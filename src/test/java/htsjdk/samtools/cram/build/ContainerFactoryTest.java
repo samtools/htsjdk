@@ -30,7 +30,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         final long dummyByteOffset = 0;
         final Container container = factory.buildContainer(records, dummyByteOffset);
 
-        Assert.assertEquals(container.nofRecords, recordsPerSlice);
+        Assert.assertEquals(container.getNofRecords(), recordsPerSlice);
         Assert.assertEquals(container.getSlices().length, 1);
         Assert.assertEquals(container.getSlices()[0].nofRecords, recordsPerSlice);
 
@@ -40,7 +40,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         records.add(CRAMStructureTestUtil.createMappedRecord(recordsPerSlice, 0, 1));
         final Container container2 = factory.buildContainer(records, dummyByteOffset);
 
-        Assert.assertEquals(container2.nofRecords, recordsPerSlice + 1);
+        Assert.assertEquals(container2.getNofRecords(), recordsPerSlice + 1);
         Assert.assertEquals(container2.getSlices().length, 2);
         Assert.assertEquals(container2.getSlices()[0].nofRecords, recordsPerSlice);
         Assert.assertEquals(container2.getSlices()[1].nofRecords, 1);
@@ -134,13 +134,13 @@ public class ContainerFactoryTest extends HtsjdkTest {
         // when other refs are added, subsequent containers are multiref
 
         recordCount++;  // this container has 2 records
-        globalRecordCount = containers.get(0).nofRecords;   // we've seen 1 record before this container
+        globalRecordCount = containers.get(0).getNofRecords();   // we've seen 1 record before this container
         CRAMStructureTestUtil.assertContainerState(containers.get(1), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
                 Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, recordCount,
                 READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 1);
 
         recordCount++;  // this container has 3 records
-        globalRecordCount = containers.get(0).nofRecords + containers.get(1).nofRecords;    // we've seen 3 records before this container
+        globalRecordCount = containers.get(0).getNofRecords() + containers.get(1).getNofRecords();    // we've seen 3 records before this container
         CRAMStructureTestUtil.assertContainerState(containers.get(2), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
                 Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, recordCount,
                 READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 2);

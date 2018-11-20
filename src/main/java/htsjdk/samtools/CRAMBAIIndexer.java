@@ -131,7 +131,7 @@ public class CRAMBAIIndexer {
      * @param container container to be indexed
      */
     void processContainer(final Container container, final ValidationStringency validationStringency) {
-        if (container == null || container.isEOF()) {
+        if (container == null || container.isEOFContainer()) {
             return;
         }
 
@@ -144,7 +144,6 @@ public class CRAMBAIIndexer {
                 // TODO why are we updating the original slice here?
 
                 slice.index = sliceIndex++;
-
                 /**
                  * Unmapped span must be processed after mapped spans:
                  */
@@ -267,7 +266,7 @@ public class CRAMBAIIndexer {
         ProgressLogger progressLogger = new ProgressLogger(log, 1, "indexed", "slices");
         do {
             container = ContainerIO.readContainer(cramHeader.getVersion(), stream);
-            if (container == null || container.isEOF()) {
+            if (container == null || container.isEOFContainer()) {
                 break;
             }
 
@@ -287,10 +286,10 @@ public class CRAMBAIIndexer {
                         sequenceName = cramHeader.getSamFileHeader().getSequence(containerContext.getSequenceId()).getSequenceName();
                         break;
                 }
-                progressLogger.record(sequenceName, container.alignmentStart);
+                progressLogger.record(sequenceName, container.getAlignmentStart());
             }
 
-        } while (!container.isEOF());
+        } while (!container.isEOFContainer());
 
         indexer.finish();
     }

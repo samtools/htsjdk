@@ -25,7 +25,7 @@ public class CramContainerIterator implements Iterator<Container> {
     private void readNextContainer() {
         nextContainer = containerFromStream(countingInputStream);
 
-        if (nextContainer.isEOF()) {
+        if (nextContainer.isEOFContainer()) {
             eof = true;
             nextContainer = null;
         }

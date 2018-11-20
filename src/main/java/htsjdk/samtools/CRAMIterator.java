@@ -39,7 +39,7 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator {
-    
+
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
     private final ArrayList<SAMRecord> records;
@@ -135,13 +135,13 @@ public class CRAMIterator implements SAMRecordIterator {
                 return;
             }
             container = containerIterator.next();
-            if (container.isEOF()) {
+            if (container.isEOFContainer()) {
                 records.clear();
                 return;
             }
         } else {
             container = ContainerIO.readContainer(cramHeader.getVersion(), countingInputStream);
-            if (container.isEOF()) {
+            if (container.isEOFContainer()) {
                 records.clear();
                 return;
             }
@@ -149,7 +149,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
         records.clear();
         if (cramRecords == null)
-            cramRecords = new ArrayList<>(container.nofRecords);
+            cramRecords = new ArrayList<>(container.getNofRecords());
         else
             cramRecords.clear();
 
@@ -180,8 +180,9 @@ public class CRAMIterator implements SAMRecordIterator {
         for (final Slice slice : container.getSlices()) {
             final ReferenceContext sliceContext = slice.getReferenceContext();
 
-            if (! sliceContext.isMappedSingleRef())
+            if (! sliceContext.isMappedSingleRef()) {
                 continue;
+            }
 
             if (!slice.validateRefMD5(referenceBases)) {
                 final String msg = String.format(
@@ -195,7 +196,7 @@ public class CRAMIterator implements SAMRecordIterator {
         }
 
         normalizer.normalize(cramRecords, referenceBases, 0,
-                container.compressionHeader.substitutionMatrix);
+                container.getCompressionHeader().substitutionMatrix);
 
         final Cram2SamRecordFactory cramToSamRecordFactory = new Cram2SamRecordFactory(
                 cramHeader.getSamFileHeader());
@@ -211,11 +212,11 @@ public class CRAMIterator implements SAMRecordIterator {
             samRecord.setValidationStringency(validationStringency);
 
             if (mReader != null) {
-                final long chunkStart = (container.byteOffset << 16) | cramRecord.sliceIndex;
-                final long chunkEnd = ((container.byteOffset << 16) | cramRecord.sliceIndex) + 1;
+                final long chunkStart = (container.getByteOffset() << 16) | cramRecord.sliceIndex;
+                final long chunkEnd = ((container.getByteOffset() << 16) | cramRecord.sliceIndex) + 1;
                 samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
-            
+
             records.add(samRecord);
         }
         cramRecords.clear();
@@ -253,7 +254,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
     @Override
     public boolean hasNext() {
-        if (container != null && container.isEOF()) return false;
+        if (container != null && container.isEOFContainer()) return false;
         if (!iterator.hasNext()) {
             nextContainer();
         }

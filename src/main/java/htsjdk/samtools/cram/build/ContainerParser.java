@@ -42,16 +42,16 @@ public class ContainerParser {
     public List<CramCompressionRecord> getRecords(final Container container,
                                                   ArrayList<CramCompressionRecord> records,
                                                   final ValidationStringency validationStringency) {
-        if (container.isEOF()) {
+        if (container.isEOFContainer()) {
             return Collections.emptyList();
         }
 
         if (records == null) {
-            records = new ArrayList<>(container.nofRecords);
+            records = new ArrayList<>(container.getNofRecords());
         }
 
         for (final Slice slice : container.getSlices()) {
-            records.addAll(getRecords(slice, container.compressionHeader, validationStringency));
+            records.addAll(getRecords(slice, container.getCompressionHeader(), validationStringency));
         }
 
         return records;

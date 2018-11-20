@@ -68,14 +68,14 @@ public class VersionTest extends HtsjdkTest {
         // ensure EOF follows:
         Container eof = ContainerIO.readContainer(version, cramSeekableStream);
         Assert.assertNotNull(eof);
-        Assert.assertTrue(eof.isEOF());
+        Assert.assertTrue(eof.isEOFContainer());
 
         // TODO: ensure there is nothing left in the stream.
 
         // position stream at the start of the 1st container:
         cramSeekableStream.seek(containerStart);
         // read only container header:
-        ContainerHeaderIO.readContainerHeader(version.major, cramSeekableStream, containerStart);
+        ContainerHeaderIO.readContainerHeader(version.major, cramSeekableStream);
 
         // read the following 4 bytes of CRC32:
         int crcByteSize = 4;
@@ -91,8 +91,8 @@ public class VersionTest extends HtsjdkTest {
         // test that checksum matches:
         CRC32 digester = new CRC32();
         digester.update(containerHeaderBytes);
-        Assert.assertEquals(container.checksum, (int) digester.getValue());
-        Assert.assertEquals(CramInt.readInt32(crcBytes), container.checksum);
+        Assert.assertEquals(container.getChecksum(), (int) digester.getValue());
+        Assert.assertEquals(CramInt.readInt32(crcBytes), container.getChecksum());
 
         // test block's crc:
         cramSeekableStream.seek(firstBlockStart);

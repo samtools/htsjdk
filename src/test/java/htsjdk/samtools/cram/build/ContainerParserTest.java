@@ -46,7 +46,7 @@ public class ContainerParserTest extends HtsjdkTest {
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(eofBytes);
              final CountingInputStream inputStream = new CountingInputStream(bais)) {
             final Container container = ContainerIO.readContainer(version, inputStream);
-            Assert.assertTrue(container.isEOF());
+            Assert.assertTrue(container.isEOFContainer());
             Assert.assertTrue(PARSER.getRecords(container, null, ValidationStringency.STRICT).isEmpty());
         }
     }

@@ -67,7 +67,8 @@ public class ContainerTest extends HtsjdkTest {
                                          final int expectedAlignmentStart,
                                          final int expectedAlignmentSpan) {
         final long byteOffset = 536635;
-        final Container container = Container.initializeFromSlices(slices, COMPRESSION_HEADER, byteOffset);
+        final ContainerHeader header = ContainerHeader.initializeFromSlices(slices, 0, 0);
+        final Container container = new Container(header, COMPRESSION_HEADER, slices, byteOffset);
         CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, byteOffset);
     }
 
@@ -95,8 +96,10 @@ public class ContainerTest extends HtsjdkTest {
 
     @Test(dataProvider = "illegalCombinationTestCases", expectedExceptions = CRAMException.class)
     public static void illegalCombinationsStateTest(final Slice one, final Slice another) {
-        final long dummyByteOffset = 0;
-        Container.initializeFromSlices(Arrays.asList(one, another), COMPRESSION_HEADER, dummyByteOffset);
+        final int dummy = 0;
+        final List<Slice> slices = Arrays.asList(one, another);
+        final ContainerHeader header = ContainerHeader.initializeFromSlices(slices, dummy, dummy);
+        new Container(header, COMPRESSION_HEADER, slices, dummy);
     }
 
     @DataProvider(name = "getSpansTestCases")
@@ -209,24 +212,30 @@ public class ContainerTest extends HtsjdkTest {
     @DataProvider(name = "containerDistributeNegative")
     private Object[][] containerDistributeNegative() {
         final ReferenceContext refContext = new ReferenceContext(0);
+        final List<Slice> oneSlice = Collections.singletonList(new Slice(refContext));
 
-        final Container nullLandmarks = new Container(refContext);
-        nullLandmarks.containerBlocksByteSize = 6789;
-        nullLandmarks.landmarks = null;
+        final ContainerHeader nullLandmarksHeader = ContainerHeader.initializeFromSlices(oneSlice, 0, 0);
+        nullLandmarksHeader.setContainerBlocksByteSize(6789);
+        //nullLandmarksHeader.setLandmarks();
+        final Container nullLandmarks = new Container(nullLandmarksHeader);
         nullLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 999);
 
-        final Container tooManyLandmarks = new Container(refContext);
-        tooManyLandmarks.containerBlocksByteSize = 111;
-        tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
+        final ContainerHeader tooManyLandmarksHeader = ContainerHeader.initializeFromSlices(oneSlice, 0, 0);
+        tooManyLandmarksHeader.setContainerBlocksByteSize(111);
+        tooManyLandmarksHeader.setLandmarks(new int[]{ 1, 2, 3, 4, 5 });
+        final Container tooManyLandmarks = new Container(tooManyLandmarksHeader);
         tooManyLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 12345);
 
-        final Container tooManySlices = new Container(refContext);
-        tooManySlices.containerBlocksByteSize = 675345389;
-        tooManySlices.landmarks = new int[]{ 1 };
+        final ContainerHeader tooManySlicesHeader = ContainerHeader.initializeFromSlices(oneSlice, 0, 0);
+        tooManySlicesHeader.setContainerBlocksByteSize(675345389);
+        tooManySlicesHeader.setLandmarks(new int[]{ 1 });
+        final Container tooManySlices = new Container(tooManySlicesHeader);
         tooManySlices.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
-        final Container noByteSize = new Container(refContext);
-        noByteSize.landmarks = new int[]{ 1, 2 };
+        final ContainerHeader noByteSizeHeader = ContainerHeader.initializeFromSlices(oneSlice, 0, 0);
+        //noByteSizeHeader.setContainerBlocksByteSize(111);
+        noByteSizeHeader.setLandmarks(new int[]{ 1, 2});
+        final Container noByteSize = new Container(noByteSizeHeader);
         noByteSize.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
         return new Object[][] {
@@ -247,12 +256,12 @@ public class ContainerTest extends HtsjdkTest {
                                                      final int compressionHeaderSize) {
         final ReferenceContext refContext = new ReferenceContext(0);
 
-        final Container container = new Container(refContext);
-        container.containerBlocksByteSize = compressionHeaderSize + slice0size;
-        container.landmarks = new int[]{
+        final int containerBlocksByteSize = compressionHeaderSize + slice0size;
+        final int[] landmarks = new int[]{
                 compressionHeaderSize,                // beginning of slice
         };
 
+        final Container container = new Container(getContainerHeader(refContext, containerBlocksByteSize, landmarks));
         container.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), containerStreamByteOffset);
         container.distributeIndexingParametersToSlices();
         return container;
@@ -262,21 +271,30 @@ public class ContainerTest extends HtsjdkTest {
                                                      final int slice0size,
                                                      final int slice1size,
                                                      final int compressionHeaderSize) {
-        final int containerDataSize = compressionHeaderSize + slice0size + slice1size;
-
         final ReferenceContext refContext = new ReferenceContext(0);
 
-        final Container container = new Container(refContext);
-        container.containerBlocksByteSize = containerDataSize;
-        container.landmarks = new int[]{
+        final int containerBlocksByteSize = compressionHeaderSize + slice0size + slice1size;
+        final int[] landmarks = new int[]{
                 compressionHeaderSize,                // beginning of slice 1
                 compressionHeaderSize + slice0size    // beginning of slice 2
         };
 
+        final Container container = new Container(getContainerHeader(refContext, containerBlocksByteSize, landmarks));
         container.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), containerStreamByteOffset);
         container.distributeIndexingParametersToSlices();
         return container;
     }
+
+    private static ContainerHeader getContainerHeader(final ReferenceContext refContext,
+                                                      final int containerBlocksByteSize,
+                                                      final int[] landmarks) {
+        final ContainerHeader containerHeader = new ContainerHeader(refContext, 0, 0, 0, 0);
+        containerHeader.setContainerBlocksByteSize(containerBlocksByteSize);
+        containerHeader.setLandmarks(landmarks);
+
+        return containerHeader;
+    }
+
 
     private static void assertSliceIndexingParams(final Slice slice,
                                                   final int expectedIndex,

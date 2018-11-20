@@ -18,10 +18,7 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,12 +67,11 @@ public class ContainerFactory {
             slices.add(slice);
         }
 
-        final Container container = Container.initializeFromSlices(slices, compressionHeader, containerByteOffset);
-        container.nofRecords = records.size();
-        container.globalRecordCounter = lastGlobalRecordCounter;
-        container.blockCount = 0;
-        container.bases += baseCount;
-        return container;
+        final ContainerHeader containerHeader = ContainerHeader.initializeFromSlices(slices, records.size(), lastGlobalRecordCounter);
+        containerHeader.setBlockCount(0);
+        containerHeader.setBases(baseCount);
+
+        return new Container(containerHeader, compressionHeader, slices, containerByteOffset);
     }
 
     public boolean isPreserveReadNames() {

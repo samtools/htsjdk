@@ -22,68 +22,112 @@ import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockContentType;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Container {
-    private final ReferenceContext referenceContext;
+    private final ContainerHeader containerHeader;
 
-    // container header as defined in the specs, in addition to sequenceId from ReferenceContext
+    private Block[] blocks;
 
-    /**
-     * The total length of all blocks in this container, of all types.
-     *
-     * Equal to the total length of this container, minus the Container Header.
-     *
-     * @see htsjdk.samtools.cram.structure.block.BlockContentType
-     */
-    public int containerBlocksByteSize = 0;
-
-    // minimum alignment start of the reads in this Container
-    // uses a 1-based coordinate system
-    public int alignmentStart = Slice.NO_ALIGNMENT_START;
-    public int alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
-    public int nofRecords = 0;
-    public long globalRecordCounter = 0;
-
-    public long bases = 0;
-    public int blockCount = -1;
-
-    /**
-     * Slice byte boundaries as offsets within this container,
-     * counted after the container header.  The start of the compression header
-     * has offset 0.
-     *
-     * Equal to {@link Slice#byteOffsetFromCompressionHeaderStart}.
-     *
-     * As an example, suppose we have:
-     * - landmarks[0] = 9000
-     * - landmarks[1] = 109000
-     * - containerBlocksByteSize = 123456
-     *
-     * We therefore know:
-     * - the compression header size = 9000
-     * - Slice 0 has offset 9000 and size 100000 (109000 - 9000)
-     * - Slice 1 has offset 109000 and size 14456 (123456 - 109000)
-     */
-    public int[] landmarks;
-
-    public int checksum = 0;
-
-    /**
-     * Container data
-     */
-    public Block[] blocks;
-
-    public CompressionHeader compressionHeader;
+    private CompressionHeader compressionHeader;
 
     // slices found in the container:
     private Slice[] slices;
 
     // this Container's byte offset from the the start of the stream.
     // Used for indexing.
-    public long byteOffset;
+    private long byteOffset;
+
+    public Container(final ContainerHeader containerHeader) {
+        this.containerHeader = containerHeader;
+    }
+
+    public Container(final ContainerHeader containerHeader,
+                     final long containerByteOffset) {
+        this.containerHeader = containerHeader;
+        this.byteOffset = containerByteOffset;
+    }
+
+    public Container(final ContainerHeader containerHeader,
+                     final CompressionHeader compressionHeader,
+                     final List<Slice> slices,
+                     final long containerByteOffset) {
+        this.containerHeader = containerHeader;
+        this.compressionHeader = compressionHeader;
+
+        setSlicesAndByteOffset(slices, containerByteOffset);
+    }
+
+    public ContainerHeader getContainerHeader() {
+        return containerHeader;
+    }
+
+    public boolean isFileHeaderContainer() {
+        return blocks != null
+                && blocks.length > 0
+                && blocks[0].getContentType() == BlockContentType.FILE_HEADER;
+    }
+
+    public boolean isEOFContainer() {
+        return containerHeader.isEOFContainer() && (slices == null || slices.length == 0);
+    }
+
+    /**
+     * Byte size of the content excluding compressionHeader.
+     */
+    public int getContainerBlocksByteSize() {
+        return containerHeader.getContainerBlocksByteSize();
+    }
+
+    public ReferenceContext getReferenceContext() {
+        return containerHeader.getReferenceContext();
+    }
+
+    public int getAlignmentStart() {
+        return containerHeader.getAlignmentStart();
+    }
+
+    public int getAlignmentSpan() {
+        return containerHeader.getAlignmentSpan();
+    }
+
+    public int getNofRecords() {
+        return containerHeader.getNofRecords();
+    }
+
+    public long getGlobalRecordCounter() {
+        return containerHeader.getGlobalRecordCounter();
+    }
+
+    public long getBases() {
+        return containerHeader.getBases();
+    }
+
+    public int getBlockCount() {
+        return containerHeader.getBlockCount();
+    }
+
+    public int[] getLandmarks() {
+        return containerHeader.getLandmarks();
+    }
+
+    public int getChecksum() {
+        return containerHeader.getChecksum();
+    }
+
+    /**
+     * Container data
+     */
+    public Block[] getBlocks() {
+        return blocks;
+    }
+
+    public CompressionHeader getCompressionHeader() {
+        return compressionHeader;
+    }
 
     public Slice[] getSlices() {
         return slices;
@@ -103,82 +147,8 @@ public class Container {
         this.byteOffset = byteOffset;
     }
 
-    /**
-     * Construct this Container by providing its {@link ReferenceContext}
-     * @param refContext the reference context associated with this container
-     */
-    public Container(final ReferenceContext refContext) {
-        this.referenceContext = refContext;
-    }
-
-    public ReferenceContext getReferenceContext() {
-        return referenceContext;
-    }
-
-    /**
-     * Derive the container's {@link ReferenceContext} from its {@link Slice}s.
-     *
-     * A Single Reference Container contains only Single Reference Slices mapped to the same reference.
-     * - set the Container's ReferenceContext to be the same as those slices
-     * - set the Container's Alignment Start and Span to cover all slices
-     *
-     * A Multiple Reference Container contains only Multiple Reference Slices.
-     * - set the Container's ReferenceContext to MULTIPLE_REFERENCE_CONTEXT
-     * - unset the Container's Alignment Start and Span
-     *
-     * An Unmapped Container contains only Unmapped Slices.
-     * - set the Container's ReferenceContext to UNMAPPED_UNPLACED_CONTEXT
-     * - unset the Container's Alignment Start and Span
-     *
-     * Any other combination is invalid.
-     *
-     * TODO for general Container refactoring: make this part of construction
-     *
-     * @param containerSlices the constituent Slices of the Container
-     * @param compressionHeader the CRAM {@link CompressionHeader} to assign to the Container
-     * @param containerByteOffset the Container's byte offset from the start of the stream
-     * @throws CRAMException for invalid Container states
-     * @return the initialized Container
-     */
-    public static Container initializeFromSlices(final List<Slice> containerSlices,
-                                                 final CompressionHeader compressionHeader,
-                                                 final long containerByteOffset) {
-        final Set<ReferenceContext> sliceRefContexts = containerSlices.stream()
-                .map(Slice::getReferenceContext)
-                .collect(Collectors.toSet());
-
-        if (sliceRefContexts.isEmpty()) {
-            throw new CRAMException("Cannot construct a Container without any Slices");
-        }
-        else if (sliceRefContexts.size() > 1) {
-            throw new CRAMException("Cannot construct a Container from Slices with conflicting types or sequence IDs");
-        }
-
-        final ReferenceContext commonRefContext = sliceRefContexts.iterator().next();
-
-        final Container container = new Container(commonRefContext);
-        container.setSlicesAndByteOffset(containerSlices, containerByteOffset);
-        container.compressionHeader = compressionHeader;
-
-        if (commonRefContext.isMappedSingleRef()) {
-            int start = Integer.MAX_VALUE;
-            // end is start + span - 1.  We can do slightly easier math instead.
-            int endPlusOne = Integer.MIN_VALUE;
-
-            for (final Slice slice : containerSlices) {
-                start = Math.min(start, slice.alignmentStart);
-                endPlusOne = Math.max(endPlusOne, slice.alignmentStart + slice.alignmentSpan);
-            }
-
-            container.alignmentStart = start;
-            container.alignmentSpan = endPlusOne - start;
-        }
-        else {
-            container.alignmentStart = Slice.NO_ALIGNMENT_START;
-            container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
-        }
-
-        return container;
+    public long getByteOffset() {
+        return byteOffset;
     }
 
     /**
@@ -193,6 +163,7 @@ public class Container {
             return;
         }
 
+        final int landmarks[] = containerHeader.getLandmarks();
         if (landmarks == null) {
             throw new CRAMException("Cannot set Slice indexing parameters if this Container does not have landmarks");
         }
@@ -202,7 +173,7 @@ public class Container {
             throw new CRAMException(String.format(format, landmarks.length, slices.length));
         }
 
-        if (containerBlocksByteSize == 0) {
+        if (containerHeader.getContainerBlocksByteSize() == 0) {
             throw new CRAMException("Cannot set Slice indexing parameters if the byte size of this Container's blocks is unknown");
         }
 
@@ -217,7 +188,7 @@ public class Container {
         final Slice lastSlice = slices[lastSliceIndex];
         lastSlice.index = lastSliceIndex;
         lastSlice.byteOffsetFromCompressionHeaderStart = landmarks[lastSliceIndex];
-        lastSlice.byteSize = containerBlocksByteSize - lastSlice.byteOffsetFromCompressionHeaderStart;
+        lastSlice.byteSize = containerHeader.getContainerBlocksByteSize() - lastSlice.byteOffsetFromCompressionHeaderStart;
     }
 
     /**
@@ -225,7 +196,7 @@ public class Container {
      * @return the list of CRAI Index entries
      */
     public List<CRAIEntry> getCRAIEntries() {
-        if (isEOF()) {
+        if (isEOFContainer()) {
             return Collections.emptyList();
         }
 
@@ -238,22 +209,10 @@ public class Container {
 
     @Override
     public String toString() {
-        return String
-                .format("seqID=%s, start=%d, span=%d, records=%d, slices=%d, blocks=%d.",
-                        referenceContext, alignmentStart, alignmentSpan, nofRecords,
-                        getSlices() == null ? -1 : getSlices().length, blockCount);
-    }
-
-    public boolean isEOF() {
-        final boolean v3 = containerBlocksByteSize == 15 && referenceContext.isUnmappedUnplaced()
-                && alignmentStart == 4542278 && blockCount == 1
-                && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
-
-        final boolean v2 = containerBlocksByteSize == 11 && referenceContext.isUnmappedUnplaced()
-                && alignmentStart == 4542278 && blockCount == 1
-                && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
-
-        return v3 || v2;
+        final String format = "seqID=%s, start=%d, span=%d, records=%d, slices=%d, blocks=%d.";
+        return String.format(format, containerHeader.getReferenceContext(), containerHeader.getAlignmentStart(),
+                containerHeader.getAlignmentSpan(), containerHeader.getNofRecords(),
+                slices == null ? -1 : slices.length, containerHeader.getBlockCount());
     }
 
     /**

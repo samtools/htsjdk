@@ -12,10 +12,7 @@ import htsjdk.samtools.cram.lossy.QualityScorePreservation;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceTracks;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
@@ -446,7 +443,13 @@ public class CRAMContainerStreamWriter {
         for (final Slice slice : container.getSlices()) {
             slice.setRefMD5(referenceBases);
         }
-        offset += ContainerIO.writeContainer(cramVersion, container, outputStream);
+
+        if (container.isFileHeaderContainer()) {
+            offset += ContainerIO.writeFileHeaderContainer(cramVersion, container, outputStream);
+        } else {
+            offset += ContainerIO.writeContainer(cramVersion, container, outputStream);
+        }
+
         if (indexer != null) {
             /**
              * Using silent validation here because the reads have been through validation already or

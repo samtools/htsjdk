@@ -100,7 +100,7 @@ public class CRAMCRAIIndexer {
         // get the first container
         Container container = ContainerIO.readContainer(cramVersion, cramStream);
 
-        while (container != null && !container.isEOF()) {
+        while (container != null && !container.isEOFContainer()) {
             indexer.processContainer(container);
             container = ContainerIO.readContainer(cramVersion, cramStream);
         }

@@ -31,7 +31,9 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         final Slice slice2 = createSliceWithArbitraryValues(refContext);
 
         final long containerByteOffset = 12345;
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), COMPRESSION_HEADER, containerByteOffset);
+        final List<Slice> slices = Arrays.asList(slice1, slice2);
+        final ContainerHeader header = ContainerHeader.initializeFromSlices(slices, 0, 0);
+        final Container container = new Container(header, COMPRESSION_HEADER, slices, containerByteOffset);
         final List<CRAIEntry> entries = container.getCRAIEntries();
 
         Assert.assertNotNull(entries);
@@ -86,7 +88,9 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         slice2.byteSize = sliceByteSize;
         slice2.byteOffsetFromCompressionHeaderStart = slice2ByteOffsetFromContainer;
 
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), compressionHeader, containerOffset);
+        final List<Slice> slices = Arrays.asList(slice1, slice2);
+        final ContainerHeader containerHeader = ContainerHeader.initializeFromSlices(slices, allRecords.size(), 0);
+        final Container container = new Container(containerHeader, compressionHeader, slices, containerOffset);
 
         final List<CRAIEntry> entries = container.getCRAIEntries();
         Assert.assertNotNull(entries);

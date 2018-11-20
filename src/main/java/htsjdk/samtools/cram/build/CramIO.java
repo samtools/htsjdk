@@ -21,11 +21,13 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
+import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
@@ -213,14 +215,10 @@ public class CramIO {
         try {
             final CramHeader header = readFormatDefinition(inputStream);
 
-            // the location of the stream pointer after the CramHeader has been read
-            final long containerByteOffset = CramIO.DEFINITION_LENGTH;
-
             final SAMFileHeader samFileHeader = readSAMFileHeader(
                     header.getVersion(),
                     inputStream,
-                    new String(header.getId()),
-                    containerByteOffset);
+                    new String(header.getId()));
 
             return new CramHeader(header.getVersion(), new String(header.getId()), samFileHeader);
         } catch (final IOException e) {
@@ -256,6 +254,7 @@ public class CramIO {
         return headerOS.toByteArray();
     }
 
+    // TODO: merge with ContainerIO.writeFileHeaderContainer
     private static long writeContainerForSamFileHeader(final int major, final SAMFileHeader samFileHeader, final OutputStream os) {
         final byte[] data = toByteArray(samFileHeader);
         final int length = Math.max(1024, data.length + data.length / 2);
@@ -263,37 +262,52 @@ public class CramIO {
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
         final Block block = Block.createRawFileHeaderBlock(blockContent);
 
-        final Container container = new Container(new ReferenceContext(0));
-        container.blockCount = 1;
-        container.blocks = new Block[]{block};
-        container.landmarks = new int[0];
-        container.bases = 0;
-        container.globalRecordCounter = 0;
-        container.nofRecords = 0;
-
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         block.write(major, byteArrayOutputStream);
-        container.containerBlocksByteSize = byteArrayOutputStream.size();
+        final int containerBlocksByteSize = byteArrayOutputStream.size();
 
-        final int containerHeaderByteSize = ContainerHeaderIO.writeContainerHeader(major, container, os);
+        final ReferenceContext referenceContext = new ReferenceContext(0);
+        final int alignmentStart = Slice.NO_ALIGNMENT_START;
+        final int alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+        final int nofRecords = 0;
+        final long globalRecordCounter = 0;
+        final int containerByteSize = byteArrayOutputStream.size();
+        final long bases = 0;
+        final int blockCount = 1;
+        final int[] landmarks = new int[0];
+        final int checksum = 0; // TODO
+
+        final ContainerHeader containerHeader = new ContainerHeader(
+                referenceContext,
+                alignmentStart,
+                alignmentSpan,
+                nofRecords,
+                globalRecordCounter,
+                containerByteSize,
+                bases,
+                blockCount,
+                landmarks,
+                checksum);
+        // TODO
+//        container.blocks = new Block[]{block};
+//        container.slices = new Slice[0];
+
+        final int containerHeaderByteSize = ContainerHeaderIO.writeContainerHeader(major, containerHeader, os);
         try {
-            os.write(byteArrayOutputStream.toByteArray(), 0, container.containerBlocksByteSize);
+            os.write(byteArrayOutputStream.toByteArray(), 0, containerBlocksByteSize);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
 
-        return containerHeaderByteSize + container.containerBlocksByteSize;
+        return containerHeaderByteSize + containerBlocksByteSize;
     }
 
-    private static SAMFileHeader readSAMFileHeader(final Version version,
-                                                   final InputStream inputStream,
-                                                   final String id,
-                                                   final long containerByteOffset) {
-        final Container container = ContainerHeaderIO.readContainerHeader(version.major, inputStream, containerByteOffset);
+    private static SAMFileHeader readSAMFileHeader(final Version version, InputStream inputStream, final String id) {
+        final ContainerHeader containerHeader = ContainerHeaderIO.readContainerHeader(version.major, inputStream);
         final Block block;
         {
             if (version.compatibleWith(CramVersions.CRAM_v3)) {
-                final byte[] bytes = new byte[container.containerBlocksByteSize];
+                final byte[] bytes = new byte[containerHeader.getContainerBlocksByteSize()];
                 InputStreamUtils.readFully(inputStream, bytes, 0, bytes.length);
                 block = Block.read(version.major, new ByteArrayInputStream(bytes));
                 // ignore the rest of the container
@@ -347,15 +361,16 @@ public class CramIO {
     public static boolean replaceCramHeader(final File file, final CramHeader newHeader) {
         try (final CountingInputStream countingInputStream = new CountingInputStream(new FileInputStream(file));
              final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw")) {
+
             final CramHeader cramHeader = readFormatDefinition(countingInputStream);
-            final Container c = ContainerHeaderIO.readContainerHeader(cramHeader.getVersion().major, countingInputStream);
+            final ContainerHeader containerHeader = ContainerHeaderIO.readContainerHeader(cramHeader.getVersion().major, countingInputStream);
             final long pos = countingInputStream.getCount();
             countingInputStream.close();
 
             final Block block = Block.createRawFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             block.write(newHeader.getVersion().major, byteArrayOutputStream);
-            if (byteArrayOutputStream.size() > c.containerBlocksByteSize) {
+            if (byteArrayOutputStream.size() > containerHeader.getContainerBlocksByteSize()) {
                 log.error("Failed to replace CRAM header because the new header does not fit.");
                 return false;
             }
