@@ -29,7 +29,6 @@ package htsjdk.variant.variantcontext;
 // the imports for unit testing.
 
 import htsjdk.variant.VariantBaseTest;
-import htsjdk.variant.variantcontext.Allele;
 
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
@@ -48,7 +47,7 @@ import org.testng.annotations.Test;
  * Basic unit test for RecalData
  */
 public class AlleleUnitTest extends VariantBaseTest {
-    Allele ARef, A, T, ATIns, ATCIns, NoCall, SpandDel;
+    Allele ARef, A, T, ATIns, ATCIns, NoCall, SpandDel, NonRef, UnspecifiedAlternate;
     
     @BeforeSuite
     public void before() {
@@ -62,6 +61,9 @@ public class AlleleUnitTest extends VariantBaseTest {
         NoCall = Allele.create(Allele.NO_CALL_STRING);
 
         SpandDel = Allele.create(Allele.SPAN_DEL_STRING);
+
+        NonRef = Allele.create(Allele.NON_REF_STRING);
+        UnspecifiedAlternate = Allele.create(Allele.UNSPECIFIED_ALTERNATE_ALLELE_STRING);
     }
 
     @Test
@@ -188,6 +190,22 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertTrue(a.isSymbolic());
         Assert.assertEquals("<SYMBOLIC>", a.getDisplayString());
     }
+
+    @Test
+    public void testNonRefAllele() {
+        Assert.assertTrue(NonRef.isNonRefAllele());
+        Assert.assertTrue(UnspecifiedAlternate.isNonRefAllele());
+
+        Assert.assertFalse(T.isNonRefAllele());
+        Assert.assertFalse(ATIns.isNonRefAllele());
+
+        Assert.assertTrue(Allele.NON_REF_ALLELE.isNonRefAllele());
+        Assert.assertTrue(Allele.UNSPECIFIED_ALTERNATE_ALLELE.isNonRefAllele());
+
+        Allele a = Allele.create("<*>");
+        Assert.assertTrue(a.isNonRefAllele());
+    }
+
 
     @Test
     public void testEquals() {

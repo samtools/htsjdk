@@ -131,9 +131,8 @@ public class Allele implements Comparable<Allele>, Serializable {
     /** A generic static SPAN_DEL allele for use */
     public final static String SPAN_DEL_STRING = "*";
 
-    /** A generic static NON_REF allele for use */
+    /** Non ref allele representations */
     public final static String NON_REF_STRING = "<NON_REF>";
-
     public final static String UNSPECIFIED_ALTERNATE_ALLELE_STRING = "<*>";
 
     // no public way to create an allele
@@ -565,7 +564,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     /**
      *  @return true if Allele is either "<NON_REF>" or "<*>"
      */
-    public boolean isValidRefBlockAllele() {
+    public boolean isNonRefAllele() {
         return this.equals(Allele.NON_REF_ALLELE) || this.equals(Allele.UNSPECIFIED_ALTERNATE_ALLELE);
     }
 }

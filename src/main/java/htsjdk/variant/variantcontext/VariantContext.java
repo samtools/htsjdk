@@ -25,7 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -1689,7 +1688,7 @@ public class VariantContext implements Feature, Serializable {
      */
     public boolean isRefOnlyBlock(){
         return getAlternateAlleles().size() == 1
-                && getAlternateAllele(0).isValidRefBlockAllele()
+                && getAlternateAllele(0).isNonRefAllele()
                 && getAttribute(VCFConstants.END_KEY) != null;
     }
 
