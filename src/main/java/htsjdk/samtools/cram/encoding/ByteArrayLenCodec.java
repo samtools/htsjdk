@@ -4,9 +4,8 @@ class ByteArrayLenCodec implements CRAMCodec<byte[]> {
     private final CRAMCodec<Integer> lenCodec;
     private final CRAMCodec<byte[]> byteCodec;
 
-    public ByteArrayLenCodec(final CRAMCodec<Integer> lenCodec,
-                             final CRAMCodec<byte[]> byteCodec) {
-        super();
+    ByteArrayLenCodec(final CRAMCodec<Integer> lenCodec,
+                      final CRAMCodec<byte[]> byteCodec) {
         this.lenCodec = lenCodec;
         this.byteCodec = byteCodec;
     }
