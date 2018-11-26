@@ -13,7 +13,7 @@ class IndexStreamBuffer implements IndexFileBuffer {
 
     /** Continually reads from the provided {@link SeekableStream} into the buffer until the specified number of bytes are read, or
      * until the stream is exhausted, throwing a {@link RuntimeIOException}. */
-    private static void readFully(final SeekableStream in, final byte[] buffer, final int offset, final int length) {
+    private static void readFully(final SeekableStream in, final byte[] buffer, final int length) {
         int read = 0;
         while (read < length) {
             final int readThisLoop;
@@ -42,24 +42,24 @@ class IndexStreamBuffer implements IndexFileBuffer {
 
     @Override
     public void readBytes(final byte[] bytes) {
-        readFully(in, bytes, 0, bytes.length);
+        readFully(in, bytes, bytes.length);
     }
 
     @Override
-    public void seek(final int position) {
+    public void seek(final long position) {
         try { in.seek(position); }
         catch (final IOException e) { throw new RuntimeIOException(e); }
     }
 
     @Override
     public int readInteger() {
-        readFully(in, tmpBuf.array(), 0, 4);
+        readFully(in, tmpBuf.array(), 4);
         return tmpBuf.getInt(0);
     }
 
     @Override
     public long readLong() {
-        readFully(in, tmpBuf.array(), 0, 8);
+        readFully(in, tmpBuf.array(), 8);
         return tmpBuf.getLong(0);
     }
 
@@ -68,15 +68,16 @@ class IndexStreamBuffer implements IndexFileBuffer {
         try {
             for (int s = count; s > 0;) {
                 final int skipped = (int)in.skip(s);
-                if (skipped <= 0)
+                if (skipped <= 0) {
                     throw new RuntimeIOException("Failed to skip " + s);
+                }
                 s -= skipped;
             }
         } catch (final IOException e) { throw new RuntimeIOException(e); }
     }
 
     @Override
-    public int position() {
+    public long position() {
         try {
             return (int) in.position();
         } catch (final IOException e) { throw new RuntimeIOException(e); }

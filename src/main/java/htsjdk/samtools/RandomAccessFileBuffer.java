@@ -26,7 +26,7 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
     private final File mFile;
     private RandomAccessFile mRandomAccessFile;
     private final int mFileLength;
-    private int mFilePointer = 0;
+    private long mFilePointer = 0;
     private int mCurrentPage = INVALID_PAGE;
     private final byte[] mBuffer = new byte[PAGE_SIZE];
 
@@ -53,7 +53,7 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
         }
         while (resultLength > 0) {
             loadPage(mFilePointer);
-            final int pageOffset = mFilePointer & PAGE_OFFSET_MASK;
+            final int pageOffset = (int)mFilePointer & PAGE_OFFSET_MASK;
             final int copyLength = Math.min(resultLength, PAGE_SIZE - pageOffset);
             System.arraycopy(mBuffer, pageOffset, bytes, resultOffset, copyLength);
             mFilePointer += copyLength;
@@ -66,7 +66,7 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
     public int readInteger() {
         // This takes advantage of the fact that integers in BAM index files are always 4-byte aligned.
         loadPage(mFilePointer);
-        final int pageOffset = mFilePointer & PAGE_OFFSET_MASK;
+        final int pageOffset = (int)mFilePointer & PAGE_OFFSET_MASK;
         mFilePointer += 4;
         return((mBuffer[pageOffset + 0] & 0xFF) |
                 ((mBuffer[pageOffset + 1] & 0xFF) << 8) |
@@ -89,12 +89,12 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
     }
 
     @Override
-    public void seek(final int position) {
+    public void seek(final long position) {
         mFilePointer = position;
     }
 
     @Override
-    public int position() {
+    public long position() {
         return mFilePointer;
     }
 
@@ -112,8 +112,8 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
         }
     }
 
-    private void loadPage(final int filePosition) {
-        final int page = filePosition & PAGE_MASK;
+    private void loadPage(final long filePosition) {
+        final int page = (int)filePosition & PAGE_MASK;
         if (page == mCurrentPage) {
             return;
         }

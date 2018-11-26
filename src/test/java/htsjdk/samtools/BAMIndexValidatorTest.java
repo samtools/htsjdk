@@ -26,8 +26,7 @@ public class BAMIndexValidatorTest extends HtsjdkTest {
         int baiCount = BamIndexValidator.exhaustivelyTestIndex(samFileReader1);
         int csiCount = BamIndexValidator.exhaustivelyTestIndex(samFileReader2);
 
-        Assert.assertEquals(baiCount, 5031);
-        Assert.assertEquals(csiCount, 5013);
+        Assert.assertEquals(baiCount, csiCount);
     }
 
 }

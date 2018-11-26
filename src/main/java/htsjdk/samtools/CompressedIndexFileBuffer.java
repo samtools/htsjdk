@@ -1,19 +1,25 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.IOException;
 
-
+/**
+ * CSI index files produced by SAMtools are BGZF compressed by default. This class
+ * adds the ability to read such files.
+ */
 class CompressedIndexFileBuffer implements IndexFileBuffer {
 
-    private BlockCompressedInputStream mCompressedStream;
+    private final BlockCompressedInputStream mCompressedStream;
+    private final BinaryCodec binaryCodec;
 
     CompressedIndexFileBuffer(File file) {
         try {
             mCompressedStream = new BlockCompressedInputStream(file);
+            binaryCodec = new BinaryCodec(mCompressedStream);
         } catch (IOException ioe) {
             throw(new RuntimeIOException("Construction error of CSI compressed stream: " + ioe));
         }
@@ -21,36 +27,25 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
 
     @Override
     public void readBytes(final byte[] bytes) {
-        try {
-            mCompressedStream.read(bytes);
-        } catch (IOException ioe) {
-            throw(new RuntimeIOException("Read error in CSI compressed stream: " + ioe));
-        }
+        binaryCodec.readBytes(bytes);
     }
 
     @Override
     public int readInteger() {
-        final byte[] intbuff = new byte[4];
-        try {
-            mCompressedStream.read(intbuff, 0, 4);
-        } catch (IOException ioe) {
-            throw(new RuntimeIOException("Read error in CSI compressed stream: " + ioe));
-        }
-        return((intbuff[0] & 0xFF) |
-                ((intbuff[1] & 0xFF) << 8) |
-                ((intbuff[2] & 0xFF) << 16) |
-                ((intbuff[3] & 0xFF) << 24));
+        return binaryCodec.readInt();
     }
 
     @Override
     public long readLong() {
-        final long lower = readInteger();
-        final long upper = readInteger();
-        return ((upper << 32) | (lower & 0xFFFFFFFFL));
+        return binaryCodec.readLong();
     }
 
     @Override
     public void skipBytes(final int count) {
+        if (mCompressedStream == null) {
+            throw new SAMException("Null input stream.");
+        }
+
         try {
             mCompressedStream.skip(count);
         } catch (IOException ioe) {
@@ -59,7 +54,11 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
     }
 
     @Override
-    public void seek(final int position) {
+    public void seek(final long position) {
+        if (mCompressedStream == null) {
+            throw new SAMException("Null input stream.");
+        }
+
         try {
             mCompressedStream.seek(position);
         } catch (IOException ioe) {
@@ -68,12 +67,20 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
     }
 
     @Override
-    public int position() {
-        return (int)mCompressedStream.getPosition();
+    public long position() {
+        if (mCompressedStream == null) {
+            throw new SAMException("Null input stream.");
+        }
+
+        return mCompressedStream.getPosition();
     }
 
     @Override
     public void close() {
+        if (mCompressedStream == null) {
+            throw new SAMException("Null input stream.");
+        }
+
         try {
             mCompressedStream.close();
         } catch (IOException ioe) {

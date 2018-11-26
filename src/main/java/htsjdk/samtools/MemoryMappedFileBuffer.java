@@ -50,12 +50,12 @@ class MemoryMappedFileBuffer implements IndexFileBuffer {
     }
 
     @Override
-    public void seek(final int position) {
-        mFileBuffer.position(position);
+    public void seek(final long position) {
+        mFileBuffer.position((int)position);
     }
 
     @Override
-    public int position() {
+    public long position() {
         return mFileBuffer.position();
     }
 

@@ -75,11 +75,6 @@ public class LinearIndex {
         return indexPos >> BAM_LIDX_SHIFT;
     }
 
-    public static int convertToLinearIndexOffset(final int contigPos, int minShift) {
-        final int indexPos = (contigPos <= 0) ? 0 : contigPos-1;
-        return indexPos >> minShift;
-    }
-
     /**
      * Gets the minimum offset of any alignment start appearing in this index, according to the linear index. 
      * @param startPos Starting position for this query.

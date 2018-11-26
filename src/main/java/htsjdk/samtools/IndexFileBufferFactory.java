@@ -6,9 +6,9 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.File;
 import java.io.IOException;
 
-public class IndexFileBufferFactory {
+class IndexFileBufferFactory {
 
-    public static IndexFileBuffer getBuffer(File file, boolean enableMemoryMapping) {
+    static IndexFileBuffer getBuffer(File file, boolean enableMemoryMapping) {
         boolean isCompressed;
         try {
             isCompressed = IOUtil.isBlockCompressed(file.toPath());

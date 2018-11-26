@@ -223,11 +223,7 @@ public class BAMIndexMetaData {
                 throw new SAMException("No index for bam file " + inputBamFile);
             }
 
-            BAMIndexMetaData[] data = null;
-            if (bam.getIndexType().equals(SamIndexes.BAI) || bam.getIndexType().equals(SamIndexes.CSI)) {
-                data = getIndexStats(bam);
-            }
-
+            BAMIndexMetaData[] data = getIndexStats(bam);
             if (data == null) {
                 throw new SAMException("Exception in getting index statistics");
             }

@@ -2,19 +2,21 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.BitSet;
-import java.util.Iterator;
 
 public class CSIIndexTest extends HtsjdkTest {
 
-    private static DiskBasedBAMFileIndex bai = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), null);
-    private static CSIIndex csi = new CSIIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), false, null);
-    private static CSIIndex ucsi = new CSIIndex(Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/uncompressed_index.bam.csi"), true, null);
-    private static DiskBasedBAMFileIndex ubai = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/uncompressed_index.bam.bai"),null);
+    private static DiskBasedBAMFileIndex bai;
+    private static CSIIndex csi;
+    private static CSIIndex mcsi;
+    private static CSIIndex ucsi;
+    private static DiskBasedBAMFileIndex ubai;
 
     private static Bin bin1 = new Bin(0, 0);
     private static Bin bin2 = new Bin(0, 1);
@@ -26,6 +28,19 @@ public class CSIIndexTest extends HtsjdkTest {
     private static Bin bin8 = new Bin(1, 4689);
     private static Bin bin9 = new Bin(1, 135853);
     private static Bin bin10 = new Bin(1, 163);
+
+    @BeforeTest
+    public void init() {
+        bai = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), null);
+        csi = new CSIIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), false, null);
+        mcsi = new CSIIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), true, null);
+        try {
+            ucsi = new CSIIndex(Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/uncompressed_index.bam.csi"), null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        ubai = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/uncompressed_index.bam.bai"),null);
+    }
 
 
     @Test
@@ -51,30 +66,30 @@ public class CSIIndexTest extends HtsjdkTest {
 
     @Test
     public static void testGetFirstBinInLevelOK() {
-        Assert.assertEquals(csi.getFirstBinOnLevel(0), 0);
-        Assert.assertEquals(csi.getFirstBinOnLevel(1), 1);
-        Assert.assertEquals(csi.getFirstBinOnLevel(2), 9);
-        Assert.assertEquals(csi.getFirstBinOnLevel(3), 73);
-        Assert.assertEquals(csi.getFirstBinOnLevel(4), 585);
-        Assert.assertEquals(csi.getFirstBinOnLevel(5), 4681);
+        Assert.assertEquals(csi.getFirstBinInLevelForCSI(0), 0);
+        Assert.assertEquals(csi.getFirstBinInLevelForCSI(1), 1);
+        Assert.assertEquals(csi.getFirstBinInLevelForCSI(2), 9);
+        Assert.assertEquals(csi.getFirstBinInLevelForCSI(3), 73);
+        Assert.assertEquals(csi.getFirstBinInLevelForCSI(4), 585);
+        Assert.assertEquals(csi.getFirstBinInLevelForCSI(5), 4681);
 
-        Assert.assertEquals(ucsi.getFirstBinOnLevel(0), 0);
-        Assert.assertEquals(ucsi.getFirstBinOnLevel(1), 1);
-        Assert.assertEquals(ucsi.getFirstBinOnLevel(2), 9);
-        Assert.assertEquals(ucsi.getFirstBinOnLevel(3), 73);
-        Assert.assertEquals(ucsi.getFirstBinOnLevel(4), 585);
-        Assert.assertEquals(ucsi.getFirstBinOnLevel(5), 4681);
-        Assert.assertEquals(ucsi.getFirstBinOnLevel(6), 37449);
+        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(0), 0);
+        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(1), 1);
+        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(2), 9);
+        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(3), 73);
+        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(4), 585);
+        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(5), 4681);
+        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(6), 37449);
     }
 
     @Test (expectedExceptions = SAMException.class)
     public static void testGetFirstBinInLevelFail1() {
-        csi.getFirstBinOnLevel(6);
+        csi.getFirstBinInLevelForCSI(6);
     }
 
     @Test (expectedExceptions = SAMException.class)
     public static void testGetFirstBinInLevelFail2() {
-        ucsi.getFirstBinOnLevel(7);
+        ucsi.getFirstBinInLevelForCSI(7);
     }
 
     @Test
