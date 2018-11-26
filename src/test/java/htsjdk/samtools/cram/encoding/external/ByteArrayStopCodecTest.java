@@ -9,14 +9,17 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 public class ByteArrayStopCodecTest extends HtsjdkTest {
 
     @Test(dataProvider = "testByteArrays", dataProviderClass = IOTestCases.class)
     public void codecTest(final byte[] values) throws IOException {
-        final byte stopByte = 100;
-        Assert.assertFalse(Arrays.asList(values).contains(stopByte));   // sanity check for this test
+        final byte stopByte = '\t';
+
+        // sanity check this test
+        for (final byte v : values) {
+            Assert.assertNotEquals(v, stopByte);
+        }
 
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             final CRAMCodec<byte[]> writeCodec = new ByteArrayStopCodec(null, os, stopByte);
