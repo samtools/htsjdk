@@ -19,12 +19,12 @@ package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.io.InputStreamUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.ByteArrayInputStream;
 
 public class ExternalByteArrayCodec extends ExternalCodec<byte[]> {
-    public ExternalByteArrayCodec(final InputStream inputStream, final OutputStream outputStream) {
+    public ExternalByteArrayCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

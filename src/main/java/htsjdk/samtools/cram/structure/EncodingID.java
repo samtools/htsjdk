@@ -58,7 +58,6 @@ public enum EncodingID {
     BETA(6),
 
     /**
-     * EXPERIMENTAL: This encoding is untested and scheduled for removal from the CRAM spec.
      * Subexponential codes, see the CRAM specs for details.
      */
     SUBEXPONENTIAL(7),
@@ -70,7 +69,6 @@ public enum EncodingID {
     GOLOMB_RICE(8),
 
     /**
-     * EXPERIMENTAL: This encoding is untested and scheduled for removal from the CRAM spec.
      * http://en.wikipedia.org/wiki/Elias_gamma_coding
      */
     GAMMA(9);

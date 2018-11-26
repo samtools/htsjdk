@@ -17,32 +17,23 @@
  */
 package htsjdk.samtools.cram.encoding.external;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 
 public class ExternalByteCodec extends ExternalCodec<Byte> {
 
-    public ExternalByteCodec(final InputStream inputStream, final OutputStream outputStream) {
+    ExternalByteCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 
     @Override
     public Byte read() {
-        try {
-            return (byte) inputStream.read();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return (byte) inputStream.read();
     }
 
     @Override
     public void write(final Byte object) {
-        try {
-            outputStream.write(object);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        outputStream.write(object);
     }
 
     @Override

@@ -9,7 +9,6 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 
 public class ByteArrayStopCodecTest extends HtsjdkTest {
@@ -24,7 +23,7 @@ public class ByteArrayStopCodecTest extends HtsjdkTest {
 
             writeCodec.write(values);
 
-            try (final InputStream is = new ByteArrayInputStream(os.toByteArray())) {
+            try (final ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
                 final CRAMCodec<byte[]> readCodec = new ByteArrayStopCodec(is, null, stopByte);
 
                 final byte[] actual = readCodec.read();

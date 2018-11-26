@@ -13,7 +13,6 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,7 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
     private CramCompressionRecord read(final byte[] dataBytes,
                                        final CompressionHeader header,
                                        final int refId,
-                                       final Map<Integer, InputStream> inputMap) throws IOException {
+                                       final Map<Integer, ByteArrayInputStream> inputMap) throws IOException {
         try (final ByteArrayInputStream is = new ByteArrayInputStream(dataBytes);
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
@@ -69,7 +68,7 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         final byte[] written = write(initialRecords, header, refId, outputMap);
 
-        final Map<Integer, InputStream> inputMap = createInputMap(outputMap);
+        final Map<Integer, ByteArrayInputStream> inputMap = createInputMap(outputMap);
         final List<CramCompressionRecord> roundTripRecords = new ArrayList<>(initialRecords.size());
         for (int i = 0; i < initialRecords.size(); i++) {
             roundTripRecords.add(read(written, header, refId, inputMap));

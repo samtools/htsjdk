@@ -19,11 +19,11 @@ package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.io.LTF8;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 
 class ExternalLongCodec extends ExternalCodec<Long> {
-    public ExternalLongCodec(final InputStream inputStream, final OutputStream outputStream) {
+    ExternalLongCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

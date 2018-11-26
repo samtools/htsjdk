@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.io.BitInputStream;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.Map;
@@ -73,7 +73,7 @@ public class CramRecordReader {
 
     private final Map<DataSeries, EncodingParams> encodingMap;
     private final BitInputStream coreBlockInputStream;
-    private final Map<Integer, InputStream> externalBlockInputMap;
+    private final Map<Integer, ByteArrayInputStream> externalBlockInputMap;
 
     private CramCompressionRecord prevRecord;
     private int recordCounter = 0;
@@ -89,7 +89,7 @@ public class CramRecordReader {
      * @param validationStringency how strict to be when reading this CRAM record
      */
     public CramRecordReader(final BitInputStream coreInputStream,
-                            final Map<Integer, InputStream> externalInputMap,
+                            final Map<Integer, ByteArrayInputStream> externalInputMap,
                             final CompressionHeader header,
                             final int refId,
                             final ValidationStringency validationStringency) {

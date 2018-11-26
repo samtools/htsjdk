@@ -23,7 +23,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class GolombRiceIntegerEncoding extends ExperimentalEncoding<Integer> {
     @Override
     public CRAMCodec<Integer> buildCodec(final BitInputStream coreBlockInputStream,
                                          final BitOutputStream coreBlockOutputStream,
-                                         final Map<Integer, InputStream> externalBlockInputMap,
+                                         final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
                                          final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
         return new GolombRiceIntegerCodec(coreBlockInputStream, coreBlockOutputStream, offset, m);
     }

@@ -19,7 +19,7 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.structure.*;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +53,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
      * @param recordCount           the number of CRAM records to read
      */
     public MultiRefSliceAlignmentSpanReader(final BitInputStream coreInputStream,
-                                            final Map<Integer, InputStream> externalInputMap,
+                                            final Map<Integer, ByteArrayInputStream> externalInputMap,
                                             final CompressionHeader header,
                                             final ValidationStringency validationStringency,
                                             final int initialAlignmentStart,

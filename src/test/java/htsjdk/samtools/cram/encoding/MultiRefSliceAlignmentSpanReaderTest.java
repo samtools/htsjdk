@@ -14,7 +14,6 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -75,7 +74,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         final byte[] written = write(initialRecords, header, refId, outputMap);
 
-        final Map<Integer, InputStream> inputMap = createInputMap(outputMap);
+        final Map<Integer, ByteArrayInputStream> inputMap = createInputMap(outputMap);
         try (final ByteArrayInputStream is = new ByteArrayInputStream(written);
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 

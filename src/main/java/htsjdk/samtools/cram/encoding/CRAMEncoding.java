@@ -22,20 +22,24 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.util.Map;
 
 /**
  * An interface to describe how a data series is encoded.
- * It also has methods to serialize/deserialize to/from byte array and a method to construct
- * a {@link CRAMCodec} instance.
+ * It also has methods to serialize/deserialize its parameters to/from a byte array
+ * and a method to construct a {@link CRAMCodec} instance.
  *
  * @param <T> data series type
  */
 public abstract class CRAMEncoding<T> {
     private final EncodingID ENCODING_ID;
 
+    /**
+     * Create a new encoding.  Concrete implementation constructors will specify their parameters
+     * @param id the EncodingID associated with the concrete implementation
+     */
     protected CRAMEncoding(final EncodingID id) {
         ENCODING_ID = id;
     }
@@ -48,18 +52,45 @@ public abstract class CRAMEncoding<T> {
         return new EncodingParams(id(), toByteArray());
     }
 
+    /**
+     * Subclasses but have a defined serialization of their parameters
+     * @return a byte array representing a specific encoding's parameter values
+     */
     public abstract byte[] toByteArray();
 
+    /**
+     * Instantiate the codec represented by this encoding by supplying it with the appropriate streams
+     *
+     * @param coreBlockInputStream the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will read from
+     * @param coreBlockOutputStream the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will write to
+     * @param externalBlockInputMap the external block byte stream a {@link htsjdk.samtools.cram.encoding.external.ExternalCodec} will read from
+     * @param externalBlockOutputMap the external block byte stream a {@link htsjdk.samtools.cram.encoding.external.ExternalCodec} will write to
+     * @return a newly instantiated codec
+     */
     public abstract CRAMCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
                                             final BitOutputStream coreBlockOutputStream,
-                                            final Map<Integer, InputStream> externalBlockInputMap,
+                                            final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
                                             final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap);
 
-    public CRAMCodec<T> buildReadCodec(final BitInputStream bitInputStream, final Map<Integer, InputStream> inputMap) {
-        return buildCodec(bitInputStream, null, inputMap, null);
+    /**
+     * Convenience initializer method for read codecs
+     *
+     * @param coreBlockInputStream the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will read from
+     * @param externalBlockInputMap the external block byte stream a {@link htsjdk.samtools.cram.encoding.external.ExternalCodec} will read from
+     * @return
+     */
+    public CRAMCodec<T> buildReadCodec(final BitInputStream coreBlockInputStream, final Map<Integer, ByteArrayInputStream> externalBlockInputMap) {
+        return buildCodec(coreBlockInputStream, null, externalBlockInputMap, null);
     }
 
-    public CRAMCodec<T> buildWriteCodec(final BitOutputStream bitOutputStream, final Map<Integer, ByteArrayOutputStream> outputMap) {
-        return buildCodec(null, bitOutputStream, null, outputMap);
+    /**
+     * Convenience initializer method for write codecs
+     *
+     * @param coreBlockOutputStream the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will write to
+     * @param externalBlockOutputMap the external block byte stream a {@link htsjdk.samtools.cram.encoding.external.ExternalCodec} will write to
+     * @return
+     */
+    public CRAMCodec<T> buildWriteCodec(final BitOutputStream coreBlockOutputStream, final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
+        return buildCodec(null, coreBlockOutputStream, null, externalBlockOutputMap);
     }
 }

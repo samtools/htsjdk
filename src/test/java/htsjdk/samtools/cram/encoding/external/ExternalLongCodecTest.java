@@ -9,7 +9,6 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +24,7 @@ public class ExternalLongCodecTest extends HtsjdkTest {
             }
 
             final List<Long> actual = new ArrayList<>(values.size());
-            try (final InputStream is = new ByteArrayInputStream(os.toByteArray())) {
+            try (final ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
                 final CRAMCodec<Long> readCodec = new ExternalLongCodec(is, null);
 
                 for (int i = 0; i < values.size(); i++) {

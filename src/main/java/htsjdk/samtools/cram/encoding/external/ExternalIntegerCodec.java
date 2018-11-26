@@ -19,11 +19,11 @@ package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.io.ITF8;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 
 class ExternalIntegerCodec extends ExternalCodec<Integer> {
-    public ExternalIntegerCodec(final InputStream inputStream, final OutputStream outputStream) {
+    ExternalIntegerCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

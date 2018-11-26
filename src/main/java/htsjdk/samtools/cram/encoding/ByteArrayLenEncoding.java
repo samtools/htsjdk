@@ -23,9 +23,9 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -79,7 +79,7 @@ public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
     @Override
     public CRAMCodec<byte[]> buildCodec(final BitInputStream coreBlockInputStream,
                                         final BitOutputStream coreBlockOutputStream,
-                                        final Map<Integer, InputStream> externalBlockInputMap,
+                                        final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
                                         final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
         return new ByteArrayLenCodec(
                 lenEncoding.buildCodec(coreBlockInputStream, coreBlockOutputStream, externalBlockInputMap, externalBlockOutputMap),

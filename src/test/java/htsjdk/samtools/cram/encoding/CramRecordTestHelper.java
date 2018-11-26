@@ -13,7 +13,6 @@ import htsjdk.samtools.cram.structure.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +115,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
                         params -> new ByteArrayOutputStream()));
     }
 
-    Map<Integer,InputStream> createInputMap(final Map<Integer, ByteArrayOutputStream> outputMap) {
+    Map<Integer, ByteArrayInputStream> createInputMap(final Map<Integer, ByteArrayOutputStream> outputMap) {
         return outputMap.entrySet()
                 .stream()
                 .collect(Collectors.toMap(

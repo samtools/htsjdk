@@ -66,6 +66,5 @@ public class DataSeriesWriter<T> {
     void writeData(final T value) {
         codec.write(value);
     }
-
 }
 

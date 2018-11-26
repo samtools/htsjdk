@@ -18,7 +18,7 @@ public class ExternalByteArrayCodecTest extends HtsjdkTest {
 
             writeCodec.write(values);
 
-            try (final InputStream is = new ByteArrayInputStream(os.toByteArray())) {
+            try (final ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
                 final CRAMCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
 
                 final byte[] actual = readCodec.read(values.length);
@@ -29,7 +29,7 @@ public class ExternalByteArrayCodecTest extends HtsjdkTest {
 
     @Test(expectedExceptions = RuntimeException.class)
     public void readWithoutLength() throws IOException {
-        try (final InputStream is = new ByteArrayInputStream(new byte[0])) {
+        try (final ByteArrayInputStream is = new ByteArrayInputStream(new byte[0])) {
             final CRAMCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
 
             readCodec.read();
@@ -38,7 +38,7 @@ public class ExternalByteArrayCodecTest extends HtsjdkTest {
 
     @Test(expectedExceptions = RuntimeException.class)
     public void readTooMuch() throws IOException {
-        try (final InputStream is = new ByteArrayInputStream(new byte[0])) {
+        try (final ByteArrayInputStream is = new ByteArrayInputStream(new byte[0])) {
             final CRAMCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
 
             readCodec.read(1);

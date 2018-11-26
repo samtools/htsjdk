@@ -250,7 +250,7 @@ public class Slice {
         return new DefaultBitInputStream(new ByteArrayInputStream(coreBlock.getRawContent()));
     }
 
-    private Map<Integer, InputStream> getExternalBlockInputMap() {
+    private Map<Integer, ByteArrayInputStream> getExternalBlockInputMap() {
         return external.entrySet()
                 .stream()
                 .collect(Collectors.toMap(

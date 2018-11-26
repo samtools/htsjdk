@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.util.Map;
 
 /**
@@ -46,7 +46,7 @@ public class DataSeriesReader<T> {
     public DataSeriesReader(final DataSeriesType valueType,
                             final EncodingParams params,
                             final BitInputStream bitInputStream,
-                            final Map<Integer, InputStream> inputMap) {
+                            final Map<Integer, ByteArrayInputStream> inputMap) {
 
         final CRAMEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
@@ -57,7 +57,7 @@ public class DataSeriesReader<T> {
      * Read a single object
      * @return an object or a primitive value read
      */
-    public T readData() {
+    T readData() {
         return codec.read();
     }
 
@@ -66,8 +66,7 @@ public class DataSeriesReader<T> {
      * @param length the length of the array to be read
      * @return the array of objects
      */
-    public T readDataArray(final int length) {
+    T readDataArray(final int length) {
         return codec.read(length);
     }
-
 }

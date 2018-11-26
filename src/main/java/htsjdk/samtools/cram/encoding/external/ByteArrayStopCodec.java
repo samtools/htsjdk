@@ -1,12 +1,13 @@
 package htsjdk.samtools.cram.encoding.external;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class ByteArrayStopCodec extends ExternalCodec<byte[]> {
     private final int stop;
 
-    public ByteArrayStopCodec(final InputStream inputStream, final OutputStream outputStream, final byte stopByte) {
+    public ByteArrayStopCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream, final byte stopByte) {
         super(inputStream, outputStream);
         this.stop = 0xFF & stopByte;
     }
@@ -16,15 +17,11 @@ public class ByteArrayStopCodec extends ExternalCodec<byte[]> {
         final ByteArrayOutputStream readingBAOS = new ByteArrayOutputStream();
         int b;
         readingBAOS.reset();
-        try {
-            while ((b = inputStream.read()) != -1 && b != stop) {
-                readingBAOS.write(b);
-            }
-
-            return readingBAOS.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        while ((b = inputStream.read()) != -1 && b != stop) {
+            readingBAOS.write(b);
         }
+
+        return readingBAOS.toByteArray();
     }
 
     @Override

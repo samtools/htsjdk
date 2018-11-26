@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -68,9 +68,9 @@ public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
     @Override
     public CRAMCodec<byte[]> buildCodec(final BitInputStream coreBlockInputStream,
                                         final BitOutputStream coreBlockOutputStream,
-                                        final Map<Integer, InputStream> externalBlockInputMap,
+                                        final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
                                         final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        final InputStream is = externalBlockInputMap == null ? null : externalBlockInputMap.get(externalId);
+        final ByteArrayInputStream is = externalBlockInputMap == null ? null : externalBlockInputMap.get(externalId);
         final ByteArrayOutputStream os = externalBlockOutputMap == null ? null : externalBlockOutputMap.get(externalId);
         return new ByteArrayStopCodec(is, os, stopByte);
     }
