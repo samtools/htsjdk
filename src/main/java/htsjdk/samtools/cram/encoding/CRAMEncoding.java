@@ -34,18 +34,18 @@ import java.util.Map;
  * @param <T> data series type
  */
 public abstract class CRAMEncoding<T> {
-    private final EncodingID ENCODING_ID;
+    private final EncodingID encodingId;
 
     /**
      * Create a new encoding.  Concrete implementation constructors will specify their parameters
      * @param id the EncodingID associated with the concrete implementation
      */
     protected CRAMEncoding(final EncodingID id) {
-        ENCODING_ID = id;
+        encodingId = id;
     }
 
     public EncodingID id() {
-        return ENCODING_ID;
+        return encodingId;
     }
 
     public EncodingParams toParam() {
