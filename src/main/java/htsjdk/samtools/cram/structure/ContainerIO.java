@@ -6,6 +6,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
+import htsjdk.samtools.cram.structure.block.CompressionHeaderBlock;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.compress.utils.CountingOutputStream;
 
@@ -80,11 +81,7 @@ public class ContainerIO {
             return container;
         }
 
-        final Block block = Block.read(major, inputStream);
-        if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
-            throw new RuntimeException("Content type does not match: " + block.getContentType().name());
-        container.header = new CompressionHeader();
-        container.header.read(block.getUncompressedContent());
+        container.header = CompressionHeaderBlock.readAsCompressionHeader(major, inputStream);
 
         howManySlices = Math.min(container.landmarks.length, howManySlices);
 
@@ -167,7 +164,7 @@ public class ContainerIO {
 
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
 
-        final Block block = Block.buildNewCompressionHeaderBlock(container.header.toByteArray());
+        final CompressionHeaderBlock block = Block.uncompressedCompressionHeaderBlock(container.header.toByteArray());
         block.write(version.major, byteArrayOutputStream);
         container.blockCount = 1;
 

@@ -20,8 +20,8 @@ package htsjdk.samtools.cram.structure.block;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.ExternalCompression;
-import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.*;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +42,11 @@ public abstract class Block {
     public static final int NO_CONTENT_ID = 0;
 
     /**
+     * Compression method that applied to this block's content.
+     */
+    private final BlockCompressionMethod method;
+
+    /**
      * Identifies CRAM content type of the block.
      */
     private final BlockContentType contentType;
@@ -52,16 +57,28 @@ public abstract class Block {
     protected final byte[] compressedContent;
 
     /**
-     * Abstract constructor for Block.  Sets the block content type only.
+     * Abstract constructor of a generic Block, to be called by subclasses.
      *
-     * @see RawBlock
-     * @see CompressibleBlock
-     * @param contentType whether this is a header or data block, and which kind
+     * @param method the block compression method.  Can be RAW, if uncompressed
+     * @param type whether this is a header or data block, and which kind
      * @param compressedContent the compressed form of the data to be stored in this block
      */
-    protected Block(final BlockContentType contentType, final byte[] compressedContent) {
-        this.contentType = contentType;
+    protected Block(final BlockCompressionMethod method,
+                    final BlockContentType type,
+                    final byte[] compressedContent) {
+        this.method = method;
+        this.contentType = type;
         this.compressedContent = compressedContent;
+
+        // causes test failures.  https://github.com/samtools/htsjdk/issues/1232
+//        if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
+//            throw new CRAMException("Valid Content ID required for external blocks.");
+//        }
+
+        if (type != BlockContentType.EXTERNAL && getContentId() != Block.NO_CONTENT_ID) {
+            throw new CRAMException("Cannot set a Content ID for non-external blocks.");
+        }
+
     }
 
     /**
@@ -69,10 +86,10 @@ public abstract class Block {
      * The block will have RAW (no) compression and FILE_HEADER content type.
      *
      * @param rawContent the uncompressed content of the block
-     * @return a new file header {@link RawBlock} object
+     * @return a new {@link FileHeaderBlock} object
      */
-    public static RawBlock buildNewFileHeaderBlock(final byte[] rawContent) {
-        return new RawBlock(BlockContentType.FILE_HEADER, rawContent);
+    public static FileHeaderBlock uncompressedFileHeaderBlock(final byte[] rawContent) {
+        return new FileHeaderBlock(BlockCompressionMethod.RAW, rawContent);
     }
 
     /**
@@ -80,10 +97,10 @@ public abstract class Block {
      * The block will have RAW (no) compression and COMPRESSION_HEADER content type.
      *
      * @param rawContent the uncompressed content of the block
-     * @return a new compression header {@link RawBlock} object
+     * @return a new {@link CompressionHeaderBlock} object
      */
-    public static RawBlock buildNewCompressionHeaderBlock(final byte[] rawContent) {
-        return new RawBlock(BlockContentType.COMPRESSION_HEADER, rawContent);
+    public static CompressionHeaderBlock uncompressedCompressionHeaderBlock(final byte[] rawContent) {
+        return new CompressionHeaderBlock(BlockCompressionMethod.RAW, rawContent);
     }
 
     /**
@@ -91,29 +108,10 @@ public abstract class Block {
      * The block will have RAW (no) compression and MAPPED_SLICE content type.
      *
      * @param rawContent the uncompressed content of the block
-     * @return a new mapped slice {@link RawBlock} object
+     * @return a new {@link SliceHeaderBlock} object
      */
-    public static RawBlock buildNewSliceHeaderBlock(final byte[] rawContent) {
-        return new RawBlock(BlockContentType.MAPPED_SLICE, rawContent);
-    }
-
-    /**
-     * Create a new external block with the given uncompressed content, content ID and compression method.
-     * The block will have EXTERNAL content type.
-     *
-     * @param contentId the external identifier for the block
-     * @param compressor which external compressor to use on this block
-     * @param rawContent the uncompressed content of the block
-     * @return a new external {@link CompressibleBlock} object
-     */
-    public static CompressibleBlock buildNewExternalBlock(final int contentId, final ExternalCompressor compressor, final byte[] rawContent) {
-        // remove after https://github.com/samtools/htsjdk/issues/1232
-        if (contentId == Block.NO_CONTENT_ID) {
-            throw new CRAMException("Valid Content ID required.  Given: " + contentId);
-        }
-
-        final byte[] compressedContent = compressor.compress(rawContent);
-        return new CompressibleBlock(compressor.getMethod(), BlockContentType.EXTERNAL, contentId, compressedContent);
+    public static SliceHeaderBlock uncompressedSliceHeaderBlock(final byte[] rawContent) {
+        return new SliceHeaderBlock(BlockCompressionMethod.RAW, rawContent);
     }
 
     /**
@@ -121,13 +119,15 @@ public abstract class Block {
      * The block will have RAW (no) compression and CORE content type.
      *
      * @param rawContent the uncompressed content of the block
-     * @return a new mapped slice {@link RawBlock} object
+     * @return a new {@link CoreDataBlock} object
      */
-    public static RawBlock buildNewCoreBlock(final byte[] rawContent) {
-        return new RawBlock(BlockContentType.CORE, rawContent);
+    public static CoreDataBlock uncompressedCoreBlock(final byte[] rawContent) {
+        return new CoreDataBlock(BlockCompressionMethod.RAW, rawContent);
     }
 
-    public abstract BlockCompressionMethod getMethod();
+    public final BlockCompressionMethod getMethod() {
+        return method;
+    }
 
     /**
      * Identifies whether this is a header or data block, and which kind
@@ -140,8 +140,7 @@ public abstract class Block {
     /**
      * Return the External Content ID for this block.
      *
-     * By default this is NO_CONTENT_ID (0) but CompressibleBlocks override this.  Note that only External blocks have
-     * Content ID, so CompressibleBlocks which are not External will also have NO_CONTENT_ID
+     * Only ExternalBlocks have a meaningful Content ID, so that class overrides this method.
      *
      * @return the External Content ID, or NO_CONTENT_ID
      */
@@ -149,7 +148,9 @@ public abstract class Block {
         return NO_CONTENT_ID;
     }
 
-    public abstract byte[] getUncompressedContent();
+    public final byte[] getUncompressedContent() {
+        return ExternalCompression.uncompress(method, compressedContent);
+    }
 
     /**
      * The size of the uncompressed content in bytes.
@@ -176,37 +177,55 @@ public abstract class Block {
      *
      * @param major CRAM version major number
      * @param inputStream    input stream to read the block from
-     * @return a new {@link CompressibleBlock} object with fields and content from the input stream
-     * @throws IOException as per java IO contract
+     * @return a subtype of {@link Block} object with fields and content from the input stream
      */
-    public static CompressibleBlock read(final int major, InputStream inputStream) throws IOException {
+    public static Block read(final int major, InputStream inputStream) {
         final boolean v3OrHigher = major >= CramVersions.CRAM_v3.major;
         if (v3OrHigher) {
             inputStream = new CRC32InputStream(inputStream);
         }
-        final BlockCompressionMethod method = BlockCompressionMethod.byId(inputStream.read());
-        final BlockContentType type = BlockContentType.byId(inputStream.read());
-        final int contentId = ITF8.readUnsignedITF8(inputStream);
-        final int compressedSize = ITF8.readUnsignedITF8(inputStream);
-        final int rawSize = ITF8.readUnsignedITF8(inputStream);
 
-        final byte[] compressedContent = new byte[compressedSize];
-        InputStreamUtils.readFully(inputStream, compressedContent, 0, compressedSize);
-        if (v3OrHigher) {
-            final int actualChecksum = ((CRC32InputStream) inputStream).getCRC32();
-            final int checksum = CramInt.readInt32(inputStream);
-            if (checksum != actualChecksum) {
-                throw new RuntimeException(String.format("Block CRC32 mismatch: %04x vs %04x", checksum, actualChecksum));
+        try {
+            final BlockCompressionMethod method = BlockCompressionMethod.byId(inputStream.read());
+            final BlockContentType type = BlockContentType.byId(inputStream.read());
+            final int contentId = ITF8.readUnsignedITF8(inputStream);
+            final int compressedSize = ITF8.readUnsignedITF8(inputStream);
+            final int rawSize = ITF8.readUnsignedITF8(inputStream);
+
+            final byte[] compressedContent = new byte[compressedSize];
+            InputStreamUtils.readFully(inputStream, compressedContent, 0, compressedSize);
+            if (v3OrHigher) {
+                final int actualChecksum = ((CRC32InputStream) inputStream).getCRC32();
+                final int checksum = CramInt.readInt32(inputStream);
+                if (checksum != actualChecksum) {
+                    throw new RuntimeException(String.format("Block CRC32 mismatch: %04x vs %04x", checksum, actualChecksum));
+                }
+            }
+
+            // TODO: is this check worthwhile?  it may be expensive.
+            final byte[] uncompressedContent = ExternalCompression.uncompress(method, compressedContent);
+            if (uncompressedContent.length != rawSize) {
+                throw new CRAMException(String.format("Block uncompressed size did not match expected size: %04x vs %04x", rawSize, uncompressedContent.length));
+            }
+
+            switch (type) {
+                case FILE_HEADER:
+                    return new FileHeaderBlock(method, compressedContent);
+                case COMPRESSION_HEADER:
+                    return new CompressionHeaderBlock(method, compressedContent);
+                case MAPPED_SLICE:
+                    return new SliceHeaderBlock(method, compressedContent);
+                case EXTERNAL:
+                    return new ExternalDataBlock(method, compressedContent, contentId);
+                case CORE:
+                    return new CoreDataBlock(method, compressedContent);
+                default:
+                    throw new CRAMException("Unknown BlockContentType " + type.name());
             }
         }
-
-        // TODO: is this check worthwhile?  it may be expensive.
-        final byte[] uncompressedContent = ExternalCompression.uncompress(method, compressedContent);
-        if (uncompressedContent.length != rawSize) {
-            throw new CRAMException(String.format("Block uncompressed size did not match expected size: %04x vs %04x", rawSize, uncompressedContent.length));
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
-
-        return new CompressibleBlock(method, type, contentId, compressedContent);
     }
 
     /**
@@ -216,16 +235,18 @@ public abstract class Block {
      * @param outputStream    output stream to write to
      * @throws IOException as per java IO contract
      */
-    public final void write(final int major, final OutputStream outputStream) throws IOException {
-        if (major >= CramVersions.CRAM_v3.major) {
-
-            final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
-
-            doWrite(crc32OutputStream);
-
-            outputStream.write(crc32OutputStream.getCrc32_LittleEndian());
-        } else {
-            doWrite(outputStream);
+    public final void write(final int major, final OutputStream outputStream) {
+        try {
+            if (major >= CramVersions.CRAM_v3.major) {
+                final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
+                doWrite(crc32OutputStream);
+                outputStream.write(crc32OutputStream.getCrc32_LittleEndian());
+            } else {
+                doWrite(outputStream);
+            }
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
     }
 

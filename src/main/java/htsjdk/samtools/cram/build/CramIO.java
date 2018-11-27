@@ -29,6 +29,7 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.block.FileHeaderBlock;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
@@ -248,7 +249,7 @@ public class CramIO {
         final int length = Math.max(1024, data.length + data.length / 2);
         final byte[] blockContent = new byte[length];
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
-        final Block block = Block.buildNewFileHeaderBlock(blockContent);
+        final FileHeaderBlock block = Block.uncompressedFileHeaderBlock(blockContent);
 
         final Container container = new Container();
         container.blockCount = 1;
@@ -327,7 +328,7 @@ public class CramIO {
         final long pos = countingInputStream.getCount();
         countingInputStream.close();
 
-        final Block block = Block.buildNewFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
+        final FileHeaderBlock block = Block.uncompressedFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
         block.write(newHeader.getVersion().major, byteArrayOutputStream);
         if (byteArrayOutputStream.size() > c.containerByteSize) {
