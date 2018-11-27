@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
-import htsjdk.samtools.cram.structure.Block;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;

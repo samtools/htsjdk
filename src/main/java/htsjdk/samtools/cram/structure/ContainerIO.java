@@ -4,6 +4,8 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.compress.utils.CountingOutputStream;
 
@@ -165,17 +167,7 @@ public class ContainerIO {
 
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
 
-        final Block block = new Block();
-        block.setContentType(BlockContentType.COMPRESSION_HEADER);
-        block.setContentId(0);
-        block.setMethod(BlockCompressionMethod.RAW);
-        final byte[] bytes;
-        try {
-            bytes = container.header.toByteArray();
-        } catch (final IOException e) {
-            throw new RuntimeException("This should have never happened.");
-        }
-        block.setRawContent(bytes);
+        final Block block = Block.buildNewCompressionHeaderBlock(container.header.toByteArray());
         block.write(version.major, byteArrayOutputStream);
         container.blockCount = 1;
 

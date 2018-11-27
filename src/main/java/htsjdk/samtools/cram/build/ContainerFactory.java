@@ -24,8 +24,7 @@ import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
-import htsjdk.samtools.cram.structure.Block;
-import htsjdk.samtools.cram.structure.BlockContentType;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -170,21 +169,13 @@ public class ContainerFactory {
         writer.writeCramCompressionRecords(records, slice.alignmentStart);
 
         bitOutputStream.close();
-        slice.coreBlock = Block.buildNewCore(bitBAOS.toByteArray());
+        slice.coreBlock = Block.buildNewCoreBlock(bitBAOS.toByteArray());
 
         slice.external = new HashMap<>();
         for (final Integer key : map.keySet()) {
-            final ByteArrayOutputStream os = map.get(key);
-
-            final Block externalBlock = new Block();
-            externalBlock.setContentId(key);
-            externalBlock.setContentType(BlockContentType.EXTERNAL);
-
             final ExternalCompressor compressor = header.externalCompressors.get(key);
-            final byte[] rawData = os.toByteArray();
-            final byte[] compressed = compressor.compress(rawData);
-            externalBlock.setContent(rawData, compressed);
-            externalBlock.setMethod(compressor.getMethod());
+            final byte[] rawData = map.get(key).toByteArray();
+            final Block externalBlock = Block.buildNewExternalBlock(key, compressor, rawData);
             slice.external.put(key, externalBlock);
         }
 

@@ -22,6 +22,7 @@ import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 

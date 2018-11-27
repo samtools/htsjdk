@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.io.LTF8;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.Log;
 
@@ -105,7 +106,7 @@ class SliceIO {
     }
 
     private static void readSliceBlocks(final int major, final Slice slice, final InputStream inputStream) throws IOException {
-        slice.external = new HashMap<Integer, Block>();
+        slice.external = new HashMap<>();
         for (int i = 0; i < slice.nofBlocks; i++) {
             final Block block = Block.readFromInputStream(major, inputStream);
 

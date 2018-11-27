@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.IOUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
@@ -149,5 +150,26 @@ public class ExternalCompression {
         final byte[] bytes = new byte[buffer.remaining()];
         buffer.get(bytes);
         return bytes;
+    }
+
+    public static byte[] uncompress(final BlockCompressionMethod method, final byte[] compressedContent) {
+        try {
+            switch (method) {
+                case RAW:
+                    return compressedContent;
+                case GZIP:
+                    return gunzip(compressedContent);
+                case BZIP2:
+                    return unbzip2(compressedContent);
+                case LZMA:
+                    return unxz(compressedContent);
+                case RANS:
+                    return unrans(compressedContent);
+                default:
+                    throw new RuntimeException("Unknown block compression method: " + method.name());
+            }
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
