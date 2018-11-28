@@ -154,7 +154,6 @@ public class BlockTest extends HtsjdkTest {
         contentCheck(rtBlock3, testData, testData);
     }
 
-
     @Test(expectedExceptions = CRAMException.class)
     public void testExternalBlockContentId() {
         // arbitrary values
@@ -164,6 +163,18 @@ public class BlockTest extends HtsjdkTest {
         // not allowed for external
         final int contentID = Block.NO_CONTENT_ID;
         Block.buildNewExternalBlock(contentID, compressor, uncompressedData);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
+    public void testNonExternalBlockContentId() {
+        // arbitrary values
+        final BlockCompressionMethod method = BlockCompressionMethod.RAW;
+        final BlockContentType type = BlockContentType.CORE;
+        final byte[] testData = "TEST STRING".getBytes();
+
+        // only allowed for external
+        final int contentID = 1;
+        new CompressibleBlock(method, type, contentID, testData, testData);
     }
 
 }

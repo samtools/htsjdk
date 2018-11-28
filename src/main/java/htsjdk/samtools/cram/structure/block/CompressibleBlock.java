@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.structure.block;
 
+import htsjdk.samtools.cram.CRAMException;
+
 /**
  * Represents an arbitrary Block type.  It may be compressed and may be external.
  * Contrast with {@link RawBlock} which can't be either of these
@@ -41,6 +43,15 @@ public class CompressibleBlock extends Block {
                       final byte[] rawContent,
                       final byte[] compressedContent) {
         super(type);
+
+        // causes test failures.  https://github.com/samtools/htsjdk/issues/1232
+//        if (type == BlockContentType.EXTERNAL && contentId == Block.NO_CONTENT_ID) {
+//            throw new CRAMException("Valid Content ID required for external blocks.");
+//        }
+
+        if (type != BlockContentType.EXTERNAL && contentId != Block.NO_CONTENT_ID) {
+            throw new CRAMException("Cannot set a Content ID for non-external blocks.");
+        }
 
         this.method = method;
         this.contentId = contentId;

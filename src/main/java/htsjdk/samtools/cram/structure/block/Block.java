@@ -137,10 +137,11 @@ public abstract class Block {
      * @return a new external {@link CompressibleBlock} object
      */
     public static CompressibleBlock buildNewExternalBlock(final int contentId, final ExternalCompressor compressor, final byte[] rawContent) {
+        // remove after https://github.com/samtools/htsjdk/issues/1232
         if (contentId == Block.NO_CONTENT_ID) {
             throw new CRAMException("Valid Content ID required.  Given: " + contentId);
         }
-        
+
         final byte[] compressedContent = compressor.compress(rawContent);
         return new CompressibleBlock(compressor.getMethod(), BlockContentType.EXTERNAL, contentId, rawContent, compressedContent);
     }
