@@ -156,7 +156,7 @@ public abstract class Block {
         return new RawBlock(BlockContentType.CORE, rawContent);
     }
 
-    protected abstract BlockCompressionMethod getMethod();
+    public abstract BlockCompressionMethod getMethod();
 
     /**
      * Identifies whether this is a header or data block, and which kind
