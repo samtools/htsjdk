@@ -98,7 +98,7 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test
-    public void testCompressionHeaderBlockRoundTrip() {
+    public void testCompressionHeaderBlockRoundTrips() {
         final byte[] testData = "TEST STRING".getBytes();
 
         final Block chBlock = Block.buildNewCompressionHeaderBlock(testData);
@@ -111,7 +111,7 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test
-    public void testSliceHeaderBlockRoundTrip() {
+    public void testSliceHeaderBlockRoundTrips() {
         final byte[] testData = "TEST STRING".getBytes();
 
         final Block shBlock = Block.buildNewSliceHeaderBlock(testData);
@@ -124,7 +124,7 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test
-    public void testExternalBlockRoundTrip() {
+    public void testExternalBlockRoundTrips() {
         // arbitrary values
         final ExternalCompressor compressor = ExternalCompressor.createGZIP();
         final int contentID = 5;
@@ -142,7 +142,7 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test
-    public void testCoreBlockRoundTrip() {
+    public void testCoreBlockRoundTrips() {
         final byte[] testData = "TEST STRING".getBytes();
 
         final Block coreBlock = Block.buildNewCoreBlock(testData);

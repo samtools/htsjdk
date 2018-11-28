@@ -35,6 +35,10 @@ import java.util.Arrays;
  * to serialize/deserialize blocks.
  */
 public abstract class Block {
+    /**
+     * Only external blocks have meaningful Content IDs
+     * Other blocks are required to have a Content ID of 0
+     */
     public static final int NO_CONTENT_ID = 0;
 
     /**
