@@ -22,8 +22,18 @@ import htsjdk.samtools.cram.io.LTF8;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Encode Longs using an External Data Block
+ */
 class ExternalLongCodec extends ExternalCodec<Long> {
-    public ExternalLongCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
+    /**
+     * Construct an External Codec for Longs
+     *
+     * @param inputStream the input bytestream to read from
+     * @param outputStream the output bytestream to write to
+     */
+    public ExternalLongCodec(final ByteArrayInputStream inputStream,
+                             final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

@@ -5,10 +5,23 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import htsjdk.samtools.util.RuntimeIOException;
 
+/**
+ * Encode byte arrays by specifying a stop byte to separate the arrays.
+ * This cannot be a byte that appears in the data.
+ */
 public class ByteArrayStopCodec extends ExternalCodec<byte[]> {
     private final int stop;
 
-    public ByteArrayStopCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream, final byte stopByte) {
+    /**
+     * Construct a Byte Array Stop Codec
+     *
+     * @param inputStream the input bytestream to read from
+     * @param outputStream the output bytestream to write to
+     * @param stopByte the byte used to mark array boundaries
+     */
+    public ByteArrayStopCodec(final ByteArrayInputStream inputStream,
+                              final ByteArrayOutputStream outputStream,
+                              final byte stopByte) {
         super(inputStream, outputStream);
         this.stop = 0xFF & stopByte;
     }

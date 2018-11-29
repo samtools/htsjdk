@@ -23,10 +23,23 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
+/**
+ * Use the <a href="http://www.ittc.ku.edu/~jsv/Papers/HoV94.progressive_FELICS.pdf">Subexponential Codec</a>
+ * to encode Integers.
+ */
 class SubexponentialIntegerCodec extends CoreCodec<Integer> {
     final private int offset;
     final private int k;
 
+    /**
+     * Construct a Subexponential Codec for Integers.
+     *
+     * @param coreBlockInputStream the input bitstream to read from
+     * @param coreBlockOutputStream the output bitstream to write to
+     * @param offset the common value to be added to all values before storage.
+     *               Setting this to (-MIN) will ensure all stored values will be in the range (0 .. MAX - MIN)
+     * @param k
+     */
     public SubexponentialIntegerCodec(final BitInputStream coreBlockInputStream,
                                final BitOutputStream coreBlockOutputStream,
                                final int offset, final int k) {

@@ -58,7 +58,8 @@ public enum EncodingID {
     BETA(6),
 
     /**
-     * Subexponential codes, see the CRAM specs for details.
+     * Subexponential codes.
+     * http://www.ittc.ku.edu/~jsv/Papers/HoV94.progressive_FELICS.pdf
      */
     SUBEXPONENTIAL(7),
 

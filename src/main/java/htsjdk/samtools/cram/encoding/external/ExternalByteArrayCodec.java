@@ -24,8 +24,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
 
+/**
+ * Encode Byte Arrays using an External Data Block
+ */
 public class ExternalByteArrayCodec extends ExternalCodec<byte[]> {
-    public ExternalByteArrayCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
+    /**
+     * Construct an External Codec for Byte Arrays
+     *
+     * @param inputStream the input bytestream to read from
+     * @param outputStream the output bytestream to write to
+     */
+    public ExternalByteArrayCodec(final ByteArrayInputStream inputStream,
+                                  final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

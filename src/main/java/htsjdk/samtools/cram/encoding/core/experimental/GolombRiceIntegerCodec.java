@@ -32,7 +32,8 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
 
     public GolombRiceIntegerCodec(final BitInputStream coreBlockInputStream,
                                   final BitOutputStream coreBlockOutputStream,
-                                  final int offset, final int log2m) {
+                                  final int offset,
+                                  final int log2m) {
         super(coreBlockInputStream, coreBlockOutputStream);
 
         this.log2m = log2m;

@@ -20,9 +20,19 @@ package htsjdk.samtools.cram.encoding.external;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 
+/**
+ * Encode Bytes using an External Data Block
+ */
 public class ExternalByteCodec extends ExternalCodec<Byte> {
 
-    public ExternalByteCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
+    /**
+     * Construct an External Codec for Bytes
+     *
+     * @param inputStream the input bytestream to read from
+     * @param outputStream the output bytestream to write to
+     */
+    public ExternalByteCodec(final ByteArrayInputStream inputStream,
+                             final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

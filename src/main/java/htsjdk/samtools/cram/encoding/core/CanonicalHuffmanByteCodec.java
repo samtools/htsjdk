@@ -24,12 +24,20 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
+/**
+ * Encode Bytes using the Canonical Huffman Codec.
+ * https://en.wikipedia.org/wiki/Canonical_Huffman_code
+ */
 class CanonicalHuffmanByteCodec extends CoreCodec<Byte> {
     private final HuffmanByteHelper helper;
 
-    /*
-     * values[]: the alphabet (provided as Integers) bitLengths[]: the number of
-     * bits of symbol's huffman code
+    /**
+     * Construct a Canonical Huffman Codec for Byte data
+     *
+     * @param coreBlockInputStream the input bitstream to read from
+     * @param coreBlockOutputStream the output bitstream to write to
+     * @param values the alphabet (provided as Integers)
+     * @param bitLengths the number of bits of symbol's huffman code
      */
     public CanonicalHuffmanByteCodec(final BitInputStream coreBlockInputStream,
                                      final BitOutputStream coreBlockOutputStream,

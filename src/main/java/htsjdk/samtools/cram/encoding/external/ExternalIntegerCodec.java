@@ -22,8 +22,18 @@ import htsjdk.samtools.cram.io.ITF8;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Encode Integers using an External Data Block
+ */
 class ExternalIntegerCodec extends ExternalCodec<Integer> {
-    public ExternalIntegerCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
+    /**
+     * Construct an External Codec for Integers
+     *
+     * @param inputStream the input bytestream to read from
+     * @param outputStream the output bytestream to write to
+     */
+    public ExternalIntegerCodec(final ByteArrayInputStream inputStream,
+                                final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

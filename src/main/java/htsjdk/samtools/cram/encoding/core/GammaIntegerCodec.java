@@ -23,9 +23,21 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
+/**
+ * Encode Integers using Elias Gamma Encoding.
+ * http://en.wikipedia.org/wiki/Elias_gamma_coding
+ */
 class GammaIntegerCodec extends CoreCodec<Integer> {
     private final int offset;
 
+    /**
+     * Construct a Gamma Codec for Integers.
+     *
+     * @param coreBlockInputStream the input bitstream to read from
+     * @param coreBlockOutputStream the output bitstream to write to
+     * @param offset the common value to be added to all values before storage.
+     *               Setting this to (-MIN) will ensure all stored values will be in the range (0 .. MAX - MIN)
+     */
     public GammaIntegerCodec(final BitInputStream coreBlockInputStream,
                       final BitOutputStream coreBlockOutputStream,
                       final int offset) {
