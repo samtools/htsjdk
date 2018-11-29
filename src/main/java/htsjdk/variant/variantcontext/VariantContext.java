@@ -1247,11 +1247,11 @@ public class VariantContext implements Feature, Serializable {
         validateAttributeIsExpectedSize(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
         validateAttributeIsExpectedSize(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
 
-        if ( !hasGenotypes() )
+        if (!hasGenotypes())
             return;
 
         // AN
-        if ( hasAttribute(VCFConstants.ALLELE_NUMBER_KEY) ) {
+        if (hasAttribute(VCFConstants.ALLELE_NUMBER_KEY)) {
             final int reportedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
             final int observedAN = getCalledChrCount();
             if ( reportedAN != observedAN )
@@ -1259,12 +1259,12 @@ public class VariantContext implements Feature, Serializable {
         }
 
         // AC
-        if ( hasAttribute(VCFConstants.ALLELE_COUNT_KEY) ) {
+        if (hasAttribute(VCFConstants.ALLELE_COUNT_KEY)) {
             final ArrayList<Integer> observedACs = new ArrayList<>();
 
             // if there are alternate alleles, record the relevant tags
-            if ( numberOfAlternateAlleles > 0 ) {
-                for ( Allele allele : getAlternateAlleles() ) {
+            if (numberOfAlternateAlleles > 0) {
+                for (Allele allele : getAlternateAlleles()) {
                     observedACs.add(getCalledChrCount(allele));
                 }
             }
@@ -1277,7 +1277,7 @@ public class VariantContext implements Feature, Serializable {
             for (int i = 0; i < observedACs.size(); i++) {
                 // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
                 final int reportedAC = Integer.valueOf(reportedACs.get(i).toString());
-                if ( reportedAC != observedACs.get(i) )
+                if (reportedAC != observedACs.get(i))
                     throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), reportedAC, observedACs.get(i)));
             }
         }
