@@ -23,7 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 class ExternalLongCodec extends ExternalCodec<Long> {
-    ExternalLongCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
+    public ExternalLongCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

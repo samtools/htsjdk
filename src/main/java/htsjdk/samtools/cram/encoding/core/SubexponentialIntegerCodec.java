@@ -26,7 +26,7 @@ class SubexponentialIntegerCodec extends CoreCodec<Integer> {
     final private int offset;
     final private int k;
 
-    SubexponentialIntegerCodec(final BitInputStream coreBlockInputStream,
+    public SubexponentialIntegerCodec(final BitInputStream coreBlockInputStream,
                                final BitOutputStream coreBlockOutputStream,
                                final int offset, final int k) {
         super(coreBlockInputStream, coreBlockOutputStream);

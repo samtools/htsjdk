@@ -22,7 +22,7 @@ import java.io.ByteArrayInputStream;
 
 public class ExternalByteCodec extends ExternalCodec<Byte> {
 
-    ExternalByteCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
+    public ExternalByteCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

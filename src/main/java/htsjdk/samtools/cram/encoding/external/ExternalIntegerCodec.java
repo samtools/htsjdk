@@ -23,7 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 class ExternalIntegerCodec extends ExternalCodec<Integer> {
-    ExternalIntegerCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
+    public ExternalIntegerCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
         super(inputStream, outputStream);
     }
 

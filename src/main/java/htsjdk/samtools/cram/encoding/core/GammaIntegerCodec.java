@@ -25,7 +25,7 @@ import java.io.IOException;
 class GammaIntegerCodec extends CoreCodec<Integer> {
     private final int offset;
 
-    GammaIntegerCodec(final BitInputStream coreBlockInputStream,
+    public GammaIntegerCodec(final BitInputStream coreBlockInputStream,
                       final BitOutputStream coreBlockOutputStream,
                       final int offset) {
         super(coreBlockInputStream, coreBlockOutputStream);
