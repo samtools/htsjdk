@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.encoding.external;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import htsjdk.samtools.util.RuntimeIOException;
 
 public class ByteArrayStopCodec extends ExternalCodec<byte[]> {
     private final int stop;
@@ -35,7 +36,7 @@ public class ByteArrayStopCodec extends ExternalCodec<byte[]> {
             outputStream.write(value);
             outputStream.write(stop);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 }

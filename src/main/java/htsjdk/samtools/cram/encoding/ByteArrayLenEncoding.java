@@ -22,6 +22,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -71,7 +72,7 @@ public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
             ITF8.writeUnsignedITF8(byteBytes.length, byteArrayOutputStream);
             byteArrayOutputStream.write(byteBytes);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
         return byteArrayOutputStream.toByteArray();
     }

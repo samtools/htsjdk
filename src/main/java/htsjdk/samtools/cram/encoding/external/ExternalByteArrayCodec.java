@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,7 +34,7 @@ public class ExternalByteArrayCodec extends ExternalCodec<byte[]> {
         try {
             return InputStreamUtils.readFully(inputStream, length);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -42,7 +43,7 @@ public class ExternalByteArrayCodec extends ExternalCodec<byte[]> {
         try {
             outputStream.write(object);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

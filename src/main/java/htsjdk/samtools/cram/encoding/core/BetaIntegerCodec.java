@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
@@ -59,7 +60,7 @@ public class BetaIntegerCodec extends CoreCodec<Integer> {
         try {
             return coreBlockInputStream.readBits(bitsPerValue) - offset;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -89,7 +90,7 @@ public class BetaIntegerCodec extends CoreCodec<Integer> {
         try {
             coreBlockOutputStream.write(getAndCheckOffsetValue(value), bitsPerValue);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 }

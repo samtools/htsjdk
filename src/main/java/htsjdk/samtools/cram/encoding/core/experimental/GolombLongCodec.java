@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.encoding.core.experimental;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
@@ -59,7 +60,7 @@ class GolombLongCodec extends ExperimentalCodec<Long> {
 
             return (quotient * m + reminder) - offset;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -81,7 +82,7 @@ class GolombLongCodec extends ExperimentalCodec<Long> {
                         (int) ceiling);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
@@ -47,7 +48,7 @@ class GammaIntegerCodec extends CoreCodec<Integer> {
             final int value = readBits | 1 << (length - 1);
             return value - offset;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -69,7 +70,7 @@ class GammaIntegerCodec extends CoreCodec<Integer> {
 
             coreBlockOutputStream.write(newValue, betaCodeLength);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

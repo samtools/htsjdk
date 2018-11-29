@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
@@ -55,7 +56,7 @@ class SubexponentialIntegerCodec extends CoreCodec<Integer> {
 
             return n - offset;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -84,7 +85,7 @@ class SubexponentialIntegerCodec extends CoreCodec<Integer> {
             // write only the 'b' lowest bits of newValue
             coreBlockOutputStream.write(newValue, b);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

@@ -23,6 +23,7 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
@@ -326,7 +327,7 @@ public class CramRecordReader {
                 System.err.printf("Failed at record %d. Here is the previously read record: %s\n", recordCounter,
                         prevRecord.toString());
             }
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 }

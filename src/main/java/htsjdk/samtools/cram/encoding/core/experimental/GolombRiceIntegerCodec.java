@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.encoding.core.experimental;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
@@ -54,7 +55,7 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
             final int result = unary * m + remainder;
             return result - offset;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -83,7 +84,7 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
                 reminderMask >>>= 1;
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

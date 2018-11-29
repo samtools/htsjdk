@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.encoding.core;
 import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanByteHelper;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
@@ -42,7 +43,7 @@ class CanonicalHuffmanByteCodec extends CoreCodec<Byte> {
         try {
             return helper.read(coreBlockInputStream);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -51,7 +52,7 @@ class CanonicalHuffmanByteCodec extends CoreCodec<Byte> {
         try {
             helper.write(coreBlockOutputStream, value);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
