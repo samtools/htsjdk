@@ -14,6 +14,7 @@ import java.io.*;
 public class BetaIntegerCodecTest extends HtsjdkTest {
 
     private void testCodec(final int offset, final int bitsPerValue, final int[] values) throws IOException {
+        byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
@@ -22,18 +23,21 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
                 writeCodec.write(value);
             }
 
-            final int[] actual = new int[values.length];
-            try (final InputStream is = new ByteArrayInputStream(os.toByteArray());
-                 final DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
-
-                final CRAMCodec<Integer> readCodec = new BetaIntegerCodec(dbis, null, offset, bitsPerValue);
-                for (int i = 0; i < values.length; i++) {
-                    actual[i] = readCodec.read();
-                }
-            }
-
-            Assert.assertEquals(actual, values);
+            bos.flush();
+            written = os.toByteArray();
         }
+
+        final int[] actual = new int[values.length];
+        try (final InputStream is = new ByteArrayInputStream(written);
+             final DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
+
+            final CRAMCodec<Integer> readCodec = new BetaIntegerCodec(dbis, null, offset, bitsPerValue);
+            for (int i = 0; i < values.length; i++) {
+                actual[i] = readCodec.read();
+            }
+        }
+
+        Assert.assertEquals(actual, values);
     }
 
     // test that the offsets enable the data series to be stored in N bits

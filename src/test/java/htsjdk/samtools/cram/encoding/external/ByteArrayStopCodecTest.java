@@ -21,17 +21,20 @@ public class ByteArrayStopCodecTest extends HtsjdkTest {
             Assert.assertNotEquals(v, stopByte);
         }
 
+        byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             final CRAMCodec<byte[]> writeCodec = new ByteArrayStopCodec(null, os, stopByte);
 
             writeCodec.write(values);
+            os.flush();
+            written = os.toByteArray();
+        }
 
-            try (final ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                final CRAMCodec<byte[]> readCodec = new ByteArrayStopCodec(is, null, stopByte);
+        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
+            final CRAMCodec<byte[]> readCodec = new ByteArrayStopCodec(is, null, stopByte);
 
-                final byte[] actual = readCodec.read();
-                Assert.assertEquals(actual, values);
-            }
+            final byte[] actual = readCodec.read();
+            Assert.assertEquals(actual, values);
         }
     }
 }

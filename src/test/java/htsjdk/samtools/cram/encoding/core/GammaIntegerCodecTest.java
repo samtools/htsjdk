@@ -17,6 +17,7 @@ import java.io.InputStream;
 public class GammaIntegerCodecTest extends HtsjdkTest {
 
     private void testCodec(final int offset, final int[] inputs, final byte[] expected) throws IOException {
+        byte[] writtenOut;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
@@ -26,21 +27,21 @@ public class GammaIntegerCodecTest extends HtsjdkTest {
             }
 
             bos.flush();
-            final byte[] writtenOut = os.toByteArray();
+            writtenOut = os.toByteArray();
             Assert.assertEquals(writtenOut, expected);
-
-            final int[] readBack = new int[inputs.length];
-            try (final InputStream is = new ByteArrayInputStream(writtenOut);
-                 final DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
-
-                final CRAMCodec<Integer> readCodec = new GammaIntegerCodec(dbis, null, offset);
-                for (int i = 0; i < inputs.length; i++) {
-                    readBack[i] = readCodec.read();
-                }
-            }
-
-            Assert.assertEquals(readBack, inputs);
         }
+
+        final int[] readBack = new int[inputs.length];
+        try (final InputStream is = new ByteArrayInputStream(writtenOut);
+             final DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
+
+            final CRAMCodec<Integer> readCodec = new GammaIntegerCodec(dbis, null, offset);
+            for (int i = 0; i < inputs.length; i++) {
+                readBack[i] = readCodec.read();
+            }
+        }
+
+        Assert.assertEquals(readBack, inputs);
     }
 
     // test that the offsets result in a strictly positive data series

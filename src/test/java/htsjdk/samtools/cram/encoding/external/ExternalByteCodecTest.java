@@ -14,24 +14,27 @@ public class ExternalByteCodecTest extends HtsjdkTest {
 
     @Test(dataProvider = "testByteLists", dataProviderClass = IOTestCases.class)
     public void codecTest(final List<Byte> values) throws IOException {
+        byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             final CRAMCodec<Byte> writeCodec = new ExternalByteCodec(null, os);
 
             for (final byte value : values) {
                 writeCodec.write(value);
             }
-
-            final List<Byte> actual = new ArrayList<>(values.size());
-            try (final ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                final CRAMCodec<Byte> readCodec = new ExternalByteCodec(is, null);
-
-                for (int i = 0; i < values.size(); i++) {
-                    actual.add(readCodec.read());
-                }
-            }
-
-            Assert.assertEquals(actual, values);
+            os.flush();
+            written = os.toByteArray();
         }
+
+        final List<Byte> actual = new ArrayList<>(values.size());
+        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
+            final CRAMCodec<Byte> readCodec = new ExternalByteCodec(is, null);
+
+            for (int i = 0; i < values.size(); i++) {
+                actual.add(readCodec.read());
+            }
+        }
+
+        Assert.assertEquals(actual, values);
     }
 
     @Test(expectedExceptions = RuntimeException.class)

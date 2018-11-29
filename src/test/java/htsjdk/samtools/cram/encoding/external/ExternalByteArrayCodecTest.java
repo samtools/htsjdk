@@ -12,18 +12,20 @@ public class ExternalByteArrayCodecTest extends HtsjdkTest {
 
     @Test(dataProvider = "testByteArrays", dataProviderClass = IOTestCases.class)
     public void codecTest(final byte[] values) throws IOException {
-
+        byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             final CRAMCodec<byte[]> writeCodec = new ExternalByteArrayCodec(null, os);
 
             writeCodec.write(values);
+            os.flush();
+            written = os.toByteArray();
+        }
 
-            try (final ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                final CRAMCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
+        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
+            final CRAMCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
 
-                final byte[] actual = readCodec.read(values.length);
-                Assert.assertEquals(actual, values);
-            }
+            final byte[] actual = readCodec.read(values.length);
+            Assert.assertEquals(actual, values);
         }
     }
 

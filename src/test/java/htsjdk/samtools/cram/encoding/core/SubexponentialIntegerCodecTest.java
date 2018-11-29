@@ -17,6 +17,7 @@ import java.io.InputStream;
 public class SubexponentialIntegerCodecTest extends HtsjdkTest {
 
     private void testCodec(final int offset, final int k, final int[] values, final byte[] expected) throws IOException {
+        byte[] writtenOut;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
@@ -26,21 +27,21 @@ public class SubexponentialIntegerCodecTest extends HtsjdkTest {
             }
 
             bos.flush();
-            final byte[] writtenOut = os.toByteArray();
+            writtenOut = os.toByteArray();
             Assert.assertEquals(writtenOut, expected);
-
-            final int[] readBack = new int[values.length];
-            try (final InputStream is = new ByteArrayInputStream(writtenOut);
-                 final DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
-
-                final CRAMCodec<Integer> readCodec = new SubexponentialIntegerCodec(dbis, null, offset, k);
-                for (int i = 0; i < values.length; i++) {
-                    readBack[i] = readCodec.read();
-                }
-            }
-
-            Assert.assertEquals(readBack, values);
         }
+
+        final int[] readBack = new int[values.length];
+        try (final InputStream is = new ByteArrayInputStream(writtenOut);
+             final DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
+
+            final CRAMCodec<Integer> readCodec = new SubexponentialIntegerCodec(dbis, null, offset, k);
+            for (int i = 0; i < values.length; i++) {
+                readBack[i] = readCodec.read();
+            }
+        }
+
+        Assert.assertEquals(readBack, values);
     }
     
     // test that the offsets result in a non-negative data series
