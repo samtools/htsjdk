@@ -53,15 +53,13 @@ import java.util.TreeMap;
  * This particular version relies heavily on GZIP and RANS for better compression.
  */
 public class CompressionHeaderFactory {
-    private static final int TAG_VALUE_BUFFER_SIZE = 1024 * 1024;
     public static final int BYTE_SPACE_SIZE = 256;
     public static final int ALL_BYTES_USED = -1;
-    private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
-    private final ByteArrayOutputStream baosForTagValues;
 
-    public CompressionHeaderFactory() {
-        baosForTagValues = new ByteArrayOutputStream(TAG_VALUE_BUFFER_SIZE);
-    }
+    // a parameter for Huffman encoding, so we don't have to re-construct on each call
+    private static final int[] singleZero = new int[] { 0 };
+    private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
+    private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
 
     /**
      * Decides on compression methods to use for the given records.
@@ -412,7 +410,7 @@ public class CompressionHeaderFactory {
      */
     private EncodingParams buildTagEncodingForSize(final int tagValueSize, final int tagID) {
         return new ByteArrayLenEncoding(
-                new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, new int[] { 0 }),
+                new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, singleZero),
                 new ExternalByteArrayEncoding(tagID)).toParam();
     }
 
