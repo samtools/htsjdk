@@ -1552,8 +1552,8 @@ public class VariantContextUnitTest extends VariantBaseTest {
         }
     }
 
-    @DataProvider(name = "refOnlyBlockData")
-    public Object[][] refOnlyBlockData() {
+    @DataProvider(name = "referenceBlockData")
+    public Object[][] referenceBlockData() {
         return new Object[][]{
                 {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, false},
                 {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, true},
@@ -1563,15 +1563,15 @@ public class VariantContextUnitTest extends VariantBaseTest {
         };
     }
 
-    @Test(dataProvider = "refOnlyBlockData")
-    public void testRefOnlyBlock(List<Allele> alleles, boolean addEndAttribute, boolean isRefBlock) {
+    @Test(dataProvider = "referenceBlockData")
+    public void testReferenceBlock(List<Allele> alleles, boolean addEndAttribute, boolean isRefBlock) {
         // create a context builder/context based on inputs provided
         final VariantContextBuilder builder =
                 new VariantContextBuilder("test", snpLoc,snpLocStart, snpLocStop, alleles);
         if (addEndAttribute) {
             builder.attribute("END", 10);
         }
-        Assert.assertEquals(builder.make().isRefOnlyBlock(), isRefBlock);
+        Assert.assertEquals(builder.make().isReferenceBlock(), isRefBlock);
     }
 
     @Test

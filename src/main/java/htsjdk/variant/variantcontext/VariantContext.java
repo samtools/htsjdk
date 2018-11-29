@@ -1683,10 +1683,10 @@ public class VariantContext implements Feature, Serializable {
 
     /**
      *
-     * @return true if the variant context is a REF-only block
+     * @return true if the variant context is a reference block
      *
      */
-    public boolean isRefOnlyBlock() {
+    public boolean isReferenceBlock() {
         return getAlternateAlleles().size() == 1
                 && getAlternateAllele(0).isNonRefAllele()
                 && getAttribute(VCFConstants.END_KEY) != null;
