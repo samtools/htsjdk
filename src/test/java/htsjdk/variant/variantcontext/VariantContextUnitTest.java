@@ -1554,23 +1554,21 @@ public class VariantContextUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "refOnlyBlockData")
     public Object[][] refOnlyBlockData() {
-        List<Object[]> tests = new ArrayList<>();
-
-        tests.add(new Object[]{Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, false});
-        tests.add(new Object[]{Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, true});
-        tests.add(new Object[]{Arrays.asList(Aref, Allele.NON_REF_ALLELE), true, true});
-        tests.add(new Object[]{Arrays.asList(Aref, C, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, false});
-        tests.add(new Object[]{Arrays.asList(Aref, C), false, false});
-
-        return tests.toArray(new Object[][]{});
+        return new Object[][]{
+                {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, false},
+                {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, true},
+                {Arrays.asList(Aref, Allele.NON_REF_ALLELE), true, true},
+                {Arrays.asList(Aref, C, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, false},
+                {Arrays.asList(Aref, C), false, false}
+        };
     }
 
     @Test(dataProvider = "refOnlyBlockData")
-    public void testRefOnlyBlock(List<Allele> alleles, boolean addEndAttribute, boolean isRefBlock){
+    public void testRefOnlyBlock(List<Allele> alleles, boolean addEndAttribute, boolean isRefBlock) {
         // create a context builder/context based on inputs provided
         final VariantContextBuilder builder =
                 new VariantContextBuilder("test", snpLoc,snpLocStart, snpLocStop, alleles);
-        if (addEndAttribute){
+        if (addEndAttribute) {
             builder.attribute("END", 10);
         }
         Assert.assertEquals(builder.make().isRefOnlyBlock(), isRefBlock);

@@ -47,7 +47,7 @@ import org.testng.annotations.Test;
  * Basic unit test for RecalData
  */
 public class AlleleUnitTest extends VariantBaseTest {
-    Allele ARef, A, T, ATIns, ATCIns, NoCall, SpandDel, NonRef, UnspecifiedAlternate;
+    private Allele ARef, A, T, ATIns, ATCIns, NoCall, SpandDel, NonRef, UnspecifiedAlternate;
     
     @BeforeSuite
     public void before() {
