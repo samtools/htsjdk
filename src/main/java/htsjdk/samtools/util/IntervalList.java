@@ -23,11 +23,27 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.*;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMTextHeaderCodec;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Represents a list of intervals against a reference sequence that can be written to
@@ -50,7 +66,7 @@ public class IntervalList implements Iterable<Interval> {
     public static final String INTERVAL_LIST_FILE_EXTENSION = ".interval_list";
 
     private final SAMFileHeader header;
-    private final List<Interval> intervals = new ArrayList<Interval>();
+    private final List<Interval> intervals = new ArrayList<>();
 
     private static final Log log = Log.getInstance(IntervalList.class);
 
@@ -150,7 +166,7 @@ public class IntervalList implements Iterable<Interval> {
      */
     public IntervalList sorted() {
         final IntervalList sorted = IntervalList.copyOf(this);
-        Collections.sort(sorted.intervals, new IntervalCoordinateComparator(sorted.header));
+        sorted.intervals.sort(new IntervalCoordinateComparator(sorted.header));
         sorted.header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         return sorted;
     }
@@ -439,14 +455,11 @@ public class IntervalList implements Iterable<Interval> {
      * @return an IntervalList object that contains the headers and intervals from the path
      */
     public static IntervalList fromPath(final Path path) {
-        final IntervalList list;
         try (final BufferedReader reader = IOUtil.openFileForBufferedReading(path)) {
-            list = fromReader(reader);
+            return fromReader(reader);
         } catch (final IOException e) {
             throw new SAMException(String.format("Failed to close file %s after reading", path.toUri().toString()));
         }
-
-        return list;
     }
 
     /**
@@ -477,7 +490,7 @@ public class IntervalList implements Iterable<Interval> {
     /**
      * Parses an interval list from a reader in a stream based fashion.
      *
-     * @param in a BufferedReader that can be read from
+     * @param in a BufferedReader that can be read from. Caller is responsible to close reader as needed.
      * @return an IntervalList object that contains the headers and intervals from the file
      * @throws IllegalArgumentException if start or end are less than 1 or greater than the length of the sequence
      */
@@ -570,10 +583,6 @@ public class IntervalList implements Iterable<Interval> {
             return list;
         } catch (final IOException ioe) {
             throw new SAMException("Error parsing interval list.", ioe);
-        } finally {
-            try {
-                in.close();
-            } catch (final Exception e) { /* do nothing */ }
         }
     }
 
@@ -739,22 +748,22 @@ public class IntervalList implements Iterable<Interval> {
             final String sequenceName = samSequenceRecord.getSequenceName();
             final int sequenceLength = samSequenceRecord.getSequenceLength();
 
-            Integer lastCoveredPosition = 0; //start at beginning of sequence
+            int lastCoveredPosition = 0; //start at beginning of sequence
             //iterate over list of intervals that are in sequence
-            if (map.containsKey(sequenceIndex)) // if there are intervals in the ListMap on this contig, iterate over them (in order)
-            {
+            if (map.containsKey(sequenceIndex)) {
+                // if there are intervals in the ListMap on this contig, iterate over them (in order)
+
                 for (final Interval i : map.get(sequenceIndex)) {
-                    if (i.getStart() > lastCoveredPosition + 1) //if there's space between the last interval and the current one, add an interval between them
-                    {
+                    if (i.getStart() > lastCoveredPosition + 1) {
+                        //if there's space between the last interval and the current one, add an interval between them
                         inverse.add(new Interval(sequenceName, lastCoveredPosition + 1, i.getStart() - 1, false, "interval-" + (++intervals)));
                     }
                     lastCoveredPosition = i.getEnd(); //update the last covered position
                 }
             }
-            //finally, if there's room between the last covered position and the end of the sequence, add an interval
-            if (sequenceLength > lastCoveredPosition) //if there's space between the last interval and the next
+            if (sequenceLength > lastCoveredPosition) {
+            // finally, if there's space between the last interval and the next
             // one, add an interval. This also covers the case that there are no intervals in the ListMap for a contig.
-            {
                 inverse.add(new Interval(sequenceName, lastCoveredPosition + 1, sequenceLength, false, "interval-" + (++intervals)));
             }
         }
