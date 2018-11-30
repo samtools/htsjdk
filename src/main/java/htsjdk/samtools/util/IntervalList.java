@@ -53,11 +53,13 @@ import java.util.TreeSet;
  * A SAM style header must be present in the file which lists the sequence records
  * against which the intervals are described.  After the header the file then contains
  * records one per line in text format with the following values tab-separated:
- * Sequence name,
- * Start position (1-based),
- * End position (1-based, end inclusive),
- * Strand (either + or -),
- * Interval name (an, ideally unique, name for the interval),
+ * <ul>
+ * <li>Sequence name </li>
+ * <li>Start position (1-based)</li>
+ * <li>End position (1-based, end inclusive)</li>
+ * <li>Strand (either + or -)</li>
+ * <li>Interval name (an, ideally unique, name for the interval)</li>
+ * </ul>
  *
  * @author Tim Fennell
  * @author Yossi Farjoun
