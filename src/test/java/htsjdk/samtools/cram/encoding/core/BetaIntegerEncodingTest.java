@@ -10,6 +10,7 @@ public class BetaIntegerEncodingTest extends HtsjdkTest {
     public Object[][] testData() {
         return new Object[][] {
                 // positive values below the ITF8 single-byte limit (128) are encoded as-is
+                {0, 0, new byte[] { 0, 0 }},
                 {0, 8, new byte[] { 0, 8 }},
                 {127, 32, new byte[] { 127, 32 }},
 
@@ -32,12 +33,11 @@ public class BetaIntegerEncodingTest extends HtsjdkTest {
     }
 
 
-    // sanity checks for bitsPerValue.  Must be > 0 and <= 32
+    // sanity checks for bitsPerValue.  Must be between 0 and 32, inclusive
 
     @DataProvider(name = "bitsPerValue")
     public Object[][] bitsPerValueData() {
         return new Object[][] {
-                {0},
                 {-1},
                 {33}
         };
