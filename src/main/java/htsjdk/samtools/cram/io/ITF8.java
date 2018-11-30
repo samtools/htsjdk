@@ -38,7 +38,7 @@ import java.nio.ByteBuffer;
  */
 public class ITF8 {
 
-    static final int MAX_BYTES = 5;
+    public static final int MAX_BYTES = 5;
     static final int MAX_BITS = 8 * MAX_BYTES;
 
     /**

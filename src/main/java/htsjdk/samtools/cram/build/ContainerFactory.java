@@ -20,7 +20,7 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.digest.ContentDigests;
-import htsjdk.samtools.cram.encoding.ExternalCompressor;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
@@ -32,6 +32,7 @@ import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -117,9 +118,9 @@ public class ContainerFactory {
                                     final CompressionHeader header)
             throws IllegalArgumentException, IllegalAccessException,
             IOException {
-        final Map<Integer, ExposedByteArrayOutputStream> map = new HashMap<Integer, ExposedByteArrayOutputStream>();
+        final Map<Integer, ByteArrayOutputStream> map = new HashMap<>();
         for (final int id : header.externalIds) {
-            map.put(id, new ExposedByteArrayOutputStream());
+            map.put(id, new ByteArrayOutputStream());
         }
 
         final ExposedByteArrayOutputStream bitBAOS = new ExposedByteArrayOutputStream();
@@ -171,9 +172,9 @@ public class ContainerFactory {
         bitOutputStream.close();
         slice.coreBlock = Block.buildNewCore(bitBAOS.toByteArray());
 
-        slice.external = new HashMap<Integer, Block>();
+        slice.external = new HashMap<>();
         for (final Integer key : map.keySet()) {
-            final ExposedByteArrayOutputStream os = map.get(key);
+            final ByteArrayOutputStream os = map.get(key);
 
             final Block externalBlock = new Block();
             externalBlock.setContentId(key);

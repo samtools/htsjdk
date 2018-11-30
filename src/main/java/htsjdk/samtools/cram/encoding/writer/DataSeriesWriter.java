@@ -17,16 +17,15 @@
  */
 package htsjdk.samtools.cram.encoding.writer;
 
-import htsjdk.samtools.cram.encoding.BitCodec;
+import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.structure.DataSeriesType;
-import htsjdk.samtools.cram.encoding.Encoding;
+import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.encoding.reader.DataSeriesReader;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.util.Map;
 
 /**
@@ -39,8 +38,7 @@ import java.util.Map;
  * @param <T> data type of the series to be written.
  */
 public class DataSeriesWriter<T> {
-    private final BitCodec<T> codec;
-    private final BitOutputStream bitOutputStream;
+    private final CRAMCodec<T> codec;
 
     /**
      * Initialize a Data Series writer
@@ -53,31 +51,20 @@ public class DataSeriesWriter<T> {
     public DataSeriesWriter(final DataSeriesType valueType,
                             final EncodingParams params,
                             final BitOutputStream bitOutputStream,
-                            final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+                            final Map<Integer, ByteArrayOutputStream> outputMap) {
 
-        final EncodingFactory f = new EncodingFactory();
-        final Encoding<T> encoding = f.createEncoding(valueType, params.id);
-        if (encoding == null) {
-            throw new IllegalArgumentException("Encoding not found: value type="
-                    + valueType.name() + ", encoding id=" + params.id.name());
-        }
+        final CRAMEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
-        encoding.fromByteArray(params.params);
-
-        this.codec = encoding.buildCodec(null, outputMap);
-        this.bitOutputStream = bitOutputStream;
+        this.codec = encoding.buildWriteCodec(bitOutputStream, outputMap);
     }
 
     /**
      * Write out a single value or an array, depending on the Encoding.
      *
      * @param value data to be written
-     * @return number of bits written
-     * @throws IOException as per java IO contract
      */
-    public long writeData(final T value) throws IOException {
-        return codec.write(bitOutputStream, value);
+    void writeData(final T value) {
+        codec.write(value);
     }
-
 }
 

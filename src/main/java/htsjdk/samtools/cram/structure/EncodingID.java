@@ -25,38 +25,50 @@ public enum EncodingID {
      * "Do nothing" encoding. Should throw an exception when trying reading or writing with this encoding.
      */
     NULL(0),
+
     /**
      * Shove the data into a byte array for compressing later with a generic compressor like GZIP.
      */
     EXTERNAL(1),
+
     /**
-     * 'naf said: http://en.wikipedia.org/wiki/Golomb_coding
+     * EXPERIMENTAL: This encoding is untested and scheduled for removal from the CRAM spec.
+     * http://en.wikipedia.org/wiki/Golomb_coding
      */
     GOLOMB(2),
+
     /**
      * http://en.wikipedia.org/wiki/Huffman_coding
      */
     HUFFMAN(3),
+
     /**
      * A byte array serialized as [length][elements]
      */
     BYTE_ARRAY_LEN(4),
+
     /**
      * A byte array serialized as [elements][stop]
      */
     BYTE_ARRAY_STOP(5),
+
     /**
      * Binary coding with sufficient leading 0 bits to store each value with the same length
      */
     BETA(6),
+
     /**
-     * Subexponential codes, see the CRAM specs for details.
+     * Subexponential codes.
+     * http://www.ittc.ku.edu/~jsv/Papers/HoV94.progressive_FELICS.pdf
      */
     SUBEXPONENTIAL(7),
+
     /**
+     * EXPERIMENTAL: This encoding is untested and scheduled for removal from the CRAM spec.
      * A variant of GOLOMB encoding: http://en.wikipedia.org/wiki/Golomb_coding
      */
     GOLOMB_RICE(8),
+
     /**
      * http://en.wikipedia.org/wiki/Elias_gamma_coding
      */

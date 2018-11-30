@@ -19,10 +19,10 @@ package htsjdk.samtools.cram.encoding.writer;
 
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.*;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +67,7 @@ public class CramRecordWriter {
     
     private final Map<DataSeries, EncodingParams> encodingMap;
     private final BitOutputStream coreBlockOutputStream;
-    private final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap;
+    private final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap;
 
     /**
      * Initializes a Cram Record Writer
@@ -78,7 +78,7 @@ public class CramRecordWriter {
      * @param refId the reference sequence ID to assign to these records
      */
     public CramRecordWriter(final BitOutputStream coreOutputStream,
-                            final Map<Integer, ExposedByteArrayOutputStream> externalOutputMap,
+                            final Map<Integer, ByteArrayOutputStream> externalOutputMap,
                             final CompressionHeader header,
                             final int refId) {
         this.captureReadNames = header.readNamesIncluded;
@@ -112,7 +112,7 @@ public class CramRecordWriter {
         mateBitFlagsCodec =                     createDataWriter(DataSeries.MF_MateBitFlags);
         nextFragmentReferenceSequenceIDCodec =  createDataWriter(DataSeries.NS_NextFragmentReferenceSequenceID);
         nextFragmentAlignmentStart =            createDataWriter(DataSeries.NP_NextFragmentAlignmentStart);
-        templateSize =                          createDataWriter(DataSeries.TS_InsetSize);
+        templateSize =                          createDataWriter(DataSeries.TS_InsertSize);
         tagIdListCodec =                        createDataWriter(DataSeries.TL_TagIdList);
         refIdCodec =                            createDataWriter(DataSeries.RI_RefId);
         refSkipCodec =                          createDataWriter(DataSeries.RS_RefSkip);

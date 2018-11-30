@@ -13,9 +13,7 @@ import htsjdk.samtools.cram.structure.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -108,16 +106,16 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         return sam2CramRecordFactory.createCramRecord(record);
     }
 
-    Map<Integer, ExposedByteArrayOutputStream> createOutputMap(final CompressionHeader header) {
+    Map<Integer, ByteArrayOutputStream> createOutputMap(final CompressionHeader header) {
         return header.encodingMap.values()
                 .stream()
                 .filter(params -> params.id == EncodingID.EXTERNAL)
                 .collect(Collectors.toMap(
                         params -> ITF8.readUnsignedITF8(params.params),
-                        params -> new ExposedByteArrayOutputStream()));
+                        params -> new ByteArrayOutputStream()));
     }
 
-    Map<Integer,InputStream> createInputMap(final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    Map<Integer, ByteArrayInputStream> createInputMap(final Map<Integer, ByteArrayOutputStream> outputMap) {
         return outputMap.entrySet()
                 .stream()
                 .collect(Collectors.toMap(
@@ -128,7 +126,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
     public byte[] write(final List<CramCompressionRecord> records,
                         final CompressionHeader header,
                         final int refId,
-                        final Map<Integer, ExposedByteArrayOutputStream> outputMap) throws IOException {
+                        final Map<Integer, ByteArrayOutputStream> outputMap) throws IOException {
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 

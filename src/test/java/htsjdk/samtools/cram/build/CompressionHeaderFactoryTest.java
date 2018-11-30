@@ -111,7 +111,7 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
         final List<CramCompressionRecord> records = new ArrayList<>();
         final int tagID = ReadTag.name3BytesToInt("ACi".getBytes());
         // test empty list:
-        CompressionHeaderFactory.ByteSizeRange range = CompressionHeaderFactory.geByteSizeRangeOfTagValues(records, tagID);
+        CompressionHeaderFactory.ByteSizeRange range = CompressionHeaderFactory.getByteSizeRangeOfTagValues(records, tagID);
         Assert.assertNotNull(range);
         Assert.assertEquals(range.min, Integer.MAX_VALUE);
         Assert.assertEquals(range.max, Integer.MIN_VALUE);
@@ -123,7 +123,7 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
         record.tags = new ReadTag[]{tag};
         records.add(record);
 
-        range = CompressionHeaderFactory.geByteSizeRangeOfTagValues(records, tagID);
+        range = CompressionHeaderFactory.getByteSizeRangeOfTagValues(records, tagID);
         Assert.assertNotNull(range);
         Assert.assertEquals(range.min, 4);
         Assert.assertEquals(range.max, 4);

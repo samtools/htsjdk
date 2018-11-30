@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.encoding.core.BetaIntegerEncoding;
 import htsjdk.samtools.cram.encoding.reader.DataSeriesReader;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingParams;
@@ -13,7 +14,7 @@ public class DataSeriesReaderTest extends HtsjdkTest {
     public static Object[][] negativeConstructor() {
         return new Object[][] {
                 // mismatch type and encoding
-                {DataSeriesType.BYTE, BetaIntegerEncoding.toParam(0, 8)}
+                {DataSeriesType.BYTE, new BetaIntegerEncoding(0, 8).toParam()}
         };
     }
 
