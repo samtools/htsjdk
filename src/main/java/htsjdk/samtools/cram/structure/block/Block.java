@@ -157,7 +157,7 @@ public abstract class Block {
     public abstract int getCompressedContentSize();
 
     /**
-     * Deserialize the Block from the {@link InputStream}. The reading is parametrized by the major CRAM version number.
+     * Deserialize the Block from the {@link InputStream}. The reading is parameterized by the major CRAM version number.
      *
      * @param major CRAM version major number
      * @param inputStream    input stream to read the block from
@@ -194,7 +194,7 @@ public abstract class Block {
     }
 
     /**
-     * Write the block out to the the specified {@link OutputStream}. The method is parametrized with CRAM major version number.
+     * Write the block out to the the specified {@link OutputStream}. The method is parameterized with CRAM major version number.
      *
      * @param major CRAM version major number
      * @param outputStream    output stream to write to
