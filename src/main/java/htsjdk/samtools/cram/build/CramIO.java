@@ -290,7 +290,7 @@ public class CramIO {
             }
         }
 
-        inputStream = new ByteArrayInputStream(block.getRawContent());
+        inputStream = new ByteArrayInputStream(block.getUncompressedContent());
 
         final ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.order(ByteOrder.LITTLE_ENDIAN);

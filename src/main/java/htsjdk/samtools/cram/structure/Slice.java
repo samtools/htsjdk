@@ -27,7 +27,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -248,7 +247,7 @@ public class Slice {
     }
 
     private BitInputStream getCoreBlockInputStream() {
-        return new DefaultBitInputStream(new ByteArrayInputStream(coreBlock.getRawContent()));
+        return new DefaultBitInputStream(new ByteArrayInputStream(coreBlock.getUncompressedContent()));
     }
 
     private Map<Integer, ByteArrayInputStream> getExternalBlockInputMap() {
@@ -256,7 +255,7 @@ public class Slice {
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        e -> new ByteArrayInputStream(e.getValue().getRawContent())));
+                        e -> new ByteArrayInputStream(e.getValue().getUncompressedContent())));
     }
 
     /**

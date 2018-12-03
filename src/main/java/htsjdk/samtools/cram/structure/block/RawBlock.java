@@ -28,12 +28,12 @@ public final class RawBlock extends Block {
      * Return the uncompressed block content
      */
     @Override
-    public final byte[] getRawContent() {
+    public final byte[] getUncompressedContent() {
         return content;
     }
 
     @Override
-    public final int getRawContentSize() {
+    public final int getUncompressedContentSize() {
         return content.length;
     }
 

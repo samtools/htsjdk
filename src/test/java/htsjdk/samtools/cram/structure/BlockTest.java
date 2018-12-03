@@ -23,8 +23,8 @@ public class BlockTest extends HtsjdkTest {
 
         // raw and compressed data are equal to what was given
 
-        Assert.assertEquals(actual.getRawContent(), expectedRaw);
-        Assert.assertEquals(actual.getRawContentSize(), expectedRaw.length);
+        Assert.assertEquals(actual.getUncompressedContent(), expectedRaw);
+        Assert.assertEquals(actual.getUncompressedContentSize(), expectedRaw.length);
         Assert.assertEquals(actual.getCompressedContent(), expectedCompressed);
         Assert.assertEquals(actual.getCompressedContentSize(), expectedCompressed.length);
     }
@@ -49,7 +49,7 @@ public class BlockTest extends HtsjdkTest {
         final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();
         final byte[] compressedData = ExternalCompression.gzip(uncompressedData);
 
-        final Block block = new CompressibleBlock(method, type, contentID, uncompressedData, compressedData);
+        final Block block = new CompressibleBlock(method, type, contentID, compressedData);
         contentCheck(block, uncompressedData, compressedData);
     }
 
@@ -63,7 +63,7 @@ public class BlockTest extends HtsjdkTest {
         final int contentID = Block.NO_CONTENT_ID;
         final byte[] testData = "TEST STRING".getBytes();
 
-        final CompressibleBlock block = new CompressibleBlock(method, type, contentID, testData, testData);
+        final CompressibleBlock block = new CompressibleBlock(method, type, contentID, testData);
         contentCheck(block, testData, testData);
     }
 
@@ -169,7 +169,7 @@ public class BlockTest extends HtsjdkTest {
 
         // only allowed for external
         final int contentID = 1;
-        new CompressibleBlock(method, type, contentID, testData, testData);
+        new CompressibleBlock(method, type, contentID, testData);
     }
 
 }

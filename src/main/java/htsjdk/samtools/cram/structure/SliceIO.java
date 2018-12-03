@@ -43,7 +43,7 @@ class SliceIO {
     }
 
     private static void parseSliceHeaderBlock(final int major, final Slice slice) throws IOException {
-        final InputStream inputStream = new ByteArrayInputStream(slice.headerBlock.getRawContent());
+        final InputStream inputStream = new ByteArrayInputStream(slice.headerBlock.getUncompressedContent());
 
         slice.sequenceId = ITF8.readUnsignedITF8(inputStream);
         slice.alignmentStart = ITF8.readUnsignedITF8(inputStream);

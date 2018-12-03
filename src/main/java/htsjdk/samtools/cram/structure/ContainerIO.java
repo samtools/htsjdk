@@ -84,7 +84,7 @@ public class ContainerIO {
         if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
             throw new RuntimeException("Content type does not match: " + block.getContentType().name());
         container.header = new CompressionHeader();
-        container.header.read(block.getRawContent());
+        container.header.read(block.getUncompressedContent());
 
         howManySlices = Math.min(container.landmarks.length, howManySlices);
 

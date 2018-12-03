@@ -106,7 +106,7 @@ public abstract class Block {
         }
 
         final byte[] compressedContent = compressor.compress(rawContent);
-        return new CompressibleBlock(compressor.getMethod(), BlockContentType.EXTERNAL, contentId, rawContent, compressedContent);
+        return new CompressibleBlock(compressor.getMethod(), BlockContentType.EXTERNAL, contentId, compressedContent);
     }
 
     /**
@@ -142,12 +142,12 @@ public abstract class Block {
         return NO_CONTENT_ID;
     }
 
-    public abstract byte[] getRawContent();
+    public abstract byte[] getUncompressedContent();
 
     /**
      * The size of the uncompressed content in bytes.
      */
-    public abstract int getRawContentSize();
+    public abstract int getUncompressedContentSize();
 
     public abstract byte[] getCompressedContent();
 
@@ -185,12 +185,13 @@ public abstract class Block {
             }
         }
 
+        // TODO: is this check worthwhile?  it may be expensive.
         final byte[] uncompressedContent = ExternalCompression.uncompress(method, compressedContent);
         if (uncompressedContent.length != rawSize) {
             throw new CRAMException(String.format("Block uncompressed size did not match expected size: %04x vs %04x", rawSize, uncompressedContent.length));
         }
 
-        return new CompressibleBlock(method, type, contentId, uncompressedContent, compressedContent);
+        return new CompressibleBlock(method, type, contentId, compressedContent);
     }
 
     /**
@@ -219,20 +220,20 @@ public abstract class Block {
 
         ITF8.writeUnsignedITF8(getContentId(), outputStream);
         ITF8.writeUnsignedITF8(getCompressedContentSize(), outputStream);
-        ITF8.writeUnsignedITF8(getRawContentSize(), outputStream);
+        ITF8.writeUnsignedITF8(getUncompressedContentSize(), outputStream);
 
         outputStream.write(getCompressedContent());
     }
 
     @Override
     public String toString() {
-        final byte[] rawContent = getRawContent();
-        final byte[] compressedContent = getCompressedContent();
+        final byte[] uncompressed = getUncompressedContent();
+        final byte[] compressed = getCompressedContent();
 
-        final String raw = Arrays.toString(Arrays.copyOf(rawContent, Math.min(5, rawContent.length)));
-        final String comp = Arrays.toString(Arrays.copyOf(compressedContent, Math.min(5, compressedContent.length)));
+        final String raw = Arrays.toString(Arrays.copyOf(uncompressed, Math.min(5, uncompressed.length)));
+        final String comp = Arrays.toString(Arrays.copyOf(compressed, Math.min(5, compressed.length)));
 
         return String.format("method=%s, type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s, comp=%s.", getMethod().name(),
-                getContentType().name(), getContentId(), getRawContentSize(), getCompressedContentSize(), raw, comp);
+                getContentType().name(), getContentId(), getUncompressedContentSize(), getCompressedContentSize(), raw, comp);
     }
 }
