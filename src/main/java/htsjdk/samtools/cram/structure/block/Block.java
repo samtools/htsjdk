@@ -47,14 +47,21 @@ public abstract class Block {
     private final BlockContentType contentType;
 
     /**
+     * The content stored in this block, in compressed form (if applicable)
+     */
+    protected final byte[] compressedContent;
+
+    /**
      * Abstract constructor for Block.  Sets the block content type only.
      *
      * @see RawBlock
      * @see CompressibleBlock
      * @param contentType whether this is a header or data block, and which kind
+     * @param compressedContent the compressed form of the data to be stored in this block
      */
-    protected Block(final BlockContentType contentType) {
+    protected Block(final BlockContentType contentType, final byte[] compressedContent) {
         this.contentType = contentType;
+        this.compressedContent = compressedContent;
     }
 
     /**
@@ -147,14 +154,22 @@ public abstract class Block {
     /**
      * The size of the uncompressed content in bytes.
      */
-    public abstract int getUncompressedContentSize();
-
-    public abstract byte[] getCompressedContent();
+    public int getUncompressedContentSize() {
+        return getUncompressedContent().length;
+    }
 
     /**
-     * The size of the compressed content in bytes.
+     * Return the compressed block content
      */
-    public abstract int getCompressedContentSize();
+
+    public final byte[] getCompressedContent() {
+        return compressedContent;
+    }
+
+
+    public final int getCompressedContentSize() {
+        return compressedContent.length;
+    }
 
     /**
      * Deserialize the Block from the {@link InputStream}. The reading is parameterized by the major CRAM version number.

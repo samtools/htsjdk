@@ -20,11 +20,6 @@ public class CompressibleBlock extends Block {
     private final int contentId;
 
     /**
-     * The content stored in this block, in compressed form
-     */
-    private final byte[] compressedContent;
-
-    /**
      * Construct a CompressibleBlock instance
      *
      * @param method the block compression method.  Can be RAW, if uncompressed
@@ -36,7 +31,7 @@ public class CompressibleBlock extends Block {
                              final BlockContentType type,
                              final int contentId,
                              final byte[] compressedContent) {
-        super(type);
+        super(type, compressedContent);
 
         // causes test failures.  https://github.com/samtools/htsjdk/issues/1232
 //        if (type == BlockContentType.EXTERNAL && contentId == Block.NO_CONTENT_ID) {
@@ -49,7 +44,6 @@ public class CompressibleBlock extends Block {
 
         this.method = method;
         this.contentId = contentId;
-        this.compressedContent = compressedContent;
     }
 
     @Override
@@ -68,23 +62,5 @@ public class CompressibleBlock extends Block {
     @Override
     public final byte[] getUncompressedContent() {
         return ExternalCompression.uncompress(method, compressedContent);
-    }
-
-    @Override
-    public final int getUncompressedContentSize() {
-        return getUncompressedContent().length;
-    }
-
-    /**
-     * Return the compressed block content
-     */
-    @Override
-    public final byte[] getCompressedContent() {
-        return compressedContent;
-    }
-
-    @Override
-    public final int getCompressedContentSize() {
-        return compressedContent.length;
     }
 }

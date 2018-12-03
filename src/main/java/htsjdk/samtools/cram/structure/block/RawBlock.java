@@ -6,8 +6,6 @@ package htsjdk.samtools.cram.structure.block;
  * Contrast with {@link CompressibleBlock}
  */
 public final class RawBlock extends Block {
-    private final byte[] content;
-
     /**
      * Construct a RawBlock given a BlockContentType and the uncompressed content of the block
      *
@@ -15,8 +13,7 @@ public final class RawBlock extends Block {
      * @param rawContent the uncompressed data to store in this Block
      */
     public RawBlock(final BlockContentType contentType, final byte[] rawContent) {
-        super(contentType);
-        this.content = rawContent;
+        super(contentType, rawContent);
     }
 
     @Override
@@ -29,24 +26,6 @@ public final class RawBlock extends Block {
      */
     @Override
     public final byte[] getUncompressedContent() {
-        return content;
-    }
-
-    @Override
-    public final int getUncompressedContentSize() {
-        return content.length;
-    }
-
-    /**
-     * Return the "compressed" block content.  This is the same as the uncompressed content.
-     */
-    @Override
-    public final byte[] getCompressedContent() {
-        return content;
-    }
-
-    @Override
-    public final int getCompressedContentSize() {
-        return content.length;
+        return getCompressedContent();
     }
 }
