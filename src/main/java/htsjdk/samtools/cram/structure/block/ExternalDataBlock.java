@@ -24,23 +24,6 @@ public class ExternalDataBlock extends Block {
         this.contentId = contentId;
     }
 
-    /**
-     * Create a new external data block with the given content ID, compressor, and uncompressed content.
-     * The block will have EXTERNAL content type.
-     *
-     * @param contentId the external identifier for the block
-     * @param compressor which external compressor to use on this block
-     * @param rawContent the uncompressed content of the block
-     */
-    public ExternalDataBlock(final int contentId, final ExternalCompressor compressor, final byte[] rawContent) {
-        this(compressor.getMethod(), compressor.compress(rawContent), contentId);
-
-        // remove after https://github.com/samtools/htsjdk/issues/1232
-        if (contentId == Block.NO_CONTENT_ID) {
-            throw new CRAMException("Valid Content ID required.  Given: " + contentId);
-        }
-    }
-
     @Override
     public final int getContentId() {
         return contentId;

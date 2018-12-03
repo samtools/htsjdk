@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.structure.block;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.ExternalCompression;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.*;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -115,7 +116,7 @@ public abstract class Block {
     }
 
     /**
-     * Create a new core block with the given uncompressed content.
+     * Create a new core data block with the given uncompressed content.
      * The block will have RAW (no) compression and CORE content type.
      *
      * @param rawContent the uncompressed content of the block
@@ -123,6 +124,24 @@ public abstract class Block {
      */
     public static CoreDataBlock uncompressedCoreBlock(final byte[] rawContent) {
         return new CoreDataBlock(BlockCompressionMethod.RAW, rawContent);
+    }
+
+    /**
+     * Create a new external data block with the given content ID, compressor, and uncompressed content.
+     * The block will have EXTERNAL content type.
+     *
+     * @param contentId the external identifier for the block
+     * @param compressor which external compressor to use on this block
+     * @param rawContent the uncompressed content of the block
+     * @return a new {@link ExternalDataBlock} object
+     */
+    public static ExternalDataBlock externalDataBlock(final int contentId, final ExternalCompressor compressor, final byte[] rawContent) {
+        // remove after https://github.com/samtools/htsjdk/issues/1232
+        if (contentId == Block.NO_CONTENT_ID) {
+            throw new CRAMException("Valid Content ID required.  Given: " + contentId);
+        }
+
+        return new ExternalDataBlock(compressor.getMethod(), compressor.compress(rawContent), contentId);
     }
 
     public final BlockCompressionMethod getMethod() {
