@@ -16,7 +16,7 @@ public final class RawBlock extends Block {
      */
     public RawBlock(final BlockContentType contentType, final byte[] rawContent) {
         super(contentType);
-        this.content = rawContent.clone();
+        this.content = rawContent;
     }
 
     @Override
@@ -25,11 +25,11 @@ public final class RawBlock extends Block {
     }
 
     /**
-     * Return a copy of the uncompressed block content
+     * Return the uncompressed block content
      */
     @Override
     public final byte[] getRawContent() {
-        return content.clone();
+        return content;
     }
 
     @Override
@@ -38,11 +38,11 @@ public final class RawBlock extends Block {
     }
 
     /**
-     * Return a copy of the block content.  This is the same as the uncompressed content.
+     * Return the "compressed" block content.  This is the same as the uncompressed content.
      */
     @Override
     public final byte[] getCompressedContent() {
-        return content.clone();
+        return content;
     }
 
     @Override

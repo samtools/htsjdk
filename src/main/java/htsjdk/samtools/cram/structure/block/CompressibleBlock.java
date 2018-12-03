@@ -55,8 +55,8 @@ public class CompressibleBlock extends Block {
 
         this.method = method;
         this.contentId = contentId;
-        this.rawContent = rawContent.clone();
-        this.compressedContent = compressedContent.clone();
+        this.rawContent = rawContent;
+        this.compressedContent = compressedContent;
     }
 
     @Override
@@ -70,11 +70,11 @@ public class CompressibleBlock extends Block {
     }
 
     /**
-     * Return a copy of the uncompressed block content
+     * Return the uncompressed block content
      */
     @Override
     public final byte[] getRawContent() {
-        return rawContent.clone();
+        return rawContent;
     }
 
     @Override
@@ -83,11 +83,11 @@ public class CompressibleBlock extends Block {
     }
 
     /**
-     * Return a copy of the compressed block content
+     * Return the compressed block content
      */
     @Override
     public final byte[] getCompressedContent() {
-        return compressedContent.clone();
+        return compressedContent;
     }
 
     @Override
