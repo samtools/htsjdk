@@ -169,7 +169,9 @@ public abstract class Block {
 
     /**
      * Return the External Content ID for this block.
-     * By default this is NO_CONTENT_ID (0) but CompressibleBlocks override this
+     *
+     * By default this is NO_CONTENT_ID (0) but CompressibleBlocks override this.  Note that only External blocks have
+     * Content ID, so CompressibleBlocks which are not External will also have NO_CONTENT_ID
      *
      * @return the External Content ID, or NO_CONTENT_ID
      */
