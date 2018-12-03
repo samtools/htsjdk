@@ -47,6 +47,8 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         return new Object[][] {
                 {8, -100, new int[]{100, 101, 102, (1<<8) + 98, (1<<8) + 99}},
                 {4, 10015, new int[]{-10015, -10014, -10001, -10000}},
+                {0, 0, new int[]{0, 0, 0}},
+                {0, 100, new int[]{-100, -100}},
         };
     }
 
@@ -62,6 +64,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         return new Object[][] {
                 {8, new int[]{0, 1, 2, 100, (1 << 8) - 2, (1 << 8) - 1}},
                 {16, new int[]{0, 1, 255, (1 << 16) - 2, (1 << 16) - 1}},
+                {0, new int[]{0, 0, 0}},
         };
     }
 
@@ -77,6 +80,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         // tuples of bitsPerValue and offsets + values which are too big to store
         return new Object[][] {
                 // first with zero offset
+                {0, 0, 1},
                 {1, 0, (1 << 1)},
                 {2, 0, (1 << 2)},
                 {4, 0, (1 << 4)},
@@ -84,6 +88,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
                 {16, 0, (1 << 16)},
 
                 // adding offset of 1 will put it over
+                {0, 1, 0},
                 {1, 1, (1 << 1) - 1},
                 {2, 1, (1 << 2) - 1},
                 {4, 1, (1 << 4) - 1},

@@ -36,8 +36,8 @@ public class BetaIntegerEncoding extends CRAMEncoding<Integer> {
     public BetaIntegerEncoding(final int offset, final int bitsPerValue) {
         super(EncodingID.BETA);
 
-        if (bitsPerValue <= 0) {
-            throw new IllegalArgumentException("Number of bits per value must be positive");
+        if (bitsPerValue < 0) {
+            throw new IllegalArgumentException("Number of bits per value must not be negative");
         } else if (bitsPerValue > 32) {
             throw new IllegalArgumentException("Number of bits per value must be 32 or lower");
         }
