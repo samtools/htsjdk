@@ -27,11 +27,6 @@ public class BlockTest extends HtsjdkTest {
         Assert.assertEquals(actual.getRawContentSize(), expectedRaw.length);
         Assert.assertEquals(actual.getCompressedContent(), expectedCompressed);
         Assert.assertEquals(actual.getCompressedContentSize(), expectedCompressed.length);
-
-        // but they are defensive copies, not the same references
-
-        Assert.assertNotSame(actual.getRawContent(), expectedRaw);
-        Assert.assertNotSame(actual.getCompressedContent(), expectedCompressed);
     }
 
     @Test
