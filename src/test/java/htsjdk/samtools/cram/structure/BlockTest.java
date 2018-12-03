@@ -77,7 +77,7 @@ public class BlockTest extends HtsjdkTest {
             in.write(version.major, os);
 
             try (final InputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                return Block.readFromInputStream(version.major, is);
+                return Block.read(version.major, is);
             }
         } catch (final IOException e) {
             throw new RuntimeException(e);

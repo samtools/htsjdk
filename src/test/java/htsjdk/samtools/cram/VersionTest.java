@@ -95,7 +95,7 @@ public class VersionTest extends HtsjdkTest {
 
         // test block's crc:
         cramSeekableStream.seek(firstBlockStart);
-        Block.readFromInputStream(version.major, cramSeekableStream);
+        Block.read(version.major, cramSeekableStream);
         long blockByteSyze = cramSeekableStream.position() - firstBlockStart - crcByteSize;
         cramSeekableStream.seek(firstBlockStart);
         final byte[] blockBytes = InputStreamUtils.readFully(cramSeekableStream, (int) blockByteSyze);

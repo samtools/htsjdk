@@ -80,7 +80,7 @@ public class ContainerIO {
             return container;
         }
 
-        final Block block = Block.readFromInputStream(major, inputStream);
+        final Block block = Block.read(major, inputStream);
         if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
             throw new RuntimeException("Content type does not match: " + block.getContentType().name());
         container.header = new CompressionHeader();

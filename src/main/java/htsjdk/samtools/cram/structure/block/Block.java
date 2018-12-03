@@ -58,43 +58,6 @@ public abstract class Block {
     }
 
     /**
-     * Deserialize the Block from the {@link InputStream}. The reading is parametrized by the major CRAM version number.
-     *
-     * @param major CRAM version major number
-     * @param inputStream    input stream to read the block from
-     * @return a new {@link CompressibleBlock} object with fields and content from the input stream
-     * @throws IOException as per java IO contract
-     */
-    public static CompressibleBlock readFromInputStream(final int major, InputStream inputStream) throws IOException {
-        final boolean v3OrHigher = major >= CramVersions.CRAM_v3.major;
-        if (v3OrHigher) {
-            inputStream = new CRC32InputStream(inputStream);
-        }
-        final BlockCompressionMethod method = BlockCompressionMethod.byId(inputStream.read());
-        final BlockContentType type = BlockContentType.byId(inputStream.read());
-        final int contentId = ITF8.readUnsignedITF8(inputStream);
-        final int compressedSize = ITF8.readUnsignedITF8(inputStream);
-        final int rawSize = ITF8.readUnsignedITF8(inputStream);
-
-        final byte[] compressedContent = new byte[compressedSize];
-        InputStreamUtils.readFully(inputStream, compressedContent, 0, compressedSize);
-        if (v3OrHigher) {
-            final int actualChecksum = ((CRC32InputStream) inputStream).getCRC32();
-            final int checksum = CramInt.readInt32(inputStream);
-            if (checksum != actualChecksum) {
-                throw new RuntimeException(String.format("Block CRC32 mismatch: %04x vs %04x", checksum, actualChecksum));
-            }
-        }
-
-        final byte[] uncompressedContent = ExternalCompression.uncompress(method, compressedContent);
-        if (uncompressedContent.length != rawSize) {
-            throw new CRAMException(String.format("Block uncompressed size did not match expected size: %04x vs %04x", rawSize, uncompressedContent.length));
-        }
-
-        return new CompressibleBlock(method, type, contentId, uncompressedContent, compressedContent);
-    }
-
-    /**
      * Create a new file header block with the given uncompressed content.
      * The block will have RAW (no) compression and FILE_HEADER content type.
      *
@@ -192,6 +155,43 @@ public abstract class Block {
      * The size of the compressed content in bytes.
      */
     public abstract int getCompressedContentSize();
+
+    /**
+     * Deserialize the Block from the {@link InputStream}. The reading is parametrized by the major CRAM version number.
+     *
+     * @param major CRAM version major number
+     * @param inputStream    input stream to read the block from
+     * @return a new {@link CompressibleBlock} object with fields and content from the input stream
+     * @throws IOException as per java IO contract
+     */
+    public static CompressibleBlock read(final int major, InputStream inputStream) throws IOException {
+        final boolean v3OrHigher = major >= CramVersions.CRAM_v3.major;
+        if (v3OrHigher) {
+            inputStream = new CRC32InputStream(inputStream);
+        }
+        final BlockCompressionMethod method = BlockCompressionMethod.byId(inputStream.read());
+        final BlockContentType type = BlockContentType.byId(inputStream.read());
+        final int contentId = ITF8.readUnsignedITF8(inputStream);
+        final int compressedSize = ITF8.readUnsignedITF8(inputStream);
+        final int rawSize = ITF8.readUnsignedITF8(inputStream);
+
+        final byte[] compressedContent = new byte[compressedSize];
+        InputStreamUtils.readFully(inputStream, compressedContent, 0, compressedSize);
+        if (v3OrHigher) {
+            final int actualChecksum = ((CRC32InputStream) inputStream).getCRC32();
+            final int checksum = CramInt.readInt32(inputStream);
+            if (checksum != actualChecksum) {
+                throw new RuntimeException(String.format("Block CRC32 mismatch: %04x vs %04x", checksum, actualChecksum));
+            }
+        }
+
+        final byte[] uncompressedContent = ExternalCompression.uncompress(method, compressedContent);
+        if (uncompressedContent.length != rawSize) {
+            throw new CRAMException(String.format("Block uncompressed size did not match expected size: %04x vs %04x", rawSize, uncompressedContent.length));
+        }
+
+        return new CompressibleBlock(method, type, contentId, uncompressedContent, compressedContent);
+    }
 
     /**
      * Write the block out to the the specified {@link OutputStream}. The method is parametrized with CRAM major version number.
