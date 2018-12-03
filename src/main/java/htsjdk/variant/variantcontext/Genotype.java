@@ -197,31 +197,33 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     protected GenotypeType determineType() {
         // TODO -- this code is slow and could be optimized for the diploid case
         final List<Allele> alleles = getAlleles();
-        if ( alleles.isEmpty() )
+        if ( alleles.isEmpty() ) {
             return GenotypeType.UNAVAILABLE;
+        }
 
         boolean sawNoCall = false, sawMultipleAlleles = false;
-        Allele observedAllele = null;
+        Allele firstAllele = null;
 
-        for ( final Allele allele : alleles ) {
-            if ( allele.isNoCall() )
+        for ( int i = 0; i < alleles.size(); i++ ) {
+            final Allele allele = alleles.get(i);
+            if ( allele.isNoCall() ) {
                 sawNoCall = true;
-            else if ( observedAllele == null )
-                observedAllele = allele;
-            else if ( !allele.equals(observedAllele) )
+            } else if ( firstAllele == null ) {
+                firstAllele = allele;
+            } else if ( !allele.equals(firstAllele) )
                 sawMultipleAlleles = true;
         }
 
         if ( sawNoCall ) {
-            if ( observedAllele == null )
+            if ( firstAllele == null )
                 return GenotypeType.NO_CALL;
             return GenotypeType.MIXED;
         }
 
-        if ( observedAllele == null )
+        if ( firstAllele == null )
             throw new IllegalStateException("BUG: there are no alleles present in this genotype but the alleles list is not null");
 
-        return sawMultipleAlleles ? GenotypeType.HET : observedAllele.isReference() ? GenotypeType.HOM_REF : GenotypeType.HOM_VAR;
+        return sawMultipleAlleles ? GenotypeType.HET : firstAllele.isReference() ? GenotypeType.HOM_REF : GenotypeType.HOM_VAR;
     }
 
     /**
