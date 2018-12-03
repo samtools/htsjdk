@@ -202,7 +202,7 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertTrue(Allele.NON_REF_ALLELE.isNonRefAllele());
         Assert.assertTrue(Allele.UNSPECIFIED_ALTERNATE_ALLELE.isNonRefAllele());
 
-        Allele a = Allele.create("<*>");
+        Allele a = Allele.create(new String("<*>"));
         Assert.assertTrue(a.isNonRefAllele());
     }
 
