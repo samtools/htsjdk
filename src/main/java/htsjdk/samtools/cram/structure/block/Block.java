@@ -134,24 +134,6 @@ public class Block {
         return new Block(BlockCompressionMethod.RAW, BlockContentType.CORE, rawContent, rawContent.length);
     }
 
-    /**
-     * Create a new external data block with the given content ID, compressor, and uncompressed content.
-     * The block will have EXTERNAL content type.
-     *
-     * @param contentId the external identifier for the block
-     * @param compressor which external compressor to use on this block
-     * @param rawContent the uncompressed content of the block
-     * @return a new {@link ExternalDataBlock} object
-     */
-    public static ExternalDataBlock externalDataBlock(final int contentId, final ExternalCompressor compressor, final byte[] rawContent) {
-        // remove after https://github.com/samtools/htsjdk/issues/1232
-        if (contentId == Block.NO_CONTENT_ID) {
-            throw new CRAMException("Valid Content ID required.  Given: " + contentId);
-        }
-
-        return new ExternalDataBlock(compressor.getMethod(), compressor.compress(rawContent), rawContent.length, contentId);
-    }
-
     public final BlockCompressionMethod getMethod() {
         return method;
     }

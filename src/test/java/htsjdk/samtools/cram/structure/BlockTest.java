@@ -110,7 +110,7 @@ public class BlockTest extends HtsjdkTest {
         final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();
         final byte[] compressedData = compressor.compress(uncompressedData);
 
-        final Block extBlock = Block.externalDataBlock(contentID, compressor, uncompressedData);
+        final Block extBlock = new ExternalDataBlock(contentID, compressor, uncompressedData);
 
         final Block rtBlock2 = roundTrip(extBlock, CramVersions.CRAM_v2_1);
         contentCheck(rtBlock2, uncompressedData, compressedData);
@@ -140,6 +140,6 @@ public class BlockTest extends HtsjdkTest {
 
         // not allowed for external
         final int contentID = Block.NO_CONTENT_ID;
-        Block.externalDataBlock(contentID, compressor, uncompressedData);
+        new ExternalDataBlock(contentID, compressor, uncompressedData);
     }
 }

@@ -176,7 +176,7 @@ public class ContainerFactory {
         for (final Integer key : map.keySet()) {
             final ExternalCompressor compressor = header.externalCompressors.get(key);
             final byte[] rawData = map.get(key).toByteArray();
-            final ExternalDataBlock externalBlock = Block.externalDataBlock(key, compressor, rawData);
+            final ExternalDataBlock externalBlock = new ExternalDataBlock(key, compressor, rawData);
             slice.external.put(key, externalBlock);
         }
 
