@@ -822,8 +822,9 @@ public class VariantContext implements Feature, Serializable {
             return true;
 
         final List<Allele> allelesToConsider = considerRefAllele ? getAlleles() : getAlternateAlleles();
-        for ( int i = 0; i < allelesToConsider.size(); i++) {
-            if ( allelesToConsider.get(i).equals(allele, ignoreRefState) )
+        for (int i = 0, allelesToConsiderSize = allelesToConsider.size(); i < allelesToConsiderSize; i++) {
+            Allele anAllelesToConsider = allelesToConsider.get(i);
+            if (anAllelesToConsider.equals(allele, ignoreRefState))
                 return true;
         }
 
@@ -1356,7 +1357,7 @@ public class VariantContext implements Feature, Serializable {
             Genotype genotype = genotypes.get(i);
             if ( genotype.isAvailable() ) {
                 final List<Allele> alleles = genotype.getAlleles();
-                for ( int j = 0; j < alleles.size(); j++ ) {
+                for ( int j = 0, size = alleles.size(); j < size; j++ ) {
                     final Allele gAllele = alleles.get(j);
                     if ( ! hasAllele(gAllele) && gAllele.isCalled() )
                         throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
@@ -1487,8 +1488,8 @@ public class VariantContext implements Feature, Serializable {
 
         boolean sawRef = false;
         for ( final Allele a : alleles ) {
-            for ( int i = 0; i < alleleList.size(); i++ ) {
-                if ( a.equals(alleleList.get(i), true) ) {
+            for (int i = 0, alleleListSize = alleleList.size(); i < alleleListSize; i++) {
+                if (a.equals(alleleList.get(i), true)) {
                     throw new IllegalArgumentException("Duplicate allele added to VariantContext: " + a);
                 }
             }
@@ -1701,8 +1702,7 @@ public class VariantContext implements Feature, Serializable {
     }
 
     public static boolean hasSymbolicAlleles( final List<Allele> alleles ) {
-        int size = alleles.size();
-        for (int i = 0; i < size; i++ ) {
+        for (int i = 0, size = alleles.size(); i < size; i++ ) {
             if (alleles.get(i).isSymbolic()) {
                 return true;
             }
