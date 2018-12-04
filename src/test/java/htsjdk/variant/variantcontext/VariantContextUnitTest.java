@@ -28,26 +28,25 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
-
-// the imports for unit testing.
-
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.vcf.VCFCodec;
-import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
-
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import java.io.File;
 import java.util.*;
+
+// the imports for unit testing.
 
 
 public class VariantContextUnitTest extends VariantBaseTest {
@@ -1608,6 +1607,9 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 .attribute("DoubleList", new double[]{1.8, 1.6, 2.1})
                 .attribute("StringList", new String[]{"1", "2"})
                 .attribute("NotNumeric", new String[]{"A", "B"})
+                // new String() is necessary here because String literals are interred which makes == comparison work when
+                // it doesn't work in general
+                .attribute("MissingValue", new Object[]{1, new String(".")})
                 .make();
         // test an empty value
         Assert.assertTrue(context.getAttributeAsDoubleList("Empty", 5).isEmpty());
@@ -1620,6 +1622,8 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertThrows(() -> context.getAttributeAsDoubleList("NotNumeric", 5));
         // test the case of a missing key
         Assert.assertTrue(context.getAttributeAsDoubleList("MissingList", 5).isEmpty());
+        // test with a missing value
+        Assert.assertEquals(context.getAttributeAsDoubleList("MissingValue", 5), Arrays.asList(1d, 5d));
     }
 
     @Test

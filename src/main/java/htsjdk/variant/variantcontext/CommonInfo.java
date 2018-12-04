@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -51,8 +52,8 @@ public final class CommonInfo implements Serializable {
 
     public static final double NO_LOG10_PERROR = 1.0;
 
-    private static Set<String> NO_FILTERS = Collections.emptySet();
-    private static Map<String, Object> NO_ATTRIBUTES = Collections.unmodifiableMap(new HashMap<String, Object>());
+    private static final Set<String> NO_FILTERS = Collections.emptySet();
+    private static final Map<String, Object> NO_ATTRIBUTES = Collections.unmodifiableMap(new HashMap<>());
 
     private double log10PError = NO_LOG10_PERROR;
     private String name = null;
@@ -114,7 +115,7 @@ public final class CommonInfo implements Serializable {
 
     public void addFilter(String filter) {
         if ( filters == null ) // immutable -> mutable
-            filters = new HashSet<String>();
+            filters = new HashSet<>();
 
         if ( filter == null ) throw new IllegalArgumentException("BUG: Attempting to add null filter " + this);
         if ( getFilters().contains(filter) ) throw new IllegalArgumentException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
@@ -169,7 +170,7 @@ public final class CommonInfo implements Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
     public void clearAttributes() {
-        attributes = new HashMap<String, Object>();
+        attributes = new HashMap<>();
     }
 
     /**
@@ -195,14 +196,14 @@ public final class CommonInfo implements Serializable {
             throw new IllegalStateException("Attempting to overwrite key->value binding: key = " + key + " this = " + this);
 
         if ( attributes == NO_ATTRIBUTES ) // immutable -> mutable
-            attributes = new HashMap<String, Object>();
+            attributes = new HashMap<>();
 
         attributes.put(key, value);
     }
 
     public void removeAttribute(String key) {
         if ( attributes == NO_ATTRIBUTES ) // immutable -> mutable
-            attributes = new HashMap<String, Object>();
+            attributes = new HashMap<>();
         attributes.remove(key);
     }
 
@@ -211,7 +212,7 @@ public final class CommonInfo implements Serializable {
             // for efficiency, we can skip the validation if the map is empty
             if (attributes.isEmpty()) {
                 if ( attributes == NO_ATTRIBUTES ) // immutable -> mutable
-                    attributes = new HashMap<String, Object>();
+                    attributes = new HashMap<>();
                 attributes.putAll(map);
             } else {
                 for ( Map.Entry<String, ?> elt : map.entrySet() ) {
@@ -269,66 +270,87 @@ public final class CommonInfo implements Serializable {
         return Collections.singletonList(o);
     }
 
-    private <T> List<T> getAttributeAsList(String key, Function<Object, T> transformer) {
-        return getAttributeAsList(key).stream().map(transformer).collect(Collectors.toList());
+
+    /**
+     * This this duplicates the code in getAttribute as list but is necessary to avoid costly coersion
+     * of Stream -> List -> Stream
+     */
+    @SuppressWarnings("unchecked")
+    private static Stream<? extends Object> getAttributeAsObjectStream(Object attribute){
+        Object o = attribute;
+        if ( o == null ) return Stream.empty();
+        if ( o instanceof List ) return ((List<Object>)o).stream();
+        if ( o.getClass().isArray() ) {
+            if (o instanceof int[]) {
+                return Arrays.stream((int[])o).boxed();
+            } else if (o instanceof double[]) {
+                return Arrays.stream((double[])o).boxed();
+            }
+            return Arrays.stream((Object[])o);
+        }
+        return Stream.of(o);
+    }
+
+
+    private static boolean isNullOrMissingValue(Object x) {
+      return x == null || x.equals(VCFConstants.MISSING_VALUE_v4);
+    }
+
+    private static <T> List<T> attributeToList(Object attributeValue, T defaultValue, Function<Object, T> transformer) {
+        return getAttributeAsObjectStream(attributeValue)
+            .map(value -> isNullOrMissingValue(value) ? defaultValue : transformer.apply(value))
+            .collect(Collectors.toList());
     }
 
     public List<String> getAttributeAsStringList(String key, String defaultValue) {
-        return getAttributeAsList(key, x -> (x == null) ? defaultValue : String.valueOf(x));
+        return attributeToList(getAttribute(key), defaultValue, CommonInfo::toString);
     }
 
     public List<Integer> getAttributeAsIntList(String key, Integer defaultValue) {
-        return getAttributeAsList(key, x -> {
-            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
-                return defaultValue;
-            } else if (x instanceof Number) {
-                return ((Number) x).intValue();
-            } else {
-                return Integer.valueOf((String)x); // throws an exception if this isn't a string
-            }
-        });
+        return attributeToList(getAttribute(key), defaultValue, CommonInfo::toInt);
     }
 
     public List<Double> getAttributeAsDoubleList(String key, Double defaultValue) {
-        return getAttributeAsList(key, x -> {
-            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
-                return defaultValue;
-            } else if (x instanceof Number) {
-                return ((Number) x).doubleValue();
-            } else {
-                return Double.valueOf((String)x); // throws an exception if this isn't a string
-            }
-        });
+        return attributeToList(getAttribute(key), defaultValue, CommonInfo::toDouble);
     }
 
     public String getAttributeAsString(String key, String defaultValue) {
         Object x = getAttribute(key);
-        if ( x == null ) return defaultValue;
-        if ( x instanceof String ) return (String)x;
-        return String.valueOf(x); // throws an exception if this isn't a string
+        return isNullOrMissingValue(x) ? defaultValue : toString(x);
     }
 
     public int getAttributeAsInt(String key, int defaultValue) {
         Object x = getAttribute(key);
-        if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
-        if ( x instanceof Integer ) return (Integer)x;
-        return Integer.valueOf((String)x); // throws an exception if this isn't a string
+        return isNullOrMissingValue(x) ? defaultValue : toInt(x);
     }
 
     public double getAttributeAsDouble(String key, double defaultValue) {
         Object x = getAttribute(key);
-        if ( x == null ) return defaultValue;
-        if ( x instanceof Double ) return (Double)x;
-        if ( x instanceof Integer ) return (Integer)x;
-        return Double.valueOf((String)x); // throws an exception if this isn't a string
+        return isNullOrMissingValue(x) ? defaultValue : toDouble(x);
     }
 
     public boolean getAttributeAsBoolean(String key, boolean defaultValue) {
         Object x = getAttribute(key);
-        if ( x == null ) return defaultValue;
+        if ( isNullOrMissingValue(x) ) return defaultValue;
         if ( x instanceof Boolean ) return (Boolean)x;
         return Boolean.valueOf((String)x); // throws an exception if this isn't a string
     }
+
+    private static double toDouble(Object x) {
+        if ( x instanceof Number ) return ((Number) x).doubleValue();
+        return Double.valueOf((String)x); // throws an exception if this isn't a string
+    }
+
+    private static int toInt(Object x) {
+        if ( x instanceof Number ) return ((Number) x).intValue();
+        return Integer.valueOf((String)x); // throws an exception if this isn't a string
+    }
+
+    private static String toString(Object x) {
+        if ( x instanceof String ) return (String)x;
+        return String.valueOf(x); // throws an exception if this isn't a string
+    }
+
 
 //    public String getAttributeAsString(String key)      { return (String.valueOf(getExtendedAttribute(key))); } // **NOTE**: will turn a null Object into the String "null"
 //    public int getAttributeAsInt(String key)            { Object x = getExtendedAttribute(key); return x instanceof Integer ? (Integer)x : Integer.valueOf((String)x); }
