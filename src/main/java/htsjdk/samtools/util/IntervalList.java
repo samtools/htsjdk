@@ -272,8 +272,8 @@ public class IntervalList implements Iterable<Interval> {
             intervals = list.intervals;
         }
 
-        final List<Interval> unique = new ArrayList<Interval>();
-        final TreeSet<Interval> toBeMerged = new TreeSet<Interval>();
+        final List<Interval> unique = new ArrayList<>();
+        final TreeSet<Interval> toBeMerged = new TreeSet<>();
         Interval current = null;
 
         for (final Interval next : intervals) {
@@ -332,7 +332,7 @@ public class IntervalList implements Iterable<Interval> {
      * @return list of intervals that are broken up
      */
     public static List<Interval> breakIntervalsAtBandMultiples(final List<Interval> intervals, final int bandMultiple) {
-        final List<Interval> brokenUpIntervals = new ArrayList<Interval>();
+        final List<Interval> brokenUpIntervals = new ArrayList<>();
         for (final Interval interval : intervals) {
             if (interval.getEnd() >= interval.getStart()) {       // Normal, non-empty intervals
                 final int startIndex = interval.getStart() / bandMultiple;
@@ -361,7 +361,7 @@ public class IntervalList implements Iterable<Interval> {
      * @return list of intervals that are broken up
      */
     private static List<Interval> breakIntervalAtBandMultiples(final Interval interval, final int bandMultiple) {
-        final List<Interval> brokenUpIntervals = new ArrayList<Interval>();
+        final List<Interval> brokenUpIntervals = new ArrayList<>();
 
         int startPos = interval.getStart();
         final int startOfIntervalIndex = startPos / bandMultiple;
@@ -388,7 +388,7 @@ public class IntervalList implements Iterable<Interval> {
         int start = intervals.first().getStart();
         int end = intervals.last().getEnd();
         final boolean neg = intervals.first().isNegativeStrand();
-        final LinkedHashSet<String> names = new LinkedHashSet<String>();
+        final LinkedHashSet<String> names = new LinkedHashSet<>();
         final String name;
 
         for (final Interval i : intervals) {
@@ -482,7 +482,7 @@ public class IntervalList implements Iterable<Interval> {
      * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #union(java.util.Collection)}.
      */
     public static IntervalList fromFiles(final Collection<File> intervalListFiles) {
-        final Collection<IntervalList> intervalLists = new ArrayList<IntervalList>();
+        final Collection<IntervalList> intervalLists = new ArrayList<>();
         for (final File file : intervalListFiles) {
             intervalLists.add(IntervalList.fromFile(file));
         }
@@ -497,6 +497,12 @@ public class IntervalList implements Iterable<Interval> {
      * @throws IllegalArgumentException if start or end are less than 1 or greater than the length of the sequence
      */
     public static IntervalList fromReader(final BufferedReader in) {
+
+        final int SEQUENCE_POS=0;
+        final int START_POS=1;
+        final int END_POS=2;
+        final int STRAND_POS=3;
+        final int NAME_POS=4;
         try {
             // Setup a reader and parse the header
             final StringBuilder builder = new StringBuilder(4096);
@@ -539,9 +545,9 @@ public class IntervalList implements Iterable<Interval> {
                 }
 
                 // Then parse them out
-                final String seq = fields[0];
-                final int start = format.parseInt(fields[1]);
-                final int end = format.parseInt(fields[2]);
+                final String seq = fields[SEQUENCE_POS];
+                final int start = format.parseInt(fields[START_POS]);
+                final int end = format.parseInt(fields[END_POS]);
                 if (start < 1) {
                     throw new IllegalArgumentException("Coordinate less than 1: start value of " + start +
                             " is less than 1 and thus illegal");
@@ -554,7 +560,7 @@ public class IntervalList implements Iterable<Interval> {
                 }
 
                 final boolean negative;
-                switch (fields[3]) {
+                switch (fields[STRAND_POS]) {
                     case "-":
                         negative = true;
                         break;
@@ -562,10 +568,10 @@ public class IntervalList implements Iterable<Interval> {
                         negative = false;
                         break;
                     default:
-                        throw new IllegalArgumentException("Invalid strand field: " + fields[3]);
+                        throw new IllegalArgumentException("Invalid strand field: " + fields[STRAND_POS]);
                 }
 
-                final String name = fields[4];
+                final String name = fields[NAME_POS];
 
                 final Interval interval = new Interval(seq, start, end, negative, name);
                 final SAMSequenceRecord sequence = dict.getSequence(seq);
@@ -644,7 +650,7 @@ public class IntervalList implements Iterable<Interval> {
 
         result = new IntervalList(list1.getHeader().clone());
 
-        final OverlapDetector<Interval> detector = new OverlapDetector<Interval>(0, 0);
+        final OverlapDetector<Interval> detector = new OverlapDetector<>(0, 0);
 
         detector.addAll(list1.getIntervals(), list1.getIntervals());
 
@@ -734,7 +740,7 @@ public class IntervalList implements Iterable<Interval> {
     public static IntervalList invert(final IntervalList list) {
         final IntervalList inverse = new IntervalList(list.header.clone());
 
-        final ListMap<Integer, Interval> map = new ListMap<Integer, Interval>();
+        final ListMap<Integer, Interval> map = new ListMap<>();
 
         //add all the intervals (uniqued and therefore also sorted) to a ListMap from sequenceIndex to a list of Intervals
         for (final Interval i : list.uniqued().getIntervals()) {
