@@ -434,14 +434,14 @@ public class IntervalList implements Iterable<Interval> {
 
     /**
      * Parses an interval list from a path.
+     *
      * @param path the path containing the intervals
      * @return an IntervalList object that contains the headers and intervals from the path
      */
     public static IntervalList fromPath(final Path path) {
-        final BufferedReader reader = IOUtil.openFileForBufferedReading(path);
-        final IntervalList list = fromReader(reader);
-        try {
-            reader.close();
+        final IntervalList list;
+        try (final BufferedReader reader = IOUtil.openFileForBufferedReading(path)) {
+            list = fromReader(reader);
         } catch (final IOException e) {
             throw new SAMException(String.format("Failed to close file %s after reading", path.toUri().toString()));
         }
@@ -526,12 +526,29 @@ public class IntervalList implements Iterable<Interval> {
                 // Then parse them out
                 final String seq = fields[0];
                 final int start = format.parseInt(fields[1]);
-                final int end   = format.parseInt(fields[2]);
+                final int end = format.parseInt(fields[2]);
+                if (start < 1) {
+                    throw new IllegalArgumentException("Coordinate less than 1: start value of " + start +
+                            " is less than 1 and thus illegal");
+                }
+
+                if (start > end + 1) {
+                    throw new IllegalArgumentException("Start value of " + start +
+                            " is greater than end + 1 for end of value: " + end +
+                            ". I'm afraid I cannot let you do that.");
+                }
 
                 final boolean negative;
-                if (fields[3].equals("-")) negative = true;
-                else if (fields[3].equals("+")) negative = false;
-                else throw new IllegalArgumentException("Invalid strand field: " + fields[3]);
+                switch (fields[3]) {
+                    case "-":
+                        negative = true;
+                        break;
+                    case "+":
+                        negative = false;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid strand field: " + fields[3]);
+                }
 
                 final String name = fields[4];
 
@@ -539,8 +556,12 @@ public class IntervalList implements Iterable<Interval> {
                 final SAMSequenceRecord sequence = dict.getSequence(seq);
                 if (sequence == null) {
                     log.warn("Ignoring interval for unknown reference: " + interval);
-                }
-                else {
+                } else {
+                    final int sequenceLength = sequence.getSequenceLength();
+                    if (sequenceLength > 0 && sequenceLength < end) {
+                        throw new IllegalArgumentException("interval with end: " + end + " extends beyond end of sequence with length: " + sequenceLength);
+                    }
+
                     list.intervals.add(interval);
                 }
             }
@@ -562,8 +583,7 @@ public class IntervalList implements Iterable<Interval> {
      * @param file a file to write to.  If exists it will be overwritten.
      */
     public void write(final File file) {
-        try {
-            final BufferedWriter out = IOUtil.openFileForBufferedWriting(file);
+        try (final BufferedWriter out = IOUtil.openFileForBufferedWriting(file)) {
             final FormatUtil format = new FormatUtil();
 
             // Write out the header
@@ -582,19 +602,16 @@ public class IntervalList implements Iterable<Interval> {
                 out.write('\t');
                 out.write(interval.isPositiveStrand() ? '+' : '-');
                 out.write('\t');
-                if(interval.getName() != null){
+                if (interval.getName() != null) {
                     out.write(interval.getName());
-                }
-                else{
+                } else {
                     out.write(".");
                 }
                 out.newLine();
             }
 
             out.flush();
-            out.close();
-        }
-        catch (final IOException ioe) {
+        } catch (final IOException ioe) {
             throw new SAMException("Error writing out interval list to file: " + file.getAbsolutePath(), ioe);
         }
     }
@@ -790,7 +807,7 @@ public class IntervalList implements Iterable<Interval> {
      * in the second list.
      *
      * @param lhs the first collection of IntervalLists
-     * @param lhs the second collection of IntervalLists
+     * @param rhs the second collection of IntervalLists
      * @return an IntervalList comprising of all intervals in the first IntervalList that have at least 1bp overlap with
      * any interval in the second.
      */

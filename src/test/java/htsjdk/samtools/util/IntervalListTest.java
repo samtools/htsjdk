@@ -33,6 +33,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,9 +51,9 @@ public class IntervalListTest extends HtsjdkTest {
 
     final SAMFileHeader fileHeader;
     final IntervalList list1, list2, list3;
-
+    static final public File TEST_DIR=new File("src/test/resources/htsjdk/samtools/intervallist");
     public IntervalListTest() {
-        fileHeader = IntervalList.fromFile(new File("src/test/resources/htsjdk/samtools/intervallist/IntervalListchr123_empty.interval_list")).getHeader();
+        fileHeader = IntervalList.fromFile(new File(TEST_DIR, "/IntervalListchr123_empty.interval_list")).getHeader();
         fileHeader.setSortOrder(SAMFileHeader.SortOrder.unsorted);
 
         list1 = new IntervalList(fileHeader);
@@ -76,9 +77,10 @@ public class IntervalListTest extends HtsjdkTest {
         list3.add(new Interval("3", 50, 470));
     }
 
+
     @Test
     public void testIntervalListFrom() {
-        final String testPath = "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list";
+        final String testPath = new File(TEST_DIR, "IntervalListFromVCFTestComp.interval_list").getAbsolutePath();
         final IntervalList fromFileList = IntervalList.fromFile(new File(testPath));
         final IntervalList fromPathList = IntervalList.fromPath(Paths.get(testPath));
         fromFileList.getHeader().getSequenceDictionary().assertSameDictionary(fromPathList.getHeader().getSequenceDictionary());
@@ -468,10 +470,10 @@ public class IntervalListTest extends HtsjdkTest {
     @DataProvider(name = "VCFCompData")
     public Object[][] VCFCompData() {
         return new Object[][]{
-                new Object[]{"src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTest.vcf", "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list", false},
-                new Object[]{"src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTest.vcf", "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestCompInverse.interval_list", true},
-                new Object[]{"src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestManual.vcf", "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestManualComp.interval_list", false},
-                new Object[]{"src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestManual.vcf", "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestCompInverseManual.interval_list", true}
+                new Object[]{TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTest.vcf", TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestComp.interval_list", false},
+                new Object[]{TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTest.vcf", TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestCompInverse.interval_list", true},
+                new Object[]{TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestManual.vcf", TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestManualComp.interval_list", false},
+                new Object[]{TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestManual.vcf", TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestCompInverseManual.interval_list", true}
         };
     }
 
@@ -540,9 +542,9 @@ public class IntervalListTest extends HtsjdkTest {
     @DataProvider
     public Object[][] testFromSequenceData() {
         return new Object[][]{
-                new Object[]{"src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list", "1", 249250621},
-                new Object[]{"src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list", "2", 243199373},
-                new Object[]{"src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list", "3", 198022430},
+                new Object[]{TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestComp.interval_list", "1", 249250621},
+                new Object[]{TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestComp.interval_list", "2", 243199373},
+                new Object[]{TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFTestComp.interval_list", "3", 198022430},
         };
     }
 
@@ -659,8 +661,24 @@ public class IntervalListTest extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testContigsAbsentInHeader() {
-        String vcf = "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFNoContigLines.vcf";
+        String vcf = TEST_DIR.getAbsolutePath()+"/IntervalListFromVCFNoContigLines.vcf";
         final File vcfFile = new File(vcf);
         VCFFileReader.toIntervalList(vcfFile.toPath());
+    }
+
+
+    @DataProvider
+    public static Object[][] brokenFiles() {
+        return new Object[][]{
+                {new File(TEST_DIR,"broken.end.extends.too.far.interval_list")},
+                {new File(TEST_DIR,"broken.start.bigger.than.end.interval_list")},
+                {new File(TEST_DIR,"broken.unallowed.strand.interval_list")},
+                {new File(TEST_DIR,"broken.zero.start.interval_list")},
+        };
+    }
+
+    @Test(dataProvider = "brokenFiles", expectedExceptions = IllegalArgumentException.class)
+    public void testBreaks(final File brokenIntervalFile){
+        IntervalList.fromFile(brokenIntervalFile);
     }
 }
