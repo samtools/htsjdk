@@ -12,8 +12,11 @@ public class CoreDataBlock extends Block {
      *
      * @param method the compression method used in this block
      * @param compressedContent the content of this block, in compressed mode
+     * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
-    CoreDataBlock(final BlockCompressionMethod method, final byte[] compressedContent) {
-        super(method, type, compressedContent);
+    CoreDataBlock(final BlockCompressionMethod method,
+                  final byte[] compressedContent,
+                  final int uncompressedLength) {
+        super(method, type, compressedContent, uncompressedLength);
     }
 }

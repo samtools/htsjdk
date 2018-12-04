@@ -58,18 +58,26 @@ public abstract class Block {
     protected final byte[] compressedContent;
 
     /**
+     * The length of the content stored in this block when uncompressed
+     */
+    private final int uncompressedLength;
+
+    /**
      * Abstract constructor of a generic Block, to be called by subclasses.
      *
      * @param method the block compression method.  Can be RAW, if uncompressed
      * @param type whether this is a header or data block, and which kind
      * @param compressedContent the compressed form of the data to be stored in this block
+     * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
     protected Block(final BlockCompressionMethod method,
                     final BlockContentType type,
-                    final byte[] compressedContent) {
+                    final byte[] compressedContent,
+                    final int uncompressedLength) {
         this.method = method;
         this.contentType = type;
         this.compressedContent = compressedContent;
+        this.uncompressedLength = uncompressedLength;
 
         // causes test failures.  https://github.com/samtools/htsjdk/issues/1232
 //        if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
@@ -90,7 +98,7 @@ public abstract class Block {
      * @return a new {@link FileHeaderBlock} object
      */
     public static FileHeaderBlock uncompressedFileHeaderBlock(final byte[] rawContent) {
-        return new FileHeaderBlock(BlockCompressionMethod.RAW, rawContent);
+        return new FileHeaderBlock(BlockCompressionMethod.RAW, rawContent, rawContent.length);
     }
 
     /**
@@ -101,7 +109,7 @@ public abstract class Block {
      * @return a new {@link CompressionHeaderBlock} object
      */
     public static CompressionHeaderBlock uncompressedCompressionHeaderBlock(final byte[] rawContent) {
-        return new CompressionHeaderBlock(BlockCompressionMethod.RAW, rawContent);
+        return new CompressionHeaderBlock(BlockCompressionMethod.RAW, rawContent, rawContent.length);
     }
 
     /**
@@ -112,7 +120,7 @@ public abstract class Block {
      * @return a new {@link SliceHeaderBlock} object
      */
     public static SliceHeaderBlock uncompressedSliceHeaderBlock(final byte[] rawContent) {
-        return new SliceHeaderBlock(BlockCompressionMethod.RAW, rawContent);
+        return new SliceHeaderBlock(BlockCompressionMethod.RAW, rawContent, rawContent.length);
     }
 
     /**
@@ -123,7 +131,7 @@ public abstract class Block {
      * @return a new {@link CoreDataBlock} object
      */
     public static CoreDataBlock uncompressedCoreBlock(final byte[] rawContent) {
-        return new CoreDataBlock(BlockCompressionMethod.RAW, rawContent);
+        return new CoreDataBlock(BlockCompressionMethod.RAW, rawContent, rawContent.length);
     }
 
     /**
@@ -141,7 +149,7 @@ public abstract class Block {
             throw new CRAMException("Valid Content ID required.  Given: " + contentId);
         }
 
-        return new ExternalDataBlock(compressor.getMethod(), compressor.compress(rawContent), contentId);
+        return new ExternalDataBlock(compressor.getMethod(), compressor.compress(rawContent), rawContent.length, contentId);
     }
 
     public final BlockCompressionMethod getMethod() {
@@ -168,6 +176,10 @@ public abstract class Block {
     }
 
     public final byte[] getUncompressedContent() {
+        final byte[] uncompressedContent = ExternalCompression.uncompress(method, compressedContent);
+        if (uncompressedContent.length != uncompressedLength) {
+            throw new CRAMException(String.format("Block uncompressed length did not match expected length: %04x vs %04x", uncompressedLength, uncompressedContent.length));
+        }
         return ExternalCompression.uncompress(method, compressedContent);
     }
 
@@ -175,7 +187,7 @@ public abstract class Block {
      * The size of the uncompressed content in bytes.
      */
     public int getUncompressedContentSize() {
-        return getUncompressedContent().length;
+        return uncompressedLength;
     }
 
     /**
@@ -209,7 +221,7 @@ public abstract class Block {
             final BlockContentType type = BlockContentType.byId(inputStream.read());
             final int contentId = ITF8.readUnsignedITF8(inputStream);
             final int compressedSize = ITF8.readUnsignedITF8(inputStream);
-            final int rawSize = ITF8.readUnsignedITF8(inputStream);
+            final int uncompressedSize = ITF8.readUnsignedITF8(inputStream);
 
             final byte[] compressedContent = new byte[compressedSize];
             InputStreamUtils.readFully(inputStream, compressedContent, 0, compressedSize);
@@ -221,23 +233,17 @@ public abstract class Block {
                 }
             }
 
-            // TODO: is this check worthwhile?  it may be expensive.
-            final byte[] uncompressedContent = ExternalCompression.uncompress(method, compressedContent);
-            if (uncompressedContent.length != rawSize) {
-                throw new CRAMException(String.format("Block uncompressed size did not match expected size: %04x vs %04x", rawSize, uncompressedContent.length));
-            }
-
             switch (type) {
                 case FILE_HEADER:
-                    return new FileHeaderBlock(method, compressedContent);
+                    return new FileHeaderBlock(method, compressedContent, uncompressedSize);
                 case COMPRESSION_HEADER:
-                    return new CompressionHeaderBlock(method, compressedContent);
+                    return new CompressionHeaderBlock(method, compressedContent, uncompressedSize);
                 case MAPPED_SLICE:
-                    return new SliceHeaderBlock(method, compressedContent);
+                    return new SliceHeaderBlock(method, compressedContent, uncompressedSize);
                 case EXTERNAL:
-                    return new ExternalDataBlock(method, compressedContent, contentId);
+                    return new ExternalDataBlock(method, compressedContent, uncompressedSize, contentId);
                 case CORE:
-                    return new CoreDataBlock(method, compressedContent);
+                    return new CoreDataBlock(method, compressedContent, uncompressedSize);
                 default:
                     throw new CRAMException("Unknown BlockContentType " + type.name());
             }
