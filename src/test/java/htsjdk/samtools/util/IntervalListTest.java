@@ -34,8 +34,8 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -74,10 +74,10 @@ public class IntervalListTest extends HtsjdkTest {
 
 
     @Test
-    public void testIntervalListFrom() {
+    public void testIntervalListFrom() throws IOException {
         final String testPath = TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list").toString();
         final IntervalList fromFileList = IntervalList.fromFile(new File(testPath));
-        final IntervalList fromPathList = IntervalList.fromPath(Paths.get(testPath));
+        final IntervalList fromPathList = IntervalList.fromPath(IOUtil.getPath(testPath));
         fromFileList.getHeader().getSequenceDictionary().assertSameDictionary(fromPathList.getHeader().getSequenceDictionary());
         Assert.assertEquals(CollectionUtil.makeCollection(fromFileList.iterator()), CollectionUtil.makeCollection(fromPathList.iterator()));
     }
