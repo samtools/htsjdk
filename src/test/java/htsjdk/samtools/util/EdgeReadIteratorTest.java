@@ -394,10 +394,8 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         return builder.getSamReader();
     }
 
-    private IntervalList createIntervalList(String s) {
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(s.getBytes());
-             InputStreamReader isr = new InputStreamReader(bais);
-             BufferedReader br = new BufferedReader(isr)) {
+    private IntervalList createIntervalList(final String s) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(s.getBytes())))) {
             return IntervalList.fromReader(br);
         } catch (IOException e) {
             throw new RuntimeException("Trouble closing reader: " + s, e);

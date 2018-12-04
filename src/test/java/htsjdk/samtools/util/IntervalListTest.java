@@ -465,21 +465,19 @@ public class IntervalListTest extends HtsjdkTest {
     @DataProvider(name = "VCFCompData")
     public Object[][] VCFCompData() {
         return new Object[][]{
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTest.vcf").toString(), TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list").toString(), false},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTest.vcf").toString(), TEST_DIR.resolve("IntervalListFromVCFTestCompInverse.interval_list").toString(), true},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestManual.vcf").toString(), TEST_DIR.resolve("IntervalListFromVCFTestManualComp.interval_list").toString(), false},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestManual.vcf").toString(), TEST_DIR.resolve("IntervalListFromVCFTestCompInverseManual.interval_list").toString(), true}
+                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTest.vcf"), TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), false},
+                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTest.vcf"), TEST_DIR.resolve("IntervalListFromVCFTestCompInverse.interval_list"), true},
+                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestManual.vcf"), TEST_DIR.resolve("IntervalListFromVCFTestManualComp.interval_list"), false},
+                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestManual.vcf"), TEST_DIR.resolve("IntervalListFromVCFTestCompInverseManual.interval_list"), true}
         };
     }
 
     @Test(dataProvider = "VCFCompData")
-    public void testFromVCF(final String vcf, final String compInterval, final boolean invertVCF) {
+    public void testFromVCF(final Path vcf, final Path compInterval, final boolean invertVCF) {
 
-        final File vcfFile = new File(vcf);
-        final File compIntervalFile = new File(compInterval);
 
-        final IntervalList compList = IntervalList.fromFile(compIntervalFile);
-        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.toIntervalList(vcfFile.toPath())) : VCFFileReader.toIntervalList(vcfFile.toPath());
+        final IntervalList compList = IntervalList.fromPath(compInterval);
+        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.toIntervalList(vcf)) : VCFFileReader.toIntervalList(vcf);
 
         compList.getHeader().getSequenceDictionary().assertSameDictionary(list.getHeader().getSequenceDictionary());
 
@@ -504,13 +502,11 @@ public class IntervalListTest extends HtsjdkTest {
 
 
     @Test(dataProvider = "VCFCompData")
-    public void testFromVCFWithPath(final String vcf, final String compInterval, final boolean invertVCF) {
+    public void testFromVCFWithPath(final Path vcf, final Path compInterval, final boolean invertVCF) {
 
-        final File vcfFile = new File(vcf);
-        final File compIntervalFile = new File(compInterval);
 
-        final IntervalList compList = IntervalList.fromFile(compIntervalFile);
-        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.toIntervalList(vcfFile.toPath())) : VCFFileReader.toIntervalList(vcfFile.toPath());
+        final IntervalList compList = IntervalList.fromPath(compInterval);
+        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.toIntervalList(vcf)) : VCFFileReader.toIntervalList(vcf);
 
         compList.getHeader().getSequenceDictionary().assertSameDictionary(list.getHeader().getSequenceDictionary());
 
@@ -537,16 +533,16 @@ public class IntervalListTest extends HtsjdkTest {
     @DataProvider
     public Object[][] testFromSequenceData() {
         return new Object[][]{
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list").toString(), "1", 249250621},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list").toString(), "2", 243199373},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list").toString(), "3", 198022430},
+                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), "1", 249250621},
+                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), "2", 243199373},
+                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), "3", 198022430},
         };
     }
 
     @Test(dataProvider = "testFromSequenceData")
-    public void testFromSequenceName(final String intervalList, final String referenceName, final Integer length) {
+    public void testFromSequenceName(final Path intervalList, final String referenceName, final Integer length) {
 
-        final IntervalList intervals = IntervalList.fromFile(new File(intervalList));
+        final IntervalList intervals = IntervalList.fromPath(intervalList);
         final IntervalList test = IntervalList.fromName(intervals.getHeader(), referenceName);
         Assert.assertEquals(test.getIntervals(), CollectionUtil.makeList(new Interval(referenceName, 1, length)));
     }
