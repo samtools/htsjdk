@@ -23,27 +23,11 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SAMTextHeaderCodec;
+import htsjdk.samtools.*;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Represents a list of intervals against a reference sequence that can be written to
@@ -53,11 +37,11 @@ import java.util.TreeSet;
  * A SAM style header must be present in the file which lists the sequence records
  * against which the intervals are described.  After the header the file then contains
  * records one per line in text format with the following values tab-separated:
- *    Sequence name,
- *    Start position (1-based),
- *    End position (1-based, end inclusive),
- *    Strand (either + or -),
- *    Interval name (an, ideally unique, name for the interval),
+ * Sequence name,
+ * Start position (1-based),
+ * End position (1-based, end inclusive),
+ * Strand (either + or -),
+ * Interval name (an, ideally unique, name for the interval),
  *
  * @author Tim Fennell
  * @author Yossi Farjoun
@@ -70,25 +54,41 @@ public class IntervalList implements Iterable<Interval> {
 
     private static final Log log = Log.getInstance(IntervalList.class);
 
-    /** Constructs a new interval list using the supplied header information. */
+    /**
+     * Constructs a new interval list using the supplied header information.
+     */
     public IntervalList(final SAMFileHeader header) {
-        if (header == null) throw new IllegalArgumentException("SAMFileHeader must be supplied.");
+        if (header == null) {
+            throw new IllegalArgumentException("SAMFileHeader must be supplied.");
+        }
         this.header = header;
     }
 
-    /** Constructs a new interval list using the supplied header information. */
+    /**
+     * Constructs a new interval list using the supplied header information.
+     */
     public IntervalList(final SAMSequenceDictionary dict) {
         this(new SAMFileHeader(dict));
     }
 
-    /** Gets the header (if there is one) for the interval list. */
-    public SAMFileHeader getHeader() { return header; }
+    /**
+     * Gets the header (if there is one) for the interval list.
+     */
+    public SAMFileHeader getHeader() {
+        return header;
+    }
 
-    /** Returns an iterator over the intervals. */
+    /**
+     * Returns an iterator over the intervals.
+     */
     @Override
-    public Iterator<Interval> iterator() { return this.intervals.iterator(); }
+    public Iterator<Interval> iterator() {
+        return this.intervals.iterator();
+    }
 
-    /** Adds an interval to the list of intervals. */
+    /**
+     * Adds an interval to the list of intervals.
+     */
     public void add(final Interval interval) {
         if (header.getSequence(interval.getContig()) == null) {
             throw new IllegalArgumentException(String.format("Cannot add interval %s, contig not in header", interval.toString()));
@@ -96,7 +96,9 @@ public class IntervalList implements Iterable<Interval> {
         this.intervals.add(interval);
     }
 
-    /** Adds a Collection of intervals to the list of intervals. */
+    /**
+     * Adds a Collection of intervals to the list of intervals.
+     */
     public void addall(final Collection<Interval> intervals) {
         //use this instead of addAll so that the contig checking happens.
         for (Interval interval : intervals) {
@@ -117,27 +119,35 @@ public class IntervalList implements Iterable<Interval> {
         this.header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
     }
 
-    /** Returns a new IntervalList where each interval is padded by the specified amount of bases. */
+    /**
+     * Returns a new IntervalList where each interval is padded by the specified amount of bases.
+     */
     public IntervalList padded(final int before, final int after) {
-        if (before < 0 || after < 0) throw new IllegalArgumentException("Padding values must be >= 0.");
+        if (before < 0 || after < 0) {
+            throw new IllegalArgumentException("Padding values must be >= 0.");
+        }
         final IntervalList padded = new IntervalList(this.getHeader().clone());
         final SAMSequenceDictionary dict = padded.getHeader().getSequenceDictionary();
         for (final Interval i : this) {
             final SAMSequenceRecord seq = dict.getSequence(i.getContig());
             final int start = Math.max(1, i.getStart() - before);
-            final int end   = Math.min(seq.getSequenceLength(), i.getEnd() + after);
+            final int end = Math.min(seq.getSequenceLength(), i.getEnd() + after);
             padded.add(new Interval(i.getContig(), start, end, i.isNegativeStrand(), i.getName()));
         }
 
         return padded;
     }
 
-    /** Returns a new IntervalList where each interval is padded by 'padding' bases on each side. */
+    /**
+     * Returns a new IntervalList where each interval is padded by 'padding' bases on each side.
+     */
     public IntervalList padded(final int padding) {
         return padded(padding, padding);
     }
 
-    /** returns an independent sorted IntervalList*/
+    /**
+     * returns an independent sorted IntervalList
+     */
     public IntervalList sorted() {
         final IntervalList sorted = IntervalList.copyOf(this);
         Collections.sort(sorted.intervals, new IntervalCoordinateComparator(sorted.header));
@@ -145,13 +155,16 @@ public class IntervalList implements Iterable<Interval> {
         return sorted;
     }
 
-    /** Returned an independent IntervalList that is sorted and uniquified. */
+    /**
+     * Returned an independent IntervalList that is sorted and uniquified.
+     */
     public IntervalList uniqued() {
         return uniqued(true);
     }
 
     /**
      * Returned an independent IntervalList that is sorted and uniquified.
+     *
      * @param concatenateNames If false, interval names are not concatenated when merging intervals to save space.
      */
     public IntervalList uniqued(final boolean concatenateNames) {
@@ -189,7 +202,9 @@ public class IntervalList implements Iterable<Interval> {
         this.intervals.addAll(tmp);
     }
 
-    /** Gets the set of intervals as held internally. */
+    /**
+     * Gets the set of intervals as held internally.
+     */
     public List<Interval> getIntervals() {
         return Collections.unmodifiableList(this.intervals);
     }
@@ -212,8 +227,10 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     //NO SIDE EFFECTS HERE!
+
     /**
      * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
+     *
      * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames) {
@@ -221,9 +238,11 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     //NO SIDE EFFECTS HERE!
+
     /**
      * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
-     * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
+     *
+     * @param concatenateNames   If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      * @param enforceSameStrands enforce that merged intervals have the same strand, otherwise ignore.
      */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames, final boolean enforceSameStrands) {
@@ -231,8 +250,7 @@ public class IntervalList implements Iterable<Interval> {
         final List<Interval> intervals;
         if (list.getHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             intervals = list.sorted().intervals;
-        }
-        else {
+        } else {
             intervals = list.intervals;
         }
 
@@ -244,13 +262,13 @@ public class IntervalList implements Iterable<Interval> {
             if (current == null) {
                 toBeMerged.add(next);
                 current = next;
-            }
-            else if (current.intersects(next) || current.abuts(next)) {
-                if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
+            } else if (current.intersects(next) || current.abuts(next)) {
+                if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) {
+                    throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
+                }
                 toBeMerged.add(next);
                 current = new Interval(current.getContig(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), current.isNegativeStrand(), null);
-            }
-            else {
+            } else {
                 // Emit merged/unique interval
                 unique.add(merge(toBeMerged, concatenateNames));
 
@@ -261,7 +279,9 @@ public class IntervalList implements Iterable<Interval> {
             }
         }
 
-        if (!toBeMerged.isEmpty()) unique.add(merge(toBeMerged, concatenateNames));
+        if (!toBeMerged.isEmpty()) {
+            unique.add(merge(toBeMerged, concatenateNames));
+        }
         return unique;
     }
 
@@ -288,7 +308,8 @@ public class IntervalList implements Iterable<Interval> {
      *
      * ex: if there is an interval (7200-9300) and the bandMultiple is 1000, the interval will be split into:
      * (7200-7999, 8000-8999, 9000-9300)
-     * @param intervals A list of Interval
+     *
+     * @param intervals    A list of Interval
      * @param bandMultiple integer value (> 0) to break up intervals in the list at integer multiples of
      * @return list of intervals that are broken up
      */
@@ -303,8 +324,7 @@ public class IntervalList implements Iterable<Interval> {
                 } else {
                     brokenUpIntervals.addAll(breakIntervalAtBandMultiples(interval, bandMultiple));
                 }
-            }
-            else {                                  // Special case - empty intervals ex: (100-99)
+            } else {                                  // Special case - empty intervals ex: (100-99)
                 brokenUpIntervals.add(interval);
             }
         }
@@ -317,7 +337,8 @@ public class IntervalList implements Iterable<Interval> {
      *
      * ex: if the interval is (7200-9300) and the bandMultiple is 1000, the interval will be split into:
      * (7200-7999, 8000-8999, 9000-9300)
-     * @param interval an Interval
+     *
+     * @param interval     an Interval
      * @param bandMultiple integer value (> 0) to break up intervals in the list at integer multiples of
      * @return list of intervals that are broken up
      */
@@ -329,7 +350,7 @@ public class IntervalList implements Iterable<Interval> {
         int startIndex = startOfIntervalIndex;
         final int endIndex = interval.getEnd() / bandMultiple;
         while (startIndex <= endIndex) {
-            int endPos = (startIndex + 1) * bandMultiple -1;
+            int endPos = (startIndex + 1) * bandMultiple - 1;
             if (endPos > interval.getEnd()) {
                 endPos = interval.getEnd();
             }
@@ -341,50 +362,61 @@ public class IntervalList implements Iterable<Interval> {
         return brokenUpIntervals;
     }
 
-
-    /** Merges a sorted collection of intervals and optionally concatenates unique names or takes the first name. */
+    /**
+     * Merges a sorted collection of intervals and optionally concatenates unique names or takes the first name.
+     */
     static Interval merge(final SortedSet<Interval> intervals, final boolean concatenateNames) {
         final String chrom = intervals.first().getContig();
         int start = intervals.first().getStart();
-        int end   = intervals.last().getEnd();
-        final boolean neg  = intervals.first().isNegativeStrand();
+        int end = intervals.last().getEnd();
+        final boolean neg = intervals.first().isNegativeStrand();
         final LinkedHashSet<String> names = new LinkedHashSet<String>();
         final String name;
 
         for (final Interval i : intervals) {
-            if (i.getName() != null) names.add(i.getName());
+            if (i.getName() != null) {
+                names.add(i.getName());
+            }
             start = Math.min(start, i.getStart());
-            end   = Math.max(end, i.getEnd());
+            end = Math.max(end, i.getEnd());
         }
 
-        if (names.isEmpty()) name = null;
-        else if (concatenateNames) name = StringUtil.join("|", names);
-        else name = names.iterator().next();
+        if (names.isEmpty()) {
+            name = null;
+        } else if (concatenateNames) {
+            name = StringUtil.join("|", names);
+        } else {
+            name = names.iterator().next();
+        }
 
         return new Interval(chrom, start, end, neg, name);
     }
 
-    /** Gets the (potentially redundant) sum of the length of the intervals in the list. */
+    /**
+     * Gets the (potentially redundant) sum of the length of the intervals in the list.
+     */
     public long getBaseCount() {
         return Interval.countBases(this.intervals);
     }
 
-    /** Gets the count of unique bases represented by the intervals in the list. */
+    /**
+     * Gets the count of unique bases represented by the intervals in the list.
+     */
     public long getUniqueBaseCount() {
         return uniqued().getBaseCount();
     }
 
-    /** Returns the count of intervals in the list. */
+    /**
+     * Returns the count of intervals in the list.
+     */
     public int size() {
         return this.intervals.size();
     }
 
-    /** creates a independent copy of the given IntervalList
-     *
-     * @param list
-     * @return
+    /**
+     * creates a independent copy of the given IntervalList
      */
-    public static IntervalList copyOf(final IntervalList list){
+    public static IntervalList copyOf(final IntervalList list) {
         final IntervalList clone = new IntervalList(list.header.clone());
         clone.intervals.addAll(list.intervals);
         return clone;
@@ -392,6 +424,7 @@ public class IntervalList implements Iterable<Interval> {
 
     /**
      * Parses an interval list from a file.
+     *
      * @param file the file containing the intervals
      * @return an IntervalList object that contains the headers and intervals from the file
      */
@@ -418,7 +451,8 @@ public class IntervalList implements Iterable<Interval> {
 
     /**
      * Creates an IntervalList from the given sequence name
-     * @param header header to use to create IntervalList
+     *
+     * @param header       header to use to create IntervalList
      * @param sequenceName name of sequence in header
      * @return a new intervalList with given header that contains the reference name
      */
@@ -442,8 +476,10 @@ public class IntervalList implements Iterable<Interval> {
 
     /**
      * Parses an interval list from a reader in a stream based fashion.
+     *
      * @param in a BufferedReader that can be read from
      * @return an IntervalList object that contains the headers and intervals from the file
+     * @throws IllegalArgumentException if start or end are less than 1 or greater than the length of the sequence
      */
     public static IntervalList fromReader(final BufferedReader in) {
         try {
@@ -454,8 +490,7 @@ public class IntervalList implements Iterable<Interval> {
             while ((line = in.readLine()) != null) {
                 if (line.startsWith("@")) {
                     builder.append(line).append('\n');
-                }
-                else {
+                } else {
                     break;
                 }
             }
@@ -470,12 +505,16 @@ public class IntervalList implements Iterable<Interval> {
             final SAMSequenceDictionary dict = list.getHeader().getSequenceDictionary();
 
             //there might not be any lines after the header, in which case we should return an empty list
-            if(line == null) return list;
+            if (line == null) {
+                return list;
+            }
 
             // Then read in the intervals
             final FormatUtil format = new FormatUtil();
             do {
-                if (line.trim().isEmpty()) continue; // skip over blank lines
+                if (line.trim().isEmpty()) {
+                    continue; // skip over blank lines
+                }
 
                 // Make sure we have the right number of fields
                 final String[] fields = line.split("\t");
@@ -497,7 +536,8 @@ public class IntervalList implements Iterable<Interval> {
                 final String name = fields[4];
 
                 final Interval interval = new Interval(seq, start, end, negative, name);
-                if (dict.getSequence(seq) == null) {
+                final SAMSequenceRecord sequence = dict.getSequence(seq);
+                if (sequence == null) {
                     log.warn("Ignoring interval for unknown reference: " + interval);
                 }
                 else {
@@ -507,17 +547,18 @@ public class IntervalList implements Iterable<Interval> {
             while ((line = in.readLine()) != null);
 
             return list;
-        }
-        catch (final IOException ioe) {
+        } catch (final IOException ioe) {
             throw new SAMException("Error parsing interval list.", ioe);
-        }
-        finally {
-            try { in.close(); } catch (final Exception e) { /* do nothing */ }
+        } finally {
+            try {
+                in.close();
+            } catch (final Exception e) { /* do nothing */ }
         }
     }
 
     /**
      * Writes out the list of intervals to the supplied file.
+     *
      * @param file a file to write to.  If exists it will be overwritten.
      */
     public void write(final File file) {
@@ -598,15 +639,13 @@ public class IntervalList implements Iterable<Interval> {
      * @return the intersection of all the IntervalLists in lists.
      */
 
-
     public static IntervalList intersection(final Collection<IntervalList> lists) {
 
         IntervalList intersection = null;
         for (final IntervalList list : lists) {
-            if(intersection == null){
+            if (intersection == null) {
                 intersection = list;
-            }
-            else{
+            } else {
                 intersection = intersection(intersection, list);
             }
         }
@@ -621,7 +660,7 @@ public class IntervalList implements Iterable<Interval> {
      * @return the union of all the IntervalLists in lists.
      */
     public static IntervalList concatenate(final Collection<IntervalList> lists) {
-        if(lists.isEmpty()){
+        if (lists.isEmpty()) {
             throw new SAMException("Cannot concatenate an empty list of IntervalLists.");
         }
 
@@ -658,7 +697,8 @@ public class IntervalList implements Iterable<Interval> {
         return IntervalList.union(duo);
     }
 
-    /** inverts an IntervalList and returns one that has exactly all the bases in the dictionary that the original one does not.
+    /**
+     * inverts an IntervalList and returns one that has exactly all the bases in the dictionary that the original one does not.
      *
      * @param list an IntervalList
      * @return an IntervalList that is complementary to list
@@ -666,11 +706,11 @@ public class IntervalList implements Iterable<Interval> {
     public static IntervalList invert(final IntervalList list) {
         final IntervalList inverse = new IntervalList(list.header.clone());
 
-        final ListMap<Integer,Interval> map = new ListMap<Integer,Interval>();
+        final ListMap<Integer, Interval> map = new ListMap<Integer, Interval>();
 
         //add all the intervals (uniqued and therefore also sorted) to a ListMap from sequenceIndex to a list of Intervals
-        for(final Interval i : list.uniqued().getIntervals()){
-            map.add(list.getHeader().getSequenceIndex(i.getContig()),i);
+        for (final Interval i : list.uniqued().getIntervals()) {
+            map.add(list.getHeader().getSequenceIndex(i.getContig()), i);
         }
 
         // a counter to supply newly-created intervals with a name
@@ -679,21 +719,27 @@ public class IntervalList implements Iterable<Interval> {
         //iterate over the contigs in the dictionary
         for (final SAMSequenceRecord samSequenceRecord : list.getHeader().getSequenceDictionary().getSequences()) {
             final Integer sequenceIndex = samSequenceRecord.getSequenceIndex();
-            final String sequenceName   = samSequenceRecord.getSequenceName();
-            final int sequenceLength    = samSequenceRecord.getSequenceLength();
+            final String sequenceName = samSequenceRecord.getSequenceName();
+            final int sequenceLength = samSequenceRecord.getSequenceLength();
 
             Integer lastCoveredPosition = 0; //start at beginning of sequence
             //iterate over list of intervals that are in sequence
             if (map.containsKey(sequenceIndex)) // if there are intervals in the ListMap on this contig, iterate over them (in order)
+            {
                 for (final Interval i : map.get(sequenceIndex)) {
                     if (i.getStart() > lastCoveredPosition + 1) //if there's space between the last interval and the current one, add an interval between them
+                    {
                         inverse.add(new Interval(sequenceName, lastCoveredPosition + 1, i.getStart() - 1, false, "interval-" + (++intervals)));
+                    }
                     lastCoveredPosition = i.getEnd(); //update the last covered position
                 }
+            }
             //finally, if there's room between the last covered position and the end of the sequence, add an interval
             if (sequenceLength > lastCoveredPosition) //if there's space between the last interval and the next
-                // one, add an interval. This also covers the case that there are no intervals in the ListMap for a contig.
+            // one, add an interval. This also covers the case that there are no intervals in the ListMap for a contig.
+            {
                 inverse.add(new Interval(sequenceName, lastCoveredPosition + 1, sequenceLength, false, "interval-" + (++intervals)));
+            }
         }
 
         return inverse;
@@ -762,7 +808,7 @@ public class IntervalList implements Iterable<Interval> {
      * overlap with any interval in the second lists.
      */
     public static IntervalList overlaps(final Collection<IntervalList> lists1, final Collection<IntervalList> lists2) {
-        if(lists1.isEmpty()){
+        if (lists1.isEmpty()) {
             throw new SAMException("Cannot call overlaps with the first collection having empty list of IntervalLists.");
         }
 
@@ -799,8 +845,12 @@ public class IntervalList implements Iterable<Interval> {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final IntervalList intervals1 = (IntervalList) o;
 
@@ -824,7 +874,9 @@ class IntervalCoordinateComparator implements Comparator<Interval>, Serializable
 
     private final SAMFileHeader header;
 
-    /** Constructs a comparator using the supplied sequence header. */
+    /**
+     * Constructs a comparator using the supplied sequence header.
+     */
     IntervalCoordinateComparator(final SAMFileHeader header) {
         this.header = header;
     }
@@ -835,20 +887,29 @@ class IntervalCoordinateComparator implements Comparator<Interval>, Serializable
         final int rhsIndex = this.header.getSequenceIndex(rhs.getContig());
         int retval = lhsIndex - rhsIndex;
 
-        if (retval == 0) retval = lhs.getStart() - rhs.getStart();
-        if (retval == 0) retval = lhs.getEnd()   - rhs.getEnd();
         if (retval == 0) {
-            if (lhs.isPositiveStrand() && rhs.isNegativeStrand()) retval = -1;
-            else if (lhs.isNegativeStrand() && rhs.isPositiveStrand()) retval = 1;
+            retval = lhs.getStart() - rhs.getStart();
+        }
+        if (retval == 0) {
+            retval = lhs.getEnd() - rhs.getEnd();
+        }
+        if (retval == 0) {
+            if (lhs.isPositiveStrand() && rhs.isNegativeStrand()) {
+                retval = -1;
+            } else if (lhs.isNegativeStrand() && rhs.isPositiveStrand()) {
+                retval = 1;
+            }
         }
         if (retval == 0) {
             if (lhs.getName() == null) {
-                if (rhs.getName() == null) return 0;
-                else return -1;
+                if (rhs.getName() == null) {
+                    return 0;
+                } else {
+                    return -1;
+                }
             } else if (rhs.getName() == null) {
                 return 1;
-            }
-            else {
+            } else {
                 return lhs.getName().compareTo(rhs.getName());
             }
         }
