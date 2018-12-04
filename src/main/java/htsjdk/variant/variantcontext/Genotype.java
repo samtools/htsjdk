@@ -202,28 +202,28 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         }
 
         boolean sawNoCall = false, sawMultipleAlleles = false;
-        Allele firstAllele = null;
+        Allele firstCallAllele = null;
 
         for ( int i = 0; i < alleles.size(); i++ ) {
             final Allele allele = alleles.get(i);
             if ( allele.isNoCall() ) {
                 sawNoCall = true;
-            } else if ( firstAllele == null ) {
-                firstAllele = allele;
-            } else if ( !allele.equals(firstAllele) )
+            } else if ( firstCallAllele == null ) {
+                firstCallAllele = allele;
+            } else if ( !allele.equals(firstCallAllele) )
                 sawMultipleAlleles = true;
         }
 
         if ( sawNoCall ) {
-            if ( firstAllele == null )
+            if ( firstCallAllele == null )
                 return GenotypeType.NO_CALL;
             return GenotypeType.MIXED;
         }
 
-        if ( firstAllele == null )
+        if ( firstCallAllele == null )
             throw new IllegalStateException("BUG: there are no alleles present in this genotype but the alleles list is not null");
 
-        return sawMultipleAlleles ? GenotypeType.HET : firstAllele.isReference() ? GenotypeType.HOM_REF : GenotypeType.HOM_VAR;
+        return sawMultipleAlleles ? GenotypeType.HET : firstCallAllele.isReference() ? GenotypeType.HOM_REF : GenotypeType.HOM_VAR;
     }
 
     /**

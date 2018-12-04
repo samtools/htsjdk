@@ -1353,8 +1353,11 @@ public class VariantContext implements Feature, Serializable {
         if ( this.genotypes == null ) throw new IllegalStateException("Genotypes is null");
 
         for ( int i = 0; i < genotypes.size(); i++ ) {
-            if ( genotypes.get(i).isAvailable() ) {
-                for ( Allele gAllele : genotypes.get(i).getAlleles() ) {
+            Genotype genotype = genotypes.get(i);
+            if ( genotype.isAvailable() ) {
+                final List<Allele> alleles = genotype.getAlleles();
+                for ( int j = 0; j < alleles.size(); j++ ) {
+                    final Allele gAllele = alleles.get(j);
                     if ( ! hasAllele(gAllele) && gAllele.isCalled() )
                         throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
                 }
@@ -1698,7 +1701,8 @@ public class VariantContext implements Feature, Serializable {
     }
 
     public static boolean hasSymbolicAlleles( final List<Allele> alleles ) {
-        for (int i = 0; i < alleles.size(); i++ ) {
+        int size = alleles.size();
+        for (int i = 0; i < size; i++ ) {
             if (alleles.get(i).isSymbolic()) {
                 return true;
             }
