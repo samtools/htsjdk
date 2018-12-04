@@ -33,16 +33,16 @@ public class BlockTest extends HtsjdkTest {
     public void uncompressedTest() {
         final byte[] testData = "TEST STRING".getBytes();
 
-        final FileHeaderBlock fhBlock = Block.uncompressedFileHeaderBlock(testData);
+        final Block fhBlock = Block.uncompressedFileHeaderBlock(testData);
         contentCheck(fhBlock, testData, testData);
 
-        final CompressionHeaderBlock chBlock = Block.uncompressedCompressionHeaderBlock(testData);
+        final Block chBlock = Block.uncompressedCompressionHeaderBlock(testData);
         contentCheck(chBlock, testData, testData);
 
-        final SliceHeaderBlock shBlock = Block.uncompressedSliceHeaderBlock(testData);
+        final Block shBlock = Block.uncompressedSliceHeaderBlock(testData);
         contentCheck(shBlock, testData, testData);
 
-        final CoreDataBlock core = Block.uncompressedCoreBlock(testData);
+        final Block core = Block.uncompressedCoreBlock(testData);
         contentCheck(core, testData, testData);
     }
 

@@ -6,8 +6,8 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
-import htsjdk.samtools.cram.structure.block.CompressionHeaderBlock;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 import org.apache.commons.compress.utils.CountingOutputStream;
 
 import java.io.ByteArrayInputStream;
@@ -81,7 +81,7 @@ public class ContainerIO {
             return container;
         }
 
-        container.header = CompressionHeaderBlock.readAsCompressionHeader(major, inputStream);
+        container.header = readAsCompressionHeader(major, inputStream);
 
         howManySlices = Math.min(container.landmarks.length, howManySlices);
 
@@ -164,7 +164,7 @@ public class ContainerIO {
 
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
 
-        final CompressionHeaderBlock block = Block.uncompressedCompressionHeaderBlock(container.header.toByteArray());
+        final Block block = Block.uncompressedCompressionHeaderBlock(container.header.toByteArray());
         block.write(version.major, byteArrayOutputStream);
         container.blockCount = 1;
 
@@ -216,5 +216,22 @@ public class ContainerIO {
         }
 
         return countingOutputStream.getBytesWritten();
+    }
+
+    /**
+     * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader
+     *
+     * @param major the CRAM major version number
+     * @param inputStream the stream to read from
+     * @return a new CompressionHeader from the input
+     */
+    private static CompressionHeader readAsCompressionHeader(final int major, final InputStream inputStream) {
+        final Block block = Block.read(major, inputStream);
+        if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
+            throw new RuntimeIOException("Content type does not match: " + block.getContentType().name());
+
+        final CompressionHeader header = new CompressionHeader();
+        header.read(block.getUncompressedContent());
+        return header;
     }
 }

@@ -4,8 +4,6 @@ package htsjdk.samtools.cram.structure.block;
  * A Block used by Slices to store data externally
  */
 public class ExternalDataBlock extends Block {
-    private static final BlockContentType type = BlockContentType.EXTERNAL;
-
     private final int contentId;
 
     /**
@@ -21,7 +19,7 @@ public class ExternalDataBlock extends Block {
                       final byte[] compressedContent,
                       final int uncompressedLength,
                       final int contentId) {
-        super(method, type, compressedContent, uncompressedLength);
+        super(method, BlockContentType.EXTERNAL, compressedContent, uncompressedLength);
         this.contentId = contentId;
     }
 

@@ -35,7 +35,7 @@ import java.util.Arrays;
  * methods, for example to read a block from an input stream. Blocks can be written out to an output stream, this may be considered as a way
  * to serialize/deserialize blocks.
  */
-public abstract class Block {
+public class Block {
     /**
      * Only external blocks have meaningful Content IDs
      * Other blocks are required to have a Content ID of 0
@@ -63,7 +63,7 @@ public abstract class Block {
     private final int uncompressedLength;
 
     /**
-     * Abstract constructor of a generic Block, to be called by subclasses.
+     * Private constructor of a generic Block, to be called by static factory methods and subclasses.
      *
      * @param method the block compression method.  Can be RAW, if uncompressed
      * @param type whether this is a header or data block, and which kind
@@ -95,10 +95,10 @@ public abstract class Block {
      * The block will have RAW (no) compression and FILE_HEADER content type.
      *
      * @param rawContent the uncompressed content of the block
-     * @return a new {@link FileHeaderBlock} object
+     * @return a new {@link Block} object
      */
-    public static FileHeaderBlock uncompressedFileHeaderBlock(final byte[] rawContent) {
-        return new FileHeaderBlock(BlockCompressionMethod.RAW, rawContent, rawContent.length);
+    public static Block uncompressedFileHeaderBlock(final byte[] rawContent) {
+        return new Block(BlockCompressionMethod.RAW, BlockContentType.FILE_HEADER, rawContent, rawContent.length);
     }
 
     /**
@@ -106,10 +106,10 @@ public abstract class Block {
      * The block will have RAW (no) compression and COMPRESSION_HEADER content type.
      *
      * @param rawContent the uncompressed content of the block
-     * @return a new {@link CompressionHeaderBlock} object
+     * @return a new {@link Block} object
      */
-    public static CompressionHeaderBlock uncompressedCompressionHeaderBlock(final byte[] rawContent) {
-        return new CompressionHeaderBlock(BlockCompressionMethod.RAW, rawContent, rawContent.length);
+    public static Block uncompressedCompressionHeaderBlock(final byte[] rawContent) {
+        return new Block(BlockCompressionMethod.RAW, BlockContentType.COMPRESSION_HEADER, rawContent, rawContent.length);
     }
 
     /**
@@ -117,10 +117,10 @@ public abstract class Block {
      * The block will have RAW (no) compression and MAPPED_SLICE content type.
      *
      * @param rawContent the uncompressed content of the block
-     * @return a new {@link SliceHeaderBlock} object
+     * @return a new {@link Block} object
      */
-    public static SliceHeaderBlock uncompressedSliceHeaderBlock(final byte[] rawContent) {
-        return new SliceHeaderBlock(BlockCompressionMethod.RAW, rawContent, rawContent.length);
+    public static Block uncompressedSliceHeaderBlock(final byte[] rawContent) {
+        return new Block(BlockCompressionMethod.RAW, BlockContentType.MAPPED_SLICE, rawContent, rawContent.length);
     }
 
     /**
@@ -128,10 +128,10 @@ public abstract class Block {
      * The block will have RAW (no) compression and CORE content type.
      *
      * @param rawContent the uncompressed content of the block
-     * @return a new {@link CoreDataBlock} object
+     * @return a new {@link Block} object
      */
-    public static CoreDataBlock uncompressedCoreBlock(final byte[] rawContent) {
-        return new CoreDataBlock(BlockCompressionMethod.RAW, rawContent, rawContent.length);
+    public static Block uncompressedCoreBlock(final byte[] rawContent) {
+        return new Block(BlockCompressionMethod.RAW, BlockContentType.CORE, rawContent, rawContent.length);
     }
 
     /**
@@ -233,19 +233,10 @@ public abstract class Block {
                 }
             }
 
-            switch (type) {
-                case FILE_HEADER:
-                    return new FileHeaderBlock(method, compressedContent, uncompressedSize);
-                case COMPRESSION_HEADER:
-                    return new CompressionHeaderBlock(method, compressedContent, uncompressedSize);
-                case MAPPED_SLICE:
-                    return new SliceHeaderBlock(method, compressedContent, uncompressedSize);
-                case EXTERNAL:
-                    return new ExternalDataBlock(method, compressedContent, uncompressedSize, contentId);
-                case CORE:
-                    return new CoreDataBlock(method, compressedContent, uncompressedSize);
-                default:
-                    throw new CRAMException("Unknown BlockContentType " + type.name());
+            if (type == BlockContentType.EXTERNAL) {
+                return new ExternalDataBlock(method, compressedContent, uncompressedSize, contentId);
+            } else {
+                return new Block(method, type, compressedContent, uncompressedSize);
             }
         }
         catch (final IOException e) {
@@ -258,7 +249,6 @@ public abstract class Block {
      *
      * @param major CRAM version major number
      * @param outputStream    output stream to write to
-     * @throws IOException as per java IO contract
      */
     public final void write(final int major, final OutputStream outputStream) {
         try {
