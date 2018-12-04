@@ -822,8 +822,9 @@ public class VariantContext implements Feature, Serializable {
             return true;
 
         final List<Allele> allelesToConsider = considerRefAllele ? getAlleles() : getAlternateAlleles();
-        for ( Allele a : allelesToConsider ) {
-            if ( a.equals(allele, ignoreRefState) )
+        for (int i = 0, allelesToConsiderSize = allelesToConsider.size(); i < allelesToConsiderSize; i++) {
+            Allele anAllelesToConsider = allelesToConsider.get(i);
+            if (anAllelesToConsider.equals(allele, ignoreRefState))
                 return true;
         }
 
@@ -1352,9 +1353,12 @@ public class VariantContext implements Feature, Serializable {
     private void validateGenotypes() {
         if ( this.genotypes == null ) throw new IllegalStateException("Genotypes is null");
 
-        for ( final Genotype g : this.genotypes ) {
-            if ( g.isAvailable() ) {
-                for ( Allele gAllele : g.getAlleles() ) {
+        for ( int i = 0; i < genotypes.size(); i++ ) {
+            Genotype genotype = genotypes.get(i);
+            if ( genotype.isAvailable() ) {
+                final List<Allele> alleles = genotype.getAlleles();
+                for ( int j = 0, size = alleles.size(); j < size; j++ ) {
+                    final Allele gAllele = alleles.get(j);
                     if ( ! hasAllele(gAllele) && gAllele.isCalled() )
                         throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
                 }
@@ -1484,9 +1488,10 @@ public class VariantContext implements Feature, Serializable {
 
         boolean sawRef = false;
         for ( final Allele a : alleles ) {
-            for ( final Allele b : alleleList ) {
-                if ( a.equals(b, true) )
+            for (int i = 0, alleleListSize = alleleList.size(); i < alleleListSize; i++) {
+                if (a.equals(alleleList.get(i), true)) {
                     throw new IllegalArgumentException("Duplicate allele added to VariantContext: " + a);
+                }
             }
 
             // deal with the case where the first allele isn't the reference
@@ -1696,8 +1701,13 @@ public class VariantContext implements Feature, Serializable {
         return hasSymbolicAlleles(getAlleles());
     }
 
-    public static boolean hasSymbolicAlleles(final List<Allele> alleles) {
-        return alleles.stream().anyMatch(Allele::isSymbolic);
+    public static boolean hasSymbolicAlleles( final List<Allele> alleles ) {
+        for (int i = 0, size = alleles.size(); i < size; i++ ) {
+            if (alleles.get(i).isSymbolic()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Allele getAltAlleleWithHighestAlleleCount() {
