@@ -75,7 +75,7 @@ public class CompressionHeader {
     static CompressionHeader readFromBlock(final int major, final InputStream blockStream) {
         final Block block = Block.read(major, blockStream);
         if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
-            throw new RuntimeIOException("Content type does not match: " + block.getContentType().name());
+            throw new RuntimeIOException("Compression Header Block expected, found: " + block.getContentType().name());
 
         final CompressionHeader header = new CompressionHeader();
         header.read(block.getUncompressedContent());

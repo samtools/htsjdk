@@ -40,7 +40,7 @@ class SliceIO {
     private static void readSliceHeader(final int major, final Slice slice, final InputStream readInputStream) throws IOException {
         slice.headerBlock = Block.read(major, readInputStream);
         if (slice.headerBlock.getContentType() != BlockContentType.MAPPED_SLICE)
-            throw new RuntimeException("Content type does not match: " + slice.headerBlock.getContentType().name());
+            throw new RuntimeException("Slice Header Block expected, found:  " + slice.headerBlock.getContentType().name());
 
         final InputStream parseInputStream = new ByteArrayInputStream(slice.headerBlock.getUncompressedContent());
 
