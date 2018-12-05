@@ -74,7 +74,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     // These are the chars matched by \\s.
     private static final char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
 
-    private static Pattern ILLEGAL_RNAME_CHARS = Pattern.compile("[\\\\,\"\'`()<>{}\\]\\[]");
+    private static Pattern LEGAL_RNAME_PATTERN = Pattern.compile("[0-9A-Za-z!#$%&+./:;?@^_|~-][0-9A-Za-z!#$%&*+./:;=?@^_|~-]*");
 
     /**
      * @deprecated Use {@link #SAMSequenceRecord(String, int)} instead.
@@ -87,8 +87,8 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     public SAMSequenceRecord(final String name, final int sequenceLength) {
         if (name != null) {
-            if (SEQUENCE_NAME_SPLITTER.matcher(name).find() || ILLEGAL_RNAME_CHARS.matcher(name).find()) {
-                throw new SAMException("Sequence name contains invalid character: " + name);
+            if (!LEGAL_RNAME_PATTERN.matcher(name).useAnchoringBounds(true).matches()) {
+                throw new SAMException(String.format("Sequence name '%s' doesn't match regex: '%s' ", name, LEGAL_RNAME_PATTERN));
             }
             validateSequenceName(name);
             mSequenceName = name.intern();

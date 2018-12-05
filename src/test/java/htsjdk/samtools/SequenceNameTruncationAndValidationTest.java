@@ -43,7 +43,7 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
     @Test(expectedExceptions = {SAMException.class}, dataProvider = "badSequenceNames")
     public void testSequenceRecordThrowsWhenInvalid(final String sequenceName) {
         new SAMSequenceRecord(sequenceName, 123);
-        Assert.fail("Should not reach here.");
+        Assert.fail("Should not reach here. Sequence " + sequenceName + " should have failed.");
     }
 
     @DataProvider(name = "badSequenceNames")
@@ -53,7 +53,13 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
                 {"\t"},
                 {"\n"},
                 {"="},
-                {"Hi, Mom!"}
+                {"Hi: Mom!"},
+                {"=Hi:Mom!"},
+                {"Hi:'Mom!"},
+                {"Hi:\"Mom!"},
+                {"Hi:)Mom!"},
+                {"Hi:(Mom!"},
+                {"Hi,@Mom!"}
         };
     }
 
@@ -65,7 +71,8 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
     @DataProvider(name = "goodSequenceNames")
     public Object[][] goodSequenceNames() {
         return new Object[][]{
-                {"Hi,@Mom!"}
+                {"Hi:@Mom!"},
+                {"Hi:=Mom!"}
         };
     }
 
