@@ -20,7 +20,6 @@ package htsjdk.samtools.cram.structure.block;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.ExternalCompression;
-import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.*;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -45,7 +44,7 @@ public class Block {
     /**
      * Compression method that applied to this block's content.
      */
-    private final BlockCompressionMethod method;
+    private final BlockCompressionMethod compressionMethod;
 
     /**
      * Identifies CRAM content type of the block.
@@ -65,17 +64,17 @@ public class Block {
     /**
      * Private constructor of a generic Block, to be called by static factory methods and subclasses.
      *
-     * @param method the block compression method.  Can be RAW, if uncompressed
-     * @param type whether this is a header or data block, and which kind
+     * @param compressionMethod the block compression method.  Can be RAW, if uncompressed
+     * @param contentType whether this is a header or data block, and which kind
      * @param compressedContent the compressed form of the data to be stored in this block
      * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
-    protected Block(final BlockCompressionMethod method,
-                    final BlockContentType type,
+    protected Block(final BlockCompressionMethod compressionMethod,
+                    final BlockContentType contentType,
                     final byte[] compressedContent,
                     final int uncompressedLength) {
-        this.method = method;
-        this.contentType = type;
+        this.compressionMethod = compressionMethod;
+        this.contentType = contentType;
         this.compressedContent = compressedContent;
         this.uncompressedLength = uncompressedLength;
 
@@ -84,7 +83,7 @@ public class Block {
 //            throw new CRAMException("Valid Content ID required for external blocks.");
 //        }
 
-        if (type != BlockContentType.EXTERNAL && getContentId() != Block.NO_CONTENT_ID) {
+        if (contentType != BlockContentType.EXTERNAL && getContentId() != Block.NO_CONTENT_ID) {
             throw new CRAMException("Cannot set a Content ID for non-external blocks.");
         }
 
@@ -134,8 +133,8 @@ public class Block {
         return new Block(BlockCompressionMethod.RAW, BlockContentType.CORE, rawContent, rawContent.length);
     }
 
-    public final BlockCompressionMethod getMethod() {
-        return method;
+    public final BlockCompressionMethod getCompressionMethod() {
+        return compressionMethod;
     }
 
     /**
@@ -158,7 +157,7 @@ public class Block {
     }
 
     public final byte[] getUncompressedContent() {
-        final byte[] uncompressedContent = ExternalCompression.uncompress(method, compressedContent);
+        final byte[] uncompressedContent = ExternalCompression.uncompress(compressionMethod, compressedContent);
         if (uncompressedContent.length != uncompressedLength) {
             throw new CRAMException(String.format("Block uncompressed length did not match expected length: %04x vs %04x", uncompressedLength, uncompressedContent.length));
         }
@@ -227,10 +226,11 @@ public class Block {
     }
 
     /**
-     * Write the block out to the the specified {@link OutputStream}. The method is parameterized with CRAM major version number.
+     * Write the block out to the the specified {@link OutputStream}.
+     * The method is parameterized with the CRAM major version number.
      *
      * @param major CRAM version major number
-     * @param outputStream    output stream to write to
+     * @param outputStream output stream to write to
      */
     public final void write(final int major, final OutputStream outputStream) {
         try {
@@ -248,7 +248,7 @@ public class Block {
     }
 
     private void doWrite(final OutputStream outputStream) throws IOException {
-        outputStream.write(getMethod().getMethodId());
+        outputStream.write(getCompressionMethod().getMethodId());
         outputStream.write(getContentType().getContentTypeId());
 
         ITF8.writeUnsignedITF8(getContentId(), outputStream);
@@ -266,7 +266,8 @@ public class Block {
         final String raw = Arrays.toString(Arrays.copyOf(uncompressed, Math.min(5, uncompressed.length)));
         final String comp = Arrays.toString(Arrays.copyOf(compressed, Math.min(5, compressed.length)));
 
-        return String.format("method=%s, type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s, comp=%s.", getMethod().name(),
-                getContentType().name(), getContentId(), getUncompressedContentSize(), getCompressedContentSize(), raw, comp);
+        return String.format("compression method=%s, content type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s, comp=%s.",
+                getCompressionMethod().name(), getContentType().name(), getContentId(),
+                getUncompressedContentSize(), getCompressedContentSize(), raw, comp);
     }
 }
