@@ -54,7 +54,7 @@ public class Block {
     /**
      * The content stored in this block, in compressed form (if applicable)
      */
-    protected final byte[] compressedContent;
+    private final byte[] compressedContent;
 
     /**
      * The length of the content stored in this block when uncompressed
@@ -86,7 +86,18 @@ public class Block {
         if (contentType != BlockContentType.EXTERNAL && getContentId() != Block.NO_CONTENT_ID) {
             throw new CRAMException("Cannot set a Content ID for non-external blocks.");
         }
+    }
 
+    /**
+     * Private constructor of a generic Block, to be called by static factory methods and subclasses.
+     * Creates RAW blocks only.
+     *
+     * @param contentType whether this is a header or data block, and which kind
+     * @param rawContent the raw data to be stored in this block
+     */
+    protected Block(final BlockContentType contentType,
+                    final byte[] rawContent) {
+        this(BlockCompressionMethod.RAW, contentType, rawContent, rawContent.length);
     }
 
     /**
@@ -97,7 +108,7 @@ public class Block {
      * @return a new {@link Block} object
      */
     public static Block createRawFileHeaderBlock(final byte[] rawContent) {
-        return new Block(BlockCompressionMethod.RAW, BlockContentType.FILE_HEADER, rawContent, rawContent.length);
+        return new Block(BlockContentType.FILE_HEADER, rawContent);
     }
 
     /**
@@ -108,7 +119,7 @@ public class Block {
      * @return a new {@link Block} object
      */
     public static Block createRawCompressionHeaderBlock(final byte[] rawContent) {
-        return new Block(BlockCompressionMethod.RAW, BlockContentType.COMPRESSION_HEADER, rawContent, rawContent.length);
+        return new Block(BlockContentType.COMPRESSION_HEADER, rawContent);
     }
 
     /**
@@ -119,7 +130,7 @@ public class Block {
      * @return a new {@link Block} object
      */
     public static Block createRawSliceHeaderBlock(final byte[] rawContent) {
-        return new Block(BlockCompressionMethod.RAW, BlockContentType.MAPPED_SLICE, rawContent, rawContent.length);
+        return new Block(BlockContentType.MAPPED_SLICE, rawContent);
     }
 
     /**
@@ -130,7 +141,7 @@ public class Block {
      * @return a new {@link Block} object
      */
     public static Block createRawCoreDataBlock(final byte[] rawContent) {
-        return new Block(BlockCompressionMethod.RAW, BlockContentType.CORE, rawContent, rawContent.length);
+        return new Block(BlockContentType.CORE, rawContent);
     }
 
     public final BlockCompressionMethod getCompressionMethod() {
