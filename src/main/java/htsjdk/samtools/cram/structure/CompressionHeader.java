@@ -20,7 +20,10 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -61,8 +64,22 @@ public class CompressionHeader {
     public CompressionHeader() {
     }
 
-    private CompressionHeader(final InputStream inputStream) throws IOException {
-        read(inputStream);
+    /**
+     * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader
+     * We do this instead of reading the InputStream directly because the Block content may be compressed
+     *
+     * @param major the CRAM major version number
+     * @param blockStream the stream to read from
+     * @return a new CompressionHeader from the input
+     */
+    static CompressionHeader readFromBlock(final int major, final InputStream blockStream) {
+        final Block block = Block.read(major, blockStream);
+        if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
+            throw new RuntimeIOException("Content type does not match: " + block.getContentType().name());
+
+        final CompressionHeader header = new CompressionHeader();
+        header.read(block.getUncompressedContent());
+        return header;
     }
 
     private byte[][][] parseDictionary(final byte[] bytes) {

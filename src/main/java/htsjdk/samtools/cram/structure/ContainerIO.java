@@ -7,8 +7,6 @@ import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeIOException;
-import org.apache.commons.compress.utils.CountingOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -81,7 +79,7 @@ public class ContainerIO {
             return container;
         }
 
-        container.header = readAsCompressionHeader(major, inputStream);
+        container.header = CompressionHeader.readFromBlock(major, inputStream);
 
         howManySlices = Math.min(container.landmarks.length, howManySlices);
 
@@ -192,23 +190,5 @@ public class ContainerIO {
         log.debug("CONTAINER WRITTEN: " + container.toString());
 
         return length;
-    }
-
-
-    /**
-     * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader
-     *
-     * @param major the CRAM major version number
-     * @param inputStream the stream to read from
-     * @return a new CompressionHeader from the input
-     */
-    private static CompressionHeader readAsCompressionHeader(final int major, final InputStream inputStream) {
-        final Block block = Block.read(major, inputStream);
-        if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
-            throw new RuntimeIOException("Content type does not match: " + block.getContentType().name());
-
-        final CompressionHeader header = new CompressionHeader();
-        header.read(block.getUncompressedContent());
-        return header;
     }
 }
