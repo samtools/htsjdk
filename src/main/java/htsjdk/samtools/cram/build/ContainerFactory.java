@@ -116,11 +116,11 @@ public class ContainerFactory {
 
     private static Slice buildSlice(final List<CramCompressionRecord> records,
                                     final CompressionHeader header)
-            throws IllegalArgumentException, IllegalAccessException,
+            throws IllegalArgumentException,
             IOException {
-        final Map<Integer, ByteArrayOutputStream> map = new HashMap<>();
+        final Map<Integer, ByteArrayOutputStream> externalBlockMap = new HashMap<>();
         for (final int id : header.externalIds) {
-            map.put(id, new ByteArrayOutputStream());
+            externalBlockMap.put(id, new ByteArrayOutputStream());
         }
 
         final ExposedByteArrayOutputStream bitBAOS = new ExposedByteArrayOutputStream();
@@ -166,18 +166,18 @@ public class ContainerFactory {
             slice.alignmentSpan = maxAlEnd - minAlStart + 1;
         }
 
-        final CramRecordWriter writer = new CramRecordWriter(bitOutputStream, map, header, slice.sequenceId);
+        final CramRecordWriter writer = new CramRecordWriter(bitOutputStream, externalBlockMap, header, slice.sequenceId);
         writer.writeCramCompressionRecords(records, slice.alignmentStart);
 
         bitOutputStream.close();
         slice.coreBlock = Block.createRawCoreDataBlock(bitBAOS.toByteArray());
 
         slice.external = new HashMap<>();
-        for (final Integer key : map.keySet()) {
-            final ExternalCompressor compressor = header.externalCompressors.get(key);
-            final byte[] rawData = map.get(key).toByteArray();
-            final ExternalDataBlock externalBlock = new ExternalDataBlock(key, compressor, rawData);
-            slice.external.put(key, externalBlock);
+        for (final Integer contentId : externalBlockMap.keySet()) {
+            final ExternalCompressor compressor = header.externalCompressors.get(contentId);
+            final byte[] rawData = externalBlockMap.get(contentId).toByteArray();
+            final ExternalDataBlock externalBlock = new ExternalDataBlock(contentId, compressor, rawData);
+            slice.external.put(contentId, externalBlock);
         }
 
         return slice;
