@@ -218,12 +218,6 @@ public class CompressionHeader {
         }
     }
 
-    public byte[] toByteArray() throws IOException {
-        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        write(byteArrayOutputStream);
-        return byteArrayOutputStream.toByteArray();
-    }
-
     void write(final OutputStream outputStream) throws IOException {
 
         { // preservation map:
@@ -307,4 +301,13 @@ public class CompressionHeader {
         }
     }
 
+    Block toBlock() {
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            write(os);
+            return Block.createRawCompressionHeaderBlock(os.toByteArray());
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
 }

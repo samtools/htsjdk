@@ -162,11 +162,11 @@ public class ContainerIO {
 
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
 
-        final Block block = Block.createRawCompressionHeaderBlock(container.header.toByteArray());
+        final Block block = container.header.toBlock();
         block.write(version.major, byteArrayOutputStream);
         container.blockCount = 1;
 
-        final List<Integer> landmarks = new ArrayList<Integer>();
+        final List<Integer> landmarks = new ArrayList<>();
         for (int i = 0; i < container.slices.length; i++) {
             final Slice slice = container.slices[i];
             landmarks.add(byteArrayOutputStream.size());
