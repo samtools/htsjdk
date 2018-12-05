@@ -162,7 +162,7 @@ public class Block {
         if (uncompressedContent.length != uncompressedLength) {
             throw new CRAMException(String.format("Block uncompressed length did not match expected length: %04x vs %04x", uncompressedLength, uncompressedContent.length));
         }
-        return ExternalCompression.uncompress(method, compressedContent);
+        return uncompressedContent;
     }
 
     /**
