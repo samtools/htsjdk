@@ -170,7 +170,7 @@ public class ContainerFactory {
         writer.writeCramCompressionRecords(records, slice.alignmentStart);
 
         bitOutputStream.close();
-        slice.coreBlock = Block.uncompressedCoreBlock(bitBAOS.toByteArray());
+        slice.coreBlock = Block.createRawCoreDataBlock(bitBAOS.toByteArray());
 
         slice.external = new HashMap<>();
         for (final Integer key : map.keySet()) {

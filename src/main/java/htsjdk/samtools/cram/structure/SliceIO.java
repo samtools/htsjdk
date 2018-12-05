@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.ITF8;
@@ -139,7 +138,7 @@ class SliceIO {
                 slice.contentIDs[i] = id;
         }
 
-        slice.headerBlock = Block.uncompressedSliceHeaderBlock(createSliceHeaderBlockContent(major, slice));
+        slice.headerBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, slice));
         slice.headerBlock.write(major, outputStream);
 
         slice.coreBlock.write(major, outputStream);

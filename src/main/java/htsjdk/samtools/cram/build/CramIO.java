@@ -248,7 +248,7 @@ public class CramIO {
         final int length = Math.max(1024, data.length + data.length / 2);
         final byte[] blockContent = new byte[length];
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
-        final Block block = Block.uncompressedFileHeaderBlock(blockContent);
+        final Block block = Block.createRawFileHeaderBlock(blockContent);
 
         final Container container = new Container();
         container.blockCount = 1;
@@ -327,7 +327,7 @@ public class CramIO {
         final long pos = countingInputStream.getCount();
         countingInputStream.close();
 
-        final Block block = Block.uncompressedFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
+        final Block block = Block.createRawFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
         block.write(newHeader.getVersion().major, byteArrayOutputStream);
         if (byteArrayOutputStream.size() > c.containerByteSize) {

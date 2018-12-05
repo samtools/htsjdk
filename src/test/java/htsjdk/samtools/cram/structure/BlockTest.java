@@ -33,16 +33,16 @@ public class BlockTest extends HtsjdkTest {
     public void uncompressedTest() {
         final byte[] testData = "TEST STRING".getBytes();
 
-        final Block fhBlock = Block.uncompressedFileHeaderBlock(testData);
+        final Block fhBlock = Block.createRawFileHeaderBlock(testData);
         contentCheck(fhBlock, testData, testData);
 
-        final Block chBlock = Block.uncompressedCompressionHeaderBlock(testData);
+        final Block chBlock = Block.createRawCompressionHeaderBlock(testData);
         contentCheck(chBlock, testData, testData);
 
-        final Block shBlock = Block.uncompressedSliceHeaderBlock(testData);
+        final Block shBlock = Block.createRawSliceHeaderBlock(testData);
         contentCheck(shBlock, testData, testData);
 
-        final Block core = Block.uncompressedCoreBlock(testData);
+        final Block core = Block.createRawCoreDataBlock(testData);
         contentCheck(core, testData, testData);
     }
 
@@ -66,7 +66,7 @@ public class BlockTest extends HtsjdkTest {
     public void testFileHeaderBlockRoundTrips() {
         final byte[] testData = "TEST STRING".getBytes();
 
-        final Block fhBlock = Block.uncompressedFileHeaderBlock(testData);
+        final Block fhBlock = Block.createRawFileHeaderBlock(testData);
 
         final Block rtBlock2 = roundTrip(fhBlock, CramVersions.CRAM_v2_1);
         contentCheck(rtBlock2, testData, testData);
@@ -79,7 +79,7 @@ public class BlockTest extends HtsjdkTest {
     public void testCompressionHeaderBlockRoundTrips() {
         final byte[] testData = "TEST STRING".getBytes();
 
-        final Block chBlock = Block.uncompressedCompressionHeaderBlock(testData);
+        final Block chBlock = Block.createRawCompressionHeaderBlock(testData);
 
         final Block rtBlock2 = roundTrip(chBlock, CramVersions.CRAM_v2_1);
         contentCheck(rtBlock2, testData, testData);
@@ -92,7 +92,7 @@ public class BlockTest extends HtsjdkTest {
     public void testSliceHeaderBlockRoundTrips() {
         final byte[] testData = "TEST STRING".getBytes();
 
-        final Block shBlock = Block.uncompressedSliceHeaderBlock(testData);
+        final Block shBlock = Block.createRawSliceHeaderBlock(testData);
 
         final Block rtBlock2 = roundTrip(shBlock, CramVersions.CRAM_v2_1);
         contentCheck(rtBlock2, testData, testData);
@@ -123,7 +123,7 @@ public class BlockTest extends HtsjdkTest {
     public void testCoreBlockRoundTrips() {
         final byte[] testData = "TEST STRING".getBytes();
 
-        final Block coreBlock = Block.uncompressedCoreBlock(testData);
+        final Block coreBlock = Block.createRawCoreDataBlock(testData);
 
         final Block rtBlock2 = roundTrip(coreBlock, CramVersions.CRAM_v2_1);
         contentCheck(rtBlock2, testData, testData);

@@ -164,7 +164,7 @@ public class ContainerIO {
 
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
 
-        final Block block = Block.uncompressedCompressionHeaderBlock(container.header.toByteArray());
+        final Block block = Block.createRawCompressionHeaderBlock(container.header.toByteArray());
         block.write(version.major, byteArrayOutputStream);
         container.blockCount = 1;
 

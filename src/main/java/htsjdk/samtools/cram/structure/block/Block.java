@@ -97,7 +97,7 @@ public class Block {
      * @param rawContent the uncompressed content of the block
      * @return a new {@link Block} object
      */
-    public static Block uncompressedFileHeaderBlock(final byte[] rawContent) {
+    public static Block createRawFileHeaderBlock(final byte[] rawContent) {
         return new Block(BlockCompressionMethod.RAW, BlockContentType.FILE_HEADER, rawContent, rawContent.length);
     }
 
@@ -108,7 +108,7 @@ public class Block {
      * @param rawContent the uncompressed content of the block
      * @return a new {@link Block} object
      */
-    public static Block uncompressedCompressionHeaderBlock(final byte[] rawContent) {
+    public static Block createRawCompressionHeaderBlock(final byte[] rawContent) {
         return new Block(BlockCompressionMethod.RAW, BlockContentType.COMPRESSION_HEADER, rawContent, rawContent.length);
     }
 
@@ -119,7 +119,7 @@ public class Block {
      * @param rawContent the uncompressed content of the block
      * @return a new {@link Block} object
      */
-    public static Block uncompressedSliceHeaderBlock(final byte[] rawContent) {
+    public static Block createRawSliceHeaderBlock(final byte[] rawContent) {
         return new Block(BlockCompressionMethod.RAW, BlockContentType.MAPPED_SLICE, rawContent, rawContent.length);
     }
 
@@ -130,7 +130,7 @@ public class Block {
      * @param rawContent the uncompressed content of the block
      * @return a new {@link Block} object
      */
-    public static Block uncompressedCoreBlock(final byte[] rawContent) {
+    public static Block createRawCoreDataBlock(final byte[] rawContent) {
         return new Block(BlockCompressionMethod.RAW, BlockContentType.CORE, rawContent, rawContent.length);
     }
 
