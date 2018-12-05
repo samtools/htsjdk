@@ -194,29 +194,6 @@ public class ContainerIO {
         return length;
     }
 
-    /**
-     * Calculates the byte size of a container based on the CRAM version.
-     *
-     * @param version   the CRAM version to assume
-     * @param container the container to be weighted
-     * @return the total number of bytes the container would occupy if written out
-     */
-    public static long getByteSize(final Version version, final Container container) {
-        final CountingOutputStream countingOutputStream = new CountingOutputStream(new OutputStream() {
-            @Override
-            public void write(final int b) throws IOException {
-            }
-        });
-
-        try {
-            writeContainer(version, container, countingOutputStream);
-            countingOutputStream.close();
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return countingOutputStream.getBytesWritten();
-    }
 
     /**
      * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader
