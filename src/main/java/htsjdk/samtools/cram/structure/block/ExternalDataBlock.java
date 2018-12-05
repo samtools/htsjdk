@@ -13,16 +13,16 @@ public class ExternalDataBlock extends Block {
      * Create a new external data block with the given compression method, uncompressed content, and content ID.
      * The block will have EXTERNAL content type.
      *
-     * @param method the compression method used in this block
+     * @param compressionMethod the compression method used in this block
+     * @param contentId the external identifier for the block
      * @param compressedContent the content of this block, in compressed mode
      * @param uncompressedLength the length of the content stored in this block when uncompressed
-     * @param contentId the external identifier for the block
      */
-    ExternalDataBlock(final BlockCompressionMethod method,
+    ExternalDataBlock(final BlockCompressionMethod compressionMethod,
+                      final int contentId,
                       final byte[] compressedContent,
-                      final int uncompressedLength,
-                      final int contentId) {
-        super(method, BlockContentType.EXTERNAL, compressedContent, uncompressedLength);
+                      final int uncompressedLength) {
+        super(compressionMethod, BlockContentType.EXTERNAL, compressedContent, uncompressedLength);
         this.contentId = contentId;
     }
 
@@ -35,7 +35,7 @@ public class ExternalDataBlock extends Block {
      * @param rawContent the uncompressed content of the block
      */
     public ExternalDataBlock(final int contentId, final ExternalCompressor compressor, final byte[] rawContent) {
-        this(compressor.getMethod(), compressor.compress(rawContent), rawContent.length, contentId);
+        this(compressor.getMethod(), contentId, compressor.compress(rawContent), rawContent.length);
         
         // remove after https://github.com/samtools/htsjdk/issues/1232
         if (contentId == Block.NO_CONTENT_ID) {

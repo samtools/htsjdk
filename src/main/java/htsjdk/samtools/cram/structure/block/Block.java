@@ -198,8 +198,8 @@ public class Block {
         }
 
         try {
-            final BlockCompressionMethod method = BlockCompressionMethod.byId(inputStream.read());
-            final BlockContentType type = BlockContentType.byId(inputStream.read());
+            final BlockCompressionMethod compressionMethod = BlockCompressionMethod.byId(inputStream.read());
+            final BlockContentType contentType = BlockContentType.byId(inputStream.read());
             final int contentId = ITF8.readUnsignedITF8(inputStream);
             final int compressedSize = ITF8.readUnsignedITF8(inputStream);
             final int uncompressedSize = ITF8.readUnsignedITF8(inputStream);
@@ -214,10 +214,10 @@ public class Block {
                 }
             }
 
-            if (type == BlockContentType.EXTERNAL) {
-                return new ExternalDataBlock(method, compressedContent, uncompressedSize, contentId);
+            if (contentType == BlockContentType.EXTERNAL) {
+                return new ExternalDataBlock(compressionMethod, contentId, compressedContent, uncompressedSize);
             } else {
-                return new Block(method, type, compressedContent, uncompressedSize);
+                return new Block(compressionMethod, contentType, compressedContent, uncompressedSize);
             }
         }
         catch (final IOException e) {
