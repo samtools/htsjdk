@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.block.Block;
-import htsjdk.samtools.cram.structure.block.ExternalDataBlock;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -57,8 +56,8 @@ public class Slice {
     // content associated with ids:
     public Block headerBlock;
     public Block coreBlock;
-    public ExternalDataBlock embeddedRefBlock;
-    public Map<Integer, ExternalDataBlock> external;
+    public Block embeddedRefBlock;
+    public Map<Integer, Block> external;
 
     // for indexing purposes:
     public int offset = -1;

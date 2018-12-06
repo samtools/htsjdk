@@ -6,7 +6,7 @@ import htsjdk.samtools.cram.compression.ExternalCompressor;
 /**
  * A Block used by Slices to store data externally
  */
-public class ExternalDataBlock extends Block {
+public class ExternalBlock extends Block {
     private final int contentId;
 
     /**
@@ -18,10 +18,10 @@ public class ExternalDataBlock extends Block {
      * @param compressedContent the content of this block, in compressed mode
      * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
-    ExternalDataBlock(final BlockCompressionMethod compressionMethod,
-                      final int contentId,
-                      final byte[] compressedContent,
-                      final int uncompressedLength) {
+    ExternalBlock(final BlockCompressionMethod compressionMethod,
+                  final int contentId,
+                  final byte[] compressedContent,
+                  final int uncompressedLength) {
         super(compressionMethod, BlockContentType.EXTERNAL, compressedContent, uncompressedLength);
         this.contentId = contentId;
     }
@@ -34,7 +34,7 @@ public class ExternalDataBlock extends Block {
      * @param compressor which external compressor to use on this block
      * @param rawContent the uncompressed content of the block
      */
-    public ExternalDataBlock(final int contentId, final ExternalCompressor compressor, final byte[] rawContent) {
+    public ExternalBlock(final int contentId, final ExternalCompressor compressor, final byte[] rawContent) {
         this(compressor.getMethod(), contentId, compressor.compress(rawContent), rawContent.length);
         
         // remove after https://github.com/samtools/htsjdk/issues/1232

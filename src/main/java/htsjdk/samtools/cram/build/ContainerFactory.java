@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
-import htsjdk.samtools.cram.structure.block.ExternalDataBlock;
+import htsjdk.samtools.cram.structure.block.ExternalBlock;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
@@ -176,7 +176,7 @@ public class ContainerFactory {
         for (final Integer contentId : externalBlockMap.keySet()) {
             final ExternalCompressor compressor = header.externalCompressors.get(contentId);
             final byte[] rawData = externalBlockMap.get(contentId).toByteArray();
-            final ExternalDataBlock externalBlock = new ExternalDataBlock(contentId, compressor, rawData);
+            final ExternalBlock externalBlock = new ExternalBlock(contentId, compressor, rawData);
             slice.external.put(contentId, externalBlock);
         }
 

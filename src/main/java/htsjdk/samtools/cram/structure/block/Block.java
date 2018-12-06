@@ -226,7 +226,7 @@ public class Block {
             }
 
             if (contentType == BlockContentType.EXTERNAL) {
-                return new ExternalDataBlock(compressionMethod, contentId, compressedContent, uncompressedSize);
+                return new ExternalBlock(compressionMethod, contentId, compressedContent, uncompressedSize);
             } else {
                 return new Block(compressionMethod, contentType, compressedContent, uncompressedSize);
             }

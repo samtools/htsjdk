@@ -114,11 +114,10 @@ class SliceIO {
                     slice.coreBlock = block;
                     break;
                 case EXTERNAL:
-                    final ExternalDataBlock extBlock = (ExternalDataBlock) block;
-                    if (slice.embeddedRefBlockContentID == extBlock.getContentId()) {
-                        slice.embeddedRefBlock = extBlock;
+                    if (slice.embeddedRefBlockContentID == block.getContentId()) {
+                        slice.embeddedRefBlock = block;
                     }
-                    slice.external.put(extBlock.getContentId(), extBlock);
+                    slice.external.put(block.getContentId(), block);
                     break;
 
                 default:
@@ -142,7 +141,7 @@ class SliceIO {
         slice.headerBlock.write(major, outputStream);
 
         slice.coreBlock.write(major, outputStream);
-        for (final ExternalDataBlock block : slice.external.values())
+        for (final Block block : slice.external.values())
             block.write(major, outputStream);
     }
 
