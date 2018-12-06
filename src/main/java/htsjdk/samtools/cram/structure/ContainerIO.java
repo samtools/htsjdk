@@ -79,7 +79,7 @@ public class ContainerIO {
             return container;
         }
 
-        container.header = CompressionHeader.readFromBlock(major, inputStream);
+        container.header = CompressionHeader.read(major, inputStream);
 
         howManySlices = Math.min(container.landmarks.length, howManySlices);
 
@@ -162,8 +162,7 @@ public class ContainerIO {
 
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
 
-        final Block block = container.header.toBlock();
-        block.write(version.major, byteArrayOutputStream);
+        container.header.write(version, byteArrayOutputStream);
         container.blockCount = 1;
 
         final List<Integer> landmarks = new ArrayList<>();
