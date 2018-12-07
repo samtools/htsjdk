@@ -6,7 +6,7 @@ import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -64,7 +64,7 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
         final boolean sorted = true;
         final CompressionHeader header = createHeader(initialRecords, sorted);
 
-        final int refId = Slice.MULTI_REFERENCE;
+        final int refId = SliceHeader.REFERENCE_INDEX_MULTI;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         final byte[] written = write(initialRecords, header, refId, outputMap);
 

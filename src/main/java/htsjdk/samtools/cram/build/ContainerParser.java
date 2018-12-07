@@ -21,15 +21,14 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.slice.SliceAlignment;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
-import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,8 +43,8 @@ public class ContainerParser {
     }
 
     public List<CramCompressionRecord> getRecords(final Container container,
-                                                  ArrayList<CramCompressionRecord> records, final ValidationStringency validationStringency) throws IllegalArgumentException,
-            IllegalAccessException {
+                                                  ArrayList<CramCompressionRecord> records,
+                                                  final ValidationStringency validationStringency) {
         if (container.isEOF()) {
             return Collections.emptyList();
         }
@@ -54,85 +53,74 @@ public class ContainerParser {
             records = new ArrayList<>(container.nofRecords);
         }
 
-        for (final Slice slice : container.slices) {
+        for (final IndexableSlice slice : container.slices) {
             records.addAll(getRecords(slice, container.header, validationStringency));
         }
 
         return records;
     }
 
-    public Map<Integer, AlignmentSpan> getReferences(final Container container, final ValidationStringency validationStringency) throws IOException {
-        final Map<Integer, AlignmentSpan> containerSpanMap  = new HashMap<>();
-        for (final Slice slice : container.slices) {
+    public Map<Integer, SliceAlignment> getReferences(final Container container, final ValidationStringency validationStringency) {
+        final Map<Integer, SliceAlignment> containerSpanMap  = new HashMap<>();
+        for (final IndexableSlice slice : container.slices) {
             addAllSpans(containerSpanMap, getReferences(slice, container.header, validationStringency));
         }
         return containerSpanMap;
     }
 
-    private static void addSpan(final int seqId, final int start, final int span, final int count, final Map<Integer, AlignmentSpan> map) {
+    private static void addSpan(final Map<Integer, SliceAlignment> map, final int seqId, final SliceAlignment sliceAlignment) {
         if (map.containsKey(seqId)) {
-            map.get(seqId).add(start, span, count);
+            map.get(seqId).add(sliceAlignment);
         } else {
-            map.put(seqId, new AlignmentSpan(start, span, count));
+            map.put(seqId, sliceAlignment);
         }
     }
 
-    private static Map<Integer, AlignmentSpan> addAllSpans(final Map<Integer, AlignmentSpan> spanMap, final Map<Integer, AlignmentSpan> addition) {
-        for (final Map.Entry<Integer, AlignmentSpan> entry:addition.entrySet()) {
-            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getCount(), entry.getValue().getSpan(), spanMap);
+    private static void addAllSpans(final Map<Integer, SliceAlignment> spanMap, final Map<Integer, SliceAlignment> addition) {
+        for (final Map.Entry<Integer, SliceAlignment> entry:addition.entrySet()) {
+            addSpan(spanMap, entry.getKey(), entry.getValue());
         }
+    }
+
+    private Map<Integer, SliceAlignment> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
+        final Map<Integer, SliceAlignment> spanMap = new HashMap<>();
+
+        if (slice.hasNoReference()) {
+            spanMap.put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SliceAlignment.UNMAPPED_SPAN);
+        } else if (slice.hasMultipleReferences()) {
+            addAllSpans(spanMap, slice.getMultiRefAlignmentSpans(header, validationStringency));
+        } else {
+            addSpan(spanMap, slice.getSequenceId(), slice.getSliceAlignment());
+        }
+
         return spanMap;
     }
 
-    Map<Integer, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) throws IOException {
-        final Map<Integer, AlignmentSpan> spanMap = new HashMap<>();
-        switch (slice.sequenceId) {
-            case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
-                spanMap.put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, AlignmentSpan.UNMAPPED_SPAN);
-                break;
-            case Slice.MULTI_REFERENCE:
-                final Map<Integer, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(header, validationStringency);
-                addAllSpans(spanMap, spans);
-                break;
-            default:
-                addSpan(slice.sequenceId, slice.alignmentStart, slice.alignmentSpan, slice.nofRecords, spanMap);
-                break;
-        }
-        return spanMap;
-    }
-
-    ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                                final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) throws IllegalArgumentException {
+    private ArrayList<CramCompressionRecord> getRecords(final IndexableSlice slice,
+                                                        final CompressionHeader header,
+                                                        final ValidationStringency validationStringency) {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
-        switch (slice.sequenceId) {
-            case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
-            case -2:
-                break;
 
-            default:
-                final SAMSequenceRecord sequence = samFileHeader
-                        .getSequence(slice.sequenceId);
-                seqName = sequence.getSequenceName();
-                break;
+        if (slice.hasSingleReference()) {
+            final SAMSequenceRecord sequence = samFileHeader.getSequence(slice.getSequenceId());
+            seqName = sequence.getSequenceName();
         }
 
         final CramRecordReader reader = slice.createCramRecordReader(header, validationStringency);
 
-        if (records == null) {
-            records = new ArrayList<>(slice.nofRecords);
-        }
+        ArrayList<CramCompressionRecord> records = new ArrayList<>(slice.getRecordCount());
 
-        int prevStart = slice.alignmentStart;
-        for (int i = 0; i < slice.nofRecords; i++) {
+        int prevStart = slice.getAlignmentStart();
+        for (int i = 0; i < slice.getRecordCount(); i++) {
             final CramCompressionRecord record = new CramCompressionRecord();
-            record.sliceIndex = slice.index;
+            record.sliceIndex = slice.getSliceIndex();
             record.index = i;
 
             reader.read(record);
 
-            if (record.sequenceId == slice.sequenceId) {
+            if (record.sequenceId == slice.getSequenceId()) {
                 record.sequenceName = seqName;
-                record.sequenceId = slice.sequenceId;
+                record.sequenceId = slice.getSequenceId();
             } else {
                 if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
                     record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
@@ -151,10 +139,5 @@ public class ContainerParser {
         }
 
         return records;
-    }
-
-    List<CramCompressionRecord> getRecords(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency)
-            throws IllegalArgumentException, IllegalAccessException {
-        return getRecords(null, slice, header, validationStringency);
     }
 }

@@ -8,7 +8,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
@@ -33,12 +33,12 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         final ByteArrayInputStream bais = new ByteArrayInputStream(test.cramData);
         final CramHeader cramHeader = CramIO.readCramHeader(bais);
         final Container container = ContainerIO.readContainer(cramHeader.getVersion(), bais);
-        final Slice slice = container.slices[0];
-        Assert.assertEquals(slice.alignmentStart, 1);
-        Assert.assertEquals(slice.alignmentSpan, test.referenceBases.length);
+        final IndexableSlice slice = container.slices[0];
+        Assert.assertEquals(slice.getAlignmentStart(), 1);
+        Assert.assertEquals(slice.getAlignmentSpan(), test.referenceBases.length);
         // check the slice MD5 is the MD5 of upper-cased ref bases:
         final byte[] ucRefMD5 = SequenceUtil.calculateMD5(test.refBasesFromUCSource, 0, test.refBasesFromUCSource.length);
-        Assert.assertEquals(slice.refMD5, ucRefMD5);
+        Assert.assertEquals(slice.getRefMD5(), ucRefMD5);
 
         // check the CRAM file reads:
         final CRAMFileReader reader = new CRAMFileReader(new ByteArrayInputStream(test.cramData), (File) null, test.referenceSourceUpperCased, ValidationStringency.STRICT);

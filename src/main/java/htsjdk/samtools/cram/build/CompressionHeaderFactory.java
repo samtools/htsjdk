@@ -115,6 +115,7 @@ public class CompressionHeaderFactory {
 
         buildTagEncodings(records, builder);
 
+        // TODO: only non-null in tests, and constant for those.  Can we remove this parameter?
         if (substitutionMatrix == null) {
             substitutionMatrix = new SubstitutionMatrix(buildFrequencies(records));
             updateSubstitutionCodes(records, substitutionMatrix);

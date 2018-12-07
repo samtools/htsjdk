@@ -54,7 +54,7 @@ public class CompressionHeader {
 
     public Map<DataSeries, EncodingParams> encodingMap;
     public Map<Integer, EncodingParams> tMap;
-    public final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<Integer, ExternalCompressor>();
+    public final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<>();
 
     public SubstitutionMatrix substitutionMatrix;
 

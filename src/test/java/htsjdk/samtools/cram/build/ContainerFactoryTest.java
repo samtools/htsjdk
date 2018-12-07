@@ -7,12 +7,11 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +22,7 @@ import java.util.List;
 public class ContainerFactoryTest extends HtsjdkTest {
 
     @Test
-    public void testUnmapped() throws IOException, IllegalAccessException {
+    public void testUnmapped() {
         SAMFileHeader header = new SAMFileHeader();
 
         int recordsPerContainer = 10;
@@ -41,15 +40,15 @@ public class ContainerFactoryTest extends HtsjdkTest {
             records.add(record);
         }
 
-        final Container container = factory.buildContainer(records);
+        final Container container = factory.buildContainer(records, null, 0);
         Assert.assertNotNull(container);
         Assert.assertEquals(container.nofRecords, records.size());
 
-        assertContainerAlignmentBoundaries(container, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerAlignmentBoundaries(container, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SliceHeader.NO_ALIGNMENT_START, SliceHeader.NO_ALIGNMENT_SPAN);
     }
 
     @Test
-    public void testMapped() throws IOException, IllegalAccessException {
+    public void testMapped() {
         InMemoryReferenceSequenceFile refFile = new InMemoryReferenceSequenceFile();
         String refName = "1";
         String refString = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -81,7 +80,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
             span = record.alignmentStart + readLength - alignmentStartOffset;
         }
 
-        final Container container = factory.buildContainer(records);
+        final Container container = factory.buildContainer(records, null, 0);
         Assert.assertNotNull(container);
         Assert.assertEquals(container.nofRecords, records.size());
 
@@ -89,7 +88,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
     }
 
     @Test
-    public void testMultiref() throws IOException, IllegalAccessException {
+    public void testMultiref() {
         SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("1", 100));
         header.addSequence(new SAMSequenceRecord("2", 200));
@@ -114,11 +113,11 @@ public class ContainerFactoryTest extends HtsjdkTest {
             records.add(record);
         }
 
-        final Container container = factory.buildContainer(records);
+        final Container container = factory.buildContainer(records, null, 0);
         Assert.assertNotNull(container);
         Assert.assertEquals(container.nofRecords, records.size());
 
-        assertContainerAlignmentBoundaries(container, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerAlignmentBoundaries(container, SliceHeader.REFERENCE_INDEX_MULTI, SliceHeader.NO_ALIGNMENT_START, SliceHeader.NO_ALIGNMENT_SPAN);
     }
 
 
@@ -127,9 +126,9 @@ public class ContainerFactoryTest extends HtsjdkTest {
         Assert.assertEquals(container.alignmentStart, alignmentStart);
         Assert.assertEquals(container.alignmentSpan, alignmentSpan);
 
-        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX || sequenceId == Slice.MULTI_REFERENCE) {
-            Assert.assertEquals(container.alignmentStart, Slice.NO_ALIGNMENT_START);
-            Assert.assertEquals(container.alignmentSpan, Slice.NO_ALIGNMENT_SPAN);
+        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX || sequenceId == SliceHeader.REFERENCE_INDEX_MULTI) {
+            Assert.assertEquals(container.alignmentStart, SliceHeader.NO_ALIGNMENT_START);
+            Assert.assertEquals(container.alignmentSpan, SliceHeader.NO_ALIGNMENT_SPAN);
         }
     }
 }
