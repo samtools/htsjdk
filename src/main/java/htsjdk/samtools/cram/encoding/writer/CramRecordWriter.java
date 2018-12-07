@@ -148,9 +148,8 @@ public class CramRecordWriter {
      *
      * @param records the Cram Compression Records to write
      * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
-     * @throws IOException
      */
-    public void writeCramCompressionRecords(final List<CramCompressionRecord> records, int prevAlignmentStart) throws IOException {
+    public void writeCramCompressionRecords(final List<CramCompressionRecord> records, int prevAlignmentStart) {
         for (final CramCompressionRecord record : records) {
             record.alignmentDelta = record.alignmentStart - prevAlignmentStart;
             prevAlignmentStart = record.alignmentStart;
@@ -162,9 +161,8 @@ public class CramRecordWriter {
      * Write a Cram Compression Record, using this class's Encodings
      *
      * @param r the Cram Compression Record to write
-     * @throws IOException
      */
-    private void writeRecord(final CramCompressionRecord r) throws IOException {
+    private void writeRecord(final CramCompressionRecord r) {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
         if (refId == Slice.MULTI_REFERENCE) {
