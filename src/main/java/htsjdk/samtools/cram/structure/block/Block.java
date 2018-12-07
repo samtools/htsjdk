@@ -62,7 +62,7 @@ public class Block {
     private final int uncompressedLength;
 
     /**
-     * Private constructor of a generic Block, to be called by static factory methods and subclasses.
+     * Protected constructor of a generic Block, to be called by static factory methods and subclasses.
      *
      * @param compressionMethod the block compression method.  Can be RAW, if uncompressed
      * @param contentType whether this is a header or data block, and which kind
@@ -89,7 +89,7 @@ public class Block {
     }
 
     /**
-     * Private constructor of a generic Block, to be called by static factory methods and subclasses.
+     * Protected constructor of a generic Block, to be called by static factory methods and subclasses.
      * Creates RAW blocks only.
      *
      * @param contentType whether this is a header or data block, and which kind
@@ -167,6 +167,12 @@ public class Block {
         return NO_CONTENT_ID;
     }
 
+    /**
+     * Uncompress the stored block content (if not RAW) and return the uncompressed content.
+     *
+     * @return The uncompressed block content.
+     * @throws CRAMException The uncompressed length did not match what was expected.
+     */
     public final byte[] getUncompressedContent() {
         final byte[] uncompressedContent = ExternalCompression.uncompress(compressionMethod, compressedContent);
         if (uncompressedContent.length != uncompressedLength) {
@@ -176,21 +182,22 @@ public class Block {
     }
 
     /**
-     * The size of the uncompressed content in bytes.
+     * @return The size of the uncompressed content in bytes.
      */
     public int getUncompressedContentSize() {
         return uncompressedLength;
     }
 
     /**
-     * Return the compressed block content
+     * @return The compressed block content.
      */
-
     public final byte[] getCompressedContent() {
         return compressedContent;
     }
 
-
+    /**
+     * @return The size of the compressed content in bytes.
+     */
     public final int getCompressedContentSize() {
         return compressedContent.length;
     }
