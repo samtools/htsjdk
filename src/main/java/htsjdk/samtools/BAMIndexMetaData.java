@@ -23,7 +23,8 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceBAIMetadata;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
 import java.io.File;
@@ -147,23 +148,25 @@ public class BAMIndexMetaData {
     }
 
     /**
-     * @param slice
+     * Record metadata for a given CRAM slice
+     *
+     * @param sliceMetadata Information about a CRAM slice.
      */
-    void recordMetaData(Slice slice) {
+    void recordMetaData(final SliceBAIMetadata sliceMetadata) {
 
-        final int alignmentStart = slice.alignmentStart;
+        final int alignmentStart = sliceMetadata.getAlignmentStart();
         if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
-            noCoordinateRecords+=slice.nofRecords;
+            noCoordinateRecords += sliceMetadata.getRecordCount();
             return;
         }
 
-        final long start = slice.offset;
-        final long end = slice.offset + 0;
+        final long start = sliceMetadata.getByteOffset();
+        final long end = sliceMetadata.getByteOffset() + sliceMetadata.getByteSize();
 
-        if (slice.alignmentSpan < 1) {
-            unAlignedRecords += slice.nofRecords;
+        if (sliceMetadata.getAlignmentSpan() == SliceHeader.NO_ALIGNMENT_SPAN) {
+            unAlignedRecords += sliceMetadata.getRecordCount();
         } else {
-            alignedRecords += slice.nofRecords;
+            alignedRecords += sliceMetadata.getRecordCount();
         }
         if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
             this.firstOffset = start;

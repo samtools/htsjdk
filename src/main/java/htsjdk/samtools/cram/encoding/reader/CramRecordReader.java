@@ -23,6 +23,7 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
@@ -173,7 +174,7 @@ public class CramRecordReader {
 
             cramRecord.flags = bitFlagsCodec.readData();
             cramRecord.compressionFlags = compressionBitFlagsCodec.readData();
-            if (refId == Slice.MULTI_REFERENCE) {
+            if (refId == SliceHeader.MULTI_REFERENCE) {
                 cramRecord.sequenceId = refIdCodec.readData();
             } else {
                 cramRecord.sequenceId = refId;

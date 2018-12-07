@@ -14,7 +14,7 @@ import htsjdk.samtools.cram.ref.ReferenceTracks;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
@@ -97,8 +97,6 @@ public class CRAMContainerStreamWriter {
                 flushContainer();
             } catch (IOException e) {
                 throw new RuntimeIOException(e);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
             }
         }
 
@@ -137,8 +135,6 @@ public class CRAMContainerStreamWriter {
             outputStream.close();
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
-        } catch (final IllegalAccessException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -208,7 +204,7 @@ public class CRAMContainerStreamWriter {
             return true;
         }
 
-        if (refSeqIndex == Slice.MULTI_REFERENCE) {
+        if (refSeqIndex == SliceHeader.MULTI_REFERENCE) {
             return false;
         }
 
@@ -223,7 +219,7 @@ public class CRAMContainerStreamWriter {
         if (samRecords.size() > MIN_SINGLE_REF_RECORDS) {
             return true;
         } else {
-            refSeqIndex = Slice.MULTI_REFERENCE;
+            refSeqIndex = SliceHeader.MULTI_REFERENCE;
             return false;
         }
     }
@@ -267,23 +263,23 @@ public class CRAMContainerStreamWriter {
      * @throws IllegalAccessException
      * @throws IOException
      */
-    protected void flushContainer() throws IllegalArgumentException, IllegalAccessException, IOException {
+    protected void flushContainer() throws IllegalArgumentException, IOException {
 
-        final byte[] refs;
+        final byte[] refBases;
         String refSeqName = null;
         switch (refSeqIndex) {
-            case Slice.MULTI_REFERENCE:
+            case SliceHeader.MULTI_REFERENCE:
                 if (preservation != null && preservation.areReferenceTracksRequired()) {
                     throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
                 }
-            refs = new byte[0];
+            refBases = new byte[0];
                 break;
             case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
-                refs = new byte[0];
+                refBases = new byte[0];
                 break;
             default:
             final SAMSequenceRecord sequence = samFileHeader.getSequence(refSeqIndex);
-            refs = source.getReferenceBases(sequence, true);
+            refBases = source.getReferenceBases(sequence, true);
             refSeqName = sequence.getSequenceName();
                 break;
         }
@@ -301,7 +297,7 @@ public class CRAMContainerStreamWriter {
 
         ReferenceTracks tracks = null;
         if (preservation != null && preservation.areReferenceTracksRequired()) {
-            tracks = new ReferenceTracks(refSeqIndex, refSeqName, refs);
+            tracks = new ReferenceTracks(refSeqIndex, refSeqName, refBases);
 
             tracks.ensureRange(start, stop - start + 1);
             updateTracks(samRecords, tracks);
@@ -309,7 +305,7 @@ public class CRAMContainerStreamWriter {
 
         final List<CramCompressionRecord> cramRecords = new ArrayList<CramCompressionRecord>(samRecords.size());
 
-        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(refs, samFileHeader, cramVersion);
+        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(refBases, samFileHeader, cramVersion);
         sam2CramRecordFactory.preserveReadNames = preserveReadNames;
         sam2CramRecordFactory.captureAllTags = captureAllTags;
         sam2CramRecordFactory.captureTags.addAll(captureTags);
@@ -450,11 +446,7 @@ public class CRAMContainerStreamWriter {
             }
         }
 
-        final Container container = containerFactory.buildContainer(cramRecords);
-        for (final Slice slice : container.slices) {
-            slice.setRefMD5(refs);
-        }
-        container.offset = offset;
+        final Container container = containerFactory.buildContainer(cramRecords, refBases, offset);
         offset += ContainerIO.writeContainer(cramVersion, container, outputStream);
         if (indexer != null) {
             /**
@@ -488,14 +480,14 @@ public class CRAMContainerStreamWriter {
      * @param samRecordReferenceIndex index of the new reference sequence
      */
     private void updateReferenceContext(final int samRecordReferenceIndex) {
-        if (refSeqIndex == Slice.MULTI_REFERENCE) {
+        if (refSeqIndex == SliceHeader.MULTI_REFERENCE) {
             return;
         }
 
         if (refSeqIndex == REF_SEQ_INDEX_NOT_INITIALIZED) {
             refSeqIndex = samRecordReferenceIndex;
         } else if (refSeqIndex != samRecordReferenceIndex) {
-            refSeqIndex = Slice.MULTI_REFERENCE;
+            refSeqIndex = SliceHeader.MULTI_REFERENCE;
     }
     }
 

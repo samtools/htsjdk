@@ -19,6 +19,8 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 
 public class Container {
     // container header as defined in the specs:
@@ -27,8 +29,8 @@ public class Container {
      */
     public int containerByteSize;
     public int sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-    public int alignmentStart = Slice.NO_ALIGNMENT_START;
-    public int alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+    public int alignmentStart = SliceHeader.NO_ALIGNMENT_START;
+    public int alignmentSpan = SliceHeader.NO_ALIGNMENT_SPAN;
     public int nofRecords = 0;
     public long globalRecordCounter = 0;
 

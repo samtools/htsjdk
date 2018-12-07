@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 
 import java.util.Objects;
 
@@ -11,7 +12,7 @@ public class AlignmentSpan {
     /**
      * A constant to represent an unmapped span.
      */
-    public static final AlignmentSpan UNMAPPED_SPAN = new AlignmentSpan(SAMRecord.NO_ALIGNMENT_START, 0);
+    public static final AlignmentSpan UNMAPPED_SPAN = new AlignmentSpan(SAMRecord.NO_ALIGNMENT_START, SliceHeader.NO_ALIGNMENT_SPAN);
 
     private int start;
     private int span;

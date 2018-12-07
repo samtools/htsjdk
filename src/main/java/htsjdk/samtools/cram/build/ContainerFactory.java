@@ -20,19 +20,21 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.digest.ContentDigests;
+import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.digest.ContentDigests;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
-import htsjdk.samtools.cram.structure.block.ExternalBlock;
-import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.cram.structure.block.ExternalBlock;
+import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
+import htsjdk.samtools.cram.structure.slice.StreamableSlice;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.cram.structure.block.Block;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -52,20 +54,17 @@ public class ContainerFactory {
         this.recordsPerSlice = recordsPerSlice;
     }
 
-    public Container buildContainer(final List<CramCompressionRecord> records) {
-        return buildContainer(records, null);
-    }
-
-    Container buildContainer(final List<CramCompressionRecord> records,
-                             final SubstitutionMatrix substitutionMatrix) {
+    public Container buildContainer(final List<CramCompressionRecord> records,
+                                    final byte[] refBases,
+                                    final long offset) {
 
         // sets header APDelta
         final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-        final CompressionHeader header = new CompressionHeaderFactory().build(records, substitutionMatrix, coordinateSorted);
+        final CompressionHeader header = new CompressionHeaderFactory().build(records, null, coordinateSorted);
 
         header.readNamesIncluded = preserveReadNames;
 
-        final List<Slice> slices = new ArrayList<Slice>();
+        final List<Slice> slices = new ArrayList<>();
 
         final Container container = new Container();
         container.header = header;
@@ -73,36 +72,57 @@ public class ContainerFactory {
         container.globalRecordCounter = globalRecordCounter;
         container.bases = 0;
         container.blockCount = 0;
+        container.offset = offset;
 
-        long lastGlobalRecordCounter = container.globalRecordCounter;
-        for (int i = 0; i < records.size(); i += recordsPerSlice) {
-            final List<CramCompressionRecord> sliceRecords = records.subList(i,
-                    Math.min(records.size(), i + recordsPerSlice));
-            final Slice slice = buildSlice(sliceRecords, header);
-            slice.globalRecordCounter = lastGlobalRecordCounter;
-            lastGlobalRecordCounter += slice.nofRecords;
-            container.bases += slice.bases;
-            slices.add(slice);
+        // write to a stream to determine byte sizes for Slice BAI Metadata
+        try (final ByteArrayOutputStream osForIndexMetadata = new ByteArrayOutputStream()) {
+            final Version version = CramVersions.CRAM_v3;
+            container.header.write(version, osForIndexMetadata);
 
-            // assuming one sequence per container max:
-            if (container.sequenceId == -1 && slice.sequenceId != -1)
-                container.sequenceId = slice.sequenceId;
+            // TODO: is this copy necessary?
+            long globalRecordCounterCopy = container.globalRecordCounter;
+            int sliceIndex = 0;
+            for (int i = 0; i < records.size(); i += recordsPerSlice) {
+                final List<CramCompressionRecord> sliceRecords = records.subList(i,
+                        Math.min(records.size(), i + recordsPerSlice));
+                final StreamableSlice slice = buildSlice(sliceRecords, header, globalRecordCounterCopy, refBases);
+                globalRecordCounterCopy += sliceRecords.size();
+
+                // TODO for Container refactoring:
+                // these are also the container.landmarks so let's centralize their construction here
+
+                final int sliceByteOffset = osForIndexMetadata.size();
+                slice.write(version.major, osForIndexMetadata);
+                final int sliceByteSize = osForIndexMetadata.size() - sliceByteOffset;
+
+                slices.add(slice.withIndexingMetadata(sliceByteOffset, sliceByteSize, sliceIndex++));
+
+                container.bases += sliceRecords.stream().map(r -> r.readLength).reduce(Integer::sum).orElse(0);
+
+                // assuming one sequence per container max:
+                if (container.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && !slice.hasNoReference())
+                    container.sequenceId = slice.getSequenceId();
+            }
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
 
-        container.slices = slices.toArray(new Slice[slices.size()]);
+        container.slices = slices.toArray(new Slice[0]);
         calculateAlignmentBoundaries(container);
 
         globalRecordCounter += records.size();
+
         return container;
     }
 
     private static void calculateAlignmentBoundaries(final Container container) {
         int start = Integer.MAX_VALUE;
         int end = Integer.MIN_VALUE;
-        for (final Slice s : container.slices) {
-            if (s.sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                start = Math.min(start, s.alignmentStart);
-                end = Math.max(end, s.alignmentStart + s.alignmentSpan);
+        for (final Slice slice : container.slices) {
+            if (!slice.hasNoReference()) {
+                start = Math.min(start, slice.getAlignmentStart());
+                end = Math.max(end, slice.getAlignmentStart() + slice.getAlignmentSpan());
             }
         }
 
@@ -112,82 +132,89 @@ public class ContainerFactory {
         }
     }
 
-    private static Slice buildSlice(final List<CramCompressionRecord> records,
-                                    final CompressionHeader header) {
-        final Map<Integer, ByteArrayOutputStream> externalBlockMap = new HashMap<>();
-        for (final int id : header.externalIds) {
-            externalBlockMap.put(id, new ByteArrayOutputStream());
-        }
+    private static StreamableSlice buildSlice(final List<CramCompressionRecord> records,
+                                              final CompressionHeader compressionHeader,
+                                              final long globalRecordCounter,
+                                              final byte[] refBases) {
 
-        final Slice slice = new Slice();
-        slice.nofRecords = records.size();
+        // @formatter:off
+        /*
+         * 1) Decide if the slice is single ref, unmapped or multi reference.
+         * 2) Detect alignment boundaries for the slice if not multi reference.
+         */
+        // @formatter:on
 
-        int minAlStart = Integer.MAX_VALUE;
-        int maxAlEnd = SAMRecord.NO_ALIGNMENT_START;
-        {
-            // @formatter:off
-            /*
-             * 1) Count slice bases.
-			 * 2) Decide if the slice is single ref, unmapped or multi reference.
-			 * 3) Detect alignment boundaries for the slice if not multi reference.
-			 */
-            // @formatter:on
-            slice.sequenceId = records.get(0).sequenceId;
-            final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
-            for (final CramCompressionRecord record : records) {
-                slice.bases += record.readLength;
-                hasher.add(record);
-                if (slice.sequenceId == Slice.MULTI_REFERENCE) continue;
+        int sequenceId = records.get(0).sequenceId;
+        int alignmentStart = Integer.MAX_VALUE;
+        int alignmentEnd = Integer.MIN_VALUE;
 
-                if (slice.sequenceId != record.sequenceId) {
-                    slice.sequenceId = Slice.MULTI_REFERENCE;
-                } else if (record.alignmentStart != SAMRecord.NO_ALIGNMENT_START) {
-                    minAlStart = Math.min(record.alignmentStart, minAlStart);
-                    maxAlEnd = Math.max(record.getAlignmentEnd(), maxAlEnd);
-                }
+        final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
+        for (final CramCompressionRecord record : records) {
+            hasher.add(record);
+            if (sequenceId == SliceHeader.MULTI_REFERENCE) continue;
+
+            if (sequenceId != record.sequenceId) {
+                sequenceId = SliceHeader.MULTI_REFERENCE;
+            } else if (record.alignmentStart != SAMRecord.NO_ALIGNMENT_START) {
+                alignmentStart = Math.min(record.alignmentStart, alignmentStart);
+                alignmentEnd = Math.max(record.getAlignmentEnd(), alignmentEnd);
             }
-
-            slice.sliceTags = hasher.getAsTags();
         }
 
-        if (slice.sequenceId == Slice.MULTI_REFERENCE
-                || minAlStart == Integer.MAX_VALUE) {
-            slice.alignmentStart = Slice.NO_ALIGNMENT_START;
-            slice.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+        int alignmentSpan;
+        if (sequenceId == SliceHeader.MULTI_REFERENCE || alignmentStart == Integer.MAX_VALUE) {
+            alignmentStart = SliceHeader.NO_ALIGNMENT_START;
+            alignmentSpan = SliceHeader.NO_ALIGNMENT_SPAN;
         } else {
-            slice.alignmentStart = minAlStart;
-            slice.alignmentSpan = maxAlEnd - minAlStart + 1;
+            alignmentSpan = alignmentEnd - alignmentStart + 1;
         }
 
+        final Map<Integer, ByteArrayOutputStream> externalStreamMap = new HashMap<>();
+        for (final int id : compressionHeader.externalIds) {
+            externalStreamMap.put(id, new ByteArrayOutputStream());
+        }
+
+        Block coreBlock;
         try (final ByteArrayOutputStream bitBAOS = new ByteArrayOutputStream();
              final DefaultBitOutputStream bitOutputStream = new DefaultBitOutputStream(bitBAOS)) {
 
-            final CramRecordWriter writer = new CramRecordWriter(bitOutputStream, externalBlockMap, header, slice.sequenceId);
-            writer.writeCramCompressionRecords(records, slice.alignmentStart);
-
+            final CramRecordWriter writer = new CramRecordWriter(bitOutputStream, externalStreamMap, compressionHeader, sequenceId);
+            writer.writeCramCompressionRecords(records, alignmentStart);
             bitOutputStream.close();
-            slice.coreBlock = Block.createRawCoreDataBlock(bitBAOS.toByteArray());
+            coreBlock = Block.createRawCoreDataBlock(bitBAOS.toByteArray());
         }
         catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
 
-        slice.external = new HashMap<>();
-        for (final Integer contentId : externalBlockMap.keySet()) {
+        // core block + externals
+        final int blockCount = 1 + externalStreamMap.size();
+        final int[] contentIDs = externalStreamMap.keySet().stream().mapToInt(Integer::intValue).toArray();
+        final int embeddedRefBlockContentId = SliceHeader.NO_EMBEDDED_REFERENCE;
+        final byte[] refMD5 = SliceHeader.calculateRefMD5(refBases, sequenceId, alignmentStart, alignmentSpan, globalRecordCounter);
+
+        final SliceHeader sliceHeader = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, records.size(), globalRecordCounter,
+            blockCount, contentIDs, embeddedRefBlockContentId, refMD5, hasher.getAsTags());
+
+        return new StreamableSlice(sliceHeader, coreBlock, buildBlocksFromStreams(compressionHeader.externalCompressors, externalStreamMap));
+    }
+
+    private static Map<Integer, Block> buildBlocksFromStreams(final Map<Integer, ExternalCompressor> compressors, final Map<Integer, ByteArrayOutputStream> externalDataBlockMap) {
+        final Map<Integer, Block> ext = new HashMap<>();
+        for (final Integer contentId : externalDataBlockMap.keySet()) {
             // remove after https://github.com/samtools/htsjdk/issues/1232
             if (contentId == Block.NO_CONTENT_ID) {
                 throw new CRAMException("Valid Content ID required.  Given: " + contentId);
             }
 
-            final ExternalCompressor compressor = header.externalCompressors.get(contentId);
-            final byte[] rawContent = externalBlockMap.get(contentId).toByteArray();
+            final ExternalCompressor compressor = compressors.get(contentId);
+            final byte[] rawContent = externalDataBlockMap.get(contentId).toByteArray();
             final ExternalBlock externalBlock = new ExternalBlock(compressor.getMethod(), contentId,
                     compressor.compress(rawContent), rawContent.length);
 
-            slice.external.put(contentId, externalBlock);
+            ext.put(contentId, externalBlock);
         }
-
-        return slice;
+        return ext;
     }
 
     public boolean isPreserveReadNames() {

@@ -10,7 +10,7 @@ import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -28,7 +28,7 @@ import java.util.Map;
 public class ContainerParserTest extends HtsjdkTest {
 
     @Test
-    public void testEOF() throws IOException, IllegalAccessException {
+    public void testEOF() throws IOException {
         ContainerParser parser = new ContainerParser(new SAMFileHeader());
         ByteArrayOutputStream v2_baos = new ByteArrayOutputStream();
         Version version = CramVersions.CRAM_v2_1;
@@ -46,7 +46,7 @@ public class ContainerParserTest extends HtsjdkTest {
     }
 
     @Test
-    public void testSingleRefContainer() throws IOException, IllegalAccessException {
+    public void testSingleRefContainer() {
         SAMFileHeader samFileHeader = new SAMFileHeader();
         ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
         List<CramCompressionRecord> records = new ArrayList<>();
@@ -63,7 +63,7 @@ public class ContainerParserTest extends HtsjdkTest {
             records.add(record);
         }
 
-        Container container = factory.buildContainer(records);
+        Container container = factory.buildContainer(records, null, 0);
         Assert.assertEquals(container.nofRecords, 10);
         Assert.assertEquals(container.sequenceId, 0);
 
@@ -75,7 +75,7 @@ public class ContainerParserTest extends HtsjdkTest {
     }
 
     @Test
-    public void testUnmappedContainer() throws IOException, IllegalAccessException {
+    public void testUnmappedContainer() {
         SAMFileHeader samFileHeader = new SAMFileHeader();
         ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
         List<CramCompressionRecord> records = new ArrayList<>();
@@ -91,7 +91,7 @@ public class ContainerParserTest extends HtsjdkTest {
             records.add(record);
         }
 
-        Container container = factory.buildContainer(records);
+        Container container = factory.buildContainer(records, null, 0);
         Assert.assertEquals(container.nofRecords, 10);
         Assert.assertEquals(container.sequenceId, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
 
@@ -129,9 +129,9 @@ public class ContainerParserTest extends HtsjdkTest {
 
 
 
-        Container container = factory.buildContainer(records);
+        Container container = factory.buildContainer(records, null, 0);
         Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, Slice.MULTI_REFERENCE);
+        Assert.assertEquals(container.sequenceId, SliceHeader.MULTI_REFERENCE);
 
         ContainerParser parser = new ContainerParser(samFileHeader);
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
@@ -166,9 +166,9 @@ public class ContainerParserTest extends HtsjdkTest {
             records.add(record);
         }
 
-        Container container = factory.buildContainer(records);
+        Container container = factory.buildContainer(records, null, 0);
         Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, Slice.MULTI_REFERENCE);
+        Assert.assertEquals(container.sequenceId, SliceHeader.MULTI_REFERENCE);
 
         ContainerParser parser = new ContainerParser(samFileHeader);
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);

@@ -20,8 +20,8 @@ package htsjdk.samtools.cram.encoding.writer;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -165,7 +165,7 @@ public class CramRecordWriter {
     private void writeRecord(final CramCompressionRecord r) {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
-        if (refId == Slice.MULTI_REFERENCE) {
+        if (refId == SliceHeader.MULTI_REFERENCE) {
             refIdCodec.writeData(r.sequenceId);
         }
 

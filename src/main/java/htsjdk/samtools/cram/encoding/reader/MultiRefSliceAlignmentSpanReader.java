@@ -18,6 +18,7 @@ package htsjdk.samtools.cram.encoding.reader;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
@@ -58,7 +59,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final ValidationStringency validationStringency,
                                             final int initialAlignmentStart,
                                             final int recordCount) {
-        super(coreInputStream, externalInputMap, header, Slice.MULTI_REFERENCE, validationStringency);
+        super(coreInputStream, externalInputMap, header, SliceHeader.MULTI_REFERENCE, validationStringency);
 
         this.currentAlignmentStart = initialAlignmentStart;
 

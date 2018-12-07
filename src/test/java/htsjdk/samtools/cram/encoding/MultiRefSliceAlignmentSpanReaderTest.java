@@ -7,7 +7,7 @@ import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -70,7 +70,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         final boolean sorted = false;
         final CompressionHeader header = createHeader(initialRecords, sorted);
 
-        final int refId = Slice.MULTI_REFERENCE;
+        final int refId = SliceHeader.MULTI_REFERENCE;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         final byte[] written = write(initialRecords, header, refId, outputMap);
 

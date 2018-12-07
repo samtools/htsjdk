@@ -5,6 +5,8 @@ import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
+import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.StreamableSlice;
 import htsjdk.samtools.util.Log;
 
 import java.io.*;
@@ -39,17 +41,6 @@ public class ContainerIO {
     }
 
     /**
-     * Reads next container from the stream.
-     *
-     * @param inputStream the stream to read from
-     * @return CRAM container or null if no more data
-     * @throws IOException
-     */
-    private static Container readContainer(final int major, final InputStream inputStream) throws IOException {
-        return readContainer(major, inputStream, 0, Integer.MAX_VALUE);
-    }
-
-    /**
      * Reads container header only from a {@link InputStream}.
      *
      * @param major the CRAM version to assume
@@ -67,9 +58,14 @@ public class ContainerIO {
         return container;
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private static Container readContainer(final int major, final InputStream inputStream, final int fromSlice, int howManySlices) throws IOException {
-
+    /**
+     * Reads next container from the stream.
+     *
+     * @param inputStream the stream to read from
+     * @return CRAM container or null if no more data
+     * @throws IOException
+     */
+    public static Container readContainer(final int major, final InputStream inputStream) throws IOException {
         final Container container = readContainerHeader(major, inputStream);
         if (container.isEOF()) {
             return container;
@@ -77,42 +73,21 @@ public class ContainerIO {
 
         container.header = CompressionHeader.read(major, inputStream);
 
-        howManySlices = Math.min(container.landmarks.length, howManySlices);
+        container.slices = new Slice[container.landmarks.length];
+        for (int sliceIndex = 0; sliceIndex < container.landmarks.length; sliceIndex++) {
+            final StreamableSlice slice = StreamableSlice.read(major, inputStream);
 
-        if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
-            inputStream.skip(container.landmarks[fromSlice]);
+            final int byteOffset = container.landmarks[sliceIndex];
+            final boolean lastSlice = (sliceIndex == container.landmarks.length - 1);
+            final int sliceEnd = lastSlice ? container.containerByteSize : container.landmarks[sliceIndex + 1];
+            final int byteSize = sliceEnd - byteOffset;
 
-        final List<Slice> slices = new ArrayList<Slice>();
-        for (int sliceCount = fromSlice; sliceCount < howManySlices - fromSlice; sliceCount++) {
-            final Slice slice = new Slice();
-            SliceIO.read(major, slice, inputStream);
-            slice.index = sliceCount;
-            slices.add(slice);
+            container.slices[sliceIndex] = slice.withIndexingMetadata(byteOffset, byteSize, sliceIndex);
         }
-
-        container.slices = slices.toArray(new Slice[slices.size()]);
-
-        calculateSliceOffsetsAndSizes(container);
 
         log.debug("READ CONTAINER: " + container.toString());
 
         return container;
-    }
-
-    private static void calculateSliceOffsetsAndSizes(final Container container) {
-        if (container.slices.length == 0) return;
-        for (int i = 0; i < container.slices.length - 1; i++) {
-            final Slice slice = container.slices[i];
-            slice.offset = container.landmarks[i];
-            slice.size = container.landmarks[i + 1] - slice.offset;
-            slice.containerOffset = container.offset;
-            slice.index = i;
-        }
-        final Slice lastSlice = container.slices[container.slices.length - 1];
-        lastSlice.offset = container.landmarks[container.landmarks.length - 1];
-        lastSlice.size = container.containerByteSize - lastSlice.offset;
-        lastSlice.containerOffset = container.offset;
-        lastSlice.index = container.slices.length - 1;
     }
 
     /**
@@ -162,21 +137,24 @@ public class ContainerIO {
         container.blockCount = 1;
 
         final List<Integer> landmarks = new ArrayList<>();
-        for (int i = 0; i < container.slices.length; i++) {
-            final Slice slice = container.slices[i];
+        for (final Slice slice : container.slices) {
             landmarks.add(byteArrayOutputStream.size());
-            SliceIO.write(version.major, slice, byteArrayOutputStream);
+            slice.write(version.major, byteArrayOutputStream);
             container.blockCount++;
             container.blockCount++;
-            if (slice.embeddedRefBlock != null) container.blockCount++;
-            container.blockCount += slice.external.size();
+            // TODO for Container refactor: is this right?
+            // this should be counted in the external blocks
+            // also we should use the slice header data block count instead
+            if (slice.hasEmbeddedRefBlock()) {
+                container.blockCount++;
+            }
+            container.blockCount += slice.getExternalBlockCount();
         }
         container.landmarks = new int[landmarks.size()];
         for (int i = 0; i < container.landmarks.length; i++)
             container.landmarks[i] = landmarks.get(i);
 
         container.containerByteSize = byteArrayOutputStream.size();
-        calculateSliceOffsetsAndSizes(container);
 
         int length = new ContainerHeaderIO().writeContainerHeader(version.major, container, outputStream);
         outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
