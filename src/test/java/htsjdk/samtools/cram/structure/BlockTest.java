@@ -6,7 +6,6 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.structure.block.*;
-import htsjdk.samtools.util.RuntimeIOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -46,24 +45,20 @@ public class BlockTest extends HtsjdkTest {
         contentCheck(core, testData, testData);
     }
 
-    private Block roundTrip(final Block in, final Version version) {
+    private Block roundTrip(final Block in, final Version version) throws IOException {
         byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             in.write(version.major, os);
             written = os.toByteArray();
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
         }
 
         try (final InputStream is = new ByteArrayInputStream(written)) {
             return Block.read(version.major, is);
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
         }
     }
 
     @Test
-    public void testFileHeaderBlockRoundTrips() {
+    public void testFileHeaderBlockRoundTrips() throws IOException {
         final byte[] testData = "TEST STRING".getBytes();
 
         final Block fhBlock = Block.createRawFileHeaderBlock(testData);
@@ -76,7 +71,7 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test
-    public void testCompressionHeaderBlockRoundTrips() {
+    public void testCompressionHeaderBlockRoundTrips() throws IOException {
         final byte[] testData = "TEST STRING".getBytes();
 
         final Block chBlock = Block.createRawCompressionHeaderBlock(testData);
@@ -89,7 +84,7 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test
-    public void testSliceHeaderBlockRoundTrips() {
+    public void testSliceHeaderBlockRoundTrips() throws IOException {
         final byte[] testData = "TEST STRING".getBytes();
 
         final Block shBlock = Block.createRawSliceHeaderBlock(testData);
@@ -102,7 +97,7 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test
-    public void testExternalBlockRoundTrips() {
+    public void testExternalBlockRoundTrips() throws IOException {
         // arbitrary values
         final ExternalCompressor compressor = ExternalCompressor.createGZIP();
         final int contentID = 5;
@@ -120,7 +115,7 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test
-    public void testCoreBlockRoundTrips() {
+    public void testCoreBlockRoundTrips() throws IOException {
         final byte[] testData = "TEST STRING".getBytes();
 
         final Block coreBlock = Block.createRawCoreDataBlock(testData);
