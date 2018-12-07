@@ -200,7 +200,7 @@ public class CompressionHeader {
      * @param cramVersion the CRAM major version number
      * @param blockStream the stream to write to
      */
-    public void write(final Version cramVersion, final ByteArrayOutputStream blockStream) {
+    public void write(final Version cramVersion, final OutputStream blockStream) {
         try (final ByteArrayOutputStream internalOutputStream = new ByteArrayOutputStream()) {
             internalWrite(internalOutputStream);
             final Block block = Block.createRawCompressionHeaderBlock(internalOutputStream.toByteArray());
