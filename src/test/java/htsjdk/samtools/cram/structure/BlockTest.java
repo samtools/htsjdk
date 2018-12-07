@@ -7,6 +7,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.structure.block.*;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -26,6 +27,13 @@ public class BlockTest extends HtsjdkTest {
         Assert.assertEquals(actual.getUncompressedContentSize(), expectedRaw.length);
         Assert.assertEquals(actual.getCompressedContent(), expectedCompressed);
         Assert.assertEquals(actual.getCompressedContentSize(), expectedCompressed.length);
+    }
+
+    private void rtCheck(final Block srcBlock, final byte[] testData, final Version[] versions) throws IOException {
+        for (final Version version : versions) {
+            final Block rtBlock = roundTrip(srcBlock, version);
+            contentCheck(rtBlock, testData, testData);
+        }
     }
 
     @Test
@@ -57,43 +65,35 @@ public class BlockTest extends HtsjdkTest {
         }
     }
 
-    @Test
-    public void testFileHeaderBlockRoundTrips() throws IOException {
-        final byte[] testData = "TEST STRING".getBytes();
+    @DataProvider(name = "RoundTripTest")
+    public static Object[][] rtProvider() {
+        return new Object[][]{
+                {"TEST STRING".getBytes(), new Version[]{CramVersions.CRAM_v2_1, CramVersions.CRAM_v3}}
+        };
+    }
 
+    @Test(dataProvider = "RoundTripTest")
+    public void testFileHeaderBlockRoundTrips(final byte[] testData, final Version[] versions) throws IOException {
         final Block fhBlock = Block.createRawFileHeaderBlock(testData);
-
-        final Block rtBlock2 = roundTrip(fhBlock, CramVersions.CRAM_v2_1);
-        contentCheck(rtBlock2, testData, testData);
-
-        final Block rtBlock3 = roundTrip(fhBlock, CramVersions.CRAM_v3);
-        contentCheck(rtBlock3, testData, testData);
+        rtCheck(fhBlock, testData, versions);
     }
 
-    @Test
-    public void testCompressionHeaderBlockRoundTrips() throws IOException {
-        final byte[] testData = "TEST STRING".getBytes();
-
+    @Test(dataProvider = "RoundTripTest")
+    public void testCompressionHeaderBlockRoundTrips(final byte[] testData, final Version[] versions) throws IOException {
         final Block chBlock = Block.createRawCompressionHeaderBlock(testData);
-
-        final Block rtBlock2 = roundTrip(chBlock, CramVersions.CRAM_v2_1);
-        contentCheck(rtBlock2, testData, testData);
-
-        final Block rtBlock3 = roundTrip(chBlock, CramVersions.CRAM_v3);
-        contentCheck(rtBlock3, testData, testData);
+        rtCheck(chBlock, testData, versions);
     }
 
-    @Test
-    public void testSliceHeaderBlockRoundTrips() throws IOException {
-        final byte[] testData = "TEST STRING".getBytes();
-
+    @Test(dataProvider = "RoundTripTest")
+    public void testSliceHeaderBlockRoundTrips(final byte[] testData, final Version[] versions) throws IOException {
         final Block shBlock = Block.createRawSliceHeaderBlock(testData);
+        rtCheck(shBlock, testData, versions);
+    }
 
-        final Block rtBlock2 = roundTrip(shBlock, CramVersions.CRAM_v2_1);
-        contentCheck(rtBlock2, testData, testData);
-
-        final Block rtBlock3 = roundTrip(shBlock, CramVersions.CRAM_v3);
-        contentCheck(rtBlock3, testData, testData);
+    @Test(dataProvider = "RoundTripTest")
+    public void testCoreBlockRoundTrips(final byte[] testData, final Version[] versions) throws IOException {
+        final Block coreBlock = Block.createRawCoreDataBlock(testData);
+        rtCheck(coreBlock, testData, versions);
     }
 
     @Test
@@ -105,36 +105,12 @@ public class BlockTest extends HtsjdkTest {
         final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();
         final byte[] compressedData = compressor.compress(uncompressedData);
 
-        final Block extBlock = new ExternalBlock(contentID, compressor, uncompressedData);
+        final Block extBlock = new ExternalBlock(compressor.getMethod(), contentID, compressedData, uncompressedData.length);
 
         final Block rtBlock2 = roundTrip(extBlock, CramVersions.CRAM_v2_1);
         contentCheck(rtBlock2, uncompressedData, compressedData);
 
         final Block rtBlock3 = roundTrip(extBlock, CramVersions.CRAM_v3);
         contentCheck(rtBlock3, uncompressedData, compressedData);
-    }
-
-    @Test
-    public void testCoreBlockRoundTrips() throws IOException {
-        final byte[] testData = "TEST STRING".getBytes();
-
-        final Block coreBlock = Block.createRawCoreDataBlock(testData);
-
-        final Block rtBlock2 = roundTrip(coreBlock, CramVersions.CRAM_v2_1);
-        contentCheck(rtBlock2, testData, testData);
-
-        final Block rtBlock3 = roundTrip(coreBlock, CramVersions.CRAM_v3);
-        contentCheck(rtBlock3, testData, testData);
-    }
-
-    @Test(expectedExceptions = CRAMException.class)
-    public void testExternalBlockContentId() {
-        // arbitrary values
-        final ExternalCompressor compressor = ExternalCompressor.createGZIP();
-        final byte[] uncompressedData = "A TEST STRING".getBytes();
-
-        // not allowed for external
-        final int contentID = Block.NO_CONTENT_ID;
-        new ExternalBlock(contentID, compressor, uncompressedData);
     }
 }

@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.digest.ContentDigests;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
@@ -173,9 +174,16 @@ public class ContainerFactory {
 
         slice.external = new HashMap<>();
         for (final Integer contentId : externalBlockMap.keySet()) {
+            // remove after https://github.com/samtools/htsjdk/issues/1232
+            if (contentId == Block.NO_CONTENT_ID) {
+                throw new CRAMException("Valid Content ID required.  Given: " + contentId);
+            }
+
             final ExternalCompressor compressor = header.externalCompressors.get(contentId);
-            final byte[] rawData = externalBlockMap.get(contentId).toByteArray();
-            final ExternalBlock externalBlock = new ExternalBlock(contentId, compressor, rawData);
+            final byte[] rawContent = externalBlockMap.get(contentId).toByteArray();
+            final ExternalBlock externalBlock = new ExternalBlock(compressor.getMethod(), contentId,
+                    compressor.compress(rawContent), rawContent.length);
+
             slice.external.put(contentId, externalBlock);
         }
 
