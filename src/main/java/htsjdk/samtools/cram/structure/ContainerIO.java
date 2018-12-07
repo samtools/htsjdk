@@ -3,15 +3,11 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
-import htsjdk.samtools.util.Log;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -149,18 +145,18 @@ public class ContainerIO {
                 final Block firstBlock = container.blocks[0];
                 final boolean isFileHeaderContainer = firstBlock.getContentType() == BlockContentType.FILE_HEADER;
                 if (isFileHeaderContainer) {
-                    final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
+                    final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                     firstBlock.write(version.major, byteArrayOutputStream);
                     container.containerByteSize = byteArrayOutputStream.size();
 
                     final int containerHeaderByteSize = new ContainerHeaderIO().writeContainerHeader(version.major, container, outputStream);
-                    outputStream.write(byteArrayOutputStream.getBuffer(), 0, byteArrayOutputStream.size());
+                    outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
                     return containerHeaderByteSize + byteArrayOutputStream.size();
                 }
             }
         }
 
-        final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         container.header.write(version, byteArrayOutputStream);
         container.blockCount = 1;
@@ -183,7 +179,7 @@ public class ContainerIO {
         calculateSliceOffsetsAndSizes(container);
 
         int length = new ContainerHeaderIO().writeContainerHeader(version.major, container, outputStream);
-        outputStream.write(byteArrayOutputStream.getBuffer(), 0, byteArrayOutputStream.size());
+        outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
         length += byteArrayOutputStream.size();
 
         log.debug("CONTAINER WRITTEN: " + container.toString());

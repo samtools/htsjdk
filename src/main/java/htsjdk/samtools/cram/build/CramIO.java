@@ -22,7 +22,6 @@ import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.Container;
@@ -216,7 +215,7 @@ public class CramIO {
     }
 
     private static byte[] toByteArray(final SAMFileHeader samFileHeader) {
-        final ExposedByteArrayOutputStream headerBodyOS = new ExposedByteArrayOutputStream();
+        final ByteArrayOutputStream headerBodyOS = new ByteArrayOutputStream();
         final OutputStreamWriter outStreamWriter = new OutputStreamWriter(headerBodyOS);
         new SAMTextHeaderCodec().encode(outStreamWriter, samFileHeader);
         try {
@@ -235,7 +234,7 @@ public class CramIO {
         final ByteArrayOutputStream headerOS = new ByteArrayOutputStream();
         try {
             headerOS.write(bytes);
-            headerOS.write(headerBodyOS.getBuffer(), 0, headerBodyOS.size());
+            headerOS.write(headerBodyOS.toByteArray(), 0, headerBodyOS.size());
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
@@ -262,12 +261,12 @@ public class CramIO {
         container.nofRecords = 0;
         container.sequenceId = 0;
 
-        final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         block.write(major, byteArrayOutputStream);
         container.containerByteSize = byteArrayOutputStream.size();
 
         final int containerHeaderByteSize = ContainerIO.writeContainerHeader(major, container, os);
-        os.write(byteArrayOutputStream.getBuffer(), 0, byteArrayOutputStream.size());
+        os.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
 
         return containerHeaderByteSize + byteArrayOutputStream.size();
     }
@@ -328,7 +327,7 @@ public class CramIO {
         countingInputStream.close();
 
         final Block block = Block.createRawFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
-        final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         block.write(newHeader.getVersion().major, byteArrayOutputStream);
         if (byteArrayOutputStream.size() > c.containerByteSize) {
             log.error("Failed to replace CRAM header because the new header does not fit.");
@@ -336,7 +335,7 @@ public class CramIO {
         }
         final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
         randomAccessFile.seek(pos);
-        randomAccessFile.write(byteArrayOutputStream.getBuffer(), 0, byteArrayOutputStream.size());
+        randomAccessFile.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
         randomAccessFile.close();
         return true;
     }
