@@ -24,6 +24,8 @@
 package htsjdk.samtools;
 
 
+import htsjdk.variant.variantcontext.VariantContext;
+
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,22 +59,26 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
 
     /**
-     * This is not a valid sequence name, because it is reserved in the MRNM field of SAM text format
+     * This is not a valid sequence name, because it is reserved in the RNEXT field of SAM text format
      * to mean "same reference as RNAME field."
      */
-    public static final String RESERVED_MRNM_SEQUENCE_NAME = "=";
+
+    public static final String RESERVED_RNEXT_SEQUENCE_NAME = "=";
+
+    /* use RESERVED_RNEXT_SEQUENCE_NAME instead. */
+    @Deprecated
+    public static final String RESERVED_MRNM_SEQUENCE_NAME = RESERVED_RNEXT_SEQUENCE_NAME;
 
     /**
      * The standard tags are stored in text header without type information, because the type of these tags is known.
      */
     public static final Set<String> STANDARD_TAGS =
-            new HashSet<String>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, MD5_TAG, URI_TAG,
-                                                SPECIES_TAG));
+            new HashSet<>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, MD5_TAG, URI_TAG, SPECIES_TAG));
 
-    // Split on any whitespace
-    private static final Pattern SEQUENCE_NAME_SPLITTER = Pattern.compile("\\s");
     // These are the chars matched by \\s.
     private static final char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
+
+    private static final Pattern LEGAL_RNAME_PATTERN = Pattern.compile("[0-9A-Za-z!#$%&+./:;?@^_|~-][0-9A-Za-z!#$%&*+./:;=?@^_|~-]*");
 
     /**
      * @deprecated Use {@link #SAMSequenceRecord(String, int)} instead.
@@ -85,9 +91,6 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     public SAMSequenceRecord(final String name, final int sequenceLength) {
         if (name != null) {
-            if (SEQUENCE_NAME_SPLITTER.matcher(name).find()) {
-                throw new SAMException("Sequence name contains invalid character: " + name);
-            }
             validateSequenceName(name);
             mSequenceName = name.intern();
         } else {
@@ -188,8 +191,8 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public static String truncateSequenceName(final String sequenceName) {
         /*
          * Instead of using regex split, do it manually for better performance.
-        return SEQUENCE_NAME_SPLITTER.split(sequenceName, 2)[0];
-        */
+         */
+
         int truncateAt = sequenceName.length();
         for (final char c : WHITESPACE_CHARS) {
             int index = sequenceName.indexOf(c);
@@ -204,8 +207,8 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      * Throw an exception if the sequence name is not valid.
      */
     public static void validateSequenceName(final String name) {
-        if (RESERVED_MRNM_SEQUENCE_NAME.equals(name)) {
-            throw new SAMException("'" + RESERVED_MRNM_SEQUENCE_NAME + "' is not a valid sequence name");
+        if (!LEGAL_RNAME_PATTERN.matcher(name).useAnchoringBounds(true).matches()) {
+            throw new SAMException(String.format("Sequence name '%s' doesn't match regex: '%s' ", name, LEGAL_RNAME_PATTERN));
         }
     }
 
