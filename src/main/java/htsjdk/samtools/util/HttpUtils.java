@@ -17,7 +17,7 @@ public class HttpUtils {
     }
 
     private static URLConnection openConnection(final URL url) throws IOException{
-        URLConnection conn = url.openConnection();
+        final URLConnection conn = url.openConnection();
         conn.setReadTimeout(3000);
         conn.setDefaultUseCaches(false);
         conn.setUseCaches(false);
@@ -29,9 +29,13 @@ public class HttpUtils {
         try {
             // Create a URLConnection object for a URL
             conn = openConnection(url);
+            if (conn instanceof HttpURLConnection) {
+                // The HEAD method is identical to GET except that the server MUST NOT return a message-body in the response.
+                ((HttpURLConnection) conn).setRequestMethod("HEAD");
+            }
             return conn.getHeaderField(name);
 
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
             return null;
         }
