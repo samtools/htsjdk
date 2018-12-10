@@ -17,10 +17,14 @@
  */
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -59,10 +63,6 @@ public class CompressionHeader {
     public byte[][][] dictionary;
 
     public CompressionHeader() {
-    }
-
-    private CompressionHeader(final InputStream inputStream) throws IOException {
-        read(inputStream);
     }
 
     private byte[][][] parseDictionary(final byte[] bytes) {
@@ -114,15 +114,7 @@ public class CompressionHeader {
         return dictionary[id];
     }
 
-    public void read(final byte[] data) {
-        try {
-            read(new ByteArrayInputStream(data));
-        } catch (final IOException e) {
-            throw new RuntimeException("This should have never happened.");
-        }
-    }
-
-    void read(final InputStream is) throws IOException {
+    private void internalRead(final InputStream is) throws IOException {
         { // preservation map:
             final int byteSize = ITF8.readUnsignedITF8(is);
             final byte[] bytes = new byte[byteSize];
@@ -201,13 +193,25 @@ public class CompressionHeader {
         }
     }
 
-    public byte[] toByteArray() throws IOException {
-        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        write(byteArrayOutputStream);
-        return byteArrayOutputStream.toByteArray();
+    /**
+     * Write this CompressionHeader out to an internal OutputStream, wrap it in a Block, and write that
+     * Block out to the passed-in OutputStream.
+     *
+     * @param cramVersion the CRAM major version number
+     * @param blockStream the stream to write to
+     */
+    public void write(final Version cramVersion, final OutputStream blockStream) {
+        try (final ByteArrayOutputStream internalOutputStream = new ByteArrayOutputStream()) {
+            internalWrite(internalOutputStream);
+            final Block block = Block.createRawCompressionHeaderBlock(internalOutputStream.toByteArray());
+            block.write(cramVersion.major, blockStream);
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
-    void write(final OutputStream outputStream) throws IOException {
+    private void internalWrite(final OutputStream outputStream) throws IOException {
 
         { // preservation map:
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
@@ -287,6 +291,28 @@ public class CompressionHeader {
 
             ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
             outputStream.write(mapBytes);
+        }
+    }
+
+    /**
+     * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader
+     * We do this instead of reading the InputStream directly because the Block content may be compressed
+     *
+     * @param cramVersion the CRAM version
+     * @param blockStream the stream to read from
+     * @return a new CompressionHeader from the input
+     */
+    public static CompressionHeader read(final int cramVersion, final InputStream blockStream) {
+        final Block block = Block.read(cramVersion, blockStream);
+        if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
+            throw new RuntimeIOException("Compression Header Block expected, found: " + block.getContentType().name());
+
+        try (final ByteArrayInputStream internalStream = new ByteArrayInputStream(block.getUncompressedContent())) {
+            final CompressionHeader header = new CompressionHeader();
+            header.internalRead(internalStream);
+            return header;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
     }
 

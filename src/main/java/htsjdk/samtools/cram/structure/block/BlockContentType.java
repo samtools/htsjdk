@@ -15,7 +15,16 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.structure;
+package htsjdk.samtools.cram.structure.block;
+
+import htsjdk.samtools.cram.CRAMException;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The block content types specified by Section 8.1 of the CRAM spec
@@ -44,4 +53,19 @@ public enum BlockContentType {
     public int getContentTypeId() {
         return contentTypeId;
     }
+
+    /**
+     * Return the BlockContentType specified by the ID
+     *
+     * @param id the number assigned to each block content type in the CRAM spec
+     * @return the BlockContentType associated with the ID
+     */
+    public static BlockContentType byId(final int id) {
+        return Optional.ofNullable(ID_MAP.get(id))
+                .orElseThrow(() -> new CRAMException("Could not find BlockContentType for: " + id));
+    }
+
+    private static final Map<Integer, BlockContentType> ID_MAP =
+            Collections.unmodifiableMap(Stream.of(BlockContentType.values())
+                    .collect(Collectors.toMap(BlockContentType::getContentTypeId, Function.identity())));
 }

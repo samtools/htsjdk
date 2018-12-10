@@ -4,8 +4,9 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.Log;
-import org.apache.commons.compress.utils.CountingOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -78,11 +79,7 @@ public class ContainerIO {
             return container;
         }
 
-        final Block block = Block.readFromInputStream(major, inputStream);
-        if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
-            throw new RuntimeException("Content type does not match: " + block.getContentType().name());
-        container.header = new CompressionHeader();
-        container.header.read(block.getRawContent());
+        container.header = CompressionHeader.read(major, inputStream);
 
         howManySlices = Math.min(container.landmarks.length, howManySlices);
 
@@ -165,21 +162,10 @@ public class ContainerIO {
 
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
 
-        final Block block = new Block();
-        block.setContentType(BlockContentType.COMPRESSION_HEADER);
-        block.setContentId(0);
-        block.setMethod(BlockCompressionMethod.RAW);
-        final byte[] bytes;
-        try {
-            bytes = container.header.toByteArray();
-        } catch (final IOException e) {
-            throw new RuntimeException("This should have never happened.");
-        }
-        block.setRawContent(bytes);
-        block.write(version.major, byteArrayOutputStream);
+        container.header.write(version, byteArrayOutputStream);
         container.blockCount = 1;
 
-        final List<Integer> landmarks = new ArrayList<Integer>();
+        final List<Integer> landmarks = new ArrayList<>();
         for (int i = 0; i < container.slices.length; i++) {
             final Slice slice = container.slices[i];
             landmarks.add(byteArrayOutputStream.size());
@@ -203,29 +189,5 @@ public class ContainerIO {
         log.debug("CONTAINER WRITTEN: " + container.toString());
 
         return length;
-    }
-
-    /**
-     * Calculates the byte size of a container based on the CRAM version.
-     *
-     * @param version   the CRAM version to assume
-     * @param container the container to be weighted
-     * @return the total number of bytes the container would occupy if written out
-     */
-    public static long getByteSize(final Version version, final Container container) {
-        final CountingOutputStream countingOutputStream = new CountingOutputStream(new OutputStream() {
-            @Override
-            public void write(final int b) throws IOException {
-            }
-        });
-
-        try {
-            writeContainer(version, container, countingOutputStream);
-            countingOutputStream.close();
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return countingOutputStream.getBytesWritten();
     }
 }

@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
-import htsjdk.samtools.cram.structure.Block;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -248,7 +248,7 @@ public class CramIO {
         final int length = Math.max(1024, data.length + data.length / 2);
         final byte[] blockContent = new byte[length];
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
-        final Block block = Block.buildNewFileHeaderBlock(blockContent);
+        final Block block = Block.createRawFileHeaderBlock(blockContent);
 
         final Container container = new Container();
         container.blockCount = 1;
@@ -279,18 +279,18 @@ public class CramIO {
             if (version.compatibleWith(CramVersions.CRAM_v3)) {
                 final byte[] bytes = new byte[container.containerByteSize];
                 InputStreamUtils.readFully(inputStream, bytes, 0, bytes.length);
-                block = Block.readFromInputStream(version.major, new ByteArrayInputStream(bytes));
+                block = Block.read(version.major, new ByteArrayInputStream(bytes));
                 // ignore the rest of the container
             } else {
                 /*
                  * pending issue: container.containerByteSize inputStream 2 bytes shorter
 				 * then needed in the v21 test cram files.
 				 */
-                block = Block.readFromInputStream(version.major, inputStream);
+                block = Block.read(version.major, inputStream);
             }
         }
 
-        inputStream = new ByteArrayInputStream(block.getRawContent());
+        inputStream = new ByteArrayInputStream(block.getUncompressedContent());
 
         final ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -327,7 +327,7 @@ public class CramIO {
         final long pos = countingInputStream.getCount();
         countingInputStream.close();
 
-        final Block block = Block.buildNewFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
+        final Block block = Block.createRawFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
         block.write(newHeader.getVersion().major, byteArrayOutputStream);
         if (byteArrayOutputStream.size() > c.containerByteSize) {

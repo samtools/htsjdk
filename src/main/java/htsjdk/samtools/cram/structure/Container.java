@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.structure.block.Block;
 
 public class Container {
     // container header as defined in the specs:

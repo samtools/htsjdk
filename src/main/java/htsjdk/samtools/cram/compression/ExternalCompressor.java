@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.compression;
 
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.cram.compression.rans.RANS.ORDER;
-import htsjdk.samtools.cram.structure.BlockCompressionMethod;
 
 import java.io.IOException;
 

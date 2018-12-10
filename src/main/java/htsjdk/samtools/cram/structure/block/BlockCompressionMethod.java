@@ -15,7 +15,14 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.structure;
+package htsjdk.samtools.cram.structure.block;
+
+import htsjdk.samtools.cram.CRAMException;
+
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The block compression methods specified by Section 8 of the CRAM spec
@@ -43,4 +50,19 @@ public enum BlockCompressionMethod {
     public int getMethodId() {
         return methodId;
     }
+
+    /**
+     * Return the BlockCompressionMethod specified by the ID
+     *
+     * @param id the number assigned to each block compression method in the CRAM spec
+     * @return the BlockCompressionMethod associated with the ID
+     */
+    public static BlockCompressionMethod byId(final int id) {
+        return Optional.ofNullable(ID_MAP.get(id))
+                .orElseThrow(() -> new CRAMException("Could not find BlockCompressionMethod for: " + id));
+    }
+
+    private static final Map<Integer, BlockCompressionMethod> ID_MAP =
+            Collections.unmodifiableMap(Stream.of(BlockCompressionMethod.values())
+                    .collect(Collectors.toMap(BlockCompressionMethod::getMethodId, Function.identity())));
 }
