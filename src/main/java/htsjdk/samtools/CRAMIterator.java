@@ -68,6 +68,10 @@ public class CRAMIterator implements SAMRecordIterator {
         this.validationStringency = validationStringency;
     }
 
+    /**
+     * `samRecordIndex` only used when validation is not `SILENT`
+     * (for identification by the validator which records are invalid)
+     */
     private long samRecordIndex;
     private ArrayList<CramCompressionRecord> cramRecords;
 
@@ -84,7 +88,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        records = new ArrayList<SAMRecord>(10000);
+        records = new ArrayList<SAMRecord>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -103,7 +107,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        records = new ArrayList<SAMRecord>(10000);
+        records = new ArrayList<SAMRecord>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -143,10 +147,7 @@ public class CRAMIterator implements SAMRecordIterator {
             }
         }
 
-        if (records == null)
-            records = new ArrayList<SAMRecord>(container.nofRecords);
-        else
-            records.clear();
+        records.clear();
         if (cramRecords == null)
             cramRecords = new ArrayList<CramCompressionRecord>(container.nofRecords);
         else
@@ -172,15 +173,17 @@ public class CRAMIterator implements SAMRecordIterator {
 
         for (int i = 0; i < container.slices.length; i++) {
             final Slice slice = container.slices[i];
+
             if (slice.sequenceId < 0)
                 continue;
+
             if (!slice.validateRefMD5(refs)) {
                 final String msg = String.format(
                         "Reference sequence MD5 mismatch for slice: sequence id %d, start %d, span %d, expected MD5 %s",
-                            slice.sequenceId,
-                            slice.alignmentStart,
-                            slice.alignmentSpan,
-                            String.format("%032x", new BigInteger(1, slice.refMD5)));
+                        slice.sequenceId,
+                        slice.alignmentStart,
+                        slice.alignmentSpan,
+                        String.format("%032x", new BigInteger(1, slice.refMD5)));
                 throw new CRAMException(msg);
             }
         }
@@ -201,12 +204,6 @@ public class CRAMIterator implements SAMRecordIterator {
 
             samRecord.setValidationStringency(validationStringency);
 
-            if (validationStringency != ValidationStringency.SILENT) {
-                final List<SAMValidationError> validationErrors = samRecord.isValid();
-                SAMUtils.processValidationErrors(validationErrors,
-                        samRecordIndex, validationStringency);
-            }
-
             if (mReader != null) {
                 final long chunkStart = (container.offset << 16) | cramRecord.sliceIndex;
                 final long chunkEnd = ((container.offset << 16) | cramRecord.sliceIndex) + 1;
@@ -215,7 +212,6 @@ public class CRAMIterator implements SAMRecordIterator {
             }
 
             records.add(samRecord);
-            samRecordIndex++;
         }
         cramRecords.clear();
         iterator = records.iterator();
@@ -267,7 +263,15 @@ public class CRAMIterator implements SAMRecordIterator {
     @Override
     public SAMRecord next() {
         if (hasNext()) {
-            return iterator.next();
+
+            SAMRecord samRecord = iterator.next();
+
+            if (validationStringency != ValidationStringency.SILENT) {
+                SAMUtils.processValidationErrors(samRecord.isValid(), samRecordIndex++, validationStringency);
+            }
+
+            return samRecord;
+
         } else {
             throw new NoSuchElementException();
         }
