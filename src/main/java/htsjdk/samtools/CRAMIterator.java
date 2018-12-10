@@ -41,18 +41,18 @@ import htsjdk.samtools.cram.CRAMException;
 public class CRAMIterator implements SAMRecordIterator {
     private static final Log log = Log.getInstance(CRAMIterator.class);
     private final CountingInputStream countingInputStream;
-    private CramHeader cramHeader;
-    private ArrayList<SAMRecord> records;
+    private final CramHeader cramHeader;
+    private final ArrayList<SAMRecord> records;
     private SAMRecord nextRecord = null;
-    private CramNormalizer normalizer;
+    private final CramNormalizer normalizer;
     private byte[] refs;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
     public Container container;
     private SamReader mReader;
     long firstContainerOffset = 0;
-    private Iterator<Container> containerIterator;
+    private final Iterator<Container> containerIterator;
 
-    private ContainerParser parser;
+    private final ContainerParser parser;
     private final CRAMReferenceSource referenceSource;
 
     private Iterator<SAMRecord> iterator = Collections.<SAMRecord>emptyList().iterator();
