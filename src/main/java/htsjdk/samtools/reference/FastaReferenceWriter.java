@@ -431,24 +431,26 @@ public final class FastaReferenceWriter implements AutoCloseable {
     /**
      * Adds bases to current sequence from a {@code byte} array.
      *
-     * @param basesString String containing the bases to be added.
+     * @param basesBases String containing the bases to be added.
+     *                   string will be interpreted using ascii and will throw if any character is >= 127.
      * @return this instance.
-     * @throws IllegalArgumentException if {@bases} is {@code null} or
+     * @throws IllegalArgumentException if {@code bases} is {@code null} or
      *                                  the input array contains invalid bases (as assessed by: {@link SequenceUtil#isIUPAC(byte)}).
      * @throws IllegalStateException    if no sequence was started or the writer is already closed.
      * @throws IOException              if such exception is throw when writing in any of the outputs.
      */
-    public FastaReferenceWriter appendString(final String basesString)
+    public FastaReferenceWriter appendBases(final String basesBases)
             throws IOException {
-        return appendBases(basesString.getBytes());
+        return appendBases(basesBases.getBytes("ASCII"));
     }
 
     /**
      * Adds bases to current sequence from a {@code byte} array.
+     * Will throw if any character is >= 127.
      *
      * @param bases array containing the bases to be added.
      * @return this instance.
-     * @throws IllegalArgumentException if {@bases} is {@code null} or
+     * @throws IllegalArgumentException if {@code bases} is {@code null} or
      *                                  the input array contains invalid bases (as assessed by: {@link SequenceUtil#isIUPAC(byte)}).
      * @throws IllegalStateException    if no sequence was started or the writer is already closed.
      * @throws IOException              if such exception is throw when writing in any of the outputs.
@@ -460,14 +462,15 @@ public final class FastaReferenceWriter implements AutoCloseable {
 
     /**
      * Adds bases to current sequence from a range in a {@code byte} array.
+     * Will throw if any character is >= 127.
      *
      * @param bases  array containing the bases to be added.
      * @param offset the position of the first base to add.
      * @param length how many bases to be added starting from position {@code offset}.
      * @return this instance.
-     * @throws IllegalArgumentException if {@bases} is {@code null} or
+     * @throws IllegalArgumentException if {@code bases} is {@code null} or
      *                                  {@code offset} and {@code length} do not entail a valid range in {@code bases} or
-     *                                  that range in {@base} contain invalid bases (as assessed by: {@link SequenceUtil#isIUPAC(byte)}).
+     *                                  that range in {@code base} contain invalid bases (as assessed by: {@link SequenceUtil#isIUPAC(byte)}).
      * @throws IllegalStateException    if no sequence was started or the writer is already closed.
      * @throws IOException              if such exception is throw when writing in any of the outputs.
      */

@@ -23,15 +23,7 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.AlignmentBlock;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqConstants;
 import htsjdk.utils.ValidationUtils;
 
@@ -60,15 +52,17 @@ public class SequenceUtil {
      */
     private static final byte[] BAM_READ_BASE_SET = "=ABCDGHKMNRSTVWY".getBytes();
 
+    private static final int BASES_ARRAY_LENGTH = 127;
+    private static final int SHIFT_TO_LOWER_CASE = a - A;
     /**
      * A lookup table to find a corresponding BAM read base.
      */
-    private static final byte[] bamReadBaseLookup = new byte[127];
+    private static final byte[] bamReadBaseLookup = new byte[BASES_ARRAY_LENGTH];
     static {
         Arrays.fill(bamReadBaseLookup, N);
         for (final byte base: BAM_READ_BASE_SET) {
             bamReadBaseLookup[base] = base;
-            bamReadBaseLookup[base + 32] = base;
+            bamReadBaseLookup[base + SHIFT_TO_LOWER_CASE] = base;
         }
     }
 
@@ -77,7 +71,7 @@ public class SequenceUtil {
     private static final byte G_MASK = 4;
     private static final byte T_MASK = 8;
 
-    private static final byte[] bases = new byte[127];
+    private static final byte[] bases = new byte[BASES_ARRAY_LENGTH];
     private static final byte NON_IUPAC_CODE = 0;
     /*
      * Definition of IUPAC codes:
@@ -102,7 +96,7 @@ public class SequenceUtil {
         bases['N'] = A_MASK | C_MASK | G_MASK | T_MASK;
         // Also store the bases in lower case
         for (int i = 'A'; i <= 'Z'; i++) {
-            bases[(byte) i + 32] = bases[(byte) i];
+            bases[(byte) i + SHIFT_TO_LOWER_CASE] = bases[(byte) i];
         }
         bases['.'] = A_MASK | C_MASK | G_MASK | T_MASK;
     };
@@ -127,6 +121,12 @@ public class SequenceUtil {
      * without considering the set relationships between ambiguous codes.
      */
     public static boolean basesEqual(final byte lhs, final byte rhs) {
+        if (lhs < 0 || lhs >= BASES_ARRAY_LENGTH) {
+            return false;
+        }
+        if (rhs < 0 || rhs >= BASES_ARRAY_LENGTH) {
+            return false;
+        }
         return (bases[lhs] == bases[rhs]);
     }
 
@@ -141,6 +141,13 @@ public class SequenceUtil {
      * Since the comparison is directional, make sure to pass read / ref codes in correct order.
      */
     public static boolean readBaseMatchesRefBaseWithAmbiguity(final byte readBase, final byte refBase) {
+        if (readBase < 0 || readBase >= BASES_ARRAY_LENGTH) {
+            return false;
+        }
+        if (refBase < 0 || refBase >= BASES_ARRAY_LENGTH) {
+            return false;
+        }
+
         return (bases[readBase] & bases[refBase]) == bases[readBase];
     }
 
@@ -177,15 +184,19 @@ public class SequenceUtil {
 
     /** Checks if the given base is a IUPAC code */
     public static boolean isIUPAC(final byte base) {
+        if (base >= BASES_ARRAY_LENGTH || base < 0) {
+            return false;
+        }
         return bases[base] != NON_IUPAC_CODE;
     }
 
     /** Calculates the fraction of bases that are G/C in the sequence */
     public static double calculateGc(final byte[] bases) {
         int gcs = 0;
-        for (int i = 0; i < bases.length; ++i) {
-            final byte b = bases[i];
-            if (b == 'C' || b == 'G' || b == 'c' || b == 'g') ++gcs;
+        for (final byte b : bases) {
+            if (b == 'C' || b == 'G' || b == 'c' || b == 'g') {
+                ++gcs;
+            }
         }
 
         return gcs / (double) bases.length;
