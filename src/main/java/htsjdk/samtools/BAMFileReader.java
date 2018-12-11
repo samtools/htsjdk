@@ -338,6 +338,15 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     }
 
     /**
+     * Reads through the header and sequence records to find the virtual file offset of the first record in the BAM file.
+     * The caller is responsible for closing the stream.
+     */
+    static long findVirtualOffsetOfFirstRecord(final SeekableStream seekableStream) throws IOException {
+        final BAMFileReader reader = new BAMFileReader(seekableStream, (SeekableStream) null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+        return reader.mFirstRecordPointer;
+    }
+
+    /**
      * If true, writes the source of every read into the source SAMRecords.
      * @param enabled true to write source information into each SAMRecord.
      */
@@ -942,6 +951,14 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         // Add some preprocessing filters for edge-case reads that don't fit into this
         // query type.
         return new BAMQueryFilteringIterator(iterator, new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
+    }
+
+    /**
+     * @return a virtual file pointer for the underlying compressed stream.
+     * @see BlockCompressedInputStream#getFilePointer()
+     */
+    public long getVirtualFilePointer() {
+        return mCompressedInputStream.getFilePointer();
     }
 
     /**
