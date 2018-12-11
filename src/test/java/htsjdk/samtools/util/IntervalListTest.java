@@ -222,14 +222,12 @@ public class IntervalListTest extends HtsjdkTest {
         union13.add(new Interval("2", 200, 600));
         union13.add(new Interval("3", 50, 470));
 
+
         return new Object[][]{
                 new Object[]{Arrays.asList(list1, list2, list3), union123},
                 new Object[]{Arrays.asList(list1, list2), union12},
-                new Object[]{Arrays.asList(list1, list2), union12},
-                new Object[]{Arrays.asList(list2, list3), union23},
                 new Object[]{Arrays.asList(list2, list3), union23},
                 new Object[]{Arrays.asList(list1, list3), union13},
-                new Object[]{Arrays.asList(list1, list3), union13}
         };
     }
 
@@ -464,11 +462,14 @@ public class IntervalListTest extends HtsjdkTest {
 
     @DataProvider(name = "VCFCompData")
     public Object[][] VCFCompData() {
+        final Path intervalListFromVcf = TEST_DIR.resolve("IntervalListFromVCFTest.vcf");
+        final Path intervalListFromVcfManual = TEST_DIR.resolve("IntervalListFromVCFTestManual.vcf");
+
         return new Object[][]{
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTest.vcf"), TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), false},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTest.vcf"), TEST_DIR.resolve("IntervalListFromVCFTestCompInverse.interval_list"), true},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestManual.vcf"), TEST_DIR.resolve("IntervalListFromVCFTestManualComp.interval_list"), false},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestManual.vcf"), TEST_DIR.resolve("IntervalListFromVCFTestCompInverseManual.interval_list"), true}
+                new Object[]{intervalListFromVcf, TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), false},
+                new Object[]{intervalListFromVcf, TEST_DIR.resolve("IntervalListFromVCFTestCompInverse.interval_list"), true},
+                new Object[]{intervalListFromVcfManual, TEST_DIR.resolve("IntervalListFromVCFTestManualComp.interval_list"), false},
+                new Object[]{intervalListFromVcfManual, TEST_DIR.resolve("IntervalListFromVCFTestCompInverseManual.interval_list"), true}
         };
     }
 
@@ -532,10 +533,11 @@ public class IntervalListTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] testFromSequenceData() {
+        final Path intervalList = TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list");
         return new Object[][]{
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), "1", 249250621},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), "2", 243199373},
-                new Object[]{TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list"), "3", 198022430},
+                new Object[]{intervalList, "1", 249250621},
+                new Object[]{intervalList, "2", 243199373},
+                new Object[]{intervalList, "3", 198022430},
         };
     }
 
