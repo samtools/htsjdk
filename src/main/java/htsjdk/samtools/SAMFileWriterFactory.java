@@ -437,7 +437,7 @@ public class SAMFileWriterFactory implements Cloneable {
             return makeSAMWriter(header, presorted, outputPath);
         } else {
             if (!BAM_TYPE.hasValidFileExtension(filename)) {
-                log.info("Unknown file extension, assuming BAM format when writing file: " + outputFile.getAbsolutePath());
+                log.info("Unknown file extension, assuming BAM format when writing file: " + outputPath.toUri().toString());
             }
             return makeBAMWriter(header, presorted, outputPath);
         }
@@ -635,7 +635,7 @@ public class SAMFileWriterFactory implements Cloneable {
 
         final CRAMReferenceSource referenceSource;
         if (referenceFasta == null) {
-            log.info("Reference fasta is not provided when writing CRAM file " + outputFile.getAbsolutePath());
+            log.info("Reference fasta is not provided when writing CRAM file " + outputFile.toUri().toString());
             log.info("Will attempt to use a default reference or download as set by defaults    :");
             log.info("Default REFERENCE_FASTA (-Dsamjdk.reference_fasta): " + Defaults.REFERENCE_FASTA);
             log.info("Default USE_CRAM_REF_DOWNLOAD (-Dsamjdk.use_cram_ref_download): " + Defaults.USE_CRAM_REF_DOWNLOAD);
