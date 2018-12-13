@@ -26,6 +26,7 @@ import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.Slice;
 
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ public class ContainerParser {
             records = new ArrayList<>(container.nofRecords);
         }
 
-        for (final Slice slice : container.slices) {
+        for (final IndexableSlice slice : container.slices) {
             records.addAll(getRecords(slice, container.header, validationStringency));
         }
 
@@ -60,7 +61,7 @@ public class ContainerParser {
 
     public Map<Integer, AlignmentSpan> getReferences(final Container container, final ValidationStringency validationStringency) {
         final Map<Integer, AlignmentSpan> containerSpanMap  = new HashMap<>();
-        for (final Slice slice : container.slices) {
+        for (final IndexableSlice slice : container.slices) {
             addAllSpans(containerSpanMap, getReferences(slice, container.header, validationStringency));
         }
         return containerSpanMap;
@@ -96,7 +97,9 @@ public class ContainerParser {
     }
 
     ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                                final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
+                                                final IndexableSlice slice,
+                                                final CompressionHeader header,
+                                                final ValidationStringency validationStringency) {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
 
         if (slice.hasSingleReference()) {
@@ -141,7 +144,7 @@ public class ContainerParser {
         return records;
     }
 
-    List<CramCompressionRecord> getRecords(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
+    List<CramCompressionRecord> getRecords(final IndexableSlice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
         return getRecords(null, slice, header, validationStringency);
     }
 }

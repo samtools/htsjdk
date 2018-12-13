@@ -5,10 +5,10 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.SliceBAIMetadata;
 import htsjdk.samtools.cram.structure.slice.SliceHeader;
-import htsjdk.samtools.cram.structure.slice.StreamableSlice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -22,18 +22,18 @@ import java.util.Iterator;
  * Created by vadim on 07/12/2015.
  */
 public class SliceTests extends HtsjdkTest {
-    public static StreamableSlice dummySliceForTesting(final int sequenceId,
-                                                       final int alignmentStart,
-                                                       final int alignmentSpan) {
+    public static Slice dummySliceForTesting(final int sequenceId,
+                                             final int alignmentStart,
+                                             final int alignmentSpan) {
         // dummy value
         final byte[] refBases = null;
         return dummySliceForTesting(sequenceId, alignmentStart, alignmentSpan, refBases);
     }
 
-    private static StreamableSlice dummySliceForTesting(final int sequenceId,
-                                                        final int alignmentStart,
-                                                        final int alignmentSpan,
-                                                        final byte[] refBases) {
+    private static Slice dummySliceForTesting(final int sequenceId,
+                                              final int alignmentStart,
+                                              final int alignmentSpan,
+                                              final byte[] refBases) {
 
         // dummy values
 
@@ -49,10 +49,10 @@ public class SliceTests extends HtsjdkTest {
         final SliceHeader header = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
                 globalRecordCounter, blockCount, contentIDs, embeddedRefBlockContentID, refMD5, tags);
 
-        return new StreamableSlice(header, null, null);
+        return new Slice(header, null, null);
     }
 
-    private static StreamableSlice getUnmappedSlice() {
+    private static Slice getUnmappedSlice() {
         return dummySliceForTesting(SliceHeader.NO_REFERENCE,
                 SliceHeader.NO_ALIGNMENT_START,
                 SliceHeader.NO_ALIGNMENT_SPAN);
@@ -60,7 +60,7 @@ public class SliceTests extends HtsjdkTest {
 
     @Test
     public void testUnmappedValidateRef() {
-        StreamableSlice slice = getUnmappedSlice();
+        Slice slice = getUnmappedSlice();
 
         slice.validateRefMD5(null);
         slice.validateRefMD5(new byte[0]);
@@ -75,7 +75,7 @@ public class SliceTests extends HtsjdkTest {
         final int alignmentStart = 1;
         final int alignmentSpan = 5;
         final int globalRecordCounter = 0;
-        final StreamableSlice slice = dummySliceForTesting(sequenceId, alignmentStart, alignmentSpan, refBases);
+        final Slice slice = dummySliceForTesting(sequenceId, alignmentStart, alignmentSpan, refBases);
 
         Assert.assertEquals(SliceHeader.calculateRefMD5(refBases, sequenceId, alignmentStart, alignmentSpan, globalRecordCounter), md5);
         slice.validateRefMD5(refBases);
@@ -99,7 +99,7 @@ public class SliceTests extends HtsjdkTest {
         };
     }
 
-    private StreamableSlice testSlice() {
+    private Slice testSlice() {
         byte[] refBases = "AAAAA".getBytes();
         final int sequenceId = 0;
         final int alignmentStart = 1;
@@ -109,19 +109,19 @@ public class SliceTests extends HtsjdkTest {
 
     @Test(dataProvider = "badRefs1", expectedExceptions = CRAMException.class)
     public void test_validateMismatchRef(final byte[] badRefBases) {
-        final StreamableSlice slice = testSlice();
+        final Slice slice = testSlice();
         slice.validateRefMD5(badRefBases);
     }
 
     @Test(dataProvider = "badRefs2", expectedExceptions = RuntimeException.class)
     public void test_validateOutsideRef(final byte[] badRefBases) {
-        final StreamableSlice slice = testSlice();
+        final Slice slice = testSlice();
         slice.validateRefMD5(badRefBases);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void test_validateRefNull() {
-        final StreamableSlice slice = testSlice();
+        final Slice slice = testSlice();
         slice.validateRefMD5(null);
     }
 
@@ -131,7 +131,7 @@ public class SliceTests extends HtsjdkTest {
         final int sequenceId = SliceHeader.MULTI_REFERENCE;
         final int alignmentStart = 1;
         final int alignmentSpan = 5;
-        final StreamableSlice slice = dummySliceForTesting(sequenceId, alignmentStart, alignmentSpan, refBases);
+        final Slice slice = dummySliceForTesting(sequenceId, alignmentStart, alignmentSpan, refBases);
 
         slice.validateRefMD5(refBases);
     }
@@ -174,8 +174,8 @@ public class SliceTests extends HtsjdkTest {
 
         final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
                 0, 0, null, 0, null, null);
-        final StreamableSlice ss = new StreamableSlice(sh, null, null);
-        final Slice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
+        final Slice ss = new Slice(sh, null, null);
+        final IndexableSlice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
 
         final SliceBAIMetadata b = s.getBAIMetadata(containerByteOffset);
 
@@ -202,8 +202,8 @@ public class SliceTests extends HtsjdkTest {
 
         final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
                 0, 0, null, 0, null, null);
-        final StreamableSlice ss = new StreamableSlice(sh, null, null);
-        final Slice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
+        final Slice ss = new Slice(sh, null, null);
+        final IndexableSlice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
 
         final int sequenceId2 = 45;
         final int start2 = 50;
@@ -235,8 +235,8 @@ public class SliceTests extends HtsjdkTest {
 
         final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
                 0, 0, null, 0, null, null);
-        final StreamableSlice ss = new StreamableSlice(sh, null, null);
-        final Slice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
+        final Slice ss = new Slice(sh, null, null);
+        final IndexableSlice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
 
         final CRAIEntry c = s.getCRAIEntry(containerByteOffset);
 
@@ -262,8 +262,8 @@ public class SliceTests extends HtsjdkTest {
 
         final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
                 0, 0, null, 0, null, null);
-        final StreamableSlice ss = new StreamableSlice(sh, null, null);
-        final Slice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
+        final Slice ss = new Slice(sh, null, null);
+        final IndexableSlice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
 
         final int sequenceId2 = 45;
         final int start2 = 50;

@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.structure.slice;
 import htsjdk.samtools.cram.CRAIEntry;
 
 /**
- * Contains the necessary information about a {@link Slice} for BAI indexing.
+ * Contains the necessary information about a {@link IndexableSlice} for BAI indexing.
  *
  * It differs from a {@link CRAIEntry} because CRAI does not store recordCount and index.
  */

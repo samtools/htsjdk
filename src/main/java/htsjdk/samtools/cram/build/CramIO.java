@@ -27,7 +27,7 @@ import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -254,7 +254,7 @@ public class CramIO {
         container.blockCount = 1;
         container.blocks = new Block[]{block};
         container.landmarks = new int[0];
-        container.slices = new Slice[0];
+        container.slices = new IndexableSlice[0];
         container.alignmentSpan = SliceHeader.NO_ALIGNMENT_SPAN;
         container.alignmentStart = SliceHeader.NO_ALIGNMENT_START;
         container.bases = 0;

@@ -27,6 +27,7 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import htsjdk.samtools.seekablestream.SeekableStream;

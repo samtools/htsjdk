@@ -5,8 +5,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.CRAMCRAIIndexer;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.cram.structure.slice.Slice;
-import htsjdk.samtools.cram.structure.slice.SliceBAIMetadata;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.ValidationStringency;
@@ -53,22 +52,22 @@ public class CRAIIndex {
 
     /**
      * Create index entries for a single container.
-     * @param c the container to index
+     * @param container the container to index
      */
-    public void processContainer(final Container c) {
+    public void processContainer(final Container container) {
         // TODO: this should be refactored and delegate to container/slice
-        if (!c.isEOF()) {
-            for (final Slice slice : c.slices) {
+        if (!container.isEOF()) {
+            for (final IndexableSlice slice : container.slices) {
                 if (slice.hasMultipleReferences()) {
-                    final Map<Integer, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(c.header, ValidationStringency.DEFAULT_STRINGENCY);
+                    final Map<Integer, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(container.header, ValidationStringency.DEFAULT_STRINGENCY);
                     final List<CRAIEntry> entries = spans
                             .entrySet()
                             .stream()
-                            .map(span -> slice.getCRAIEntry(span.getKey(), span.getValue(), c.offset))
+                            .map(span -> slice.getCRAIEntry(span.getKey(), span.getValue(), container.offset))
                             .collect(Collectors.toList());
                     this.entries.addAll(entries);
                 } else {
-                    this.entries.add(slice.getCRAIEntry(c.offset));
+                    this.entries.add(slice.getCRAIEntry(container.offset));
                 }
             }
         }

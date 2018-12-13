@@ -3,8 +3,8 @@ package htsjdk.samtools.cram;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.SliceTests;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.Slice;
-import htsjdk.samtools.cram.structure.slice.StreamableSlice;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -19,10 +19,10 @@ public class CRAIEntryTest extends HtsjdkTest {
     @Test
     public void testFromContainer() {
         final Container container = new Container();
-        final Slice slice = newSlice(1, 2, 3);
+        final IndexableSlice slice = newSlice(1, 2, 3);
         container.offset = 4;
         container.landmarks = new int[]{5};
-        container.slices = new Slice[]{slice};
+        container.slices = new IndexableSlice[]{slice};
 
         final List<CRAIEntry> entries = CRAIEntry.fromContainer(container);
         Assert.assertNotNull(entries);
@@ -131,10 +131,10 @@ public class CRAIEntryTest extends HtsjdkTest {
         return new CRAIEntry(1, 0, 0, containerStartOffset, 0, 0);
     }
 
-    private Slice newSlice(final int sequenceId,
-                           final int alignmentStart,
-                           final int alignmentSpan) {
-        final StreamableSlice slice = SliceTests.dummySliceForTesting(sequenceId, alignmentStart, alignmentSpan);
+    private IndexableSlice newSlice(final int sequenceId,
+                                    final int alignmentStart,
+                                    final int alignmentSpan) {
+        final Slice slice = SliceTests.dummySliceForTesting(sequenceId, alignmentStart, alignmentSpan);
         return slice.withIndexingMetadata(10, 11, 12);
     }
 }

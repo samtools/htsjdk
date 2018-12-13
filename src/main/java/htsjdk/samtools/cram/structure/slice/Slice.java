@@ -1,27 +1,20 @@
-/**
- * ****************************************************************************
- * Copyright 2013 EMBL-EBI
- * <p/>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at4
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ****************************************************************************
- */
 package htsjdk.samtools.cram.structure.slice;
 
-import htsjdk.samtools.cram.CRAIEntry;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
+import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
+import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.block.Block;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * A Slice is a logical grouping of blocks inside a container.
@@ -31,121 +24,186 @@ import java.util.Map;
  * 1 Core Data Block
  * N External Data Blocks, indexed by Block Content ID.
  *
- * We also store BAI indexing information along with the Slice.
- * Since this is not part of the CRAM stream, we must first construct a {@link StreamableSlice} from the stream
- * and then construct the Slice using values derived from the StreamableSlice
+ * A full {@link IndexableSlice} can be constructed from this Slice by also supplying BAI indexing metadata.
+ *
  */
-public class Slice extends StreamableSlice {
-    private final int byteOffset;
-    private final int byteSize;
-    private final int sliceIndex;
+public class Slice {
+
+    // Immutable Slice Header
+
+    protected final SliceHeader header;
+
+    // data blocks
+
+    private final Block coreBlock;
+    private final Map<Integer, Block> externalBlockMap;
 
     /**
-     * Fully construct a Slice by specifying both the streamable data and indexing metadata
+     * Construct a Slice without indexing
+     *
+     * To construct a full IndexableSlice, we also need indexing metadata
      *
      * @param sliceHeader an immutable data structure representing the header fields of the slice
      * @param coreBlock the Core Data Block associated with the slice
      * @param externalDataBlockMap a mapping of Block Content IDs to External Data Blocks
+     */
+    public Slice(final SliceHeader sliceHeader,
+                 final Block coreBlock,
+                 final Map<Integer, Block> externalDataBlockMap) {
+
+        this.header = sliceHeader;
+        this.coreBlock = coreBlock;
+        this.externalBlockMap = externalDataBlockMap;
+    }
+
+    /**
+     * Fully construct an {@link IndexableSlice} by specifying indexing metadata
+     *
      * @param byteOffset the start byte position in the stream for this Slice
      * @param byteSize the size of this Slice when serialized, in bytes
-     * @param sliceIndex the sliceIndex of this Slice in its Container
+     * @param sliceIndex the index of this Slice in its Container
      */
-    Slice(final SliceHeader sliceHeader,
-          final Block coreBlock,
-          final Map<Integer, Block> externalDataBlockMap,
-          final int byteOffset,
-          final int byteSize,
-          final int sliceIndex) {
-
-        super(sliceHeader, coreBlock, externalDataBlockMap);
-
-        this.byteOffset = byteOffset;
-        this.byteSize = byteSize;
-        this.sliceIndex = sliceIndex;
+    public IndexableSlice withIndexingMetadata(final int byteOffset, final int byteSize, final int sliceIndex) {
+        return new IndexableSlice(header, coreBlock, externalBlockMap, byteOffset, byteSize, sliceIndex);
     }
 
     /**
-     * Generate BAI indexing metadata from this Slice and other parameters.
-     * This method is appropriate for single-reference Slices.
+     * Deserialize the Slice from the {@link InputStream}
      *
-     * @param containerByteOffset the byte offset of this Slice's Container
-     * @return a new BAI indexing metadata object
+     * @param major CRAM version major number
+     * @param blockStream input stream to read the slice from
+     * @return a Slice object with fields and content from the input stream
      */
-    public SliceBAIMetadata getBAIMetadata(final long containerByteOffset) {
-        return new SliceBAIMetadata(getSequenceId(),
+    public static Slice read(final int major,
+                             final InputStream blockStream) {
+        final SliceHeader header = SliceHeader.read(major, blockStream);
+
+        Block coreBlock = null;
+        Map<Integer, Block> externalDataBlockMap = new HashMap<>();
+
+        for (int i = 0; i < header.getDataBlockCount(); i++) {
+            final Block block = Block.read(major, blockStream);
+
+            switch (block.getContentType()) {
+                case CORE:
+                    coreBlock = block;
+                    break;
+                case EXTERNAL:
+                    externalDataBlockMap.put(block.getContentId(), block);
+                    break;
+
+                default:
+                    throw new RuntimeException("Not a slice block, content type id " + block.getContentType().name());
+            }
+        }
+
+        return new Slice(header, coreBlock, externalDataBlockMap);
+    }
+
+    /**
+     * Write the Slice out to the the specified {@link OutputStream}.
+     * The method is parameterized with the CRAM major version number.
+     *
+     * @param major CRAM version major number
+     * @param blockStream output stream to write to
+     */
+    public void write(final int major, final OutputStream blockStream) {
+        header.write(major, blockStream);
+        coreBlock.write(major, blockStream);
+        for (final Block block : externalBlockMap.values())
+            block.write(major, blockStream);
+    }
+
+    /**
+     * Initialize a Cram Record Reader from a Slice
+     *
+     * @param compressionHeader the associated Cram Compression Header
+     * @param validationStringency how strict to be when reading this CRAM record
+     */
+    public CramRecordReader createCramRecordReader(final CompressionHeader compressionHeader,
+                                                   final ValidationStringency validationStringency) {
+        return new CramRecordReader(getCoreBlockInputStream(),
+                getExternalBlockInputMap(),
+                compressionHeader,
+                getSequenceId(),
+                validationStringency);
+    }
+
+    /**
+     * Uses a Multiple Reference Slice Alignment Reader to determine the Reference Spans of a Slice.
+     * The intended use is for CRAI indexing.
+     *
+     * @param compressionHeader the associated Cram Compression Header
+     * @param validationStringency how strict to be when reading CRAM records
+     */
+    public Map<Integer, AlignmentSpan> getMultiRefAlignmentSpans(final CompressionHeader compressionHeader,
+                                                                 final ValidationStringency validationStringency) {
+        final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(getCoreBlockInputStream(),
+                getExternalBlockInputMap(),
+                compressionHeader,
+                validationStringency,
                 getAlignmentStart(),
-                getAlignmentSpan(),
-                getRecordCount(),
-                byteOffset,
-                containerByteOffset,
-                byteSize,
-                sliceIndex);
+                getRecordCount());
+        return reader.getReferenceSpans();
     }
 
-    /**
-     * Generate BAI indexing metadata from this Slice and other parameters.
-     *
-     * @param sequenceId which Sequence ID this metadata should be associated with
-     * @param span the Alignment Span to be indexed
-     * @param containerByteOffset the byte offset of this Slice's Container
-     * @return a new BAI indexing metadata object
-     */
-    public SliceBAIMetadata getBAIMetadata(final int sequenceId,
-                                           final AlignmentSpan span,
-                                           final long containerByteOffset) {
-        return new SliceBAIMetadata(sequenceId,
-                span.getStart(),
-                span.getSpan(),
-                span.getCount(),
-                byteOffset,
-                containerByteOffset,
-                byteSize,
-                sliceIndex);
+    private BitInputStream getCoreBlockInputStream() {
+        return new DefaultBitInputStream(new ByteArrayInputStream(coreBlock.getUncompressedContent()));
     }
 
-    /**
-     * Generate a CRAI Index entry from this Slice and other parameters.
-     *
-     * @param containerByteOffset the byte offset of this Slice's Container
-     * @return a new CRAI Index Entry
-     */
-    public CRAIEntry getCRAIEntry(final long containerByteOffset) {
-        return new CRAIEntry(getSequenceId(),
-                getAlignmentStart(),
-                getAlignmentSpan(),
-                containerByteOffset,
-                byteOffset,
-                byteSize);
+    private Map<Integer, ByteArrayInputStream> getExternalBlockInputMap() {
+        return externalBlockMap.entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> new ByteArrayInputStream(e.getValue().getUncompressedContent())));
     }
 
-    /**
-     * Generate a CRAI Index entry from this Slice and other parameters.
-     * This method is appropriate for multiple-reference Slices.
-     *
-     * @param sequenceId a Sequence ID to associate with this sliceIndex entry
-     * @param span the Alignment Span to sliceIndex
-     * @param containerByteOffset the byte offset of this Slice's Container
-     * @return a new CRAI Index Entry
-     */
-    public CRAIEntry getCRAIEntry(final int sequenceId,
-                                  final AlignmentSpan span,
-                                  final long containerByteOffset) {
-        return new CRAIEntry(sequenceId,
-                span.getStart(),
-                span.getSpan(),
-                containerByteOffset,
-                byteOffset,
-                byteSize);
+    // header delegate methods
+
+    public int getSequenceId() {
+        return header.getSequenceId();
     }
 
-    /**
-     * Where does this Slice appear in its Container?
-     * Used when populating a {@link htsjdk.samtools.cram.structure.CramCompressionRecord}
-     *
-     * @return the sliceIndex of this Slice in its Container
-     */
-    public int getSliceIndex() {
-        return sliceIndex;
+    public int getAlignmentStart() {
+        return header.getAlignmentStart();
+    }
+
+    public int getAlignmentSpan() {
+        return header.getAlignmentSpan();
+    }
+
+    public int getRecordCount() {
+        return header.getRecordCount();
+    }
+
+    public byte[] getRefMD5() {
+        return header.getRefMD5();
+    }
+
+    public void validateRefMD5(final byte[] refBases) {
+        header.validateRefMD5(refBases);
+    }
+
+    public boolean hasSingleReference() {
+        return header.hasSingleReference();
+    }
+
+    public boolean hasNoReference() {
+        return header.hasNoReference();
+    }
+
+    public boolean hasMultipleReferences() {
+        return header.hasMultipleReferences();
+    }
+
+    public boolean hasEmbeddedRefBlock() {
+        return header.hasEmbeddedRefBlock();
+    }
+
+    // end header delegate methods
+
+    public int getExternalBlockCount() {
+        return externalBlockMap.size();
     }
 }
-

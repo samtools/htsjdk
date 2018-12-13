@@ -5,8 +5,8 @@ import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.Slice;
-import htsjdk.samtools.cram.structure.slice.StreamableSlice;
 import htsjdk.samtools.util.Log;
 
 import java.io.*;
@@ -73,9 +73,9 @@ public class ContainerIO {
 
         container.header = CompressionHeader.read(major, inputStream);
 
-        container.slices = new Slice[container.landmarks.length];
+        container.slices = new IndexableSlice[container.landmarks.length];
         for (int sliceIndex = 0; sliceIndex < container.landmarks.length; sliceIndex++) {
-            final StreamableSlice slice = StreamableSlice.read(major, inputStream);
+            final Slice slice = Slice.read(major, inputStream);
 
             final int byteOffset = container.landmarks[sliceIndex];
             final boolean lastSlice = (sliceIndex == container.landmarks.length - 1);

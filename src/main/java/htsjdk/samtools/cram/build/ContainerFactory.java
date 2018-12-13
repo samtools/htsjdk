@@ -30,9 +30,9 @@ import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.block.ExternalBlock;
-import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.SliceHeader;
-import htsjdk.samtools.cram.structure.slice.StreamableSlice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.cram.structure.block.Block;
 
@@ -64,7 +64,7 @@ public class ContainerFactory {
 
         header.readNamesIncluded = preserveReadNames;
 
-        final List<Slice> slices = new ArrayList<>();
+        final List<IndexableSlice> slices = new ArrayList<>();
 
         final Container container = new Container();
         container.header = header;
@@ -85,7 +85,7 @@ public class ContainerFactory {
             for (int i = 0; i < records.size(); i += recordsPerSlice) {
                 final List<CramCompressionRecord> sliceRecords = records.subList(i,
                         Math.min(records.size(), i + recordsPerSlice));
-                final StreamableSlice slice = buildSlice(sliceRecords, header, globalRecordCounterCopy, refBases);
+                final Slice slice = buildSlice(sliceRecords, header, globalRecordCounterCopy, refBases);
                 globalRecordCounterCopy += sliceRecords.size();
 
                 // TODO for Container refactoring:
@@ -108,7 +108,7 @@ public class ContainerFactory {
             throw new RuntimeIOException(e);
         }
 
-        container.slices = slices.toArray(new Slice[0]);
+        container.slices = slices.toArray(new IndexableSlice[0]);
         calculateAlignmentBoundaries(container);
 
         globalRecordCounter += records.size();
@@ -132,10 +132,10 @@ public class ContainerFactory {
         }
     }
 
-    private static StreamableSlice buildSlice(final List<CramCompressionRecord> records,
-                                              final CompressionHeader compressionHeader,
-                                              final long globalRecordCounter,
-                                              final byte[] refBases) {
+    private static Slice buildSlice(final List<CramCompressionRecord> records,
+                                    final CompressionHeader compressionHeader,
+                                    final long globalRecordCounter,
+                                    final byte[] refBases) {
 
         // @formatter:off
         /*
@@ -196,7 +196,7 @@ public class ContainerFactory {
         final SliceHeader sliceHeader = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, records.size(), globalRecordCounter,
             blockCount, contentIDs, embeddedRefBlockContentId, refMD5, hasher.getAsTags());
 
-        return new StreamableSlice(sliceHeader, coreBlock, buildBlocksFromStreams(compressionHeader.externalCompressors, externalStreamMap));
+        return new Slice(sliceHeader, coreBlock, buildBlocksFromStreams(compressionHeader.externalCompressors, externalStreamMap));
     }
 
     private static Map<Integer, Block> buildBlocksFromStreams(final Map<Integer, ExternalCompressor> compressors, final Map<Integer, ByteArrayOutputStream> externalDataBlockMap) {

@@ -19,7 +19,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.structure.block.Block;
-import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.SliceHeader;
 
 public class Container {
@@ -47,7 +47,7 @@ public class Container {
     public CompressionHeader header;
 
     // slices found in the container:
-    public Slice[] slices;
+    public IndexableSlice[] slices;
 
     // for indexing:
     /**

@@ -44,7 +44,7 @@ import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import htsjdk.samtools.cram.structure.slice.SliceBAIMetadata;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -117,7 +117,7 @@ public class CRAMBAIIndexer {
             return;
         }
 
-        for (final Slice slice : container.slices) {
+        for (final IndexableSlice slice : container.slices) {
             if (slice.hasMultipleReferences()) {
                 final ContainerParser parser = new ContainerParser(indexBuilder.bamHeader);
                 final Map<Integer, AlignmentSpan> referenceAlignmentMap = parser.getReferences(container, validationStringency);
