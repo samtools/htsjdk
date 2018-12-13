@@ -59,12 +59,13 @@ public class CRAIIndex {
         if (!container.isEOF()) {
             for (final IndexableSlice slice : container.slices) {
                 if (slice.hasMultipleReferences()) {
-                    final Map<Integer, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(container.header, ValidationStringency.DEFAULT_STRINGENCY);
-                    final List<CRAIEntry> entries = spans
-                            .entrySet()
-                            .stream()
+                    final Map<Integer, AlignmentSpan> spans =
+                            slice.getMultiRefAlignmentSpans(container.header, ValidationStringency.DEFAULT_STRINGENCY);
+
+                    final List<CRAIEntry> entries = spans.entrySet().stream()
                             .map(span -> slice.getCRAIEntry(span.getKey(), span.getValue(), container.offset))
                             .collect(Collectors.toList());
+
                     this.entries.addAll(entries);
                 } else {
                     this.entries.add(slice.getCRAIEntry(container.offset));
@@ -73,7 +74,8 @@ public class CRAIIndex {
         }
     }
 
-    public static SeekableStream openCraiFileAsBaiStream(final InputStream indexStream, final SAMSequenceDictionary dictionary) throws CRAIIndexException {
+    public static SeekableStream openCraiFileAsBaiStream(final InputStream indexStream,
+                                                         final SAMSequenceDictionary dictionary) throws CRAIIndexException {
         final List<CRAIEntry> full = CRAMCRAIIndexer.readIndex(indexStream).getCRAIEntries();
         Collections.sort(full);
 

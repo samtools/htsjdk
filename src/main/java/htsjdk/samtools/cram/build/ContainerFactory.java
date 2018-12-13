@@ -64,8 +64,6 @@ public class ContainerFactory {
 
         header.readNamesIncluded = preserveReadNames;
 
-        final List<IndexableSlice> slices = new ArrayList<>();
-
         final Container container = new Container();
         container.header = header;
         container.nofRecords = records.size();
@@ -73,6 +71,8 @@ public class ContainerFactory {
         container.bases = 0;
         container.blockCount = 0;
         container.offset = offset;
+
+        final List<IndexableSlice> slices = new ArrayList<>();
 
         // write to a stream to determine byte sizes for Slice BAI Metadata
         try (final ByteArrayOutputStream osForIndexMetadata = new ByteArrayOutputStream()) {
@@ -188,13 +188,13 @@ public class ContainerFactory {
         }
 
         // core block + externals
-        final int blockCount = 1 + externalStreamMap.size();
+        final int dataBlockCount = 1 + externalStreamMap.size();
         final int[] contentIDs = externalStreamMap.keySet().stream().mapToInt(Integer::intValue).toArray();
         final int embeddedRefBlockContentId = SliceHeader.NO_EMBEDDED_REFERENCE;
         final byte[] refMD5 = SliceHeader.calculateRefMD5(refBases, sequenceId, alignmentStart, alignmentSpan, globalRecordCounter);
 
         final SliceHeader sliceHeader = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, records.size(), globalRecordCounter,
-            blockCount, contentIDs, embeddedRefBlockContentId, refMD5, hasher.getAsTags());
+            dataBlockCount, contentIDs, embeddedRefBlockContentId, refMD5, hasher.getAsTags());
 
         return new Slice(sliceHeader, coreBlock, buildBlocksFromStreams(compressionHeader.externalCompressors, externalStreamMap));
     }
