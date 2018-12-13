@@ -161,6 +161,13 @@ public class SliceTests extends HtsjdkTest {
         }
     }
 
+    private IndexableSlice getIndexableSlice(int sequenceId, int alignmentStart, int alignmentSpan, int recordCount, int byteOffset, int byteSize, int index) {
+        final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
+                0, 0, null, 0, null, null);
+        final Slice slice = new Slice(sh, null, null);
+        return slice.withIndexingMetadata(byteOffset, byteSize, index);
+    }
+
     @Test
     public void testBAIMetadata() {
         final int sequenceId = 5;
@@ -172,10 +179,7 @@ public class SliceTests extends HtsjdkTest {
         final int byteSize = 35;
         final int index = 40;
 
-        final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
-                0, 0, null, 0, null, null);
-        final Slice ss = new Slice(sh, null, null);
-        final IndexableSlice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
+        final IndexableSlice s = getIndexableSlice(sequenceId, alignmentStart, alignmentSpan, recordCount, byteOffset, byteSize, index);
 
         final SliceBAIMetadata b = s.getBAIMetadata(containerByteOffset);
 
@@ -200,10 +204,7 @@ public class SliceTests extends HtsjdkTest {
         final int byteSize = 35;
         final int index = 40;
 
-        final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
-                0, 0, null, 0, null, null);
-        final Slice ss = new Slice(sh, null, null);
-        final IndexableSlice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
+        final IndexableSlice s = getIndexableSlice(sequenceId, alignmentStart, alignmentSpan, recordCount, byteOffset, byteSize, index);
 
         final int sequenceId2 = 45;
         final int start2 = 50;
@@ -233,10 +234,7 @@ public class SliceTests extends HtsjdkTest {
         final int byteSize = 35;
         final int index = 40;
 
-        final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
-                0, 0, null, 0, null, null);
-        final Slice ss = new Slice(sh, null, null);
-        final IndexableSlice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
+        final IndexableSlice s = getIndexableSlice(sequenceId, alignmentStart, alignmentSpan, recordCount, byteOffset, byteSize, index);
 
         final CRAIEntry c = s.getCRAIEntry(containerByteOffset);
 
@@ -260,10 +258,7 @@ public class SliceTests extends HtsjdkTest {
         final int byteSize = 35;
         final int index = 40;
 
-        final SliceHeader sh = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount,
-                0, 0, null, 0, null, null);
-        final Slice ss = new Slice(sh, null, null);
-        final IndexableSlice s = ss.withIndexingMetadata(byteOffset, byteSize, index);
+        final IndexableSlice s = getIndexableSlice(sequenceId, alignmentStart, alignmentSpan, recordCount, byteOffset, byteSize, index);
 
         final int sequenceId2 = 45;
         final int start2 = 50;
