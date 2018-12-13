@@ -110,7 +110,9 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     public String toString() { return serializeToString(); }
 
     public static List<CRAIEntry> fromContainer(final Container container) {
-        return Arrays.stream(container.slices).map(slice -> slice.getCRAIEntry(container.offset)).collect(Collectors.toList());
+        return Arrays.stream(container.slices)
+                .map(slice -> slice.getCRAIEntry(container.offset))
+                .collect(Collectors.toList());
     }
 
     @Override

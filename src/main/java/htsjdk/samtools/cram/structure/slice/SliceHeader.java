@@ -19,7 +19,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 /**
- * Header values associated with a {@link IndexableSlice}
+ * Header values associated with a {@link Slice}
  */
 public class SliceHeader {
     private static final Log log = Log.getInstance(SliceHeader.class);
