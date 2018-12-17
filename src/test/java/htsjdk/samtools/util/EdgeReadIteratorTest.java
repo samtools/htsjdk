@@ -25,11 +25,11 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.SamReader;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +74,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
             // add a negative-strand fragment mapped on chrM with base quality of 10
             builder.addFrag("record" + i, 0, startPosition, true, false, "36M", null, 10);
         }
-        final int coveredEnd = CoordMath.getEnd(startPosition, readLength) +1;
+        final int coveredEnd = CoordMath.getEnd(startPosition, readLength) + 1;
         final EdgeReadIterator sli = new EdgeReadIterator(builder.getSamReader());
 
         int pos = 1;
@@ -97,7 +97,8 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
      */
     @Override
     @Test
-    public void testSimpleGappedAlignment() {final SAMRecordSetBuilder builder = getRecordBuilder();
+    public void testSimpleGappedAlignment() {
+        final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
         for (int i = 0; i < coverage; i++) {
@@ -332,7 +333,6 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         assertEquals(81, locusPosition);
     }
 
-
     /**
      * Test for intersecting interval for read with a deletion in the middle
      */
@@ -377,7 +377,6 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         assertEquals(21, locusPosition);
     }
 
-
     private void fillEmptyLocus(int[] expectedReferencePositions, int[] expectedDepths, int[][] expectedReadOffsets, int i) {
         expectedReferencePositions[i] = i + 1;
         expectedDepths[i] = 0;
@@ -395,8 +394,11 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         return builder.getSamReader();
     }
 
-
-    private IntervalList createIntervalList(String s) {
-        return IntervalList.fromReader(new BufferedReader(new InputStreamReader(new ByteArrayInputStream(s.getBytes()))));
+    private IntervalList createIntervalList(final String s) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(s.getBytes())))) {
+            return IntervalList.fromReader(br);
+        } catch (IOException e) {
+            throw new RuntimeException("Trouble closing reader: " + s, e);
+        }
     }
 }
