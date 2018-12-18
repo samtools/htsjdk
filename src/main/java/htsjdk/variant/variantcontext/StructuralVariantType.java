@@ -43,5 +43,18 @@ public enum StructuralVariantType {
      *  event can be summarized as a set of novel adjacencies.
      *  Each adjacency ties together two breakends.</cite>
      */
-    BND
+    BND;
+
+    // TODO: 10/10/18 one caveat: BND's have symbolic alt allele, but it takes more information (novel adjacency at the minimum)
+    /**
+     * Create angle-bracketed alt allele for simple SV types
+     * @return angle-bracketed alt allele for simple SV types
+     * @throws UnsupportedOperationException if this is invoked on a {@link #BND} object
+     */
+    Allele toSymbolicAltAllele() {
+        if (this.equals(StructuralVariantType.BND)) {
+            throw new UnsupportedOperationException("BND type does not have angle bracketed alt allele");
+        }
+        return Allele.create("<" + name() + ">", false);
+    }
 }

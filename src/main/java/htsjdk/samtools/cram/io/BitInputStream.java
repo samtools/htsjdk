@@ -17,6 +17,7 @@
  */
 package htsjdk.samtools.cram.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -24,7 +25,7 @@ import java.io.InputStream;
  * An interface to describe the requirements for reading bit data as opposed to bytes. Implementors must keep track of the amount of data
  * read similar to {@link InputStream} concept.
  */
-public interface BitInputStream {
+public interface BitInputStream extends Closeable {
 
     /**
      * Reads a single bit from the stream.

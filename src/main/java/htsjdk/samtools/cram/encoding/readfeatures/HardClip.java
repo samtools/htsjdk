@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.encoding.readfeatures;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * A read feature representing a hard clip similar to {@link htsjdk.samtools.CigarOperator#H}.
@@ -60,18 +61,21 @@ public class HardClip implements Serializable, ReadFeature {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof HardClip))
-            return false;
-
-        final HardClip hardClip = (HardClip) obj;
-
-        return position == hardClip.position && length == hardClip.length;
-
+    public String toString() {
+        return getClass().getSimpleName() + "[" + "position=" + position + "; length=" + length + "] ";
     }
 
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + "position=" + position + "; length=" + length + "] ";
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HardClip hardClip = (HardClip) o;
+        return position == hardClip.position &&
+                length == hardClip.length;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(position, length);
     }
 }

@@ -19,130 +19,72 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
+import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
+import htsjdk.samtools.util.RuntimeIOException;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class ByteArrayLenEncoding implements Encoding<byte[]> {
-    private final static EncodingID ID = EncodingID.BYTE_ARRAY_LEN;
-    private Encoding<Integer> lenEncoding;
-    private Encoding<byte[]> byteEncoding;
+public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
+    private final CRAMEncoding<Integer> lenEncoding;
+    private final CRAMEncoding<byte[]> byteEncoding;
 
-    public ByteArrayLenEncoding() {
+    public ByteArrayLenEncoding(final CRAMEncoding<Integer> lenEncoding, final CRAMEncoding<byte[]> byteEncoding) {
+        super(EncodingID.BYTE_ARRAY_LEN);
+        this.lenEncoding = lenEncoding;
+        this.byteEncoding = byteEncoding;
     }
 
-    @Override
-    public EncodingID id() {
-        return ID;
-    }
+    public static ByteArrayLenEncoding fromParams(final byte[] data) {
+        final ByteBuffer buffer = ByteBuffer.wrap(data);
 
-    public static EncodingParams toParam(final EncodingParams lenParams,
-                                         final EncodingParams byteParams) {
-        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        try {
-            byteArrayOutputStream.write((byte) lenParams.id.ordinal());
-            ITF8.writeUnsignedITF8(lenParams.params.length, byteArrayOutputStream);
-            byteArrayOutputStream.write(lenParams.params);
+        final EncodingID lenID = EncodingID.values()[buffer.get()];
+        final int lenLength = ITF8.readUnsignedITF8(buffer);
+        final byte[] lenBytes = new byte[lenLength];
+        buffer.get(lenBytes);
+        final CRAMEncoding<Integer> lenEncoding = EncodingFactory.createEncoding(DataSeriesType.INT, lenID, lenBytes);
 
-            byteArrayOutputStream.write((byte) byteParams.id.ordinal());
-            ITF8.writeUnsignedITF8(byteParams.params.length, byteArrayOutputStream);
-            byteArrayOutputStream.write(byteParams.params);
-        } catch (final IOException e) {
-            throw new RuntimeException("It never happened. ");
-        }
-        return new EncodingParams(ID, byteArrayOutputStream.toByteArray());
+        final EncodingID byteID = EncodingID.values()[buffer.get()];
+        final int byteLength = ITF8.readUnsignedITF8(buffer);
+        final byte[] byteBytes = new byte[byteLength];
+        buffer.get(byteBytes);
+        final CRAMEncoding<byte[]> byteEncoding = EncodingFactory.createEncoding(DataSeriesType.BYTE_ARRAY, byteID, byteBytes);
+
+        return new ByteArrayLenEncoding(lenEncoding, byteEncoding);
     }
 
     @Override
     public byte[] toByteArray() {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try {
-            byteArrayOutputStream.write((byte) lenEncoding.id().ordinal());
+            byteArrayOutputStream.write((byte) lenEncoding.id().getId());
             final byte[] lenBytes = lenEncoding.toByteArray();
             ITF8.writeUnsignedITF8(lenBytes.length, byteArrayOutputStream);
             byteArrayOutputStream.write(lenBytes);
 
-            byteArrayOutputStream.write((byte) byteEncoding.id().ordinal());
+            byteArrayOutputStream.write((byte) byteEncoding.id().getId());
             final byte[] byteBytes = byteEncoding.toByteArray();
             ITF8.writeUnsignedITF8(byteBytes.length, byteArrayOutputStream);
             byteArrayOutputStream.write(byteBytes);
         } catch (final IOException e) {
-            throw new RuntimeException("It never happened. ");
+            throw new RuntimeIOException(e);
         }
         return byteArrayOutputStream.toByteArray();
     }
 
     @Override
-    public void fromByteArray(final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
-
-        final EncodingFactory encodingFactory = new EncodingFactory();
-
-        final EncodingID lenID = EncodingID.values()[buffer.get()];
-        lenEncoding = encodingFactory.createEncoding(DataSeriesType.INT, lenID);
-        int length = ITF8.readUnsignedITF8(buffer);
-        byte[] bytes = new byte[length];
-        buffer.get(bytes);
-        lenEncoding.fromByteArray(bytes);
-
-        final EncodingID byteID = EncodingID.values()[buffer.get()];
-        byteEncoding = encodingFactory.createEncoding(DataSeriesType.BYTE_ARRAY, byteID);
-        length = ITF8.readUnsignedITF8(buffer);
-        bytes = new byte[length];
-        buffer.get(bytes);
-        byteEncoding.fromByteArray(bytes);
-    }
-
-    @Override
-    public BitCodec<byte[]> buildCodec(final Map<Integer, InputStream> inputMap,
-                                       final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public CRAMCodec<byte[]> buildCodec(final BitInputStream coreBlockInputStream,
+                                        final BitOutputStream coreBlockOutputStream,
+                                        final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
+                                        final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
         return new ByteArrayLenCodec(
-                lenEncoding.buildCodec(inputMap, outputMap),
-                byteEncoding.buildCodec(inputMap, outputMap));
+                lenEncoding.buildCodec(coreBlockInputStream, coreBlockOutputStream, externalBlockInputMap, externalBlockOutputMap),
+                byteEncoding.buildCodec(coreBlockInputStream, coreBlockOutputStream, externalBlockInputMap, externalBlockOutputMap));
     }
 
-    private static class ByteArrayLenCodec extends AbstractBitCodec<byte[]> {
-        private final BitCodec<Integer> lenCodec;
-        private final BitCodec<byte[]> byteCodec;
-
-        public ByteArrayLenCodec(final BitCodec<Integer> lenCodec,
-                                 final BitCodec<byte[]> byteCodec) {
-            super();
-            this.lenCodec = lenCodec;
-            this.byteCodec = byteCodec;
-        }
-
-        @Override
-        public byte[] read(final BitInputStream bitInputStream) throws IOException {
-            final int length = lenCodec.read(bitInputStream);
-            return byteCodec.read(bitInputStream, length);
-        }
-
-        @Override
-        public byte[] read(final BitInputStream bitInputStream, final int length) throws IOException {
-            throw new RuntimeException("Not implemented.");
-        }
-
-        @Override
-        public long write(final BitOutputStream bitOutputStream, final byte[] object)
-                throws IOException {
-            long length = lenCodec.write(bitOutputStream, object.length);
-            length += byteCodec.write(bitOutputStream, object);
-            return length;
-        }
-
-        @Override
-        public long numberOfBits(final byte[] object) {
-            return lenCodec.numberOfBits(object.length)
-                    + byteCodec.numberOfBits(object);
-        }
-
-    }
 }

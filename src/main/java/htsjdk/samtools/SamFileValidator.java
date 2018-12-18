@@ -94,6 +94,7 @@ public class SamFileValidator {
     private SAMSortOrderChecker orderChecker;
     private Set<Type> errorsToIgnore;
     private boolean ignoreWarnings;
+    private boolean skipMateValidation;
     private boolean bisulfiteSequenced;
     private IndexValidationStringency indexValidationStringency;
     private boolean sequenceDictionaryEmptyAndNoWarningEmitted;
@@ -101,6 +102,8 @@ public class SamFileValidator {
     private int numErrors;
 
     private final int maxTempFiles;
+    private int qualityNotStoredErrorCount = 0;
+    public static final int MAX_QUALITY_NOT_STORED_ERRORS = 100;
 
     public SamFileValidator(final PrintWriter out, final int maxTempFiles) {
         this.out = out;
@@ -112,6 +115,7 @@ public class SamFileValidator {
         this.errorsToIgnore = EnumSet.noneOf(Type.class);
         this.verbose = false;
         this.ignoreWarnings = false;
+        this.skipMateValidation = false;
         this.bisulfiteSequenced = false;
         this.sequenceDictionaryEmptyAndNoWarningEmitted = false;
         this.numWarnings = 0;
@@ -133,6 +137,23 @@ public class SamFileValidator {
 
     public void setIgnoreWarnings(final boolean ignoreWarnings) {
         this.ignoreWarnings = ignoreWarnings;
+    }
+
+    /**
+     * Sets whether or not we should run mate validation beyond the mate cigar check, which
+     * is useful in extreme edge cases that would require a lot of memory to do the validation.
+     *
+     * @param skipMateValidation should this tool skip mate validation
+     */
+    public void setSkipMateValidation(final boolean skipMateValidation) {
+        this.skipMateValidation = skipMateValidation;
+    }
+
+    /**
+     * @return true if the validator will skip mate validation, otherwise false
+     */
+    public boolean getSkipMateValidation() {
+        return skipMateValidation;
     }
 
     /**
@@ -187,10 +208,8 @@ public class SamFileValidator {
     }
 
     public void validateBamFileTermination(final File inputFile) {
-        BufferedInputStream inputStream = null;
         try {
-            inputStream = IOUtil.toBufferedStream(new FileInputStream(inputFile));
-            if (!BlockCompressedInputStream.isValidFile(inputStream)) {
+            if (!IOUtil.isBlockCompressed(inputFile.toPath())) {
                 return;
             }
             final BlockCompressedInputStream.FileTermination terminationState =
@@ -206,10 +225,6 @@ public class SamFileValidator {
             }
         } catch (IOException e) {
             throw new SAMException("IOException", e);
-        } finally {
-            if (inputStream != null) {
-                CloserUtil.close(inputStream);
-            }
         }
     }
 
@@ -223,8 +238,7 @@ public class SamFileValidator {
                 try {
                     if (indexValidationStringency == IndexValidationStringency.LESS_EXHAUSTIVE) {
                         BamIndexValidator.lessExhaustivelyTestIndex(samReader);
-                    }
-                    else {
+                    } else {
                         BamIndexValidator.exhaustivelyTestIndex(samReader);
                     }
                 } catch (Exception e) {
@@ -239,7 +253,6 @@ public class SamFileValidator {
             out.flush();
         }
     }
-
 
     /**
      * Report on reads marked as paired, for which the mate was not found.
@@ -323,6 +336,14 @@ public class SamFileValidator {
                     sequenceDictionaryEmptyAndNoWarningEmitted = false;
 
                 }
+
+                if ((qualityNotStoredErrorCount++ < MAX_QUALITY_NOT_STORED_ERRORS) && record.getBaseQualityString().equals("*")) {
+                    addError(new SAMValidationError(Type.QUALITY_NOT_STORED,
+                            "QUAL field is set to * (unspecified quality scores), this is allowed by the SAM" +
+                                    " specification but many tools expect reads to include qualities ",
+                            record.getReadName(), recordNumber));
+                }
+
                 progress.record(record);
             }
 
@@ -362,15 +383,33 @@ public class SamFileValidator {
     }
 
     /**
-     * Report error if a tag value is a Long.
+     * Report error if a tag value is a Long, or if there's a duplicate dag,
+     * or if there's a CG tag is obvered (CG tags are converted to cigars in
+     * the bam code, and should not appear in other formats)
      */
     private void validateTags(final SAMRecord record, final long recordNumber) {
-        for (final SAMRecord.SAMTagAndValue tagAndValue : record.getAttributes()) {
+        final List<SAMRecord.SAMTagAndValue> attributes = record.getAttributes();
+
+        final Set<String> tags = new HashSet<>(attributes.size());
+
+        for (final SAMRecord.SAMTagAndValue tagAndValue : attributes) {
             if (tagAndValue.value instanceof Long) {
                 addError(new SAMValidationError(Type.TAG_VALUE_TOO_LARGE,
                         "Numeric value too large for tag " + tagAndValue.tag,
                         record.getReadName(), recordNumber));
             }
+
+            if (!tags.add(tagAndValue.tag)) {
+                addError(new SAMValidationError(Type.DUPLICATE_SAM_TAG,
+                        "Duplicate SAM tag (" + tagAndValue.tag + ") found.", record.getReadName(), recordNumber));
+            }
+        }
+
+        if (tags.contains(SAMTag.CG.name())){
+            addError(new SAMValidationError(Type.CG_TAG_FOUND_IN_ATTRIBUTES,
+                    "The CG Tag should only be used in BAM format to hold a large cigar. " +
+                            "It was found containing the value: " +
+                            record.getAttribute(SAMTag.CG.getBinaryTag()), record.getReadName(), recordNumber));
         }
     }
 
@@ -428,7 +467,6 @@ public class SamFileValidator {
         }
         return valid;
     }
-
 
     private boolean validateSortOrder(final SAMRecord record, final long recordNumber) {
         final SAMRecord prev = orderChecker.getPreviousRecord();
@@ -498,6 +536,10 @@ public class SamFileValidator {
         }
         validateMateCigar(record, recordNumber);
 
+        if (skipMateValidation) {
+            return;
+        }
+
         final PairEndInfo pairEndInfo = pairEndInfoByName.remove(record.getReferenceIndex(), record.getReadName());
         if (pairEndInfo == null) {
             pairEndInfoByName.put(record.getMateReferenceIndex(), record.getReadName(), new PairEndInfo(record, recordNumber));
@@ -561,8 +603,7 @@ public class SamFileValidator {
                 addError(new SAMValidationError(Type.MISSING_PLATFORM_VALUE,
                         "A platform (PL) attribute was not found for read group ",
                         readGroupID));
-            }
-            else {
+            } else {
                 // NB: cannot be null, so not catching a NPE
                 try {
                     SAMReadGroupRecord.PlatformValue.valueOf(platformValue.toUpperCase());
@@ -599,7 +640,7 @@ public class SamFileValidator {
 
         switch (error.getType().severity) {
             case WARNING:
-                if ( this.ignoreWarnings ) {
+                if (this.ignoreWarnings) {
                     return;
                 }
                 this.numWarnings++;

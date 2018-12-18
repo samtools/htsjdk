@@ -27,12 +27,15 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 public class SAMTextReaderTest extends HtsjdkTest {
+    private static final String ARRAY_TAG = "xa";
+
     // Simple input, spot check that parsed correctly, and make sure nothing blows up.
     @Test
     public void testBasic() throws Exception {
@@ -134,5 +137,22 @@ public class SAMTextReaderTest extends HtsjdkTest {
         final SAMRecord recFromText = reader.iterator().next();
         Assert.assertEquals(recFromText.getAttribute(SAMTag.CQ.name()), valueWithColons);
         CloserUtil.close(reader);
+    }
+
+    @DataProvider
+    public Object[][] getRecordsWithArrays(){
+        final String recordBase = "Read\t4\tchr1\t1\t0\t*\t*\t0\t0\tG\t%\t";
+        return new Object[][]{
+                {recordBase + ARRAY_TAG + ":B:i", new int[0]},
+                {recordBase + ARRAY_TAG + ":B:i,", new int[0]},
+                {recordBase + ARRAY_TAG + ":B:i,1,2,3,", new int[]{1,2,3}},
+        };
+    }
+
+    @Test(dataProvider = "getRecordsWithArrays")
+    public void testSamRecordCanHandleArrays(String samRecord, Object array){
+        final SAMLineParser samLineParser = new SAMLineParser(new SAMFileHeader());
+        final SAMRecord record = samLineParser.parseLine(samRecord);
+        Assert.assertEquals(record.getAttribute(ARRAY_TAG), array);
     }
 }

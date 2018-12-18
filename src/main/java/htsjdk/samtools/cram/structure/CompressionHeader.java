@@ -17,12 +17,14 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.encoding.ExternalCompressor;
-import htsjdk.samtools.cram.encoding.NullEncoding;
+import htsjdk.samtools.cram.common.Version;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -50,7 +52,7 @@ public class CompressionHeader {
     public boolean APDelta = true;
     private boolean referenceRequired = true;
 
-    public Map<EncodingKey, EncodingParams> encodingMap;
+    public Map<DataSeries, EncodingParams> encodingMap;
     public Map<Integer, EncodingParams> tMap;
     public final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<Integer, ExternalCompressor>();
 
@@ -61,10 +63,6 @@ public class CompressionHeader {
     public byte[][][] dictionary;
 
     public CompressionHeader() {
-    }
-
-    private CompressionHeader(final InputStream inputStream) throws IOException {
-        read(inputStream);
     }
 
     private byte[][][] parseDictionary(final byte[] bytes) {
@@ -116,15 +114,7 @@ public class CompressionHeader {
         return dictionary[id];
     }
 
-    public void read(final byte[] data) {
-        try {
-            read(new ByteArrayInputStream(data));
-        } catch (final IOException e) {
-            throw new RuntimeException("This should have never happened.");
-        }
-    }
-
-    void read(final InputStream is) throws IOException {
+    private void internalRead(final InputStream is) throws IOException {
         { // preservation map:
             final int byteSize = ITF8.readUnsignedITF8(is);
             final byte[] bytes = new byte[byteSize];
@@ -163,26 +153,21 @@ public class CompressionHeader {
             final ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
             final int mapSize = ITF8.readUnsignedITF8(buffer);
-            encodingMap = new TreeMap<EncodingKey, EncodingParams>();
-            for (final EncodingKey encodingKey : EncodingKey.values())
-                encodingMap.put(encodingKey, NullEncoding.toParam());
+            encodingMap = new TreeMap<>();
 
             for (int i = 0; i < mapSize; i++) {
-                final String key = new String(new byte[]{buffer.get(), buffer.get()});
-                final EncodingKey encodingKey = EncodingKey.byFirstTwoChars(key);
-                if (encodingKey == null) {
-                    throw new CRAMException("Unknown encoding key: " + key);
-                }
+                final String dataSeriesAbbreviation = new String(new byte[]{buffer.get(), buffer.get()});
+                final DataSeries dataSeries = DataSeries.byCanonicalName(dataSeriesAbbreviation);
 
                 final EncodingID id = EncodingID.values()[buffer.get()];
                 final int paramLen = ITF8.readUnsignedITF8(buffer);
                 final byte[] paramBytes = new byte[paramLen];
                 buffer.get(paramBytes);
 
-                encodingMap.put(encodingKey, new EncodingParams(id, paramBytes));
+                encodingMap.put(dataSeries, new EncodingParams(id, paramBytes));
 
                 log.debug(String.format("FOUND ENCODING: %s, %s, %s.",
-                        encodingKey.name(), id.name(),
+                        dataSeries.name(), id.name(),
                         Arrays.toString(Arrays.copyOf(paramBytes, 20))));
             }
         }
@@ -208,13 +193,25 @@ public class CompressionHeader {
         }
     }
 
-    public byte[] toByteArray() throws IOException {
-        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        write(byteArrayOutputStream);
-        return byteArrayOutputStream.toByteArray();
+    /**
+     * Write this CompressionHeader out to an internal OutputStream, wrap it in a Block, and write that
+     * Block out to the passed-in OutputStream.
+     *
+     * @param cramVersion the CRAM major version number
+     * @param blockStream the stream to write to
+     */
+    public void write(final Version cramVersion, final OutputStream blockStream) {
+        try (final ByteArrayOutputStream internalOutputStream = new ByteArrayOutputStream()) {
+            internalWrite(internalOutputStream);
+            final Block block = Block.createRawCompressionHeaderBlock(internalOutputStream.toByteArray());
+            block.write(cramVersion.major, blockStream);
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
-    void write(final OutputStream outputStream) throws IOException {
+    private void internalWrite(final OutputStream outputStream) throws IOException {
 
         { // preservation map:
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
@@ -249,22 +246,23 @@ public class CompressionHeader {
 
         { // encoding map:
             int size = 0;
-            for (final EncodingKey encodingKey : encodingMap.keySet()) {
-                if (encodingMap.get(encodingKey).id != EncodingID.NULL)
+            for (final DataSeries dataSeries : encodingMap.keySet()) {
+                if (encodingMap.get(dataSeries).id != EncodingID.NULL)
                     size++;
             }
 
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(size, mapBuffer);
-            for (final EncodingKey encodingKey : encodingMap.keySet()) {
-                if (encodingMap.get(encodingKey).id == EncodingID.NULL)
+            for (final DataSeries dataSeries : encodingMap.keySet()) {
+                if (encodingMap.get(dataSeries).id == EncodingID.NULL)
                     continue;
 
-                mapBuffer.put((byte) encodingKey.name().charAt(0));
-                mapBuffer.put((byte) encodingKey.name().charAt(1));
+                final String dataSeriesAbbreviation = dataSeries.getCanonicalName();
+                mapBuffer.put((byte) dataSeriesAbbreviation.charAt(0));
+                mapBuffer.put((byte) dataSeriesAbbreviation.charAt(1));
 
-                final EncodingParams params = encodingMap.get(encodingKey);
-                mapBuffer.put((byte) (0xFF & params.id.ordinal()));
+                final EncodingParams params = encodingMap.get(dataSeries);
+                mapBuffer.put((byte) (0xFF & params.id.getId()));
                 ITF8.writeUnsignedITF8(params.params.length, mapBuffer);
                 mapBuffer.put(params.params);
             }
@@ -279,11 +277,11 @@ public class CompressionHeader {
         { // tag encoding map:
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(tMap.size(), mapBuffer);
-            for (final Integer encodingKey : tMap.keySet()) {
-                ITF8.writeUnsignedITF8(encodingKey, mapBuffer);
+            for (final Integer dataSeries : tMap.keySet()) {
+                ITF8.writeUnsignedITF8(dataSeries, mapBuffer);
 
-                final EncodingParams params = tMap.get(encodingKey);
-                mapBuffer.put((byte) (0xFF & params.id.ordinal()));
+                final EncodingParams params = tMap.get(dataSeries);
+                mapBuffer.put((byte) (0xFF & params.id.getId()));
                 ITF8.writeUnsignedITF8(params.params.length, mapBuffer);
                 mapBuffer.put(params.params);
             }
@@ -293,6 +291,28 @@ public class CompressionHeader {
 
             ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
             outputStream.write(mapBytes);
+        }
+    }
+
+    /**
+     * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader
+     * We do this instead of reading the InputStream directly because the Block content may be compressed
+     *
+     * @param cramVersion the CRAM version
+     * @param blockStream the stream to read from
+     * @return a new CompressionHeader from the input
+     */
+    public static CompressionHeader read(final int cramVersion, final InputStream blockStream) {
+        final Block block = Block.read(cramVersion, blockStream);
+        if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
+            throw new RuntimeIOException("Compression Header Block expected, found: " + block.getContentType().name());
+
+        try (final ByteArrayInputStream internalStream = new ByteArrayInputStream(block.getUncompressedContent())) {
+            final CompressionHeader header = new CompressionHeader();
+            header.internalRead(internalStream);
+            return header;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
     }
 

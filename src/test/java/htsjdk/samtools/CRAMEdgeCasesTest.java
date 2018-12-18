@@ -3,19 +3,16 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
-import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -79,22 +76,9 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
         testSingleRecord("AAA".getBytes(), "!!!".getBytes(), "A".getBytes());
     }
 
-    private void testRecords(Collection<SAMRecord> records, byte[] ref) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InMemoryReferenceSequenceFile refFile = new InMemoryReferenceSequenceFile();
-        refFile.add("chr1", ref);
-        ReferenceSource source = new ReferenceSource(refFile);
-        final SAMFileHeader header = records.iterator().next().getHeader();
-        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, header, "whatever");
-
-        Iterator<SAMRecord> it = records.iterator();
-        while (it.hasNext()) {
-            SAMRecord record = it.next();
-            cramFileWriter.addAlignment(record);
-        }
-        cramFileWriter.close();
-
-        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream) null, source, ValidationStringency.SILENT);
+    private static void testRecords(Collection<SAMRecord> records, byte[] ref) throws IOException {
+        CRAMFileReader cramFileReader = CRAMTestUtils.writeAndReadFromInMemoryCram(records, ref);
+        Iterator<SAMRecord> it;
         final SAMRecordIterator iterator = cramFileReader.getIterator();
         Assert.assertTrue(iterator.hasNext());
 
@@ -113,16 +97,8 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
         Assert.assertFalse(iterator.hasNext());
     }
 
-    private void testSingleRecord(SAMRecord record, byte[] ref) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InMemoryReferenceSequenceFile refFile = new InMemoryReferenceSequenceFile();
-        refFile.add("chr1", ref);
-        ReferenceSource source = new ReferenceSource(refFile);
-        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, record.getHeader(), "whatever");
-        cramFileWriter.addAlignment(record);
-        cramFileWriter.close();
-
-        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream) null, source, ValidationStringency.SILENT);
+    private static void testSingleRecord(SAMRecord record, byte[] ref) throws IOException {
+        CRAMFileReader cramFileReader = CRAMTestUtils.writeAndReadFromInMemoryCram(Collections.singletonList(record), ref);
         final SAMRecordIterator iterator = cramFileReader.getIterator();
         Assert.assertTrue(iterator.hasNext());
         SAMRecord s2 = iterator.next();

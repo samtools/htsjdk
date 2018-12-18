@@ -27,13 +27,7 @@
 package htsjdk.samtools.sra;
 
 import gov.nih.nlm.ncbi.ngs.NGS;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTagUtil;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.SAMBinaryTagAndValue;
-import htsjdk.samtools.SAMUtils;
-import htsjdk.samtools.SAMValidationError;
+import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import ngs.ReadCollection;
 import ngs.AlignmentIterator;
@@ -43,15 +37,11 @@ import ngs.Read;
 import ngs.Fragment;
 import ngs.ErrorMsg;
 
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 /**
  * Extends SAMRecord so that any of the fields will be loaded only when needed.
@@ -157,10 +147,10 @@ public class SRALazyRecord extends SAMRecord {
                 return self.getProperPairFlag();
             }
         },
-        NOT_PRIMARY_ALIGNMENT(true) {
+        SECONDARY_ALIGNMENT(true) {
             @Override
             public boolean getFlag(SRALazyRecord self) {
-                return self.getNotPrimaryAlignmentFlag();
+                return self.isSecondaryAlignment();
             }
         },
         MATE_NEGATIVE_STRAND(false) {
@@ -214,7 +204,7 @@ public class SRALazyRecord extends SAMRecord {
     static
     {
         lazyAttributeTags = new HashMap<Short, LazyAttribute>();
-        lazyAttributeTags.put(SAMTagUtil.getSingleton().RG, LazyAttribute.RG);
+        lazyAttributeTags.put(SAMTag.RG.getBinaryTag(), LazyAttribute.RG);
     }
 
     public SRALazyRecord(final SAMFileHeader header, SRAAccession accession, ReadCollection run, AlignmentIterator alignmentIterator, String readId, String alignmentId) {
@@ -533,19 +523,19 @@ public class SRALazyRecord extends SAMRecord {
     }
 
     @Override
-    public boolean getNotPrimaryAlignmentFlag() {
-        if (!initializedFlags.contains(LazyFlag.NOT_PRIMARY_ALIGNMENT)) {
-            setNotPrimaryAlignmentFlag(getNotPrimaryAlignmentFlagImpl());
+    public boolean isSecondaryAlignment() {
+        if (!initializedFlags.contains(LazyFlag.SECONDARY_ALIGNMENT)) {
+            setSecondaryAlignment(getSecondaryAlignmentFlagImpl());
         }
-        return super.getNotPrimaryAlignmentFlag();
+        return super.isSecondaryAlignment();
     }
 
     @Override
-    public void setNotPrimaryAlignmentFlag(final boolean flag) {
-        if (!initializedFlags.contains(LazyFlag.NOT_PRIMARY_ALIGNMENT)) {
-            initializedFlags.add(LazyFlag.NOT_PRIMARY_ALIGNMENT);
+    public void setSecondaryAlignment(final boolean flag) {
+        if (!initializedFlags.contains(LazyFlag.SECONDARY_ALIGNMENT)) {
+            initializedFlags.add(LazyFlag.SECONDARY_ALIGNMENT);
         }
-        super.setNotPrimaryAlignmentFlag(flag);
+        super.setSecondaryAlignment(flag);
     }
 
     @Override
@@ -677,7 +667,7 @@ public class SRALazyRecord extends SAMRecord {
 
     @Override
     public boolean isUnsignedArrayAttribute(final String tag) {
-        Short binaryTag = SAMTagUtil.getSingleton().makeBinaryTag(tag);
+        Short binaryTag = SAMTag.makeBinaryTag(tag);
         LazyAttribute attr = lazyAttributeTags.get(binaryTag);
         if (attr != null && !initializedAttributes.contains(attr)) {
             getAttribute(binaryTag);
@@ -951,7 +941,7 @@ public class SRALazyRecord extends SAMRecord {
         return isAligned && getReadPairedFlag() && !getMateUnmappedFlag();
     }
 
-    private boolean getNotPrimaryAlignmentFlagImpl() {
+    private boolean getSecondaryAlignmentFlagImpl() {
         try {
             if (isAligned) {
                 return getCurrentAlignment().getAlignmentCategory() == Alignment.secondaryAlignment;

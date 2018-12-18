@@ -173,4 +173,40 @@ public class MergingIteratorTest extends HtsjdkTest {
 		Assert.assertEquals(mergingIterator.next().intValue(), 4);
 		mergingIterator.next(); // fails, because the next element would be "2"
 	}
+
+	@Test()
+	public void testCloseMultipleIteratorsMidIteration() {
+		final Queue<Integer> queueOne = new LinkedList<Integer>();
+		queueOne.add(1);
+		queueOne.add(4);
+		queueOne.add(7);
+
+		final Queue<Integer> queueTwo = new LinkedList<Integer>();
+		queueTwo.add(2);
+		queueTwo.add(5);
+		queueTwo.add(8);
+
+		final Queue<Integer> queueThree = new LinkedList<Integer>();
+		queueThree.add(3);
+		queueThree.add(6);
+		queueThree.add(9);
+
+		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<CloseableIterator<Integer>>(3);
+		Collections.addAll(
+				iterators,
+				new QueueBackedIterator<>(queueOne),
+				new QueueBackedIterator<>(queueTwo),
+				new QueueBackedIterator<>(queueThree));
+
+		final MergingIterator<Integer> mergingIterator = new MergingIterator<Integer>(
+				INTEGER_COMPARATOR,
+				iterators);
+
+		Assert.assertEquals(mergingIterator.next().intValue(), 1);
+		Assert.assertEquals(mergingIterator.next().intValue(), 2);
+		Assert.assertEquals(mergingIterator.next().intValue(), 3);
+
+		mergingIterator.close();
+		Assert.assertFalse(mergingIterator.hasNext());
+	}
 }

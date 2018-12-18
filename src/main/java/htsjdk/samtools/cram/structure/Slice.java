@@ -17,18 +17,21 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.SAMBinaryTagAndUnsignedArrayValue;
-import htsjdk.samtools.SAMBinaryTagAndValue;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTagUtil;
+import htsjdk.samtools.*;
+import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
+import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
+import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.io.DefaultBitInputStream;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * CRAM slice is a logical union of blocks into for example alignment slices.
@@ -182,7 +185,7 @@ public class Slice {
 
     /**
      * Get tag value attached to the slice.
-     * @param tag tag ID as a short integer as returned by {@link htsjdk.samtools.SAMTagUtil#makeBinaryTag(java.lang.String)}
+     * @param tag tag ID as a short integer as returned by {@link SAMTag#makeBinaryTag(String)}
      * @return a value of the tag
      */
     public Object getAttribute(final short tag) {
@@ -196,14 +199,14 @@ public class Slice {
 
     /**
      * Set a value for the tag.
-     * @param tag tag ID as a short integer as returned by {@link htsjdk.samtools.SAMTagUtil#makeBinaryTag(java.lang.String)}
+     * @param tag tag ID as a short integer as returned by {@link SAMTag#makeBinaryTag(String)}
      * @param value tag value
      */
     public void setAttribute(final String tag, final Object value) {
         if (value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty value passed for tag " + tag);
         }
-        setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value);
+        setAttribute(SAMTag.makeBinaryTag(tag), value);
     }
 
     public void setUnsignedArrayAttribute(final String tag, final Object value) {
@@ -213,7 +216,7 @@ public class Slice {
         if (Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
         }
-        setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value, true);
+        setAttribute(SAMTag.makeBinaryTag(tag), value, true);
     }
 
     void setAttribute(final short tag, final Object value) {
@@ -242,4 +245,50 @@ public class Slice {
     public boolean isMultiref() {
         return sequenceId == Slice.MULTI_REFERENCE;
     }
+
+    private BitInputStream getCoreBlockInputStream() {
+        return new DefaultBitInputStream(new ByteArrayInputStream(coreBlock.getUncompressedContent()));
+    }
+
+    private Map<Integer, ByteArrayInputStream> getExternalBlockInputMap() {
+        return external.entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> new ByteArrayInputStream(e.getValue().getUncompressedContent())));
+    }
+
+    /**
+     * Initialize a Cram Record Reader from a Slice
+     *
+     * @param header the associated Cram Compression Header
+     * @param validationStringency how strict to be when reading this CRAM record
+     */
+    public CramRecordReader createCramRecordReader(final CompressionHeader header,
+                                                   final ValidationStringency validationStringency) {
+        return new CramRecordReader(getCoreBlockInputStream(),
+                getExternalBlockInputMap(),
+                header,
+                sequenceId,
+                validationStringency);
+    }
+
+    /**
+     * Uses a Multiple Reference Slice Alignment Reader to determine the Reference Spans of a Slice.
+     * The intended use is for CRAI indexing.
+     *
+     * @param header               the associated Cram Compression Header
+     * @param validationStringency how strict to be when reading CRAM records
+     */
+    public Map<Integer, AlignmentSpan> getMultiRefAlignmentSpans(final CompressionHeader header,
+                                                                 final ValidationStringency validationStringency) {
+        final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(getCoreBlockInputStream(),
+                getExternalBlockInputMap(),
+                header,
+                validationStringency,
+                alignmentStart,
+                nofRecords);
+        return reader.getReferenceSpans();
+    }
+
 }

@@ -32,6 +32,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -69,7 +71,7 @@ public class SortingLongCollection {
     /**
      * Where files of sorted values go.
      */
-    private final File[] tmpDir;
+    private final Path[] tmpDir;
 
     private final int maxValuesInRam;
     private int numValuesInRam = 0;
@@ -89,7 +91,7 @@ public class SortingLongCollection {
     /**
      * List of files in tmpDir containing sorted values
      */
-    private final List<File> files = new ArrayList<File>();
+    private final List<Path> files = new ArrayList<>();
 
     // for in-memory iteration
     private int iterationIndex = 0;
@@ -104,6 +106,16 @@ public class SortingLongCollection {
      * @param tmpDir         Where to write files of values that will not fit in RAM
      */
     public SortingLongCollection(final int maxValuesInRam, final File... tmpDir) {
+        this(maxValuesInRam, Arrays.stream(tmpDir).map(File::toPath).toArray(Path[]::new));
+    }
+
+    /**
+     * Prepare to accumulate values to be sorted
+     *
+     * @param maxValuesInRam how many values to accumulate before spilling to disk
+     * @param tmpDir         Where to write files of values that will not fit in RAM
+     */
+    public SortingLongCollection(final int maxValuesInRam, final Path... tmpDir) {
         if (maxValuesInRam <= 0) {
             throw new IllegalArgumentException("maxValuesInRam must be > 0");
         }
@@ -147,7 +159,7 @@ public class SortingLongCollection {
 
         this.priorityQueue = new PriorityQueue<PeekFileValueIterator>(files.size(),
                 new PeekFileValueIteratorComparator());
-        for (final File f : files) {
+        for (final Path f : files) {
             final FileValueIterator it = new FileValueIterator(f);
             if (it.hasNext()) {
                 this.priorityQueue.offer(new PeekFileValueIterator(it));
@@ -165,12 +177,12 @@ public class SortingLongCollection {
 
         try {
             Arrays.sort(this.ramValues, 0, this.numValuesInRam);
-            final File f = IOUtil.newTempFile("sortingcollection.", ".tmp", this.tmpDir, IOUtil.FIVE_GBS);
+            final Path f = IOUtil.newTempPath("sortingcollection.", ".tmp", this.tmpDir, IOUtil.FIVE_GBS);
             DataOutputStream os = null;
             try {
                 final long numBytes = this.numValuesInRam * SIZEOF;
-                os = new DataOutputStream(IOUtil.maybeBufferOutputStream(new FileOutputStream(f)));
-                f.deleteOnExit();
+                os = new DataOutputStream(IOUtil.maybeBufferOutputStream(Files.newOutputStream(f)));
+                IOUtil.deleteOnExit(f);
                 for (int i = 0; i < this.numValuesInRam; ++i) {
                     os.writeLong(ramValues[i]);
                 }
@@ -197,7 +209,7 @@ public class SortingLongCollection {
         this.cleanedUp = true;
         this.ramValues = null;
 
-        IOUtil.deleteFiles(this.files);
+        IOUtil.deletePaths(this.files);
     }
 
 
@@ -247,18 +259,18 @@ public class SortingLongCollection {
      * Read a file of longs
      */
     private static class FileValueIterator {
-        private final File file;
+        private final Path file;
         private final DataInputStream is;
         private long currentRecord = 0;
         private boolean isCurrentRecord = true;
 
-        FileValueIterator(final File file) {
+        FileValueIterator(final Path file) {
             this.file = file;
             try {
-                is = new DataInputStream(IOUtil.maybeBufferInputStream(new FileInputStream(file)));
+                is = new DataInputStream(IOUtil.maybeBufferInputStream(Files.newInputStream(file)));
                 next();
-            } catch (FileNotFoundException e) {
-                throw new RuntimeIOException(file.getAbsolutePath(), e);
+            } catch (IOException e) {
+                throw new RuntimeIOException(file.toUri().toString(), e);
             }
         }
 

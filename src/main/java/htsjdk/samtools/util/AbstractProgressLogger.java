@@ -15,12 +15,13 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private final int n;
     private final String verb;
     private final String noun;
-    private final long startTime = System.currentTimeMillis();
+    private long startTime;
     private final NumberFormat fmt = new DecimalFormat("#,###");
     private final NumberFormat timeFmt = new DecimalFormat("00");
-    private long processed = 0;
-    // Set to -1 until the first record is added
-    private long lastStartTime = -1;
+    private long processed;
+    private long lastStartTime;
+    private String lastChrom;
+    private int lastPos;
 
     /**
      * Construct an AbstractProgressLogger.
@@ -35,6 +36,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         this.noun = noun;
         this.verb = verb;
         this.n = n;
+        reset();
     }
 
     /**
@@ -44,25 +46,49 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
      */
     abstract protected void log(String ... message);
 
+    private synchronized void record() {
+        final long now = System.currentTimeMillis();
+        final long lastPeriodSeconds = (now - this.lastStartTime) / 1000;
+        this.lastStartTime = now;
+
+        final long seconds = (now - startTime) / 1000;
+        final String elapsed   = formatElapseTime(seconds);
+        final String period    = pad(fmt.format(lastPeriodSeconds), 4);
+        final String processed = pad(fmt.format(this.processed), 13);
+
+        final String readInfo;
+        if (this.lastChrom == null) readInfo = "*/*";
+        else readInfo = this.lastChrom + ":" + fmt.format(this.lastPos);
+
+        final long n = (this.processed % this.n == 0) ? this.n : this.processed % this.n;
+
+        log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(n),
+                ": ", period, "s.  Last read position: ", readInfo);
+    }
+
+    /**
+     * Logs the last last record if it wasn't previously logged.
+     * @return boolean true if logging was triggered, false otherwise
+     */
+    public synchronized boolean log() {
+        if (this.processed % this.n != 0) {
+            record();
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
     @Override
     public synchronized boolean record(final String chrom, final int pos) {
-	    if (this.lastStartTime == -1) this.lastStartTime = System.currentTimeMillis();
-	    if (++this.processed % this.n == 0) {
-            final long now = System.currentTimeMillis();
-            final long lastPeriodSeconds = (now - this.lastStartTime) / 1000;
-            this.lastStartTime = now;
-
-            final long seconds = (System.currentTimeMillis() - startTime) / 1000;
-            final String elapsed   = formatElapseTime(seconds);
-            final String period    = pad(fmt.format(lastPeriodSeconds), 4);
-            final String processed = pad(fmt.format(this.processed), 13);
-
-            final String readInfo;
-            if (chrom == null) readInfo = "*/*";
-            else readInfo = chrom + ":" + fmt.format(pos);
-
-            log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(this.n),
-                    ": ", period, "s.  Last read position: ", readInfo);
+        this.lastChrom = chrom;
+        this.lastPos = pos;
+        if (this.lastStartTime == -1) {
+            this.lastStartTime = System.currentTimeMillis();
+        }
+        if (++this.processed % this.n == 0) {
+            record();
             return true;
         }
         else {
@@ -97,6 +123,16 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
 
     /** Returns the number of seconds since progress tracking began. */
     public long getElapsedSeconds() { return (System.currentTimeMillis() - this.startTime) / 1000; }
+
+    /** Resets the start time to now and the number of records to zero. */
+    public void reset() {
+        startTime = System.currentTimeMillis();
+        processed = 0;
+        // Set to -1 until the first record is added
+        lastStartTime = -1;
+        lastChrom = null;
+        lastPos = 0;
+    }
 
     /** Left pads a string until it is at least the given length. */
     private String pad (String in, final int length) {

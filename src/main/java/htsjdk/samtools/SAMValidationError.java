@@ -223,7 +223,16 @@ public class SAMValidationError implements Serializable {
         MISMATCH_SEQ_QUAL_LENGTH,
 
         /** Mismatch between file and sequence dictionaries */
-        MISMATCH_FILE_SEQ_DICT;
+        MISMATCH_FILE_SEQ_DICT,
+
+        /** Base quality is not stored for the read. */
+        QUALITY_NOT_STORED(Severity.WARNING),
+
+        /** A duplicate Sam tag was found in a record. */
+        DUPLICATE_SAM_TAG,
+
+        /** The CG Tag should only be used in BAM format to hold a large cigar */
+        CG_TAG_FOUND_IN_ATTRIBUTES;
 
         public final Severity severity;
 

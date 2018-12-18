@@ -33,10 +33,8 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * @author alecw@broadinstitute.org
@@ -56,14 +54,22 @@ public class LiftOverTest extends HtsjdkTest {
 
     @Test(dataProvider = "testIntervals")
     public void testBasic(final Interval in, final Interval expected) {
+        Assert.assertEquals(liftOver.liftOver(in), expected);
+    }
+
+    @Test(dataProvider = "testIntervalsSubset")
+    public void testLiftoverCounter(final Interval in, final Interval expected) {
+        liftOver.resetFailedIntervalsBelowThresholdCounter();
         final Interval out = liftOver.liftOver(in);
         Assert.assertEquals(out, expected);
 
+        Assert.assertEquals(liftOver.getFailedIntervalsBelowThreshold(), expected == null ? 1 : 0);
+
     }
 
-    @DataProvider(name = "testIntervals")
-    public Object[][] makeTestIntervals() {
-        return new Object[][] {
+    @DataProvider(name = "testIntervalsSubset")
+    public Object[][] makeTestIntervalsSubset() {
+        return new Object[][]{
                 {new Interval("chr3", 50911035, 50911051), null},
                 {new Interval("chr1", 16776377, 16776452),    new Interval("chr1", 16903790, 16903865)},
                 {new Interval("chr2", 30575990, 30576065),    new Interval("chr2", 30722486, 30722561)},
@@ -276,7 +282,15 @@ public class LiftOverTest extends HtsjdkTest {
                 {new Interval("chrX", 128442357, 128442474),	new Interval("chrX", 128614676, 128614793)},
                 {new Interval("chrX", 152701873, 152701902),	new Interval("chrX", 153048679, 153048708)},
                 {new Interval("chrY", 2715028, 2715646),	new Interval("chrY", 2655028, 2655646)},
-                {new Interval("chrY", 26179988, 26180064),	new Interval("chrY", 27770600, 27770676)},
+                {new Interval("chrY", 26179988, 26180064),	new Interval("chrY", 27770600, 27770676)}
+        };
+    }
+
+    @DataProvider(name = "testIntervals")
+    public Object[][] makeTestIntervals() {
+        Object[][] arr1 = makeTestIntervalsSubset();
+
+        Object[][] arr2 = new Object[][] {
                 // Some intervals that are flipped in the new genome
                 {new Interval("chr1", 2479704, 2479833, false, "target_549"),        new Interval("chr1", 2494585, 2494714, true, "target_549")},
                 {new Interval("chr1", 2480081, 2480116, false, "target_550"),        new Interval("chr1", 2494302, 2494337, true, "target_550")},
@@ -384,6 +398,8 @@ public class LiftOverTest extends HtsjdkTest {
                 {new Interval("chrX", 48774611, 48775058), null},
 
         };
+
+        return Stream.concat(Arrays.stream(arr1), Arrays.stream(arr2)).toArray(Object[][]::new);
     }
 
     @Test(dataProvider = "failingIntervals")

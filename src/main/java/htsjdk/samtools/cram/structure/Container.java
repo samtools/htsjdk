@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.structure.block.Block;
 
 public class Container {
     // container header as defined in the specs:
@@ -45,13 +46,6 @@ public class Container {
 
     // slices found in the container:
     public Slice[] slices;
-
-    // for performance measurement:
-    public long buildHeaderTime;
-    public long buildSlicesTime;
-    public long writeTime;
-    public long parseTime;
-    public long readTime;
 
     // for indexing:
     /**

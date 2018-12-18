@@ -32,18 +32,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -51,7 +44,7 @@ import java.util.function.Function;
  */
 public class ParsingUtils {
 
-    public static Map<Object, Color> colorCache = new WeakHashMap<Object, Color>(100);
+    public static Map<Object, Color> colorCache = new WeakHashMap<>(100);
 
     // HTML 4.1 color table,  + orange and magenta
     static Map<String, String> colorSymbols = new HashMap();
@@ -80,7 +73,6 @@ public class ParsingUtils {
         colorSymbols.put("magenta", "FF00FF");
     }
 
-
     /**
      * @return an input stream from the given path
      * @throws IOException
@@ -90,34 +82,33 @@ public class ParsingUtils {
         return openInputStream(path, null);
     }
 
+    static private final Set<String> URL_SCHEMES = new HashSet<>(Arrays.asList("http", "ftp", "https"));
+
     /**
      * open an input stream from the given path and wrap the raw byte stream with a wrapper if given
      *
      * the wrapper will only be applied to paths that are not http, https, ftp, or file, i.e. any {@link java.nio.file.Path}
      * using a custom filesystem plugin
-     * @param path a uri like string
+     * @param uri a uri like string
      * @param wrapper to wrap the input stream in, may be used to implement caching or prefetching, etc
-     * @return
-     * @throws IOException
+     * @return An inputStream appropriately created from uri and conditionally wrapped with wrapper (only in certain cases)
+     * @throws IOException when stream cannot be opened against uri
      */
-    public static InputStream openInputStream(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+    public static InputStream openInputStream(final String uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)
             throws IOException {
 
         final InputStream inputStream;
-        if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
-            inputStream = getURLHelper(new URL(path)).openInputStream();
-        } else if (IOUtil.hasScheme(path)) {
-            inputStream = new SeekablePathStream(IOUtil.getPath(path), wrapper);
+
+        if (URL_SCHEMES.stream().anyMatch(uri::startsWith)) {
+            inputStream = getURLHelper(new URL(uri)).openInputStream();
+        } else if (!IOUtil.hasScheme(uri)) {
+            File file = new File(uri);
+            inputStream = Files.newInputStream(file.toPath());
         } else {
-            File file = new File(path);
-            inputStream = new FileInputStream(file);
+            inputStream = new SeekablePathStream(IOUtil.getPath(uri), wrapper);
         }
         return inputStream;
     }
-
-    //public static String join(String separator, Collection<String> strings) {
-    //    return join( separator, strings.toArray(new String[0]) );
-    //}
 
     public static <T> String join(String separator, Collection<T> objects) {
         if (objects.isEmpty()) {
@@ -141,17 +132,17 @@ public class ParsingUtils {
      * @return
      */
     public static <T extends Comparable> List<T> sortList(Collection<T> list) {
-        ArrayList<T> ret = new ArrayList<T>();
+        ArrayList<T> ret = new ArrayList<>();
         ret.addAll(list);
         Collections.sort(ret);
         return ret;
     }
 
     public static <T extends Comparable<T>, V> String sortedString(Map<T, V> c) {
-        List<T> t = new ArrayList<T>(c.keySet());
+        List<T> t = new ArrayList<>(c.keySet());
         Collections.sort(t);
 
-        List<String> pairs = new ArrayList<String>();
+        List<String> pairs = new ArrayList<>();
         for (T k : t) {
             pairs.add(k + "=" + c.get(k));
         }
@@ -206,7 +197,7 @@ public class ParsingUtils {
      */
     public static List<String> split(String input, char delim) {
         if (input.isEmpty()) return Arrays.asList("");
-        final ArrayList<String> output = new ArrayList<String>(1+input.length()/2);
+        final ArrayList<String> output = new ArrayList<>(1 + input.length() / 2);
         int from = -1, to;
         for (to = input.indexOf(delim);
              to >= 0;

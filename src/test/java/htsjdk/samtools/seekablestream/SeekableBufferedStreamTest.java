@@ -29,6 +29,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 
@@ -67,6 +68,20 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
 
         assertEquals(buffer1, buffer2);
     }
+
+    @Test
+    public void testReadExactlyOneByteAtEndOfFile() throws IOException {
+        try (final SeekableStream stream = new SeekableHTTPStream(new URL(BAM_URL_STRING))){
+            byte[] buff = new byte[1];
+            long length = stream.length();
+            stream.seek(length - 1);
+            Assert.assertFalse(stream.eof());
+            Assert.assertEquals(stream.read(buff), 1);
+            Assert.assertTrue(stream.eof());
+            Assert.assertEquals(stream.read(buff), -1);
+        }
+    }
+
 
     /**
      * Test an attempt to read past the end of the file.  The test file is 594,149 bytes in length.  The test
@@ -120,6 +135,65 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
             in2.close();
 
             Assert.assertEquals(bytes1, bytes2, "Error at buffer size " + bufferSize);
+        }
+    }
+
+    @Test
+    public void testSeek() throws IOException {
+        final int bufferSize = 20000;
+        final int filledBufferSize = bufferSize / 2;
+        final int startPosition = 250000;
+        final int length = 5000;
+
+        class LimitedSeekableFileStream extends SeekableFileStream {
+            LimitedSeekableFileStream(File file) throws FileNotFoundException {
+                super(file);
+            }
+            @Override
+            public int read(byte[] buffer, int offset, int length) throws IOException {
+                // only return a fraction of the buffer size (this is allowed by the read contract) to ensure that
+                // BufferedInputStream's internal buffer is not filled, and so some of its contents are not valid
+                return super.read(buffer, offset, Math.min(length, filledBufferSize));
+            }
+        }
+
+        final int[] RELATIVE_SEEK_OFFSET = new int[]{-bufferSize*2, -bufferSize, -bufferSize/2, -length, -length/2, -1,
+                0, 1, length/2, length, bufferSize/2, bufferSize-1, bufferSize, bufferSize*2};
+
+        for (final int seekOffset : RELATIVE_SEEK_OFFSET) {
+            try (SeekableStream unBufferedStream = new SeekableFileStream(BAM_FILE);
+                 SeekableBufferedStream bufferedStream = new SeekableBufferedStream(new LimitedSeekableFileStream(BAM_FILE), bufferSize)) {
+                byte[] buffer1 = new byte[length];
+                unBufferedStream.seek(startPosition);
+                int bytesRead = unBufferedStream.read(buffer1, 0, length);
+                Assert.assertEquals(length, bytesRead);
+
+                byte[] buffer2 = new byte[length];
+                bufferedStream.seek(startPosition);
+                bytesRead = bufferedStream.read(buffer2, 0, length);
+                Assert.assertEquals(length, bytesRead);
+
+                Assert.assertEquals(buffer1, buffer2);
+
+                unBufferedStream.seek(startPosition + seekOffset);
+                bytesRead = unBufferedStream.read(buffer1, 0, length);
+                Assert.assertEquals(length, bytesRead);
+
+                Object internalBuffer = bufferedStream.bufferedStream;
+                bufferedStream.seek(startPosition + seekOffset);
+                bytesRead = bufferedStream.read(buffer2, 0, length);
+                Assert.assertEquals(length, bytesRead);
+                Object newInternalBuffer = bufferedStream.bufferedStream;
+                if (seekOffset >=0 && seekOffset < filledBufferSize) {
+                    Assert.assertSame(internalBuffer, newInternalBuffer,
+                            "Internal buffer should have been reused for seek offset " + seekOffset);
+                } else {
+                    Assert.assertNotSame(internalBuffer, newInternalBuffer,
+                            "Internal buffer should not have been reused for seek offset " + seekOffset);
+                }
+
+                Assert.assertEquals(buffer1, buffer2, "Error at relative seek offset " + seekOffset);
+            }
         }
     }
 

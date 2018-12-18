@@ -209,8 +209,7 @@ public class IndexFactoryTest extends HtsjdkTest {
                 // we don't have an externally generated index file for the original input, so iterate through each variant
                 // and use the generated index to query for the same variant in the indexed copy of the input
                 final VariantContext vcOrig = originalIt.next();
-                final Interval queryInterval = new Interval(vcOrig.getContig(), vcOrig.getStart(), vcOrig.getEnd());
-                final Iterator<VariantContext> tmpIt = tmpReader.query(queryInterval.getContig(), queryInterval.getStart(), queryInterval.getEnd());
+                final Iterator<VariantContext> tmpIt = tmpReader.query(vcOrig);
                 Assert.assertTrue(tmpIt.hasNext(), "Variant not returned from indexed file");
                 final VariantContext vcTmp = tmpIt.next();
                 Assert.assertEquals(vcOrig.getContig(), vcTmp.getContig());

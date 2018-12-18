@@ -59,7 +59,7 @@ public class SAMBinaryTagAndValue implements Serializable {
         }
         if (!isAllowedAttributeValue(value)) {
             throw new IllegalArgumentException("Attribute type " + value.getClass() + " not supported. Tag: " +
-                    SAMTagUtil.getSingleton().makeStringTag(tag));
+                    SAMTag.makeStringTag(tag));
         }
         this.tag = tag;
         this.value = value;
@@ -202,7 +202,7 @@ public class SAMBinaryTagAndValue implements Serializable {
 
     public SAMBinaryTagAndValue getNext() { return this.next; }
 
-    /** Inserts at item into the ordered list of attributes and returns the head of the list/sub-list */
+    /** Inserts an item into the ordered list of attributes and returns the head of the list/sub-list */
     public SAMBinaryTagAndValue insert(final SAMBinaryTagAndValue attr) {
         if (attr == null) return this;
         if (attr.next != null) throw new IllegalStateException("Can only insert single tag/value combinations.");

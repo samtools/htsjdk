@@ -215,7 +215,6 @@ import java.util.stream.Collectors;
  *     asking for a fully decoded version of the VC.
  * <!-- </s3> -->
  *
- * @author depristo
  */
 public class VariantContext implements Feature, Serializable {
     public static final long serialVersionUID = 1L;
@@ -823,8 +822,9 @@ public class VariantContext implements Feature, Serializable {
             return true;
 
         final List<Allele> allelesToConsider = considerRefAllele ? getAlleles() : getAlternateAlleles();
-        for ( Allele a : allelesToConsider ) {
-            if ( a.equals(allele, ignoreRefState) )
+        for (int i = 0, allelesToConsiderSize = allelesToConsider.size(); i < allelesToConsiderSize; i++) {
+            Allele anAllelesToConsider = allelesToConsider.get(i);
+            if (anAllelesToConsider.equals(allele, ignoreRefState))
                 return true;
         }
 
@@ -1248,11 +1248,11 @@ public class VariantContext implements Feature, Serializable {
         validateAttributeIsExpectedSize(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
         validateAttributeIsExpectedSize(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
 
-        if ( !hasGenotypes() )
+        if (!hasGenotypes())
             return;
 
         // AN
-        if ( hasAttribute(VCFConstants.ALLELE_NUMBER_KEY) ) {
+        if (hasAttribute(VCFConstants.ALLELE_NUMBER_KEY)) {
             final int reportedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
             final int observedAN = getCalledChrCount();
             if ( reportedAN != observedAN )
@@ -1260,12 +1260,12 @@ public class VariantContext implements Feature, Serializable {
         }
 
         // AC
-        if ( hasAttribute(VCFConstants.ALLELE_COUNT_KEY) ) {
+        if (hasAttribute(VCFConstants.ALLELE_COUNT_KEY)) {
             final ArrayList<Integer> observedACs = new ArrayList<>();
 
             // if there are alternate alleles, record the relevant tags
-            if ( numberOfAlternateAlleles > 0 ) {
-                for ( Allele allele : getAlternateAlleles() ) {
+            if (numberOfAlternateAlleles > 0) {
+                for (Allele allele : getAlternateAlleles()) {
                     observedACs.add(getCalledChrCount(allele));
                 }
             }
@@ -1278,7 +1278,7 @@ public class VariantContext implements Feature, Serializable {
             for (int i = 0; i < observedACs.size(); i++) {
                 // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
                 final int reportedAC = Integer.valueOf(reportedACs.get(i).toString());
-                if ( reportedAC != observedACs.get(i) )
+                if (reportedAC != observedACs.get(i))
                     throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), reportedAC, observedACs.get(i)));
             }
         }
@@ -1353,9 +1353,12 @@ public class VariantContext implements Feature, Serializable {
     private void validateGenotypes() {
         if ( this.genotypes == null ) throw new IllegalStateException("Genotypes is null");
 
-        for ( final Genotype g : this.genotypes ) {
-            if ( g.isAvailable() ) {
-                for ( Allele gAllele : g.getAlleles() ) {
+        for ( int i = 0; i < genotypes.size(); i++ ) {
+            Genotype genotype = genotypes.get(i);
+            if ( genotype.isAvailable() ) {
+                final List<Allele> alleles = genotype.getAlleles();
+                for ( int j = 0, size = alleles.size(); j < size; j++ ) {
+                    final Allele gAllele = alleles.get(j);
                     if ( ! hasAllele(gAllele) && gAllele.isCalled() )
                         throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
                 }
@@ -1448,32 +1451,35 @@ public class VariantContext implements Feature, Serializable {
     }
 
     public String toStringDecodeGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
                 ParsingUtils.sortedString(this.getAttributes()),
-                this.getGenotypes());
+                this.getGenotypes(),
+                String.join(",", commonInfo.getFilters()));
     }
 
     private String toStringUnparsedGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
                 ParsingUtils.sortedString(this.getAttributes()),
-                ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData());
+                ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData(),
+                String.join(",", commonInfo.getFilters()));
     }
 
     public String toStringWithoutGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
-                ParsingUtils.sortedString(this.getAttributes()));
+                ParsingUtils.sortedString(this.getAttributes()),
+                String.join(",", commonInfo.getFilters()));
     }
 
     // protected basic manipulation routines
@@ -1482,9 +1488,10 @@ public class VariantContext implements Feature, Serializable {
 
         boolean sawRef = false;
         for ( final Allele a : alleles ) {
-            for ( final Allele b : alleleList ) {
-                if ( a.equals(b, true) )
+            for (int i = 0, alleleListSize = alleleList.size(); i < alleleListSize; i++) {
+                if (a.equals(alleleList.get(i), true)) {
                     throw new IllegalArgumentException("Duplicate allele added to VariantContext: " + a);
+                }
             }
 
             // deal with the case where the first allele isn't the reference
@@ -1679,12 +1686,28 @@ public class VariantContext implements Feature, Serializable {
         return (int)stop;
     }
 
+    /**
+     *
+     * @return true if the variant context is a reference block
+     *
+     */
+    public boolean isReferenceBlock() {
+        return getAlternateAlleles().size() == 1
+                && getAlternateAllele(0).isNonRefAllele()
+                && getAttribute(VCFConstants.END_KEY) != null;
+    }
+
     public boolean hasSymbolicAlleles() {
         return hasSymbolicAlleles(getAlleles());
     }
 
     public static boolean hasSymbolicAlleles( final List<Allele> alleles ) {
-        return alleles.stream().anyMatch(Allele::isSymbolic);
+        for (int i = 0, size = alleles.size(); i < size; i++ ) {
+            if (alleles.get(i).isSymbolic()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Allele getAltAlleleWithHighestAlleleCount() {
@@ -1719,12 +1742,20 @@ public class VariantContext implements Feature, Serializable {
                 .collect(Collectors.toCollection(() -> new ArrayList<>(alleles.size())));
     }
 
+    /**
+     * @deprecated 7/18 use {@link #getGLIndicesOfAlternateAllele(Allele)} instead
+     */
+    @Deprecated
     public int[] getGLIndecesOfAlternateAllele(Allele targetAllele) {
+       return getGLIndicesOfAlternateAllele(targetAllele);
+    }
+
+    public int[] getGLIndicesOfAlternateAllele(Allele targetAllele) {
         final int index = getAlleleIndex(targetAllele);
         if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
-        return GenotypeLikelihoods.getPLIndecesOfAlleles(0, index);
+        return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
     }
-    
+
     /** 
      * Search for the INFO=SVTYPE and return the type of Structural Variant 
      * @return the StructuralVariantType of null if there is no property SVTYPE 

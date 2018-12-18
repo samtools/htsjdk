@@ -23,6 +23,8 @@
  */
 package htsjdk.tribble.index;
 
+import java.util.Objects;
+
 /**
  * Represents a contiguous block of bytes in a file, defined by a start position and size (in bytes)
 */
@@ -73,10 +75,18 @@ public class Block {
         return size;
     }
 
-    public boolean equals(final Object obj) {
-        if ( this == obj ) return true;
-        if ( ! (obj instanceof Block) ) return false;
-        final Block otherBlock = (Block)obj;
-        return this.startPosition == otherBlock.startPosition && this.size == otherBlock.size;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Block block = (Block) o;
+        return startPosition == block.startPosition &&
+                size == block.size;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(startPosition, size);
     }
 }

@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * The linear index associated with a given reference in a BAM index.
@@ -103,23 +104,19 @@ public class LinearIndex {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
-        final LinearIndex that = (LinearIndex) o;
-
-        if (mIndexStart != that.mIndexStart) return false;
-        if (mReferenceSequence != that.mReferenceSequence) return false;
-        if (!Arrays.equals(mIndexEntries, that.mIndexEntries)) return false;
-
-        return true;
+        LinearIndex that = (LinearIndex) o;
+        return mReferenceSequence == that.mReferenceSequence &&
+                mIndexStart == that.mIndexStart &&
+                Arrays.equals(mIndexEntries, that.mIndexEntries);
     }
 
     @Override
     public int hashCode() {
-        int result = mReferenceSequence;
-        result = 31 * result + mIndexStart;
+
+        int result = Objects.hash(mReferenceSequence, mIndexStart);
         result = 31 * result + Arrays.hashCode(mIndexEntries);
         return result;
     }

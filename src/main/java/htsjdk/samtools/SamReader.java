@@ -43,13 +43,13 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /** Describes a type of SAM file. */
     public abstract class Type {
         /** A string representation of this type. */
-        abstract String name();
+        public abstract String name();
 
         /** The recommended file extension for SAMs of this type, without a period. */
         public abstract String fileExtension();
 
         /** The recommended file extension for SAM indexes of this type, without a period, or null if this type is not associated with indexes. */
-        abstract String indexExtension();
+        public abstract String indexExtension();
 
         static class TypeImpl extends Type {
             final String name, fileExtension, indexExtension;
@@ -61,7 +61,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             }
 
             @Override
-            String name() {
+            public String name() {
                 return name;
             }
 
@@ -71,7 +71,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             }
 
             @Override
-            String indexExtension() {
+            public String indexExtension() {
                 return indexExtension;
             }
 
@@ -81,10 +81,10 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             }
         }
 
-        public static Type SRA_TYPE = new TypeImpl("SRA", "sra", null);
-        public static Type CRAM_TYPE = new TypeImpl("CRAM", "cram", "crai");
-        public static Type BAM_TYPE = new TypeImpl("BAM", "bam", "bai");
-        public static Type SAM_TYPE = new TypeImpl("SAM", "sam", null);
+        public static final Type SRA_TYPE = new TypeImpl("SRA", "sra", null);
+        public static final Type CRAM_TYPE = new TypeImpl("CRAM", "cram", "crai");
+        public static final Type BAM_TYPE = new TypeImpl("BAM", "bam", "bai");
+        public static final Type SAM_TYPE = new TypeImpl("SAM", "sam", null);
     }
 
     /**
@@ -552,8 +552,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
 
         private final CloseableIterator<SAMRecord> wrappedIterator;
-        private SAMRecord previous = null;
-        private SAMRecordComparator comparator = null;
+        private SAMSortOrderChecker checker;
 
         public AssertingIterator(final CloseableIterator<SAMRecord> iterator) {
             wrappedIterator = iterator;
@@ -561,35 +560,21 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
         @Override
         public SAMRecordIterator assertSorted(final SAMFileHeader.SortOrder sortOrder) {
-
-            if (sortOrder == null || sortOrder == SAMFileHeader.SortOrder.unsorted) {
-                comparator = null;
-                return this;
-            }
-
-            comparator = sortOrder.getComparatorInstance();
+            checker = new SAMSortOrderChecker(sortOrder);
             return this;
         }
 
         @Override
         public SAMRecord next() {
             final SAMRecord result = wrappedIterator.next();
-            if (comparator != null) {
-                if (previous != null) {
-                    if (comparator.fileOrderCompare(previous, result) > 0) {
-                        throw new IllegalStateException(MessageFormat.format(
-                                "Records {0} ({1}:{2}) should come after {3} ({4}:{5}) when sorting with {6}",
-                                previous.getReadName(),
-                                previous.getReferenceName(),
-                                previous.getAlignmentStart(),
-                                result.getReadName(),
-                                result.getReferenceName(),
-                                result.getAlignmentStart(),
-                                comparator.getClass().getName())
-                        );
-                    }
+            if (checker != null) {
+                final SAMRecord previous = checker.getPreviousRecord();
+                if (!checker.isSorted(result)) {
+                    throw new IllegalStateException(String.format(
+                            "Record %s should come after %s when sorting with %s ordering.",
+                            previous.getSAMString().trim(),
+                            result.getSAMString().trim(), checker.getSortOrder()));
                 }
-                previous = result;
             }
             return result;
         }

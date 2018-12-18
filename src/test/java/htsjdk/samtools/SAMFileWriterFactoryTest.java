@@ -29,9 +29,11 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.FileSystem;
+import java.nio.file.Paths;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -73,6 +75,17 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
             Assert.assertTrue(Files.size(outputPath) > 0);
             Assert.assertTrue(Files.size(indexPath) > 0);
             Assert.assertTrue(Files.size(md5File) > 0);
+        }
+    }
+
+    @Test()
+    public void pathWriterFailureMentionsCause() throws Exception {
+        try {
+            final Path outputPath = Paths.get("nope://no.txt");
+            createSmallBam(outputPath);
+            Assert.fail("Should have thrown a RuntimeIOException");
+        } catch (RuntimeIOException expected) {
+            Assert.assertTrue(expected.getCause().toString().contains("NoSuchFileException"));
         }
     }
 
@@ -324,7 +337,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
             Files.deleteIfExists(outputPath);
             final SAMFileHeader header = new SAMFileHeader();
             final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
-            final File referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta");
+            final Path referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta").toPath();
 
             int nRecs;
             try (final SAMFileWriter samWriter = factory.makeWriter(header, false, outputPath, referenceFile)) {
@@ -334,6 +347,24 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         }
     }
 
+    @Test(dataProvider="bamOrCramWriter")
+    public void testMakeWriterPathAndReferencePath(String extension) throws Exception {
+        final String referenceName = "hg19mini.fasta";
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            Path outputPath = jimfs.getPath("testMakeWriterPath" + extension);
+            Files.deleteIfExists(outputPath);
+            final SAMFileHeader header = new SAMFileHeader();
+            final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
+            final Path referencePath = jimfs.getPath(referenceName);
+            Files.copy(new File(TEST_DATA_DIR, referenceName).toPath(), referencePath);
+
+            int nRecs;
+            try (final SAMFileWriter samWriter = factory.makeWriter(header, false, outputPath, referencePath)) {
+                nRecs = fillSmallBam(samWriter);
+            }
+            verifyWriterOutput(outputPath, new ReferenceSource(referencePath), nRecs, true);
+        }
+    }
 
     @Test
     public void testMakeCRAMWriterWithOptions() throws Exception {

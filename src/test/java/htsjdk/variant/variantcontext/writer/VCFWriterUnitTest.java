@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
@@ -89,8 +90,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     public void testBasicWriteAndRead(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testBasicWriteAndRead.", extension, tempDir);
         fakeVCFFile.deleteOnExit();
-        if (".vcf.gz".equals(extension)) {
-            new File(fakeVCFFile.getAbsolutePath() + ".tbi");
+        if (IOUtil.COMPRESSED_VCF_FILE_EXTENSION.equals(extension)) {
+            new File(fakeVCFFile.getAbsolutePath() + IOUtil.VCF_INDEX_EXTENSION);
         } else {
             Tribble.indexFile(fakeVCFFile).deleteOnExit();
         }
@@ -135,7 +136,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     public void testWriteAndReadVCFHeaderless(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
         fakeVCFFile.deleteOnExit();
-        if (".vcf.gz".equals(extension)) {
+        if (IOUtil.COMPRESSED_VCF_FILE_EXTENSION.equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
             Tribble.indexFile(fakeVCFFile).deleteOnExit();
@@ -148,7 +149,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build()) {
-            writer.setVCFHeader(header);
+            writer.setHeader(header);
             writer.add(createVC(header));
             writer.add(createVC(header));
         }
@@ -171,7 +172,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testWriteHeaderTwice() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", ".vcf");
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", IOUtil.VCF_FILE_EXTENSION);
         fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
@@ -188,7 +189,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testChangeHeaderAfterWritingHeader() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", ".vcf");
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", IOUtil.VCF_FILE_EXTENSION);
         fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
@@ -198,13 +199,13 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .setReferenceDictionary(sequenceDict)
                 .build()) {
             writer2.writeHeader(header);
-            writer2.setVCFHeader(header);
+            writer2.setHeader(header);
         }
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testChangeHeaderAfterWritingBody() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", ".vcf");
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", IOUtil.VCF_FILE_EXTENSION);
         fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
@@ -213,9 +214,9 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .setOutputFile(fakeVCFFile)
                 .setReferenceDictionary(sequenceDict)
                 .build()) {
-            writer3.setVCFHeader(header);
+            writer3.setHeader(header);
             writer3.add(createVC(header));
-            writer3.setVCFHeader(header);
+            writer3.setHeader(header);
         }
     }
 
@@ -299,7 +300,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         final File vcf = new File(tempDir, "test" + extension);
         final String indexExtension;
-        if (extension.equals(".vcf.gz")) {
+        if (extension.equals(IOUtil.COMPRESSED_VCF_FILE_EXTENSION)) {
             indexExtension = TabixUtils.STANDARD_INDEX_EXTENSION;
         } else {
             indexExtension = Tribble.STANDARD_INDEX_EXTENSION;
@@ -331,8 +332,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         return new Object[][] {
                 // TODO: BCF doesn't work because header is not properly constructed.
                 // {".bcf"},
-                {".vcf"},
-                {".vcf.gz"}
+                {IOUtil.VCF_FILE_EXTENSION},
+                {IOUtil.COMPRESSED_VCF_FILE_EXTENSION}
         };
     }
 
@@ -350,7 +351,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         header.addMetaDataLine(new VCFHeaderLine("FOOBAR", "foovalue"));
 
-        final File outputVCF = createTempFile("testModifyHeader", ".vcf");
+        final File outputVCF = createTempFile("testModifyHeader", IOUtil.VCF_FILE_EXTENSION);
         final VariantContextWriter writer = new VariantContextWriterBuilder().setOutputFile(outputVCF).setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER)).build();
         writer.writeHeader(header);
         writer.close();
@@ -361,6 +362,26 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         Assert.assertNotNull(roundtripHeader.getOtherHeaderLine("FOOBAR"), "Could not find FOOBAR header line after a write/read cycle");
         Assert.assertEquals(roundtripHeader.getOtherHeaderLine("FOOBAR").getValue(), "foovalue", "Wrong value for FOOBAR header line after a write/read cycle");
+    }
+
+
+    /**
+     *
+     * A test to check that we can't write VCF with missing header.
+     */
+    @Test(dataProvider = "vcfExtensionsDataProvider", expectedExceptions = IllegalStateException.class)
+    public void testWriteWithEmptyHeader(final String extension) throws IOException {
+        final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
+        metaData = new HashSet<>();
+        additionalColumns = new HashSet<>();
+        final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
+        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build()) {
+            writer.add(createVC(header));
+        }
     }
 }
 

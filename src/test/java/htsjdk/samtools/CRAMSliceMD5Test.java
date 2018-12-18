@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
@@ -22,7 +23,7 @@ import java.util.Arrays;
 /**
  * Created by vadim on 03/07/2017.
  */
-public class CRAMSliceMD5Test {
+public class CRAMSliceMD5Test extends HtsjdkTest{
 
     @Test
     public void testSliceMD5() throws IOException {

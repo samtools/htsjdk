@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Files;
@@ -51,7 +52,9 @@ public class FastaSequenceIndexTest extends HtsjdkTest {
         final File sequenceIndexFile = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.fasta.fai");
         return new Object[][] { new Object[]
             { new FastaSequenceIndex(sequenceIndexFile) },
-            { new FastaSequenceIndex(sequenceIndexFile.toPath()) } };
+            { new FastaSequenceIndex(sequenceIndexFile.toPath()) },
+            { new FastaSequenceIndex(new FileInputStream(sequenceIndexFile)) }
+        };
     }
 
     @DataProvider(name="specialcharacters")
@@ -59,7 +62,9 @@ public class FastaSequenceIndexTest extends HtsjdkTest {
         final File sequenceIndexFile = new File(TEST_DATA_DIR,"testing.fai");
         return new Object[][] { new Object[]
             { new FastaSequenceIndex(sequenceIndexFile) },
-            { new FastaSequenceIndex(sequenceIndexFile.toPath()) } };
+            { new FastaSequenceIndex(sequenceIndexFile.toPath()) },
+            { new FastaSequenceIndex(new FileInputStream(sequenceIndexFile)) }
+        };
     }
 
     @Test(dataProvider="homosapiens")

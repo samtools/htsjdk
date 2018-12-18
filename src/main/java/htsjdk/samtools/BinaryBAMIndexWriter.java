@@ -25,6 +25,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,7 +48,7 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
      * @param output  BAM Index output file
      */
     public BinaryBAMIndexWriter(final int nRef, final File output) {
-        this(nRef, null == output ? null : output.toPath());
+        this(nRef, IOUtil.toPath(output));
     }
 
     /**

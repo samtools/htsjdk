@@ -19,20 +19,22 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.digest.ContentDigests;
-import htsjdk.samtools.cram.encoding.ExternalCompressor;
-import htsjdk.samtools.cram.encoding.writer.DataWriterFactory;
-import htsjdk.samtools.cram.encoding.writer.Writer;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
-import htsjdk.samtools.cram.structure.Block;
-import htsjdk.samtools.cram.structure.BlockContentType;
+import htsjdk.samtools.cram.structure.block.ExternalBlock;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.util.RuntimeIOException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,22 +52,16 @@ public class ContainerFactory {
         this.recordsPerSlice = recordsPerSlice;
     }
 
-    public Container buildContainer(final List<CramCompressionRecord> records)
-            throws IllegalArgumentException, IllegalAccessException,
-            IOException {
+    public Container buildContainer(final List<CramCompressionRecord> records) {
         return buildContainer(records, null);
     }
 
     Container buildContainer(final List<CramCompressionRecord> records,
-                             final SubstitutionMatrix substitutionMatrix)
-            throws IllegalArgumentException, IllegalAccessException,
-            IOException {
-        // get stats, create compression header and slices
-        final long time1 = System.nanoTime();
-        final CompressionHeader header = new CompressionHeaderFactory().build(records,
-                substitutionMatrix, samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
-        header.APDelta = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-        final long time2 = System.nanoTime();
+                             final SubstitutionMatrix substitutionMatrix) {
+
+        // sets header APDelta
+        final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
+        final CompressionHeader header = new CompressionHeaderFactory().build(records, substitutionMatrix, coordinateSorted);
 
         header.readNamesIncluded = preserveReadNames;
 
@@ -78,7 +74,6 @@ public class ContainerFactory {
         container.bases = 0;
         container.blockCount = 0;
 
-        final long time3 = System.nanoTime();
         long lastGlobalRecordCounter = container.globalRecordCounter;
         for (int i = 0; i < records.size(); i += recordsPerSlice) {
             final List<CramCompressionRecord> sliceRecords = records.subList(i,
@@ -94,13 +89,8 @@ public class ContainerFactory {
                 container.sequenceId = slice.sequenceId;
         }
 
-        final long time4 = System.nanoTime();
-
         container.slices = slices.toArray(new Slice[slices.size()]);
         calculateAlignmentBoundaries(container);
-
-        container.buildHeaderTime = time2 - time1;
-        container.buildSlicesTime = time4 - time3;
 
         globalRecordCounter += records.size();
         return container;
@@ -123,17 +113,11 @@ public class ContainerFactory {
     }
 
     private static Slice buildSlice(final List<CramCompressionRecord> records,
-                                    final CompressionHeader header)
-            throws IllegalArgumentException, IllegalAccessException,
-            IOException {
-        final Map<Integer, ExposedByteArrayOutputStream> map = new HashMap<Integer, ExposedByteArrayOutputStream>();
+                                    final CompressionHeader header) {
+        final Map<Integer, ByteArrayOutputStream> externalBlockMap = new HashMap<>();
         for (final int id : header.externalIds) {
-            map.put(id, new ExposedByteArrayOutputStream());
+            externalBlockMap.put(id, new ByteArrayOutputStream());
         }
-
-        final DataWriterFactory dataWriterFactory = new DataWriterFactory();
-        final ExposedByteArrayOutputStream bitBAOS = new ExposedByteArrayOutputStream();
-        final DefaultBitOutputStream bitOutputStream = new DefaultBitOutputStream(bitBAOS);
 
         final Slice slice = new Slice();
         slice.nofRecords = records.size();
@@ -175,31 +159,32 @@ public class ContainerFactory {
             slice.alignmentSpan = maxAlEnd - minAlStart + 1;
         }
 
-        final Writer writer = dataWriterFactory.buildWriter(bitOutputStream, map, header, slice.sequenceId);
-        int prevAlStart = slice.alignmentStart;
-        for (final CramCompressionRecord record : records) {
-            record.alignmentDelta = record.alignmentStart - prevAlStart;
-            prevAlStart = record.alignmentStart;
-            writer.write(record);
+        try (final ByteArrayOutputStream bitBAOS = new ByteArrayOutputStream();
+             final DefaultBitOutputStream bitOutputStream = new DefaultBitOutputStream(bitBAOS)) {
+
+            final CramRecordWriter writer = new CramRecordWriter(bitOutputStream, externalBlockMap, header, slice.sequenceId);
+            writer.writeCramCompressionRecords(records, slice.alignmentStart);
+
+            bitOutputStream.close();
+            slice.coreBlock = Block.createRawCoreDataBlock(bitBAOS.toByteArray());
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
 
-        bitOutputStream.close();
-        slice.coreBlock = Block.buildNewCore(bitBAOS.toByteArray());
+        slice.external = new HashMap<>();
+        for (final Integer contentId : externalBlockMap.keySet()) {
+            // remove after https://github.com/samtools/htsjdk/issues/1232
+            if (contentId == Block.NO_CONTENT_ID) {
+                throw new CRAMException("Valid Content ID required.  Given: " + contentId);
+            }
 
-        slice.external = new HashMap<Integer, Block>();
-        for (final Integer key : map.keySet()) {
-            final ExposedByteArrayOutputStream os = map.get(key);
+            final ExternalCompressor compressor = header.externalCompressors.get(contentId);
+            final byte[] rawContent = externalBlockMap.get(contentId).toByteArray();
+            final ExternalBlock externalBlock = new ExternalBlock(compressor.getMethod(), contentId,
+                    compressor.compress(rawContent), rawContent.length);
 
-            final Block externalBlock = new Block();
-            externalBlock.setContentId(key);
-            externalBlock.setContentType(BlockContentType.EXTERNAL);
-
-            final ExternalCompressor compressor = header.externalCompressors.get(key);
-            final byte[] rawData = os.toByteArray();
-            final byte[] compressed = compressor.compress(rawData);
-            externalBlock.setContent(rawData, compressed);
-            externalBlock.setMethod(compressor.getMethod());
-            slice.external.put(key, externalBlock);
+            slice.external.put(contentId, externalBlock);
         }
 
         return slice;

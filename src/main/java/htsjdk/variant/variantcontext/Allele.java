@@ -26,7 +26,6 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.samtools.util.StringUtil;
-import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -127,10 +126,14 @@ public class Allele implements Comparable<Allele>, Serializable {
     private byte[] bases = null;
 
     /** A generic static NO_CALL allele for use */
-    public final static String NO_CALL_STRING = ".";
+    public static final String NO_CALL_STRING = ".";
 
     /** A generic static SPAN_DEL allele for use */
-    public final static String SPAN_DEL_STRING = "*";
+    public static final String SPAN_DEL_STRING = "*";
+
+    /** Non ref allele representations */
+    public static final String NON_REF_STRING = "<NON_REF>";
+    public static final String UNSPECIFIED_ALTERNATE_ALLELE_STRING = "<*>";
 
     // no public way to create an allele
     protected Allele(final byte[] bases, final boolean isRef) {
@@ -182,19 +185,31 @@ public class Allele implements Comparable<Allele>, Serializable {
         this.isSymbolic = allele.isSymbolic;
     }
 
+    private static final Allele REF_A = new Allele("A", true);
+    private static final Allele ALT_A = new Allele("A", false);
+    private static final Allele REF_C = new Allele("C", true);
+    private static final Allele ALT_C = new Allele("C", false);
+    private static final Allele REF_G = new Allele("G", true);
+    private static final Allele ALT_G = new Allele("G", false);
+    private static final Allele REF_T = new Allele("T", true);
+    private static final Allele ALT_T = new Allele("T", false);
+    private static final Allele REF_N = new Allele("N", true);
+    private static final Allele ALT_N = new Allele("N", false);
+    public static final Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
+    public static final Allele NO_CALL = new Allele(NO_CALL_STRING, false);
+    public static final Allele NON_REF_ALLELE = new Allele(NON_REF_STRING, false);
+    public static final Allele UNSPECIFIED_ALTERNATE_ALLELE = new Allele(UNSPECIFIED_ALTERNATE_ALLELE_STRING, false);
 
-    private final static Allele REF_A = new Allele("A", true);
-    private final static Allele ALT_A = new Allele("A", false);
-    private final static Allele REF_C = new Allele("C", true);
-    private final static Allele ALT_C = new Allele("C", false);
-    private final static Allele REF_G = new Allele("G", true);
-    private final static Allele ALT_G = new Allele("G", false);
-    private final static Allele REF_T = new Allele("T", true);
-    private final static Allele ALT_T = new Allele("T", false);
-    private final static Allele REF_N = new Allele("N", true);
-    private final static Allele ALT_N = new Allele("N", false);
-    public final static Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
-    public final static Allele NO_CALL = new Allele(NO_CALL_STRING, false);
+    // for simple deletion, e.g. "ALT==<DEL>" (note that the spec allows, for now at least, alt alleles like <DEL:ME>)
+    public static final Allele SV_SIMPLE_DEL = StructuralVariantType.DEL.toSymbolicAltAllele();
+    // for simple insertion, e.g. "ALT==<INS>"
+    public static final Allele SV_SIMPLE_INS = StructuralVariantType.INS.toSymbolicAltAllele();
+    // for simple inversion, e.g. "ALT==<INV>"
+    public static final Allele SV_SIMPLE_INV = StructuralVariantType.INV.toSymbolicAltAllele();
+    // for simple generic cnv, e.g. "ALT==<CNV>"
+    public static final Allele SV_SIMPLE_CNV = StructuralVariantType.CNV.toSymbolicAltAllele();
+    // for simple duplication, e.g. "ALT==<DUP>"
+    public static final Allele SV_SIMPLE_DUP = StructuralVariantType.DUP.toSymbolicAltAllele();
 
     // ---------------------------------------------------------------------------------------------------------
     //
@@ -543,5 +558,12 @@ public class Allele implements Comparable<Allele>, Serializable {
     private static boolean firstIsPrefixOfSecond(final Allele a1, final Allele a2) {
         String a1String = a1.getBaseString();
         return a2.getBaseString().substring(0, a1String.length()).equals(a1String);
+    }
+
+    /**
+     *  @return true if Allele is either {@code <NON_REF>} or {@code <*>}
+     */
+    public boolean isNonRefAllele() {
+        return equals(NON_REF_ALLELE) || equals(UNSPECIFIED_ALTERNATE_ALLELE);
     }
 }

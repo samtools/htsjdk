@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.List;
 
 public class BamFileIoUtils {
@@ -86,7 +87,7 @@ public class BamFileIoUtils {
                 // If we found the end of the header then write the remainder of this block out as a
                 // new gzip block and then break out of the while loop
                 if (remainingInBlock >= 0) {
-                    final BlockCompressedOutputStream blockOut = new BlockCompressedOutputStream(outputStream, null);
+                    final BlockCompressedOutputStream blockOut = new BlockCompressedOutputStream(outputStream, (Path)null);
                     IOUtil.transferByStream(blockIn, blockOut, remainingInBlock);
                     blockOut.flush();
                     // Don't close blockOut because closing underlying stream would break everything

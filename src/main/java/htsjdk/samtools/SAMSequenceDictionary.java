@@ -31,9 +31,6 @@ import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
 
 import static htsjdk.samtools.SAMSequenceRecord.*;
 import static java.util.stream.Collectors.toList;
@@ -41,14 +38,10 @@ import static java.util.stream.Collectors.toList;
 /**
  * Collection of SAMSequenceRecords.
  */
-@XmlRootElement(name="References")
+
 public class SAMSequenceDictionary implements Serializable {
     public static final long serialVersionUID = 1L;
 
-    /* xml Serialization , for `m_sequence` we use the field instead of the
-    getter because the later wraps the list into an unmodifiable List 
-    see http://tech.joshuacummings.com/2010/10/problems-with-defensive-collection.html */
-    @XmlElement(name="Reference")
     private List<SAMSequenceRecord> mSequences = new ArrayList<>();
     private final Map<String, SAMSequenceRecord> mSequenceMap = new HashMap<>();
 
@@ -60,7 +53,6 @@ public class SAMSequenceDictionary implements Serializable {
         setSequences(list);
     }
 
-    @XmlTransient //we use the field instead of getter/setter
     public List<SAMSequenceRecord> getSequences() {
         return Collections.unmodifiableList(mSequences);
     }

@@ -45,7 +45,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -363,7 +362,7 @@ public class SRATest extends AbstractSRATest {
             }
 
             if (currentRecord.getReadName().equals(readName)
-                    && currentRecord.getNotPrimaryAlignmentFlag() == isSecondaryAlignment
+                    && currentRecord.isSecondaryAlignment() == isSecondaryAlignment
                     && (!hasMate || currentRecord.getSecondOfPairFlag() == isSecondOfPair)) {
                 record = currentRecord;
                 break;
@@ -412,7 +411,7 @@ public class SRATest extends AbstractSRATest {
         Assert.assertEquals(record.getBaseQualityString(), quals);
         Assert.assertEquals(record.getReadPairedFlag(), hasMate);
         Assert.assertEquals(record.getFlags(), flags);
-        Assert.assertEquals(record.getNotPrimaryAlignmentFlag(), isSecondaryAlignment);
+        Assert.assertEquals(record.isSecondaryAlignment(), isSecondaryAlignment);
         if (hasMate) {
             Assert.assertEquals(record.getSecondOfPairFlag(), isSecondOfPair);
         }

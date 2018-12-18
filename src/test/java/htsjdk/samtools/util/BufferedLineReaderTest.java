@@ -24,13 +24,14 @@
 
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class BufferedLineReaderTest {
+public class BufferedLineReaderTest extends HtsjdkTest{
 
     private static final String[] TERMINATORS = {"\r", "\n", "\r\n"};
     private static final boolean[] LAST_LINE_TERMINATED = {false, true};
@@ -71,10 +72,12 @@ public class BufferedLineReaderTest {
             input = "";
         }
         final BufferedLineReader blr = BufferedLineReader.fromString(input);
+        blr.peek();
         final String output = blr.readLine();
         if (lastLineTerminated) {
             Assert.assertEquals(output, "");
         }
+        blr.peek();
         Assert.assertNull(blr.readLine());
     }
 
@@ -105,12 +108,14 @@ public class BufferedLineReaderTest {
         }
         final BufferedLineReader blr = BufferedLineReader.fromString(input);
         for (int i = 0; i < lines.length - 1; ++i) {
+            blr.peek();
             final String s = blr.readLine();
             String expected = lines[i];
             Assert.assertEquals(s, expected);
         }
 
         // Last line may need to be handled specially
+        blr.peek();
         String s = blr.readLine();
         if (!lastLineTerminated
                 && emptyLineState == EmptyLineState.LAST_LINE) {
@@ -119,6 +124,7 @@ public class BufferedLineReaderTest {
             String expected = lines[lines.length - 1];
             Assert.assertEquals(s, expected);
         }
+        blr.peek();
         s = blr.readLine();
         Assert.assertNull(s);
     }

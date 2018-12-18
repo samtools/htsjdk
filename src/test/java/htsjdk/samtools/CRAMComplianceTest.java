@@ -41,14 +41,19 @@ public class CRAMComplianceTest extends HtsjdkTest {
                 {"c1#noseq"},       // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"c1#unknown"},     // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"ce#5b"},          // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
+                {"ce#1000"},        // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
                 {"ce#tag_depadded"},// reads with no read bases: https://github.com/samtools/htsjdk/issues/509
                 {"ce#tag_padded"},  // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
                 {"ce#unmap"},       // unmapped reads with non-zero MAPQ value that is not restored
                                     // https://github.com/samtools/htsjdk/issues/714
-                {"xx#triplet"},     // the version 2.1 variant of this file has a bad insertSize, which is
-                                    // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
                 {"xx#minimal"},     // cigar string "5H0M5H" is restored as "10H"
                                     // https://github.com/samtools/htsjdk/issues/713
+                {"xx#repeated"},    // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
+                {"xx#tlen"},        // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
+                {"xx#tlen2"},       // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
+                {"xx#triplet"},     // the version 2.1 variant of this file has a bad insertSize, which is
+                                    // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
+                //{"md#1"},           // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
         };
     }
 
@@ -67,6 +72,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
                 {"c1#pad1"},
                 {"c1#pad2"},
                 {"c1#pad3"},
+                {"c2#pad"},
                 {"ce#1"},
                 {"ce#2"},
                 {"ce#5"},
@@ -392,7 +398,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         // tests to fail since it can change the order of some unmapped reads - this is allowed
         // by the spec since the order is arbitrary for unmapped.
         try (final SAMFileWriter writer = new SAMFileWriterFactory()
-            .makeWriter(samHeader, true, targetPath, referenceFile)) {
+            .makeWriter(samHeader, true, targetPath, referenceFile.toPath())) {
             for (SAMRecord rec : recs) {
                 writer.addAlignment(rec);
             }

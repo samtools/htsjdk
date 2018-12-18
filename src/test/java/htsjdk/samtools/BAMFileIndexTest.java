@@ -24,10 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.StopWatch;
-import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -80,7 +77,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
 
     @Test(groups = {"slow"})
     public void testRandomQueries() throws Exception {
-        runRandomTest(BAM_FILE, 1000, new Random());
+        runRandomTest(BAM_FILE, 1000, new Random(TestUtil.RANDOM_SEED));
     }
 
     @Test
@@ -252,7 +249,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
     public void testMultiIntervalQuery(final boolean contained) {
         final List<String> referenceNames = getReferenceNames(BAM_FILE);
 
-        final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), 1000, new Random());
+        final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), 1000, new Random(TestUtil.RANDOM_SEED));
         final Set<SAMRecord> multiIntervalRecords = new HashSet<SAMRecord>();
         final Set<SAMRecord> singleIntervalRecords = new HashSet<SAMRecord>();
         final SamReader reader = SamReaderFactory.makeDefault().open(BAM_FILE);

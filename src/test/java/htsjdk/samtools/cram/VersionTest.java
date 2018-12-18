@@ -10,7 +10,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CramInt;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.Block;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -91,17 +91,17 @@ public class VersionTest extends HtsjdkTest {
         CRC32 digester = new CRC32();
         digester.update(containerHeaderBytes);
         Assert.assertEquals(container.checksum, (int) digester.getValue());
-        Assert.assertEquals(CramInt.int32(crcBytes), container.checksum);
+        Assert.assertEquals(CramInt.readInt32(crcBytes), container.checksum);
 
         // test block's crc:
         cramSeekableStream.seek(firstBlockStart);
-        Block.readFromInputStream(version.major, cramSeekableStream);
+        Block.read(version.major, cramSeekableStream);
         long blockByteSyze = cramSeekableStream.position() - firstBlockStart - crcByteSize;
         cramSeekableStream.seek(firstBlockStart);
         final byte[] blockBytes = InputStreamUtils.readFully(cramSeekableStream, (int) blockByteSyze);
         crcBytes = InputStreamUtils.readFully(cramSeekableStream, crcByteSize);
         digester = new CRC32();
         digester.update(blockBytes);
-        Assert.assertEquals(CramInt.int32(crcBytes), (int) digester.getValue());
+        Assert.assertEquals(CramInt.readInt32(crcBytes), (int) digester.getValue());
     }
 }

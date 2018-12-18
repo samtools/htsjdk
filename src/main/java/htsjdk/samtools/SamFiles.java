@@ -3,6 +3,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.build.CramIO;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class SamFiles {
      * @return The index for the provided SAM, or null if one was not found.
      */
     public static File findIndex(final File samFile) {
-        Path path = findIndex(samFile.toPath());
+        final Path path = findIndex(IOUtil.toPath(samFile));
         return path == null ? null : path.toFile();
     }
 

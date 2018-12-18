@@ -40,7 +40,7 @@ import java.util.List;
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
  *
  */
-public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Locus {
+public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Locus, Locatable {
     /**
      * Reference sequence, to which the reads are aligned.
      **/
@@ -144,5 +144,20 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
      */
     public boolean isEmpty() {
         return getRecordAndOffsets().isEmpty();
+    }
+
+    @Override
+    public String getContig() {
+        return getSequenceName();
+    }
+
+    @Override
+    public int getStart() {
+        return getPosition();
+    }
+
+    @Override
+    public int getEnd() {
+        return getPosition();
     }
 }

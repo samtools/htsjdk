@@ -18,7 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.io.CRC32OutputStream;
-import htsjdk.samtools.cram.io.CramArray;
+import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.CramInt;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.LTF8;
@@ -49,7 +49,7 @@ class ContainerHeaderIO {
             peek[i] = (byte) character;
         }
 
-        container.containerByteSize = CramInt.int32(peek);
+        container.containerByteSize = CramInt.readInt32(peek);
         container.sequenceId = ITF8.readUnsignedITF8(inputStream);
         container.alignmentStart = ITF8.readUnsignedITF8(inputStream);
         container.alignmentSpan = ITF8.readUnsignedITF8(inputStream);
@@ -57,9 +57,9 @@ class ContainerHeaderIO {
         container.globalRecordCounter = LTF8.readUnsignedLTF8(inputStream);
         container.bases = LTF8.readUnsignedLTF8(inputStream);
         container.blockCount = ITF8.readUnsignedITF8(inputStream);
-        container.landmarks = CramArray.array(inputStream);
+        container.landmarks = CramIntArray.array(inputStream);
         if (major >= 3)
-            container.checksum = CramInt.int32(inputStream);
+            container.checksum = CramInt.readInt32(inputStream);
 
         return true;
     }
@@ -84,7 +84,7 @@ class ContainerHeaderIO {
         length += (LTF8.writeUnsignedLTF8(container.globalRecordCounter, crc32OutputStream) + 7) / 8;
         length += (LTF8.writeUnsignedLTF8(container.bases, crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.blockCount, crc32OutputStream) + 7) / 8;
-        length += (CramArray.write(container.landmarks, crc32OutputStream) + 7) / 8;
+        length += (CramIntArray.write(container.landmarks, crc32OutputStream) + 7) / 8;
 
         if (major >= 3) {
             outputStream.write(crc32OutputStream.getCrc32_LittleEndian());

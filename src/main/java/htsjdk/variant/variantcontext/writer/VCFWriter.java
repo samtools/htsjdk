@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.file.Path;
 
 /**
  * this class writes VCF files
@@ -86,6 +88,14 @@ class VCFWriter extends IndexingVariantContextWriter {
                      final boolean enableOnTheFlyIndexing,
                      final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
                      final boolean writeFullFormatField) {
+        this(IOUtil.toPath(location), output, refDict, enableOnTheFlyIndexing, doNotWriteGenotypes,
+            allowMissingFieldsInHeader,writeFullFormatField);
+    }
+
+    public VCFWriter(final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
+        final boolean enableOnTheFlyIndexing,
+        final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
+        final boolean writeFullFormatField) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
@@ -96,11 +106,20 @@ class VCFWriter extends IndexingVariantContextWriter {
                      final IndexCreator indexCreator, final boolean enableOnTheFlyIndexing,
                      final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
                      final boolean writeFullFormatField) {
+        this(IOUtil.toPath(location), output, refDict, indexCreator, enableOnTheFlyIndexing,
+            doNotWriteGenotypes, allowMissingFieldsInHeader, writeFullFormatField);
+    }
+
+    public VCFWriter(final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
+        final IndexCreator indexCreator, final boolean enableOnTheFlyIndexing,
+        final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
+        final boolean writeFullFormatField) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing, indexCreator);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.writeFullFormatField = writeFullFormatField;
     }
+
     // --------------------------------------------------------------------------------
     //
     // VCFWriter interface functions
@@ -134,7 +153,7 @@ class VCFWriter extends IndexingVariantContextWriter {
 
         // note we need to update the mHeader object after this call because they header
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
-        setVCFHeader(header);
+        setHeader(header);
         try {
             writeHeader(this.mHeader, writer, getVersionLine(), getStreamName());
             writeAndResetBuffer();
@@ -219,9 +238,15 @@ class VCFWriter extends IndexingVariantContextWriter {
     public void add(final VariantContext context) {
         try {
             super.add(context);
-
-            if (this.doNotWriteGenotypes) write(this.vcfEncoder.encode(new VariantContextBuilder(context).noGenotypes().make()));
-            else write(this.vcfEncoder.encode(context));
+            if (this.mHeader == null) {
+                throw new IllegalStateException("Unable to write the VCF: header is missing, " +
+                                                   "try to call writeHeader or setHeader first.");
+            }
+            if (this.doNotWriteGenotypes) {
+                this.vcfEncoder.write(this.writer, new VariantContextBuilder(context).noGenotypes().make());
+            } else {
+                this.vcfEncoder.write(this.writer, context);
+            }
             write("\n");
 
             writeAndResetBuffer();
@@ -232,7 +257,7 @@ class VCFWriter extends IndexingVariantContextWriter {
     }
 
     @Override
-    public void setVCFHeader(final VCFHeader header) {
+    public void setHeader(final VCFHeader header) {
         if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }

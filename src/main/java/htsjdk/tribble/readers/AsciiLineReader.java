@@ -187,6 +187,10 @@ public class AsciiLineReader implements LineReader, LocationAware {
         if ( is != null ) is.close();
         lineBuffer = null;
     }
-
+    
+    @Override
+    public String toString() {
+        return "AsciiLineReader("+(this.is == null ? "closed"  : String.valueOf(this.is.getPosition())) +")";
+    }
 }
 

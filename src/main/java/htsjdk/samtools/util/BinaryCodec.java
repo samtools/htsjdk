@@ -123,7 +123,7 @@ public class BinaryCodec implements Closeable {
      * @param writing whether the file is being written to
      */
     public BinaryCodec(final File file, final boolean writing) {
-        this(null == file ? null : file.toPath(), writing);
+        this(IOUtil.toPath(file), writing);
     }
 
     /**
@@ -415,7 +415,10 @@ public class BinaryCodec implements Closeable {
             throw new IllegalStateException("Calling read method on BinaryCodec open for write.");
         }
         try {
-            return inputStream.read(buffer, offset, length);
+            // Some implementations of InputStream do not behave well when the buffer is empty and length is zero, for
+            // example ByteArrayInputStream, so we must check for length equal to zero.
+            // See: https://bugs.java.com/view_bug.do?bug_id=6766844
+            return (length == 0) ? 0 : inputStream.read(buffer, offset, length);
         } catch (IOException e) {
             throw new RuntimeIOException(constructErrorMessage("Read error"), e);
         }

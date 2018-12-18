@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CigarUtil;
 import htsjdk.samtools.util.CloserUtil;
@@ -580,7 +581,7 @@ public final class SAMUtils {
         rec.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         rec.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
         rec.setInferredInsertSize(0);
-        rec.setNotPrimaryAlignmentFlag(false);
+        rec.setSecondaryAlignment(false);
         rec.setSupplementaryAlignmentFlag(false);
         rec.setProperPairFlag(false);
         rec.setReadUnmappedFlag(true);
@@ -680,6 +681,18 @@ public final class SAMUtils {
     public static long findVirtualOffsetOfFirstRecordInBam(final File bamFile) {
         try {
             return BAMFileReader.findVirtualOffsetOfFirstRecord(bamFile);
+        } catch (final IOException ioe) {
+            throw new RuntimeEOFException(ioe);
+        }
+    }
+
+    /**
+     * Returns the virtual file offset of the first record in a BAM file - i.e. the virtual file
+     * offset after skipping over the text header and the sequence records.
+     */
+    public static long findVirtualOffsetOfFirstRecordInBam(final SeekableStream seekableStream) {
+        try {
+            return BAMFileReader.findVirtualOffsetOfFirstRecord(seekableStream);
         } catch (final IOException ioe) {
             throw new RuntimeEOFException(ioe);
         }
@@ -1127,7 +1140,7 @@ public final class SAMUtils {
         if (record == null) throw new IllegalArgumentException("record is null");
         if (record.getHeader() == null) throw new IllegalArgumentException("record.getHeader() is null");
         /* extract value of SA tag */
-        final Object saValue = record.getAttribute(SAMTagUtil.getSingleton().SA);
+        final Object saValue = record.getAttribute(SAMTag.SA.getBinaryTag());
         if (saValue == null) return Collections.emptyList();
         if (!(saValue instanceof String)) throw new SAMException(
                 "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record);
@@ -1220,7 +1233,7 @@ public final class SAMUtils {
             /* fill NM */
             try {
                 if (!commaStrs[5].equals("*")) {
-                    otherRec.setAttribute(SAMTagUtil.getSingleton().NM, Integer.parseInt(commaStrs[5]));
+                    otherRec.setAttribute(SAMTag.NM.getBinaryTag(), Integer.parseInt(commaStrs[5]));
                 }
             } catch (final NumberFormatException err) {
                 throw new SAMException("bad NM in " + semiColonStr + ". Record: " + record, err);
@@ -1235,5 +1248,13 @@ public final class SAMUtils {
             alignments.add(otherRec);
         }
         return alignments;
+    }
+
+    /**
+     * Checks if reference sequence is compatible with BAI indexing format.
+     * @param sequence reference sequence.
+     */
+    public static boolean isReferenceSequenceCompatibleWithBAI(final SAMSequenceRecord sequence) {
+        return sequence.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
     }
 }

@@ -31,10 +31,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
@@ -59,38 +55,7 @@ public class SAMSequenceDictionaryTest extends HtsjdkTest {
         Assert.assertNull(dict.getSequence("chr2"));
     }
 
-    /**
-     * should be saved as XML
-     * 
-     * <pre>
-     * <?xml version="1.0" encoding="UTF-8" standalone="yes"?><References><Reference assembly="as" md5="68b329da9893e34099c7d8ad5cb9c940" index="0" length="1" species="sp">1</Reference><Reference index="1" length="1">2</Reference></References>
-     * </pre>
-     * 
-     * @throws JAXBException
-     */
-    @Test
-    public void testXmlSeralization() throws JAXBException {
-        // create dict
-        final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", 1);
-        ssr1.setMd5("68b329da9893e34099c7d8ad5cb9c940");
-        ssr1.setAssembly("as");
-        ssr1.setSpecies("sp");
-        final SAMSequenceRecord ssr2 = new SAMSequenceRecord("2", 1);
-        final StringWriter xmlWriter = new StringWriter();
-        final SAMSequenceDictionary dict1 = new SAMSequenceDictionary(
-                Arrays.asList(ssr1, ssr2));
-        // create jaxb context
-        JAXBContext jaxbContext = JAXBContext
-                .newInstance(SAMSequenceDictionary.class);
-        // save to XML
-        Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
-        jaxbMarshaller.marshal(dict1, xmlWriter);
-        // reload XML
-        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-        final SAMSequenceDictionary dict2 = (SAMSequenceDictionary) jaxbUnmarshaller
-                .unmarshal(new StringReader(xmlWriter.toString()));
-        Assert.assertEquals(dict1, dict2);
-    }
+
 
     @DataProvider(name="testMergeDictionariesData")
     public Object[][] testMergeDictionariesData(){

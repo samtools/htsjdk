@@ -67,7 +67,8 @@ public class MetricBaseTest extends HtsjdkTest {
         Assert.assertFalse(b.equals(a));
     }
 
-    @Test void testSelfEquality(){
+    @Test
+    public void testSelfEquality(){
         final A a = new A();
         final B b = new B();
         Assert.assertTrue(a.equals(a));

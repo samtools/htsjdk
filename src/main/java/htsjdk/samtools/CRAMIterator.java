@@ -34,28 +34,25 @@ import htsjdk.samtools.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import htsjdk.samtools.cram.CRAMException;
 
 public class CRAMIterator implements SAMRecordIterator {
     private static final Log log = Log.getInstance(CRAMIterator.class);
     private final CountingInputStream countingInputStream;
-    private CramHeader cramHeader;
-    private ArrayList<SAMRecord> records;
+    private final CramHeader cramHeader;
+    private final ArrayList<SAMRecord> records;
     private SAMRecord nextRecord = null;
-    private CramNormalizer normalizer;
+    private final CramNormalizer normalizer;
     private byte[] refs;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
     public Container container;
     private SamReader mReader;
     long firstContainerOffset = 0;
-    private Iterator<Container> containerIterator;
+    private final Iterator<Container> containerIterator;
 
-    private ContainerParser parser;
+    private final ContainerParser parser;
     private final CRAMReferenceSource referenceSource;
 
     private Iterator<SAMRecord> iterator = Collections.<SAMRecord>emptyList().iterator();
@@ -71,6 +68,10 @@ public class CRAMIterator implements SAMRecordIterator {
         this.validationStringency = validationStringency;
     }
 
+    /**
+     * `samRecordIndex` only used when validation is not `SILENT`
+     * (for identification by the validator which records are invalid)
+     */
     private long samRecordIndex;
     private ArrayList<CramCompressionRecord> cramRecords;
 
@@ -87,7 +88,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        records = new ArrayList<SAMRecord>(10000);
+        records = new ArrayList<SAMRecord>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -106,7 +107,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        records = new ArrayList<SAMRecord>(10000);
+        records = new ArrayList<SAMRecord>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -146,10 +147,7 @@ public class CRAMIterator implements SAMRecordIterator {
             }
         }
 
-        if (records == null)
-            records = new ArrayList<SAMRecord>(container.nofRecords);
-        else
-            records.clear();
+        records.clear();
         if (cramRecords == null)
             cramRecords = new ArrayList<CramCompressionRecord>(container.nofRecords);
         else
@@ -175,15 +173,17 @@ public class CRAMIterator implements SAMRecordIterator {
 
         for (int i = 0; i < container.slices.length; i++) {
             final Slice slice = container.slices[i];
+
             if (slice.sequenceId < 0)
                 continue;
+
             if (!slice.validateRefMD5(refs)) {
                 final String msg = String.format(
                         "Reference sequence MD5 mismatch for slice: sequence id %d, start %d, span %d, expected MD5 %s",
-                            slice.sequenceId,
-                            slice.alignmentStart,
-                            slice.alignmentSpan,
-                            String.format("%032x", new BigInteger(1, slice.refMD5)));
+                        slice.sequenceId,
+                        slice.alignmentStart,
+                        slice.alignmentSpan,
+                        String.format("%032x", new BigInteger(1, slice.refMD5)));
                 throw new CRAMException(msg);
             }
         }
@@ -204,12 +204,6 @@ public class CRAMIterator implements SAMRecordIterator {
 
             samRecord.setValidationStringency(validationStringency);
 
-            if (validationStringency != ValidationStringency.SILENT) {
-                final List<SAMValidationError> validationErrors = samRecord.isValid();
-                SAMUtils.processValidationErrors(validationErrors,
-                        samRecordIndex, validationStringency);
-            }
-
             if (mReader != null) {
                 final long chunkStart = (container.offset << 16) | cramRecord.sliceIndex;
                 final long chunkEnd = ((container.offset << 16) | cramRecord.sliceIndex) + 1;
@@ -218,7 +212,6 @@ public class CRAMIterator implements SAMRecordIterator {
             }
 
             records.add(samRecord);
-            samRecordIndex++;
         }
         cramRecords.clear();
         iterator = records.iterator();
@@ -259,9 +252,7 @@ public class CRAMIterator implements SAMRecordIterator {
         if (!iterator.hasNext()) {
             try {
                 nextContainer();
-            } catch (IOException e) {
-                throw new SAMException(e);
-            } catch (IllegalAccessException e) {
+            } catch (IOException | IllegalAccessException e) {
                 throw new SAMException(e);
             }
         }
@@ -271,7 +262,19 @@ public class CRAMIterator implements SAMRecordIterator {
 
     @Override
     public SAMRecord next() {
-        return iterator.next();
+        if (hasNext()) {
+
+            SAMRecord samRecord = iterator.next();
+
+            if (validationStringency != ValidationStringency.SILENT) {
+                SAMUtils.processValidationErrors(samRecord.isValid(), samRecordIndex++, validationStringency);
+            }
+
+            return samRecord;
+
+        } else {
+            throw new NoSuchElementException();
+        }
     }
 
     @Override

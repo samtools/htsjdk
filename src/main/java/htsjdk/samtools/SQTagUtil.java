@@ -27,7 +27,9 @@ package htsjdk.samtools;
  * Utility methods for encoding and decoding the SQ tag value of SAMRecord.
  * 
  * @author alecw@broadinstitute.org
+ * @deprecated since 11/2018. SQ is a reserved tag that shouldn't be used and this code untested.
  */
+@Deprecated
 public class SQTagUtil {
     /**
      * The ordinals of these are stored in the high-order 2 bits of each byte of the SQ tag.

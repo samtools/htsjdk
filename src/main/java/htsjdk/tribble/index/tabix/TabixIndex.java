@@ -215,7 +215,7 @@ public class TabixIndex implements Index {
      */
     @Override
     public void write(final Path tabixPath) throws IOException {
-        try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(Files.newOutputStream(tabixPath), null))) {
+        try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(Files.newOutputStream(tabixPath), (Path)null))) {
             write(los);
         }
     }

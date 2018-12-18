@@ -23,10 +23,10 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.*;
-import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +46,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     List<String> sequenceNames;
 
     /**
-     *
      * @param featureFile - path to a feature file. Can be a local file, http url, or ftp url
      * @param codec
      * @throws IOException
@@ -56,9 +55,8 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
     /**
-     *
      * @param featureFile - path to a feature file. Can be a local file, http url, or ftp url
-     * @param indexFile - path to the index file.
+     * @param indexFile   - path to the index file.
      * @param codec
      * @throws IOException
      */
@@ -67,24 +65,22 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
     /**
-     *
-     * @param featureFile     path to a feature file. Can be a local file, http url, or ftp url
-     * @param indexFile       path to the index file.
-     * @param wrapper         a wrapper to apply to the byte stream from the featureResource allowing injecting features
-     *                        like caching and prefetching of the stream, may be null, will only be applied if featureFile
-     *                        is a uri representing a {@link java.nio.file.Path}
-     * @param indexWrapper    a wrapper to apply to the byte stream from the indexResource, may be null, will only be
-     *                        applied if indexFile is a uri representing a {@link java.nio.file.Path}
+     * @param featureFile  path to a feature file. Can be a local file, http url, or ftp url
+     * @param indexFile    path to the index file.
+     * @param wrapper      a wrapper to apply to the byte stream from the featureResource allowing injecting features
+     *                     like caching and prefetching of the stream, may be null, will only be applied if featureFile
+     *                     is a uri representing a {@link java.nio.file.Path}
+     * @param indexWrapper a wrapper to apply to the byte stream from the indexResource, may be null, will only be
+     *                     applied if indexFile is a uri representing a {@link java.nio.file.Path}
      */
     public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec,
                               final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                               final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
         super(featureFile, codec, wrapper, indexWrapper);
-        tabixReader = new TabixReader(featureFile, indexFile, wrapper, indexWrapper);
+        tabixReader = new TabixReader(this.path, indexFile, wrapper, indexWrapper);
         sequenceNames = new ArrayList<>(tabixReader.getChromosomes());
         readHeader();
     }
-
 
     /**
      * read the header
@@ -95,7 +91,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     private void readHeader() throws IOException {
         SOURCE source = null;
         try {
-            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ParsingUtils.openInputStream(path, wrapper))));
+            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(SeekableStreamFactory.getInstance().getStreamFor(path, wrapper))));
             header = codec.readHeader(source);
         } catch (Exception e) {
             throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);
@@ -107,10 +103,9 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
     @Override
-    public boolean hasIndex(){
+    public boolean hasIndex() {
         return true;
     }
-
 
     @Override
     public List<String> getSequenceNames() {
@@ -140,7 +135,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
 
     @Override
     public CloseableTribbleIterator<T> iterator() throws IOException {
-        final InputStream is = new BlockCompressedInputStream(ParsingUtils.openInputStream(path, wrapper));
+        final InputStream is = new BlockCompressedInputStream(SeekableStreamFactory.getInstance().getStreamFor(path, wrapper));
         final PositionalBufferedStream stream = new PositionalBufferedStream(is);
         final LineReader reader = new SynchronousLineReader(stream);
         return new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
@@ -150,7 +145,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     public void close() throws IOException {
         tabixReader.close();
     }
-
 
     class FeatureIterator<T extends Feature> implements CloseableTribbleIterator<T> {
         private T currentRecord;
@@ -165,7 +159,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             readNextRecord();
         }
 
-
         /**
          * Advance to the next record in the query interval.
          *
@@ -177,7 +170,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             while (currentRecord == null && (nextLine = lineReader.readLine()) != null) {
                 final Feature f;
                 try {
-                    f = ((AsciiFeatureCodec)codec).decode(nextLine);
+                    f = ((AsciiFeatureCodec) codec).decode(nextLine);
                     if (f == null) {
                         continue;   // Skip
                     }
@@ -197,11 +190,8 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                     String error = "Error parsing line: " + nextLine;
                     throw new TribbleException.MalformedFeatureFile(error, path, e);
                 }
-
-
             }
         }
-
 
         @Override
         public boolean hasNext() {
@@ -218,7 +208,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                         ret.getContig() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
             }
             return ret;
-
         }
 
         @Override
@@ -236,6 +225,4 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             return this;
         }
     }
-
-
 }

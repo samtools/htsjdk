@@ -133,11 +133,17 @@ public abstract class SamReaderFactory {
     /** Sets the specified reference sequence * */
     abstract public SamReaderFactory referenceSequence(File referenceSequence);
 
+    /** Sets the specified reference sequence. */
+    abstract public SamReaderFactory referenceSequence(Path referenceSequence);
+
     /** Sets the specified reference sequence * */
     abstract public SamReaderFactory referenceSource(CRAMReferenceSource referenceSequence);
 
     /** Utility method to open the file get the header and close the file */
     abstract public SAMFileHeader getFileHeader(File samFile);
+
+    /** Utility method to open the file get the header and close the file */
+    abstract public SAMFileHeader getFileHeader(Path samFile);
 
     /** Reapplies any changed options to the reader * */
     abstract public void reapplyOptions(SamReader reader);
@@ -255,6 +261,12 @@ public abstract class SamReaderFactory {
         }
 
         @Override
+        public SamReaderFactory referenceSequence(final Path referenceSequence) {
+            this.referenceSource = new ReferenceSource(referenceSequence);
+            return this;
+        }
+
+        @Override
         public SamReaderFactory referenceSource(final CRAMReferenceSource referenceSource) {
             this.referenceSource = referenceSource;
             return this;
@@ -262,6 +274,14 @@ public abstract class SamReaderFactory {
 
         @Override
         public SAMFileHeader getFileHeader(final File samFile) {
+            final SamReader reader = open(samFile);
+            final SAMFileHeader header = reader.getFileHeader();
+            CloserUtil.close(reader);
+            return header;
+        }
+
+        @Override
+        public SAMFileHeader getFileHeader(final Path samFile) {
             final SamReader reader = open(samFile);
             final SAMFileHeader header = reader.getFileHeader();
             CloserUtil.close(reader);
@@ -386,7 +406,17 @@ public abstract class SamReaderFactory {
                             referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
                         }
                         if (sourceFile == null || !sourceFile.isFile()) {
-                            primitiveSamReader = new CRAMFileReader(bufferedStream, indexFile, referenceSource, validationStringency);
+                            final SeekableStream indexSeekableStream =
+                                    indexMaybe == null ?
+                                            null :
+                                            indexMaybe.asUnbufferedSeekableStream();
+                            final SeekableStream sourceSeekableStream = data.asUnbufferedSeekableStream();
+                            if (null == sourceSeekableStream || null == indexSeekableStream) {
+                                primitiveSamReader = new CRAMFileReader(bufferedStream, indexFile, referenceSource, validationStringency);
+                            } else {
+                                sourceSeekableStream.seek(0);
+                                primitiveSamReader = new CRAMFileReader(sourceSeekableStream, indexSeekableStream, referenceSource, validationStringency);
+                            }
                         } else {
                             bufferedStream.close();
                             primitiveSamReader = new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);

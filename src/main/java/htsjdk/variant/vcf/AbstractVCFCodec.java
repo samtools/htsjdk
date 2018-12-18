@@ -228,7 +228,22 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         return this.header;
     }
 
-	/**
+    /**
+     * @return the header that was either explicitly set on this codec, or read from the file. May be null.
+     * The returned value should not be modified.
+     */
+    public VCFHeader getHeader() {
+        return header;
+    }
+
+    /**
+     * @return the version number that was either explicitly set on this codec, or read from the file. May be null.
+     */
+    public VCFHeaderVersion getVersion() {
+        return version;
+    }
+
+    /**
 	 * Explicitly set the VCFHeader on this codec. This will overwrite the header read from the file
 	 * and the version state stored in this instance; conversely, reading the header from a file will
 	 * overwrite whatever is set here. The returned header may not be identical to the header argument
@@ -680,6 +695,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         alleleMap.clear();
 
         // cycle through the genotype strings
+        boolean PlIsSet = false;
         for (int genotypeOffset = 1; genotypeOffset < nParts; genotypeOffset++) {
             List<String> genotypeValues = ParsingUtils.split(genotypeParts[genotypeOffset], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
 
@@ -718,8 +734,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                             gb.AD(decodeInts(genotypeValues.get(i)));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {
                             gb.PL(decodeInts(genotypeValues.get(i)));
+                            PlIsSet = true;
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_LIKELIHOODS_KEY)) {
-                            gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i)).getAsPLs());
+                            // Do not overwrite PL with data from GL
+                            if (!PlIsSet) {
+                                gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i)).getAsPLs());
+                            }
                         } else if (gtKey.equals(VCFConstants.DEPTH_KEY)) {
                             gb.DP(Integer.valueOf(genotypeValues.get(i)));
                         } else {

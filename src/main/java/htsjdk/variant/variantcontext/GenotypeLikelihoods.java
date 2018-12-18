@@ -567,13 +567,26 @@ public class GenotypeLikelihoods {
     }
 
     /**
-     * get the PL indexes (AA, AB, BB) for the given allele pair; assumes allele1Index &lt;= allele2Index.
+     * get the PL indices (AA, AB, BB) for the given allele pair; assumes allele1Index &lt;= allele2Index.
+     *
+     * @param allele1Index    the index in VariantContext.getAllele() of the first allele
+     * @param allele2Index    the index in VariantContext.getAllele() of the second allele
+     * @return the PL indexes
+     * @deprecated 7/18 use {@link #getPLIndicesOfAlleles(int, int)} instead
+     */
+    @Deprecated
+    public static int[] getPLIndecesOfAlleles(final int allele1Index, final int allele2Index) {
+        return getPLIndicesOfAlleles(allele1Index, allele2Index);
+    }
+
+    /**
+     * get the PL indices (AA, AB, BB) for the given allele pair; assumes allele1Index &lt;= allele2Index.
      *
      * @param allele1Index    the index in VariantContext.getAllele() of the first allele
      * @param allele2Index    the index in VariantContext.getAllele() of the second allele
      * @return the PL indexes
      */
-    public static int[] getPLIndecesOfAlleles(final int allele1Index, final int allele2Index) {
+    public static int[] getPLIndicesOfAlleles(final int allele1Index, final int allele2Index) {
 
         final int[] indexes = new int[3];
         indexes[0] = calculatePLindex(allele1Index, allele1Index);

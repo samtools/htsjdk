@@ -6,7 +6,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingKey;
+import htsjdk.samtools.cram.structure.DataSeries;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import org.testng.Assert;
@@ -22,7 +22,7 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void testAllEncodingsPresent() {
         final CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), new SubstitutionMatrix(new long[256][256]), true);
-        for (final EncodingKey key : EncodingKey.values()) {
+        for (final DataSeries key : DataSeries.values()) {
             switch (key) {
                 // skip test marks and unused series:
                 case TV_TestMark:
@@ -111,7 +111,7 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
         final List<CramCompressionRecord> records = new ArrayList<>();
         final int tagID = ReadTag.name3BytesToInt("ACi".getBytes());
         // test empty list:
-        CompressionHeaderFactory.ByteSizeRange range = CompressionHeaderFactory.geByteSizeRangeOfTagValues(records, tagID);
+        CompressionHeaderFactory.ByteSizeRange range = CompressionHeaderFactory.getByteSizeRangeOfTagValues(records, tagID);
         Assert.assertNotNull(range);
         Assert.assertEquals(range.min, Integer.MAX_VALUE);
         Assert.assertEquals(range.max, Integer.MIN_VALUE);
@@ -123,7 +123,7 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
         record.tags = new ReadTag[]{tag};
         records.add(record);
 
-        range = CompressionHeaderFactory.geByteSizeRangeOfTagValues(records, tagID);
+        range = CompressionHeaderFactory.getByteSizeRangeOfTagValues(records, tagID);
         Assert.assertNotNull(range);
         Assert.assertEquals(range.min, 4);
         Assert.assertEquals(range.max, 4);

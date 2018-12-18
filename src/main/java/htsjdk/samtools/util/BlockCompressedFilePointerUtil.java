@@ -60,10 +60,18 @@ public class BlockCompressedFilePointerUtil {
 
     /**
      * @param blockAddress File offset of start of BGZF block.
+     * @return Virtual file pointer that points to the start of a BGZF block.
+     */
+    public static long makeFilePointer(final long blockAddress) {
+        return makeFilePointer(blockAddress, 0);
+    }
+
+    /**
+     * @param blockAddress File offset of start of BGZF block.
      * @param blockOffset Offset into uncompressed block.
      * @return Virtual file pointer that embodies the input parameters.
      */
-    static long makeFilePointer(final long blockAddress, final int blockOffset) {
+    public static long makeFilePointer(final long blockAddress, final int blockOffset) {
         if (blockOffset < 0) {
             throw new IllegalArgumentException("Negative blockOffset " + blockOffset + " not allowed.");
         }

@@ -43,8 +43,22 @@ public class SeekableBufferedStream extends SeekableStream {
 
         /** Returns the number of bytes that can be read from the buffer without reading more into the buffer. */
         int getBytesInBufferAvailable() {
-            if (this.count == this.pos) return 0; // documented test for "is buffer empty"
-            else return this.buf.length - this.pos;
+            return this.count - this.pos;
+        }
+
+        /** Return true if the position can be changed by the given delta and remain in the buffer. */
+        boolean canChangePos(long delta) {
+            long newPos = this.pos + delta;
+            return newPos >= 0 && newPos < this.count;
+        }
+
+        /** Changes the position in the buffer by a given delta. */
+        void changePos(int delta) {
+            int newPos = this.pos + delta;
+            if (newPos < 0 || newPos >= this.count) {
+                throw new IllegalArgumentException("New position not in buffer pos=" + this.pos + ", delta=" + delta);
+            }
+            this.pos = newPos;
         }
     }
 
@@ -80,16 +94,31 @@ public class SeekableBufferedStream extends SeekableStream {
             return retval;
         } else {
             final long position = this.position + skipLength;
-            seek(position);
+            seekInternal(position);
             return skipLength;
         }
     }
 
     @Override
     public void seek(final long position) throws IOException {
-        this.position = position;
+        if (this.position == position) {
+            return;
+        }
+        // check if the seek is within the buffer
+        long delta = position - this.position;
+        if (this.bufferedStream.canChangePos(delta)) {
+            // casting to an int is safe since the buffer is less than the size of an int
+            this.bufferedStream.changePos((int) delta);
+            this.position = position;
+        } else {
+            seekInternal(position);
+        }
+    }
+
+    private void seekInternal(final long position) throws IOException {
         wrappedStream.seek(position);
         bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
+        this.position = position;
     }
 
     @Override

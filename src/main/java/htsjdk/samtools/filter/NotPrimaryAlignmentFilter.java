@@ -23,34 +23,13 @@
  */
 package htsjdk.samtools.filter;
 
-import htsjdk.samtools.SAMRecord;
-
 /**
  * Filter out SAMRecords with NotPrimaryAlignment flag set
  *
  * $Id$
+ * @deprecated use {@link SecondaryAlignmentFilter} instead.
  */
-public class NotPrimaryAlignmentFilter implements SamRecordFilter {
-    /**
-     * @param record the SAMRecord to evaluate
-     * @return true if the SAMRecord matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        return record.getNotPrimaryAlignmentFlag();
-    }
+@Deprecated
+public class NotPrimaryAlignmentFilter extends SecondaryAlignmentFilter {
 
-    /**
-     * Determines whether a pair of SAMRecord matches this filter
-     *
-     * @param first  the first SAMRecord to evaluate
-     * @param second the second SAMRecord to evaluate
-     *
-     * @return true if the SAMRecords matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        // if either fails, exclude them both
-        return (first.getNotPrimaryAlignmentFlag() || second.getNotPrimaryAlignmentFlag());
-    }
 }

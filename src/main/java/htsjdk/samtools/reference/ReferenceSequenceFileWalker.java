@@ -30,6 +30,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Manages a ReferenceSequenceFile.  Loads the requested sequence, ensuring that
@@ -43,6 +44,10 @@ public class ReferenceSequenceFileWalker implements Closeable {
 
     public ReferenceSequenceFileWalker(final ReferenceSequenceFile referenceSequenceFile) {
         this.referenceSequenceFile = referenceSequenceFile;
+    }
+
+    public ReferenceSequenceFileWalker(final Path path) {
+        this(ReferenceSequenceFileFactory.getReferenceSequenceFile(path, true, false));
     }
 
     public ReferenceSequenceFileWalker(final File file) {

@@ -24,80 +24,73 @@
 
 package htsjdk.variant.utils;
 
-import htsjdk.samtools.BamFileIoUtils;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTextHeaderCodec;
-import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.*;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.BufferedLineReader;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.IntervalList;
+import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * Tiny class for automatically loading a SAMSequenceDictionary given a file
+ * Small class for loading a SAMSequenceDictionary from a file
  * @author farjoun on 2/25/2014
  */
 public class SAMSequenceDictionaryExtractor {
 
     enum TYPE {
         FASTA(ReferenceSequenceFileFactory.FASTA_EXTENSIONS) {
+
             @Override
-            SAMSequenceDictionary extractDictionary(final File reference) {
+            SAMSequenceDictionary extractDictionary(Path reference) {
                 final SAMSequenceDictionary dict = ReferenceSequenceFileFactory.getReferenceSequenceFile(reference).getSequenceDictionary();
                 if (dict == null)
-                    throw new SAMException("Could not find dictionary next to reference file " + reference.getAbsoluteFile());
+                    throw new SAMException("Could not find dictionary next to reference file " + reference.toUri().toString());
                 return dict;
             }
         },
         DICTIONARY(IOUtil.DICT_FILE_EXTENSION) {
+
             @Override
-            SAMSequenceDictionary extractDictionary(final File dictionary) {
-                BufferedLineReader bufferedLineReader = null;
-                try {
-                    bufferedLineReader = new BufferedLineReader(new FileInputStream(dictionary));
+            SAMSequenceDictionary extractDictionary(final Path dictionary) {
+                try (BufferedLineReader bufferedLineReader =
+                             new BufferedLineReader(ParsingUtils.openInputStream(dictionary.toUri().toString()))) {
                     final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
                     final SAMFileHeader header = codec.decode(bufferedLineReader, dictionary.toString());
                     return header.getSequenceDictionary();
-                } catch (final FileNotFoundException e) {
+                } catch (final IOException e) {
                     throw new SAMException("Could not open sequence dictionary file: " + dictionary, e);
-                } finally {
-                    CloserUtil.close(bufferedLineReader);
                 }
             }
         },
         SAM(IOUtil.SAM_FILE_EXTENSION, BamFileIoUtils.BAM_FILE_EXTENSION) {
+
             @Override
-            SAMSequenceDictionary extractDictionary(final File sam) {
+            SAMSequenceDictionary extractDictionary(Path sam) {
                 return SamReaderFactory.makeDefault().getFileHeader(sam).getSequenceDictionary();
             }
         },
         VCF(IOUtil.VCF_EXTENSIONS) {
+
             @Override
-            SAMSequenceDictionary extractDictionary(final File vcf) {
-                VCFFileReader vcfFileReader = null;
-                try {
-                    vcfFileReader = new VCFFileReader(vcf, false);
-                    return vcfFileReader.getFileHeader().getSequenceDictionary();
-                } finally {
-                    CloserUtil.close(vcfFileReader);
+            SAMSequenceDictionary extractDictionary(Path vcf) {
+                try (VCFFileReader vcfPathReader = new VCFFileReader(vcf, false)){
+                    return vcfPathReader.getFileHeader().getSequenceDictionary();
                 }
             }
         },
         INTERVAL_LIST(IOUtil.INTERVAL_LIST_FILE_EXTENSION) {
+
             @Override
-            SAMSequenceDictionary extractDictionary(final File intervalList) {
-                return IntervalList.fromFile(intervalList).getHeader().getSequenceDictionary();
+            SAMSequenceDictionary extractDictionary(Path intervalList) {
+                return IntervalList.fromPath(intervalList).getHeader().getSequenceDictionary();
             }
         };
 
@@ -111,17 +104,31 @@ public class SAMSequenceDictionaryExtractor {
             applicableExtensions = extensions;
         }
 
-        abstract SAMSequenceDictionary extractDictionary(final File file);
+        /**
+         * @deprecated in favor of {@link VCFFileReader##extractDictionary(Path) }
+         * */
+        @Deprecated
+        SAMSequenceDictionary extractDictionary(final File file) {return extractDictionary(file.toPath());}
 
+        abstract SAMSequenceDictionary extractDictionary(final Path file);
+
+        /**
+         * @deprecated in favor of {@link SAMSequenceDictionaryExtractor##forFile(Path) }
+         */
+        @Deprecated
         static TYPE forFile(final File dictionaryExtractable) {
+            return forFile(dictionaryExtractable.toPath());
+        }
+
+        static TYPE forFile(final Path dictionaryExtractable) {
             for (final TYPE type : TYPE.values()) {
                 for (final String s : type.applicableExtensions) {
-                    if (dictionaryExtractable.getName().endsWith(s)) {
+                    if (dictionaryExtractable.toUri().toString().endsWith(s)) {
                         return type;
                     }
                 }
             }
-            throw new SAMException("Cannot figure out type of file " + dictionaryExtractable.getAbsolutePath() + " from extension. Current implementation understands the following types: " + Arrays.toString(TYPE.values()));
+            throw new SAMException("Cannot figure out type of file " + dictionaryExtractable.toUri().toString() + " from extension. Current implementation understands the following types: " + Arrays.toString(TYPE.values()));
         }
 
         @Override
@@ -130,8 +137,16 @@ public class SAMSequenceDictionaryExtractor {
         }
     }
 
+    /**
+     * @deprecated in favor of {@link SAMSequenceDictionaryExtractor#extractDictionary(Path) }
+     */
+    @Deprecated
     public static SAMSequenceDictionary extractDictionary(final File file) {
-        return TYPE.forFile(file).extractDictionary(file);
+        return extractDictionary(file.toPath());
+    }
+
+    public static SAMSequenceDictionary extractDictionary(final Path path) {
+        return TYPE.forFile(path).extractDictionary(path);
     }
 
 }

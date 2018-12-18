@@ -47,8 +47,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.EOFException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.channels.SeekableByteChannel;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -160,7 +162,7 @@ public class IndexFactory {
      * @param indexFile from which to load the index
      */
     public static Index loadIndex(final String indexFile) {
-        return loadIndex(indexFile, null);
+        return loadIndex(indexFile, (Function<SeekableByteChannel, SeekableByteChannel>) null);
     }
 
     /**
@@ -172,15 +174,32 @@ public class IndexFactory {
      *                     {@link java.nio.file.Path}
      */
     public static Index loadIndex(final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
+        try {
+            return loadIndex(indexFile, indexFileInputStream(indexFile, indexWrapper));
+        } catch (final IOException ex) {
+            throw new TribbleException.UnableToReadIndexFile("Unable to read index file", indexFile, ex);
+        }
+    }
+
+    /**
+     * Load in index from the specified stream. Note that the caller is responsible for decompressing the stream if necessary.
+     *
+     * @param source the stream source (typically the file name)
+     * @param inputStream the raw byte stream of the index
+     */
+    public static Index loadIndex(final String source, final InputStream inputStream) {
         // Must be buffered, because getIndexType uses mark and reset
-        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(indexFileInputStream(indexFile, indexWrapper), Defaults.NON_ZERO_BUFFER_SIZE)) {
+        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, Defaults.NON_ZERO_BUFFER_SIZE)) {
             final Class<Index> indexClass = IndexType.getIndexType(bufferedInputStream).getIndexType();
             final Constructor<Index> ctor = indexClass.getConstructor(InputStream.class);
             return ctor.newInstance(bufferedInputStream);
         } catch (final TribbleException ex) {
             throw ex;
-        } catch (final IOException ex) {
-            throw new TribbleException.UnableToReadIndexFile("Unable to read index file", indexFile, ex);
+        } catch (final InvocationTargetException ex) {
+            if (ex.getCause() instanceof EOFException) {
+                throw new TribbleException.CorruptedIndexFile("Index file is corrupted", source, ex);
+            }
+            throw new RuntimeException(ex);
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -422,7 +441,7 @@ public class IndexFactory {
             this.codec = codec;
             this.inputFile = inputFile;
             try {
-                if (AbstractFeatureReader.hasBlockCompressedExtension(inputFile)) {
+                if (IOUtil.hasBlockCompressedExtension(inputFile)) {
                     final BlockCompressedInputStream bcs = initIndexableBlockCompressedStream(inputFile);
                     source = (SOURCE) codec.makeIndexableSourceFromStream(bcs);
                 } else {
@@ -446,12 +465,9 @@ public class IndexFactory {
         }
 
         private static BlockCompressedInputStream initIndexableBlockCompressedStream(final File inputFile) {
-            final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-
-            // make a buffered stream to test that this is in fact a valid block compressed file
-            try (final BufferedInputStream bufferedStream = new BufferedInputStream(new FileInputStream(inputFile), bufferSize)){
-
-                if (!BlockCompressedInputStream.isValidFile(bufferedStream)) {
+            // test that this is in fact a valid block compressed file
+            try {
+                if (!IOUtil.isBlockCompressed(inputFile.toPath(), true)) {
                     throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.",
                             inputFile.getAbsolutePath());
                 }

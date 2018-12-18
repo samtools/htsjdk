@@ -29,16 +29,8 @@ import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.StringWriter;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Header information from a SAM or BAM file.
@@ -48,8 +40,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static final String VERSION_TAG = "VN";
     public static final String SORT_ORDER_TAG = "SO";
     public static final String GROUP_ORDER_TAG = "GO";
-    public static final String CURRENT_VERSION = "1.5";
-    public static final Set<String> ACCEPTABLE_VERSIONS = CollectionUtil.makeSet("1.0", "1.3", "1.4", "1.5");
+    public static final String CURRENT_VERSION = "1.6";
+    public static final Set<String> ACCEPTABLE_VERSIONS = CollectionUtil.makeSet("1.0", "1.3", "1.4", "1.5", CURRENT_VERSION );
 
     private SortOrder sortOrder = null;
     private GroupOrder groupOrder = null;
@@ -70,40 +62,32 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      * Ways in which a SAM or BAM may be sorted.
      */
     public enum SortOrder {
-        unsorted(null),
-        queryname(SAMRecordQueryNameComparator.class),
-        coordinate(SAMRecordCoordinateComparator.class),
-        duplicate(SAMRecordDuplicateComparator.class), // NB: this is not in the SAM spec!
-        unknown(null);
+        unsorted(() -> null),
+        queryname(SAMRecordQueryNameComparator::new),
+        coordinate(SAMRecordCoordinateComparator::new),
+        duplicate(SAMRecordDuplicateComparator::new), // NB: this is not in the SAM spec!
+        unknown(() -> null);
 
-        private final Class<? extends SAMRecordComparator> comparator;
+        private final Supplier<SAMRecordComparator> comparatorSupplier;
 
-        SortOrder(final Class<? extends SAMRecordComparator> comparatorClass) {
-            this.comparator = comparatorClass;
+        SortOrder(final Supplier<SAMRecordComparator> comparatorClass) {
+            this.comparatorSupplier = comparatorClass;
         }
 
         /**
          * @return Comparator class to sort in the specified order, or null if unsorted.
+         * @deprecated since 7/2018, use {@link #getComparatorInstance()} with {@link SAMSortOrderChecker#getClass()} instead
          */
+        @Deprecated
         public Class<? extends SAMRecordComparator> getComparator() {
-            return comparator;
+            return comparatorSupplier.get().getClass();
         }
 
         /**
          * @return Comparator to sort in the specified order, or null if unsorted.
          */
         public SAMRecordComparator getComparatorInstance() {
-            if (comparator != null) {
-                try {
-                    final Constructor<? extends SAMRecordComparator> ctor = comparator.getConstructor();
-                    return ctor.newInstance();
-                }
-                catch (Exception e) {
-                    throw new IllegalStateException("Could not instantiate a comparator for sort order: " +
-                            this.name(), e);
-                }
-            }
-            return null;
+            return comparatorSupplier.get();
         }
     }
 
@@ -148,9 +132,11 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
 
     /**
      * Look up sequence record by name.
+     * @return sequence record if it's found by name,
+     * or null if sequence dictionary is empty or if the sequence is not found in the dictionary.
      */
     public SAMSequenceRecord getSequence(final String name) {
-        return mSequenceDictionary.getSequence(name);
+        return mSequenceDictionary == null ? null : mSequenceDictionary.getSequence(name);
     }
 
     /**
@@ -260,7 +246,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
                 try {
                     return SortOrder.valueOf(so);
                 } catch (IllegalArgumentException e) {
-                    log.warn("Found non conforming header SO tag: " + so + ". Treating as 'unknown'.");
+                    log.warn("Found non-conforming header SO tag: " + so + ". Treating as 'unknown'.");
                     sortOrder = SortOrder.unknown;
                 }
             }
@@ -322,12 +308,18 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      */
     @Override
     public void setAttribute(final String key, final String value) {
+        String tempVal = value;
         if (key.equals(SORT_ORDER_TAG)) {
             this.sortOrder = null;
+            try {
+                tempVal = SortOrder.valueOf(value).toString();
+            } catch (IllegalArgumentException e) {
+                tempVal = SortOrder.unknown.toString();
+            }
         } else if (key.equals(GROUP_ORDER_TAG)) {
             this.groupOrder = null;
         }
-        super.setAttribute(key, value);
+        super.setAttribute(key, tempVal);
     }
 
     /**

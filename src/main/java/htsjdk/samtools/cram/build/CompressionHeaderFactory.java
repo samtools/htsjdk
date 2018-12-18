@@ -18,18 +18,19 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.common.MutableInt;
-import htsjdk.samtools.cram.encoding.ByteArrayLenEncoding;
-import htsjdk.samtools.cram.encoding.ByteArrayStopEncoding;
-import htsjdk.samtools.cram.encoding.ExternalByteEncoding;
-import htsjdk.samtools.cram.encoding.ExternalCompressor;
-import htsjdk.samtools.cram.encoding.ExternalIntegerEncoding;
-import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanIntegerEncoding;
-import htsjdk.samtools.cram.encoding.rans.RANS;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.encoding.*;
+import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
+import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
+import htsjdk.samtools.cram.encoding.external.ExternalByteArrayEncoding;
+import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;
+import htsjdk.samtools.cram.encoding.external.ExternalIntegerEncoding;
+import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.EncodingKey;
+import htsjdk.samtools.cram.structure.DataSeries;
 import htsjdk.samtools.cram.structure.EncodingParams;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
@@ -52,15 +53,13 @@ import java.util.TreeMap;
  * This particular version relies heavily on GZIP and RANS for better compression.
  */
 public class CompressionHeaderFactory {
-    private static final int TAG_VALUE_BUFFER_SIZE = 1024 * 1024;
     public static final int BYTE_SPACE_SIZE = 256;
     public static final int ALL_BYTES_USED = -1;
-    private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
-    private final ByteArrayOutputStream baosForTagValues;
 
-    public CompressionHeaderFactory() {
-        baosForTagValues = new ByteArrayOutputStream(TAG_VALUE_BUFFER_SIZE);
-    }
+    // a parameter for Huffman encoding, so we don't have to re-construct on each call
+    private static final int[] singleZero = new int[] { 0 };
+    private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
+    private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
 
     /**
      * Decides on compression methods to use for the given records.
@@ -70,47 +69,47 @@ public class CompressionHeaderFactory {
      * @param substitutionMatrix
      *            a matrix of base substitution frequencies, can be null, in
      *            which case it is re-calculated.
-     * @param sorted
+     * @param coordinateSorted
      *            if true the records are assumed to be sorted by alignment
      *            position
      * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} object
      *         describing the encoding chosen for the data
      */
     public CompressionHeader build(final List<CramCompressionRecord> records, SubstitutionMatrix substitutionMatrix,
-                                   final boolean sorted) {
+                                   final boolean coordinateSorted) {
 
-        final CompressionHeaderBuilder builder = new CompressionHeaderBuilder(sorted);
+        final CompressionHeaderBuilder builder = new CompressionHeaderBuilder(coordinateSorted);
 
-        builder.addExternalIntegerRansOrderZeroEncoding(EncodingKey.AP_AlignmentPositionOffset);
-        builder.addExternalByteRansOrderOneEncoding(EncodingKey.BA_Base);
+        builder.addExternalIntegerRansOrderZeroEncoding(DataSeries.AP_AlignmentPositionOffset);
+        builder.addExternalByteRansOrderOneEncoding(DataSeries.BA_Base);
         // BB is not used
-        builder.addExternalIntegerRansOrderOneEncoding(EncodingKey.BF_BitFlags);
-        builder.addExternalByteGzipEncoding(EncodingKey.BS_BaseSubstitutionCode);
-        builder.addExternalIntegerRansOrderOneEncoding(EncodingKey.CF_CompressionBitFlags);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.DL_DeletionLength);
-        builder.addExternalByteGzipEncoding(EncodingKey.FC_FeatureCode);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.FN_NumberOfReadFeatures);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.FP_FeaturePosition);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.HC_HardClip);
-        builder.addExternalByteArrayStopTabGzipEncoding(EncodingKey.IN_Insertion);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.MF_MateBitFlags);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.MQ_MappingQualityScore);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.NF_RecordsToNextFragment);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.NP_NextFragmentAlignmentStart);
-        builder.addExternalIntegerRansOrderOneEncoding(EncodingKey.NS_NextFragmentReferenceSequenceID);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.PD_padding);
+        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.BF_BitFlags);
+        builder.addExternalByteGzipEncoding(DataSeries.BS_BaseSubstitutionCode);
+        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.CF_CompressionBitFlags);
+        builder.addExternalIntegerGzipEncoding(DataSeries.DL_DeletionLength);
+        builder.addExternalByteGzipEncoding(DataSeries.FC_FeatureCode);
+        builder.addExternalIntegerGzipEncoding(DataSeries.FN_NumberOfReadFeatures);
+        builder.addExternalIntegerGzipEncoding(DataSeries.FP_FeaturePosition);
+        builder.addExternalIntegerGzipEncoding(DataSeries.HC_HardClip);
+        builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.IN_Insertion);
+        builder.addExternalIntegerGzipEncoding(DataSeries.MF_MateBitFlags);
+        builder.addExternalIntegerGzipEncoding(DataSeries.MQ_MappingQualityScore);
+        builder.addExternalIntegerGzipEncoding(DataSeries.NF_RecordsToNextFragment);
+        builder.addExternalIntegerGzipEncoding(DataSeries.NP_NextFragmentAlignmentStart);
+        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.NS_NextFragmentReferenceSequenceID);
+        builder.addExternalIntegerGzipEncoding(DataSeries.PD_padding);
         // QQ is not used
-        builder.addExternalByteRansOrderOneEncoding(EncodingKey.QS_QualityScore);
-        builder.addExternalIntegerRansOrderOneEncoding(EncodingKey.RG_ReadGroup);
-        builder.addExternalIntegerRansOrderZeroEncoding(EncodingKey.RI_RefId);
-        builder.addExternalIntegerRansOrderOneEncoding(EncodingKey.RL_ReadLength);
-        builder.addExternalByteArrayStopTabGzipEncoding(EncodingKey.RN_ReadName);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.RS_RefSkip);
-        builder.addExternalByteArrayStopTabGzipEncoding(EncodingKey.SC_SoftClip);
-        builder.addExternalIntegerGzipEncoding(EncodingKey.TC_TagCount);
-        builder.addExternalIntegerEncoding(EncodingKey.TL_TagIdList, ExternalCompressor.createGZIP());
-        builder.addExternalIntegerGzipEncoding(EncodingKey.TN_TagNameAndType);
-        builder.addExternalIntegerRansOrderOneEncoding(EncodingKey.TS_InsetSize);
+        builder.addExternalByteRansOrderOneEncoding(DataSeries.QS_QualityScore);
+        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.RG_ReadGroup);
+        builder.addExternalIntegerRansOrderZeroEncoding(DataSeries.RI_RefId);
+        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.RL_ReadLength);
+        builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.RN_ReadName);
+        builder.addExternalIntegerGzipEncoding(DataSeries.RS_RefSkip);
+        builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.SC_SoftClip);
+        builder.addExternalIntegerGzipEncoding(DataSeries.TC_TagCount);
+        builder.addExternalIntegerEncoding(DataSeries.TL_TagIdList, ExternalCompressor.createGZIP());
+        builder.addExternalIntegerGzipEncoding(DataSeries.TN_TagNameAndType);
+        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.TS_InsertSize);
 
         builder.setTagIdDictionary(buildTagIdDictionary(records));
 
@@ -348,7 +347,7 @@ public class CompressionHeaderFactory {
         return baosForTagValues.toByteArray();
     }
 
-    static ByteSizeRange geByteSizeRangeOfTagValues(final List<CramCompressionRecord> records, final int tagID) {
+    static ByteSizeRange getByteSizeRangeOfTagValues(final List<CramCompressionRecord> records, final int tagID) {
         final byte type = getTagType(tagID);
         final ByteSizeRange stats = new ByteSizeRange();
         for (final CramCompressionRecord record : records) {
@@ -402,12 +401,24 @@ public class CompressionHeaderFactory {
     }
 
     /**
+     * Used by buildEncodingForTag to create a ByteArrayLenEncoding with CanonicalHuffmanIntegerEncoding and
+     * ExternalByteArrayEncoding sub-encodings
+     *
+     * @param tagValueSize the size of the tag value, to be Huffman encoded
+     * @param tagID the ID of the tag
+     * @return EncodingParams a complete description of the result Encoding
+     */
+    private EncodingParams buildTagEncodingForSize(final int tagValueSize, final int tagID) {
+        return new ByteArrayLenEncoding(
+                new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, singleZero),
+                new ExternalByteArrayEncoding(tagID)).toParam();
+    }
+
+    /**
      * Build an encoding for a specific tag for given records.
      *
-     * @param records
-     *            CRAM records holding the tags
-     * @param tagID
-     *            an integer id of the tag
+     * @param records CRAM records holding the tags
+     * @param tagID an integer id of the tag
      * @return an encoding for the tag
      */
     private EncodingDetails buildEncodingForTag(final List<CramCompressionRecord> records, final int tagID) {
@@ -421,37 +432,31 @@ public class CompressionHeaderFactory {
             case 'A':
             case 'c':
             case 'C':
-                details.params = ByteArrayLenEncoding.toParam(
-                        HuffmanIntegerEncoding.toParam(new int[] { 1 }, new int[] { 0 }),
-                        ExternalByteEncoding.toParam(tagID));
+                details.params = buildTagEncodingForSize(1, tagID);
                 return details;
+
             case 'I':
             case 'i':
             case 'f':
-                details.params = ByteArrayLenEncoding.toParam(
-                        HuffmanIntegerEncoding.toParam(new int[] { 4 }, new int[] { 0 }),
-                        ExternalByteEncoding.toParam(tagID));
+                details.params = buildTagEncodingForSize(4, tagID);
                 return details;
 
             case 's':
             case 'S':
-                details.params = ByteArrayLenEncoding.toParam(
-                        HuffmanIntegerEncoding.toParam(new int[] { 2 }, new int[] { 0 }),
-                        ExternalByteEncoding.toParam(tagID));
+                details.params = buildTagEncodingForSize(2, tagID);
                 return details;
+
             case 'Z':
             case 'B':
-                final ByteSizeRange stats = geByteSizeRangeOfTagValues(records, tagID);
+                final ByteSizeRange stats = getByteSizeRangeOfTagValues(records, tagID);
                 final boolean singleSize = stats.min == stats.max;
                 if (singleSize) {
-                    details.params = ByteArrayLenEncoding.toParam(
-                            HuffmanIntegerEncoding.toParam(new int[] { stats.min }, new int[] { 0 }),
-                            ExternalByteEncoding.toParam(tagID));
+                    details.params = buildTagEncodingForSize(stats.min, tagID);
                     return details;
                 }
 
                 if (type == 'Z') {
-                    details.params = ByteArrayStopEncoding.toParam((byte) '\t', tagID);
+                    details.params = new ByteArrayStopEncoding((byte) '\t', tagID).toParam();
                     return details;
                 }
 
@@ -459,13 +464,14 @@ public class CompressionHeaderFactory {
                 if (stats.min > minSize_threshold_ForByteArrayStopEncoding) {
                     final int unusedByte = getUnusedByte(data);
                     if (unusedByte > ALL_BYTES_USED) {
-                        details.params = ByteArrayStopEncoding.toParam((byte) unusedByte, tagID);
+                        details.params = new ByteArrayStopEncoding((byte) unusedByte, tagID).toParam();
                         return details;
                     }
                 }
 
-                details.params = ByteArrayLenEncoding.toParam(ExternalIntegerEncoding.toParam(tagID),
-                        ExternalByteEncoding.toParam(tagID));
+                details.params = new ByteArrayLenEncoding(
+                        new ExternalIntegerEncoding(tagID),
+                        new ExternalByteArrayEncoding(tagID)).toParam();
                 return details;
             default:
                 throw new IllegalArgumentException("Unknown tag type: " + (char) type);
@@ -479,56 +485,63 @@ public class CompressionHeaderFactory {
     private static class CompressionHeaderBuilder {
         private final CompressionHeader header;
 
-        CompressionHeaderBuilder(final boolean sorted) {
+        CompressionHeaderBuilder(final boolean coordinateSorted) {
             header = new CompressionHeader();
             header.externalIds = new ArrayList<>();
             header.tMap = new TreeMap<>();
 
             header.encodingMap = new TreeMap<>();
-            header.APDelta = sorted;
+            header.APDelta = coordinateSorted;
         }
 
         CompressionHeader getHeader() {
             return header;
         }
 
-        void addExternalEncoding(final EncodingKey encodingKey, final EncodingParams params,
-                                 final ExternalCompressor compressor) {
-            header.externalIds.add(encodingKey.ordinal());
-            header.externalCompressors.put(encodingKey.ordinal(), compressor);
-            header.encodingMap.put(encodingKey, params);
+        private void addExternalEncoding(final DataSeries dataSeries,
+                                         final EncodingParams params,
+                                         final ExternalCompressor compressor) {
+            header.externalIds.add(dataSeries.getExternalBlockContentId());
+            header.externalCompressors.put(dataSeries.getExternalBlockContentId(), compressor);
+            header.encodingMap.put(dataSeries, params);
         }
 
-        void addExternalByteArrayStopTabGzipEncoding(final EncodingKey encodingKey) {
-            addExternalEncoding(encodingKey, ByteArrayStopEncoding.toParam((byte) '\t', encodingKey.ordinal()),
+        private void addExternalByteArrayStopTabGzipEncoding(final DataSeries dataSeries) {
+            addExternalEncoding(dataSeries,
+                    new ByteArrayStopEncoding((byte) '\t', dataSeries.getExternalBlockContentId()).toParam(),
                     ExternalCompressor.createGZIP());
         }
 
-        void addExternalIntegerEncoding(final EncodingKey encodingKey, final ExternalCompressor compressor) {
-            addExternalEncoding(encodingKey, ExternalIntegerEncoding.toParam(encodingKey.ordinal()), compressor);
+        private void addExternalIntegerEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
+            addExternalEncoding(dataSeries,
+                    new ExternalIntegerEncoding(dataSeries.getExternalBlockContentId()).toParam(),
+                    compressor);
         }
 
-        void addExternalIntegerGzipEncoding(final EncodingKey encodingKey) {
-            addExternalEncoding(encodingKey, ExternalIntegerEncoding.toParam(encodingKey.ordinal()),
+        private void addExternalIntegerGzipEncoding(final DataSeries dataSeries) {
+            addExternalEncoding(dataSeries,
+                    new ExternalIntegerEncoding(dataSeries.getExternalBlockContentId()).toParam(),
                     ExternalCompressor.createGZIP());
         }
 
-        void addExternalByteGzipEncoding(final EncodingKey encodingKey) {
-            addExternalEncoding(encodingKey, ExternalByteEncoding.toParam(encodingKey.ordinal()),
+        private void addExternalByteGzipEncoding(final DataSeries dataSeries) {
+            addExternalEncoding(dataSeries,
+                    new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam(),
                     ExternalCompressor.createGZIP());
         }
 
-        void addExternalByteRansOrderOneEncoding(final EncodingKey encodingKey) {
-            addExternalEncoding(encodingKey, ExternalByteEncoding.toParam(encodingKey.ordinal()),
+        private void addExternalByteRansOrderOneEncoding(final DataSeries dataSeries) {
+            addExternalEncoding(dataSeries,
+                    new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam(),
                     ExternalCompressor.createRANS(RANS.ORDER.ONE));
         }
 
-        void addExternalIntegerRansOrderOneEncoding(final EncodingKey encodingKey) {
-            addExternalIntegerEncoding(encodingKey, ExternalCompressor.createRANS(RANS.ORDER.ONE));
+        private void addExternalIntegerRansOrderOneEncoding(final DataSeries dataSeries) {
+            addExternalIntegerEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ONE));
         }
 
-        void addExternalIntegerRansOrderZeroEncoding(final EncodingKey encodingKey) {
-            addExternalIntegerEncoding(encodingKey, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
+        private void addExternalIntegerRansOrderZeroEncoding(final DataSeries dataSeries) {
+            addExternalIntegerEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
         }
 
         void addTagEncoding(final int tagId, final EncodingDetails encodingDetails) {

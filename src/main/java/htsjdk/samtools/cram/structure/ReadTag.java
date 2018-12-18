@@ -17,20 +17,14 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMFormatException;
-import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
-import htsjdk.samtools.SAMTagUtil;
-import htsjdk.samtools.SAMUtils;
-import htsjdk.samtools.SAMValidationError;
-import htsjdk.samtools.TagValueAndUnsignedArrayFlag;
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.StringUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.util.Objects;
 
 /**
  * CRAM counterpart of {@link htsjdk.samtools.SAMTag}.
@@ -62,7 +56,7 @@ public class ReadTag implements Comparable<ReadTag> {
 
         keyType3BytesAsInt = id;
 
-        code = SAMTagUtil.getSingleton().makeBinaryTag(this.key);
+        code = SAMTag.makeBinaryTag(this.key);
     }
 
     private ReadTag(final String key, final char type, final Object value) {
@@ -86,7 +80,7 @@ public class ReadTag implements Comparable<ReadTag> {
         keyType3Bytes = this.key + this.type;
         keyType3BytesAsInt = nameType3BytesToInt(this.key, this.type);
 
-        code = SAMTagUtil.getSingleton().makeBinaryTag(this.key);
+        code = SAMTag.makeBinaryTag(this.key);
     }
 
     public static int name3BytesToInt(final byte[] name) {
@@ -150,21 +144,6 @@ public class ReadTag implements Comparable<ReadTag> {
     @Override
     public int compareTo(@SuppressWarnings("NullableProblems") final ReadTag o) {
         return key.compareTo(o.key);
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof ReadTag))
-            return false;
-
-        final ReadTag foe = (ReadTag) obj;
-        return key.equals(foe.key) && (value == null && foe.value == null || value != null && value.equals(foe.value));
-
-    }
-
-    @Override
-    public int hashCode() {
-        return key.hashCode();
     }
 
     public Object getValue() {
@@ -483,5 +462,25 @@ public class ReadTag implements Comparable<ReadTag> {
         // Skip over the null terminator
         byteBuffer.get();
         return StringUtil.bytesToString(buf);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final ReadTag readTag = (ReadTag) o;
+        return keyType3BytesAsInt == readTag.keyType3BytesAsInt &&
+                type == readTag.type &&
+                code == readTag.code &&
+                index == readTag.index &&
+                Objects.equals(key, readTag.key) &&
+                Objects.equals(keyAndType, readTag.keyAndType) &&
+                Objects.equals(keyType3Bytes, readTag.keyType3Bytes) &&
+                Objects.equals(value, readTag.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, keyAndType, keyType3Bytes, keyType3BytesAsInt, type, value, code, index);
     }
 }

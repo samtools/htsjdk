@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.DynamicIndexCreator;
@@ -40,20 +41,21 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 
 /**
  * this class writes VCF files
  */
 abstract class IndexingVariantContextWriter implements VariantContextWriter {
     private final String name;
-    private final File location;
+    private final Path location;
     private final SAMSequenceDictionary refDict;
 
     private OutputStream outputStream;
     private LocationAware locationSource = null;
     private IndexCreator indexer = null;
 
-    private IndexingVariantContextWriter(final String name, final File location, final OutputStream output, final SAMSequenceDictionary refDict) {
+    private IndexingVariantContextWriter(final String name, final Path location, final OutputStream output, final SAMSequenceDictionary refDict) {
         this.name = name;
         this.location = location;
         this.outputStream = output;
@@ -73,6 +75,20 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      */
     protected IndexingVariantContextWriter(final String name, final File location, final OutputStream output, final SAMSequenceDictionary refDict,
                                            final boolean enableOnTheFlyIndexing) {
+        this(name, IOUtil.toPath(location), output, refDict, enableOnTheFlyIndexing);
+    }
+
+    /**
+     * Create a VariantContextWriter with an associated index using the default index creator
+     *
+     * @param name  the name of this writer (i.e. the file name or stream)
+     * @param location  the path to the output file
+     * @param output    the output stream to write to
+     * @param refDict   the reference dictionary
+     * @param enableOnTheFlyIndexing    is OTF indexing enabled?
+     */
+    protected IndexingVariantContextWriter(final String name, final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
+        final boolean enableOnTheFlyIndexing) {
         this(name, location, output, refDict);
 
         if ( enableOnTheFlyIndexing ) {
@@ -92,6 +108,21 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      */
     protected IndexingVariantContextWriter(final String name, final File location, final OutputStream output, final SAMSequenceDictionary refDict,
                                            final boolean enableOnTheFlyIndexing, final IndexCreator idxCreator) {
+        this(name, IOUtil.toPath(location), output, refDict, enableOnTheFlyIndexing, idxCreator);
+    }
+
+    /**
+     * Create a VariantContextWriter with an associated index using a custom index creator
+     *
+     * @param name  the name of this writer (i.e. the file name or stream)
+     * @param location  the path to the output file
+     * @param output    the output stream to write to
+     * @param refDict   the reference dictionary
+     * @param enableOnTheFlyIndexing    is OTF indexing enabled?
+     * @param idxCreator    the custom index creator.  NOTE: must be initialized
+     */
+    protected IndexingVariantContextWriter(final String name, final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
+        final boolean enableOnTheFlyIndexing, final IndexCreator idxCreator) {
         this(name, location, output, refDict);
 
         if ( enableOnTheFlyIndexing ) {
@@ -144,7 +175,7 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
             if (indexer != null) {
                 indexer.setIndexSequenceDictionary(refDict);
                 final Index index = indexer.finalizeIndex(locationSource.getPosition());
-                index.writeBasedOnFeatureFile(location);
+                index.writeBasedOnFeaturePath(location);
             }
 
 
@@ -180,6 +211,17 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @return
      */
     protected static final String writerName(final File location, final OutputStream stream) {
-        return location == null ? stream == null ? DEFAULT_READER_NAME : stream.toString() : location.getAbsolutePath();
+        return writerName(IOUtil.toPath(location), stream);
+    }
+
+    /**
+     * Returns a reasonable "name" for this writer, to display to the user if something goes wrong
+     *
+     * @param location
+     * @param stream
+     * @return
+     */
+    protected static final String writerName(final Path location, final OutputStream stream) {
+        return location == null ? stream == null ? DEFAULT_READER_NAME : stream.toString() : location.toAbsolutePath().toUri().toString();
     }
 }

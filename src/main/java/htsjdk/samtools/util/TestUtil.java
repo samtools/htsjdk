@@ -29,6 +29,9 @@ import java.io.*;
 
 public class TestUtil {
 
+    public static int RANDOM_SEED = 42;
+
+
     /**
      * Base url where all test files for http tests are found
      */
