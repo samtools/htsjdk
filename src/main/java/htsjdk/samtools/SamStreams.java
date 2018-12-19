@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 /**
  * Utilities related to processing of {@link java.io.InputStream}s encoding SAM data
- *
+ * 
  * @author mccowan
  */
 public class SamStreams {

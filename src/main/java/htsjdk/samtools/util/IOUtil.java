@@ -175,13 +175,13 @@ public class IOUtil {
     }
 
     public static SeekableStream maybeBufferedSeekableStream(final SeekableStream stream, final int bufferSize) {
-        return bufferSize > 0 ? new SeekableBufferedStream(stream, bufferSize) : stream;
+        return bufferSize > 0 ? new SeekableBufferedStream(stream, bufferSize) : stream; 
     }
-
+    
     public static SeekableStream maybeBufferedSeekableStream(final SeekableStream stream) {
         return maybeBufferedSeekableStream(stream, Defaults.BUFFER_SIZE);
     }
-
+    
     public static SeekableStream maybeBufferedSeekableStream(final File file) {
         try {
             return maybeBufferedSeekableStream(new SeekableFileStream(file));
@@ -377,9 +377,9 @@ public class IOUtil {
             return full;
         }
     }
-
+    
     /**
-     * Checks that an input is  is non-null, a URL or a file, exists,
+     * Checks that an input is  is non-null, a URL or a file, exists, 
      * and if its a file then it is not a directory and is readable.  If any
      * condition is false then a runtime exception is thrown.
      *
@@ -393,9 +393,9 @@ public class IOUtil {
         assertFileIsReadable(new File(input));
       }
     }
-
-    /**
-     * Returns true iff the string is a url.
+    
+    /** 
+     * Returns true iff the string is a url. 
      * Helps distinguish url inputs form file path inputs.
      */
     public static boolean isUrl(final String input) {
@@ -459,7 +459,7 @@ public class IOUtil {
 
 
     /**
-     * Checks that each string is non-null, exists or is a URL,
+     * Checks that each string is non-null, exists or is a URL, 
      * and if it is a file then not a directory and is readable.  If any
      * condition is false then a runtime exception is thrown.
      *
@@ -1163,7 +1163,7 @@ public class IOUtil {
      * @param stream the input stream.
      * @return true if `stream` starts with a gzip signature
      * @throws IllegalArgumentException if `stream` cannot mark or reset the stream
-     * @see {@link SamStreams#isGzippedSAMFile(InputStream)}
+     * @see SamStreams#isGzippedSAMFile(InputStream)
      */
     public static boolean isGZIPInputStream(final InputStream stream) {
         /* this function was previously implemented in SamStreams.isGzippedSAMFile */
@@ -1194,7 +1194,7 @@ public class IOUtil {
      * @param extension  the extension to add, eg. ".bak"
      * @return           "/folder/file.jpg.bak"
      */
-    public static Path addExtension(final Path path,final String extension) {
+    public static Path addExtension(Path path, String extension) {
         return path.resolveSibling(path.getFileName() + extension);
     }
 
