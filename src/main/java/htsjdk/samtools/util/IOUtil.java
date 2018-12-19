@@ -26,6 +26,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SamStreams;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
@@ -110,7 +111,6 @@ public class IOUtil {
     public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
-
     /**
      * Sets the GZip compression level for subsequent GZIPOutputStream object creation.
      * @param compressionLevel 0 <= compressionLevel <= 9
@@ -571,12 +571,13 @@ public class IOUtil {
      * Checks that the two files are the same length, and have the same content, otherwise throws a runtime exception.
      */
     public static void assertFilesEqual(final File f1, final File f2) {
-        try {
-            if (f1.length() != f2.length()) {
-                throw new SAMException("File " + f1 + " is " + f1.length() + " bytes but file " + f2 + " is " + f2.length() + " bytes.");
-            }
+        if (f1.length() != f2.length()) {
+            throw new SAMException("File " + f1 + " is " + f1.length() + " bytes but file " + f2 + " is " + f2.length() + " bytes.");
+        }
+        try (
             final FileInputStream s1 = new FileInputStream(f1);
             final FileInputStream s2 = new FileInputStream(f2);
+            ) {
             final byte[] buf1 = new byte[1024 * 1024];
             final byte[] buf2 = new byte[1024 * 1024];
             int len1;
@@ -589,12 +590,9 @@ public class IOUtil {
                     throw new SAMException("Files " + f1 + " and " + f2 + " differ.");
                 }
             }
-            s1.close();
-            s2.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new SAMException("Exception comparing files " + f1 + " and " + f2, e);
         }
-
     }
 
     /**
@@ -1155,6 +1153,38 @@ public class IOUtil {
      */
     public static List<Path> filesToPaths(Collection<File> files){
         return files.stream().map(File::toPath).collect(Collectors.toList());
+    }
+
+    /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
+    public static final int GZIP_HEADER_READ_LENGTH = 8000;
+
+    /**
+     * Test whether a input stream looks like a GZIP input.
+     * @param stream the input stream.
+     * @return true if `stream` starts with a gzip signature
+     * @throws IllegalArgumentException if `stream` cannot mark or reset the stream
+     * @see SamStreams#isGzippedSAMFile(InputStream)
+     */
+    public static boolean isGZIPInputStream(final InputStream stream) {
+        /* this function was previously implemented in SamStreams.isGzippedSAMFile */
+        if (!stream.markSupported()) {
+            throw new IllegalArgumentException("isGZIPInputStream() : Cannot test a stream that doesn't support marking.");
+        }
+        stream.mark(GZIP_HEADER_READ_LENGTH);
+
+        try {
+            final GZIPInputStream gunzip = new GZIPInputStream(stream);
+            final int ch = gunzip.read();
+            return true;
+        } catch (final IOException ioe) {
+            return false;
+        } finally {
+            try {
+                stream.reset();
+            } catch (final IOException ioe) {
+                throw new IllegalStateException("isGZIPInputStream(): Could not reset stream.");
+            }
+        }
     }
 
     /**

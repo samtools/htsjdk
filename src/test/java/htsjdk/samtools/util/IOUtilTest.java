@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Random;
 import java.util.stream.Stream;
+import java.util.zip.GZIPOutputStream;
 
 
 public class IOUtilTest extends HtsjdkTest {
@@ -267,7 +268,6 @@ public class IOUtilTest extends HtsjdkTest {
                 {"/non/existent/file", Boolean.TRUE},
         };
     }
-
 
     @DataProvider
     public Object[][] getFiles(){
@@ -719,6 +719,43 @@ public class IOUtilTest extends HtsjdkTest {
         final List<Path> collect = Files.walk(TEST_VARIANT_DIR).filter(f -> !f.equals(TEST_VARIANT_DIR)).map(p -> p.getFileName()).collect(Collectors.toList());
         final List<Path> collectCopy = Files.walk(copyToDir).filter(f -> !f.equals(copyToDir)).map(p -> p.getFileName()).collect(Collectors.toList());
         Assert.assertEqualsNoOrder(collect.toArray(), collectCopy.toArray());
+    }
+
+    // Little utility to gzip a byte array
+    private static byte[] gzipMessage(final byte[] message) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        GZIPOutputStream gzout = new GZIPOutputStream(bos);
+        gzout.write(message);
+        gzout.finish();
+        gzout.close();
+        return bos.toByteArray();
+    }
+
+    @DataProvider
+    public static Object[][] gzipTests() throws IOException {
+        final byte emptyMessage[]="".getBytes();
+        final byte message[]="Hello World".getBytes();
+
+        // Compressed version of the messages
+        final byte[] gzippedMessage = gzipMessage(message);
+        final byte[] gzippedEmptyMessage = gzipMessage(emptyMessage);
+
+        return new Object[][]{
+                {emptyMessage, false},
+                {message, false},
+                {gzippedMessage, true},
+                {gzippedEmptyMessage, true}
+        };
+    }
+
+    @Test(dataProvider = "gzipTests")
+    public void isGZIPInputStreamTest(byte[] data, boolean isGzipped) throws IOException {
+        try(ByteArrayInputStream inputStream = new ByteArrayInputStream(data)) {
+            // test string without compression
+            Assert.assertEquals(IOUtil.isGZIPInputStream(inputStream), isGzipped);
+            // call twice to verify 'in.reset()' was called
+            Assert.assertEquals(IOUtil.isGZIPInputStream(inputStream), isGzipped);
+        }
     }
 }
 

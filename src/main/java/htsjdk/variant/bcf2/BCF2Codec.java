@@ -59,6 +59,10 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     private final static int ALLOWED_MAJOR_VERSION = 2;
     private final static int MIN_MINOR_VERSION = 1;
 
+    /** sizeof a BCF header (+ min/max version). Used when trying to detect when a streams starts with a bcf header */
+    public static final int SIZEOF_BCF_HEADER =  BCFVersion.MAGIC_HEADER_START.length + 2*Byte.BYTES;
+
+    
     private BCFVersion bcfVersion = null;
 
     private VCFHeader header = null;
@@ -477,4 +481,19 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     private void error(final String message) throws RuntimeException {
         throw new TribbleException(String.format("%s, at record %d with position %d:", message, recordNo, pos));
     }
+    
+    /** try to read a BCFVersion from an uncompressed BufferedInputStream.
+     * The buffer must be large enough to contain {@link #SIZEOF_BCF_HEADER}
+     * 
+     * @param bufferedinput the uncompressed input stream
+     * @return the BCFVersion if it can be decoded, or null if not found.
+     * @throws IOException
+     */
+    public static BCFVersion tryReadBCFVersion(final BufferedInputStream uncompressedBufferedInput) throws IOException {
+        uncompressedBufferedInput.mark(SIZEOF_BCF_HEADER);
+        final BCFVersion bcfVersion = BCFVersion.readBCFVersion(uncompressedBufferedInput);
+        uncompressedBufferedInput.reset();
+        return bcfVersion;
+    }
+    
 }
