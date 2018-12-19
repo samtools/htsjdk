@@ -32,13 +32,18 @@ import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.TabixUtils;
+import htsjdk.variant.vcf.VCFCodec;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -132,6 +137,11 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (requireIndex) {
                 this.loadIndex();
                 if (!this.hasIndex()) {
+                    File check = new File ("/home/check.txt");
+                    if (!check.createNewFile())
+                    {
+                        throw new TribbleException("no file");
+                    }
                     throw new TribbleException("An index is required, but none found.");
                 }
             }
@@ -159,12 +169,30 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      */
     private void loadIndex() throws IOException {
         String indexFile = Tribble.indexFile(this.path);
+
+        final File tempIndex = new File("index111", TabixUtils.STANDARD_INDEX_EXTENSION);
+        boolean newFile = tempIndex.createNewFile();
+        if (newFile) {
+            System.out.print("Created");
+        }
+        final  FeatureCodec codec = new VCFCodec();
+
+        final File tmp = new File(this.path);
+        final Index indexS = IndexFactory.createIndex(tmp, codec, IndexFactory.IndexType.TABIX);
+
+        // write the index to a file
+        indexS.write(tempIndex);
+
         if (ParsingUtils.resourceExists(indexFile)) {
             index = IndexFactory.loadIndex(indexFile, indexWrapper);
         } else {
             // See if the index itself is gzipped
             indexFile = ParsingUtils.appendToPath(indexFile, ".gz");
             if (ParsingUtils.resourceExists(indexFile)) {
+                index = IndexFactory.loadIndex(indexFile, indexWrapper);
+            } else {
+                //index = IndexFactory.createIndex(tmp, codec, IndexFactory.IndexType.TABIX);
+                indexFile = tempIndex.getAbsolutePath();
                 index = IndexFactory.loadIndex(indexFile, indexWrapper);
             }
         }
