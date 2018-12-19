@@ -733,8 +733,8 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public static Object[][] gzipTests() throws IOException {
-        final byte emptyMessage[]="".getBytes();
-        final byte message[]="Hello World".getBytes();
+        final byte[] emptyMessage = "".getBytes();
+        final byte[] message = "Hello World".getBytes();
 
         // Compressed version of the messages
         final byte[] gzippedMessage = gzipMessage(message);

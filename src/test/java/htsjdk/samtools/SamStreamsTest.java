@@ -40,6 +40,7 @@ public class SamStreamsTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test(dataProvider = "makeData")
+    @SuppressWarnings("deprecated") // we're testing a deprecated method here deliberately
     public void testDataFormat(final String inputFile, final boolean isGzippedSAMFile, final boolean isBAMFile, final boolean isCRAMFile) throws Exception {
         final File input = new File(TEST_DATA_DIR, inputFile);
         try(final InputStream fis = new BufferedInputStream(new FileInputStream(input))) { //must be buffered or the isGzippedSAMFile will blow up

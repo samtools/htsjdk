@@ -99,6 +99,8 @@ public class IOUtil {
     public static final String COMPRESSED_VCF_INDEX_EXTENSION = ".tbi";
 
 
+
+
     /** Possible extensions for VCF files and related formats. */
     public static final String[] VCF_EXTENSIONS = {VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION};
 
@@ -109,6 +111,9 @@ public class IOUtil {
     public static final String DICT_FILE_EXTENSION = ".dict";
 
     public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
+
+    /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
+    public static final int GZIP_HEADER_READ_LENGTH = 8000;
 
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
     /**
@@ -1155,18 +1160,15 @@ public class IOUtil {
         return files.stream().map(File::toPath).collect(Collectors.toList());
     }
 
-    /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
-    public static final int GZIP_HEADER_READ_LENGTH = 8000;
-
     /**
      * Test whether a input stream looks like a GZIP input.
+     * This identifies both gzip and bgzip streams as being GZIP.
      * @param stream the input stream.
-     * @return true if `stream` starts with a gzip signature
+     * @return true if `stream` starts with a gzip signature.
      * @throws IllegalArgumentException if `stream` cannot mark or reset the stream
      * @see SamStreams#isGzippedSAMFile(InputStream)
      */
     public static boolean isGZIPInputStream(final InputStream stream) {
-        /* this function was previously implemented in SamStreams.isGzippedSAMFile */
         if (!stream.markSupported()) {
             throw new IllegalArgumentException("isGZIPInputStream() : Cannot test a stream that doesn't support marking.");
         }

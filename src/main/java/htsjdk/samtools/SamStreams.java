@@ -66,7 +66,7 @@ public class SamStreams {
     /**
      * Checks whether the file is a gzipped sam file.  Returns true if it
      * is and false otherwise.
-     * @see @link IOUtil#isGZIPInputStream(InputStream)
+     * @deprecated use {@link IOUtil#isGZIPInputStream(InputStream)} instead
      */
     @Deprecated
     public static boolean isGzippedSAMFile(final InputStream stream) {
