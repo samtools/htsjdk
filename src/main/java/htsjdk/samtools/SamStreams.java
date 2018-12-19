@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 /**
  * Utilities related to processing of {@link java.io.InputStream}s encoding SAM data
- * 
+ *
  * @author mccowan
  */
 public class SamStreams {
@@ -66,7 +66,7 @@ public class SamStreams {
     /**
      * Checks whether the file is a gzipped sam file.  Returns true if it
      * is and false otherwise.
-     * @see {@link IOUtil#isGZIPInputStream(InputStream)}
+     * @see @link IOUtil#isGZIPInputStream(InputStream)
      */
     @Deprecated
     public static boolean isGzippedSAMFile(final InputStream stream) {

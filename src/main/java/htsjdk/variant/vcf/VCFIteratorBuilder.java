@@ -1,5 +1,5 @@
 /*
-* 
+*
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
 * files (the "Software"), to deal in the Software without
@@ -8,10 +8,10 @@
 * copies of the Software, and to permit persons to whom the
 * Software is furnished to do so, subject to the following
 * conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be
 * included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -45,9 +45,9 @@ import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * A Class building {@link htsjdk.variant.vcf.VCFIterator}
- * 
+ *
  * Example:
- * 
+ *
  * <pre>
  * VCFIterator r = new VCFIteratorBuilder().open(System.in);
  * while (r.hasNext()) {
@@ -55,9 +55,9 @@ import htsjdk.variant.variantcontext.VariantContext;
  * }
  * r.close();
  * </pre>
- * 
+ *
  * @author Pierre Lindenbaum / @yokofakun
- * @see {@link htsjdk.variant.vcf.VCFIterator}
+ * @see htsjdk.variant.vcf.VCFIterator
  *
  */
 
@@ -66,7 +66,7 @@ public class VCFIteratorBuilder {
     /**
      * creates a VCF iterator from an input stream It detects if the stream is a
      * BCF stream or a GZipped stream.
-     * 
+     *
      * @param in inputstream
      * @return the VCFIterator
      * @throws IOException
@@ -82,7 +82,7 @@ public class VCFIteratorBuilder {
                BCF2Codec.SIZEOF_BCF_HEADER,
                IOUtil.GZIP_HEADER_READ_LENGTH
                ));
-        // test for gzipped inputstream 
+        // test for gzipped inputstream
         if(IOUtil.isGZIPInputStream(bufferedinput)) {
             // this is a gzipped input stream, wrap it into GZIPInputStream
             // and re-wrap it into BufferedInputStream so we can test for the BCF header
@@ -94,7 +94,7 @@ public class VCFIteratorBuilder {
 
         // try to read a BCF header
         final BCFVersion bcfVersion = BCF2Codec.tryReadBCFVersion(bufferedinput);
-        
+
         if (bcfVersion != null) {
             //this is BCF
             return new BCFInputStreamIterator(bufferedinput);
@@ -107,18 +107,18 @@ public class VCFIteratorBuilder {
     /**
      * creates a VCF iterator from a URI It detects if the stream is a BCF
      * stream or a GZipped stream.
-     * 
+     *
      * @param path the Path
      * @return the VCFIterator
      * @throws IOException
      */
     public VCFIterator open(final String path) throws IOException {
-        return open(ParsingUtils.openInputStream(path, null));
+        return open(path, null);
     }
 
     /**
      * creates a VCF iterator from a Path
-     * 
+     *
      * @param path the path
      * @return the VCFIterator
      * @throws IOException
@@ -126,10 +126,10 @@ public class VCFIteratorBuilder {
     public VCFIterator open(final Path path) throws IOException {
        return open(path, null);
     }
-    
+
     /**
      * creates a VCF iterator from a Path
-     * 
+     *
      * @param path the file path
      * @param wrapper wrapper for {@link htsjdk.samtools.seekablestream.SeekablePathStream}. Can be null.
      * @return the VCFIterator
@@ -138,10 +138,23 @@ public class VCFIteratorBuilder {
     public VCFIterator open(final Path path, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
         return open(new SeekablePathStream(path, wrapper));
     }
-    
+
+    /**
+     * creates a VCF iterator from a URI It detects if the stream is a BCF
+     * stream or a GZipped stream.
+     *
+     * @param path the Path
+     * @param wrapper wrapper for {@link htsjdk.samtools.seekablestream.SeekablePathStream}. Can be null.
+     * @return the VCFIterator
+     * @throws IOException
+     */
+    public VCFIterator open(final String path, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+        return open(ParsingUtils.openInputStream(path, wrapper));
+    }
+
     /**
      * creates a VCF iterator from a File
-     * 
+     *
      * @param file the file (can be bcf, vcf, vcf.gz)
      * @return the VCFIterator
      * @throws IOException
