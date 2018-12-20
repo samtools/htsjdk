@@ -105,6 +105,62 @@ public class VariantContextBuilder {
     }
 
     /**
+     * Getter for contig
+     * @return
+     */
+    public String getContig() {
+        return contig;
+    }
+
+    /**
+     * Getter for start position
+     * @return
+     */
+    public long getStart() {
+        return start;
+    }
+
+    /**
+     * Getter for stop position
+     * @return
+     */
+    public long getStop() {
+        return stop;
+    }
+
+    /**
+     * Getter for id of variant
+     * @return
+     */
+    public String getID() {
+        return ID;
+    }
+
+    /**
+     * Getter for genotypes (DANGEROUS!!! DOES NOT MAKE A COPY!!!)
+     * @return
+     */
+    public GenotypesContext getGenotypes() {
+        return genotypes;
+    }
+
+    /**
+     * Getter for filters (DANGEROUS!!! DOES NOT MAKE A COPY!!!)
+     * @return
+     */
+    public Set<String> getFilters() {
+        return filters;
+    }
+
+    /**
+     * Getter for attributes (DANGEROUS!!! DOES NOT MAKE A COPY!!!)
+     * @return
+     */
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    /**
      * Returns a new builder based on parent -- the new VC will have all fields initialized
      * to their corresponding values in parent.  This is the best way to create a derived VariantContext
      *
