@@ -118,5 +118,4 @@ public class GZIIndexTest extends HtsjdkTest {
         Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(virtualOffset), expectedBlockAddress);
         Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(virtualOffset), expectedBlockOffset);
     }
-
 }
