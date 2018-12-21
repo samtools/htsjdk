@@ -50,7 +50,7 @@ public final class VCFHeaderReader {
 
     private static InputStream bufferAndDecompressIfNecessary(final InputStream in) throws IOException {
         BufferedInputStream bis = new BufferedInputStream(in);
-        // despite the name, SamStreams.isGzippedSAMFile looks for any gzipped stream (including block compressed)
+        // IOUTil.isGZIPInputStream looks for any gzipped stream (including block compressed)
         return IOUtil.isGZIPInputStream(bis) ? new GZIPInputStream(bis) : bis;
     }
 

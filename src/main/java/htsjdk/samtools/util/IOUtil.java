@@ -98,9 +98,6 @@ public class IOUtil {
     public static final String COMPRESSED_VCF_FILE_EXTENSION = ".vcf.gz";
     public static final String COMPRESSED_VCF_INDEX_EXTENSION = ".tbi";
 
-
-
-
     /** Possible extensions for VCF files and related formats. */
     public static final String[] VCF_EXTENSIONS = {VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION};
 
@@ -1166,7 +1163,6 @@ public class IOUtil {
      * @param stream the input stream.
      * @return true if `stream` starts with a gzip signature.
      * @throws IllegalArgumentException if `stream` cannot mark or reset the stream
-     * @see SamStreams#isGzippedSAMFile(InputStream)
      */
     public static boolean isGZIPInputStream(final InputStream stream) {
         if (!stream.markSupported()) {
