@@ -3,6 +3,7 @@ package htsjdk.variant.utils;
 import htsjdk.samtools.SamStreams;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
@@ -49,8 +50,8 @@ public final class VCFHeaderReader {
 
     private static InputStream bufferAndDecompressIfNecessary(final InputStream in) throws IOException {
         BufferedInputStream bis = new BufferedInputStream(in);
-        // despite the name, SamStreams.isGzippedSAMFile looks for any gzipped stream (including block compressed)
-        return SamStreams.isGzippedSAMFile(bis) ? new GZIPInputStream(bis) : bis;
+        // IOUTil.isGZIPInputStream looks for any gzipped stream (including block compressed)
+        return IOUtil.isGZIPInputStream(bis) ? new GZIPInputStream(bis) : bis;
     }
 
     private static <FEATURE_TYPE extends Feature, SOURCE> VCFHeader readHeaderFrom(final InputStream in, final FeatureCodec<FEATURE_TYPE, SOURCE> featureCodec) throws IOException {

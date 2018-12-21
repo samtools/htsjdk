@@ -78,18 +78,12 @@ public class VCFIteratorBuilder {
             }
         // wrap the input stream into a BufferedInputStream to reset/read a BCFHeader or a GZIP
         // buffer must be large enough to contain the BCF header and/or GZIP signature
-        BufferedInputStream  bufferedinput = new BufferedInputStream(in, Math.max(
-               BCF2Codec.SIZEOF_BCF_HEADER,
-               IOUtil.GZIP_HEADER_READ_LENGTH
-               ));
+        BufferedInputStream  bufferedinput = new BufferedInputStream(in, Math.max(BCF2Codec.SIZEOF_BCF_HEADER, IOUtil.GZIP_HEADER_READ_LENGTH));
         // test for gzipped inputstream
         if(IOUtil.isGZIPInputStream(bufferedinput)) {
             // this is a gzipped input stream, wrap it into GZIPInputStream
             // and re-wrap it into BufferedInputStream so we can test for the BCF header
-            bufferedinput = new BufferedInputStream(
-                    new GZIPInputStream(bufferedinput),
-                    BCF2Codec.SIZEOF_BCF_HEADER
-                    );
+            bufferedinput = new BufferedInputStream(new GZIPInputStream(bufferedinput), BCF2Codec.SIZEOF_BCF_HEADER);
         }
 
         // try to read a BCF header
@@ -190,9 +184,7 @@ public class VCFIteratorBuilder {
 
         @Override
         protected VariantContext advance() {
-            return this.lineIterator.hasNext() ?
-                    this.codec.decode(this.lineIterator.next()) :
-                    null;
+            return this.lineIterator.hasNext() ? this.codec.decode(this.lineIterator.next()) : null;
         }
 
         @Override
@@ -225,9 +217,7 @@ public class VCFIteratorBuilder {
 
         @Override
         protected VariantContext advance() {
-            return this.codec.isDone(this.inputStream) ?
-                    null :
-                    this.codec.decode(this.inputStream);
+            return this.codec.isDone(this.inputStream) ? null : this.codec.decode(this.inputStream);
         }
 
         @Override
