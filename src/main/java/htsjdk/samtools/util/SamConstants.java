@@ -7,5 +7,5 @@ package htsjdk.samtools.util;
 public class SamConstants {
 
     final static String BARCODE_SEQUENCE_DELIMITER = "-";
-    final static String BARCODE_QUALITY_DELIMITER = "~";
+    final static String BARCODE_QUALITY_DELIMITER = " ";
 }
