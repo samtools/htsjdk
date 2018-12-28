@@ -98,7 +98,8 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 {"<>", "", "", ""},
                 {"<>", "", "ID,Description", ""},
                 {"<>", "ID", "", ""},
-                {"<ID=X,Description=\"Y\",Extra=E>", "ID", "Description", "Too many parameters"}
+                {"<ID=X,Description=\"Y\",Extra=E>", "ID", "Description", "Too many parameters"},
+                {"<ID=X,Description=<Y>>", "ID,Description", "", ""}
                 };
     }
 
