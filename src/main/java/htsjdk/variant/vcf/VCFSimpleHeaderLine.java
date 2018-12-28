@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -64,7 +65,20 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
      * @param expectedTagOrdering the tag ordering expected for this header line
      */
     public VCFSimpleHeaderLine(final String line, final VCFHeaderVersion version, final String key, final List<String> expectedTagOrdering) {
-        this(key, VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrdering));
+        this(key, VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrdering, null));
+    }
+
+    /**
+     * create a VCF info header line
+     *
+     * @param line      the header line
+     * @param version   the vcf header version
+     * @param key            the key for this header line
+     * @param expectedTagOrdering the tag ordering expected for this header line
+     * @param optionalTags tags that are optional for this header line                            
+     */
+    public VCFSimpleHeaderLine(final String line, final VCFHeaderVersion version, final String key, final List<String> expectedTagOrdering, final Set<String> optionalTags) {
+        this(key, VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrdering, optionalTags));
     }
 
     public VCFSimpleHeaderLine(final String key, final Map<String, String> mapping) {
