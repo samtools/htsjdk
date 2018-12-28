@@ -27,6 +27,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +50,7 @@ public class VCFHeaderLineTranslator {
     }
 
     public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder) {
-        return mapping.get(version).parseLine(valueLine,expectedTagOrder,null);
+        return mapping.get(version).parseLine(valueLine,expectedTagOrder,Collections.emptySet());
     }
     
     public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder, Set<String> optionalTags) {
@@ -77,14 +78,14 @@ class VCF4Parser implements VCFLineParser {
      */
     @Override
     public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
-        return parseLine(valueLine, expectedTagOrder, null);
+        return parseLine(valueLine, expectedTagOrder, Collections.emptySet());
     }
     
     /**
      * parse a VCF4 line
      * @param valueLine the line
      * @param expectedTagOrder List of expected tags
-     * @param optionalTags Set of tags that may or may not be present. If null, no optional tags are allowed.
+     * @param optionalTags Set of tags that may or may not be present.
      * @return a mapping of the tags parsed out
      */
     @Override
@@ -152,14 +153,14 @@ class VCF4Parser implements VCFLineParser {
         // validate the tags against the expected list
         index = 0;
         if ( expectedTagOrder != null ) {
-            if ( ret.size() > expectedTagOrder.size() + (optionalTags != null ? optionalTags.size() : 0) )
+            if ( ret.size() > expectedTagOrder.size() + optionalTags.size() )
                 throw new TribbleException.InvalidHeader("unexpected tag count " + ret.size() + " in line " + valueLine);
             for ( String str : ret.keySet() ) {
                 if (index < expectedTagOrder.size()) {
                     if (!expectedTagOrder.get(index).equals(str))
                         throw new TribbleException.InvalidHeader("Unexpected tag " + str + " in line " + valueLine);
                 }
-                else if (optionalTags==null || !optionalTags.contains(str)) {
+                else if (!optionalTags.contains(str)) {
                     throw new TribbleException.InvalidHeader("Unexpected tag " + str + " in line " + valueLine);
                 }
                 index++;
@@ -210,7 +211,7 @@ class VCF3Parser implements VCFLineParser {
 
     @Override
     public Map<String,String> parseLine(String valueLine, List<String> expectedTagOrder, Set<String> optionalTags) {
-        if (optionalTags == null || optionalTags.isEmpty()) {
+        if (optionalTags.isEmpty()) {
             return parseLine(valueLine, expectedTagOrder);
         }
         throw new TribbleException.InternalCodecException("Optional tags are not allowed in VCFv3.x");

@@ -32,6 +32,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -162,7 +163,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         super(lineType.toString(), "");
 
         final ArrayList<String> expectedTags = new ArrayList(Arrays.asList("ID", "Number", "Type", "Description"));
-        Set<String> optionalTags = null;  
+        Set<String> optionalTags = Collections.emptySet();  
         if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
             optionalTags = new HashSet<String>(Arrays.asList("Source", "Version"));
         }
