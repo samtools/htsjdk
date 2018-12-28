@@ -152,7 +152,7 @@ class VCF4Parser implements VCFLineParser {
         // validate the tags against the expected list
         index = 0;
         if ( expectedTagOrder != null ) {
-            if ( ret.size() < expectedTagOrder.size() )
+            if ( ret.size() > expectedTagOrder.size() + (optionalTags != null ? optionalTags.size() : 0) )
                 throw new TribbleException.InvalidHeader("unexpected tag count " + ret.size() + " in line " + valueLine);
             for ( String str : ret.keySet() ) {
                 if (index < expectedTagOrder.size()) {
