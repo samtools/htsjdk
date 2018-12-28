@@ -69,6 +69,8 @@ public class VCFFileReaderTest extends HtsjdkTest {
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.bcf", null, true, false},
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.bgz", null, true, false},
 
+                // testing that v4.2 parses Source/Version fields, see issue #517
+                {TEST_DATA_DIR + "Vcf4.2WithSourceVersionInfoFields.vcf", null, false, true}
         };
     }
 
