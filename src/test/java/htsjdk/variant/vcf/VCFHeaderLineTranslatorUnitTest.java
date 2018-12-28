@@ -93,10 +93,12 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 {line, "Description,ID", "", "Wrong order of parameters"},
                 {line, "Description", "ID", "Wrong order of parameters"},
                 {line, "ID,Desc", "", "Parameter name mismatch"},
+                {line, "ID", "Desc", "Optional parameter name mismatch"},
                 {line, "ID,Description,Extra", "", ""},
                 {"<>", "", "", ""},
                 {"<>", "", "ID,Description", ""},
                 {"<>", "ID", "", ""},
+                {"<ID=X,Description=\"Y\",Extra=E>", "ID", "Description", "Too many parameters"}
                 };
     }
 
