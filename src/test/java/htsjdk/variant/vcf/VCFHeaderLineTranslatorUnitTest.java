@@ -100,7 +100,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 {"<>", "ID", "", ""},
                 {"<ID=X,Description=\"Y\",Extra=E>", "ID", "Description", "Too many parameters"},
                 {"<ID=X,Description=<Y>>", "ID,Description", "", ""}
-                };
+        };
     }
 
     @Test(dataProvider = "testData")
@@ -115,20 +115,48 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
             final Set<String> optionalTags = optional.isEmpty() ?
                     Collections.emptySet() :
                     Sets.newHashSet(optional.split(","));
-            final Map<String, String> values = VCFHeaderLineTranslator.parseLine(
-                    VCFHeaderVersion.VCF4_2,
-                    line,
-                    expectedTagOrder,
-                    optionalTags
-            );
+            
+            if (optionalTags.isEmpty()) {
+                VCFHeaderLineTranslator.parseLine(
+                        VCFHeaderVersion.VCF4_2,
+                        line,
+                        expectedTagOrder
+                );
+            }
+            else {
+                VCFHeaderLineTranslator.parseLine(
+                        VCFHeaderVersion.VCF4_2,
+                        line,
+                        expectedTagOrder,
+                        optionalTags
+                );
+            }
             if (!error.isEmpty()) {
                 Assert.fail("Expected failure: '" + error + "', got success");
-            } 
+            }
         }
         catch (Exception e) {
             if (error.isEmpty()) {
                 Assert.fail("Expected success, got failure", e);
             }
         }
+    }
+
+    @DataProvider(name = "vcfv3")
+    private Object[][] getVcfV3Versions() {
+        return new Object[][]{
+                {VCFHeaderVersion.VCF3_2},
+                {VCFHeaderVersion.VCF3_3}
+        };
+    }
+
+    @Test(dataProvider = "vcfv3", expectedExceptions = TribbleException.class)
+    public void testVcfV3FailsOptionalTags(final VCFHeaderVersion vcfVersion) {
+        VCFHeaderLineTranslator.parseLine(
+                vcfVersion,
+                "<ID=X,Description=\"Y\">",
+                Arrays.asList("ID"),
+                Collections.singleton("Description")
+        );
     }
 }
