@@ -32,96 +32,123 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Asynchronous read-ahead implementation of {@link htsjdk.samtools.util.BlockCompressedInputStream}.   
+ * Asynchronous read-ahead and decompression implementation of {@link htsjdk.samtools.util.BlockCompressedInputStream}.
  * 
  * Note that this implementation is not synchronized. If multiple threads access an instance concurrently, it must be synchronized externally. 
  */
 public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream {
     private static final int READ_AHEAD_BUFFERS = (int)Math.ceil(Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-    private static final Executor threadpool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = Executors.defaultThreadFactory().newThread(r);
-                t.setDaemon(true);
-                return t;
-            }
-        });
     /**
-     * Next blocks (in stream order) that have already been decompressed. 
+     * Decompressed blocks ordered by their stream position.
+     * Async background tasks should not touch this data structure.
      */
-    private final BlockingQueue<DecompressedBlock> mResult = new ArrayBlockingQueue<>(READ_AHEAD_BUFFERS);
+    private final PriorityQueue<CompressionBlock> mOrderedResult = new PriorityQueue<>(
+            Comparator.<CompressionBlock>comparingLong(cb -> cb.getBlockAddress())
+                // If we somehow read the same block twice (e.g. EOF), preference the one with actual content
+                .thenComparing(Comparator.<CompressionBlock>comparingInt(cb -> cb.getBlockCompressedSize()).reversed()));
     /**
-     * Buffers used to decompress previous blocks that are no longer in use.
-     * These buffers are reused if possible.
-     * Note that no blocking occurs on this buffer and a blocking queue is used purely
-     * because it is a base library synchronized queue implementation
-     * (and Collections.synchronizedQueue() does not exist).
+     * Blocks that have been asynchronously decompressed but not yet processed on the foreground thread
      */
-    private final BlockingQueue<byte[]> freeBuffers = new ArrayBlockingQueue<>(READ_AHEAD_BUFFERS);
+    private final BlockingQueue<CompressionBlock> mResult = new ArrayBlockingQueue<>(READ_AHEAD_BUFFERS);
     /**
-     * Indicates whether a read-ahead task has been scheduled to run. Only one read-ahead task
-     * per stream can be scheduled at any one time.
+     * Stream position of decompression blocks. This is used to ensure that the order that the blocks
+     * are returned by {@link #nextBlock(CompressionBlock) nextBlock} matches the order of the input stream
+     * even when the blocks are decompressed out of order.
      */
-    private final Semaphore running = new Semaphore(1);
+    private final BlockingQueue<Long> mBlockStreamPosition = new ArrayBlockingQueue<>(READ_AHEAD_BUFFERS);
+    private final ConcurrentLinkedQueue<byte[]> mFreeDecompressedBlockedBuffers = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<byte[]> mFreeCompressedBlockBuffers = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<BlockGunzipper> mFreeInflators = new ConcurrentLinkedQueue<>();
+    private final AtomicLong mOutstandingTasks = new AtomicLong(0);
+    private final AtomicLong mReadAheadBuffersInUse = new AtomicLong(0);
+    private volatile boolean mReadTaskActive = false;
+    private final InflaterFactory inflatorFactory;
     /**
-     * Indicates whether any scheduled task should abort processing and terminate
-     * as soon as possible since the result will be discarded anyway.
+     * Indicates whether new asynchronous tasks should be scheduled
      */
-    private volatile boolean mAbort = false;
+    private volatile boolean mAsyncActive = true;
 
     public AsyncBlockCompressedInputStream(final InputStream stream) {
-        super(stream, true);
+        this(stream, BlockGunzipper.getDefaultInflaterFactory());
     }
 
     public AsyncBlockCompressedInputStream(final InputStream stream, InflaterFactory inflaterFactory) {
         super(stream, true, inflaterFactory);
+        this.inflatorFactory = inflaterFactory;
     }
 
-    public AsyncBlockCompressedInputStream(final File file)
-        throws IOException {
-        super(file);
+    public AsyncBlockCompressedInputStream(final File file) throws IOException {
+        this(file, BlockGunzipper.getDefaultInflaterFactory());
     }
 
-    public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory)
-            throws IOException {
+    public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory) throws IOException {
         super(file, inflaterFactory);
+        this.inflatorFactory = inflaterFactory;
     }
 
     public AsyncBlockCompressedInputStream(final URL url) {
-        super(url);
+        this(url, BlockGunzipper.getDefaultInflaterFactory());
     }
 
     public AsyncBlockCompressedInputStream(final URL url, InflaterFactory inflaterFactory) {
         super(url, inflaterFactory);
+        this.inflatorFactory = inflaterFactory;
     }
 
     public AsyncBlockCompressedInputStream(final SeekableStream strm) {
-        super(strm);
+        this(strm, BlockGunzipper.getDefaultInflaterFactory());
     }
 
     public AsyncBlockCompressedInputStream(final SeekableStream strm, InflaterFactory inflaterFactory) {
         super(strm, inflaterFactory);
+        this.inflatorFactory = inflaterFactory;
     }
 
     @Override
-    protected DecompressedBlock nextBlock(byte[] bufferAvailableForReuse) {
-        if (bufferAvailableForReuse != null) {
-            freeBuffers.offer(bufferAvailableForReuse);
+    protected CompressionBlock nextBlock(CompressionBlock releasedBlock) {
+        if (releasedBlock != null &&
+                releasedBlock.getUncompressedBlock() != null &&
+                releasedBlock.getUncompressedBlock().length > 0) {
+            mFreeDecompressedBlockedBuffers.add(releasedBlock.getUncompressedBlock());
         }
-        return nextBlockSync();
+        asyncEnsureReadAhead();
+        CompressionBlock cb;
+        try {
+            cb = takeNextBlock();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted reading from asynchronous input stream", e);
+        }
+        if (cb.getException() == null) {
+            asyncEnsureReadAhead();
+        }
+        return cb;
     }
-    
+
+    private CompressionBlock takeNextBlock() throws InterruptedException {
+        if (mReadAheadBuffersInUse.get() == 0) {
+            throw new IllegalStateException("Attempt to read from async stream when asynchronous processing is not active.");
+        }
+        long targetPosition = mBlockStreamPosition.take();
+        while (mOrderedResult.isEmpty() || mOrderedResult.peek().getBlockAddress() != targetPosition) {
+            CompressionBlock cb = mResult.take();
+            mOrderedResult.add(cb);
+        }
+        CompressionBlock correctBlock = mOrderedResult.remove();
+        mReadAheadBuffersInUse.decrementAndGet();
+        return correctBlock;
+    }
+
     @Override
     protected void prepareForSeek() {
         flushReadAhead();
+        mAsyncActive = true;
         super.prepareForSeek();
     }
 
@@ -129,7 +156,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
     public void close() throws IOException {
         // Suppress interrupts while we close.
         final boolean isInterrupted = Thread.interrupted();
-        mAbort = true;
+        mAsyncActive = false;
         try {
             flushReadAhead();
             super.close();
@@ -142,93 +169,114 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
      * and flushes all read-ahead results.
      */
     private void flushReadAhead() {
-        final boolean abortStatus = mAbort;
-        mAbort = true;
+        final boolean abortStatus = mAsyncActive;
+        mAsyncActive = false;
+        // enter the synchronized block to ensure that any background read tasks that are in-flight are recorded as such
+        asyncEnsureReadAhead();
         try {
-            // block until the thread pool operation has completed
-            running.acquire();
+            // wait for all the async tasks to complete
+            while(mOutstandingTasks.get() > 0) {
+                mResult.take();
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted waiting for decompression thread", e);
         }
-        // flush any read-ahead results
+        assert(mOutstandingTasks.get() == 0);
+        assert(!mReadTaskActive);
         mResult.clear();
-        mAbort = abortStatus;
-        running.release();
+        mBlockStreamPosition.clear();
+        mOrderedResult.clear();
+        mReadAheadBuffersInUse.set(0);
+        // restore abort status
+        // prepareForSeek() needs to abort async processing but the stream is still valid
+        mAsyncActive = abortStatus;
     }
-    /**
-     * Ensures that a read-ahead task for this stream exists in the thread pool.
-     */
-    private void ensureReadAhead() {
-        if (running.tryAcquire()) {
-            tryQueueTask();
+
+    public synchronized void asyncEnsureReadAhead() {
+        if (mAsyncActive && !mReadTaskActive && mReadAheadBuffersInUse.get() < READ_AHEAD_BUFFERS) {
+            mReadTaskActive = true;
+            mOutstandingTasks.incrementAndGet();
+            mReadAheadBuffersInUse.incrementAndGet();
+            AsynchronousIOThreadPools.getBlockingThreadpool().execute(new ReadRunnable());
         }
     }
-    /**
-     * Try to queue another read-ahead buffer
-     * This method should only be invoked by the owner of the running semaphore
-     */
-    private void tryQueueTask() {
-        if (mAbort) {
-            // Potential deadlock between getNextBlock() and flushReadAhead() here
-            // This requires seek()/close() and another method to be called
-            // at the same time. Since the parent class is not thread-safe
-            // this is an acceptable behavior.
-            running.release();
-            return;
+    private void asyncReadNextBlock() {
+        byte[] buffer = mFreeCompressedBlockBuffers.poll();
+        boolean decompressionQueued = false;
+        if (buffer == null || buffer.length < BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE) {
+            buffer = new byte[BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE];
         }
-        if (mResult.remainingCapacity() == 0) {
-            // read-ahead has already filled the results buffer
-            running.release();
-            if (mResult.remainingCapacity() > 0) {
-                // race condition this second check fixes:
-                // - worker thread context switch after checking remaining capacity is zero
-                // - foreground thread calls getNextBlock() repeatedly until blocking
-                // - worker thread switches back in and releases mutex
-                // = foreground blocking on mResult.take(), mutex free, no worker
-                // -> try to take back mutex and start worker
-                // if that fails, the someone else took the lock and would
-                // have started the background worker. (except if flushReadAhead()
-                // took the lock with getNextBlock() still blocking: not thread-safe
-                // so we don't care)
-                ensureReadAhead();
-                return;
+        CompressionBlock block = null;
+        try {
+            block = readNextBlock(buffer);
+            // we need to add the expected block position immediately (before the readNextBlock() is called again)
+            // to ensure we return results in the correct order
+            mBlockStreamPosition.add(block.getBlockAddress());
+            mReadTaskActive = false;
+            if (block.getException() == null) {
+                AsynchronousIOThreadPools.getNonBlockingThreadpool().execute(new DecompressRunnable(block));
+                decompressionQueued = true;
+                asyncEnsureReadAhead();
+            }
+        } catch (Exception e) {
+            if (block != null) {
+                block = new CompressionBlock(block.getBlockAddress(), block.getBlockCompressedSize(), e);
             } else {
-                return;
+                block = new CompressionBlock(Long.MAX_VALUE, 0, e);
+            }
+        } finally {
+            if (block.getException() != null) {
+                // stop processing once we get an exception
+                mAsyncActive = false;
+            }
+            if (!decompressionQueued) {
+                mResult.add(block);
+                mOutstandingTasks.decrementAndGet();
             }
         }
-        // we are able to perform a read-ahead operation
-        // ownership of the running mutex is now with the threadpool task
-        threadpool.execute(new AsyncBlockCompressedInputStreamRunnable());
     }
-    /**
-     * Foreground thread blocking operation that retrieves the next read-ahead buffer.
-     * Lazy initiation of read-ahead is performed if required.
-     * @return next decompressed block in input stream 
-     */
-    private DecompressedBlock nextBlockSync() {
-        ensureReadAhead();
-        DecompressedBlock nextBlock;
+    private void asyncDecompress(CompressionBlock block) {
         try {
-            nextBlock = mResult.take();
-        } catch (InterruptedException e) {
-            return new DecompressedBlock(0, 0, e);
+            if (block.getException() == null) {
+                BlockGunzipper inflator = mFreeInflators.poll();
+                if (inflator == null) {
+                    inflator = new BlockGunzipper(inflatorFactory);
+                }
+                block.decompress(mFreeDecompressedBlockedBuffers.poll(), inflator);
+                mFreeInflators.add(inflator);
+                // compressed block is not needed once we have the decompressed version
+                byte[] compressedBlockBuffer = block.getCompressedBlock();
+                if (compressedBlockBuffer != null && compressedBlockBuffer.length > 0) {
+                    mFreeCompressedBlockBuffers.add(compressedBlockBuffer);
+                }
+            }
+        } catch (Exception e) {
+            block = new CompressionBlock(block.getBlockAddress(), block.getBlockCompressedSize(), e);
+        } finally {
+            if (block.getException() != null) {
+                // stop processing once we get an exception
+                mAsyncActive = false;
+            }
+            // we always have enough room to store the decompression result since our buffer size matches
+            // the maximum number of blocks we will read ahead
+            mResult.add(block);
+            mOutstandingTasks.decrementAndGet();
         }
-        ensureReadAhead();
-        return nextBlock;
     }
-    private class AsyncBlockCompressedInputStreamRunnable implements Runnable {
-        /**
-         * Thread pool operation that fills the read-ahead queue
-         */
+    private class DecompressRunnable implements Runnable {
+        private final CompressionBlock block;
+        public DecompressRunnable(CompressionBlock block) {
+            this.block = block;
+        }
         @Override
         public void run() {
-            final DecompressedBlock decompressed = processNextBlock(freeBuffers.poll());
-            if (!mResult.offer(decompressed)) {
-                // offer should never block since we never queue a task when the results buffer is full
-                running.release(); // safety release to ensure foreground close() does not block indefinitely
-                throw new IllegalStateException("Decompression buffer full");
-            }
-            tryQueueTask();
+            asyncDecompress(block);
+        }
+    }
+    private class ReadRunnable implements Runnable {
+        @Override
+        public void run() {
+            asyncReadNextBlock();
         }
     }
 }

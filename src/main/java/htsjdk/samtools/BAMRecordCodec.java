@@ -242,13 +242,24 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
      */
     @Override
     public SAMRecord decode() {
+        final Integer recordLength = decodeRecordLength();
+        if (recordLength == null) {
+            return null;
+        }
+        return decode(recordLength);
+    }
+
+    public Integer decodeRecordLength() {
         final int recordLength;
         try {
             recordLength = this.binaryCodec.readInt();
         } catch (RuntimeEOFException e) {
             return null;
         }
+        return recordLength;
+    }
 
+    public SAMRecord decode(final int recordLength) {
         if (recordLength < BAMFileConstants.FIXED_BLOCK_SIZE) {
             throw new SAMFormatException("Invalid record length: " + recordLength);
         }

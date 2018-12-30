@@ -224,6 +224,62 @@ public class SamReaderTest extends HtsjdkTest {
         }
     }
 
+    @DataProvider(name = "bamTestCases")
+    public Object[][] bamTestPositiveCases() {
+        final Object[][] scenarios = new Object[][]{
+                {"compressed.bam"},
+                {"NA12878_garvan_head.bam"},
+                {"NA12878_garvan_head_truncated.bam"},
+                {"empty_no_empty_gzip_block.bam"},
+                {"../../../../../../RMNISTHS_30xdownsample.bam"}
+        };
+        return scenarios;
+    }
+
+    @Test(dataProvider = "bamTestCases")
+    public void perftestBamAsyncIterator(String inputBam) throws IOException {
+        final File input = new File(TEST_DATA_DIR, inputBam);
+        try(final SamReader asyncReader = SamReaderFactory.makeDefault()
+                .setUseAsyncIo(true)
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .enable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(input)) {
+            for (SAMRecord r : asyncReader) {
+                // performance testing
+            }
+        }
+    }
+    @Test(dataProvider = "bamTestCases")
+    public void testBamAsyncIterator(String inputBam) throws IOException {
+        final File input = new File(TEST_DATA_DIR, inputBam);
+        try(final SamReader reader = SamReaderFactory.makeDefault()
+                .setUseAsyncIo(false)
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .enable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(input)) {
+            try(final SamReader asyncReader = SamReaderFactory.makeDefault()
+                    .setUseAsyncIo(true)
+                    .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                    .enable(SamReaderFactory.Option.EAGERLY_DECODE)
+                    .open(input)) {
+                SAMRecordIterator it = reader.iterator();
+                SAMRecordIterator asyncIt = asyncReader.iterator();
+                while (it.hasNext()) {
+                    Assert.assertTrue(asyncIt.hasNext());
+                    // check the records match
+                    SAMRecord record = it.next();
+                    SAMRecord asyncRecord = asyncIt.next();
+                    Assert.assertEquals(record, asyncRecord);
+                    // check the BAM file metadata matches
+                    BAMFileSpan recordSpan = (BAMFileSpan)record.getFileSource().getFilePointer();
+                    BAMFileSpan asyncSpan = (BAMFileSpan)asyncRecord.getFileSource().getFilePointer();
+                    Assert.assertEquals(recordSpan.getFirstOffset(), asyncSpan.getFirstOffset());
+                }
+                Assert.assertEquals(it.hasNext(), asyncIt.hasNext());
+            }
+        }
+    }
+
     private static SAMRecord createRecord(int start, int mappingQuality) {
         final SAMRecord rec = new SAMRecord(getHeader());
         rec.setReadName("read");
