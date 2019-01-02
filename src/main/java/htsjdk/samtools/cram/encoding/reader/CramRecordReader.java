@@ -174,7 +174,7 @@ public class CramRecordReader {
 
             cramRecord.flags = bitFlagsCodec.readData();
             cramRecord.compressionFlags = compressionBitFlagsCodec.readData();
-            if (refId == SliceHeader.MULTI_REFERENCE) {
+            if (refId == SliceHeader.REFERENCE_INDEX_MULTI) {
                 cramRecord.sequenceId = refIdCodec.readData();
             } else {
                 cramRecord.sequenceId = refId;

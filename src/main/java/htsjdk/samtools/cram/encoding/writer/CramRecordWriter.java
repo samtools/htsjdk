@@ -165,7 +165,7 @@ public class CramRecordWriter {
     private void writeRecord(final CramCompressionRecord r) {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
-        if (refId == SliceHeader.MULTI_REFERENCE) {
+        if (refId == SliceHeader.REFERENCE_INDEX_MULTI) {
             refIdCodec.writeData(r.sequenceId);
         }
 

@@ -151,10 +151,10 @@ public class ContainerFactory {
         final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
         for (final CramCompressionRecord record : records) {
             hasher.add(record);
-            if (sequenceId == SliceHeader.MULTI_REFERENCE) continue;
+            if (sequenceId == SliceHeader.REFERENCE_INDEX_MULTI) continue;
 
             if (sequenceId != record.sequenceId) {
-                sequenceId = SliceHeader.MULTI_REFERENCE;
+                sequenceId = SliceHeader.REFERENCE_INDEX_MULTI;
             } else if (record.alignmentStart != SAMRecord.NO_ALIGNMENT_START) {
                 alignmentStart = Math.min(record.alignmentStart, alignmentStart);
                 alignmentEnd = Math.max(record.getAlignmentEnd(), alignmentEnd);
@@ -162,7 +162,7 @@ public class ContainerFactory {
         }
 
         int alignmentSpan;
-        if (sequenceId == SliceHeader.MULTI_REFERENCE || alignmentStart == Integer.MAX_VALUE) {
+        if (sequenceId == SliceHeader.REFERENCE_INDEX_MULTI || alignmentStart == Integer.MAX_VALUE) {
             alignmentStart = SliceHeader.NO_ALIGNMENT_START;
             alignmentSpan = SliceHeader.NO_ALIGNMENT_SPAN;
         } else {

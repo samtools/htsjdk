@@ -158,7 +158,7 @@ public class CRAMBAIIndexer {
             if (reference == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
                 return;
             }
-            if (sliceMetadata.getSequenceId() == SliceHeader.MULTI_REFERENCE) {
+            if (sliceMetadata.getSequenceId() == SliceHeader.REFERENCE_INDEX_MULTI) {
                 throw new SAMException("Expecting a single reference slice.");
             }
             if (reference != currentReference) {
@@ -429,7 +429,7 @@ public class CRAMBAIIndexer {
                         case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
                             sequenceName = "?";
                             break;
-                        case SliceHeader.MULTI_REFERENCE:
+                        case SliceHeader.REFERENCE_INDEX_MULTI:
                             sequenceName = "???";
                             break;
                         default:

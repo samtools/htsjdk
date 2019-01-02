@@ -59,7 +59,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final ValidationStringency validationStringency,
                                             final int initialAlignmentStart,
                                             final int recordCount) {
-        super(coreInputStream, externalInputMap, header, SliceHeader.MULTI_REFERENCE, validationStringency);
+        super(coreInputStream, externalInputMap, header, SliceHeader.REFERENCE_INDEX_MULTI, validationStringency);
 
         this.currentAlignmentStart = initialAlignmentStart;
 

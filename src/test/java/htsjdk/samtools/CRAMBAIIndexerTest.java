@@ -53,7 +53,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final Container container1 = containerFactory.buildContainer(records, null, 0);
         Assert.assertNotNull(container1);
         Assert.assertEquals(container1.nofRecords, records.size());
-        Assert.assertEquals(container1.sequenceId, SliceHeader.MULTI_REFERENCE);
+        Assert.assertEquals(container1.sequenceId, SliceHeader.REFERENCE_INDEX_MULTI);
 
         indexer.processContainer(container1, ValidationStringency.STRICT);
 
@@ -64,7 +64,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final Container  container2 = containerFactory.buildContainer(records, null, 0);
         Assert.assertNotNull(container2);
         Assert.assertEquals(container2.nofRecords, records.size());
-        Assert.assertEquals(container2.sequenceId, SliceHeader.MULTI_REFERENCE);
+        Assert.assertEquals(container2.sequenceId, SliceHeader.REFERENCE_INDEX_MULTI);
 
         indexer.processContainer(container2, ValidationStringency.STRICT);
 

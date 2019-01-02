@@ -131,7 +131,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
         Container container = factory.buildContainer(records, null, 0);
         Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, SliceHeader.MULTI_REFERENCE);
+        Assert.assertEquals(container.sequenceId, SliceHeader.REFERENCE_INDEX_MULTI);
 
         ContainerParser parser = new ContainerParser(samFileHeader);
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
@@ -168,7 +168,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
         Container container = factory.buildContainer(records, null, 0);
         Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, SliceHeader.MULTI_REFERENCE);
+        Assert.assertEquals(container.sequenceId, SliceHeader.REFERENCE_INDEX_MULTI);
 
         ContainerParser parser = new ContainerParser(samFileHeader);
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);

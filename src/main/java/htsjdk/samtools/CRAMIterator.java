@@ -27,7 +27,6 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.slice.IndexableSlice;
 import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.cram.structure.slice.SliceHeader;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -159,9 +158,9 @@ public class CRAMIterator implements SAMRecordIterator {
         if (container.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             refBases = new byte[]{};
             prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-        } else if (container.sequenceId == SliceHeader.MULTI_REFERENCE) {
+        } else if (container.sequenceId == SliceHeader.REFERENCE_INDEX_MULTI) {
             refBases = null;
-            prevSeqId = SliceHeader.MULTI_REFERENCE;
+            prevSeqId = SliceHeader.REFERENCE_INDEX_MULTI;
         } else if (prevSeqId < 0 || prevSeqId != container.sequenceId) {
             final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
                     .getSequence(container.sequenceId);

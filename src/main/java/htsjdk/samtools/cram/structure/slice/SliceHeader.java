@@ -24,8 +24,10 @@ import java.util.Arrays;
 public class SliceHeader {
     private static final Log log = Log.getInstance(SliceHeader.class);
 
-    public static final int MULTI_REFERENCE = -2;
-    public static final int NO_REFERENCE = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;  // -1
+    public static final int REFERENCE_INDEX_NOT_INITIALIZED = -3;
+    public static final int REFERENCE_INDEX_MULTI = -2;
+    public static final int REFERENCE_INDEX_NONE = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;  // -1
+
     public static final int NO_ALIGNMENT_START = -1;
     public static final int NO_ALIGNMENT_SPAN = 0;
     public static final int NO_EMBEDDED_REFERENCE = -1;
@@ -46,7 +48,7 @@ public class SliceHeader {
     /**
      * Construct a Slice Header
      *
-     * @param sequenceId the reference sequence ID of this Slice, or MULTI_REFERENCE or NO_REFERENCE
+     * @param sequenceId the reference sequence ID of this Slice, or REFERENCE_INDEX_MULTI or REFERENCE_INDEX_NONE
      * @param alignmentStart the alignment start position, or NO_ALIGNMENT_START
      * @param alignmentSpan the length of the alignment, or NO_ALIGNMENT_SPAN
      * @param recordCount the number of records in this Slice
@@ -172,7 +174,7 @@ public class SliceHeader {
      * Calculate the reference MD5 in the given alignment span
      *
      * @param refBases the reference, in byte array format
-     * @param sequenceId the reference sequence ID of this Slice, or MULTI_REFERENCE or NO_REFERENCE
+     * @param sequenceId the reference sequence ID of this Slice, or REFERENCE_INDEX_MULTI or REFERENCE_INDEX_NONE
      * @param alignmentStart the alignment start position, or NO_ALIGNMENT_START
      * @param alignmentSpan the length of the alignment, or NO_ALIGNMENT_SPAN
      * @param globalRecordCounter the counter of records seen so far
@@ -204,7 +206,7 @@ public class SliceHeader {
 
     /**
      * Validate the MD5 of this Slice's single reference.
-     * Always returns true of NO_REFERENCE
+     * Always returns true of REFERENCE_INDEX_NONE
      *
      * @param refBases the reference, in byte array format
      * @throws CRAMException if this slice has multiple references
@@ -327,7 +329,7 @@ public class SliceHeader {
     }
 
     public static boolean hasSingleReference(final int sequenceId) {
-        return sequenceId != NO_REFERENCE && sequenceId != MULTI_REFERENCE;
+        return sequenceId != REFERENCE_INDEX_NONE && sequenceId != REFERENCE_INDEX_MULTI;
     }
 
     public boolean hasSingleReference() {
@@ -335,11 +337,11 @@ public class SliceHeader {
     }
 
     public boolean hasNoReference() {
-        return getSequenceId() == NO_REFERENCE;
+        return getSequenceId() == REFERENCE_INDEX_NONE;
     }
 
     public boolean hasMultipleReferences() {
-        return getSequenceId() == MULTI_REFERENCE;
+        return getSequenceId() == REFERENCE_INDEX_MULTI;
     }
 
     public boolean hasEmbeddedRefBlock() {

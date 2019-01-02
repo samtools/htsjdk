@@ -20,7 +20,7 @@ public class SliceBAIMetadata {
     /**
      * Construct a new SliceBAIMetadata object
      *
-     * @param sequenceId the reference sequence ID of this Slice, or MULTI_REFERENCE or NO_REFERENCE
+     * @param sequenceId the reference sequence ID of this Slice, or REFERENCE_INDEX_MULTI or REFERENCE_INDEX_NONE
      * @param alignmentStart the alignment start position, or NO_ALIGNMENT_START
      * @param alignmentSpan the length of the alignment, or NO_ALIGNMENT_SPAN
      * @param recordCount the number of records in this Slice

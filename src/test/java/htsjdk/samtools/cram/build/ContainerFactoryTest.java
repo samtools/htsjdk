@@ -117,7 +117,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         Assert.assertNotNull(container);
         Assert.assertEquals(container.nofRecords, records.size());
 
-        assertContainerAlignmentBoundaries(container, SliceHeader.MULTI_REFERENCE, SliceHeader.NO_ALIGNMENT_START, SliceHeader.NO_ALIGNMENT_SPAN);
+        assertContainerAlignmentBoundaries(container, SliceHeader.REFERENCE_INDEX_MULTI, SliceHeader.NO_ALIGNMENT_START, SliceHeader.NO_ALIGNMENT_SPAN);
     }
 
 
@@ -126,7 +126,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         Assert.assertEquals(container.alignmentStart, alignmentStart);
         Assert.assertEquals(container.alignmentSpan, alignmentSpan);
 
-        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX || sequenceId == SliceHeader.MULTI_REFERENCE) {
+        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX || sequenceId == SliceHeader.REFERENCE_INDEX_MULTI) {
             Assert.assertEquals(container.alignmentStart, SliceHeader.NO_ALIGNMENT_START);
             Assert.assertEquals(container.alignmentSpan, SliceHeader.NO_ALIGNMENT_SPAN);
         }

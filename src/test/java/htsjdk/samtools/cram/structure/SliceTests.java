@@ -53,7 +53,7 @@ public class SliceTests extends HtsjdkTest {
     }
 
     private static Slice getUnmappedSlice() {
-        return dummySliceForTesting(SliceHeader.NO_REFERENCE,
+        return dummySliceForTesting(SliceHeader.REFERENCE_INDEX_NONE,
                 SliceHeader.NO_ALIGNMENT_START,
                 SliceHeader.NO_ALIGNMENT_SPAN);
     }
@@ -128,7 +128,7 @@ public class SliceTests extends HtsjdkTest {
     @Test(expectedExceptions = CRAMException.class)
     public void test_validateMultiRef() {
         byte[] refBases = "AAAAA".getBytes();
-        final int sequenceId = SliceHeader.MULTI_REFERENCE;
+        final int sequenceId = SliceHeader.REFERENCE_INDEX_MULTI;
         final int alignmentStart = 1;
         final int alignmentSpan = 5;
         final Slice slice = dummySliceForTesting(sequenceId, alignmentStart, alignmentSpan, refBases);

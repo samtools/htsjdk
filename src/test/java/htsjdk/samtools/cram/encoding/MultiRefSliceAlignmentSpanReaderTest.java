@@ -70,7 +70,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         final boolean sorted = false;
         final CompressionHeader header = createHeader(initialRecords, sorted);
 
-        final int refId = SliceHeader.MULTI_REFERENCE;
+        final int refId = SliceHeader.REFERENCE_INDEX_MULTI;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         final byte[] written = write(initialRecords, header, refId, outputMap);
 

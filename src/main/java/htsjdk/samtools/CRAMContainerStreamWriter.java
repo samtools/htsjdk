@@ -39,7 +39,6 @@ public class CRAMContainerStreamWriter {
     protected final int recordsPerSlice = DEFAULT_RECORDS_PER_SLICE;
     private static final int DEFAULT_SLICES_PER_CONTAINER = 1;
     protected final int containerSize = recordsPerSlice * DEFAULT_SLICES_PER_CONTAINER;
-    private static final int REF_SEQ_INDEX_NOT_INITIALIZED = -3;
 
     private final SAMFileHeader samFileHeader;
     private final String cramID;
@@ -48,7 +47,7 @@ public class CRAMContainerStreamWriter {
 
     private final List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
     private ContainerFactory containerFactory;
-    private int refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
+    private int refSeqIndex = SliceHeader.REFERENCE_INDEX_NOT_INITIALIZED;
 
     private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
 
@@ -204,7 +203,7 @@ public class CRAMContainerStreamWriter {
             return true;
         }
 
-        if (refSeqIndex == SliceHeader.MULTI_REFERENCE) {
+        if (refSeqIndex == SliceHeader.REFERENCE_INDEX_MULTI) {
             return false;
         }
 
@@ -219,7 +218,7 @@ public class CRAMContainerStreamWriter {
         if (samRecords.size() > MIN_SINGLE_REF_RECORDS) {
             return true;
         } else {
-            refSeqIndex = SliceHeader.MULTI_REFERENCE;
+            refSeqIndex = SliceHeader.REFERENCE_INDEX_MULTI;
             return false;
         }
     }
@@ -268,7 +267,7 @@ public class CRAMContainerStreamWriter {
         final byte[] refBases;
         String refSeqName = null;
         switch (refSeqIndex) {
-            case SliceHeader.MULTI_REFERENCE:
+            case SliceHeader.REFERENCE_INDEX_MULTI:
                 if (preservation != null && preservation.areReferenceTracksRequired()) {
                     throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
                 }
@@ -456,7 +455,7 @@ public class CRAMContainerStreamWriter {
             indexer.processContainer(container, ValidationStringency.SILENT);
         }
         samRecords.clear();
-        refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
+        refSeqIndex = SliceHeader.REFERENCE_INDEX_NOT_INITIALIZED;
     }
 
     /**
@@ -480,14 +479,14 @@ public class CRAMContainerStreamWriter {
      * @param samRecordReferenceIndex index of the new reference sequence
      */
     private void updateReferenceContext(final int samRecordReferenceIndex) {
-        if (refSeqIndex == SliceHeader.MULTI_REFERENCE) {
+        if (refSeqIndex == SliceHeader.REFERENCE_INDEX_MULTI) {
             return;
         }
 
-        if (refSeqIndex == REF_SEQ_INDEX_NOT_INITIALIZED) {
+        if (refSeqIndex == SliceHeader.REFERENCE_INDEX_NOT_INITIALIZED) {
             refSeqIndex = samRecordReferenceIndex;
         } else if (refSeqIndex != samRecordReferenceIndex) {
-            refSeqIndex = SliceHeader.MULTI_REFERENCE;
+            refSeqIndex = SliceHeader.REFERENCE_INDEX_MULTI;
     }
     }
 
