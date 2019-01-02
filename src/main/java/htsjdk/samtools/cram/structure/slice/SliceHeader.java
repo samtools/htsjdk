@@ -50,7 +50,7 @@ public class SliceHeader {
     private final int[] contentIDs;
     private final int embeddedRefBlockContentID;
     private final byte[] refMD5;
-    private final SAMBinaryTagAndValue tags;
+    private final SAMBinaryTagAndValue sliceHeaderTags;
 
     /**
      * Construct a Slice Header
@@ -64,7 +64,7 @@ public class SliceHeader {
      * @param contentIDs an array of the External Block Content IDs of this Slice
      * @param embeddedRefBlockContentID the Content ID of the Embedded Reference, or BLOCK_CONTENT_ID_NO_EMBEDDED_REFERENCE
      * @param refMD5 the MD5 checksum of the reference bases within the Slice boundaries, or NO_MD5
-     * @param tags an optional series of BAM tags, in the {@link SAMBinaryTagAndValue format}
+     * @param sliceHeaderTags an optional series of BAM sliceHeaderTags, in the {@link SAMBinaryTagAndValue format}
      */
     public SliceHeader(final int sequenceId,
                        final int alignmentStart,
@@ -75,7 +75,7 @@ public class SliceHeader {
                        final int[] contentIDs,
                        final int embeddedRefBlockContentID,
                        final byte[] refMD5,
-                       final SAMBinaryTagAndValue tags) {
+                       final SAMBinaryTagAndValue sliceHeaderTags) {
         this.sequenceId = sequenceId;
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;
@@ -85,7 +85,7 @@ public class SliceHeader {
         this.contentIDs = contentIDs;
         this.embeddedRefBlockContentID = embeddedRefBlockContentID;
         this.refMD5 = refMD5;
-        this.tags = tags;
+        this.sliceHeaderTags = sliceHeaderTags;
     }
 
     /**
@@ -123,12 +123,12 @@ public class SliceHeader {
         InputStreamUtils.readFully(inputStream, referenceMD5, 0, MD5_LEN);
 
         final byte[] tagBytes = InputStreamUtils.readFully(inputStream);
-        final SAMBinaryTagAndValue tags = (major >= CramVersions.CRAM_v3.major) ?
+        final SAMBinaryTagAndValue sliceHeaderTags = (major >= CramVersions.CRAM_v3.major) ?
                 BinaryTagCodec.readTags(tagBytes, 0, tagBytes.length, ValidationStringency.DEFAULT_STRINGENCY) :
                 null;
 
         return new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount, globalRecordCounter,
-                blockCount, contentIDs, embeddedRefBlockContentID, referenceMD5, tags);
+                blockCount, contentIDs, embeddedRefBlockContentID, referenceMD5, sliceHeaderTags);
     }
 
     /**
@@ -160,10 +160,10 @@ public class SliceHeader {
             ITF8.writeUnsignedITF8(embeddedRefBlockContentID, outputStream);
             outputStream.write(refMD5 == null ? NO_MD5 : refMD5);
 
-            if (major >= CramVersions.CRAM_v3.major && tags != null) {
+            if (major >= CramVersions.CRAM_v3.major && sliceHeaderTags != null) {
                 try (final BinaryCodec codec = new BinaryCodec(outputStream)) {
                     final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(codec);
-                    SAMBinaryTagAndValue samBinaryTagAndValue = tags;
+                    SAMBinaryTagAndValue samBinaryTagAndValue = sliceHeaderTags;
                     do {
                         log.debug("Writing slice tag: " + SAMTag.makeStringTag(samBinaryTagAndValue.tag));
                         binaryTagCodec.writeTag(samBinaryTagAndValue.tag, samBinaryTagAndValue.value, samBinaryTagAndValue.isUnsignedArray());
@@ -369,7 +369,7 @@ public class SliceHeader {
         if (embeddedRefBlockContentID != header.embeddedRefBlockContentID) return false;
         if (!Arrays.equals(contentIDs, header.contentIDs)) return false;
         if (!Arrays.equals(refMD5, header.refMD5)) return false;
-        return tags != null ? tags.equals(header.tags) : header.tags == null;
+        return sliceHeaderTags != null ? sliceHeaderTags.equals(header.sliceHeaderTags) : header.sliceHeaderTags == null;
     }
 
     @Override
@@ -383,7 +383,7 @@ public class SliceHeader {
         result = 31 * result + Arrays.hashCode(contentIDs);
         result = 31 * result + embeddedRefBlockContentID;
         result = 31 * result + Arrays.hashCode(refMD5);
-        result = 31 * result + (tags != null ? tags.hashCode() : 0);
+        result = 31 * result + (sliceHeaderTags != null ? sliceHeaderTags.hashCode() : 0);
         return result;
     }
 }
