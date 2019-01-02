@@ -65,7 +65,6 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     private InputStream mStream = null;
     private boolean mIsClosed = false;
     private SeekableStream mFile = null;
-    private byte[] mFileBuffer = null;
     private CompressionBlock mCurrentBlock = null;
     private int mCurrentOffset = 0;
     private long mStreamOffset = 0;
@@ -222,7 +221,6 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             mStream = null;
         }
         // Encourage garbage collection
-        mFileBuffer = null;
         mCurrentBlock = null;
 
         // Mark as closed
@@ -377,9 +375,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             prepareForSeek();
             mFile.seek(compressedOffset);
             mStreamOffset = compressedOffset;
-            mCurrentBlock = nextBlock(mCurrentBlock);
-            mCurrentOffset = 0;
-            checkAndRethrowDecompressionException();
+            readBlock();
             available = available();
         }
         if (uncompressedOffset > available || (uncompressedOffset == available && !eof())) {
@@ -399,7 +395,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             return true;
         }
         // If the last remaining block is the size of the EMPTY_GZIP_BLOCK, this is the same as being at EOF.
-        return (mFile.length() - (mCurrentBlock.getBlockAddress()
+        return mCurrentBlock != null && (mFile.length() - (mCurrentBlock.getBlockAddress()
                 + mCurrentBlock.getBlockCompressedSize()) == BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
     }
 
@@ -457,78 +453,60 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
 
     private void readBlock() throws IOException {
         mCurrentBlock = nextBlock(mCurrentBlock);
+        if (mCurrentBlock == null) {
+            // sentinel EOF block
+            mCurrentBlock = new CompressionBlock(mStreamOffset, new byte[0], 0);
+            mCurrentBlock.mDecompressedBlock = new byte[0];
+        }
         mCurrentOffset = 0;
-        checkAndRethrowDecompressionException();
     }
     /**
      * Reads and decompresses the next block
      * @param releasedBlock block which is no longer used by the BlockCompressedInputStream. Can be null
      * @return next block in the decompressed stream
      */
-    protected CompressionBlock nextBlock(CompressionBlock releasedBlock) {
-        if (mFileBuffer == null) {
-            mFileBuffer = new byte[BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE];
+    protected CompressionBlock nextBlock(CompressionBlock releasedBlock) throws IOException {
+        byte[] compressedBuffer = releasedBlock == null ? null : releasedBlock.mCompressedBlock;
+        if (compressedBuffer == null || compressedBuffer.length < BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE) {
+            compressedBuffer = new byte[BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE];
         }
-        CompressionBlock cb = readNextBlock(mFileBuffer);
-        if (cb.getException() == null) {
+        CompressionBlock cb = readNextBlock(compressedBuffer);
+        if (cb != null) {
             byte[] decompressionBufferAvailableForReuse = releasedBlock == null ? null : releasedBlock.getUncompressedBlock();
-            cb.decompress(decompressionBufferAvailableForReuse);
+            cb.decompress(decompressionBufferAvailableForReuse, blockGunzipper);
         }
         return cb;
-    }
-
-    /**
-     * Rethrows an exception encountered during decompression
-     * @throws IOException
-     */
-    private void checkAndRethrowDecompressionException() throws IOException {
-        if (mCurrentBlock.getException() != null) {
-            if (mCurrentBlock.getException() instanceof IOException) {
-                throw (IOException) mCurrentBlock.getException();
-            } else if (mCurrentBlock.getException() instanceof RuntimeException) {
-                throw (RuntimeException) mCurrentBlock.getException();
-            } else {
-                throw new RuntimeException(mCurrentBlock.getException());
-            }
-        }
     }
 
     /**
      * Reads the next block from the input stream
      * @param buffer buffer to read next block into. Must be at least MAX_COMPRESSED_BLOCK_SIZE in size.
      */
-    protected CompressionBlock readNextBlock(byte[] buffer) {
+    protected CompressionBlock readNextBlock(byte[] buffer) throws IOException {
         long blockAddress = mStreamOffset;
-        try {
-            if (buffer == null || buffer.length < BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE) {
-                throw new IllegalArgumentException("Decompression buffer too small.");
-            }
-            final int headerByteCount = readBytes(buffer, 0, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH);
-            mStreamOffset += headerByteCount;
-            if (headerByteCount == 0) {
-                // Handle case where there is no empty gzip block at end.
-                return new CompressionBlock(blockAddress, new byte[0], 0);
-            }
-            if (headerByteCount != BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH) {
-                return new CompressionBlock(blockAddress, headerByteCount, new IOException(INCORRECT_HEADER_SIZE_MSG + getSource()));
-            }
-            final int blockLength = unpackInt16(buffer, BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET) + 1;
-            if (blockLength < BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH || blockLength > buffer.length) {
-                return new CompressionBlock(blockAddress, blockLength,
-                        new IOException(UNEXPECTED_BLOCK_LENGTH_MSG + blockLength + " for " + getSource()));
-            }
-            final int remaining = blockLength - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH;
-            final int dataByteCount = readBytes(buffer, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH,
-                    remaining);
-            mStreamOffset += dataByteCount;
-            if (dataByteCount != remaining) {
-                return new CompressionBlock(blockAddress, blockLength,
-                        new FileTruncatedException(PREMATURE_END_MSG + getSource()));
-            }
-            return new CompressionBlock(blockAddress, buffer, blockLength);
-        } catch (IOException e) {
-            return new CompressionBlock(blockAddress, 0, e);
+        if (buffer == null || buffer.length < BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE) {
+            throw new IllegalArgumentException("Decompression buffer too small.");
         }
+        final int headerByteCount = readBytes(buffer, 0, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH);
+        mStreamOffset += headerByteCount;
+        if (headerByteCount == 0) {
+            // Handle case where there is no empty gzip block at end.
+            return null;
+        }
+        if (headerByteCount != BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH) {
+            throw new IOException(INCORRECT_HEADER_SIZE_MSG + getSource());
+        }
+        final int blockLength = unpackInt16(buffer, BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET) + 1;
+        if (blockLength < BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH || blockLength > buffer.length) {
+            throw new IOException(UNEXPECTED_BLOCK_LENGTH_MSG + blockLength + " for " + getSource());
+        }
+        final int remaining = blockLength - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH;
+        final int dataByteCount = readBytes(buffer, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, remaining);
+        mStreamOffset += dataByteCount;
+        if (dataByteCount != remaining) {
+            throw new FileTruncatedException(PREMATURE_END_MSG + getSource());
+        }
+        return new CompressionBlock(blockAddress, buffer, blockLength);
     }
 
     private String getSource() {
@@ -697,48 +675,29 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         private byte[] mCompressedBlock;
         private final int mBlockCompressedSize;
         private final long mBlockAddress;
-        private Exception mException;
 
         public CompressionBlock(long blockAddress, byte[] compressedBlockBuffer, int compressedBlockSize) {
             mDecompressedBlock = null;
             mCompressedBlock = compressedBlockBuffer;
             mBlockCompressedSize = compressedBlockSize;
             mBlockAddress = blockAddress;
-            mException = null;
         }
 
-        public CompressionBlock(long blockAddress, int compressedBlockSize, Exception exception) {
-            mDecompressedBlock = EMPTY_BLOCK;
-            mCompressedBlock = null;
-            mBlockAddress = blockAddress;
-            mBlockCompressedSize = compressedBlockSize;
-            mException = exception;
-        }
-
-        public void decompress(byte[] availableDecompressionBuffer) {
-            decompress(availableDecompressionBuffer, BlockCompressedInputStream.this.blockGunzipper);
-        }
         public void decompress(byte[] availableDecompressionBuffer, BlockGunzipper inflator) {
-            if (mException != null || mCompressedBlock == null || mCompressedBlock.length == 0) {
+            if (mCompressedBlock == null || mCompressedBlock.length == 0) {
                 mDecompressedBlock = EMPTY_BLOCK;
                 return;
             }
-            try {
-                final int uncompressedLength = unpackInt32(mCompressedBlock, mBlockCompressedSize - 4);
-                if (uncompressedLength < 0) {
-                    mException = new RuntimeIOException(getSource() + " has invalid uncompressedLength: " + uncompressedLength);
-                    mDecompressedBlock = EMPTY_BLOCK;
-                } else {
-                    mDecompressedBlock = availableDecompressionBuffer;
-                    if (mDecompressedBlock == null || uncompressedLength != mDecompressedBlock.length) {
-                        // can't reuse the buffer since the size is incorrect
-                        mDecompressedBlock = new byte[uncompressedLength];
-                    }
-                    inflator.unzipBlock(mDecompressedBlock, mCompressedBlock, mBlockCompressedSize);
+            final int uncompressedLength = unpackInt32(mCompressedBlock, mBlockCompressedSize - 4);
+            if (uncompressedLength < 0) {
+                throw new RuntimeIOException(getSource() + " has invalid uncompressedLength: " + uncompressedLength);
+            } else {
+                mDecompressedBlock = availableDecompressionBuffer;
+                if (mDecompressedBlock == null || uncompressedLength != mDecompressedBlock.length) {
+                    // can't reuse the buffer since the size is incorrect
+                    mDecompressedBlock = new byte[uncompressedLength];
                 }
-            } catch (Exception ex) {
-                mException = ex;
-                mDecompressedBlock = EMPTY_BLOCK;
+                inflator.unzipBlock(mDecompressedBlock, mCompressedBlock, mBlockCompressedSize);
             }
         }
 
@@ -746,9 +705,6 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
          * Decompressed block
          */
         public byte[] getUncompressedBlock() {
-            if (mException != null) {
-                throw new IllegalStateException("Cannot read uncompressed block if exception has occurred");
-            }
             return mDecompressedBlock;
         }
 
@@ -769,13 +725,6 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
          */
         public long getBlockAddress() {
             return mBlockAddress;
-        }
-
-        /**
-         * Exception thrown (if any) when attempting to decompress block
-         */
-        public Exception getException() {
-            return mException;
         }
     }
 }

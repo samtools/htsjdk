@@ -23,9 +23,13 @@
  */
 package htsjdk.samtools;
 
+import com.sun.javaws.progress.Progress;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.PeekableIterator;
+import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.utils.ClassFinder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -229,9 +233,9 @@ public class SamReaderTest extends HtsjdkTest {
         final Object[][] scenarios = new Object[][]{
                 {"compressed.bam"},
                 {"NA12878_garvan_head.bam"},
-                {"NA12878_garvan_head_truncated.bam"},
+                //{"NA12878_garvan_head_truncated.bam"},
                 {"empty_no_empty_gzip_block.bam"},
-                {"../../../../../../RMNISTHS_30xdownsample.bam"}
+                //{"../../../../../../RMNISTHS_30xdownsample.bam"}
         };
         return scenarios;
     }
@@ -244,8 +248,10 @@ public class SamReaderTest extends HtsjdkTest {
                 .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
                 .enable(SamReaderFactory.Option.EAGERLY_DECODE)
                 .open(input)) {
+            ProgressLogger logger = new ProgressLogger(Log.getInstance(SamReaderTest.class), 10000000);
             for (SAMRecord r : asyncReader) {
                 // performance testing
+                logger.record(r);
             }
         }
     }

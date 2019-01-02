@@ -148,8 +148,9 @@ public final class SAMUtils {
         int i;
         for (i = 1; i < length; i += 2) {
             final int compressedIndex = i / 2 + compressedOffset;
-            ret[i - 1] = compressedBaseToByteHigh(compressedBases[compressedIndex]);
-            ret[i] = compressedBaseToByteLow(compressedBases[compressedIndex]);
+            int base = compressedBases[compressedIndex];
+            ret[i - 1] = COMPRESSED_LOOKUP_TABLE[(base >> 4) & 0xf];
+            ret[i] = COMPRESSED_LOOKUP_TABLE[base & 0xf];
         }
         // Last nybble
         if (i == length) {
@@ -294,11 +295,10 @@ public final class SAMUtils {
      * @throws IllegalArgumentException if the base is not one of =ACGTNMRSVWYHKDB.
      */
     private static byte compressedBaseToByte(byte base) {
-        try {
-            return COMPRESSED_LOOKUP_TABLE[base];
-        } catch (IndexOutOfBoundsException e) {
+        if (base < 0 || base >= COMPRESSED_LOOKUP_TABLE.length) {
             throw new IllegalArgumentException("Bad base passed to charToCompressedBase: " + Character.toString((char) base) + "(" + base + ")");
         }
+        return COMPRESSED_LOOKUP_TABLE[base];
     }
 
     /**
