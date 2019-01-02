@@ -22,8 +22,8 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     private final int sliceByteOffset;
     private final int sliceByteSize;
 
-    private static final int indexColumns = 6;
-    private static final String entryFormat = "%d\t%d\t%d\t%d\t%d\t%d";
+    private static final int INDEX_COLUMNS = 6;
+    private static final String ENTRY_FORMAT = "%d\t%d\t%d\t%d\t%d\t%d";
 
     public CRAIEntry(final int sequenceId,
                      final int alignmentStart,
@@ -47,9 +47,9 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      */
     public CRAIEntry(final String line) throws CRAIIndex.CRAIIndexException {
         final String[] chunks = line.split("\t");
-        if (chunks.length != indexColumns) {
+        if (chunks.length != INDEX_COLUMNS) {
             throw new CRAIIndex.CRAIIndexException(
-                    "Malformed CRAI index entry: expecting " + indexColumns + " columns but got " + chunks.length);
+                    "Malformed CRAI index entry: expecting " + INDEX_COLUMNS + " columns but got " + chunks.length);
         }
 
         try {
@@ -82,7 +82,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * Format the entry as a string suitable for serialization in the CRAI index
      */
     private String serializeToString() {
-        return String.format(entryFormat,
+        return String.format(ENTRY_FORMAT,
                 sequenceId, alignmentStart, alignmentSpan,
                 containerStartOffset, sliceByteOffset, sliceByteSize);
     }
