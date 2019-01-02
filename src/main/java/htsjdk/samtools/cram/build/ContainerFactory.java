@@ -76,7 +76,7 @@ public class ContainerFactory {
 
         // write to a stream to determine byte sizes for Slice BAI Metadata
         try (final ByteArrayOutputStream osForIndexMetadata = new ByteArrayOutputStream()) {
-            final Version version = CramVersions.CRAM_v3;
+            final Version version = CramVersions.DEFAULT_CRAM_VERSION;
             container.header.write(version, osForIndexMetadata);
 
             // TODO: is this copy necessary?
