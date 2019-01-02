@@ -161,7 +161,9 @@ public class BAMIndexMetaData {
         }
 
         final long start = sliceMetadata.getByteOffset();
-        final long end = sliceMetadata.getByteOffset() + sliceMetadata.getByteSize();
+        // end / lastOffset is not used by CRAM.  Should we remove it or make it more explicit?
+        // see https://github.com/samtools/htsjdk/issues/401
+        final long end = start;
 
         if (sliceMetadata.getAlignmentSpan() == SliceHeader.NO_ALIGNMENT_SPAN) {
             unAlignedRecords += sliceMetadata.getRecordCount();
