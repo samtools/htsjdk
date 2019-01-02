@@ -119,8 +119,8 @@ public class SliceHeader {
         final int[] contentIDs = CramIntArray.array(inputStream);
         final int embeddedRefBlockContentID = ITF8.readUnsignedITF8(inputStream);
 
-        final byte[] referenceMD5s = new byte[MD5_LEN];
-        InputStreamUtils.readFully(inputStream, referenceMD5s, 0, MD5_LEN);
+        final byte[] referenceMD5 = new byte[MD5_LEN];
+        InputStreamUtils.readFully(inputStream, referenceMD5, 0, MD5_LEN);
 
         final byte[] tagBytes = InputStreamUtils.readFully(inputStream);
         final SAMBinaryTagAndValue tags = (major >= CramVersions.CRAM_v3.major) ?
@@ -128,7 +128,7 @@ public class SliceHeader {
                 null;
 
         return new SliceHeader(sequenceId, alignmentStart, alignmentSpan, recordCount, globalRecordCounter,
-                blockCount, contentIDs, embeddedRefBlockContentID, referenceMD5s, tags);
+                blockCount, contentIDs, embeddedRefBlockContentID, referenceMD5, tags);
     }
 
     /**
