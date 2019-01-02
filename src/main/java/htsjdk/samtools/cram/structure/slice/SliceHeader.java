@@ -24,13 +24,20 @@ import java.util.Arrays;
 public class SliceHeader {
     private static final Log log = Log.getInstance(SliceHeader.class);
 
+    // these values are used as Reference Sequence Index ID sentinel values
+    // so they are chosen as to not conflict with them
+
     public static final int REFERENCE_INDEX_NOT_INITIALIZED = -3;
     public static final int REFERENCE_INDEX_MULTI = -2;
     public static final int REFERENCE_INDEX_NONE = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;  // -1
 
+    // this value is used as a Block Content ID sentinel value
+    // so it is chosen as to not conflict with them
+
+    public static final int BLOCK_CONTENT_ID_NO_EMBEDDED_REFERENCE = -1;
+
     public static final int NO_ALIGNMENT_START = -1;
     public static final int NO_ALIGNMENT_SPAN = 0;
-    public static final int NO_EMBEDDED_REFERENCE = -1;
     public static final int MD5_LEN = 16;
     public static final byte[] NO_MD5 = new byte[MD5_LEN];
 
@@ -55,7 +62,7 @@ public class SliceHeader {
      * @param globalRecordCounter the number of records in the stream seen up to this point
      * @param dataBlockCount the number of data blocks in this Slice (Core and External)
      * @param contentIDs an array of the External Block Content IDs of this Slice
-     * @param embeddedRefBlockContentID the Content ID of the Embedded Reference, or NO_EMBEDDED_REFERENCE
+     * @param embeddedRefBlockContentID the Content ID of the Embedded Reference, or BLOCK_CONTENT_ID_NO_EMBEDDED_REFERENCE
      * @param refMD5 the MD5 checksum of the reference bases within the Slice boundaries, or NO_MD5
      * @param tags an optional series of BAM tags, in the {@link SAMBinaryTagAndValue format}
      */
@@ -343,7 +350,7 @@ public class SliceHeader {
     }
 
     public boolean hasEmbeddedRefBlock() {
-        return getEmbeddedRefBlockContentID() != NO_EMBEDDED_REFERENCE;
+        return getEmbeddedRefBlockContentID() != BLOCK_CONTENT_ID_NO_EMBEDDED_REFERENCE;
     }
 
     @Override

@@ -190,7 +190,7 @@ public class ContainerFactory {
         // core block + externals
         final int dataBlockCount = 1 + externalStreamMap.size();
         final int[] contentIDs = externalStreamMap.keySet().stream().mapToInt(Integer::intValue).toArray();
-        final int embeddedRefBlockContentId = SliceHeader.NO_EMBEDDED_REFERENCE;
+        final int embeddedRefBlockContentId = SliceHeader.BLOCK_CONTENT_ID_NO_EMBEDDED_REFERENCE;
         final byte[] refMD5 = SliceHeader.calculateRefMD5(refBases, sequenceId, alignmentStart, alignmentSpan, globalRecordCounter);
 
         final SliceHeader sliceHeader = new SliceHeader(sequenceId, alignmentStart, alignmentSpan, records.size(), globalRecordCounter,
