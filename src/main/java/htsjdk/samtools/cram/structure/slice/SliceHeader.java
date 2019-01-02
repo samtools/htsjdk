@@ -154,16 +154,14 @@ public class SliceHeader {
             outputStream.write(refMD5 == null ? NO_MD5 : refMD5);
 
             if (major >= CramVersions.CRAM_v3.major && tags != null) {
-                final BinaryCodec binaryCoded = new BinaryCodec(outputStream);
-                final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(binaryCoded);
-                SAMBinaryTagAndValue samBinaryTagAndValue = tags;
-                do {
-                    log.debug("Writing slice tag: " + SAMTag.makeStringTag(samBinaryTagAndValue.tag));
-                    binaryTagCodec.writeTag(samBinaryTagAndValue.tag, samBinaryTagAndValue.value, samBinaryTagAndValue.isUnsignedArray());
-                } while ((samBinaryTagAndValue = samBinaryTagAndValue.getNext()) != null);
-                // BinaryCodec doesn't seem to cache things.
-                // In any case, not calling baseCodec.close() because it's behaviour is
-                // irrelevant here.
+                try (final BinaryCodec codec = new BinaryCodec(outputStream)) {
+                    final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(codec);
+                    SAMBinaryTagAndValue samBinaryTagAndValue = tags;
+                    do {
+                        log.debug("Writing slice tag: " + SAMTag.makeStringTag(samBinaryTagAndValue.tag));
+                        binaryTagCodec.writeTag(samBinaryTagAndValue.tag, samBinaryTagAndValue.value, samBinaryTagAndValue.isUnsignedArray());
+                    } while ((samBinaryTagAndValue = samBinaryTagAndValue.getNext()) != null);
+                }
             }
 
             return outputStream.toByteArray();
