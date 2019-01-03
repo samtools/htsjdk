@@ -23,13 +23,11 @@
  */
 package htsjdk.samtools;
 
-import com.sun.javaws.progress.Progress;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.PeekableIterator;
 import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.utils.ClassFinder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -37,7 +35,6 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -235,7 +232,7 @@ public class SamReaderTest extends HtsjdkTest {
                 {"NA12878_garvan_head.bam"},
                 //{"NA12878_garvan_head_truncated.bam"},
                 {"empty_no_empty_gzip_block.bam"},
-                //{"../../../../../../RMNISTHS_30xdownsample.bam"}
+                {"../../../../../../RMNISTHS_30xdownsample.bam"}
         };
         return scenarios;
     }
@@ -244,7 +241,7 @@ public class SamReaderTest extends HtsjdkTest {
     public void perftestBamAsyncIterator(String inputBam) throws IOException {
         final File input = new File(TEST_DATA_DIR, inputBam);
         try(final SamReader asyncReader = SamReaderFactory.makeDefault()
-                .setUseAsyncIo(true)
+                .setUseAsyncIo(false)
                 .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
                 .enable(SamReaderFactory.Option.EAGERLY_DECODE)
                 .open(input)) {

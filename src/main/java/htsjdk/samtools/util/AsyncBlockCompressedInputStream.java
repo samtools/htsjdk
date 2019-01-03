@@ -32,11 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Comparator;
-import java.util.PriorityQueue;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Asynchronous read-ahead and decompression implementation of {@link htsjdk.samtools.util.BlockCompressedInputStream}.
