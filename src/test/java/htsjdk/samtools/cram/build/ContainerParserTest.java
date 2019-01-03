@@ -6,7 +6,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.slice.SliceAlignment;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -68,7 +68,7 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(container.sequenceId, 0);
 
         ContainerParser parser = new ContainerParser(samFileHeader);
-        final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
+        final Map<Integer, SliceAlignment> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
         Assert.assertEquals(referenceSet.size(), 1);
         Assert.assertTrue(referenceSet.containsKey(0));
@@ -96,7 +96,7 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(container.sequenceId, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
 
         ContainerParser parser = new ContainerParser(samFileHeader);
-        final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
+        final Map<Integer, SliceAlignment> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
         Assert.assertEquals(referenceSet.size(), 1);
         Assert.assertTrue(referenceSet.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
@@ -134,7 +134,7 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(container.sequenceId, SliceHeader.REFERENCE_INDEX_MULTI);
 
         ContainerParser parser = new ContainerParser(samFileHeader);
-        final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
+        final Map<Integer, SliceAlignment> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
         Assert.assertEquals(referenceSet.size(), 2);
         Assert.assertTrue(referenceSet.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
@@ -171,13 +171,13 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(container.sequenceId, SliceHeader.REFERENCE_INDEX_MULTI);
 
         ContainerParser parser = new ContainerParser(samFileHeader);
-        final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
+        final Map<Integer, SliceAlignment> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
         Assert.assertEquals(referenceSet.size(), 10);
         Assert.assertTrue(referenceSet.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
         for (int i=0; i<9; i++) {
             Assert.assertTrue(referenceSet.containsKey(i));
-            AlignmentSpan span = referenceSet.get(i);
+            SliceAlignment span = referenceSet.get(i);
             Assert.assertEquals(span.getCount(), 1);
             Assert.assertEquals(span.getStart(), i+1);
             Assert.assertEquals(span.getSpan(), 3);

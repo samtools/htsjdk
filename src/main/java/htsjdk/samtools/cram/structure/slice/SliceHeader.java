@@ -42,9 +42,7 @@ public class SliceHeader {
     public static final byte[] NO_MD5 = new byte[MD5_LEN];
 
     private final int sequenceId;
-    private final int alignmentStart;
-    private final int alignmentSpan;
-    private final int recordCount;
+    private final SliceAlignment sliceAlignment;
     private final long globalRecordCounter;
     private final int dataBlockCount;
     private final int[] contentIDs;
@@ -77,9 +75,7 @@ public class SliceHeader {
                        final byte[] refMD5,
                        final SAMBinaryTagAndValue sliceHeaderTags) {
         this.sequenceId = sequenceId;
-        this.alignmentStart = alignmentStart;
-        this.alignmentSpan = alignmentSpan;
-        this.recordCount = recordCount;
+        this.sliceAlignment = new SliceAlignment(alignmentStart, alignmentSpan, recordCount);
         this.globalRecordCounter = globalRecordCounter;
         this.dataBlockCount = dataBlockCount;
         this.contentIDs = contentIDs;
@@ -150,9 +146,9 @@ public class SliceHeader {
     private byte[] internalWrite(final int major) throws IOException {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             ITF8.writeUnsignedITF8(sequenceId, outputStream);
-            ITF8.writeUnsignedITF8(alignmentStart, outputStream);
-            ITF8.writeUnsignedITF8(alignmentSpan, outputStream);
-            ITF8.writeUnsignedITF8(recordCount, outputStream);
+            ITF8.writeUnsignedITF8(sliceAlignment.getStart(), outputStream);
+            ITF8.writeUnsignedITF8(sliceAlignment.getSpan(), outputStream);
+            ITF8.writeUnsignedITF8(sliceAlignment.getCount(), outputStream);
             LTF8.writeUnsignedLTF8(globalRecordCounter, outputStream);
             ITF8.writeUnsignedITF8(dataBlockCount, outputStream);
             CramIntArray.write(contentIDs, outputStream);
@@ -225,14 +221,16 @@ public class SliceHeader {
             return;
         }
 
-        alignmentBordersSanityCheck(refBases, sequenceId, alignmentStart, alignmentSpan, globalRecordCounter);
+        final int start = sliceAlignment.getStart();
+        final int span = sliceAlignment.getSpan();
+        alignmentBordersSanityCheck(refBases, sequenceId, start, span, globalRecordCounter);
 
-        if (!validateRefMD5(refBases, alignmentSpan)) {
+        if (!validateRefMD5(refBases, span)) {
             // try again with a shorter span
-            if (validateRefMD5(refBases, alignmentSpan - 1)) {
+            if (validateRefMD5(refBases, span - 1)) {
                 final String excerpt = getBrief(refBases);
-                log.warn(String.format("Reference MD5 matches partially for slice %d:%d-%d, %s", sequenceId, alignmentStart,
-                        alignmentStart + alignmentSpan - 1, excerpt));
+                log.warn(String.format("Reference MD5 matches partially for slice %d:%d-%d, %s", sequenceId, start,
+                        start + span - 1, excerpt));
                 return;
             }
 
@@ -248,8 +246,8 @@ public class SliceHeader {
     }
 
     private boolean validateRefMD5(final byte[] refBases, final int checkSpan) {
-        final int span = Math.min(checkSpan, refBases.length - alignmentStart + 1);
-        final String md5 = SequenceUtil.calculateMD5String(refBases, alignmentStart - 1, span);
+        final int span = Math.min(checkSpan, refBases.length - sliceAlignment.getStart() + 1);
+        final String md5 = SequenceUtil.calculateMD5String(refBases, sliceAlignment.getStart() - 1, span);
         return md5.equals(String.format("%032x", new BigInteger(1, refMD5)));
     }
 
@@ -279,13 +277,15 @@ public class SliceHeader {
     }
 
     private String getBrief(final byte[] bases) {
-        if (alignmentSpan >= bases.length)
+        final int start = sliceAlignment.getStart();
+        final int span = sliceAlignment.getSpan();
+        if (span >= bases.length)
             return new String(bases);
 
         final StringBuilder sb = new StringBuilder();
-        final int fromInc = alignmentStart - 1;
+        final int fromInc = start - 1;
 
-        int toExc = alignmentStart + alignmentSpan - 1;
+        int toExc = start + span - 1;
         toExc = Math.min(toExc, bases.length);
 
         final int shoulderLength = 10;
@@ -302,23 +302,30 @@ public class SliceHeader {
 
     @Override
     public String toString() {
-        return String.format("slice: seqID %d, start %d, span %d, records %d.", sequenceId, alignmentStart, alignmentSpan, recordCount);
+        final int start = sliceAlignment.getStart();
+        final int span = sliceAlignment.getSpan();
+        final int count = sliceAlignment.getCount();
+        return String.format("slice: seqID %d, start %d, span %d, records %d.", sequenceId, start, span, count);
     }
 
     public int getSequenceId() {
         return sequenceId;
     }
 
+    public SliceAlignment getSliceAlignment() {
+        return sliceAlignment;
+    }
+
     public int getAlignmentStart() {
-        return alignmentStart;
+        return sliceAlignment.getStart();
     }
 
     public int getAlignmentSpan() {
-        return alignmentSpan;
+        return sliceAlignment.getSpan();
     }
 
     public int getRecordCount() {
-        return recordCount;
+        return sliceAlignment.getCount();
     }
 
     public int getDataBlockCount() {
@@ -361,12 +368,10 @@ public class SliceHeader {
         SliceHeader header = (SliceHeader) o;
 
         if (sequenceId != header.sequenceId) return false;
-        if (alignmentStart != header.alignmentStart) return false;
-        if (alignmentSpan != header.alignmentSpan) return false;
-        if (recordCount != header.recordCount) return false;
         if (globalRecordCounter != header.globalRecordCounter) return false;
         if (dataBlockCount != header.dataBlockCount) return false;
         if (embeddedRefBlockContentID != header.embeddedRefBlockContentID) return false;
+        if (!sliceAlignment.equals(header.sliceAlignment)) return false;
         if (!Arrays.equals(contentIDs, header.contentIDs)) return false;
         if (!Arrays.equals(refMD5, header.refMD5)) return false;
         return sliceHeaderTags != null ? sliceHeaderTags.equals(header.sliceHeaderTags) : header.sliceHeaderTags == null;
@@ -375,9 +380,7 @@ public class SliceHeader {
     @Override
     public int hashCode() {
         int result = sequenceId;
-        result = 31 * result + alignmentStart;
-        result = 31 * result + alignmentSpan;
-        result = 31 * result + recordCount;
+        result = 31 * result + sliceAlignment.hashCode();
         result = 31 * result + (int) (globalRecordCounter ^ (globalRecordCounter >>> 32));
         result = 31 * result + dataBlockCount;
         result = 31 * result + Arrays.hashCode(contentIDs);

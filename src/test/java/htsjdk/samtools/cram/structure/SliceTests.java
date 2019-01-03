@@ -5,10 +5,7 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.slice.IndexableSlice;
-import htsjdk.samtools.cram.structure.slice.SliceBAIMetadata;
-import htsjdk.samtools.cram.structure.slice.SliceHeader;
-import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.*;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -210,7 +207,7 @@ public class SliceTests extends HtsjdkTest {
         final int start2 = 50;
         final int span2 = 55;
         final int count2 = 60;
-        final AlignmentSpan as = new AlignmentSpan(start2, span2, count2);
+        final SliceAlignment as = new SliceAlignment(start2, span2, count2);
         final SliceBAIMetadata b = s.getBAIMetadata(sequenceId2, as, containerByteOffset);
 
         Assert.assertEquals(b.getSequenceId(), sequenceId2);
@@ -264,7 +261,7 @@ public class SliceTests extends HtsjdkTest {
         final int start2 = 50;
         final int span2 = 55;
         final int count2 = 60;
-        final AlignmentSpan as = new AlignmentSpan(start2, span2, count2);
+        final SliceAlignment as = new SliceAlignment(start2, span2, count2);
         final CRAIEntry c = s.getCRAIEntry(sequenceId2, as, containerByteOffset);
 
         Assert.assertEquals(c.getSequenceId(), sequenceId2);

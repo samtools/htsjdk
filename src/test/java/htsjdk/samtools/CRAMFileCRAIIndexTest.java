@@ -4,7 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.slice.SliceAlignment;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
@@ -247,12 +247,12 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         it.hasNext();
         Container secondContainer = it.next();
         Assert.assertNotNull(secondContainer);
-        final Map<Integer, AlignmentSpan> references =
+        final Map<Integer, SliceAlignment> references =
                 new ContainerParser(it.getCramHeader().getSamFileHeader()).getReferences(secondContainer, ValidationStringency.STRICT);
         it.close();
 
         int refId = new TreeSet<>(references.keySet()).iterator().next();
-        final AlignmentSpan alignmentSpan = references.get(refId);
+        final SliceAlignment sliceAlignment = references.get(refId);
 
         CRAMFileReader reader = new CRAMFileReader(
                 new ByteArraySeekableStream(cramBytes),
@@ -261,7 +261,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 ValidationStringency.STRICT);
 
         final BAMIndex index = reader.getIndex();
-        final SAMFileSpan spanOfSecondContainer = index.getSpanOverlapping(refId, alignmentSpan.getStart(), alignmentSpan.getStart()+ alignmentSpan.getSpan());
+        final SAMFileSpan spanOfSecondContainer = index.getSpanOverlapping(refId, sliceAlignment.getStart(), sliceAlignment.getStart()+ sliceAlignment.getSpan());
         Assert.assertNotNull(spanOfSecondContainer);
         Assert.assertFalse(spanOfSecondContainer.isEmpty());
         Assert.assertTrue(spanOfSecondContainer instanceof BAMFileSpan);
@@ -273,7 +273,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         while (iterator.hasNext()) {
             final SAMRecord record = iterator.next();
             if (record.getReferenceIndex().intValue() == refId) {
-                boolean overlaps = CoordMath.overlaps(record.getAlignmentStart(), record.getAlignmentEnd(), alignmentSpan.getStart(), alignmentSpan.getStart()+ alignmentSpan.getSpan());
+                boolean overlaps = CoordMath.overlaps(record.getAlignmentStart(), record.getAlignmentEnd(), sliceAlignment.getStart(), sliceAlignment.getStart()+ sliceAlignment.getSpan());
                 if (overlaps) matchFound = true;
             }
             counter++;

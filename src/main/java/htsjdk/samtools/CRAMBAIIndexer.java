@@ -40,7 +40,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.slice.SliceAlignment;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -120,16 +120,16 @@ public class CRAMBAIIndexer {
         for (final IndexableSlice slice : container.slices) {
             if (slice.hasMultipleReferences()) {
                 final ContainerParser parser = new ContainerParser(indexBuilder.bamHeader);
-                final Map<Integer, AlignmentSpan> referenceAlignmentMap = parser.getReferences(container, validationStringency);
+                final Map<Integer, SliceAlignment> referenceAlignmentMap = parser.getReferences(container, validationStringency);
 
                 /**
                  * Unmapped span must be processed after mapped spans:
                  */
-                final AlignmentSpan unmappedSpan = referenceAlignmentMap.remove(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+                final SliceAlignment unmappedSpan = referenceAlignmentMap.remove(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
                 final Set<Integer> mappedReferences = new TreeSet<>(referenceAlignmentMap.keySet());
 
                 for (final int refId : mappedReferences) {
-                    final AlignmentSpan span = referenceAlignmentMap.get(refId);
+                    final SliceAlignment span = referenceAlignmentMap.get(refId);
                     processSingleReferenceSlice(slice.getBAIMetadata(refId, span, container.offset));
                 }
 

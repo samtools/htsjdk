@@ -9,9 +9,7 @@ import htsjdk.samtools.cram.CRAIEntry;
  */
 public class SliceBAIMetadata {
     private final int sequenceId;
-    private final int alignmentStart;
-    private final int alignmentSpan;
-    private final int recordCount;
+    private final SliceAlignment sliceAlignment;
     private final int byteOffset;
     private final long containerByteOffset;
     private final int byteSize;
@@ -21,27 +19,21 @@ public class SliceBAIMetadata {
      * Construct a new SliceBAIMetadata object
      *
      * @param sequenceId the reference sequence ID of this Slice, or REFERENCE_INDEX_MULTI or REFERENCE_INDEX_NONE
-     * @param alignmentStart the alignment start position, or NO_ALIGNMENT_START
-     * @param alignmentSpan the length of the alignment, or NO_ALIGNMENT_SPAN
-     * @param recordCount the number of records in this Slice
+     * @param sliceAlignment the alignment start position, length of the alignment, and number of records in this Slice
      * @param byteOffset the start byte position in the stream for this Slice
      * @param containerByteOffset the start byte position in the stream for this Slice's Container
      * @param byteSize the size of this Slice when serialized, in bytes
      * @param index the index of this Slice in its Container
      */
     public SliceBAIMetadata(final int sequenceId,
-                            final int alignmentStart,
-                            final int alignmentSpan,
-                            final int recordCount,
+                            final SliceAlignment sliceAlignment,
                             final int byteOffset,
                             final long containerByteOffset,
                             final int byteSize,
                             final int index) {
 
         this.sequenceId = sequenceId;
-        this.alignmentStart = alignmentStart;
-        this.alignmentSpan = alignmentSpan;
-        this.recordCount = recordCount;
+        this.sliceAlignment = sliceAlignment;
         this.byteOffset = byteOffset;
         this.containerByteOffset = containerByteOffset;
         this.byteSize = byteSize;
@@ -53,15 +45,15 @@ public class SliceBAIMetadata {
     }
 
     public int getAlignmentStart() {
-        return alignmentStart;
+        return sliceAlignment.getStart();
     }
 
     public int getAlignmentSpan() {
-        return alignmentSpan;
+        return sliceAlignment.getSpan();
     }
 
     public int getRecordCount() {
-        return recordCount;
+        return sliceAlignment.getCount();
     }
 
     public int getByteOffset() {

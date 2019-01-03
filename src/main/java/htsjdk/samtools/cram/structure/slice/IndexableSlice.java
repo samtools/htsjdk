@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.structure.slice;
 
 import htsjdk.samtools.cram.CRAIEntry;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.block.Block;
 
 import java.util.Map;
@@ -73,9 +72,7 @@ public class IndexableSlice extends Slice {
      */
     public SliceBAIMetadata getBAIMetadata(final long containerByteOffset) {
         return new SliceBAIMetadata(getSequenceId(),
-                getAlignmentStart(),
-                getAlignmentSpan(),
-                getRecordCount(),
+                getSliceAlignment(),
                 byteOffset,
                 containerByteOffset,
                 byteSize,
@@ -91,12 +88,10 @@ public class IndexableSlice extends Slice {
      * @return a new BAI indexing metadata object
      */
     public SliceBAIMetadata getBAIMetadata(final int sequenceId,
-                                           final AlignmentSpan span,
+                                           final SliceAlignment span,
                                            final long containerByteOffset) {
         return new SliceBAIMetadata(sequenceId,
-                span.getStart(),
-                span.getSpan(),
-                span.getCount(),
+                span,
                 byteOffset,
                 containerByteOffset,
                 byteSize,
@@ -128,7 +123,7 @@ public class IndexableSlice extends Slice {
      * @return a new CRAI Index Entry
      */
     public CRAIEntry getCRAIEntry(final int sequenceId,
-                                  final AlignmentSpan span,
+                                  final SliceAlignment span,
                                   final long containerByteOffset) {
         return new CRAIEntry(sequenceId,
                 span.getStart(),

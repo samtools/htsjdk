@@ -21,7 +21,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.slice.SliceAlignment;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
@@ -43,7 +43,8 @@ public class ContainerParser {
     }
 
     public List<CramCompressionRecord> getRecords(final Container container,
-                                                  ArrayList<CramCompressionRecord> records, final ValidationStringency validationStringency) {
+                                                  ArrayList<CramCompressionRecord> records,
+                                                  final ValidationStringency validationStringency) {
         if (container.isEOF()) {
             return Collections.emptyList();
         }
@@ -59,47 +60,45 @@ public class ContainerParser {
         return records;
     }
 
-    public Map<Integer, AlignmentSpan> getReferences(final Container container, final ValidationStringency validationStringency) {
-        final Map<Integer, AlignmentSpan> containerSpanMap  = new HashMap<>();
+    public Map<Integer, SliceAlignment> getReferences(final Container container, final ValidationStringency validationStringency) {
+        final Map<Integer, SliceAlignment> containerSpanMap  = new HashMap<>();
         for (final IndexableSlice slice : container.slices) {
             addAllSpans(containerSpanMap, getReferences(slice, container.header, validationStringency));
         }
         return containerSpanMap;
     }
 
-    private static void addSpan(final int seqId, final int start, final int span, final int count, final Map<Integer, AlignmentSpan> map) {
+    private static void addSpan(final Map<Integer, SliceAlignment> map, final int seqId, final SliceAlignment sliceAlignment) {
         if (map.containsKey(seqId)) {
-            map.get(seqId).add(start, span, count);
+            map.get(seqId).add(sliceAlignment);
         } else {
-            map.put(seqId, new AlignmentSpan(start, span, count));
+            map.put(seqId, sliceAlignment);
         }
     }
 
-    private static Map<Integer, AlignmentSpan> addAllSpans(final Map<Integer, AlignmentSpan> spanMap, final Map<Integer, AlignmentSpan> addition) {
-        for (final Map.Entry<Integer, AlignmentSpan> entry:addition.entrySet()) {
-            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getCount(), entry.getValue().getSpan(), spanMap);
+    private static void addAllSpans(final Map<Integer, SliceAlignment> spanMap, final Map<Integer, SliceAlignment> addition) {
+        for (final Map.Entry<Integer, SliceAlignment> entry:addition.entrySet()) {
+            addSpan(spanMap, entry.getKey(), entry.getValue());
         }
-        return spanMap;
     }
 
-    Map<Integer, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
-        final Map<Integer, AlignmentSpan> spanMap = new HashMap<>();
+    private Map<Integer, SliceAlignment> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
+        final Map<Integer, SliceAlignment> spanMap = new HashMap<>();
 
         if (slice.hasNoReference()) {
-            spanMap.put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, AlignmentSpan.UNMAPPED_SPAN);
+            spanMap.put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SliceAlignment.UNMAPPED_SPAN);
         } else if (slice.hasMultipleReferences()) {
             addAllSpans(spanMap, slice.getMultiRefAlignmentSpans(header, validationStringency));
         } else {
-            addSpan(slice.getSequenceId(), slice.getAlignmentStart(), slice.getAlignmentSpan(), slice.getRecordCount(), spanMap);
+            addSpan(spanMap, slice.getSequenceId(), slice.getSliceAlignment());
         }
 
         return spanMap;
     }
 
-    ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                                final IndexableSlice slice,
-                                                final CompressionHeader header,
-                                                final ValidationStringency validationStringency) {
+    private ArrayList<CramCompressionRecord> getRecords(final IndexableSlice slice,
+                                                        final CompressionHeader header,
+                                                        final ValidationStringency validationStringency) {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
 
         if (slice.hasSingleReference()) {
@@ -109,9 +108,7 @@ public class ContainerParser {
 
         final CramRecordReader reader = slice.createCramRecordReader(header, validationStringency);
 
-        if (records == null) {
-            records = new ArrayList<>(slice.getRecordCount());
-        }
+        ArrayList<CramCompressionRecord> records = new ArrayList<>(slice.getRecordCount());
 
         int prevStart = slice.getAlignmentStart();
         for (int i = 0; i < slice.getRecordCount(); i++) {
@@ -142,9 +139,5 @@ public class ContainerParser {
         }
 
         return records;
-    }
-
-    List<CramCompressionRecord> getRecords(final IndexableSlice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
-        return getRecords(null, slice, header, validationStringency);
     }
 }

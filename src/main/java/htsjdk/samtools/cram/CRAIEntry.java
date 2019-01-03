@@ -2,6 +2,7 @@ package htsjdk.samtools.cram;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.slice.SliceAlignment;
 import htsjdk.samtools.cram.structure.slice.SliceBAIMetadata;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -97,9 +98,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     public SliceBAIMetadata toBAIMetadata(final int recordCount,
                                           final int sliceIndex) {
         return new SliceBAIMetadata(getSequenceId(),
-                getAlignmentStart(),
-                getAlignmentSpan(),
-                recordCount,
+                new SliceAlignment(getAlignmentStart(), getAlignmentSpan(), recordCount),
                 getSliceByteOffset(),
                 getContainerStartOffset(),
                 getSliceByteSize(),

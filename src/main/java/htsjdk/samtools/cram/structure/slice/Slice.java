@@ -5,7 +5,6 @@ import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.block.Block;
 
@@ -136,8 +135,8 @@ public class Slice {
      * @param compressionHeader the associated Cram Compression Header
      * @param validationStringency how strict to be when reading CRAM records
      */
-    public Map<Integer, AlignmentSpan> getMultiRefAlignmentSpans(final CompressionHeader compressionHeader,
-                                                                 final ValidationStringency validationStringency) {
+    public Map<Integer, SliceAlignment> getMultiRefAlignmentSpans(final CompressionHeader compressionHeader,
+                                                                  final ValidationStringency validationStringency) {
         final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(getCoreBlockInputStream(),
                 getExternalBlockInputMap(),
                 compressionHeader,
@@ -163,6 +162,10 @@ public class Slice {
 
     public int getSequenceId() {
         return header.getSequenceId();
+    }
+
+    public SliceAlignment getSliceAlignment() {
+        return header.getSliceAlignment();
     }
 
     public int getAlignmentStart() {

@@ -1,18 +1,17 @@
-package htsjdk.samtools.cram.structure;
+package htsjdk.samtools.cram.structure.slice;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.structure.slice.SliceHeader;
 
 import java.util.Objects;
 
 /**
  * A span of reads on a single reference.
  */
-public class AlignmentSpan {
+public class SliceAlignment {
     /**
      * A constant to represent an unmapped span.
      */
-    public static final AlignmentSpan UNMAPPED_SPAN = new AlignmentSpan(SAMRecord.NO_ALIGNMENT_START, SliceHeader.NO_ALIGNMENT_SPAN);
+    public static final SliceAlignment UNMAPPED_SPAN = new SliceAlignment(SAMRecord.NO_ALIGNMENT_START, SliceHeader.NO_ALIGNMENT_SPAN);
 
     private int start;
     private int span;
@@ -24,7 +23,7 @@ public class AlignmentSpan {
      * @param start alignment start of the span
      * @param span  alignment span
      */
-    public AlignmentSpan(final int start, final int span) {
+    public SliceAlignment(final int start, final int span) {
         this.setStart(start);
         this.setSpan(span);
         this.count = 1;
@@ -37,40 +36,25 @@ public class AlignmentSpan {
      * @param span  alignment span
      * @param count number of reads in the span
      */
-    public AlignmentSpan(final int start, final int span, final int count) {
+    public SliceAlignment(final int start, final int span, final int count) {
         this.setStart(start);
         this.setSpan(span);
         this.count = count;
     }
 
     /**
-     * Add multiple reads to the span.
+     * Add alignments to this one.
      *
-     * @param start alignment start
-     * @param span  alignment span
-     * @param count number of reads to add
+     * @param sliceAlignment the alignments of the reads to add
      */
-    public void add(final int start, final int span, final int count) {
-        if (this.getStart() > start) {
-            this.setSpan(Math.max(this.getStart() + this.getSpan(), start + span) - start);
-            this.setStart(start);
-        } else if (this.getStart() < start) {
-            this.setSpan(Math.max(this.getStart() + this.getSpan(), start + span) - this.getStart());
-        } else {
-            this.setSpan(Math.max(this.getSpan(), span));
-        }
+    public void add(final SliceAlignment sliceAlignment) {
+        final int newStart = Math.min(this.getStart(), sliceAlignment.getStart());
+        final int newEnd = Math.max(this.getStart() + this.getSpan(), sliceAlignment.getStart() + sliceAlignment.getSpan());
 
-        this.count += count;
-    }
+        this.setStart(newStart);
+        this.setSpan(newEnd - newStart);
 
-    /**
-     * Add a single read to the span
-     *
-     * @param start alignment start
-     * @param span  read span on the reference
-     */
-    public void addSingle(final int start, final int span) {
-        add(start, span, 1);
+        this.count += sliceAlignment.getCount();
     }
 
     public int getStart() {
@@ -98,7 +82,7 @@ public class AlignmentSpan {
         if (this == obj) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
 
-        final AlignmentSpan that = (AlignmentSpan)obj;
+        final SliceAlignment that = (SliceAlignment)obj;
 
         return this.start == that.start &&
                 this.span == that.span &&
@@ -109,4 +93,5 @@ public class AlignmentSpan {
     public int hashCode() {
         return Objects.hash(start, span, count);
     }
+
 }

@@ -6,6 +6,7 @@ import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.CRAMCRAIIndexer;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.slice.IndexableSlice;
+import htsjdk.samtools.cram.structure.slice.SliceAlignment;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.ValidationStringency;
@@ -59,7 +60,7 @@ public class CRAIIndex {
         if (!container.isEOF()) {
             for (final IndexableSlice slice : container.slices) {
                 if (slice.hasMultipleReferences()) {
-                    final Map<Integer, AlignmentSpan> spans =
+                    final Map<Integer, SliceAlignment> spans =
                             slice.getMultiRefAlignmentSpans(container.header, ValidationStringency.DEFAULT_STRINGENCY);
 
                     final List<CRAIEntry> entries = spans.entrySet().stream()
