@@ -33,10 +33,9 @@ import htsjdk.variant.variantcontext.VariantContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * a base class for compound header lines, which include info lines and format lines (so far)
@@ -163,9 +162,11 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         super(lineType.toString(), "");
 
         final ArrayList<String> expectedTags = new ArrayList(Arrays.asList("ID", "Number", "Type", "Description"));
-        Set<String> optionalTags = Collections.emptySet();  
+        final List<String> optionalTags;  
         if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
-            optionalTags = new HashSet<>(Arrays.asList("Source", "Version"));
+            optionalTags = Arrays.asList("Source", "Version");
+        } else {
+            optionalTags = Collections.emptyList();
         }
         final Map<String, String> mapping = VCFHeaderLineTranslator.parseLine(version, line, expectedTags, optionalTags);
         name = mapping.get("ID");

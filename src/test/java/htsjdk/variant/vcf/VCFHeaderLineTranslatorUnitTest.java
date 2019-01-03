@@ -1,6 +1,5 @@
 package htsjdk.variant.vcf;
 
-import com.google.common.collect.Sets;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
@@ -11,7 +10,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
 
@@ -90,15 +88,15 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 {line, "ID", "Description", ""},
                 {line, "ID", "Description,Optional2", ""},
                 {line, "", "Description,ID", ""},
-                {line, "Description,ID", "", "Wrong order of parameters"},
-                {line, "Description", "ID", "Wrong order of parameters"},
-                {line, "ID,Desc", "", "Parameter name mismatch"},
-                {line, "ID", "Desc", "Optional parameter name mismatch"},
+                {line, "Description,ID", "", "Tag ID in wrong order"},
+                {line, "Description", "ID", "Optional tag ID must be listed after all expected tags"},
+                {line, "ID,Desc", "", "Unexpected tag Description"},
+                {line, "ID", "Desc", "Unexpected tag Description"},
                 {line, "ID,Description,Extra", "", ""},
                 {"<>", "", "", ""},
                 {"<>", "", "ID,Description", ""},
                 {"<>", "ID", "", ""},
-                {"<ID=X,Description=\"Y\",Extra=E>", "ID", "Description", "Too many parameters"},
+                {"<ID=X,Description=\"Y\",Extra=E>", "ID", "Description", "Unexpected tag count 3"},
                 {"<ID=X,Description=<Y>>", "ID,Description", "", ""}
         };
     }
@@ -112,10 +110,10 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
             final List<String> expectedTagOrder = expected.isEmpty() ?
                     Collections.emptyList() :
                     Arrays.asList(expected.split(","));
-            final Set<String> optionalTags = optional.isEmpty() ?
-                    Collections.emptySet() :
-                    Sets.newHashSet(optional.split(","));
-            
+            final List<String> optionalTags = optional.isEmpty() ?
+                    Collections.emptyList() :
+                    Arrays.asList(optional.split(","));
+
             if (optionalTags.isEmpty()) {
                 VCFHeaderLineTranslator.parseLine(
                         VCFHeaderVersion.VCF4_2,
@@ -139,6 +137,10 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
             if (error.isEmpty()) {
                 Assert.fail("Expected success, got failure", e);
             }
+            Assert.assertTrue(
+                    e.getMessage().contains(error),
+                    String.format("Error string '%s' should be present in error message '%s'", error, e.getMessage())
+            );
         }
     }
 
@@ -156,7 +158,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 vcfVersion,
                 "<ID=X,Description=\"Y\">",
                 Arrays.asList("ID"),
-                Collections.singleton("Description")
+                Arrays.asList("Description")
         );
     }
 }
