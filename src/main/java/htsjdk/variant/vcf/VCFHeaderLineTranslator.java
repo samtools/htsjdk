@@ -143,16 +143,20 @@ class VCF4Parser implements VCFLineParser {
                 escape = false;
                 switch (c) {
                     case '<':
-                        // if we see a open bracket at the beginning, ignore it
-                        if (index == 0) {
-                            break;
+                        // if we see a open bracket at the beginning, ignore it, otherwise add it
+                        if (index != 0) { 
+                            builder.append(c);
                         }
-                        // GOTCHA: no break here means we fall through to the 'default:' branch and append <
+                        break;
                     case '>': 
-                        if (index == valueLine.length()-1 && !key.isEmpty()) {
+                        if (index == valueLine.length()-1) {
                             // if we see a close bracket, and we're at the end, add an entry to our list
-                            ret.put(key,builder.toString().trim());
-                        } 
+                            if (!key.isEmpty()) { // Properly handle empty <> sequence
+                                ret.put(key, builder.toString().trim());
+                            }
+                        } else {
+                            builder.append(c);
+                        }
                         break; 
                     case '=':
                         // at an equals, copy the key and reset the builder
