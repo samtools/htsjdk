@@ -50,7 +50,7 @@ public class VCFHeaderLineTranslator {
     }
 
     public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder) {
-        return mapping.get(version).parseLine(valueLine,expectedTagOrder,Collections.emptySet());
+        return parseLine(version, valueLine, expectedTagOrder, Collections.emptySet());
     }
     
     public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder, Set<String> optionalTags) {
