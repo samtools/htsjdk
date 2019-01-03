@@ -28,7 +28,9 @@ import java.io.RandomAccessFile;
 
 /**
  * @author alecw@broadinstitute.org
+ * @deprecated This is deprecated with no replacement. 1/19
  */
+@Deprecated
 public class TimeRandomAccessFile {
     public static void main(String[] args) throws Exception {
         RandomAccessFile raf = new RandomAccessFile(new File(args[0]), "r");
