@@ -57,6 +57,9 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
 
     /**
      * create a VCF info header line
+     * 
+     * @deprecated Use the {@link #VCFSimpleHeaderLine(String, VCFHeaderVersion, String, List, List)} version
+     * that supports optional tags.
      *
      * @param line      the header line
      * @param version   the vcf header version
