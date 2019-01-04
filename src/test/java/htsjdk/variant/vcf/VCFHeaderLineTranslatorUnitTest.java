@@ -7,7 +7,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -80,63 +79,65 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
 
     }
 
-    @DataProvider(name = "testData")
-    private Object[][] getTestData() {
+    @DataProvider(name = "validHeaderLines")
+    private Object[][] getValidHeaderLines() {
         String line = "<ID=X,Description=\"Y\">";
         return new Object[][]{
-                {line, "ID,Description", "", ""},
-                {line, "ID", "Description", ""},
-                {line, "ID", "Description,Optional2", ""},
-                {line, "", "Description,ID", ""},
-                {line, "Description,ID", "", "Tag ID in wrong order"},
-                {line, "Description", "ID", "Optional tag ID must be listed after all expected tags"},
-                {line, "ID,Desc", "", "Unexpected tag Description"},
-                {line, "ID", "Desc", "Unexpected tag Description"},
-                {line, "ID,Description,Extra", "", ""},
-                {"<>", "", "", ""},
-                {"<>", "", "ID,Description", ""},
-                {"<>", "ID", "", ""},
-                {"<ID=X,Description=\"Y\",Extra=E>", "ID", "Description", "Unexpected tag count 3"},
-                {"<ID=X,Description=<Y>>", "ID,Description", "", ""}
+                // to parse, required, optional
+                {line, Arrays.asList("ID", "Description"), Arrays.asList()},
+                {line, Arrays.asList("ID"), Arrays.asList("Description")},
+                {line, Arrays.asList("ID"), Arrays.asList("Description", "Optional2")},
+                {line, Arrays.asList(), Arrays.asList("Description", "ID")},
+                {line, Arrays.asList("ID", "Description", "Extra"), Arrays.asList()},
+                {"<>", Arrays.asList(), Arrays.asList()},
+                {"<>", Arrays.asList(), Arrays.asList("ID", "Description")},
+                {"<>", Arrays.asList("ID"), Arrays.asList()},
+                {"<ID=X,Description=<Y>>", Arrays.asList("ID", "Description"), Arrays.asList()}
         };
     }
 
-    @Test(dataProvider = "testData")
-    public void testParseVCF4HeaderLineWithTags(final String line,
-                                                final String expected,
-                                                final String optional,
-                                                final String error) {
-        try {
-            final List<String> expectedTagOrder = expected.isEmpty() ?
-                    Collections.emptyList() :
-                    Arrays.asList(expected.split(","));
-            final List<String> optionalTags = optional.isEmpty() ?
-                    Collections.emptyList() :
-                    Arrays.asList(optional.split(","));
+    @DataProvider(name = "invalidHeaderLines")
+    private Object[][] getInvalidHeaderLines() {
+        String line = "<ID=X,Description=\"Y\">";
+        return new Object[][]{
+                // to parse, required, optional, error message
+                {line, Arrays.asList("Description", "ID"), Arrays.asList(), "Tag ID in wrong order"},
+                {line, Arrays.asList("Description"), Arrays.asList("ID"), "Optional tag ID must be listed after all expected tags"},
+                {line, Arrays.asList("ID", "Desc"), Arrays.asList(), "Unexpected tag Description"},
+                {line, Arrays.asList("ID"), Arrays.asList("Desc"), "Unexpected tag Description"},
+                {"<ID=X,Description=\"Y\",Extra=E>", Arrays.asList("ID"), Arrays.asList("Description"), "Unexpected tag count 3"},
+        };
+    }
 
-            if (optionalTags.isEmpty()) {
-                VCFHeaderLineTranslator.parseLine(
-                        VCFHeaderVersion.VCF4_2,
-                        line,
-                        expectedTagOrder
-                );
-            }
-            else {
-                VCFHeaderLineTranslator.parseLine(
-                        VCFHeaderVersion.VCF4_2,
-                        line,
-                        expectedTagOrder,
-                        optionalTags
-                );
-            }
-            if (!error.isEmpty()) {
-                Assert.fail("Expected failure: '" + error + "', got success");
-            }
+    private static void callTranslator(final String line,
+                                final List<String> expectedTagOrder,
+                                final List<String> optionalTags) {
+        // To cover both constructors for code coverage
+        if (optionalTags.isEmpty()) {
+            VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, line, expectedTagOrder);
+        }
+        else {
+            VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, line, expectedTagOrder, optionalTags);
+        }
+    }
+
+    @Test(dataProvider = "validHeaderLines")
+    public void testParseVCF4HeaderLineWithTagsValid(final String line,
+                                                final List<String> expectedTagOrder,
+                                                final List<String> optionalTags) {
+        callTranslator(line, expectedTagOrder, optionalTags);
+    }
+    
+    @Test(dataProvider = "invalidHeaderLines")
+    public void testParseVCF4HeaderLineWithTagsInvalid(final String line,
+                                                     final List<String> expectedTagOrder,
+                                                     final List<String> optionalTags,
+                                                     final String error) {
+        try {
+            callTranslator(line, expectedTagOrder, optionalTags);
+            Assert.fail("Expected failure: '" + error + "', got success");
         }
         catch (Exception e) {
-            if (error.isEmpty()) {
-                Assert.fail("Expected success, got failure", e);
-            }
             Assert.assertTrue(
                     e.getMessage().contains(error),
                     String.format("Error string '%s' should be present in error message '%s'", error, e.getMessage())
