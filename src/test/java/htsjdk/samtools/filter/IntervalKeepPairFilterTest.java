@@ -48,6 +48,8 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
         builder.addFrag("mapped_pair_chr1", 0, 1, false, false, "151M", null, -1, true, false);
         // Supplementary alignment are never kept by the interval filter.
         builder.addFrag("mapped_pair_chr1", 0, 1, false, false, "151M", null, -1, false, true);
+        // Single ended read should never be kept by the interval filter.
+        builder.addFrag("single_ended", 0, 1, false);
     }
 
     @Test(dataProvider = "testData")
@@ -94,6 +96,21 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
                 .anyMatch(rec -> rec.isSecondaryAlignment() || rec.getSupplementaryAlignmentFlag());
 
         Assert.assertFalse(notPrimary);
+    }
+
+    @Test
+    public void testSingleEndedReads() {
+        final List<Interval> intervalList = new ArrayList<>();
+        final Interval interval1 = new Interval("chr1", 1, 999);
+        intervalList.add(interval1);
+
+        final IntervalKeepPairFilter filter = new IntervalKeepPairFilter(intervalList);
+
+        boolean singleEnded = StreamSupport.stream(builder.spliterator(), false)
+                .filter(rec -> !filter.filterOut(rec))
+                .anyMatch(rec -> rec.getReadName().equals("single_ended"));
+
+        Assert.assertFalse(singleEnded);
     }
 
     @DataProvider(name = "testData")

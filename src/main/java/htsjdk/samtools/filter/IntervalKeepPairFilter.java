@@ -58,8 +58,8 @@ public class IntervalKeepPairFilter implements SamRecordFilter {
      * overlaps the current interval using overlap detector. If yes, return
      * false -> don't filter it out.
      *
-     * If a read is secondary or supplementary, filter read out. Use
-     * {@link IntervalFilter} if you want to keep these reads, but NOTE: the
+     * If a read is secondary, supplementary, or single ended, filter read out.
+     * Use {@link IntervalFilter} if you want to keep these reads, but NOTE: the
      * resulting bam may not be valid.
      *
      * @param record the SAMRecord to evaluate
@@ -67,7 +67,7 @@ public class IntervalKeepPairFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord record) {
-        if (record.isSecondaryOrSupplementary()) {
+        if (record.isSecondaryOrSupplementary() || !record.getReadPairedFlag()) {
            return true;
         }
 
