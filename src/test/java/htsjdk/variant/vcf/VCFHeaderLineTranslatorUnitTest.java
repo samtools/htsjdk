@@ -91,7 +91,6 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 {line, Arrays.asList("ID", "Description", "Extra"), Arrays.asList()},
                 {"<>", Arrays.asList(), Arrays.asList()},
                 {"<>", Arrays.asList(), Arrays.asList("ID", "Description")},
-                {"<>", Arrays.asList("ID"), Arrays.asList()},
                 {"<ID=X,Description=<Y>>", Arrays.asList("ID", "Description"), Arrays.asList()}
         };
     }
@@ -105,6 +104,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 {line, Arrays.asList("Description"), Arrays.asList("ID"), "Optional tag ID must be listed after all expected tags"},
                 {line, Arrays.asList("ID", "Desc"), Arrays.asList(), "Unexpected tag Description"},
                 {line, Arrays.asList("ID"), Arrays.asList("Desc"), "Unexpected tag Description"},
+                {"<>", Arrays.asList("ID"), Arrays.asList(), "Header with no tags is not supported when there are expected tags"},
                 {"<ID=X,Description=\"Y\",Extra=E>", Arrays.asList("ID"), Arrays.asList("Description"), "Unexpected tag count 3"},
         };
     }
