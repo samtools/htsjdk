@@ -44,11 +44,24 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringReader;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by IntelliJ IDEA.
@@ -502,6 +515,39 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         secondCopyReader.close();
 
     }
+
+    @Test
+    public void testVcf42Roundtrip() throws Exception {
+        // this test ensures that source/version fields are round-tripped properly
+
+        // read an existing VCF
+        File expectedFile = new File("src/test/resources/htsjdk/variant/Vcf4.2WithSourceVersionInfoFields.vcf");
+        final VCFFileReader originalFileReader = new VCFFileReader(expectedFile, false);
+        final VCFHeader originalHeader = originalFileReader.getFileHeader();
+        
+        // write the file out into a new copy
+        final File actualFile = File.createTempFile("testVcf4.2roundtrip.", IOUtil.VCF_FILE_EXTENSION);
+        actualFile.deleteOnExit();
+
+        final VariantContextWriter copyWriter = new VariantContextWriterBuilder()
+                .setOutputFile(actualFile)
+                .setReferenceDictionary(createArtificialSequenceDictionary())
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build();
+        copyWriter.writeHeader(originalHeader);
+        final CloseableIterator<VariantContext> firstCopyVariantIterator = originalFileReader.iterator();
+        while (firstCopyVariantIterator.hasNext()) {
+            VariantContext variantContext = firstCopyVariantIterator.next();
+            copyWriter.add(variantContext);
+        }
+        originalFileReader.close();
+        copyWriter.close();
+
+        final String actualContents = new String(Files.readAllBytes(actualFile.toPath()), StandardCharsets.UTF_8);
+        final String expectedContents = new String(Files.readAllBytes(expectedFile.toPath()), StandardCharsets.UTF_8);
+        Assert.assertEquals(actualContents, expectedContents);
+    }
+
 
     /**
      * a little utility function for all tests to md5sum a file

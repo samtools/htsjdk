@@ -1,21 +1,22 @@
 ##fileformat=VCFv4.2
 ##FILTER=<ID=FDRtranche2.00to10.00+,Description="FDR tranche level at qual > 0.06">
-##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth (only filtered reads used for calling)">
 ##FORMAT=<ID=GL,Number=3,Type=Float,Description="Log-scaled likelihoods for AA,AB,BB genotypes where A=ref and B=alt; not applicable if site is not biallelic">
-##FORMAT=<ID=GQ,Number=1,Type=Float,Description="Genotype Quality">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-##INFO=<ID=AC,Number=.,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as listed",Source="unknown",Version="1.2.3">
-##INFO=<ID=AF,Number=.,Type=Float,Description="Allele Frequency, for each ALT allele, in the same order as listed",Source="unknown",Version="1.2.3">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as listed",Source="unknown",Version="1.2.3">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency, for each ALT allele, in the same order as listed",Source="unknown",Version="1.2.3">
 ##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes",Source="unknown",Version="1.2.3">
 ##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP Membership",Source="unknown",Version="1.2.3">
 ##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth",Source="unknown",Version="1.2.3">
 ##INFO=<ID=Dels,Number=1,Type=Float,Description="Fraction of Reads Containing Spanning Deletions",Source="unknown",Version="1.2.3">
+##INFO=<ID=EscapingBackslash,Number=1,Type=Float,Description="This description has an escaped \ backslash in it",Source="unknown",Version="1.2.3">
+##INFO=<ID=EscapingNonQuoteOrBackslash,Number=1,Type=Float,Description="This other value has a \n newline in it",Source="unknown",Version="1.2.3">
+##INFO=<ID=EscapingQuote,Number=1,Type=Float,Description="This description has an escaped \" quote in it",Source="unknown",Version="1.2.3">
 ##INFO=<ID=HRun,Number=1,Type=Integer,Description="Largest Contiguous Homopolymer Run of Variant Allele In Either Direction",Source="unknown",Version="1.2.3">
 ##INFO=<ID=HaplotypeScore,Number=1,Type=Float,Description="Consistency of the site with two (and only two) segregating haplotypes",Source="unknown",Version="1.2.3">
-##INFO=<ID=EscapingQuote,Number=1,Type=Float,Description="This description has an escaped \" quote in it",Source="unknown",Version="1.2.3">
-##INFO=<ID=EscapingBackslash,Number=1,Type=Float,Description="This description has an escaped \\ backslash in it",Source="unknown",Version="1.2.3">
-##INFO=<ID=EscapingNonQuoteOrBackslash,Number=1,Type=Float,Description="This other value has a \n newline in it",Source="unknown",Version="1.2.3">
 ##INFO=<ID=MQ,Number=1,Type=Float,Description="RMS Mapping Quality",Source="unknown",Version="1.2.3">
 ##INFO=<ID=MQ0,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads",Source="unknown",Version="1.2.3">
 ##INFO=<ID=OQ,Number=1,Type=Float,Description="The original variant quality score",Source="unknown",Version="1.2.3">
@@ -25,5 +26,5 @@
 ##VariantFiltration="analysis_type=VariantFiltration input_file=[] read_buffer_size=null read_filter=[] intervals=null excludeIntervals=[chrM, chrY] reference_sequence=/seq/references/Homo_sapiens_assembly18/v0/Homo_sapiens_assembly18.fasta rodBind=[variant,VCF,wgs.v9/HiSeq.WGS.cleaned.ug.snpfiltered.vcf, mask,Bed,wgs.v9/HiSeq.WGS.cleaned.indels.10.mask] rodToIntervalTrackName=null BTI_merge_rule=UNION DBSNP=null hapmap=null hapmap_chip=null out=wgs.v9/HiSeq.WGS.cleaned.ug.snpfiltered.indelfiltered.vcf err=null outerr=null filterZeroMappingQualityReads=false downsampling_type=NONE downsample_to_fraction=null downsample_to_coverage=null useOriginalQualities=false validation_strictness=SILENT unsafe=null max_reads_at_locus=2147483647 num_threads=1 interval_merging=ALL read_group_black_list=null filterExpression=[] filterName=[] genotypeFilterExpression=[] genotypeFilterName=[] clusterSize=3 clusterWindowSize=0 maskName=Indel NO_HEADER=false"
 ##VariantFiltration="analysis_type=VariantFiltration input_file=[] read_buffer_size=null read_filter=[] intervals=null excludeIntervals=[chrM, chrY] reference_sequence=/seq/references/Homo_sapiens_assembly18/v0/Homo_sapiens_assembly18.fasta rodBind=[variant,VCF,wgs.v9/HiSeq.WGS.cleaned.ug.vcf] rodToIntervalTrackName=null BTI_merge_rule=UNION DBSNP=null hapmap=null hapmap_chip=null out=wgs.v9/HiSeq.WGS.cleaned.ug.snpfiltered.vcf err=null outerr=null filterZeroMappingQualityReads=false downsampling_type=NONE downsample_to_fraction=null downsample_to_coverage=null useOriginalQualities=false validation_strictness=SILENT unsafe=null max_reads_at_locus=2147483647 num_threads=1 interval_merging=ALL read_group_black_list=null filterExpression=[QUAL < 50.0, MQ0 >= 4 && ((MQ0 / (1.0 * DP)) > 0.1), AB > 0.75 && DP > 40, DP > 120 || SB > -0.10] filterName=[LowQual, HARD_TO_VALIDATE, ABFilter, DPFilter] genotypeFilterExpression=[] genotypeFilterName=[] clusterSize=3 clusterWindowSize=10 maskName=Mask NO_HEADER=false"
 ##source=VariantOptimizer
-#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12878	
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12878
 chr1	109	.	A	T	0	FDRtranche2.00to10.00+	AC=1;AF=0.50;AN=2;DP=1019;Dels=0.00;HRun=0;HaplotypeScore=686.65;MQ=19.20;MQ0=288;OQ=2175.54;QD=2.13;SB=-1042.18	GT:AD:DP:GL:GQ	0/1:610,327:308:-316.30,-95.47,-803.03:99
