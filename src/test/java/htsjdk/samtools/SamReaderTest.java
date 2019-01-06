@@ -230,9 +230,7 @@ public class SamReaderTest extends HtsjdkTest {
         final Object[][] scenarios = new Object[][]{
                 {"compressed.bam"},
                 {"NA12878_garvan_head.bam"},
-                //{"NA12878_garvan_head_truncated.bam"},
                 {"empty_no_empty_gzip_block.bam"},
-                {"../../../../../../RMNISTHS_30xdownsample.bam"}
         };
         return scenarios;
     }
