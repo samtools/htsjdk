@@ -1,5 +1,6 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -8,7 +9,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.IntSupplier;
 
-public class AsyncReadTaskRunnerTest {
+public class AsyncReadTaskRunnerTest extends HtsjdkTest {
     public class CountingAsyncReadTaskRunner extends AsyncReadTaskRunner<Integer, Integer> {
         private volatile int readCalledCount;
         private volatile int readCompleteCount;
