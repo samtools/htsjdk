@@ -24,10 +24,7 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -218,16 +215,15 @@ public class ReferenceSource implements CRAMReferenceSource {
         final String url = String.format(Defaults.EBI_REFERENCE_SERVICE_URL_MASK, md5);
 
         for (int i = 0; i < downloadTriesBeforeFailing; i++) {
-            final InputStream is = new URL(url).openStream();
-            if (is == null)
-                return null;
+            try (final InputStream is = new URL(url).openStream()) {
+                if (is == null)
+                    return null;
 
-            log.debug("Downloading reference sequence: " + url);
-            final byte[] data = InputStreamUtils.readFully(is);
-            log.debug("Downloaded " + data.length + " bytes for md5 " + md5);
-            is.close();
+                log.debug("Downloading reference sequence: " + url);
+                final byte[] data = InputStreamUtils.readFully(is);
+                log.debug("Downloaded " + data.length + " bytes for md5 " + md5);
+                is.close();
 
-            try {
                 final String downloadedMD5 = SequenceUtil.calculateMD5String(data);
                 if (md5.equals(downloadedMD5)) {
                     return data;
@@ -237,8 +233,12 @@ public class ReferenceSource implements CRAMReferenceSource {
                                     md5, downloadedMD5);
                     log.error(message);
                 }
-            } catch (final NoSuchAlgorithmException e) {
+            }
+            catch (final NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
+            }
+            catch (final IOException e) {
+                throw new RuntimeIOException(e);
             }
         }
         throw new RuntimeException("Giving up on downloading sequence for md5 "

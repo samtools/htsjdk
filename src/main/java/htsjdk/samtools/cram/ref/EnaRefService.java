@@ -19,7 +19,7 @@ public class EnaRefService {
     private static final int HTTP_CONNECTION_TIMEOUT = 522;
     private static final int HTTP_MOVED_PERMANENTLY = HttpURLConnection.HTTP_MOVED_PERM;
 
-    byte[] getSequence(final String md5) throws GaveUpException {
+    byte[] getSequence(final String md5) {
         final int restBetweenTries_ms = 0;
         final int maxTries = 1;
         final int timeout_ms = 0;
@@ -38,8 +38,7 @@ public class EnaRefService {
      * @throws GaveUpException if the sequence could not be downloaded within the time/try
      *                         limit.
      */
-    byte[] getSequence(final String md5, final long timeoutMs, int maxTries, final long restBetweenTriesMs) throws
-            GaveUpException {
+    byte[] getSequence(final String md5, final long timeoutMs, int maxTries, final long restBetweenTriesMs) {
         if (md5 == null)
             throw new NullPointerException("Expecting sequence md5 but got null.");
         if (!md5.matches("[a-z0-9]{32}"))
@@ -112,7 +111,7 @@ public class EnaRefService {
         throw new GaveUpException(md5);
     }
 
-    public static class GaveUpException extends Exception {
+    public static class GaveUpException extends RuntimeException {
         private static final long serialVersionUID = -8997576068346912410L;
         private String md5;
 

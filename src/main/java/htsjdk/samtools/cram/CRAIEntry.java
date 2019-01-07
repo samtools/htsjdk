@@ -50,7 +50,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * @param line string formatted as a CRAI index entry
      * @throws CRAIIndex.CRAIIndexException
      */
-    public CRAIEntry(final String line) throws CRAIIndex.CRAIIndexException {
+    public CRAIEntry(final String line) {
         final String[] chunks = line.split("\t");
         if (chunks.length != CRAI_INDEX_COLUMNS) {
             throw new CRAIIndex.CRAIIndexException(

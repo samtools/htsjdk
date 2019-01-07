@@ -29,7 +29,6 @@ public interface BitInputStream extends Closeable {
 
     /**
      * Reads a single bit from the stream.
-     *
      */
     boolean readBit();
 

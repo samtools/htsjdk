@@ -101,6 +101,7 @@ public class CramIO {
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
+
         return 0;
     }
 
@@ -179,12 +180,13 @@ public class CramIO {
             outputStream.write(cramHeader.getId());
             for (int i = cramHeader.getId().length; i < 20; i++)
                 outputStream.write(0);
+
+            final long length = CramIO.writeContainerForSamFileHeader(cramHeader.getVersion().major, cramHeader.getSamFileHeader(), outputStream);
+
+            return CramIO.DEFINITION_LENGTH + length;
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
-
-        final long length = CramIO.writeContainerForSamFileHeader(cramHeader.getVersion().major, cramHeader.getSamFileHeader(), outputStream);
-        return CramIO.DEFINITION_LENGTH + length;
     }
 
     private static CramHeader readFormatDefinition(final InputStream inputStream) throws IOException {

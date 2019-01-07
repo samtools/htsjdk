@@ -74,12 +74,13 @@ public class CRAIIndex {
     public static SeekableStream openCraiFileAsBaiStream(final File cramIndexFile, final SAMSequenceDictionary dictionary) {
         try {
             return openCraiFileAsBaiStream(new FileInputStream(cramIndexFile), dictionary);
-        } catch (final FileNotFoundException e) {
+        }
+        catch (final FileNotFoundException e) {
             throw new RuntimeIOException(e);
         }
     }
 
-    public static SeekableStream openCraiFileAsBaiStream(final InputStream indexStream, final SAMSequenceDictionary dictionary) throws CRAIIndexException {
+    public static SeekableStream openCraiFileAsBaiStream(final InputStream indexStream, final SAMSequenceDictionary dictionary) {
         final List<CRAIEntry> full = CRAMCRAIIndexer.readIndex(indexStream).getCRAIEntries();
         Collections.sort(full);
 
