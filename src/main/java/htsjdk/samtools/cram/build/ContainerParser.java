@@ -44,8 +44,7 @@ public class ContainerParser {
     }
 
     public List<CramCompressionRecord> getRecords(final Container container,
-                                                  ArrayList<CramCompressionRecord> records, final ValidationStringency validationStringency) throws IllegalArgumentException,
-            IllegalAccessException {
+                                                  ArrayList<CramCompressionRecord> records, final ValidationStringency validationStringency) throws IllegalArgumentException {
         if (container.isEOF()) {
             return Collections.emptyList();
         }
@@ -154,7 +153,7 @@ public class ContainerParser {
     }
 
     List<CramCompressionRecord> getRecords(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency)
-            throws IllegalArgumentException, IllegalAccessException {
+            throws IllegalArgumentException {
         return getRecords(null, slice, header, validationStringency);
     }
 }

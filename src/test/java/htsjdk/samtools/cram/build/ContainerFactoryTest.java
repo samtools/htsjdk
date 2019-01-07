@@ -12,7 +12,6 @@ import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +22,7 @@ import java.util.List;
 public class ContainerFactoryTest extends HtsjdkTest {
 
     @Test
-    public void testUnmapped() throws IOException, IllegalAccessException {
+    public void testUnmapped() {
         SAMFileHeader header = new SAMFileHeader();
 
         int recordsPerContainer = 10;
@@ -49,7 +48,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
     }
 
     @Test
-    public void testMapped() throws IOException, IllegalAccessException {
+    public void testMapped() {
         InMemoryReferenceSequenceFile refFile = new InMemoryReferenceSequenceFile();
         String refName = "1";
         String refString = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -89,7 +88,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
     }
 
     @Test
-    public void testMultiref() throws IOException, IllegalAccessException {
+    public void testMultiref() {
         SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("1", 100));
         header.addSequence(new SAMSequenceRecord("2", 200));
