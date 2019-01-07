@@ -44,7 +44,8 @@ public class ContainerParser {
     }
 
     public List<CramCompressionRecord> getRecords(final Container container,
-                                                  ArrayList<CramCompressionRecord> records, final ValidationStringency validationStringency) throws IllegalArgumentException {
+                                                  ArrayList<CramCompressionRecord> records,
+                                                  final ValidationStringency validationStringency) {
         if (container.isEOF()) {
             return Collections.emptyList();
         }
@@ -101,7 +102,9 @@ public class ContainerParser {
     }
 
     ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                                final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) throws IllegalArgumentException {
+                                                final Slice slice,
+                                                final CompressionHeader header,
+                                                final ValidationStringency validationStringency) {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
         switch (slice.sequenceId) {
             case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
@@ -152,8 +155,9 @@ public class ContainerParser {
         return records;
     }
 
-    List<CramCompressionRecord> getRecords(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency)
-            throws IllegalArgumentException {
+    List<CramCompressionRecord> getRecords(final Slice slice,
+                                           final CompressionHeader header,
+                                           final ValidationStringency validationStringency) {
         return getRecords(null, slice, header, validationStringency);
     }
 }
