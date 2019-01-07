@@ -62,7 +62,7 @@ public final class BAMSBIIndexer {
      * @param in a seekable stream for reading the BAM file from
      * @param out the stream to write the index to
      * @param granularity write the offset of every n-th alignment to the index
-     * @throws RuntimeEOFException as per java IO contract
+     * @throws IOException as per java IO contract
      */
     public static void createIndex(final SeekableStream in, final OutputStream out, final long granularity) throws IOException {
         long recordStart = SAMUtils.findVirtualOffsetOfFirstRecordInBam(in);
