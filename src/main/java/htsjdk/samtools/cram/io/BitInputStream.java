@@ -30,23 +30,20 @@ public interface BitInputStream extends Closeable {
     /**
      * Reads a single bit from the stream.
      *
-     * @throws IOException as per streaming contract in java.
      */
-    boolean readBit() throws IOException;
+    boolean readBit();
 
     /**
      * Read specified number of bits from the stream. The bits are return in an integer value.
      *
      * @param length number of bits to read
-     * @throws IOException as per streaming contract in java.
      */
-    int readBits(int length) throws IOException;
+    int readBits(int length);
 
     /**
      * Read specified number of bits from the stream. The bits are return in a long value.
      *
      * @param length number of bits to read
-     * @throws IOException as per streaming contract in java.
      */
-    long readLongBits(int length) throws IOException;
+    long readLongBits(int length);
 }

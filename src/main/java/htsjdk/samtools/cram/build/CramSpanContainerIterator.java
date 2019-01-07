@@ -4,6 +4,7 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,8 +37,12 @@ public class CramSpanContainerIterator implements Iterator<Container> {
         currentBoundary = containerBoundaries.next();
     }
 
-    public static CramSpanContainerIterator fromFileSpan(final SeekableStream seekableStream, final long[] coordinates) throws IOException {
-        return new CramSpanContainerIterator(seekableStream, coordinates);
+    public static CramSpanContainerIterator fromFileSpan(final SeekableStream seekableStream, final long[] coordinates) {
+        try {
+            return new CramSpanContainerIterator(seekableStream, coordinates);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
@@ -48,7 +53,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
             currentBoundary = containerBoundaries.next();
             return currentBoundary.hasNext();
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -57,7 +62,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
         try {
             return currentBoundary.next();
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -80,11 +85,11 @@ public class CramSpanContainerIterator implements Iterator<Container> {
             if (start >= end) throw new RuntimeException("Boundary start is greater than end.");
         }
 
-        boolean hasNext() throws IOException {
+        private boolean hasNext() throws IOException {
             return seekableStream.position() <= (end >> 16);
         }
 
-        Container next() throws IOException {
+        private Container next() throws IOException {
             if (seekableStream.position() < (start >> 16)) seekableStream.seek(start >> 16);
             if (seekableStream.position() > (end >> 16)) throw new RuntimeException("No more containers in this boundary.");
             final long offset = seekableStream.position();

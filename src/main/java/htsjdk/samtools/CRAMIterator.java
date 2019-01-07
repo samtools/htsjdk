@@ -286,11 +286,8 @@ public class CRAMIterator implements SAMRecordIterator {
     public void close() {
         records.clear();
         //noinspection EmptyCatchBlock
-        try {
-            if (countingInputStream != null)
-                countingInputStream.close();
-        } catch (final IOException e) {
-        }
+        if (countingInputStream != null)
+            countingInputStream.close();
     }
 
     @Override

@@ -3,8 +3,6 @@ package htsjdk.samtools.cram.compression;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.cram.compression.rans.RANS.ORDER;
 
-import java.io.IOException;
-
 public abstract class ExternalCompressor {
     private final BlockCompressionMethod method;
 
@@ -33,11 +31,7 @@ public abstract class ExternalCompressor {
 
             @Override
             public byte[] compress(final byte[] data) {
-                try {
-                    return ExternalCompression.gzip(data);
-                } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                }
+                return ExternalCompression.gzip(data);
             }
         };
     }
@@ -47,11 +41,7 @@ public abstract class ExternalCompressor {
 
             @Override
             public byte[] compress(final byte[] data) {
-                try {
-                    return ExternalCompression.xz(data);
-                } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                }
+                return ExternalCompression.xz(data);
             }
         };
     }
@@ -61,11 +51,7 @@ public abstract class ExternalCompressor {
 
             @Override
             public byte[] compress(final byte[] data) {
-                try {
-                    return ExternalCompression.bzip2(data);
-                } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                }
+                return ExternalCompression.bzip2(data);
             }
         };
 

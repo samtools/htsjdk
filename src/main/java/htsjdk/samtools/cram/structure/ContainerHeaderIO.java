@@ -22,6 +22,7 @@ import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.CramInt;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.LTF8;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,24 +30,26 @@ import java.io.OutputStream;
 
 class ContainerHeaderIO {
 
-    public boolean readContainerHeader(final Container container, final InputStream inputStream)
-            throws IOException {
+    public boolean readContainerHeader(final Container container, final InputStream inputStream) {
         return readContainerHeader(2, container, inputStream);
     }
 
-    public boolean readContainerHeader(final int major, final Container container, final InputStream inputStream)
-            throws IOException {
+    public boolean readContainerHeader(final int major, final Container container, final InputStream inputStream) {
         final byte[] peek = new byte[4];
-        int character = inputStream.read();
-        if (character == -1)
-            return false;
-
-        peek[0] = (byte) character;
-        for (int i = 1; i < peek.length; i++) {
-            character = inputStream.read();
+        try {
+            int character = inputStream.read();
             if (character == -1)
-                throw new RuntimeException("Incomplete or broken stream.");
-            peek[i] = (byte) character;
+                return false;
+
+            peek[0] = (byte) character;
+            for (int i = 1; i < peek.length; i++) {
+                character = inputStream.read();
+                if (character == -1)
+                    throw new RuntimeException("Incomplete or broken stream.");
+                peek[i] = (byte) character;
+            }
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
 
         container.containerByteSize = CramInt.readInt32(peek);
@@ -70,10 +73,8 @@ class ContainerHeaderIO {
      * @param container container to be written
      * @param outputStream the output stream to write the container to
      * @return number of bytes written out to the output stream
-     * @throws IOException as per java IO contract
      */
-    public int writeContainerHeader(final int major, final Container container, final OutputStream outputStream)
-            throws IOException {
+    public int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {
         final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
 
         int length = (CramInt.writeInt32(container.containerByteSize, crc32OutputStream) + 7) / 8;
@@ -87,7 +88,11 @@ class ContainerHeaderIO {
         length += (CramIntArray.write(container.landmarks, crc32OutputStream) + 7) / 8;
 
         if (major >= 3) {
-            outputStream.write(crc32OutputStream.getCrc32_LittleEndian());
+            try {
+                outputStream.write(crc32OutputStream.getCrc32_LittleEndian());
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
             length += 4 ;
         }
 

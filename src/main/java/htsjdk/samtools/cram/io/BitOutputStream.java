@@ -33,41 +33,36 @@ public interface BitOutputStream extends Closeable, Flushable {
      * Write specified number of bits supplied in the integer value. The method is naturally limited to 32 bits max.
      * @param bitContainer an integer containing the bits to be written out
      * @param nofBits the number of bits to written out, minimum 0, maximum 32.
-     * @throws IOException as per streaming contract in java.
      */
-    void write(int bitContainer, int nofBits) throws IOException;
+    void write(int bitContainer, int nofBits);
 
 
     /**
      * Write specified number of bits supplied in the long value. The method is naturally limited to 64 bits max.
      * @param bitContainer an integer containing the bits to be written out
      * @param nofBits the number of bits to written out, minimum 0, maximum 64.
-     * @throws IOException as per streaming contract in java.
      */
-    void write(long bitContainer, int nofBits) throws IOException;
+    void write(long bitContainer, int nofBits);
 
 
     /**
      * Write specified number of bits supplied in the byte value. The method is naturally limited to 8 bits max.
      * @param bitContainer an integer containing the bits to be written out
      * @param nofBits the number of bits to written out, minimum 0, maximum 8.
-     * @throws IOException as per streaming contract in java.
      */
-    void write(byte bitContainer, int nofBits) throws IOException;
+    void write(byte bitContainer, int nofBits);
 
 
     /**
      * Write a single bit specified in the boolean argument.
      * @param bit emit 1 if true, 0 otherwise.
-     * @throws IOException as per streaming contract in java.
      */
-    void write(boolean bit) throws IOException;
+    void write(boolean bit);
 
     /**
      * Write a single bit specified in the boolean argument repeatedly.
      * @param bit emit 1 if true, 0 otherwise.
      * @param repeat the number of bits to emit.
-     * @throws IOException as per streaming contract in java.
      */
-    void write(boolean bit, long repeat) throws IOException;
+    void write(boolean bit, long repeat);
 }

@@ -6,6 +6,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -23,9 +24,8 @@ public class ContainerIO {
      * @param version CRAM version to expect
      * @param inputStream      the stream to read from
      * @return a new container object read from the stream
-     * @throws IOException as per java IO contract
      */
-    public static Container readContainer(final Version version, final InputStream inputStream) throws IOException {
+    public static Container readContainer(final Version version, final InputStream inputStream) {
         final Container container = readContainer(version.major, inputStream);
         if (container == null) {
             // this will cause System.exit(1):
@@ -43,9 +43,8 @@ public class ContainerIO {
      *
      * @param inputStream the stream to read from
      * @return CRAM container or null if no more data
-     * @throws IOException
      */
-    private static Container readContainer(final int major, final InputStream inputStream) throws IOException {
+    private static Container readContainer(final int major, final InputStream inputStream) {
         return readContainer(major, inputStream, 0, Integer.MAX_VALUE);
     }
 
@@ -55,9 +54,8 @@ public class ContainerIO {
      * @param major the CRAM version to assume
      * @param inputStream    the input stream to read from
      * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
-     * @throws IOException as per java IO contract
      */
-    public static Container readContainerHeader(final int major, final InputStream inputStream) throws IOException {
+    public static Container readContainerHeader(final int major, final InputStream inputStream) {
         final Container container = new Container();
         final ContainerHeaderIO containerHeaderIO = new ContainerHeaderIO();
         if (!containerHeaderIO.readContainerHeader(major, container, inputStream)) {
@@ -68,7 +66,7 @@ public class ContainerIO {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static Container readContainer(final int major, final InputStream inputStream, final int fromSlice, int howManySlices) throws IOException {
+    private static Container readContainer(final int major, final InputStream inputStream, final int fromSlice, int howManySlices) {
 
         final Container container = readContainerHeader(major, inputStream);
         if (container.isEOF()) {
@@ -79,8 +77,12 @@ public class ContainerIO {
 
         howManySlices = Math.min(container.landmarks.length, howManySlices);
 
-        if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
-            inputStream.skip(container.landmarks[fromSlice]);
+        try {
+            if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
+                inputStream.skip(container.landmarks[fromSlice]);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
 
         final List<Slice> slices = new ArrayList<Slice>();
         for (int sliceCount = fromSlice; sliceCount < howManySlices - fromSlice; sliceCount++) {
@@ -122,9 +124,8 @@ public class ContainerIO {
      * @param container the container holding the header to write
      * @param outputStream        the stream to write to
      * @return the number of bytes written
-     * @throws IOException as per java IO contract
      */
-    public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) throws IOException {
+    public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {
         return new ContainerHeaderIO().writeContainerHeader(major, container, outputStream);
     }
 
@@ -136,9 +137,8 @@ public class ContainerIO {
      * @param container the container to write
      * @param outputStream        the stream to write to
      * @return the number of bytes written out
-     * @throws IOException as per java IO contract
      */
-    public static int writeContainer(final Version version, final Container container, final OutputStream outputStream) throws IOException {
+    public static int writeContainer(final Version version, final Container container, final OutputStream outputStream) {
         {
             if (container.blocks != null && container.blocks.length > 0) {
 
@@ -150,7 +150,11 @@ public class ContainerIO {
                     container.containerByteSize = byteArrayOutputStream.size();
 
                     final int containerHeaderByteSize = new ContainerHeaderIO().writeContainerHeader(version.major, container, outputStream);
-                    outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+                    try {
+                        outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+                    } catch (final IOException e) {
+                        throw new RuntimeIOException(e);
+                    }
                     return containerHeaderByteSize + byteArrayOutputStream.size();
                 }
             }
@@ -179,7 +183,11 @@ public class ContainerIO {
         calculateSliceOffsetsAndSizes(container);
 
         int length = new ContainerHeaderIO().writeContainerHeader(version.major, container, outputStream);
-        outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+        try {
+            outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
         length += byteArrayOutputStream.size();
 
         log.debug("CONTAINER WRITTEN: " + container.toString());

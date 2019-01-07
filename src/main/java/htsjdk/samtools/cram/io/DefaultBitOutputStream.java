@@ -17,6 +17,8 @@
  */
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -38,13 +40,21 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         this.out = delegate;
     }
 
-    public void write(final byte b) throws IOException {
-        out.write((int) b);
+    public void write(final byte b) {
+        try {
+            out.write((int) b);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void write(final int value) throws IOException {
-        out.write(value);
+    public void write(final int value) {
+        try {
+            out.write(value);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -54,12 +64,12 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
     }
 
     @Override
-    public void write(final long bitContainer, final int nofBits) throws IOException {
+    public void write(final long bitContainer, final int nofBits) {
         if (nofBits == 0)
             return;
 
         if (nofBits < 1 || nofBits > 64)
-            throw new IOException("Expecting 1 to 64 bits, got: value=" + bitContainer + ", nofBits=" + nofBits);
+            throw new RuntimeIOException("Expecting 1 to 64 bits, got: value=" + bitContainer + ", nofBits=" + nofBits);
 
         if (nofBits <= 8)
             write((byte) bitContainer, nofBits);
@@ -75,12 +85,12 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         }
     }
 
-    void write_int_LSB_0(final int value, final int nofBitsToWrite) throws IOException {
+    void write_int_LSB_0(final int value, final int nofBitsToWrite) {
         if (nofBitsToWrite == 0)
             return;
 
         if (nofBitsToWrite < 1 || nofBitsToWrite > 32)
-            throw new IOException("Expecting 1 to 32 bits.");
+            throw new RuntimeIOException("Expecting 1 to 32 bits.");
 
         if (nofBitsToWrite <= 8)
             write((byte) value, nofBitsToWrite);
@@ -97,24 +107,28 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
     }
 
     @Override
-    public void write(final int bitContainer, final int nofBits) throws IOException {
+    public void write(final int bitContainer, final int nofBits) {
         write_int_LSB_0(bitContainer, nofBits);
     }
 
-    private void writeByte(final int value) throws IOException {
-        if (bufferedNumberOfBits == 0)
-            out.write(value);
-        else {
-            bufferByte = ((value & 0xFF) >>> bufferedNumberOfBits) | bufferByte;
-            out.write(bufferByte);
-            bufferByte = (value << (8 - bufferedNumberOfBits)) & 0xFF;
+    private void writeByte(final int value) {
+        try {
+            if (bufferedNumberOfBits == 0)
+                out.write(value);
+            else {
+                bufferByte = ((value & 0xFF) >>> bufferedNumberOfBits) | bufferByte;
+                out.write(bufferByte);
+                bufferByte = (value << (8 - bufferedNumberOfBits)) & 0xFF;
+            }
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void write(byte bitContainer, final int nofBits) throws IOException {
+    public void write(byte bitContainer, final int nofBits) {
         if (nofBits < 0 || nofBits > 8)
-            throw new IOException("Expecting 0 to 8 bits.");
+            throw new RuntimeIOException("Expecting 0 to 8 bits.");
 
         if (nofBits == 8)
             writeByte(bitContainer);
@@ -125,58 +139,78 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
             } else {
                 bitContainer = (byte) (bitContainer & ~bitMasks[8 - nofBits]);
                 int bits = 8 - bufferedNumberOfBits - nofBits;
-                if (bits < 0) {
-                    bits = -bits;
-                    bufferByte |= (bitContainer >>> bits);
-                    out.write(bufferByte);
-                    bufferByte = (bitContainer << (8 - bits)) & 0xFF;
-                    bufferedNumberOfBits = bits;
-                } else if (bits == 0) {
-                    bufferByte = bufferByte | bitContainer;
-                    out.write(bufferByte);
-                    bufferedNumberOfBits = 0;
-                } else {
-                    bufferByte = bufferByte | (bitContainer << bits);
-                    bufferedNumberOfBits = 8 - bits;
+                try {
+                    if (bits < 0) {
+                        bits = -bits;
+                        bufferByte |= (bitContainer >>> bits);
+                        out.write(bufferByte);
+                        bufferByte = (bitContainer << (8 - bits)) & 0xFF;
+                        bufferedNumberOfBits = bits;
+                    } else if (bits == 0) {
+                        bufferByte = bufferByte | bitContainer;
+                        out.write(bufferByte);
+                        bufferedNumberOfBits = 0;
+                    } else {
+                        bufferByte = bufferByte | (bitContainer << bits);
+                        bufferedNumberOfBits = 8 - bits;
+                    }
+                } catch (final IOException e) {
+                    throw new RuntimeException(e);
                 }
             }
         }
     }
 
     @Override
-    public void write(final boolean bit) throws IOException {
+    public void write(final boolean bit) {
         write(bit ? (byte) 1 : (byte) 0, 1);
     }
 
     @Override
-    public void write(final boolean bit, final long repeat) throws IOException {
+    public void write(final boolean bit, final long repeat) {
         for (long i = 0; i < repeat; i++)
             write(bit);
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         flush();
-        out.close();
+        try {
+            out.close();
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void flush() throws IOException {
-        if (bufferedNumberOfBits > 0)
-            out.write(bufferByte);
+    public void flush() {
+        try {
+            if (bufferedNumberOfBits > 0)
+                out.write(bufferByte);
 
-        bufferedNumberOfBits = 0;
-        out.flush();
+            bufferedNumberOfBits = 0;
+            out.flush();
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void write(@SuppressWarnings("NullableProblems") final byte[] b) throws IOException {
-        out.write(b);
+    public void write(@SuppressWarnings("NullableProblems") final byte[] b) {
+        try {
+            out.write(b);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void write(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) throws IOException {
-        out.write(b, off, length);
+    public void write(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) {
+        try {
+            out.write(b, off, length);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

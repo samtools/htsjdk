@@ -20,7 +20,6 @@ package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -127,7 +126,7 @@ public class HuffmanByteHelper {
     }
 
     final public long write(final BitOutputStream bitOutputStream, final byte value)
-            throws IOException {
+            {
         final HuffmanBitCode code = valueToCode[value];
         if (code.value != value)
             throw new RuntimeException(String.format(
@@ -137,7 +136,7 @@ public class HuffmanByteHelper {
         return code.bitLength;
     }
 
-    final public byte read(final BitInputStream bitInputStream) throws IOException {
+    final public byte read(final BitInputStream bitInputStream) {
         int prevLen = 0;
         int bits = 0;
         for (int i = 0; i < sortedCodes.length; i++) {

@@ -28,8 +28,8 @@ import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeEOFException;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -62,7 +62,7 @@ public final class BAMSBIIndexer {
      * @param in a seekable stream for reading the BAM file from
      * @param out the stream to write the index to
      * @param granularity write the offset of every n-th alignment to the index
-     * @throws IOException as per java IO contract
+     * @throws RuntimeEOFException as per java IO contract
      */
     public static void createIndex(final SeekableStream in, final OutputStream out, final long granularity) throws IOException {
         long recordStart = SAMUtils.findVirtualOffsetOfFirstRecordInBam(in);
@@ -80,7 +80,7 @@ public final class BAMSBIIndexer {
                     // Process the record start position, then skip to the start of the next BAM record
                     indexWriter.processRecord(recordStart);
                     InputStreamUtils.skipFully(blockIn, blockSize);
-                } catch (EOFException e) {
+                } catch (RuntimeEOFException e) {
                     break;
                 }
             }

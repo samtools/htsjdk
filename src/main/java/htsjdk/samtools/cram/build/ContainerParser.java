@@ -23,13 +23,11 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
-import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,7 +59,7 @@ public class ContainerParser {
         return records;
     }
 
-    public Map<Integer, AlignmentSpan> getReferences(final Container container, final ValidationStringency validationStringency) throws IOException {
+    public Map<Integer, AlignmentSpan> getReferences(final Container container, final ValidationStringency validationStringency) {
         final Map<Integer, AlignmentSpan> containerSpanMap  = new HashMap<>();
         for (final Slice slice : container.slices) {
             addAllSpans(containerSpanMap, getReferences(slice, container.header, validationStringency));
@@ -84,7 +82,7 @@ public class ContainerParser {
         return spanMap;
     }
 
-    Map<Integer, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) throws IOException {
+    Map<Integer, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
         final Map<Integer, AlignmentSpan> spanMap = new HashMap<>();
         switch (slice.sequenceId) {
             case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:

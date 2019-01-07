@@ -19,9 +19,6 @@ package htsjdk.samtools.cram.encoding.core.experimental;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.IOException;
 
 class GolombIntegerCodec extends ExperimentalCodec<Integer> {
     private final int m;
@@ -43,23 +40,20 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
     @Override
     public final Integer read() {
         int quotient = 0;
-        try {
-            while (coreBlockInputStream.readBit() == quotientBit) {
-                quotient++;
-            }
 
-            final int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
-            int reminder = coreBlockInputStream.readBits(ceiling - 1);
-            if (reminder >= Math.pow(2, ceiling) - m) {
-                reminder <<= 1;
-                reminder |= coreBlockInputStream.readBits(1);
-                reminder -= Math.pow(2, ceiling) - m;
-            }
-
-            return (quotient * m + reminder) - offset;
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
+        while (coreBlockInputStream.readBit() == quotientBit) {
+            quotient++;
         }
+
+        final int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
+        int reminder = coreBlockInputStream.readBits(ceiling - 1);
+        if (reminder >= Math.pow(2, ceiling) - m) {
+            reminder <<= 1;
+            reminder |= coreBlockInputStream.readBits(1);
+            reminder -= Math.pow(2, ceiling) - m;
+        }
+
+        return (quotient * m + reminder) - offset;
     }
 
     @Override
@@ -69,18 +63,14 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
         final int reminder = newValue % m;
         final int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
 
-        try {
-            coreBlockOutputStream.write(quotientBit, quotient);
-            coreBlockOutputStream.write(!quotientBit);
+        coreBlockOutputStream.write(quotientBit, quotient);
+        coreBlockOutputStream.write(!quotientBit);
 
-            if (reminder < Math.pow(2, ceiling) - m) {
-                coreBlockOutputStream.write(reminder, ceiling - 1);
-            } else {
-                coreBlockOutputStream.write((int) (reminder + Math.pow(2, ceiling) - m),
-                        ceiling);
-            }
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
+        if (reminder < Math.pow(2, ceiling) - m) {
+            coreBlockOutputStream.write(reminder, ceiling - 1);
+        } else {
+            coreBlockOutputStream.write((int) (reminder + Math.pow(2, ceiling) - m),
+                    ceiling);
         }
     }
 

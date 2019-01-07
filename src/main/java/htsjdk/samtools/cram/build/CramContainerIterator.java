@@ -6,7 +6,6 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 
@@ -20,22 +19,18 @@ public class CramContainerIterator implements Iterator<Container> {
     private boolean eof = false;
     private long offset = 0;
 
-    public CramContainerIterator(final InputStream inputStream) throws IOException {
+    public CramContainerIterator(final InputStream inputStream) {
         this.countingInputStream = new CountingInputStream(inputStream);
         cramHeader = CramIO.readCramHeader(countingInputStream);
         this.offset = countingInputStream.getCount();
     }
 
     void readNextContainer() {
-        try {
-            nextContainer = containerFromStream(cramHeader.getVersion(), countingInputStream);
-            final long containerSizeInBytes = countingInputStream.getCount() - offset;
+        nextContainer = containerFromStream(cramHeader.getVersion(), countingInputStream);
+        final long containerSizeInBytes = countingInputStream.getCount() - offset;
 
-            nextContainer.offset = offset;
-            offset += containerSizeInBytes;
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
+        nextContainer.offset = offset;
+        offset += containerSizeInBytes;
 
         if (nextContainer.isEOF()) {
             eof = true;
@@ -48,9 +43,8 @@ public class CramContainerIterator implements Iterator<Container> {
      * @param cramVersion
      * @param countingStream
      * @return The next Container from the stream.
-     * @throws IOException
      */
-    protected Container containerFromStream(final Version cramVersion, final CountingInputStream countingStream) throws IOException {
+    protected Container containerFromStream(final Version cramVersion, final CountingInputStream countingStream) {
         return ContainerIO.readContainer(cramHeader.getVersion(), countingStream);
     }
 
