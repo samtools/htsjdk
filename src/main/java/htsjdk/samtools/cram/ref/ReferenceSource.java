@@ -237,9 +237,6 @@ public class ReferenceSource implements CRAMReferenceSource {
             catch (final NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
-            catch (final IOException e) {
-                throw new RuntimeIOException(e);
-            }
         }
         throw new RuntimeException("Giving up on downloading sequence for md5 "
                 + md5);
