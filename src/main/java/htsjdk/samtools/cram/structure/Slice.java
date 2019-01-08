@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
@@ -291,4 +292,15 @@ public class Slice {
         return reader.getReferenceSpans();
     }
 
+    /**
+     * Generate a CRAI Index entry from this Slice and the container offset.
+     *
+     * TODO: investigate why we can't simply use the Slice's own containerOffset here
+     *
+     * @param containerStartOffset the byte offset of this Slice's Container
+     * @return a new CRAI Index Entry
+     */
+    public CRAIEntry getCRAIEntry(final long containerStartOffset) {
+        return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerStartOffset, offset, size);
+    }
 }

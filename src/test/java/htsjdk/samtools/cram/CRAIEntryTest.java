@@ -14,7 +14,6 @@ import java.util.List;
  * Created by vadim on 25/08/2015.
  */
 public class CRAIEntryTest extends HtsjdkTest {
-
     @Test
     public void testFromContainer() {
         final Container container = new Container();
@@ -31,10 +30,10 @@ public class CRAIEntryTest extends HtsjdkTest {
         Assert.assertEquals(entries.size(), 1);
         final CRAIEntry entry = entries.get(0);
 
-        Assert.assertEquals(entry.sequenceId, slice.sequenceId);
-        Assert.assertEquals(entry.alignmentStart, slice.alignmentStart);
-        Assert.assertEquals(entry.alignmentSpan, slice.alignmentSpan);
-        Assert.assertEquals(entry.containerStartOffset, slice.containerOffset);
+        Assert.assertEquals(entry.getSequenceId(), slice.sequenceId);
+        Assert.assertEquals(entry.getAlignmentStart(), slice.alignmentStart);
+        Assert.assertEquals(entry.getAlignmentSpan(), slice.alignmentSpan);
+        Assert.assertEquals(entry.getContainerStartOffset(), slice.containerOffset);
     }
 
     @Test
@@ -45,101 +44,121 @@ public class CRAIEntryTest extends HtsjdkTest {
         final int alignmentSpan = counter++;
         final int containerOffset = Integer.MAX_VALUE + counter++;
         final int sliceOffset = counter++;
-        final int sliceSise = counter++;
+        final int sliceSize = counter++;
 
-        final String line = String.format("%d\t%d\t%d\t%d\t%d\t%d", sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSise);
+        final String line = String.format("%d\t%d\t%d\t%d\t%d\t%d", sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
         final CRAIEntry entry = new CRAIEntry(line);
         Assert.assertNotNull(entry);
-        Assert.assertEquals(entry.sequenceId, sequenceId);
-        Assert.assertEquals(entry.alignmentStart, alignmentStart);
-        Assert.assertEquals(entry.alignmentSpan, alignmentSpan);
-        Assert.assertEquals(entry.containerStartOffset, containerOffset);
+        Assert.assertEquals(entry.getSequenceId(), sequenceId);
+        Assert.assertEquals(entry.getAlignmentStart(), alignmentStart);
+        Assert.assertEquals(entry.getAlignmentSpan(), alignmentSpan);
+        Assert.assertEquals(entry.getContainerStartOffset(), containerOffset);
+        Assert.assertEquals(entry.getSliceByteOffset(), sliceOffset);
+        Assert.assertEquals(entry.getSliceByteSize(), sliceSize);
     }
 
     @Test
-    public void testIntersetcsZeroSpan() {
-        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 1), newEntry(1, 0)));
+    public void testIntersectsZeroSpan() {
+        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 1, 1), newEntry(1, 1, 0)));
     }
 
     @Test
-    public void testIntersetcsSame() {
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1), newEntry(1, 1)));
+    public void testIntersectsSame() {
+        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 1), newEntry(1, 1, 1)));
     }
 
     @Test
-    public void testIntersetcsIncluded() {
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 2), newEntry(1, 1)));
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 2), newEntry(2, 1)));
+    public void testIntersectsIncluded() {
+        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 1, 1)));
+        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 2, 1)));
 
         // is symmetrical?
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1), newEntry(1, 2)));
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(2, 1), newEntry(1, 2)));
+        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 1), newEntry(1, 1, 2)));
+        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 2, 1), newEntry(1, 1, 2)));
     }
 
     @Test
-    public void testIntersetcsOvertlaping() {
-        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 2), newEntry(0, 1)));
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 2), newEntry(0, 2)));
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 2), newEntry(2, 1)));
-        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 2), newEntry(3, 1)));
+    public void testIntersectsOvertlaping() {
+        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 0, 1)));
+        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 0, 2)));
+        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 2, 1)));
+        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 3, 1)));
     }
 
     @Test
-    public void testIntersetcsAnotherSequence() {
+    public void testIntersectsAnotherSequence() {
         Assert.assertTrue(CRAIEntry.intersect(newEntry(10, 1, 2), newEntry(10, 2, 1)));
         Assert.assertFalse(CRAIEntry.intersect(newEntry(10, 1, 2), newEntry(11, 2, 1)));
     }
 
     @Test
     public void testCompareTo () {
-        final List<CRAIEntry> list = new ArrayList<CRAIEntry>(2);
+        final List<CRAIEntry> list = new ArrayList<>(2);
         CRAIEntry e1;
         CRAIEntry e2;
 
-        e1 = new CRAIEntry();
-        e1.sequenceId = 100;
-        e2 = new CRAIEntry();
-        e2.sequenceId = 200;
+        e1 = newEntry(100, 0, 0);
+        e2 = newEntry(200, 0, 0);
         list.add(e2);
         list.add(e1);
-        Assert.assertTrue(list.get(1).sequenceId < list.get(0).sequenceId);
+        Assert.assertTrue(list.get(1).getSequenceId() < list.get(0).getSequenceId());
         Collections.sort(list);
-        Assert.assertTrue(list.get(0).sequenceId < list.get(1).sequenceId);
+        Assert.assertTrue(list.get(0).getSequenceId() < list.get(1).getSequenceId());
 
         list.clear();
-        e1 = new CRAIEntry();
-        e1.alignmentStart = 100;
-        e2 = new CRAIEntry();
-        e2.alignmentStart = 200;
+        e1 = newEntry(1, 100, 0);
+        e2 = newEntry(1, 200, 0);
         list.add(e2);
         list.add(e1);
-        Assert.assertTrue(list.get(1).alignmentStart < list.get(0).alignmentStart);
+        Assert.assertTrue(list.get(1).getAlignmentStart() < list.get(0).getAlignmentStart());
         Collections.sort(list);
-        Assert.assertTrue(list.get(0).alignmentStart < list.get(1).alignmentStart);
+        Assert.assertTrue(list.get(0).getAlignmentStart() < list.get(1).getAlignmentStart());
 
         list.clear();
-        e1 = new CRAIEntry();
-        e1.containerStartOffset = 100;
-        e2 = new CRAIEntry();
-        e2.containerStartOffset = 200;
+        e1 = newEntryContOffset(100);
+        e2 = newEntryContOffset(200);
         list.add(e2);
         list.add(e1);
-        Assert.assertTrue(list.get(1).containerStartOffset < list.get(0).containerStartOffset);
+        Assert.assertTrue(list.get(1).getContainerStartOffset() < list.get(0).getContainerStartOffset());
         Collections.sort(list);
-        Assert.assertTrue(list.get(0).containerStartOffset < list.get(1).containerStartOffset);
+        Assert.assertTrue(list.get(0).getContainerStartOffset() < list.get(1).getContainerStartOffset());
     }
 
-    private static CRAIEntry newEntry(final int start, final int span) {
-        return newEntry(1, start, span);
+    public static CRAIEntry newEntry(final int seqId, final int start, final int span) {
+        return newEntry(seqId, start, span, 0, 0, 0);
     }
 
-    private static CRAIEntry newEntry(final int seqId, final int start, final int span) {
-        final CRAIEntry e1 = new CRAIEntry();
-        e1.sequenceId = seqId;
-        e1.alignmentStart = start;
-        e1.alignmentSpan = span;
-        return e1;
+    public static CRAIEntry newEntry(final int sequenceId,
+                                     final int start,
+                                     final int span,
+                                     final int containerStartOffset,
+                                     final int sliceOffset,
+                                     final int sliceSize) {
+        return new CRAIEntry(sequenceId, start, span, containerStartOffset, sliceOffset, sliceSize);
     }
 
+    public static CRAIEntry newEntrySeqStart(final int seqId, final int start) {
+        return newEntry(seqId, start, 0);
+    }
 
+    public static  CRAIEntry newEntryContOffset(final int containerStartOffset) {
+        return newEntry(1, 0, 0, containerStartOffset, 0, 0);
+    }
+
+    public static CRAIEntry updateStart(final CRAIEntry toClone, final int alignmentStart) {
+        return newEntry(toClone.getSequenceId(),
+                alignmentStart,
+                toClone.getAlignmentSpan());
+    }
+
+    public static CRAIEntry updateStartContOffset(final CRAIEntry toClone,
+                                                  final int alignmentStart,
+                                                  final int containerStartOffset) {
+        return newEntry(toClone.getSequenceId(),
+                alignmentStart,
+                toClone.getAlignmentSpan(),
+                containerStartOffset,
+                toClone.getSliceByteOffset(),
+                toClone.getSliceByteSize());
+    }
 }

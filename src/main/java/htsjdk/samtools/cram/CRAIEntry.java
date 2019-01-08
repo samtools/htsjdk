@@ -7,27 +7,36 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A class representing CRAI index entry: file and alignment offsets for each slice.
  * Created by vadim on 10/08/2015.
  */
-public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
-    public int sequenceId;
-    public int alignmentStart;
-    public int alignmentSpan;
-    public long containerStartOffset;
-    public int sliceOffset;
-    public int sliceSize;
-    public int sliceIndex;
+public class CRAIEntry implements Comparable<CRAIEntry> {
+    private final int sequenceId;
+    private final int alignmentStart;
+    private final int alignmentSpan;
+    private final long containerStartOffset;
+    private final int sliceByteOffset;
+    private final int sliceByteSize;
 
-    private static int CRAI_INDEX_COLUMNS = 6;
-    private static String entryFormat = "%d\t%d\t%d\t%d\t%d\t%d";
+    private static final int CRAI_INDEX_COLUMNS = 6;
+    private static final String ENTRY_FORMAT = "%d\t%d\t%d\t%d\t%d\t%d";
 
-    public CRAIEntry() {
+    public CRAIEntry(final int sequenceId,
+                     final int alignmentStart,
+                     final int alignmentSpan,
+                     final long containerStartOffset,
+                     final int sliceByteOffset,
+                     final int sliceByteSize) {
+        this.sequenceId = sequenceId;
+        this.alignmentStart = alignmentStart;
+        this.alignmentSpan = alignmentSpan;
+        this.containerStartOffset = containerStartOffset;
+        this.sliceByteOffset = sliceByteOffset;
+        this.sliceByteSize = sliceByteSize;
     }
 
     /**
@@ -36,7 +45,7 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
      * @param line string formatted as a CRAI index entry
      * @throws CRAIIndex.CRAIIndexException
      */
-    public CRAIEntry(final String line) throws CRAIIndex.CRAIIndexException {
+    public CRAIEntry(final String line) throws CRAIIndex.CRAIIndexException  {
         final String[] chunks = line.split("\t");
         if (chunks.length != CRAI_INDEX_COLUMNS) {
             throw new CRAIIndex.CRAIIndexException(
@@ -48,8 +57,8 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
             alignmentStart = Integer.parseInt(chunks[1]);
             alignmentSpan = Integer.parseInt(chunks[2]);
             containerStartOffset = Long.parseLong(chunks[3]);
-            sliceOffset = Integer.parseInt(chunks[4]);
-            sliceSize = Integer.parseInt(chunks[5]);
+            sliceByteOffset = Integer.parseInt(chunks[4]);
+            sliceByteSize = Integer.parseInt(chunks[5]);
         } catch (final NumberFormatException e) {
             throw new CRAIIndex.CRAIIndexException(e);
         }
@@ -73,30 +82,18 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
      * Format the entry as a string suitable for serialization in the CRAI index
      */
     private String serializeToString() {
-        return String.format(entryFormat,
+        return String.format(ENTRY_FORMAT,
                 sequenceId, alignmentStart, alignmentSpan,
-                containerStartOffset, sliceOffset, sliceSize);
+                containerStartOffset, sliceByteOffset, sliceByteSize);
     }
 
     @Override
     public String toString() { return serializeToString(); }
 
     public static List<CRAIEntry> fromContainer(final Container container) {
-        final List<CRAIEntry> entries = new ArrayList<>(container.slices.length);
-        for (int i = 0; i < container.slices.length; i++) {
-            final Slice s = container.slices[i];
-            final CRAIEntry e = new CRAIEntry();
-            e.sequenceId = s.sequenceId;
-            e.alignmentStart = s.alignmentStart;
-            e.alignmentSpan = s.alignmentSpan;
-            e.containerStartOffset = s.containerOffset;
-            e.sliceOffset = container.landmarks[i];
-            e.sliceSize = s.size;
-
-            e.sliceIndex = i;
-            entries.add(e);
-        }
-        return entries;
+        return Arrays.stream(container.slices)
+                .map(slice -> slice.getCRAIEntry(slice.containerOffset))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -112,19 +109,6 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
         }
 
         return (int) (containerStartOffset - o.containerStartOffset);
-    }
-
-    @Override
-    public CRAIEntry clone() throws CloneNotSupportedException {
-        super.clone();
-        final CRAIEntry entry = new CRAIEntry();
-        entry.sequenceId = sequenceId;
-        entry.alignmentStart = alignmentStart;
-        entry.alignmentSpan = alignmentSpan;
-        entry.containerStartOffset = containerStartOffset;
-        entry.sliceOffset = sliceOffset;
-        entry.sliceSize = sliceSize;
-        return entry;
     }
 
     public static Comparator<CRAIEntry> byEnd = new Comparator<CRAIEntry>() {
@@ -191,5 +175,29 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
 
         return Math.abs(a0 + b0 - a1 - b1) < (e0.alignmentSpan + e1.alignmentSpan);
 
+    }
+
+    public int getSequenceId() {
+        return sequenceId;
+    }
+
+    public int getAlignmentStart() {
+        return alignmentStart;
+    }
+
+    public int getAlignmentSpan() {
+        return alignmentSpan;
+    }
+
+    public long getContainerStartOffset() {
+        return containerStartOffset;
+    }
+
+    public int getSliceByteOffset() {
+        return sliceByteOffset;
+    }
+
+    public int getSliceByteSize() {
+        return sliceByteSize;
     }
 }
