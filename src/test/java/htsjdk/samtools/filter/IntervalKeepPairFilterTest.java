@@ -106,7 +106,7 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
 
         final IntervalKeepPairFilter filter = new IntervalKeepPairFilter(intervalList);
 
-        boolean singleEnded =  builder.getRecords().stream()
+       boolean singleEnded =  builder.getRecords().stream()
                 .filter(rec -> !filter.filterOut(rec))
                 .anyMatch(rec -> rec.getReadName().equals("single_ended"));
 
