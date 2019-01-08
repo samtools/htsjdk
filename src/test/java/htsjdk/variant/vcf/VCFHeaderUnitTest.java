@@ -44,24 +44,13 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringReader;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by IntelliJ IDEA.
@@ -255,7 +244,10 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             final int splitInTheMiddle = originalHeaderList.size() / 2;
             orderedList.addAll(originalHeaderList.subList(0, splitInTheMiddle));
             final VCFContigHeaderLine outrageousContigLine = new VCFContigHeaderLine(
-                    "<ID=outrageousID,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">", VCFHeaderVersion.VCF4_2, VCFHeader.CONTIG_KEY, 0);
+                    "<ID=outrageousID,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">",
+                    VCFHeaderVersion.VCF4_2,
+                    VCFHeader.CONTIG_KEY,
+                    0);
             orderedList.add(outrageousContigLine);
             // make sure the extra contig line is outrageous enough to not collide with a real contig ID
             Assert.assertTrue(orderedList.contains(outrageousContigLine));
