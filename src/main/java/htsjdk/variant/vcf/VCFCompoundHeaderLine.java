@@ -1,27 +1,27 @@
 /*
- * Copyright (c) 2012 The Broad Institute
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
- * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+* Copyright (c) 2012 The Broad Institute
+* 
+* Permission is hereby granted, free of charge, to any person
+* obtaining a copy of this software and associated documentation
+* files (the "Software"), to deal in the Software without
+* restriction, including without limitation the rights to use,
+* copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the
+* Software is furnished to do so, subject to the following
+* conditions:
+* 
+* The above copyright notice and this permission notice shall be
+* included in all copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 package htsjdk.variant.vcf;
 
@@ -131,14 +131,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @param lineType     the header line type
      */
     protected VCFCompoundHeaderLine(String name, int count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType) {
-        super(lineType.toString(), "");
-        this.name = name;
-        this.countType = VCFHeaderLineCount.INTEGER;
-        this.count = count;
-        this.type = type;
-        this.description = description;
-        this.lineType = lineType;
-        validate();
+        this(name, count, type, description, lineType, null, null);
     }
 
     /**
@@ -151,12 +144,53 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @param lineType     the header line type
      */
     protected VCFCompoundHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType) {
+        this(name, count, type, description, lineType, null, null);
+    }
+
+    /**
+     * create a VCF format header line
+     *
+     * @param name         the name for this header line
+     * @param count        the count for this header line
+     * @param type         the type for this header line
+     * @param description  the description for this header line
+     * @param lineType     the header line type
+     * @param source       annotation source (case-insensitive, e.g. "dbsnp")
+     * @param version      exact version (e.g. "138")
+     */
+    protected VCFCompoundHeaderLine(String name, int count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType, String source, String version) {
+        super(lineType.toString(), "");
+        this.name = name;
+        this.countType = VCFHeaderLineCount.INTEGER;
+        this.count = count;
+        this.type = type;
+        this.description = description;
+        this.lineType = lineType;
+        this.source = source;
+        this.version = version;
+        validate();
+    }
+
+    /**
+     * create a VCF format header line
+     *
+     * @param name         the name for this header line
+     * @param count        the count type for this header line
+     * @param type         the type for this header line
+     * @param description  the description for this header line
+     * @param lineType     the header line type
+     * @param source       annotation source (case-insensitive, e.g. "dbsnp")
+     * @param version      exact version (e.g. "138")
+     */
+    protected VCFCompoundHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType, String source, String version) {
         super(lineType.toString(), "");
         this.name = name;
         this.countType = count;
         this.type = type;
         this.description = description;
         this.lineType = lineType;
+        this.source = source;
+        this.version = version;
         validate();
     }
 
@@ -225,10 +259,10 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     private void validate() {
         if (type != VCFHeaderLineType.Flag && countType == VCFHeaderLineCount.INTEGER && count <= 0)
             throw new IllegalArgumentException(String.format("Invalid count number, with fixed count the number should be 1 or higher: key=%s name=%s type=%s desc=%s lineType=%s count=%s",
-                                                             getKey(), name, type, description, lineType, count));
+                getKey(), name, type, description, lineType, count));
         if (name == null || type == null || description == null || lineType == null)
             throw new IllegalArgumentException(String.format("Invalid VCFCompoundHeaderLine: key=%s name=%s type=%s desc=%s lineType=%s",
-                                                             getKey(), name, type, description, lineType));
+                getKey(), name, type, description, lineType));
         if (name.contains("<") || name.contains(">"))
             throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain angle brackets");
         if (name.contains("="))
@@ -315,15 +349,15 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
 
     public boolean equalsExcludingDescription(VCFCompoundHeaderLine other) {
         return count == other.count &&
-               countType == other.countType &&
-               type == other.type &&
-               lineType == other.lineType &&
-               name.equals(other.name);
+                countType == other.countType &&
+                type == other.type &&
+                lineType == other.lineType &&
+                name.equals(other.name);
     }
 
     public boolean sameLineTypeAndName(VCFCompoundHeaderLine other) {
         return lineType == other.lineType &&
-               name.equals(other.name);
+                name.equals(other.name);
     }
 
     /**
@@ -333,19 +367,24 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     abstract boolean allowFlagValues();
 
     /**
-     * Specify annotation source and version
+     * Specify annotation source
      * <p>
-     * These values are optional starting with VCFv4.2. Do not set them for older VCF versions.
-     * There is a single method instead of traditional pair of setters to encourage specification
-     * of both source and version simultaneously. You can pass 'null' as either parameter if not known.
-     *
+     * This value is optional starting with VCFv4.2. 
+     * 
      * @param source  annotation source (case-insensitive, e.g. "dbsnp")
-     * @param version exact version (e.g. "138")
-     * @return This line for easier chaining
      */
-    public VCFCompoundHeaderLine setSourceAndVersion(String source, String version) {
+    public void setSource(final String source) {
         this.source = source;
+    }
+
+    /**
+     * Specify annotation version
+     * <p>
+     * This value is optional starting with VCFv4.2. 
+     *
+     * @param version exact version (e.g. "138")
+     */
+    public void setVersion(final String version) {
         this.version = version;
-        return this;
     }
 }

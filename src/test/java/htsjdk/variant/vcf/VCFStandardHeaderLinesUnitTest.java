@@ -178,7 +178,7 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
         tests.add(new Object[]{new RepairHeaderTest( new VCFInfoHeaderLine("AC", 1, VCFHeaderLineType.Float, "x"), standardAC)});
         tests.add(new Object[]{new RepairHeaderTest( new VCFInfoHeaderLine("AC", 1, VCFHeaderLineType.String, "x"), standardAC)});
         tests.add(new Object[]{new RepairHeaderTest( new VCFInfoHeaderLine("AC", 0, VCFHeaderLineType.Flag, "x"), standardAC)});
-        tests.add(new Object[]{new RepairHeaderTest( new VCFInfoHeaderLine("AC", 0, VCFHeaderLineType.Flag, "x").setSourceAndVersion("source", "v1.2.3"), standardAC)});
+        tests.add(new Object[]{new RepairHeaderTest( new VCFInfoHeaderLine("AC", 0, VCFHeaderLineType.Flag, "x", "source", "v1.2.3"), standardAC)});
 
         tests.add(new Object[]{new RepairHeaderTest( new VCFInfoHeaderLine("NON_STANDARD_INFO", 1, VCFHeaderLineType.String, "x"))});
         tests.add(new Object[]{new RepairHeaderTest( new VCFFormatHeaderLine("NON_STANDARD_FORMAT", 1, VCFHeaderLineType.String, "x"))});
