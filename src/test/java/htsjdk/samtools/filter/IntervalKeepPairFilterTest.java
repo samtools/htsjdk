@@ -3,14 +3,14 @@ package htsjdk.samtools.filter;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.util.CollectionUtil;
+import htsjdk.samtools.util.Interval;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import htsjdk.samtools.util.Interval;
-import java.util.List;
+
 import java.util.ArrayList;
-import java.util.stream.StreamSupport;
+import java.util.List;
 
 public class IntervalKeepPairFilterTest extends HtsjdkTest {
     private static final int READ_LENGTH = 151;
@@ -56,7 +56,7 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
     public void testIntervalPairFilter(final List<Interval> intervals, final long expectedPassingRecords) {
         final IntervalKeepPairFilter filter = new IntervalKeepPairFilter(intervals);
 
-        long actualPassingRecords = StreamSupport.stream(builder.spliterator(), false)
+        long actualPassingRecords = builder.getRecords().stream()
                 .filter(rec -> !filter.filterOut(rec))
                 .count();
 
@@ -76,7 +76,7 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
 
         final IntervalKeepPairFilter filter = new IntervalKeepPairFilter(intervalList);
 
-        boolean unmappedPassed = StreamSupport.stream(builder.spliterator(), false)
+        boolean unmappedPassed = builder.getRecords().stream()
                 .filter(rec -> !filter.filterOut(rec))
                 .anyMatch(rec -> rec.getReadName().equals("both_unmapped"));
 
@@ -91,7 +91,7 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
 
         final IntervalKeepPairFilter filter = new IntervalKeepPairFilter(intervalList);
 
-        boolean notPrimary = StreamSupport.stream(builder.spliterator(), false)
+        boolean notPrimary = builder.getRecords().stream()
                 .filter(rec -> !filter.filterOut(rec))
                 .anyMatch(rec -> rec.isSecondaryAlignment() || rec.getSupplementaryAlignmentFlag());
 
@@ -106,7 +106,7 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
 
         final IntervalKeepPairFilter filter = new IntervalKeepPairFilter(intervalList);
 
-        boolean singleEnded = StreamSupport.stream(builder.spliterator(), false)
+        boolean singleEnded =  builder.getRecords().stream()
                 .filter(rec -> !filter.filterOut(rec))
                 .anyMatch(rec -> rec.getReadName().equals("single_ended"));
 
