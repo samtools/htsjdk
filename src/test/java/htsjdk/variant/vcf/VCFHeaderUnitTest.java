@@ -354,10 +354,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         final int numContigLinesBefore = header.getContigLines().size();
 
-        VCFInfoHeaderLine newInfoField = new VCFInfoHeaderLine("test",
-                                                               VCFHeaderLineCount.UNBOUNDED,
-                                                               VCFHeaderLineType.String,
-                                                               "test info field");
+        VCFInfoHeaderLine newInfoField = new VCFInfoHeaderLine("test", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "test info field");
         header.addMetaDataLine(newInfoField);
 
         // getting the sequence dictionary was failing due to duplicating contigs in issue #214,
@@ -408,49 +405,24 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderSerialization() throws Exception {
-        final VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"),
-                                                       false);
+        final VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
         final VCFHeader originalHeader = reader.getFileHeader();
         reader.close();
 
         final VCFHeader deserializedHeader = TestUtil.serializeAndDeserialize(originalHeader);
 
-        Assert.assertEquals(deserializedHeader.getMetaDataInInputOrder(),
-                            originalHeader.getMetaDataInInputOrder(),
-                            "Header metadata does not match before/after serialization");
-        Assert.assertEquals(deserializedHeader.getContigLines(),
-                            originalHeader.getContigLines(),
-                            "Contig header lines do not match before/after serialization");
-        Assert.assertEquals(deserializedHeader.getFilterLines(),
-                            originalHeader.getFilterLines(),
-                            "Filter header lines do not match before/after serialization");
-        Assert.assertEquals(deserializedHeader.getFormatHeaderLines(),
-                            originalHeader.getFormatHeaderLines(),
-                            "Format header lines do not match before/after serialization");
-        Assert.assertEquals(deserializedHeader.getIDHeaderLines(),
-                            originalHeader.getIDHeaderLines(),
-                            "ID header lines do not match before/after serialization");
-        Assert.assertEquals(deserializedHeader.getInfoHeaderLines(),
-                            originalHeader.getInfoHeaderLines(),
-                            "Info header lines do not match before/after serialization");
-        Assert.assertEquals(deserializedHeader.getOtherHeaderLines(),
-                            originalHeader.getOtherHeaderLines(),
-                            "Other header lines do not match before/after serialization");
-        Assert.assertEquals(deserializedHeader.getGenotypeSamples(),
-                            originalHeader.getGenotypeSamples(),
-                            "Genotype samples not the same before/after serialization");
-        Assert.assertEquals(deserializedHeader.samplesWereAlreadySorted(),
-                            originalHeader.samplesWereAlreadySorted(),
-                            "Sortedness of samples not the same before/after serialization");
-        Assert.assertEquals(deserializedHeader.getSampleNamesInOrder(),
-                            originalHeader.getSampleNamesInOrder(),
-                            "Sorted list of sample names in header not the same before/after serialization");
-        Assert.assertEquals(deserializedHeader.getSampleNameToOffset(),
-                            originalHeader.getSampleNameToOffset(),
-                            "Sample name to offset map not the same before/after serialization");
-        Assert.assertEquals(deserializedHeader.toString(),
-                            originalHeader.toString(),
-                            "String representation of header not the same before/after serialization");
+        Assert.assertEquals(deserializedHeader.getMetaDataInInputOrder(), originalHeader.getMetaDataInInputOrder(), "Header metadata does not match before/after serialization");
+        Assert.assertEquals(deserializedHeader.getContigLines(), originalHeader.getContigLines(), "Contig header lines do not match before/after serialization");
+        Assert.assertEquals(deserializedHeader.getFilterLines(), originalHeader.getFilterLines(), "Filter header lines do not match before/after serialization");
+        Assert.assertEquals(deserializedHeader.getFormatHeaderLines(), originalHeader.getFormatHeaderLines(), "Format header lines do not match before/after serialization");
+        Assert.assertEquals(deserializedHeader.getIDHeaderLines(), originalHeader.getIDHeaderLines(), "ID header lines do not match before/after serialization");
+        Assert.assertEquals(deserializedHeader.getInfoHeaderLines(), originalHeader.getInfoHeaderLines(), "Info header lines do not match before/after serialization");
+        Assert.assertEquals(deserializedHeader.getOtherHeaderLines(), originalHeader.getOtherHeaderLines(), "Other header lines do not match before/after serialization");
+        Assert.assertEquals(deserializedHeader.getGenotypeSamples(), originalHeader.getGenotypeSamples(), "Genotype samples not the same before/after serialization");
+        Assert.assertEquals(deserializedHeader.samplesWereAlreadySorted(), originalHeader.samplesWereAlreadySorted(), "Sortedness of samples not the same before/after serialization");
+        Assert.assertEquals(deserializedHeader.getSampleNamesInOrder(), originalHeader.getSampleNamesInOrder(), "Sorted list of sample names in header not the same before/after serialization");
+        Assert.assertEquals(deserializedHeader.getSampleNameToOffset(), originalHeader.getSampleNameToOffset(), "Sample name to offset map not the same before/after serialization");
+        Assert.assertEquals(deserializedHeader.toString(), originalHeader.toString(), "String representation of header not the same before/after serialization");
     }
 
     @Test
@@ -462,44 +434,35 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // copy and comparing it to the first.
 
         // read an existing VCF
-        final VCFFileReader originalFileReader = new VCFFileReader(new File(
-                "src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf"), false);
+        final VCFFileReader originalFileReader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf"), false);
         final VCFHeader originalHeader = originalFileReader.getFileHeader();
 
         // add a header line with quotes to the header
         final Map<String, String> attributes = new LinkedHashMap<>();
         attributes.put("ID", "VariantFiltration");
-        attributes.put("CommandLineOptions",
-                       "filterName=[ANNOTATION] filterExpression=[ANNOTATION == \"NA\" || ANNOTATION <= 2.0]");
+        attributes.put("CommandLineOptions", "filterName=[ANNOTATION] filterExpression=[ANNOTATION == \"NA\" || ANNOTATION <= 2.0]");
         final VCFSimpleHeaderLine addedHeaderLine = new VCFSimpleHeaderLine("GATKCommandLine.Test", attributes);
         originalHeader.addMetaDataLine(addedHeaderLine);
 
         final VCFFilterHeaderLine originalCopyAnnotationLine1 = originalHeader.getFilterHeaderLine("ANNOTATION");
         Assert.assertNotNull(originalCopyAnnotationLine1);
-        Assert.assertEquals(originalCopyAnnotationLine1.getGenericFieldValue("Description"),
-                            "ANNOTATION != \"NA\" || ANNOTATION <= 0.01",
-                            originalCopyAnnotationLine1.toString());
+        Assert.assertEquals(originalCopyAnnotationLine1.getGenericFieldValue("Description"), "ANNOTATION != \"NA\" || ANNOTATION <= 0.01", originalCopyAnnotationLine1.toString());
 
         final VCFFilterHeaderLine originalCopyAnnotationLine2 = originalHeader.getFilterHeaderLine("ANNOTATION2");
         Assert.assertNotNull(originalCopyAnnotationLine2);
-        Assert.assertEquals(originalCopyAnnotationLine2.getGenericFieldValue("Description"),
-                            "ANNOTATION with quote \" that is unmatched but escaped");
+        Assert.assertEquals(originalCopyAnnotationLine2.getGenericFieldValue("Description"), "ANNOTATION with quote \" that is unmatched but escaped");
 
         final VCFInfoHeaderLine originalEscapingQuoteInfoLine = originalHeader.getInfoHeaderLine("EscapingQuote");
         Assert.assertNotNull(originalEscapingQuoteInfoLine);
-        Assert.assertEquals(originalEscapingQuoteInfoLine.getDescription(),
-                            "This description has an escaped \" quote in it");
+        Assert.assertEquals(originalEscapingQuoteInfoLine.getDescription(), "This description has an escaped \" quote in it");
 
         final VCFInfoHeaderLine originalEscapingBackslashInfoLine = originalHeader.getInfoHeaderLine("EscapingBackslash");
         Assert.assertNotNull(originalEscapingBackslashInfoLine);
-        Assert.assertEquals(originalEscapingBackslashInfoLine.getDescription(),
-                            "This description has an escaped \\ backslash in it");
+        Assert.assertEquals(originalEscapingBackslashInfoLine.getDescription(), "This description has an escaped \\ backslash in it");
 
-        final VCFInfoHeaderLine originalEscapingNonQuoteOrBackslashInfoLine = originalHeader.getInfoHeaderLine(
-                "EscapingNonQuoteOrBackslash");
+        final VCFInfoHeaderLine originalEscapingNonQuoteOrBackslashInfoLine = originalHeader.getInfoHeaderLine("EscapingNonQuoteOrBackslash");
         Assert.assertNotNull(originalEscapingNonQuoteOrBackslashInfoLine);
-        Assert.assertEquals(originalEscapingNonQuoteOrBackslashInfoLine.getDescription(),
-                            "This other value has a \\n newline in it");
+        Assert.assertEquals(originalEscapingNonQuoteOrBackslashInfoLine.getDescription(), "This other value has a \\n newline in it");
 
         // write the file out into a new copy
         final File firstCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes1.", IOUtil.VCF_FILE_EXTENSION);
@@ -527,28 +490,22 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         final VCFFilterHeaderLine firstCopyAnnotationLine1 = firstCopyHeader.getFilterHeaderLine("ANNOTATION");
         Assert.assertNotNull(firstCopyAnnotationLine1);
-        Assert.assertEquals(firstCopyAnnotationLine1.getGenericFieldValue("Description"),
-                            "ANNOTATION != \"NA\" || ANNOTATION <= 0.01");
+        Assert.assertEquals(firstCopyAnnotationLine1.getGenericFieldValue("Description"), "ANNOTATION != \"NA\" || ANNOTATION <= 0.01");
 
         final VCFFilterHeaderLine firstCopyAnnotationLine2 = firstCopyHeader.getFilterHeaderLine("ANNOTATION2");
         Assert.assertNotNull(firstCopyAnnotationLine2);
 
         final VCFInfoHeaderLine firstCopyEscapingQuoteInfoLine = firstCopyHeader.getInfoHeaderLine("EscapingQuote");
         Assert.assertNotNull(firstCopyEscapingQuoteInfoLine);
-        Assert.assertEquals(firstCopyEscapingQuoteInfoLine.getDescription(),
-                            "This description has an escaped \" quote in it");
+        Assert.assertEquals(firstCopyEscapingQuoteInfoLine.getDescription(), "his description has an escaped \" quote in it");
 
-        final VCFInfoHeaderLine firstCopyEscapingBackslashInfoLine = firstCopyHeader.getInfoHeaderLine(
-                "EscapingBackslash");
+        final VCFInfoHeaderLine firstCopyEscapingBackslashInfoLine = firstCopyHeader.getInfoHeaderLine("EscapingBackslash");
         Assert.assertNotNull(firstCopyEscapingBackslashInfoLine);
-        Assert.assertEquals(firstCopyEscapingBackslashInfoLine.getDescription(),
-                            "This description has an escaped \\ backslash in it");
+        Assert.assertEquals(firstCopyEscapingBackslashInfoLine.getDescription(), "This description has an escaped \\ backslash in it");
 
-        final VCFInfoHeaderLine firstCopyEscapingNonQuoteOrBackslashInfoLine = firstCopyHeader.getInfoHeaderLine(
-                "EscapingNonQuoteOrBackslash");
+        final VCFInfoHeaderLine firstCopyEscapingNonQuoteOrBackslashInfoLine = firstCopyHeader.getInfoHeaderLine("EscapingNonQuoteOrBackslash");
         Assert.assertNotNull(firstCopyEscapingNonQuoteOrBackslashInfoLine);
-        Assert.assertEquals(firstCopyEscapingNonQuoteOrBackslashInfoLine.getDescription(),
-                            "This other value has a \\n newline in it");
+        Assert.assertEquals(firstCopyEscapingNonQuoteOrBackslashInfoLine.getDescription(),"This other value has a \\n newline in it");
 
 
         // write one more copy to make sure things don't get double escaped
@@ -581,34 +538,25 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertNotNull(secondCopyAnnotationLine2);
 
         Assert.assertEquals(firstCopyNewHeaderLine, secondCopyNewHeaderLine);
-        Assert.assertEquals(firstCopyNewHeaderLine.toStringEncoding(),
-                            "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
-        Assert.assertEquals(secondCopyNewHeaderLine.toStringEncoding(),
-                            "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
+        Assert.assertEquals(firstCopyNewHeaderLine.toStringEncoding(), "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
+        Assert.assertEquals(secondCopyNewHeaderLine.toStringEncoding(), "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
 
         Assert.assertEquals(firstCopyAnnotationLine1, secondCopyAnnotationLine1);
-        Assert.assertEquals(secondCopyAnnotationLine1.getGenericFieldValue("Description"),
-                            "ANNOTATION != \"NA\" || ANNOTATION <= 0.01");
+        Assert.assertEquals(secondCopyAnnotationLine1.getGenericFieldValue("Description"), "ANNOTATION != \"NA\" || ANNOTATION <= 0.01");
         Assert.assertEquals(firstCopyAnnotationLine2, secondCopyAnnotationLine2);
-        Assert.assertEquals(secondCopyAnnotationLine2.getGenericFieldValue("Description"),
-                            "ANNOTATION with quote \" that is unmatched but escaped");
+        Assert.assertEquals(secondCopyAnnotationLine2.getGenericFieldValue("Description"), "ANNOTATION with quote \" that is unmatched but escaped");
 
         final VCFInfoHeaderLine secondCopyEscapingQuoteInfoLine = secondCopyHeader.getInfoHeaderLine("EscapingQuote");
         Assert.assertNotNull(secondCopyEscapingQuoteInfoLine);
-        Assert.assertEquals(secondCopyEscapingQuoteInfoLine.getDescription(),
-                            "This description has an escaped \" quote in it");
+        Assert.assertEquals(secondCopyEscapingQuoteInfoLine.getDescription(), "This description has an escaped \" quote in it");
 
-        final VCFInfoHeaderLine secondCopyEscapingBackslashInfoLine = secondCopyHeader.getInfoHeaderLine(
-                "EscapingBackslash");
+        final VCFInfoHeaderLine secondCopyEscapingBackslashInfoLine = secondCopyHeader.getInfoHeaderLine("EscapingBackslash");
         Assert.assertNotNull(secondCopyEscapingBackslashInfoLine);
-        Assert.assertEquals(secondCopyEscapingBackslashInfoLine.getDescription(),
-                            "This description has an escaped \\ backslash in it");
+        Assert.assertEquals(secondCopyEscapingBackslashInfoLine.getDescription(), "This description has an escaped \\ backslash in it");
 
-        final VCFInfoHeaderLine secondCopyEscapingNonQuoteOrBackslashInfoLine = secondCopyHeader.getInfoHeaderLine(
-                "EscapingNonQuoteOrBackslash");
+        final VCFInfoHeaderLine secondCopyEscapingNonQuoteOrBackslashInfoLine = secondCopyHeader.getInfoHeaderLine("EscapingNonQuoteOrBackslash");
         Assert.assertNotNull(secondCopyEscapingNonQuoteOrBackslashInfoLine);
-        Assert.assertEquals(secondCopyEscapingNonQuoteOrBackslashInfoLine.getDescription(),
-                            "This other value has a \\n newline in it");
+        Assert.assertEquals(secondCopyEscapingNonQuoteOrBackslashInfoLine.getDescription(), "This other value has a \\n newline in it");
 
         firstCopyReader.close();
         secondCopyReader.close();
@@ -660,15 +608,13 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("MD5");
-        }
-        catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Unable to find MD5 digest");
         }
         InputStream is;
         try {
             is = new FileInputStream(file);
-        }
-        catch (FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             throw new RuntimeException("Unable to open file " + file);
         }
         byte[] buffer = new byte[8192];
@@ -681,15 +627,12 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             BigInteger bigInt = new BigInteger(1, md5sum);
             return bigInt.toString(16);
 
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Unable to process file for MD5", e);
-        }
-        finally {
+        } finally {
             try {
                 is.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new RuntimeException("Unable to close input stream for MD5 calculation", e);
             }
         }
@@ -702,13 +645,10 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             myTempFile = File.createTempFile("VCFHeader", "vcf");
             myTempFile.deleteOnExit();
             pw = new PrintWriter(myTempFile);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             Assert.fail("Unable to make a temp file!");
         }
-        for (VCFHeaderLine line : header.getMetaDataInSortedOrder()) {
-            pw.println(line);
-        }
+        for (VCFHeaderLine line : header.getMetaDataInSortedOrder()) { pw.println(line); }
         pw.close();
         Assert.assertEquals(md5SumFile(myTempFile), md5sum);
     }
