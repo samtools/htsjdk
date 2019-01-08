@@ -133,16 +133,14 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                                                      final List<String> expectedTagOrder,
                                                      final List<String> optionalTags,
                                                      final String error) {
-        try {
-            callTranslator(line, expectedTagOrder, optionalTags);
-            Assert.fail("Expected failure: '" + error + "', got success");
-        }
-        catch (Exception e) {
-            Assert.assertTrue(
-                    e.getMessage().contains(error),
-                    String.format("Error string '%s' should be present in error message '%s'", error, e.getMessage())
-            );
-        }
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class,
+                () -> callTranslator(line, expectedTagOrder, optionalTags)
+        );
+        Assert.assertTrue(
+                e.getMessage().contains(error),
+                String.format("Error string '%s' should be present in error message '%s'", error, e.getMessage())
+        );
     }
 
     @DataProvider(name = "vcfv3")
