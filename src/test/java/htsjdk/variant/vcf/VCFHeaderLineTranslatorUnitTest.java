@@ -69,7 +69,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
     private Object[][] getValidHeaderLines() {
         String line = "<ID=X,Description=\"Y\">";
         return new Object[][]{
-                // to parse, required, optional
+                // to parse, required, recommended
                 {line, Arrays.asList("ID", "Description"), Arrays.asList()},
                 {line, Arrays.asList("ID"), Arrays.asList("Description")},
                 {line, Arrays.asList("ID"), Arrays.asList("Description", "Optional2")},
@@ -77,7 +77,9 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 {line, Arrays.asList("ID", "Description", "Extra"), Arrays.asList()},
                 {"<>", Arrays.asList(), Arrays.asList()},
                 {"<>", Arrays.asList(), Arrays.asList("ID", "Description")},
-                {"<ID=X,Description=<Y>>", Arrays.asList("ID", "Description"), Arrays.asList()}
+                {"<ID=X,Description=<Y>>", Arrays.asList("ID", "Description"), Arrays.asList()},
+                {"<ID=X,Description=\"Y\",Extra=E>", Arrays.asList("ID"), Arrays.asList("Description")},
+                {line, Arrays.asList("ID"), Arrays.asList("Desc")}
         };
     }
 
@@ -85,13 +87,12 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
     private Object[][] getInvalidHeaderLines() {
         String line = "<ID=X,Description=\"Y\">";
         return new Object[][]{
-                // to parse, required, optional, error message
+                // to parse, required, recommended, error message
                 {line, Arrays.asList("Description", "ID"), Arrays.asList(), "Tag ID in wrong order"},
                 {line, Arrays.asList("Description"), Arrays.asList("ID"), "Recommended tag ID must be listed after all expected tags"},
                 {line, Arrays.asList("ID", "Desc"), Arrays.asList(), "Unexpected tag Description"},
-                {line, Arrays.asList("ID"), Arrays.asList("Desc"), "Unexpected tag Description"},
                 {"<>", Arrays.asList("ID"), Arrays.asList(), "Header with no tags is not supported when there are expected tags"},
-                {"<ID=X,Description=\"Y\",Extra=E>", Arrays.asList("ID"), Arrays.asList("Description"), "Unexpected tag count 3"},
+                {"<ID=X,Extra=\"E\",Description=\"Y\">", Arrays.asList("ID"), Arrays.asList("Description"), "Recommended tag Description must be listed after all expected tags"},
         };
     }
 
