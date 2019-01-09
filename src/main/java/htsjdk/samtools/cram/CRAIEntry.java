@@ -18,7 +18,12 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     private final int sequenceId;
     private final int alignmentStart;
     private final int alignmentSpan;
+
+    // this Slice's Container's offset in bytes from the beginning of the stream
+    // equal to Slice.containerOffset and Container.offset
     private final long containerStartByteOffset;
+    // this Slice's offset in bytes from the beginning of its Container
+    // equal to Slice.offset and Container.landmarks[Slice.index]
     private final int sliceByteOffset;
     private final int sliceByteSize;
 
