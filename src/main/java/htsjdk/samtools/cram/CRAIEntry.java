@@ -2,7 +2,6 @@ package htsjdk.samtools.cram;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
@@ -18,7 +17,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     private final int sequenceId;
     private final int alignmentStart;
     private final int alignmentSpan;
-    private final long containerStartOffset;
+    private final long containerStartByteOffset;
     private final int sliceByteOffset;
     private final int sliceByteSize;
 
@@ -28,13 +27,13 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     public CRAIEntry(final int sequenceId,
                      final int alignmentStart,
                      final int alignmentSpan,
-                     final long containerStartOffset,
+                     final long containerStartByteOffset,
                      final int sliceByteOffset,
                      final int sliceByteSize) {
         this.sequenceId = sequenceId;
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;
-        this.containerStartOffset = containerStartOffset;
+        this.containerStartByteOffset = containerStartByteOffset;
         this.sliceByteOffset = sliceByteOffset;
         this.sliceByteSize = sliceByteSize;
     }
@@ -45,7 +44,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * @param line string formatted as a CRAI index entry
      * @throws CRAIIndex.CRAIIndexException
      */
-    public CRAIEntry(final String line) throws CRAIIndex.CRAIIndexException  {
+    public CRAIEntry(final String line) throws CRAIIndex.CRAIIndexException {
         final String[] chunks = line.split("\t");
         if (chunks.length != CRAI_INDEX_COLUMNS) {
             throw new CRAIIndex.CRAIIndexException(
@@ -56,7 +55,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
             sequenceId = Integer.parseInt(chunks[0]);
             alignmentStart = Integer.parseInt(chunks[1]);
             alignmentSpan = Integer.parseInt(chunks[2]);
-            containerStartOffset = Long.parseLong(chunks[3]);
+            containerStartByteOffset = Long.parseLong(chunks[3]);
             sliceByteOffset = Integer.parseInt(chunks[4]);
             sliceByteSize = Integer.parseInt(chunks[5]);
         } catch (final NumberFormatException e) {
@@ -84,7 +83,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     private String serializeToString() {
         return String.format(ENTRY_FORMAT,
                 sequenceId, alignmentStart, alignmentSpan,
-                containerStartOffset, sliceByteOffset, sliceByteSize);
+                containerStartByteOffset, sliceByteOffset, sliceByteSize);
     }
 
     @Override
@@ -108,7 +107,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
             return alignmentStart - o.alignmentStart;
         }
 
-        return (int) (containerStartOffset - o.containerStartOffset);
+        return (int) (containerStartByteOffset - o.containerStartByteOffset);
     }
 
     public static Comparator<CRAIEntry> byEnd = new Comparator<CRAIEntry>() {
@@ -122,7 +121,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
                 return o1.alignmentStart + o1.alignmentSpan - o2.alignmentStart - o2.alignmentSpan;
             }
 
-            return (int) (o1.containerStartOffset - o2.containerStartOffset);
+            return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
         }
     };
 
@@ -137,7 +136,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
                 return o1.alignmentStart - o2.alignmentStart;
             }
 
-            return (int) (o1.containerStartOffset - o2.containerStartOffset);
+            return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
         }
     };
 
@@ -155,7 +154,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
             if (o1.alignmentStart != o2.alignmentStart)
                 return o1.alignmentStart - o2.alignmentStart;
 
-            return (int) (o1.containerStartOffset - o2.containerStartOffset);
+            return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
         }
     };
 
@@ -189,8 +188,8 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         return alignmentSpan;
     }
 
-    public long getContainerStartOffset() {
-        return containerStartOffset;
+    public long getContainerStartByteOffset() {
+        return containerStartByteOffset;
     }
 
     public int getSliceByteOffset() {

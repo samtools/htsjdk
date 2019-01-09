@@ -86,7 +86,7 @@ public class CRAIIndex {
 
         for (final CRAIEntry entry : full) {
             final Slice slice = new Slice();
-            slice.containerOffset = entry.getContainerStartOffset();
+            slice.containerOffset = entry.getContainerStartByteOffset();
             slice.alignmentStart = entry.getAlignmentStart();
             slice.alignmentSpan = entry.getAlignmentSpan();
             slice.sequenceId = entry.getSequenceId();

@@ -33,7 +33,7 @@ public class CRAIEntryTest extends HtsjdkTest {
         Assert.assertEquals(entry.getSequenceId(), slice.sequenceId);
         Assert.assertEquals(entry.getAlignmentStart(), slice.alignmentStart);
         Assert.assertEquals(entry.getAlignmentSpan(), slice.alignmentSpan);
-        Assert.assertEquals(entry.getContainerStartOffset(), slice.containerOffset);
+        Assert.assertEquals(entry.getContainerStartByteOffset(), slice.containerOffset);
     }
 
     @Test
@@ -52,7 +52,7 @@ public class CRAIEntryTest extends HtsjdkTest {
         Assert.assertEquals(entry.getSequenceId(), sequenceId);
         Assert.assertEquals(entry.getAlignmentStart(), alignmentStart);
         Assert.assertEquals(entry.getAlignmentSpan(), alignmentSpan);
-        Assert.assertEquals(entry.getContainerStartOffset(), containerOffset);
+        Assert.assertEquals(entry.getContainerStartByteOffset(), containerOffset);
         Assert.assertEquals(entry.getSliceByteOffset(), sliceOffset);
         Assert.assertEquals(entry.getSliceByteSize(), sliceSize);
     }
@@ -119,9 +119,9 @@ public class CRAIEntryTest extends HtsjdkTest {
         e2 = newEntryContOffset(200);
         list.add(e2);
         list.add(e1);
-        Assert.assertTrue(list.get(1).getContainerStartOffset() < list.get(0).getContainerStartOffset());
+        Assert.assertTrue(list.get(1).getContainerStartByteOffset() < list.get(0).getContainerStartByteOffset());
         Collections.sort(list);
-        Assert.assertTrue(list.get(0).getContainerStartOffset() < list.get(1).getContainerStartOffset());
+        Assert.assertTrue(list.get(0).getContainerStartByteOffset() < list.get(1).getContainerStartByteOffset());
     }
 
     public static CRAIEntry newEntry(final int seqId, final int start, final int span) {

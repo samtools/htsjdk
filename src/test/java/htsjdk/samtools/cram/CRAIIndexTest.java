@@ -100,7 +100,7 @@ public class CRAIIndexTest extends HtsjdkTest {
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
-        Assert.assertEquals(coordinateArray[0] >> 16, entry.getContainerStartOffset());
+        Assert.assertEquals(coordinateArray[0] >> 16, entry.getContainerStartByteOffset());
         Assert.assertEquals(coordinateArray[1] & 0xFFFF, 1);
     }
 
