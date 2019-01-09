@@ -97,31 +97,31 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
 
     private static void callTranslator(final String line,
                                 final List<String> expectedTagOrder,
-                                final List<String> optionalTags) {
+                                final List<String> recommendedTags) {
         // To cover both constructors for code coverage
-        if (optionalTags.isEmpty()) {
+        if (recommendedTags.isEmpty()) {
             VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, line, expectedTagOrder);
         }
         else {
-            VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, line, expectedTagOrder, optionalTags);
+            VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, line, expectedTagOrder, recommendedTags);
         }
     }
 
     @Test(dataProvider = "validHeaderLines")
     public void testParseVCF4HeaderLineWithTagsValid(final String line,
                                                 final List<String> expectedTagOrder,
-                                                final List<String> optionalTags) {
-        callTranslator(line, expectedTagOrder, optionalTags);
+                                                final List<String> recommendedTags) {
+        callTranslator(line, expectedTagOrder, recommendedTags);
     }
     
     @Test(dataProvider = "invalidHeaderLines")
     public void testParseVCF4HeaderLineWithTagsInvalid(final String line,
                                                      final List<String> expectedTagOrder,
-                                                     final List<String> optionalTags,
+                                                     final List<String> recommendedTags,
                                                      final String error) {
         final TribbleException e = Assert.expectThrows(
                 TribbleException.class,
-                () -> callTranslator(line, expectedTagOrder, optionalTags)
+                () -> callTranslator(line, expectedTagOrder, recommendedTags)
         );
         Assert.assertTrue(
                 e.getMessage().contains(error),
@@ -138,7 +138,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "vcfv3", expectedExceptions = TribbleException.class)
-    public void testVcfV3FailsOptionalTags(final VCFHeaderVersion vcfVersion) {
+    public void testVcfV3FailsRecommendedTags(final VCFHeaderVersion vcfVersion) {
         VCFHeaderLineTranslator.parseLine(
                 vcfVersion,
                 "<ID=X,Description=\"Y\">",

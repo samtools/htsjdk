@@ -77,10 +77,10 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
      * @param version   the vcf header version
      * @param key            the key for this header line
      * @param expectedTagOrdering the tag ordering expected for this header line
-     * @param optionalTags tags that are optional for this header line                            
+     * @param recommendedTags tags that are optional for this header line                            
      */
-    public VCFSimpleHeaderLine(final String line, final VCFHeaderVersion version, final String key, final List<String> expectedTagOrdering, final List<String> optionalTags) {
-        this(key, VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrdering, optionalTags));
+    public VCFSimpleHeaderLine(final String line, final VCFHeaderVersion version, final String key, final List<String> expectedTagOrdering, final List<String> recommendedTags) {
+        this(key, VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrdering, recommendedTags));
     }
 
     public VCFSimpleHeaderLine(final String key, final Map<String, String> mapping) {

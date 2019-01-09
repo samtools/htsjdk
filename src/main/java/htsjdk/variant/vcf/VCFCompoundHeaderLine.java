@@ -206,13 +206,13 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         super(lineType.toString(), "");
 
         final ArrayList<String> expectedTags = new ArrayList(Arrays.asList("ID", "Number", "Type", "Description"));
-        final List<String> optionalTags;
+        final List<String> recommendedTags;
         if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
-            optionalTags = Arrays.asList("Source", "Version");
+            recommendedTags = Arrays.asList("Source", "Version");
         } else {
-            optionalTags = Collections.emptyList();
+            recommendedTags = Collections.emptyList();
         }
-        final Map<String, String> mapping = VCFHeaderLineTranslator.parseLine(version, line, expectedTags, optionalTags);
+        final Map<String, String> mapping = VCFHeaderLineTranslator.parseLine(version, line, expectedTags, recommendedTags);
         name = mapping.get("ID");
         count = -1;
         final String numberStr = mapping.get("Number");
