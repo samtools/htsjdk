@@ -300,9 +300,17 @@ public class Slice {
     }
 
     /**
+     * Generate a CRAI Index entry from this Slice
+     * @return a new CRAI Index Entry
+     */
+    public CRAIEntry getCRAIEntry() {
+        return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerOffset, offset, size);
+    }
+    /**
      * Generate a CRAI Index entry from this Slice and the container offset.
      *
-     * TODO: investigate why we can't simply use the Slice's own containerOffset here
+     * TODO: investigate why we sometimes need to pass in an external containerStartOffset
+     * because this Slice's containerOffset is incorrect
      *
      * @param containerStartOffset the byte offset of this Slice's Container
      * @return a new CRAI Index Entry

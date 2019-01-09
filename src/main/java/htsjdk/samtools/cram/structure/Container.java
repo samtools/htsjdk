@@ -18,7 +18,12 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.structure.block.Block;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Container {
     // container header as defined in the specs:
@@ -52,6 +57,12 @@ public class Container {
      * Container start in the stream.
      */
     public long offset;
+
+    public List<CRAIEntry> getCraiEntries() {
+        return Arrays.stream(slices)
+                .map(Slice::getCRAIEntry)
+                .collect(Collectors.toList());
+    }
 
     @Override
     public String toString() {

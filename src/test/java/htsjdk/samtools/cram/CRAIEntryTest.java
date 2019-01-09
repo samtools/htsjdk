@@ -27,7 +27,7 @@ public class CRAIEntryTest extends HtsjdkTest {
         container.landmarks = new int[]{7};
         container.slices = new Slice[]{slice};
 
-        final List<CRAIEntry> entries = CRAIEntry.fromContainer(container);
+        final List<CRAIEntry> entries = container.getCraiEntries();
         Assert.assertNotNull(entries);
         Assert.assertEquals(entries.size(), 1);
         final CRAIEntry entry = entries.get(0);

@@ -2,6 +2,7 @@ package htsjdk.samtools.cram;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
@@ -88,12 +89,6 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
 
     @Override
     public String toString() { return serializeToString(); }
-
-    public static List<CRAIEntry> fromContainer(final Container container) {
-        return Arrays.stream(container.slices)
-                .map(slice -> slice.getCRAIEntry(slice.containerOffset))
-                .collect(Collectors.toList());
-    }
 
     @Override
     public int compareTo(final CRAIEntry o) {
