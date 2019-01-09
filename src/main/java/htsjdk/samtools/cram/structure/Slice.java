@@ -60,10 +60,17 @@ public class Slice {
     public Block embeddedRefBlock;
     public Map<Integer, Block> external;
 
-    // for indexing purposes:
+    // for indexing purposes
+
+    // the Slice's offset in bytes from the beginning of its Container
+    // equal to Container.landmarks[Slice.index] of its enclosing Container
     public int offset = -1;
+    // this Slice's Container's offset in bytes from the beginning of the stream
+    // equal to Container.offset of its enclosing Container
     public long containerOffset = -1;
+    // this Slice's size in bytes
     public int size = -1;
+    // this Slice's index within its Container
     public int index = -1;
 
     // to pass this to the container:
