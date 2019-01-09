@@ -22,7 +22,9 @@ public class CRAIEntryTest extends HtsjdkTest {
         slice.alignmentStart = 2;
         slice.alignmentSpan = 3;
         slice.containerOffset = 4;
-        container.landmarks = new int[]{5};
+        slice.offset = 5;
+        slice.size = 6;
+        container.landmarks = new int[]{7};
         container.slices = new Slice[]{slice};
 
         final List<CRAIEntry> entries = CRAIEntry.fromContainer(container);
@@ -34,6 +36,8 @@ public class CRAIEntryTest extends HtsjdkTest {
         Assert.assertEquals(entry.getAlignmentStart(), slice.alignmentStart);
         Assert.assertEquals(entry.getAlignmentSpan(), slice.alignmentSpan);
         Assert.assertEquals(entry.getContainerStartByteOffset(), slice.containerOffset);
+        Assert.assertEquals(entry.getSliceByteOffset(), slice.offset);
+        Assert.assertEquals(entry.getSliceByteSize(), slice.size);
     }
 
     @Test
