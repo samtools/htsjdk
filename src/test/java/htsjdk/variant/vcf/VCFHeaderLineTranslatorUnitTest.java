@@ -87,7 +87,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
         return new Object[][]{
                 // to parse, required, optional, error message
                 {line, Arrays.asList("Description", "ID"), Arrays.asList(), "Tag ID in wrong order"},
-                {line, Arrays.asList("Description"), Arrays.asList("ID"), "Optional tag ID must be listed after all expected tags"},
+                {line, Arrays.asList("Description"), Arrays.asList("ID"), "Recommended tag ID must be listed after all expected tags"},
                 {line, Arrays.asList("ID", "Desc"), Arrays.asList(), "Unexpected tag Description"},
                 {line, Arrays.asList("ID"), Arrays.asList("Desc"), "Unexpected tag Description"},
                 {"<>", Arrays.asList("ID"), Arrays.asList(), "Header with no tags is not supported when there are expected tags"},
