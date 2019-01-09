@@ -94,9 +94,11 @@ public class CramSpanContainerIterator implements Iterator<Container> {
                 if (seekableStream.position() < (start >> 16)) {
                     seekableStream.seek(start >> 16);
                 }
-                if (seekableStream.position() > (end >> 16)) {
+
+                if (!hasNext()) {
                     throw new RuntimeException("No more containers in this boundary.");
                 }
+                
                 final long offset = seekableStream.position();
                 final Container c = ContainerIO.readContainer(cramHeader.getVersion(), seekableStream);
                 c.offset = offset;
