@@ -58,7 +58,7 @@ public class Container {
      */
     public long offset;
 
-    public List<CRAIEntry> getCraiEntries() {
+    public List<CRAIEntry> getCRAIEntries() {
         return Arrays.stream(slices)
                 .map(Slice::getCRAIEntry)
                 .collect(Collectors.toList());
