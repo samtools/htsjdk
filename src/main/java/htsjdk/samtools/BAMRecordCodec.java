@@ -108,18 +108,20 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final int readLength = alignment.getReadLength();
 
         // if cigar is too long, put into CG tag and replace with sentinel value
-        if (alignment.getCigarLength() > BAMRecord.MAX_CIGAR_OPERATORS) {
+        final Cigar cigarToWrite;
+        final boolean cigarSwitcharoo = alignment.getCigar().numCigarElements() > BAMRecord.MAX_CIGAR_OPERATORS;
 
+        if (cigarSwitcharoo) {
             final int[] cigarEncoding = BinaryCigarCodec.encode(alignment.getCigar());
-            alignment.setCigar(makeSentinelCigar(alignment.getCigar()));
             alignment.setAttribute(CG.name(), cigarEncoding);
+            cigarToWrite = makeSentinelCigar(alignment.getCigar());
+        }
+        else {
+            cigarToWrite = alignment.getCigar();
         }
 
-        // do not combine with previous call to alignment.getCigarLength() as cigar may change in-between
-        final int cigarLength = alignment.getCigarLength();
-
         int blockSize = BAMFileConstants.FIXED_BLOCK_SIZE + alignment.getReadNameLength() + 1 + // null terminated
-                cigarLength * BAMRecord.CIGAR_SIZE_MULTIPLIER +
+                cigarToWrite.numCigarElements() * BAMRecord.CIGAR_SIZE_MULTIPLIER +
                 (readLength + 1) / 2 + // 2 bases per byte, round up
                 readLength;
 
@@ -152,7 +154,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         this.binaryCodec.writeUByte((short) (alignment.getReadNameLength() + 1));
         this.binaryCodec.writeUByte((short) alignment.getMappingQuality());
         this.binaryCodec.writeUShort(indexBin);
-        this.binaryCodec.writeUShort(cigarLength);
+        this.binaryCodec.writeUShort(cigarToWrite.numCigarElements());
         this.binaryCodec.writeUShort(alignment.getFlags());
         this.binaryCodec.writeInt(alignment.getReadLength());
         this.binaryCodec.writeInt(alignment.getMateReferenceIndex());
@@ -171,7 +173,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                         "; quals length: " + alignment.getBaseQualities().length);
             }
             this.binaryCodec.writeString(alignment.getReadName(), false, true);
-            final int[] binaryCigar = BinaryCigarCodec.encode(alignment.getCigar());
+            final int[] binaryCigar = BinaryCigarCodec.encode(cigarToWrite);
             for (final int cigarElement : binaryCigar) {
                 // Assumption that this will fit into an integer, despite the fact
                 // that it is spec'ed as a uint.
@@ -194,6 +196,10 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 this.binaryTagCodec.writeTag(attribute.tag, attribute.value, attribute.isUnsignedArray());
                 attribute = attribute.getNext();
             }
+        }
+
+        if (cigarSwitcharoo) {
+            alignment.setAttribute(CG.name(), null);
         }
     }
 
