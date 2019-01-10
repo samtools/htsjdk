@@ -139,8 +139,9 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         // the actual cigar.
         int indexBin = 0;
         if (alignment.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
-            warnIfReferenceIsTooLargeForBinField(alignment);
-            indexBin = alignment.computeIndexingBinIfAbsent(alignment);
+            if (!warnIfReferenceIsTooLargeForBinField(alignment)) {
+                indexBin = alignment.computeIndexingBin();
+            }
         }
 
         // Blurt out the elements
@@ -223,15 +224,21 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 new CigarElement(cigar.getReferenceLength(), CigarOperator.N)));
     }
 
-    private void warnIfReferenceIsTooLargeForBinField(final SAMRecord rec) {
+    /** Emits a warning the first time a reference too large for binning indexing is encountered.
+     *
+     * @param rec the SAMRecord to examine
+     * @return true if the sequence is too large, false otherwise
+     */
+    private boolean warnIfReferenceIsTooLargeForBinField(final SAMRecord rec) {
         final SAMSequenceRecord sequence = rec.getHeader() != null ? rec.getHeader().getSequence(rec.getReferenceName()) : null;
-        if (!isReferenceSizeWarningShowed
-                && sequence != null
-                && SAMUtils.isReferenceSequenceCompatibleWithBAI(sequence)
-                && rec.getValidationStringency() != ValidationStringency.SILENT) {
-            LOG.warn("Reference length is too large for BAM bin field. Values in the bin field could be incorrect.");
+        final boolean tooLarge = sequence != null && SAMUtils.isReferenceSequenceIncompatibleWithBAI(sequence);
+        if (!isReferenceSizeWarningShowed & tooLarge && rec.getValidationStringency() != ValidationStringency.SILENT) {
+            LOG.warn("Reference length is too large for BAM bin field.");
+            LOG.warn("Reads on references longer than " + GenomicIndexUtil.BIN_GENOMIC_SPAN + "bp will have bin set to 0.");
             isReferenceSizeWarningShowed = true;
         }
+
+        return tooLarge;
     }
 
     /**

@@ -24,6 +24,6 @@ public class BAMCigarOverflowTest extends HtsjdkTest {
 
         //The BAM file that exposed the bug triggered a SAM validation error because the bin field of the BAM record did not equal the computed value. Here we test for this error.
         //Cast to int to avoid an ambiguity in the assertEquals() call between assertEquals(int,int) and assertEquals(Object,Object).
-        assertEquals(testBAMRecord.computeIndexingBin(), (int) testBAMRecord.getIndexingBin());
+        assertEquals(testBAMRecord.computeIndexingBin(), (int) 0);
     }
 }

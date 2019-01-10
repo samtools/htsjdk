@@ -258,7 +258,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
         // compare to originals
         int i = 0;
         for (SAMRecord rec : bamRecords) {
-            rec.setIndexingBin(null);
             Assert.assertTrue(rec.equals(originalCRAMRecords.get(i++)));
         }
         Assert.assertEquals(i, originalCRAMRecords.size());
@@ -294,9 +293,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
         // retrieve all records from the bam and reset the indexing bins to keep comparisons with
         // cram records from failing
         List<SAMRecord> originalBAMRecords = getSAMRecordsFromFile(originalBAMInputFile, referenceFile);
-        for (int i = 0; i < originalBAMRecords.size(); i++) {
-            originalBAMRecords.get(i).setIndexingBin(null);
-        }
 
         // write the BAM records to a temporary CRAM
         final File tempCRAMFile = File.createTempFile("testBAMThroughCRAMRoundTrip", CramIO.CRAM_FILE_EXTENSION);
@@ -327,9 +323,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
         // retrieve all records from the bam and reset the indexing bins to keep comparisons with
         // cram records from failing
         List<SAMRecord> originalBAMRecords = getSAMRecordsFromFile(originalBAMInputFile, referenceFile);
-        for (int i = 0; i < originalBAMRecords.size(); i++) {
-            originalBAMRecords.get(i).setIndexingBin(null);
-        }
 
         // write the BAM records to a temporary CRAM
         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
