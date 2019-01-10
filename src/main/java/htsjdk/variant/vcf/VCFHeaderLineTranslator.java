@@ -184,8 +184,6 @@ class VCF4Parser implements VCFLineParser {
         // validate the tags against the expected list
         index = 0;
         if ( expectedTagOrder != null ) {
-            if ( ret.size() > expectedTagOrder.size() + recommendedTags.size())
-                throw new TribbleException.InvalidHeader("Unexpected tag count " + ret.size() + " in line " + valueLine);
             if (ret.keySet().isEmpty() && !expectedTagOrder.isEmpty()) {
                 throw new TribbleException.InvalidHeader("Header with no tags is not supported when there are expected tags in line " + valueLine);
             }
@@ -201,9 +199,6 @@ class VCF4Parser implements VCFLineParser {
                             throw new TribbleException.InvalidHeader("Unexpected tag " + str + " in line " + valueLine);
                         }
                     }
-                }
-                else if (!recommendedTags.contains(str)) {
-                    throw new TribbleException.InvalidHeader("Unexpected tag " + str + " in line " + valueLine);
                 }
                 index++;
             }

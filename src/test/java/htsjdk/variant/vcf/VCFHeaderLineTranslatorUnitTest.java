@@ -7,6 +7,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -67,32 +68,46 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "validHeaderLines")
     private Object[][] getValidHeaderLines() {
-        String line = "<ID=X,Description=\"Y\">";
+        List<String> idDesc = Arrays.asList("ID", "Description");
+        List<Object> none = Collections.emptyList();
+        List<Object> sourceVersion = Arrays.asList("Source", "Version");
+        List<String> extra = Arrays.asList("Extra");
         return new Object[][]{
-                // to parse, required, recommended
-                {line, Arrays.asList("ID", "Description"), Arrays.asList()},
-                {line, Arrays.asList("ID"), Arrays.asList("Description")},
-                {line, Arrays.asList("ID"), Arrays.asList("Description", "Optional2")},
-                {line, Arrays.asList(), Arrays.asList("Description", "ID")},
-                {line, Arrays.asList("ID", "Description", "Extra"), Arrays.asList()},
-                {"<>", Arrays.asList(), Arrays.asList()},
-                {"<>", Arrays.asList(), Arrays.asList("ID", "Description")},
-                {"<ID=X,Description=<Y>>", Arrays.asList("ID", "Description"), Arrays.asList()},
-                {"<ID=X,Description=\"Y\",Extra=E>", Arrays.asList("ID"), Arrays.asList("Description")},
-                {line, Arrays.asList("ID"), Arrays.asList("Desc")}
+                // to parse, expected, recommended
+                {"<ID=X,Description=\"Y\",Source=\"source\",Version=\"1.2.3\">", idDesc, sourceVersion},
+                {"<ID=X,Description=\"Y\",Source=\"source\">", idDesc, sourceVersion},
+                {"<ID=X,Description=\"Y\",Version=\"1.2.3\">", idDesc, sourceVersion},
+                {"<ID=X,Description=\"Y\">", idDesc, sourceVersion},
+                {"<ID=X>", idDesc, sourceVersion},
+                {"<ID=X,Description=\"Y\",Extra=\"extra\",Source=\"source\",Version=\"1.2.3\">", idDesc, sourceVersion},
+
+                {"<ID=X>", idDesc, none},
+                {"<ID=X,Description=\"Y\">", idDesc, none},
+                {"<ID=X,Description=\"Y\",Extra=\"extra\">", idDesc, none},
+                {"<ID=X,Description=<Y>>", idDesc, none},
+                {"<ID=X,Description=\"Y\",Extra=E>", idDesc, none},
+                
+                {"<ID=X,Description=\"Y\",Extra=\"extra\">", idDesc, extra},
+                {"<ID=X,Description=\"Y\">", idDesc, extra},
+                {"<>", none, none},
+                {"<>", none, extra},
+                {"<>", none, sourceVersion}
         };
     }
-
+    
     @DataProvider(name = "invalidHeaderLines")
     private Object[][] getInvalidHeaderLines() {
-        String line = "<ID=X,Description=\"Y\">";
+        List<String> idDesc = Arrays.asList("ID", "Description");
+        List<Object> none = Collections.emptyList();
+        List<String> sourceVersion = Arrays.asList("Source", "Version");
         return new Object[][]{
-                // to parse, required, recommended, error message
-                {line, Arrays.asList("Description", "ID"), Arrays.asList(), "Tag ID in wrong order"},
-                {line, Arrays.asList("Description"), Arrays.asList("ID"), "Recommended tag ID must be listed after all expected tags"},
-                {line, Arrays.asList("ID", "Desc"), Arrays.asList(), "Unexpected tag Description"},
-                {"<>", Arrays.asList("ID"), Arrays.asList(), "Header with no tags is not supported when there are expected tags"},
-                {"<ID=X,Extra=\"E\",Description=\"Y\">", Arrays.asList("ID"), Arrays.asList("Description"), "Recommended tag Description must be listed after all expected tags"},
+                // to parse, expected, recommended, error message
+                {"<Description=\"Y\",ID=X>", idDesc, none, "Tag Description in wrong order (was #1, expected #2)"},
+                {"<ID=X,Desc=\"Y\">", idDesc, none, "Unexpected tag Desc"},
+                {"<>", idDesc, none, "Header with no tags is not supported when there are expected tags"},
+
+                {"<Source=\"source\",ID=X,Description=\"Y\">", idDesc, sourceVersion, "Recommended tag Source must be listed after all expected tags"},
+                {"<ID=X,Source=\"E\",Description=\"Y\">", idDesc, sourceVersion, "Recommended tag Source must be listed after all expected tags"}
         };
     }
 
