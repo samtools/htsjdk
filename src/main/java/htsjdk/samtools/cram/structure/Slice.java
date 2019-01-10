@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
@@ -59,10 +60,17 @@ public class Slice {
     public Block embeddedRefBlock;
     public Map<Integer, Block> external;
 
-    // for indexing purposes:
+    // for indexing purposes
+
+    // the Slice's offset in bytes from the beginning of its Container
+    // equal to Container.landmarks[Slice.index] of its enclosing Container
     public int offset = -1;
+    // this Slice's Container's offset in bytes from the beginning of the stream
+    // equal to Container.offset of its enclosing Container
     public long containerOffset = -1;
+    // this Slice's size in bytes
     public int size = -1;
+    // this Slice's index within its Container
     public int index = -1;
 
     // to pass this to the container:
@@ -291,4 +299,23 @@ public class Slice {
         return reader.getReferenceSpans();
     }
 
+    /**
+     * Generate a CRAI Index entry from this Slice
+     * @return a new CRAI Index Entry
+     */
+    public CRAIEntry getCRAIEntry() {
+        return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerOffset, offset, size);
+    }
+    /**
+     * Generate a CRAI Index entry from this Slice and the container offset.
+     *
+     * TODO: investigate why we sometimes need to pass in an external containerStartOffset
+     * because this Slice's containerOffset is incorrect
+     *
+     * @param containerStartOffset the byte offset of this Slice's Container
+     * @return a new CRAI Index Entry
+     */
+    public CRAIEntry getCRAIEntry(final long containerStartOffset) {
+        return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerStartOffset, offset, size);
+    }
 }

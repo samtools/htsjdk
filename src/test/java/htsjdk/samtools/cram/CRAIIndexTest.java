@@ -20,27 +20,17 @@ import java.util.zip.GZIPOutputStream;
 public class CRAIIndexTest extends HtsjdkTest {
 
     @Test
-    public void testFind() throws IOException, CloneNotSupportedException {
-        final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
+    public void testFind() {
+        final List<CRAIEntry> index = new ArrayList<>();
 
         final int sequenceId = 1;
-        CRAIEntry e = new CRAIEntry();
-        e.sequenceId = sequenceId;
-        e.alignmentStart = 1;
-        e.alignmentSpan = 1;
-        e.containerStartOffset = 1;
-        e.sliceOffset = 1;
-        e.sliceSize = 0;
+        CRAIEntry e = CRAIEntryTest.newEntry(sequenceId, 1, 1, 1, 1, 0);
         index.add(e);
 
-        e = e.clone();
-        e.alignmentStart = 2;
-        e.containerStartOffset = 2;
+        e = CRAIEntryTest.updateStartContOffset(e, 2, 2);
         index.add(e);
 
-        e = e.clone();
-        e.alignmentStart = 3;
-        e.containerStartOffset = 3;
+        e = CRAIEntryTest.updateStartContOffset(e, 3, 3);
         index.add(e);
 
         Assert.assertFalse(allFoundEntriesIntersectQueryInFind(index, sequenceId, 1, 0));
@@ -60,11 +50,11 @@ public class CRAIIndexTest extends HtsjdkTest {
         int foundCount = 0;
         for (final CRAIEntry found : CRAIIndex.find(index, sequenceId, start, span)) {
             foundCount++;
-            Assert.assertEquals(found.sequenceId, sequenceId);
+            Assert.assertEquals(found.getSequenceId(), sequenceId);
             boolean intersects = false;
-            for (int pos = Math.min(found.alignmentStart, start); pos <= Math.max(found.alignmentStart + found.alignmentSpan, start + span); pos++) {
-                if (pos >= found.alignmentStart && pos >= start &&
-                        pos <= found.alignmentStart + found.alignmentSpan && pos <= start + span) {
+            for (int pos = Math.min(found.getAlignmentStart(), start); pos <= Math.max(found.getAlignmentStart() + found.getAlignmentSpan(), start + span); pos++) {
+                if (pos >= found.getAlignmentStart() && pos >= start &&
+                        pos <= found.getAlignmentStart() + found.getAlignmentSpan() && pos <= start + span) {
                     intersects = true;
                     break;
                 }
@@ -95,15 +85,9 @@ public class CRAIIndexTest extends HtsjdkTest {
         doCRAITest(this::getBaiStreamFromFile);
     }
 
-    private void doCRAITest(BiFunction<SAMSequenceDictionary, List<CRAIEntry>, SeekableStream> getBaiStreamForIndex) throws IOException {
-        final ArrayList<CRAIEntry> index = new ArrayList<CRAIEntry>();
-        final CRAIEntry entry = new CRAIEntry();
-        entry.sequenceId = 0;
-        entry.alignmentStart = 1;
-        entry.alignmentSpan = 2;
-        entry.sliceOffset = 3;
-        entry.sliceSize = 4;
-        entry.containerStartOffset = 5;
+    private void doCRAITest(BiFunction<SAMSequenceDictionary, List<CRAIEntry>, SeekableStream> getBaiStreamForIndex) {
+        final ArrayList<CRAIEntry> index = new ArrayList<>();
+        final CRAIEntry entry = CRAIEntryTest.newEntry(0, 1, 2, 5, 3, 4);
         index.add(entry);
 
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
@@ -112,25 +96,31 @@ public class CRAIIndexTest extends HtsjdkTest {
         final SeekableStream baiStream = getBaiStreamForIndex.apply(dictionary, index);
 
         final DiskBasedBAMFileIndex bamIndex = new DiskBasedBAMFileIndex(baiStream, dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.sequenceId, entry.alignmentStart, entry.alignmentStart);
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
-        Assert.assertEquals(coordinateArray[0] >> 16, entry.containerStartOffset);
+        Assert.assertEquals(coordinateArray[0] >> 16, entry.getContainerStartByteOffset());
         Assert.assertEquals(coordinateArray[1] & 0xFFFF, 1);
     }
 
     public SeekableStream getBaiStreamFromMemory(SAMSequenceDictionary dictionary, final List<CRAIEntry> index) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] written;
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             SAMFileHeader samHeader = new SAMFileHeader();
             samHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
             CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(baos, samHeader);
-            for (CRAIEntry entry: index) {
+            for (CRAIEntry entry : index) {
                 indexer.addEntry(entry);
             }
             indexer.finish();
-            final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(new ByteArrayInputStream(baos.toByteArray()), dictionary);
+            written = baos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        try (final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(new ByteArrayInputStream(written), dictionary)) {
             Assert.assertNotNull(baiStream);
             return baiStream;
         }
@@ -161,23 +151,16 @@ public class CRAIIndexTest extends HtsjdkTest {
     }
 
     @Test
-    public void testGetLeftmost() throws CloneNotSupportedException {
-        final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
+    public void testGetLeftmost()  {
+        final List<CRAIEntry> index = new ArrayList<>();
         Assert.assertNull(CRAIIndex.getLeftmost(index));
 
-        final CRAIEntry e1 = new CRAIEntry();
-        e1.sequenceId = 1;
-        e1.alignmentStart = 2;
-        e1.alignmentSpan = 3;
-        e1.containerStartOffset = 4;
-        e1.sliceOffset = 5;
-        e1.sliceSize = 6;
+        final CRAIEntry e1 = CRAIEntryTest.newEntry(1, 2, 3, 4, 5, 6);
         index.add(e1);
         // trivial case of single entry in index:
         Assert.assertEquals(e1, CRAIIndex.getLeftmost(index));
 
-        final CRAIEntry e2 = e1.clone();
-        e2.alignmentStart = e1.alignmentStart + 1;
+        final CRAIEntry e2 = CRAIEntryTest.updateStart(e1, e1.getAlignmentStart() + 1);
         index.add(e2);
         Assert.assertEquals(e1, CRAIIndex.getLeftmost(index));
     }
@@ -192,16 +175,13 @@ public class CRAIIndexTest extends HtsjdkTest {
         for (int lastAligned = 0; lastAligned < indexSize; lastAligned++) {
             index.clear();
             for (int i = 0; i < indexSize; i++) {
-                final CRAIEntry e = new CRAIEntry();
-
-                e.sequenceId = (i <= lastAligned ? 0 : -1);
-                e.alignmentStart = i;
+                final CRAIEntry e = CRAIEntryTest.newEntrySeqStart(i <= lastAligned ? 0 : -1, i);
                 index.add(e);
             }
             // check expectations are correct before calling findLastAlignedEntry method:
-            Assert.assertTrue(index.get(lastAligned).sequenceId != -1);
+            Assert.assertTrue(index.get(lastAligned).getSequenceId() != -1);
             if (lastAligned < index.size() - 1) {
-                Assert.assertTrue(index.get(lastAligned + 1).sequenceId == -1);
+                Assert.assertTrue(index.get(lastAligned + 1).getSequenceId() == -1);
             }
             // assert the the found value matches the expectation:
             Assert.assertEquals(CRAIIndex.findLastAlignedEntry(index), lastAligned);

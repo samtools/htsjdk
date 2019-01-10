@@ -2,7 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAIEntry;
-import htsjdk.samtools.cram.CRAIIndex;
+import htsjdk.samtools.cram.CRAIEntryTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -16,8 +16,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 public class SamIndexesTest extends HtsjdkTest {
@@ -71,13 +69,7 @@ public class SamIndexesTest extends HtsjdkTest {
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(baos, header);
-        final CRAIEntry entry = new CRAIEntry();
-        entry.sequenceId = 0;
-        entry.alignmentStart = 1;
-        entry.alignmentSpan = 2;
-        entry.sliceOffset = 3;
-        entry.sliceSize = 4;
-        entry.containerStartOffset = 5;
+        final CRAIEntry entry = CRAIEntryTest.newEntry(0, 1, 2, 5, 3, 4);
         indexer.addEntry(entry);
         indexer.finish();
         baos.close();
@@ -91,11 +83,11 @@ public class SamIndexesTest extends HtsjdkTest {
         baos = new ByteArrayOutputStream();
         IOUtil.copyStream(baiStream, baos);
         final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.sequenceId, entry.alignmentStart, entry.alignmentStart);
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
-        Assert.assertEquals(coordinateArray[0] >> 16, entry.containerStartOffset);
+        Assert.assertEquals(coordinateArray[0] >> 16, entry.getContainerStartByteOffset());
         Assert.assertEquals(coordinateArray[1] & 0xFFFF, 1);
     }
 
@@ -108,13 +100,7 @@ public class SamIndexesTest extends HtsjdkTest {
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header);
-        final CRAIEntry entry = new CRAIEntry();
-        entry.sequenceId = 0;
-        entry.alignmentStart = 1;
-        entry.alignmentSpan = 2;
-        entry.sliceOffset = 3;
-        entry.sliceSize = 4;
-        entry.containerStartOffset = 5;
+        final CRAIEntry entry = CRAIEntryTest.newEntry(0, 1, 2, 5, 3, 4);
         indexer.addEntry(entry);
         indexer.finish();
         fos.close();
@@ -126,11 +112,11 @@ public class SamIndexesTest extends HtsjdkTest {
         Assert.assertNotNull(baiStream);
 
         final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(baiStream, dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.sequenceId, entry.alignmentStart, entry.alignmentStart);
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
-        Assert.assertEquals(coordinateArray[0] >> 16, entry.containerStartOffset);
+        Assert.assertEquals(coordinateArray[0] >> 16, entry.getContainerStartByteOffset());
         Assert.assertEquals(coordinateArray[1] & 0xFFFF, 1);
     }
 
@@ -167,13 +153,7 @@ public class SamIndexesTest extends HtsjdkTest {
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header);
-        final CRAIEntry entry = new CRAIEntry();
-        entry.sequenceId = 0;
-        entry.alignmentStart = 1;
-        entry.alignmentSpan = 2;
-        entry.sliceOffset = 3;
-        entry.sliceSize = 4;
-        entry.containerStartOffset = 5;
+        final CRAIEntry entry = CRAIEntryTest.newEntry(0, 1, 2, 5, 3, 4);
         indexer.addEntry(entry);
         indexer.finish();
         fos.close();
@@ -184,11 +164,11 @@ public class SamIndexesTest extends HtsjdkTest {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IOUtil.copyStream(baiStream, baos);
         final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.sequenceId, entry.alignmentStart, entry.alignmentStart);
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
-        Assert.assertEquals(coordinateArray[0] >> 16, entry.containerStartOffset);
+        Assert.assertEquals(coordinateArray[0] >> 16, entry.getContainerStartByteOffset());
         Assert.assertEquals(coordinateArray[1] & 0xFFFF, 1);
     }
 }
