@@ -1554,21 +1554,27 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * Does not change state of this.
+     * @deprecated Use computeIndexingBin() if accessible or GenomicIndexUtil.regionToBin() otherwise.
+     */
+    @Deprecated() public int computeIndexingBinIfAbsent(final SAMRecord alignment) { return alignment.computeIndexingBin(); }
+
+    /**
+     * Computes the BAI indexing bin for the record. Invokes getAlignmentEnd() among other methods, which may
+     * cause the record to deserialize/parse the cigar is necessary.
+     *
      * @return indexing bin based on alignment start & end.
      */
     int computeIndexingBin() {
-        if (getAlignmentStart() > GenomicIndexUtil.BIN_GENOMIC_SPAN || getAlignmentEnd() > GenomicIndexUtil.BIN_GENOMIC_SPAN) {
-            throw new IllegalStateException("Read position too high for BAI bin indexing.");
-        }
-
-        // regionToBin has zero-based, half-open API
-        final int alignmentStart = getAlignmentStart()-1;
+        final int alignmentStart = getAlignmentStart()-1; // BIN uses 0-based half-open
         int alignmentEnd = getAlignmentEnd();
         if (alignmentEnd <= 0) {
             // If alignment end cannot be determined (e.g. because this read is not really aligned),
             // then treat this as a one base alignment for indexing purposes.
             alignmentEnd = alignmentStart + 1;
+        }
+
+        if (alignmentStart > GenomicIndexUtil.BIN_GENOMIC_SPAN || alignmentEnd > GenomicIndexUtil.BIN_GENOMIC_SPAN) {
+            throw new IllegalStateException("Read position too high for BAI bin indexing.");
         }
 
         return GenomicIndexUtil.regionToBin(alignmentStart, alignmentEnd) & (int) BinaryCodec.MAX_USHORT;

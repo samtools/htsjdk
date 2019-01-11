@@ -1251,6 +1251,14 @@ public final class SAMUtils {
     }
 
     /**
+     * @deprecated because the method does the exact opposite of what it says.  Use the correctly named
+     *             isReferenceSequenceIncompatibleWithBAI() instead.
+     */
+    @Deprecated public static boolean isReferenceSequenceCompatibleWithBAI(final SAMSequenceRecord sequence) {
+        return isReferenceSequenceIncompatibleWithBAI(sequence);
+    }
+
+    /**
      * Checks if reference sequence is compatible with BAI indexing format.
      * @param sequence reference sequence.
      */

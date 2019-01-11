@@ -290,8 +290,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
         final File originalBAMInputFile = new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam");
         final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta");
 
-        // retrieve all records from the bam and reset the indexing bins to keep comparisons with
-        // cram records from failing
         List<SAMRecord> originalBAMRecords = getSAMRecordsFromFile(originalBAMInputFile, referenceFile);
 
         // write the BAM records to a temporary CRAM
@@ -320,8 +318,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
         final File originalBAMInputFile = new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam");
         final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta");
 
-        // retrieve all records from the bam and reset the indexing bins to keep comparisons with
-        // cram records from failing
         List<SAMRecord> originalBAMRecords = getSAMRecordsFromFile(originalBAMInputFile, referenceFile);
 
         // write the BAM records to a temporary CRAM
