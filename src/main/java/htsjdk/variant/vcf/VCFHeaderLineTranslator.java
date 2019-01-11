@@ -62,7 +62,7 @@ interface VCFLineParser {
     /**
      * parse a VCF line
      * 
-     * @deprecated Use {@link #parseLine(String, List, List)} to support VCFv4.2 and up
+     * @see #parseLine(String, List, List) VCFv4.2+ recommended tags support
      * 
      * @param valueLine the line
      * @param expectedTagOrder List of expected tags
