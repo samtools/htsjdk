@@ -398,6 +398,21 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         verifyWriterOutput(outputFile, new ReferenceSource(referenceFile), nRecs, true);
     }
 
+    // throws an exception since no reference is provided
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testMakeCRAMWriterWithNoReference() throws Exception {
+        final File outputFile = prepareOutputFileWithSuffix("." + CramIO.CRAM_FILE_EXTENSION);
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
+
+        final int nRecs;
+        try (final SAMFileWriter samWriter = factory.makeCRAMWriter(header, false, outputFile, null)) {
+            nRecs = fillSmallBam(samWriter);
+        }
+    }
+
+
+
     @Test
     public void testMakeCRAMWriterIgnoresOptions() throws Exception {
         final File outputFile = prepareOutputFileWithSuffix("." + CramIO.CRAM_FILE_EXTENSION);
