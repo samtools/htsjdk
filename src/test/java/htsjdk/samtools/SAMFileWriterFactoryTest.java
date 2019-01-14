@@ -405,9 +405,8 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         final SAMFileHeader header = new SAMFileHeader();
         final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
 
-        final int nRecs;
         try (final SAMFileWriter samWriter = factory.makeCRAMWriter(header, false, outputFile, null)) {
-            nRecs = fillSmallBam(samWriter);
+            fillSmallBam(samWriter);
         }
     }
 
