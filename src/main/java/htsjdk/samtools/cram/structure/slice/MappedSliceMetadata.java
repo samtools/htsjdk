@@ -7,7 +7,7 @@ public class MappedSliceMetadata extends SliceMetadata {
     private final int span;
 
     /**
-     * Create a metadata object with a multiple records.
+     * Create a metadata object with multiple records.
      *
      * @param start alignment start
      * @param span  alignment span
@@ -33,7 +33,8 @@ public class MappedSliceMetadata extends SliceMetadata {
      * Combine another MappedSliceMetadata with this one
      *
      * @param other the other object to combine
-     * @return the combined MappedSliceMetadata (as a SliceAlignmentMetadata)
+     * @return the combined MappedSliceMetadata (as a SliceMetadata)
+     * @throws CRAMException when attempting to combine different subclasses
      */
     @Override
     @SuppressWarnings("unchecked")

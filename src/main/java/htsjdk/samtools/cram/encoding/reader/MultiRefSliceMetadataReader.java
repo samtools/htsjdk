@@ -35,7 +35,7 @@ import java.util.Map;
  *
  * @author vadim
  */
-public class MultiRefSliceAlignmentMetadataReader extends CramRecordReader {
+public class MultiRefSliceMetadataReader extends CramRecordReader {
     /**
      * Alignment start to start counting from
      */
@@ -57,12 +57,12 @@ public class MultiRefSliceAlignmentMetadataReader extends CramRecordReader {
      * @param initialAlignmentStart the alignmentStart used for initial calculation of metadataMap
      * @param recordCount           the number of CRAM records to read
      */
-    public MultiRefSliceAlignmentMetadataReader(final BitInputStream coreInputStream,
-                                                final Map<Integer, ByteArrayInputStream> externalInputMap,
-                                                final CompressionHeader header,
-                                                final ValidationStringency validationStringency,
-                                                final int initialAlignmentStart,
-                                                final int recordCount) {
+    public MultiRefSliceMetadataReader(final BitInputStream coreInputStream,
+                                       final Map<Integer, ByteArrayInputStream> externalInputMap,
+                                       final CompressionHeader header,
+                                       final ValidationStringency validationStringency,
+                                       final int initialAlignmentStart,
+                                       final int recordCount) {
         super(coreInputStream, externalInputMap, header, Slice.MULTI_REFERENCE, validationStringency);
 
         this.currentAlignmentStart = initialAlignmentStart;

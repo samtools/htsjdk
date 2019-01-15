@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentMetadataReader;
+import htsjdk.samtools.cram.encoding.reader.MultiRefSliceMetadataReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.slice.MappedSliceMetadata;
@@ -79,7 +79,7 @@ public class MultiRefSliceMetadataReaderTest extends CramRecordTestHelper {
         try (final ByteArrayInputStream is = new ByteArrayInputStream(written);
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
-            final MultiRefSliceAlignmentMetadataReader reader = new MultiRefSliceAlignmentMetadataReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
+            final MultiRefSliceMetadataReader reader = new MultiRefSliceMetadataReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
             final Map<Integer, SliceMetadata> metadataMap = reader.getReferenceMetadata();
 
             Assert.assertEquals(metadataMap.size(), 2);

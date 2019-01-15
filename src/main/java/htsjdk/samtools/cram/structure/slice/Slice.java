@@ -20,7 +20,7 @@ package htsjdk.samtools.cram.structure.slice;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
-import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentMetadataReader;
+import htsjdk.samtools.cram.encoding.reader.MultiRefSliceMetadataReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.CompressionHeader;
@@ -308,7 +308,7 @@ public class Slice {
     }
 
     /**
-     * Uses a Multiple Reference Slice Alignment Reader to determine the SliceAlignmentMetadata of
+     * Uses a Multiple Reference Slice Alignment Reader to determine the {@link SliceMetadata} of
      * this Slice on a per-reference basis.  The intended use is for CRAI/BAI indexing.
      *
      * @param header               the associated Cram Compression Header
@@ -316,7 +316,7 @@ public class Slice {
      */
     public Map<Integer, SliceMetadata> getMultiRefAlignmentMetadata(final CompressionHeader header,
                                                                     final ValidationStringency validationStringency) {
-        final MultiRefSliceAlignmentMetadataReader reader = new MultiRefSliceAlignmentMetadataReader(getCoreBlockInputStream(),
+        final MultiRefSliceMetadataReader reader = new MultiRefSliceMetadataReader(getCoreBlockInputStream(),
                 getExternalBlockInputMap(),
                 header,
                 validationStringency,

@@ -4,7 +4,7 @@ import htsjdk.samtools.cram.CRAMException;
 
 public class UnmappedSliceMetadata extends SliceMetadata {
     /**
-     * Create a metadata object with a multiple records.
+     * Create a metadata object with multiple records.
      *
      * @param count number of records
      */
@@ -16,7 +16,8 @@ public class UnmappedSliceMetadata extends SliceMetadata {
      * Combine another UnmappedSliceMetadata with this one
      *
      * @param other the other object to combine
-     * @return the combined UnmappedSliceMetadata (as a SliceAlignmentMetadata)
+     * @return the combined UnmappedSliceMetadata (as a SliceMetadata)
+     * @throws CRAMException when attempting to combine different subclasses
      */
     @Override
     @SuppressWarnings("unchecked")

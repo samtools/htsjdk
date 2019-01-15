@@ -38,11 +38,15 @@ public class ContainerParser {
         this.samFileHeader = samFileHeader;
     }
 
-    public List<CramCompressionRecord> getRecords(final ArrayList<CramCompressionRecord> records,
+    public List<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
                                                   final Container container,
                                                   final ValidationStringency validationStringency) throws IllegalArgumentException {
         if (container.isEOF()) {
             return Collections.emptyList();
+        }
+
+        if (records == null) {
+            records = new ArrayList<>(container.nofRecords);
         }
 
         for (final Slice slice : container.slices) {
