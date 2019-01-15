@@ -107,7 +107,8 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         // Compute block size, as it is the first element of the file representation of SAMRecord
         final int readLength = alignment.getReadLength();
 
-        // if cigar is too long, put into CG tag and replace with sentinel value
+        // If cigar is too long, put into CG tag and replace with sentinel value.
+        // Using alignment.getCigarLength() here causes problems, so access the cigar instead
         final Cigar cigarToWrite;
         final boolean cigarSwitcharoo = alignment.getCigar().numCigarElements() > BAMRecord.MAX_CIGAR_OPERATORS;
 
