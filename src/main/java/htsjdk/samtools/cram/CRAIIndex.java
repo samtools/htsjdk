@@ -1,12 +1,10 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.CRAMBAIIndexer;
-import htsjdk.samtools.CRAMCRAIIndexer;
+import htsjdk.samtools.*;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.slice.MappedSliceMetadata;
 import htsjdk.samtools.cram.structure.slice.Slice;
-import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
+import htsjdk.samtools.cram.structure.slice.SliceMetadata;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.ValidationStringency;
@@ -55,17 +53,34 @@ public class CRAIIndex {
         // TODO: this should be refactored and delegate to container/slice
         if (!container.isEOF()) {
             for (final Slice s: container.slices) {
-                if (s.sequenceId == Slice.MULTI_REFERENCE) {
-                    final Map<Integer, SliceAlignmentMetadata> metadataMap = s.getMultiRefAlignmentMetadata(container.header, ValidationStringency.DEFAULT_STRINGENCY);
+                if (s.isMultiref()) {
+                    final Map<Integer, SliceMetadata> metadataMap = s.getMultiRefAlignmentMetadata(container.header, ValidationStringency.DEFAULT_STRINGENCY);
 
-                    this.entries.addAll(metadataMap.entrySet().stream()
+                    // References must be processed in order, with unmapped last
+                    // TODO refactor w/ CRAMBAIIndexer.processContainer()
+
+                    this.entries.addAll(metadataMap
+                            .entrySet()
+                            .stream()
+                            .filter(entry -> entry.getKey() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+                            .sorted(Map.Entry.comparingByKey())
                             .map(e -> new CRAIEntry(e.getKey(),
-                                    e.getValue().getAlignmentStart(),
-                                    e.getValue().getAlignmentSpan(),
+                                    ((MappedSliceMetadata) e.getValue()).getAlignmentStart(),
+                                    ((MappedSliceMetadata) e.getValue()).getAlignmentSpan(),
                                     container.offset,
                                     container.landmarks[s.index],
                                     s.size))
                             .collect(Collectors.toList()));
+
+                    final SliceMetadata unmapped = metadataMap.get(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+                    if (unmapped != null) {
+                        this.entries.add(new CRAIEntry(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                                0,  // TODO: does it matter what we set here?
+                                0,
+                                container.offset,
+                                container.landmarks[s.index],
+                                s.size));
+                    }
                  } else {
                     // TODO test that this is also correct for unmapped
                     entries.add(s.getCRAIEntry(container.offset));

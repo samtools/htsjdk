@@ -4,7 +4,8 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentMetadataReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
-import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
+import htsjdk.samtools.cram.structure.slice.MappedSliceMetadata;
+import htsjdk.samtools.cram.structure.slice.SliceMetadata;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.slice.Slice;
@@ -17,7 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-public class MultiRefSliceAlignmentMetadataReaderTest extends CramRecordTestHelper {
+public class MultiRefSliceMetadataReaderTest extends CramRecordTestHelper {
 
     private List<CramCompressionRecord> initRecords() {
         final List<CramCompressionRecord> initialRecords = createRecords();
@@ -79,13 +80,13 @@ public class MultiRefSliceAlignmentMetadataReaderTest extends CramRecordTestHelp
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
             final MultiRefSliceAlignmentMetadataReader reader = new MultiRefSliceAlignmentMetadataReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
-            final Map<Integer, SliceAlignmentMetadata> metadataMap = reader.getReferenceMetadata();
+            final Map<Integer, SliceMetadata> metadataMap = reader.getReferenceMetadata();
 
             Assert.assertEquals(metadataMap.size(), 2);
             Assert.assertTrue(metadataMap.containsKey(1));
             Assert.assertTrue(metadataMap.containsKey(2));
-            Assert.assertEquals(metadataMap.get(1), new SliceAlignmentMetadata(1, 9, 3));
-            Assert.assertEquals(metadataMap.get(2), new SliceAlignmentMetadata(2, 3, 1));
+            Assert.assertEquals(metadataMap.get(1), new MappedSliceMetadata(1, 9, 3));
+            Assert.assertEquals(metadataMap.get(2), new MappedSliceMetadata(2, 3, 1));
         }
     }
 }

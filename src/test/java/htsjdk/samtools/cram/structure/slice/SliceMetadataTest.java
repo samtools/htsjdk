@@ -5,6 +5,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
@@ -15,16 +16,57 @@ import org.testng.annotations.Test;
 
 import java.util.*;
 
-public class SliceAlignmentMetadataTest extends HtsjdkTest {
+public class SliceMetadataTest extends HtsjdkTest {
     @Test
-    public void addTest() {
-        final SliceAlignmentMetadata a = new SliceAlignmentMetadata(1, 10); // end = 10
-        final SliceAlignmentMetadata b = new SliceAlignmentMetadata(10, 10, 2); // end = 19
-        final SliceAlignmentMetadata c = SliceAlignmentMetadata.add(a, b);
+    public void addMappedTest() {
+        final MappedSliceMetadata a = new MappedSliceMetadata(1, 10); // end = 10
+        final MappedSliceMetadata b = new MappedSliceMetadata(10, 10, 2); // end = 19
+        final MappedSliceMetadata c = a.add(b);
 
         Assert.assertEquals(c.getAlignmentStart(), 1);
         Assert.assertEquals(c.getAlignmentSpan(), 19);
         Assert.assertEquals(c.getRecordCount(), 3);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
+    public void addMappedFailTest() {
+        final UnmappedSliceMetadata a = new UnmappedSliceMetadata(2638);
+        final MappedSliceMetadata b = new MappedSliceMetadata(1, 10);
+        a.add(b);
+    }
+
+    @Test
+    public void addUnmappedTest() {
+        final UnmappedSliceMetadata a = new UnmappedSliceMetadata(456);
+        final UnmappedSliceMetadata b = new UnmappedSliceMetadata(2638);
+        final UnmappedSliceMetadata c = a.add(b);
+
+        Assert.assertEquals(c.getRecordCount(), 456 + 2638);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
+    public void addUnmappedFailTest() {
+        final MappedSliceMetadata a = new MappedSliceMetadata(1, 10);
+        final UnmappedSliceMetadata b = new UnmappedSliceMetadata(2638);
+        a.add(b);
+    }
+
+    @Test
+    public void combineTest() {
+        final SliceMetadata a = new MappedSliceMetadata(1, 10); // end = 10
+        final SliceMetadata b = new MappedSliceMetadata(10, 10, 2); // end = 19
+        final SliceMetadata c = SliceMetadata.combine(a, b);
+
+        Assert.assertEquals(((MappedSliceMetadata)c).getAlignmentStart(), 1);
+        Assert.assertEquals(((MappedSliceMetadata)c).getAlignmentSpan(), 19);
+        Assert.assertEquals(c.getRecordCount(), 3);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
+    public void combineFailTest() {
+        final SliceMetadata a = new MappedSliceMetadata(1, 10);
+        final SliceMetadata b = new UnmappedSliceMetadata(2638);
+        SliceMetadata.combine(a, b);
     }
 
     private static Slice newSingleSlice(final int refId,
@@ -90,40 +132,40 @@ public class SliceAlignmentMetadataTest extends HtsjdkTest {
                         newSingleSlice(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 123, 456, 10),
                         null, // don't need compression header for single-ref test
                         1, // single ref
-                        new HashMap<Integer, SliceAlignmentMetadata>() {{
-                            put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, new SliceAlignmentMetadata(123, 456, 10));
+                        new HashMap<Integer, SliceMetadata>() {{
+                            put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, new UnmappedSliceMetadata(10));
                         }}
                 },
                 {
                         newSingleSlice(5, 789, 1234, 3),
                         null, // don't need compression header for single-ref test
                         1, // single ref
-                        new HashMap<Integer, SliceAlignmentMetadata>() {{
-                            put(5,  new SliceAlignmentMetadata(789, 1234, 3));
+                        new HashMap<Integer, SliceMetadata>() {{
+                            put(5,  new MappedSliceMetadata(789, 1234, 3));
                         }}
                 },
                 {
                         multiRefSlice,
                         multiRefContainer.header,
                         2,
-                        new HashMap<Integer, SliceAlignmentMetadata>() {{
+                        new HashMap<Integer, SliceMetadata>() {{
                             // two records for sequence 0: 1-5 and 3-7
-                            put(0, new SliceAlignmentMetadata(1, 7, 2));
+                            put(0, new MappedSliceMetadata(1, 7, 2));
                             // two records for sequence 1: 2-6 and 4-8
-                            put(1, new SliceAlignmentMetadata(2, 7, 2));
+                            put(1, new MappedSliceMetadata(2, 7, 2));
                         }}
                 },
                 {
                         multiRefSliceWithUnmapped,
                         multiRefContainerWithUnmapped.header,
                         3,
-                        new HashMap<Integer, SliceAlignmentMetadata>() {{
+                        new HashMap<Integer, SliceMetadata>() {{
                             // two unmapped records: 1-5 and 2-6
-                            put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, new SliceAlignmentMetadata(1, 6, 2));
+                            put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, new UnmappedSliceMetadata(2));
                             // one record for sequence 0: 3-7
-                            put(0, new SliceAlignmentMetadata(3, 5, 1));
+                            put(0, new MappedSliceMetadata(3, 5, 1));
                             // one record for sequence 1: 4-8
-                            put(1, new SliceAlignmentMetadata(4, 5, 1));
+                            put(1, new MappedSliceMetadata(4, 5, 1));
                         }}
                 },
         };
@@ -133,9 +175,9 @@ public class SliceAlignmentMetadataTest extends HtsjdkTest {
     public void getTest(final Slice slice,
                         final CompressionHeader compressionHeader,
                         final int referenceCount,
-                        final Map<Integer, SliceAlignmentMetadata> metadata) {
+                        final Map<Integer, SliceMetadata> metadata) {
 
-        final Map<Integer, SliceAlignmentMetadata> metadataMap = slice.getAlignmentMetadata(compressionHeader, ValidationStringency.SILENT);
+        final Map<Integer, SliceMetadata> metadataMap = slice.getAlignmentMetadata(compressionHeader, ValidationStringency.SILENT);
         Assert.assertEquals(metadataMap.size(), referenceCount);
         Assert.assertEqualsDeep(metadataMap, metadata);
     }
@@ -162,7 +204,7 @@ public class SliceAlignmentMetadataTest extends HtsjdkTest {
         Assert.assertEquals(container.nofRecords, 10);
         Assert.assertEquals(container.sequenceId, 0);
 
-        final Map<Integer, SliceAlignmentMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
+        final Map<Integer, SliceMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
         Assert.assertNotNull(referenceMap);
         Assert.assertEquals(referenceMap.size(), 1);
         Assert.assertTrue(referenceMap.containsKey(0));
@@ -189,7 +231,7 @@ public class SliceAlignmentMetadataTest extends HtsjdkTest {
         Assert.assertEquals(container.nofRecords, 10);
         Assert.assertEquals(container.sequenceId, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
 
-        final Map<Integer, SliceAlignmentMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
+        final Map<Integer, SliceMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
         Assert.assertNotNull(referenceMap);
         Assert.assertEquals(referenceMap.size(), 1);
         Assert.assertTrue(referenceMap.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
@@ -223,7 +265,7 @@ public class SliceAlignmentMetadataTest extends HtsjdkTest {
         Assert.assertEquals(container.nofRecords, 10);
         Assert.assertEquals(container.sequenceId, Slice.MULTI_REFERENCE);
 
-        final Map<Integer, SliceAlignmentMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
+        final Map<Integer, SliceMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
         Assert.assertNotNull(referenceMap);
         Assert.assertEquals(referenceMap.size(), 2);
         Assert.assertTrue(referenceMap.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
@@ -259,16 +301,16 @@ public class SliceAlignmentMetadataTest extends HtsjdkTest {
         Assert.assertEquals(container.nofRecords, 10);
         Assert.assertEquals(container.sequenceId, Slice.MULTI_REFERENCE);
 
-        final Map<Integer, SliceAlignmentMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
+        final Map<Integer, SliceMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
         Assert.assertNotNull(referenceMap);
         Assert.assertEquals(referenceMap.size(), 10);
         Assert.assertTrue(referenceMap.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
         for (int i=0; i<9; i++) {
             Assert.assertTrue(referenceMap.containsKey(i));
-            SliceAlignmentMetadata span = referenceMap.get(i);
-            Assert.assertEquals(span.getRecordCount(), 1);
-            Assert.assertEquals(span.getAlignmentStart(), i+1);
-            Assert.assertEquals(span.getAlignmentSpan(), 3);
+            MappedSliceMetadata metadata = (MappedSliceMetadata) referenceMap.get(i);
+            Assert.assertEquals(metadata.getRecordCount(), 1);
+            Assert.assertEquals(metadata.getAlignmentStart(), i+1);
+            Assert.assertEquals(metadata.getAlignmentSpan(), 3);
         }
     }
 }

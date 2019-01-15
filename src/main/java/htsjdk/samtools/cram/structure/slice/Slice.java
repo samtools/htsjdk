@@ -284,20 +284,25 @@ public class Slice {
     }
 
     /**
-     * Return a mapping of reference IDs to {@link SliceAlignmentMetadata} for this Slice.
+     * Return a mapping of reference IDs to {@link SliceMetadata} for this Slice.
      * The intended use is for CRAI/BAI indexing.
      * @return the metadata map
      */
-    public Map<Integer, SliceAlignmentMetadata> getAlignmentMetadata(final CompressionHeader header,
-                                                                     final ValidationStringency validationStringency) {
+    public Map<Integer, SliceMetadata> getAlignmentMetadata(final CompressionHeader header,
+                                                            final ValidationStringency validationStringency) {
         if (isMultiref()) {
             return getMultiRefAlignmentMetadata(header, validationStringency);
         }
         else {
-            // NOTE: also applicable to unmapped slices
+            final Map<Integer, SliceMetadata> singleRefMap = new HashMap<>();
 
-            final Map<Integer, SliceAlignmentMetadata> singleRefMap = new HashMap<>();
-            singleRefMap.put(sequenceId, new SliceAlignmentMetadata(alignmentStart, alignmentSpan, nofRecords));
+            if (isMapped()) {
+                singleRefMap.put(sequenceId, new MappedSliceMetadata(alignmentStart, alignmentSpan, nofRecords));
+            }
+            else {
+                singleRefMap.put(sequenceId, new UnmappedSliceMetadata(nofRecords));
+            }
+
             return singleRefMap;
         }
     }
@@ -309,8 +314,8 @@ public class Slice {
      * @param header               the associated Cram Compression Header
      * @param validationStringency how strict to be when reading CRAM records
      */
-    public Map<Integer, SliceAlignmentMetadata> getMultiRefAlignmentMetadata(final CompressionHeader header,
-                                                                             final ValidationStringency validationStringency) {
+    public Map<Integer, SliceMetadata> getMultiRefAlignmentMetadata(final CompressionHeader header,
+                                                                    final ValidationStringency validationStringency) {
         final MultiRefSliceAlignmentMetadataReader reader = new MultiRefSliceAlignmentMetadataReader(getCoreBlockInputStream(),
                 getExternalBlockInputMap(),
                 header,

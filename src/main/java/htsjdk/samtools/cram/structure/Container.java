@@ -22,7 +22,7 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.slice.Slice;
-import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
+import htsjdk.samtools.cram.structure.slice.SliceMetadata;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -63,8 +63,8 @@ public class Container {
      */
     public long offset;
 
-    public Map<Integer, SliceAlignmentMetadata> getSliceMetadata(final ValidationStringency validationStringency) {
-        final Map<Integer, SliceAlignmentMetadata> sliceMetadataMap  = new HashMap<>();
+    public Map<Integer, SliceMetadata> getSliceMetadata(final ValidationStringency validationStringency) {
+        final Map<Integer, SliceMetadata> sliceMetadataMap  = new HashMap<>();
 
         // iterate through the container's slices, parsing multi-ref into individual references,
         // and recombining slice metadata per-reference as necessary
@@ -73,7 +73,7 @@ public class Container {
                 .flatMap(slice ->
                         slice.getAlignmentMetadata(header, validationStringency).entrySet().stream())
                 .forEach(metadataMapEntry ->
-                        sliceMetadataMap.merge(metadataMapEntry.getKey(), metadataMapEntry.getValue(), SliceAlignmentMetadata::add));
+                        sliceMetadataMap.merge(metadataMapEntry.getKey(), metadataMapEntry.getValue(), SliceMetadata::combine));
 
         return sliceMetadataMap;
     }

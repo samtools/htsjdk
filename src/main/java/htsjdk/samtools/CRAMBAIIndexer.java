@@ -39,7 +39,8 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
+import htsjdk.samtools.cram.structure.slice.MappedSliceMetadata;
+import htsjdk.samtools.cram.structure.slice.SliceMetadata;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -120,22 +121,24 @@ public class CRAMBAIIndexer {
             slice.containerOffset = container.offset;
             slice.index = sliceIndex++;
             if (slice.isMultiref()) {
-                final Map<Integer, SliceAlignmentMetadata> metadataMap = slice.getMultiRefAlignmentMetadata(container.header, validationStringency);
                 slice.containerOffset = container.offset;
                 slice.index = sliceIndex++;
 
-                // References must be processed in order, with unmapped last
+                final Map<Integer, SliceMetadata> metadataMap = slice.getMultiRefAlignmentMetadata(container.header, validationStringency);
 
-                final SortedMap<Integer, SliceAlignmentMetadata> mapped = metadataMap
+                // References must be processed in order, with unmapped last
+                // TODO refactor w/ CRAIIndex.processContainer()
+
+                final SortedMap<Integer, SliceMetadata> mapped = metadataMap
                         .entrySet()
                         .stream()
                         .filter(entry -> entry.getKey() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, SliceAlignmentMetadata::add, TreeMap::new));
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, SliceMetadata::combine, TreeMap::new));
 
-                final SliceAlignmentMetadata unmapped = metadataMap.get(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+                final SliceMetadata unmapped = metadataMap.get(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
 
-                for (final Map.Entry<Integer, SliceAlignmentMetadata> slicePerRef : mapped.entrySet()) {
-                    final SliceAlignmentMetadata metadata = slicePerRef.getValue();
+                for (final Map.Entry<Integer, SliceMetadata> slicePerRef : mapped.entrySet()) {
+                    final MappedSliceMetadata metadata = (MappedSliceMetadata) slicePerRef.getValue();
                     final Slice fakeSlice = new Slice();
                     fakeSlice.sequenceId = slicePerRef.getKey();
                     fakeSlice.containerOffset = slice.containerOffset;
