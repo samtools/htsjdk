@@ -143,7 +143,7 @@ class VCF4Parser implements VCFLineParser {
                 escape = false;
                 switch (c) {
                     case ('<') : if (index == 0) break; // if we see a open bracket at the beginning, ignore it
-                    case ('>') : if (index == valueLine.length()-1 && !key.isEmpty()) ret.put(key,builder.toString().trim()); break; // if we see a close bracket, and we're at the end, add an entry to our list
+                    case ('>') : if (index == valueLine.length()-1) ret.put(key,builder.toString().trim()); break; // if we see a close bracket, and we're at the end, add an entry to our list
                     case ('=') : key = builder.toString().trim(); builder = new StringBuilder(); break; // at an equals, copy the key and reset the builder
                     case (',') : ret.put(key,builder.toString().trim()); builder = new StringBuilder(); break; // drop the current key value to the return map
                     default: builder.append(c); // otherwise simply append to the current string
