@@ -38,6 +38,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.structure.slice.MappedSliceMetadata;
 import htsjdk.samtools.cram.structure.slice.SliceMetadata;
@@ -129,28 +130,26 @@ public class CRAMBAIIndexer {
                 // References must be processed in order, with unmapped last
                 // TODO refactor w/ CRAIIndex.processContainer()
 
-                final SortedMap<Integer, SliceMetadata> mapped = metadataMap
+                metadataMap
                         .entrySet()
                         .stream()
                         .filter(entry -> entry.getKey() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, SliceMetadata::combine, TreeMap::new));
+                        .sorted(Map.Entry.comparingByKey())
+                        .forEach(slicePerRef -> {
+                            final MappedSliceMetadata metadata = (MappedSliceMetadata) slicePerRef.getValue();
+                            final Slice fakeSlice = new Slice();
+                            fakeSlice.sequenceId = slicePerRef.getKey();
+                            fakeSlice.containerOffset = slice.containerOffset;
+                            fakeSlice.offset = slice.offset;
+                            fakeSlice.index = slice.index;
+
+                            fakeSlice.alignmentStart = metadata.getAlignmentStart();
+                            fakeSlice.alignmentSpan = metadata.getAlignmentSpan();
+                            fakeSlice.nofRecords = metadata.getRecordCount();
+                            processSingleReferenceSlice(fakeSlice);
+                        });
 
                 final SliceMetadata unmapped = metadataMap.get(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
-
-                for (final Map.Entry<Integer, SliceMetadata> slicePerRef : mapped.entrySet()) {
-                    final MappedSliceMetadata metadata = (MappedSliceMetadata) slicePerRef.getValue();
-                    final Slice fakeSlice = new Slice();
-                    fakeSlice.sequenceId = slicePerRef.getKey();
-                    fakeSlice.containerOffset = slice.containerOffset;
-                    fakeSlice.offset = slice.offset;
-                    fakeSlice.index = slice.index;
-
-                    fakeSlice.alignmentStart = metadata.getAlignmentStart();
-                    fakeSlice.alignmentSpan = metadata.getAlignmentSpan();
-                    fakeSlice.nofRecords = metadata.getRecordCount();
-                    processSingleReferenceSlice(fakeSlice);
-                }
-
                 if (unmapped != null) {
                     final Slice fakeSlice = new Slice();
                     fakeSlice.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
@@ -164,6 +163,7 @@ public class CRAMBAIIndexer {
                     processSingleReferenceSlice(fakeSlice);
                 }
             } else {
+                // TODO: ignores unmapped single-reference slices.  is that the right behavior?
                 processSingleReferenceSlice(slice);
             }
         }
