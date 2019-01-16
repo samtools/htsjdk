@@ -315,13 +315,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         // get the file coordinates for the span:
         final long[] coordinateArray = ((BAMFileSpan) fileSpan).toCoordinateArray();
         if (coordinateArray == null || coordinateArray.length == 0) return emptyIterator;
-        try {
-            // create an input stream that reads the source cram stream only within the coordinate pairs:
-            final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
-            return new CRAMIterator(seekableStream, referenceSource, coordinateArray, validationStringency);
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
+
+        // create an input stream that reads the source cram stream only within the coordinate pairs:
+        final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
+        return new CRAMIterator(seekableStream, referenceSource, coordinateArray, validationStringency);
     }
 
     @Override
@@ -508,16 +505,14 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             super(queries, contained);
 
             if (coordinates != null && coordinates.length != 0) {
-                try {
-                    unfilteredIterator = new CRAMIterator(
-                            getSeekableStreamOrFailWithRTE(),
-                            referenceSource,
-                            coordinates,
-                            validationStringency
-                    );
-                } catch (final IOException e) {
-                    throw new RuntimeEOFException(e);
-                }
+
+                unfilteredIterator = new CRAMIterator(
+                        getSeekableStreamOrFailWithRTE(),
+                        referenceSource,
+                        coordinates,
+                        validationStringency
+                );
+                
                 getNextRecord(); // advance to the first record that matches the filter criteria
             }
         }
