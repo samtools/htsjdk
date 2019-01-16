@@ -62,6 +62,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Validates SAM files as follows:
@@ -571,6 +572,14 @@ public class SamFileValidator {
                 if (!fileHeader.getSequenceDictionary().isSameDictionary(samSequenceDictionary)) {
                     addError(new SAMValidationError(Type.MISMATCH_FILE_SEQ_DICT, "Mismatch between file and sequence dictionary", null));
                 }
+            }
+            
+            final List<SAMSequenceRecord> longSeqs = fileHeader.getSequenceDictionary().getSequences().stream()
+                    .filter(s -> s.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN).collect(Collectors.toList());
+
+            if (!longSeqs.isEmpty()) {
+                final String msg = "Reference sequences are too long for BAI indexing: " + StringUtil.join(", ", longSeqs);
+                addError(new SAMValidationError(Type.REF_SEQ_TOO_LONG_FOR_BAI, msg, null));
             }
         }
         if (fileHeader.getReadGroups().isEmpty()) {

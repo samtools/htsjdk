@@ -120,9 +120,6 @@ public class SAMTextWriterTest extends HtsjdkTest {
             inputSAMRecord.getMateReferenceIndex();
             newSAMRecord.getMateReferenceIndex();
 
-            // Force these to be equal
-            newSAMRecord.setIndexingBin(inputSAMRecord.getIndexingBin());
-
             Assert.assertEquals(newSAMRecord, inputSAMRecord);
         }
         Assert.assertFalse(newSAMIt.hasNext());

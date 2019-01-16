@@ -126,9 +126,6 @@ public class BAMRecord extends SAMRecord {
         super.setReadBases(null);
         super.setBaseQualities(null);
 
-        // Do this after the above because setCigarString will clear it.
-        setIndexingBin(indexingBin);
-
         // Mark the binary block as being valid for writing back out to disk
         mBinaryDataStale = false;
     }
