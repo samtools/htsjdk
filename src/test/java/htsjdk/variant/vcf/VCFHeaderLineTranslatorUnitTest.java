@@ -86,7 +86,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 {"<ID=X,Description=\"Y\",Extra=\"extra\">", idDesc, none},
                 {"<ID=X,Description=<Y>>", idDesc, none},
                 {"<ID=X,Description=\"Y\",Extra=E>", idDesc, none},
-                
+
                 {"<ID=X,Description=\"Y\",Extra=\"extra\">", idDesc, extra},
                 {"<ID=X,Description=\"Y\">", idDesc, extra},
                 {"<>", none, none},
@@ -104,7 +104,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 // to parse, expected, recommended, error message
                 {"<Description=\"Y\",ID=X>", idDesc, none, "Tag Description in wrong order (was #1, expected #2)"},
                 {"<ID=X,Desc=\"Y\">", idDesc, none, "Unexpected tag Desc"},
-                {"<>", idDesc, none, "Header with no tags is not supported when there are expected tags"},
+                {"<>", idDesc, none, "Unexpected tag  "},
 
                 {"<Source=\"source\",ID=X,Description=\"Y\">", idDesc, sourceVersion, "Recommended tag Source must be listed after all expected tags"},
                 {"<ID=X,Source=\"E\",Description=\"Y\">", idDesc, sourceVersion, "Recommended tag Source must be listed after all expected tags"}
