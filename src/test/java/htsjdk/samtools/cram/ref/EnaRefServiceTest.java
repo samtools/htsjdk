@@ -16,7 +16,7 @@ public class EnaRefServiceTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "testEnaRefServiceData")
-    public void testEnaRefServiceData(final String md5) throws IOException, EnaRefService.GaveUpException {
+    public void testEnaRefServiceData(final String md5) throws IOException, GaveUpException {
         Assert.assertNotNull(new EnaRefService().getSequence(md5));
     }
 }

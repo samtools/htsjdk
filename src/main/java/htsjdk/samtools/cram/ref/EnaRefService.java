@@ -31,8 +31,8 @@ public class EnaRefService {
      * try downloading the sequence many times before giving up.
      *
      * @param md5                 MD5 checksum string of the sequence to download
-     * @param timeoutMs          timeout in milliseconds before failing with the {@link EnaRefService.GaveUpException}
-     * @param maxTries            maximum number of tries before failing with the {@link EnaRefService.GaveUpException}
+     * @param timeoutMs          timeout in milliseconds before failing with the {@link GaveUpException}
+     * @param maxTries            maximum number of tries before failing with the {@link GaveUpException}
      * @param restBetweenTriesMs wait this number of milliseconds before repeating attempt
      * @return sequence bases or null if there is no sequence with such md5
      * @throws GaveUpException if the sequence could not be downloaded within the time/try
@@ -111,20 +111,4 @@ public class EnaRefService {
         throw new GaveUpException(md5);
     }
 
-    public static class GaveUpException extends RuntimeException {
-        private static final long serialVersionUID = -8997576068346912410L;
-        private String md5;
-
-        public GaveUpException(final String md5) {
-            this.setMd5(md5);
-        }
-
-        public String getMd5() {
-            return md5;
-        }
-
-        public void setMd5(final String md5) {
-            this.md5 = md5;
-        }
-    }
 }

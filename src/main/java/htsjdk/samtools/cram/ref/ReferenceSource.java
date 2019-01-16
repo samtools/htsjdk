@@ -170,7 +170,7 @@ public class ReferenceSource implements CRAMReferenceSource {
                 if (md5 != null) {
                     try {
                         bases = findBasesByMD5(md5.toLowerCase());
-                    } catch (final Exception e) {
+                    } catch (final IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
@@ -238,7 +238,7 @@ public class ReferenceSource implements CRAMReferenceSource {
                 throw new RuntimeException(e);
             }
         }
-        throw new RuntimeException("Giving up on downloading sequence for md5 "
+        throw new GaveUpException("Giving up on downloading sequence for md5 "
                 + md5);
     }
 
