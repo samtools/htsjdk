@@ -229,7 +229,7 @@ public class CramIO {
         try {
             outStreamWriter.close();
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
 
         final ByteBuffer buf = ByteBuffer.allocate(4);
@@ -244,7 +244,7 @@ public class CramIO {
             headerOS.write(bytes);
             headerOS.write(headerBodyOS.toByteArray(), 0, headerBodyOS.size());
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
 
         return headerOS.toByteArray();

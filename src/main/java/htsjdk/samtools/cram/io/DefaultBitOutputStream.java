@@ -44,7 +44,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         try {
             out.write((int) b);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -53,7 +53,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         try {
             out.write(value);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -121,7 +121,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
                 bufferByte = (value << (8 - bufferedNumberOfBits)) & 0xFF;
             }
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -178,7 +178,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         try {
             out.close();
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -191,7 +191,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
             bufferedNumberOfBits = 0;
             out.flush();
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -200,7 +200,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         try {
             out.write(b);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -209,7 +209,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         try {
             out.write(b, off, length);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

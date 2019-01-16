@@ -4,6 +4,7 @@ import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
@@ -37,7 +38,7 @@ public class ExternalCompression {
         }) {
             IOUtil.copyStream(new ByteArrayInputStream(data), gos);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
 
         return byteArrayOutputStream.toByteArray();
@@ -53,7 +54,7 @@ public class ExternalCompression {
         try (final GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data))) {
             return InputStreamUtils.readFully(gzipInputStream);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -69,7 +70,7 @@ public class ExternalCompression {
         try (final BZip2CompressorOutputStream bos = new BZip2CompressorOutputStream(byteArrayOutputStream)) {
             IOUtil.copyStream(new ByteArrayInputStream(data), bos);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
         return byteArrayOutputStream.toByteArray();
     }
@@ -85,7 +86,7 @@ public class ExternalCompression {
         try (final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data)) {
             return InputStreamUtils.readFully(new BZip2CompressorInputStream(byteArrayInputStream));
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -136,7 +137,7 @@ public class ExternalCompression {
         try (final XZCompressorOutputStream xzCompressorOutputStream = new XZCompressorOutputStream(byteArrayOutputStream)) {
             xzCompressorOutputStream.write(data);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
         return byteArrayOutputStream.toByteArray();
     }
@@ -152,7 +153,7 @@ public class ExternalCompression {
         try (final XZCompressorInputStream xzCompressorInputStream = new XZCompressorInputStream(new ByteArrayInputStream(data))) {
             return InputStreamUtils.readFully(xzCompressorInputStream);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

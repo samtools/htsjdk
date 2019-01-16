@@ -17,6 +17,8 @@
  */
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -37,7 +39,7 @@ public class CountingInputStream extends InputStream {
         try {
             return delegate.read();
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -49,7 +51,7 @@ public class CountingInputStream extends InputStream {
             count += read;
             return read;
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -60,7 +62,7 @@ public class CountingInputStream extends InputStream {
             count += read;
             return read;
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -71,7 +73,7 @@ public class CountingInputStream extends InputStream {
             count += skipped;
             return skipped;
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -80,17 +82,18 @@ public class CountingInputStream extends InputStream {
         try {
             return delegate.available();
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
     @Override
     public void close() {
         try {
-            if (delegate != null)
+            if (delegate != null) {
                 delegate.close();
+            }
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -104,7 +107,7 @@ public class CountingInputStream extends InputStream {
         try {
             delegate.reset();
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
         count = 0;
     }
