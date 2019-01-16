@@ -30,12 +30,12 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableStream;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.*;
 
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator {
     private final CountingInputStream countingInputStream;
@@ -284,9 +284,11 @@ public class CRAMIterator implements SAMRecordIterator {
     public void close() {
         records.clear();
         //noinspection EmptyCatchBlock
-        if (countingInputStream != null) {
-            countingInputStream.close();
-        }
+        try {
+            if (countingInputStream != null) {
+                countingInputStream.close();
+            }
+        } catch (final RuntimeIOException e) { }
     }
 
     @Override
