@@ -215,9 +215,9 @@ public class ReferenceSource implements CRAMReferenceSource {
                 if (is == null)
                     return null;
 
-                log.debug("Downloading reference sequence: " + url);
+                log.info("Downloading reference sequence: " + url);
                 final byte[] data = InputStreamUtils.readFully(is);
-                log.debug("Downloaded " + data.length + " bytes for md5 " + md5);
+                log.info("Downloaded " + data.length + " bytes for md5 " + md5);
 
                 final String downloadedMD5 = SequenceUtil.calculateMD5String(data);
                 if (md5.equals(downloadedMD5)) {
