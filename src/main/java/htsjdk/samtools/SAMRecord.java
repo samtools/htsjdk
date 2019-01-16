@@ -1565,7 +1565,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return indexing bin based on alignment start & end.
      */
     int computeIndexingBin() {
-        final int alignmentStart = getAlignmentStart()-1; // BIN uses 0-based half-open
+        final int alignmentStart = getAlignmentStart() - 1; // BIN uses 0-based half-open
         int alignmentEnd = getAlignmentEnd();
         if (alignmentEnd <= 0) {
             // If alignment end cannot be determined (e.g. because this read is not really aligned),

@@ -239,7 +239,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
     private boolean warnIfReferenceIsTooLargeForBinField(final SAMRecord rec) {
         final SAMSequenceRecord sequence = rec.getHeader() != null ? rec.getHeader().getSequence(rec.getReferenceName()) : null;
         final boolean tooLarge = sequence != null && SAMUtils.isReferenceSequenceIncompatibleWithBAI(sequence);
-        if (!isReferenceSizeWarningShowed & tooLarge && rec.getValidationStringency() != ValidationStringency.SILENT) {
+        if (!isReferenceSizeWarningShowed && tooLarge && rec.getValidationStringency() != ValidationStringency.SILENT) {
             LOG.warn("Reference length is too large for BAM bin field.");
             LOG.warn("Reads on references longer than " + GenomicIndexUtil.BIN_GENOMIC_SPAN + "bp will have bin set to 0.");
             isReferenceSizeWarningShowed = true;
