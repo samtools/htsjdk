@@ -39,7 +39,19 @@ class BAMFileConstants {
 
     static final byte[] BAM_MAGIC = "BAM\1".getBytes();
     /**
-     * BAM index file magic number.
+     * BAM index file magic numbers.
+     * @deprecated prefer {@link BAMFileConstants#BAI_INDEX_MAGIC}
      */
+    @Deprecated
     static final byte[] BAM_INDEX_MAGIC = "BAI\1".getBytes();
+    static final byte[] BAI_INDEX_MAGIC = "BAI\1".getBytes();
+    static final byte[] CSI_INDEX_MAGIC = "CSI\1".getBytes();
+
+    /**
+     * CSI index related constants
+     */
+    static final int CSI_MAGIC_OFFSET = 0;
+    static final int CSI_MINSHIFT_OFFSET = 4;
+    static final int CSI_AUXDATA_OFFSET = 12;
+    static final int CSI_CHUNK_SIZE = 16;
 }

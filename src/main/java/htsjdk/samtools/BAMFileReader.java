@@ -387,6 +387,9 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
     @Override
     public SamReader.Type type() {
+        if (mIndexFile != null && getIndexType().equals(SamIndexes.CSI)) {
+            return SamReader.Type.BAM_CSI_TYPE;
+        }
         return SamReader.Type.BAM_TYPE;
     }
 
@@ -407,14 +410,39 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         if(!hasIndex())
             throw new SAMException("No index is available for this BAM file.");
         if(mIndex == null) {
-            if (mIndexFile != null)
-                mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
-                                             : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
-            else
+            SamIndexes samIndex = getIndexType();
+            if (samIndex == null) {
                 mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary())
-                                             : new DiskBasedBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary());
+                        : new DiskBasedBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary());
+            } else if (samIndex.equals(SamIndexes.BAI)) {
+                    mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
+                            : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
+            } else if (samIndex.equals(SamIndexes.CSI)) {
+                    mIndex = new CSIIndex(mIndexFile, mEnableIndexMemoryMapping, getFileHeader().getSequenceDictionary());
+            } else {
+                throw new SAMFormatException("Unsupported BAM index file: " + mIndexFile.getName());
+            }
         }
+
         return mIndex;
+    }
+
+    /**
+     * Return the type of the BAM index, BAI or CSI.
+     * @return one of {@link SamIndexes#BAI} or {@link SamIndexes#CSI} or null
+     */
+    public SamIndexes getIndexType() {
+        if (mIndexFile != null) {
+            if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAI_INDEX_SUFFIX)) {
+                return SamIndexes.BAI;
+            } else if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.CSI_INDEX_SUFFIX)) {
+                return SamIndexes.CSI;
+            }
+
+            throw new SAMFormatException("Unknown BAM index file type: " + mIndexFile.getName());
+        }
+
+        return null;
     }
 
     public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }

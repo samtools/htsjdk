@@ -39,6 +39,26 @@ public class SamIndexesTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void testEmptyCsi() throws IOException {
+        final File csiFile = File.createTempFile("test", ".csi");
+        csiFile.deleteOnExit();
+        final FileOutputStream fos = new FileOutputStream(csiFile);
+        fos.write(SamIndexes.CSI.magic);
+        fos.close();
+
+
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write(SamIndexes.CSI.magic);
+        baos.close();
+
+        final InputStream inputStream = SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), null);
+        for (final byte b : SamIndexes.CSI.magic) {
+            Assert.assertEquals(inputStream.read(), 0xFF & b);
+        }
+    }
+
+
     @Test(expectedExceptions = NullPointerException.class)
     public void testCraiRequiresDictionary() throws IOException {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();

@@ -636,7 +636,7 @@ public class SAMFileWriterFactory implements Cloneable {
                 log.warn("Cannot create index for CRAM because output file is not a regular file: " + outputFile.toUri());
             }
             else {
-                final Path indexPath = IOUtil.addExtension(outputFile, BAMIndex.BAMIndexSuffix);
+                final Path indexPath = IOUtil.addExtension(outputFile, BAMIndex.BAI_INDEX_SUFFIX);
                 try {
                     indexOS = Files.newOutputStream(indexPath);
                 }

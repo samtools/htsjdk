@@ -33,7 +33,13 @@ import java.io.Closeable;
  */
 public interface BAMIndex extends Closeable {
 
-    public static final String BAMIndexSuffix = ".bai";
+    /**
+     * @deprecated prefer {@link BAMIndex#BAI_INDEX_SUFFIX} instead.
+     */
+    @Deprecated
+    String BAMIndexSuffix = ".bai";
+    String BAI_INDEX_SUFFIX = ".bai";
+    String CSI_INDEX_SUFFIX = ".csi";
 
     /**
      * Gets the compressed chunks which should be searched for the contents of records contained by the span
@@ -58,7 +64,7 @@ public interface BAMIndex extends Closeable {
      * @param reference the reference of interest
      * @return meta data for the reference
      */
-    public BAMIndexMetaData getMetaData(int reference);
+    BAMIndexMetaData getMetaData(int reference);
 
     /**
      * Close the index and release any associated resources.
