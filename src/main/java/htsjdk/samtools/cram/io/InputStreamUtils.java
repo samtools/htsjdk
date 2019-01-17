@@ -18,9 +18,10 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeEOFException;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -48,10 +49,9 @@ public class InputStreamUtils {
      * @param inputStream  the input stream to read from
      * @param length the number of bytes to read
      * @return a new byte array containing data from the input stream
-     * @throws IOException  as per java IO contract
-     * @throws EOFException if there is less than length bytes in the stream
+     * @throws RuntimeEOFException if there is less than length bytes in the stream
      */
-    public static byte[] readFully(final InputStream inputStream, final int length) throws IOException {
+    public static byte[] readFully(final InputStream inputStream, final int length) {
         final byte[] b = new byte[length];
         readFully(inputStream, b, 0, length);
         return b;
@@ -65,16 +65,19 @@ public class InputStreamUtils {
      * @param b   the byte array to read into
      * @param off offset in the byte array
      * @param length the number of bytes to read
-     * @throws IOException  as per java IO contract
-     * @throws EOFException if there is less than length bytes in the stream
+     * @throws RuntimeEOFException if there is less than length bytes in the stream
      */
-    public static void readFully(final InputStream inputStream, final byte[] b, final int off, final int length) throws IOException {
+    public static void readFully(final InputStream inputStream, final byte[] b, final int off, final int length) {
         if (length < 0) throw new IndexOutOfBoundsException();
         int n = 0;
         while (n < length) {
-            final int count = inputStream.read(b, off + n, length - n);
-            if (count < 0) throw new EOFException();
-            n += count;
+            try {
+                final int count = inputStream.read(b, off + n, length - n);
+                if (count < 0) throw new RuntimeEOFException();
+                n += count;
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
         }
     }
 
@@ -82,24 +85,27 @@ public class InputStreamUtils {
      * Skip the specified number of bytes from the {@link InputStream}.
      * @param in the input stream to skip bytes from
      * @param length the number of bytes to skip
-     * @throws IOException  as per java IO contract
-     * @throws EOFException if there is less than length bytes in the stream
+     * @throws RuntimeEOFException if there is less than length bytes in the stream
      */
-    public static void skipFully(final InputStream in, final long length) throws IOException {
+    public static void skipFully(final InputStream in, final long length) {
         long amt = length;
         while (amt > 0) {
-            long ret = in.skip(amt);
-            if (ret == 0) {
-                // skip may return 0 even if we're not at EOF.  Luckily, we can
-                // use the read() method to figure out if we're at the end.
-                int b = in.read();
-                if (b == -1) {
-                    throw new EOFException( "Premature EOF from inputStream after " +
-                            "skipping " + (length - amt) + " byte(s).");
+            try {
+                long ret = in.skip(amt);
+                if (ret == 0) {
+                    // skip may return 0 even if we're not at EOF.  Luckily, we can
+                    // use the read() method to figure out if we're at the end.
+                    int b = in.read();
+                    if (b == -1) {
+                        throw new RuntimeEOFException("Premature EOF from inputStream after " +
+                                "skipping " + (length - amt) + " byte(s).");
+                    }
+                    ret = 1;
                 }
-                ret = 1;
+                amt -= ret;
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
             }
-            amt -= ret;
         }
     }
 }

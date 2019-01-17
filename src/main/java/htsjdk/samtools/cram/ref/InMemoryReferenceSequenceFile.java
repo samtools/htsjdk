@@ -59,7 +59,7 @@ class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         sequences = null;
         dictionary = null;
     }

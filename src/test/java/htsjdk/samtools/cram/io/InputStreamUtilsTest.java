@@ -1,12 +1,12 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.RuntimeEOFException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -23,8 +23,8 @@ public class InputStreamUtilsTest extends HtsjdkTest {
         Assert.assertEquals(in.read(), -1); // EOF
     }
 
-    @Test(expectedExceptions = EOFException.class)
-    public void testSkipFullyPastEOF() throws IOException {
+    @Test(expectedExceptions = RuntimeEOFException.class)
+    public void testSkipFullyPastEOF() {
         byte[] data = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 };
         InputStream in = new BufferedInputStream(new ByteArrayInputStream(data), 4);
         InputStreamUtils.skipFully(in, 10);

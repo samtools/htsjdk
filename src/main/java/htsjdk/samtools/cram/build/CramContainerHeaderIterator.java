@@ -6,7 +6,6 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -19,11 +18,11 @@ import java.io.InputStream;
  */
 public class CramContainerHeaderIterator extends CramContainerIterator {
 
-    public CramContainerHeaderIterator(final InputStream inputStream) throws IOException {
+    public CramContainerHeaderIterator(final InputStream inputStream) {
       super(inputStream);
     }
 
-    protected Container containerFromStream(final Version cramVersion, final CountingInputStream countingStream) throws IOException {
+    protected Container containerFromStream(final Version cramVersion, final CountingInputStream countingStream) {
         final Container container = ContainerIO.readContainerHeader(cramVersion.major, countingStream);
         InputStreamUtils.skipFully(countingStream, container.containerByteSize);
         return container;

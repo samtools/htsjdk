@@ -8,6 +8,7 @@ import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
 import java.util.*;
@@ -70,11 +71,16 @@ public class CRAIIndex {
         }
     }
 
-    public static SeekableStream openCraiFileAsBaiStream(final File cramIndexFile, final SAMSequenceDictionary dictionary) throws IOException {
-        return openCraiFileAsBaiStream(new FileInputStream(cramIndexFile), dictionary);
+    public static SeekableStream openCraiFileAsBaiStream(final File cramIndexFile, final SAMSequenceDictionary dictionary) {
+        try {
+            return openCraiFileAsBaiStream(new FileInputStream(cramIndexFile), dictionary);
+        }
+        catch (final FileNotFoundException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
-    public static SeekableStream openCraiFileAsBaiStream(final InputStream indexStream, final SAMSequenceDictionary dictionary) throws IOException, CRAIIndexException {
+    public static SeekableStream openCraiFileAsBaiStream(final InputStream indexStream, final SAMSequenceDictionary dictionary) {
         final List<CRAIEntry> full = CRAMCRAIIndexer.readIndex(indexStream).getCRAIEntries();
         Collections.sort(full);
 

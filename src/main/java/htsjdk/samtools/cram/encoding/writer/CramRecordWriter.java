@@ -21,7 +21,6 @@ import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.structure.*;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.List;

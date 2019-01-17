@@ -19,7 +19,7 @@ public class EnaRefService {
     private static final int HTTP_CONNECTION_TIMEOUT = 522;
     private static final int HTTP_MOVED_PERMANENTLY = HttpURLConnection.HTTP_MOVED_PERM;
 
-    byte[] getSequence(final String md5) throws GaveUpException {
+    byte[] getSequence(final String md5) {
         final int restBetweenTries_ms = 0;
         final int maxTries = 1;
         final int timeout_ms = 0;
@@ -31,15 +31,14 @@ public class EnaRefService {
      * try downloading the sequence many times before giving up.
      *
      * @param md5                 MD5 checksum string of the sequence to download
-     * @param timeoutMs          timeout in milliseconds before failing with the {@link EnaRefService.GaveUpException}
-     * @param maxTries            maximum number of tries before failing with the {@link EnaRefService.GaveUpException}
+     * @param timeoutMs          timeout in milliseconds before failing with the {@link GaveUpException}
+     * @param maxTries            maximum number of tries before failing with the {@link GaveUpException}
      * @param restBetweenTriesMs wait this number of milliseconds before repeating attempt
      * @return sequence bases or null if there is no sequence with such md5
      * @throws GaveUpException if the sequence could not be downloaded within the time/try
      *                         limit.
      */
-    byte[] getSequence(final String md5, final long timeoutMs, int maxTries, final long restBetweenTriesMs) throws
-            GaveUpException {
+    byte[] getSequence(final String md5, final long timeoutMs, int maxTries, final long restBetweenTriesMs) {
         if (md5 == null)
             throw new NullPointerException("Expecting sequence md5 but got null.");
         if (!md5.matches("[a-z0-9]{32}"))
@@ -112,20 +111,4 @@ public class EnaRefService {
         throw new GaveUpException(md5);
     }
 
-    public static class GaveUpException extends Exception {
-        private static final long serialVersionUID = -8997576068346912410L;
-        private String md5;
-
-        public GaveUpException(final String md5) {
-            this.setMd5(md5);
-        }
-
-        public String getMd5() {
-            return md5;
-        }
-
-        public void setMd5(final String md5) {
-            this.md5 = md5;
-        }
-    }
 }

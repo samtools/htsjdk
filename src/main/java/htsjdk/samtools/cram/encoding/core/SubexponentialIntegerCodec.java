@@ -19,9 +19,6 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.IOException;
 
 /**
  * Use the <a href="http://www.ittc.ku.edu/~jsv/Papers/HoV94.progressive_FELICS.pdf">Subexponential Codec</a>
@@ -51,26 +48,22 @@ class SubexponentialIntegerCodec extends CoreCodec<Integer> {
     @Override
     public final Integer read() {
         int u = 0;
-        try {
-            while (coreBlockInputStream.readBit()) {
-                u++;
-            }
-
-            final int b;
-            final int n;
-
-            if (u == 0) {
-                b = k;
-                n = coreBlockInputStream.readBits(b);
-            } else {
-                b = u + k - 1;
-                n = (1 << b) | coreBlockInputStream.readBits(b);
-            }
-
-            return n - offset;
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
+        while (coreBlockInputStream.readBit()) {
+            u++;
         }
+
+        final int b;
+        final int n;
+
+        if (u == 0) {
+            b = k;
+            n = coreBlockInputStream.readBits(b);
+        } else {
+            b = u + k - 1;
+            n = (1 << b) | coreBlockInputStream.readBits(b);
+        }
+
+        return n - offset;
     }
 
     @Override
@@ -90,16 +83,12 @@ class SubexponentialIntegerCodec extends CoreCodec<Integer> {
             u = b - k + 1;
         }
 
-        try {
-            // write 'u' 1 bits followed by a 0 bit
-            coreBlockOutputStream.write(true, u);
-            coreBlockOutputStream.write(false);
+        // write 'u' 1 bits followed by a 0 bit
+        coreBlockOutputStream.write(true, u);
+        coreBlockOutputStream.write(false);
 
-            // write only the 'b' lowest bits of newValue
-            coreBlockOutputStream.write(newValue, b);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        // write only the 'b' lowest bits of newValue
+        coreBlockOutputStream.write(newValue, b);
     }
 
     @Override

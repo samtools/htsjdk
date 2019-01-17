@@ -17,6 +17,8 @@
  */
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -32,41 +34,67 @@ public class CountingInputStream extends InputStream {
     }
 
     @Override
-    public int read() throws IOException {
+    public int read() {
         count++;
-        return delegate.read();
+        try {
+            return delegate.read();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public int read(@SuppressWarnings("NullableProblems") final byte[] b) throws IOException {
-        final int read = delegate.read(b);
-        count += read;
-        return read;
+    public int read(@SuppressWarnings("NullableProblems") final byte[] b) {
+        try {
+            final int read = delegate.read(b);
+
+            count += read;
+            return read;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public int read(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) throws IOException {
-        final int read = delegate.read(b, off, length);
-        count += read;
-        return read;
+    public int read(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) {
+        try {
+            final int read = delegate.read(b, off, length);
+            count += read;
+            return read;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public long skip(final long n) throws IOException {
-        final long skipped = delegate.skip(n);
-        count += skipped;
-        return skipped;
+    public long skip(final long n) {
+        try {
+            final long skipped = delegate.skip(n);
+            count += skipped;
+            return skipped;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public int available() throws IOException {
-        return delegate.available();
+    public int available() {
+        try {
+            return delegate.available();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public void close() throws IOException {
-        if (delegate != null)
-            delegate.close();
+    public void close() {
+        try {
+            if (delegate != null) {
+                delegate.close();
+            }
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
@@ -75,8 +103,12 @@ public class CountingInputStream extends InputStream {
     }
 
     @Override
-    public void reset() throws IOException {
-        delegate.reset();
+    public void reset() {
+        try {
+            delegate.reset();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
         count = 0;
     }
 

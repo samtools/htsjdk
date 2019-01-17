@@ -1,9 +1,10 @@
 package htsjdk.samtools.cram.encoding.external;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import htsjdk.samtools.util.RuntimeIOException;
 
 /**
  * Encode byte arrays by specifying a stop byte to separate the arrays.
