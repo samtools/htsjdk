@@ -19,9 +19,6 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.IOException;
 
 /**
  * Encode Integers using Elias Gamma Encoding.
@@ -51,17 +48,13 @@ class GammaIntegerCodec extends CoreCodec<Integer> {
         int length = 1;
         final boolean lenCodingBit = false;
 
-        try {
-            while (coreBlockInputStream.readBit() == lenCodingBit) {
-                length++;
-            }
-
-            final int readBits = coreBlockInputStream.readBits(length - 1);
-            final int value = readBits | 1 << (length - 1);
-            return value - offset;
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
+        while (coreBlockInputStream.readBit() == lenCodingBit) {
+            length++;
         }
+
+        final int readBits = coreBlockInputStream.readBits(length - 1);
+        final int value = readBits | 1 << (length - 1);
+        return value - offset;
     }
 
     @Override
@@ -75,15 +68,12 @@ class GammaIntegerCodec extends CoreCodec<Integer> {
         final long newValue = value + offset;
         final int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
 
-        try {
-            if (betaCodeLength > 1) {
-                coreBlockOutputStream.write(0L, betaCodeLength - 1);
-            }
 
-            coreBlockOutputStream.write(newValue, betaCodeLength);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
+        if (betaCodeLength > 1) {
+            coreBlockOutputStream.write(0L, betaCodeLength - 1);
         }
+
+        coreBlockOutputStream.write(newValue, betaCodeLength);
     }
 
     @Override

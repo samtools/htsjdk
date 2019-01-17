@@ -111,9 +111,6 @@ public class BAMFileWriterTest extends HtsjdkTest {
                 final SAMRecord samRecord1 = samIt1.next();
                 final SAMRecord samRecord2 = samIt2.next();
 
-                // SAMRecords don't have this set, so stuff it in there
-                samRecord2.setIndexingBin(samRecord1.getIndexingBin());
-
                 // Force reference index attributes to be populated
                 samRecord1.getReferenceIndex();
                 samRecord2.getReferenceIndex();
@@ -342,7 +339,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
         try (final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(bamFile)) {
             reader.iterator().forEachRemaining(samRecord -> {
                 samRecord.getCigar();
-                Assert.assertNotNull(samRecord.getIndexingBin());
+                samRecord.computeIndexingBin();
             });
         }
     }

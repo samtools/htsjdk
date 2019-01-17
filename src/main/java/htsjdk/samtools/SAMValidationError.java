@@ -232,7 +232,11 @@ public class SAMValidationError implements Serializable {
         DUPLICATE_SAM_TAG,
 
         /** The CG Tag should only be used in BAM format to hold a large cigar */
-        CG_TAG_FOUND_IN_ATTRIBUTES;
+        CG_TAG_FOUND_IN_ATTRIBUTES,
+
+        /** One or more reference sequences in the dictionary are too long for BAI indexing. */
+        REF_SEQ_TOO_LONG_FOR_BAI(Severity.WARNING);
+
 
         public final Severity severity;
 

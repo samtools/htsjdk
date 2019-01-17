@@ -28,7 +28,7 @@ import java.util.Map;
 public class ContainerParserTest extends HtsjdkTest {
 
     @Test
-    public void testEOF() throws IOException, IllegalAccessException {
+    public void testEOF() throws IOException {
         ContainerParser parser = new ContainerParser(new SAMFileHeader());
         ByteArrayOutputStream v2_baos = new ByteArrayOutputStream();
         Version version = CramVersions.CRAM_v2_1;
@@ -46,7 +46,7 @@ public class ContainerParserTest extends HtsjdkTest {
     }
 
     @Test
-    public void testSingleRefContainer() throws IOException, IllegalAccessException {
+    public void testSingleRefContainer() throws IOException {
         SAMFileHeader samFileHeader = new SAMFileHeader();
         ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
         List<CramCompressionRecord> records = new ArrayList<>();
@@ -75,7 +75,7 @@ public class ContainerParserTest extends HtsjdkTest {
     }
 
     @Test
-    public void testUnmappedContainer() throws IOException, IllegalAccessException {
+    public void testUnmappedContainer() throws IOException {
         SAMFileHeader samFileHeader = new SAMFileHeader();
         ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
         List<CramCompressionRecord> records = new ArrayList<>();
@@ -104,7 +104,7 @@ public class ContainerParserTest extends HtsjdkTest {
     }
 
     @Test
-    public void testMappedAndUnmappedContainer() throws IOException, IllegalAccessException {
+    public void testMappedAndUnmappedContainer() throws IOException {
         SAMFileHeader samFileHeader = new SAMFileHeader();
         ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
         List<CramCompressionRecord> records = new ArrayList<>();
@@ -142,7 +142,7 @@ public class ContainerParserTest extends HtsjdkTest {
     }
 
     @Test
-    public void testMultirefContainer() throws IOException, IllegalAccessException {
+    public void testMultirefContainer() throws IOException {
         SAMFileHeader samFileHeader = new SAMFileHeader();
         ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
         List<CramCompressionRecord> records = new ArrayList<>();

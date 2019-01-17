@@ -19,9 +19,6 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.IOException;
 
 /**
  * Encodes integers by adding a constant offset value to a range of values in order to reduce
@@ -57,11 +54,7 @@ public class BetaIntegerCodec extends CoreCodec<Integer> {
 
     @Override
     public final Integer read() {
-        try {
-            return coreBlockInputStream.readBits(bitsPerValue) - offset;
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        return coreBlockInputStream.readBits(bitsPerValue) - offset;
     }
 
     @Override
@@ -87,10 +80,6 @@ public class BetaIntegerCodec extends CoreCodec<Integer> {
 
     @Override
     public final void write(final Integer value) {
-        try {
-            coreBlockOutputStream.write(getAndCheckOffsetValue(value), bitsPerValue);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        coreBlockOutputStream.write(getAndCheckOffsetValue(value), bitsPerValue);
     }
 }

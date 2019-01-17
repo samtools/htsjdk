@@ -29,17 +29,15 @@ import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.Log;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.*;
 
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator {
-    private static final Log log = Log.getInstance(CRAMIterator.class);
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
     private final ArrayList<SAMRecord> records;
@@ -63,8 +61,7 @@ public class CRAMIterator implements SAMRecordIterator {
         return validationStringency;
     }
 
-    public void setValidationStringency(
-            final ValidationStringency validationStringency) {
+    public void setValidationStringency(final ValidationStringency validationStringency) {
         this.validationStringency = validationStringency;
     }
 
@@ -75,11 +72,13 @@ public class CRAMIterator implements SAMRecordIterator {
     private long samRecordIndex;
     private ArrayList<CramCompressionRecord> cramRecords;
 
-    public CRAMIterator(final InputStream inputStream, final CRAMReferenceSource referenceSource, final ValidationStringency validationStringency)
-            throws IOException {
+    public CRAMIterator(final InputStream inputStream,
+                        final CRAMReferenceSource referenceSource,
+                        final ValidationStringency validationStringency) {
         if (null == referenceSource) {
             throw new CRAMException("A reference source is required for CRAM files");
         }
+
         this.countingInputStream = new CountingInputStream(inputStream);
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
@@ -88,17 +87,20 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        records = new ArrayList<SAMRecord>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
+        records = new ArrayList<>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
     }
 
-    public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource, final long[] coordinates, final ValidationStringency validationStringency)
-            throws IOException {
+    public CRAMIterator(final SeekableStream seekableStream,
+                        final CRAMReferenceSource referenceSource,
+                        final long[] coordinates,
+                        final ValidationStringency validationStringency) {
         if (null == referenceSource) {
             throw new CRAMException("A reference source is required for CRAM files");
         }
+
         this.countingInputStream = new CountingInputStream(seekableStream);
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
@@ -107,15 +109,16 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        records = new ArrayList<SAMRecord>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
+        records = new ArrayList<>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
     }
 
     @Deprecated
-    public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource, final long[] coordinates)
-            throws IOException {
+    public CRAMIterator(final SeekableStream seekableStream,
+                        final CRAMReferenceSource referenceSource,
+                        final long[] coordinates) {
         this(seekableStream, referenceSource, coordinates, ValidationStringency.DEFAULT_STRINGENCY);
     }
 
@@ -123,8 +126,7 @@ public class CRAMIterator implements SAMRecordIterator {
         return cramHeader;
     }
 
-    void nextContainer() throws IOException, IllegalArgumentException,
-            IllegalAccessException, CRAMException {
+    void nextContainer() throws IllegalArgumentException, CRAMException {
 
         if (containerIterator != null) {
             if (!containerIterator.hasNext()) {
@@ -149,7 +151,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
         records.clear();
         if (cramRecords == null)
-            cramRecords = new ArrayList<CramCompressionRecord>(container.nofRecords);
+            cramRecords = new ArrayList<>(container.nofRecords);
         else
             cramRecords.clear();
 
@@ -250,11 +252,7 @@ public class CRAMIterator implements SAMRecordIterator {
     public boolean hasNext() {
         if (container != null && container.isEOF()) return false;
         if (!iterator.hasNext()) {
-            try {
-                nextContainer();
-            } catch (IOException | IllegalAccessException e) {
-                throw new SAMException(e);
-            }
+            nextContainer();
         }
 
         return !records.isEmpty();
@@ -287,10 +285,10 @@ public class CRAMIterator implements SAMRecordIterator {
         records.clear();
         //noinspection EmptyCatchBlock
         try {
-            if (countingInputStream != null)
+            if (countingInputStream != null) {
                 countingInputStream.close();
-        } catch (final IOException e) {
-        }
+            }
+        } catch (final RuntimeIOException e) { }
     }
 
     @Override

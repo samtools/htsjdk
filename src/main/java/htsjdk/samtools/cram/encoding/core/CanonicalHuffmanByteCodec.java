@@ -20,9 +20,6 @@ package htsjdk.samtools.cram.encoding.core;
 import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanByteHelper;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.IOException;
 
 /**
  * Encode Bytes using the Canonical Huffman Codec.
@@ -48,20 +45,12 @@ class CanonicalHuffmanByteCodec extends CoreCodec<Byte> {
 
     @Override
     public Byte read() {
-        try {
-            return helper.read(coreBlockInputStream);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        return helper.read(coreBlockInputStream);
     }
 
     @Override
     public void write(final Byte value) {
-        try {
-            helper.write(coreBlockOutputStream, value);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        helper.write(coreBlockOutputStream, value);
     }
 
     @Override

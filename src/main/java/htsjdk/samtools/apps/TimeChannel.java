@@ -29,7 +29,9 @@ import java.nio.channels.FileChannel;
 
 /**
  * @author alecw@broadinstitute.org
+ * @deprecated This is deprecated with no replacement.  1/19
  */
+@Deprecated
 public class TimeChannel {
     public static void main(String[] args) throws Exception {
         long fileSize = new File(args[0]).length();

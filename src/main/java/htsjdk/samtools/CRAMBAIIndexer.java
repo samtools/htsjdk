@@ -115,56 +115,51 @@ public class CRAMBAIIndexer {
      * @param container container to be indexed
      */
     public void processContainer(final Container container, final ValidationStringency validationStringency) {
-        try {
-            if (container == null || container.isEOF()) {
-                return;
-            }
+        if (container == null || container.isEOF()) {
+            return;
+        }
 
-            int sliceIndex = 0;
-            for (final Slice slice : container.slices) {
+        int sliceIndex = 0;
+        for (final Slice slice : container.slices) {
+            slice.containerOffset = container.offset;
+            slice.index = sliceIndex++;
+            if (slice.isMultiref()) {
+                final ContainerParser parser = new ContainerParser(indexBuilder.bamHeader);
+                final Map<Integer, AlignmentSpan> refSet = parser.getReferences(container, validationStringency);
+                final Slice fakeSlice = new Slice();
                 slice.containerOffset = container.offset;
                 slice.index = sliceIndex++;
-                if (slice.isMultiref()) {
-                    final ContainerParser parser = new ContainerParser(indexBuilder.bamHeader);
-                    final Map<Integer, AlignmentSpan> refSet = parser.getReferences(container, validationStringency);
-                    final Slice fakeSlice = new Slice();
-                    slice.containerOffset = container.offset;
-                    slice.index = sliceIndex++;
-                    /**
-                     * Unmapped span must be processed after mapped spans:
-                     */
-                    AlignmentSpan unmappedSpan = refSet.remove(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
-                    for (final int refId : new TreeSet<>(refSet.keySet())) {
-                        final AlignmentSpan span = refSet.get(refId);
-                        fakeSlice.sequenceId = refId;
-                        fakeSlice.containerOffset = slice.containerOffset;
-                        fakeSlice.offset = slice.offset;
-                        fakeSlice.index = slice.index;
+                /**
+                 * Unmapped span must be processed after mapped spans:
+                 */
+                AlignmentSpan unmappedSpan = refSet.remove(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+                for (final int refId : new TreeSet<>(refSet.keySet())) {
+                    final AlignmentSpan span = refSet.get(refId);
+                    fakeSlice.sequenceId = refId;
+                    fakeSlice.containerOffset = slice.containerOffset;
+                    fakeSlice.offset = slice.offset;
+                    fakeSlice.index = slice.index;
 
-                        fakeSlice.alignmentStart = span.getStart();
-                        fakeSlice.alignmentSpan = span.getSpan();
-                        fakeSlice.nofRecords = span.getCount();
-                        processSingleReferenceSlice(fakeSlice);
-                    }
-                    if (unmappedSpan != null) {
-                        final AlignmentSpan span = unmappedSpan;
-                        fakeSlice.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-                        fakeSlice.containerOffset = slice.containerOffset;
-                        fakeSlice.offset = slice.offset;
-                        fakeSlice.index = slice.index;
-
-                        fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-                        fakeSlice.alignmentSpan = 0;
-                        fakeSlice.nofRecords = span.getCount();
-                        processSingleReferenceSlice(fakeSlice);
-                    }
-                } else {
-                    processSingleReferenceSlice(slice);
+                    fakeSlice.alignmentStart = span.getStart();
+                    fakeSlice.alignmentSpan = span.getSpan();
+                    fakeSlice.nofRecords = span.getCount();
+                    processSingleReferenceSlice(fakeSlice);
                 }
-            }
+                if (unmappedSpan != null) {
+                    final AlignmentSpan span = unmappedSpan;
+                    fakeSlice.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+                    fakeSlice.containerOffset = slice.containerOffset;
+                    fakeSlice.offset = slice.offset;
+                    fakeSlice.index = slice.index;
 
-        } catch (final IOException e) {
-            throw new RuntimeIOException("Failed to read cram container", e);
+                    fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+                    fakeSlice.alignmentSpan = 0;
+                    fakeSlice.nofRecords = span.getCount();
+                    processSingleReferenceSlice(fakeSlice);
+                }
+            } else {
+                processSingleReferenceSlice(slice);
+            }
         }
     }
 

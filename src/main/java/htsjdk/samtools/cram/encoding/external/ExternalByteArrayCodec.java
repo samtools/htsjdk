@@ -21,8 +21,8 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 /**
  * Encode Byte Arrays using an External Data Block
@@ -41,11 +41,7 @@ public class ExternalByteArrayCodec extends ExternalCodec<byte[]> {
 
     @Override
     public byte[] read(final int length) {
-        try {
-            return InputStreamUtils.readFully(inputStream, length);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        return InputStreamUtils.readFully(inputStream, length);
     }
 
     @Override

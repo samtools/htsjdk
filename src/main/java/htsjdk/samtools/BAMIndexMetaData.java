@@ -212,17 +212,22 @@ public class BAMIndexMetaData {
     }
 
     /**
-     * Prints meta-data statistics from BAM index (.bai) file
+     * Prints meta-data statistics from BAM index (.bai or .csi) file
      * Statistics include count of aligned and unaligned reads for each reference sequence
      * and a count of all records with no start coordinate
      */
     static public void printIndexStats(final File inputBamFile) {
         try {
             final BAMFileReader bam = new BAMFileReader(inputBamFile, null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
-            if (!bam.hasIndex()) {
+            if (!bam.hasIndex() || bam.getIndexType() == null) {
                 throw new SAMException("No index for bam file " + inputBamFile);
             }
+
             BAMIndexMetaData[] data = getIndexStats(bam);
+            if (data == null) {
+                throw new SAMException("Exception in getting index statistics");
+            }
+
             // read through all the bins of every reference.
             int nRefs = bam.getFileHeader().getSequenceDictionary().size();
             for (int i = 0; i < nRefs; i++) {
@@ -245,7 +250,7 @@ public class BAMIndexMetaData {
     }
 
     /**
-     * Prints meta-data statistics from BAM index (.bai) file
+     * Prints meta-data statistics from BAM index (.bai or .csi) file
      * Statistics include count of aligned and unaligned reads for each reference sequence
      * and a count of all records with no start coordinate
      */

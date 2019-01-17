@@ -114,7 +114,7 @@ public class CompressionHeader {
         return dictionary[id];
     }
 
-    private void internalRead(final InputStream is) throws IOException {
+    private void internalRead(final InputStream is) {
         { // preservation map:
             final int byteSize = ITF8.readUnsignedITF8(is);
             final byte[] bytes = new byte[byteSize];
