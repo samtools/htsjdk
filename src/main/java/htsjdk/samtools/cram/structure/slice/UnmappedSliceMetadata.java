@@ -21,7 +21,7 @@ public class UnmappedSliceMetadata extends SliceMetadata {
      */
     @Override
     @SuppressWarnings("unchecked")
-    protected <T extends SliceMetadata> T add(T other) {
+    public <T extends SliceMetadata> T add(final T other) {
         if (this.getClass() != other.getClass()) {
             throw new CRAMException("Cannot combine MappedSliceMetadata objects with UnmappedSliceMetadata objects");
         }

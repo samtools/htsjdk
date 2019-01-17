@@ -54,7 +54,7 @@ public class CRAIIndex {
         if (!container.isEOF()) {
             for (final Slice s: container.slices) {
                 if (s.isMultiref()) {
-                    final Map<Integer, SliceMetadata> metadataMap = s.getMultiRefAlignmentMetadata(container.header, ValidationStringency.DEFAULT_STRINGENCY);
+                    final Map<Integer, MappedSliceMetadata> metadataMap = s.getMultiRefAlignmentMetadata(container.header, ValidationStringency.DEFAULT_STRINGENCY);
 
                     // References must be processed in order, with unmapped last
                     // TODO refactor w/ CRAMBAIIndexer.processContainer()
@@ -62,11 +62,10 @@ public class CRAIIndex {
                     this.entries.addAll(metadataMap
                             .entrySet()
                             .stream()
-                            .filter(entry -> entry.getKey() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
                             .sorted(Map.Entry.comparingByKey())
                             .map(e -> new CRAIEntry(e.getKey(),
-                                    ((MappedSliceMetadata) e.getValue()).getAlignmentStart(),
-                                    ((MappedSliceMetadata) e.getValue()).getAlignmentSpan(),
+                                    e.getValue().getAlignmentStart(),
+                                    e.getValue().getAlignmentSpan(),
                                     container.offset,
                                     container.landmarks[s.index],
                                     s.size))

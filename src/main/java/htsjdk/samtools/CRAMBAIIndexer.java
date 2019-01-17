@@ -125,7 +125,7 @@ public class CRAMBAIIndexer {
                 slice.containerOffset = container.offset;
                 slice.index = sliceIndex++;
 
-                final Map<Integer, SliceMetadata> metadataMap = slice.getMultiRefAlignmentMetadata(container.header, validationStringency);
+                final Map<Integer, MappedSliceMetadata> metadataMap = slice.getMultiRefAlignmentMetadata(container.header, validationStringency);
 
                 // References must be processed in order, with unmapped last
                 // TODO refactor w/ CRAIIndex.processContainer()
@@ -136,7 +136,7 @@ public class CRAMBAIIndexer {
                         .filter(entry -> entry.getKey() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
                         .sorted(Map.Entry.comparingByKey())
                         .forEach(slicePerRef -> {
-                            final MappedSliceMetadata metadata = (MappedSliceMetadata) slicePerRef.getValue();
+                            final MappedSliceMetadata metadata = slicePerRef.getValue();
                             final Slice fakeSlice = new Slice();
                             fakeSlice.sequenceId = slicePerRef.getKey();
                             fakeSlice.containerOffset = slice.containerOffset;

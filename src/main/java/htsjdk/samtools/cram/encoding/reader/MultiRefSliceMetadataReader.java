@@ -17,12 +17,11 @@ package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.slice.MappedSliceMetadata;
 import htsjdk.samtools.cram.structure.slice.Slice;
-import htsjdk.samtools.cram.structure.slice.SliceMetadata;
-import htsjdk.samtools.cram.structure.slice.UnmappedSliceMetadata;
 
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
@@ -44,7 +43,7 @@ public class MultiRefSliceMetadataReader extends CramRecordReader {
     /**
      * Detected sequences with their metadata
      */
-    private final Map<Integer, SliceMetadata> metadataMap = new HashMap<>();
+    private final Map<Integer, MappedSliceMetadata> metadataMap = new HashMap<>();
 
     /**
      * Initializes a Multiple Reference Sequence ID Reader.
@@ -72,7 +71,7 @@ public class MultiRefSliceMetadataReader extends CramRecordReader {
         }
     }
 
-    public Map<Integer, SliceMetadata> getReferenceMetadata() {
+    public Map<Integer, MappedSliceMetadata> getReferenceMetadata() {
         return Collections.unmodifiableMap(metadataMap);
     }
 
@@ -80,15 +79,16 @@ public class MultiRefSliceMetadataReader extends CramRecordReader {
         final CramCompressionRecord cramRecord = new CramCompressionRecord();
         super.read(cramRecord);
 
+        if (cramRecord.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+            throw new CRAMException("Multiple-reference slices can only contain CRAM records which are mapped to valid reference sequences");
+        }
+
         if (APDelta) {
             currentAlignmentStart += cramRecord.alignmentDelta;
         } else {
             currentAlignmentStart = cramRecord.alignmentStart;
         }
 
-        final SliceMetadata metadata = (cramRecord.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) ?
-                new UnmappedSliceMetadata(1) :
-                new MappedSliceMetadata(currentAlignmentStart, cramRecord.readLength);
-        metadataMap.merge(cramRecord.sequenceId, metadata, SliceMetadata::combine);
+        metadataMap.merge(cramRecord.sequenceId, new MappedSliceMetadata(currentAlignmentStart, cramRecord.readLength), MappedSliceMetadata::add);
     }
 }

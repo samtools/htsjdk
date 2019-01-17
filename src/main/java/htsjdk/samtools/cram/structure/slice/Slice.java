@@ -291,7 +291,7 @@ public class Slice {
     public Map<Integer, SliceMetadata> getAlignmentMetadata(final CompressionHeader header,
                                                             final ValidationStringency validationStringency) {
         if (isMultiref()) {
-            return getMultiRefAlignmentMetadata(header, validationStringency);
+            return new HashMap<>(getMultiRefAlignmentMetadata(header, validationStringency));
         }
         else {
             final Map<Integer, SliceMetadata> singleRefMap = new HashMap<>();
@@ -314,8 +314,8 @@ public class Slice {
      * @param header               the associated Cram Compression Header
      * @param validationStringency how strict to be when reading CRAM records
      */
-    public Map<Integer, SliceMetadata> getMultiRefAlignmentMetadata(final CompressionHeader header,
-                                                                    final ValidationStringency validationStringency) {
+    public Map<Integer, MappedSliceMetadata> getMultiRefAlignmentMetadata(final CompressionHeader header,
+                                                                          final ValidationStringency validationStringency) {
         final MultiRefSliceMetadataReader reader = new MultiRefSliceMetadataReader(getCoreBlockInputStream(),
                 getExternalBlockInputMap(),
                 header,

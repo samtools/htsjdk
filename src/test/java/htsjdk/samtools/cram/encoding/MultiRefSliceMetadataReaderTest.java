@@ -80,7 +80,7 @@ public class MultiRefSliceMetadataReaderTest extends CramRecordTestHelper {
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
             final MultiRefSliceMetadataReader reader = new MultiRefSliceMetadataReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
-            final Map<Integer, SliceMetadata> metadataMap = reader.getReferenceMetadata();
+            final Map<Integer, MappedSliceMetadata> metadataMap = reader.getReferenceMetadata();
 
             Assert.assertEquals(metadataMap.size(), 2);
             Assert.assertTrue(metadataMap.containsKey(1));
