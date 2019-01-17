@@ -15,14 +15,15 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.structure;
+package htsjdk.samtools.cram.structure.slice;
 
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
-import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
+import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentMetadataReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
+import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
@@ -31,6 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -282,21 +284,40 @@ public class Slice {
     }
 
     /**
-     * Uses a Multiple Reference Slice Alignment Reader to determine the Reference Spans of a Slice.
-     * The intended use is for CRAI indexing.
+     * Return a mapping of reference IDs to {@link SliceAlignmentMetadata} for this Slice.
+     * The intended use is for CRAI/BAI indexing.
+     * @return the metadata map
+     */
+    public Map<Integer, SliceAlignmentMetadata> getAlignmentMetadata(final CompressionHeader header,
+                                                                     final ValidationStringency validationStringency) {
+        if (isMultiref()) {
+            return getMultiRefAlignmentMetadata(header, validationStringency);
+        }
+        else {
+            // NOTE: also applicable to unmapped slices
+
+            final Map<Integer, SliceAlignmentMetadata> singleRefMap = new HashMap<>();
+            singleRefMap.put(sequenceId, new SliceAlignmentMetadata(alignmentStart, alignmentSpan, nofRecords));
+            return singleRefMap;
+        }
+    }
+
+    /**
+     * Uses a Multiple Reference Slice Alignment Reader to determine the SliceAlignmentMetadata of
+     * this Slice on a per-reference basis.  The intended use is for CRAI/BAI indexing.
      *
      * @param header               the associated Cram Compression Header
      * @param validationStringency how strict to be when reading CRAM records
      */
-    public Map<Integer, AlignmentSpan> getMultiRefAlignmentSpans(final CompressionHeader header,
-                                                                 final ValidationStringency validationStringency) {
-        final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(getCoreBlockInputStream(),
+    public Map<Integer, SliceAlignmentMetadata> getMultiRefAlignmentMetadata(final CompressionHeader header,
+                                                                             final ValidationStringency validationStringency) {
+        final MultiRefSliceAlignmentMetadataReader reader = new MultiRefSliceAlignmentMetadataReader(getCoreBlockInputStream(),
                 getExternalBlockInputMap(),
                 header,
                 validationStringency,
                 alignmentStart,
                 nofRecords);
-        return reader.getReferenceSpans();
+        return reader.getReferenceMetadata();
     }
 
     /**

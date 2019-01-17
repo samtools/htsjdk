@@ -7,7 +7,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import org.testng.Assert;
 import org.testng.annotations.Test;

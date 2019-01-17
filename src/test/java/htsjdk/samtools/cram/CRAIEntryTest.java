@@ -2,7 +2,7 @@ package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

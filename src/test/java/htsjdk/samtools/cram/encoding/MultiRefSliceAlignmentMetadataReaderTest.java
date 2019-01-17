@@ -1,13 +1,13 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
+import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentMetadataReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -17,9 +17,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
+public class MultiRefSliceAlignmentMetadataReaderTest extends CramRecordTestHelper {
 
-    private List<CramCompressionRecord> initSpanRecords() {
+    private List<CramCompressionRecord> initRecords() {
         final List<CramCompressionRecord> initialRecords = createRecords();
 
         // note for future refactoring
@@ -59,8 +59,8 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
     }
 
     @Test
-    public void testSpans() throws IOException {
-        final List<CramCompressionRecord> initialRecords = initSpanRecords();
+    public void testMetadataMap() throws IOException {
+        final List<CramCompressionRecord> initialRecords = initRecords();
 
         // note for future refactoring
         // createHeader(records) calls CompressionHeaderBuilder.setTagIdDictionary(buildTagIdDictionary(records));
@@ -78,14 +78,14 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         try (final ByteArrayInputStream is = new ByteArrayInputStream(written);
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
-            final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
-            final Map<Integer, AlignmentSpan> spans = reader.getReferenceSpans();
+            final MultiRefSliceAlignmentMetadataReader reader = new MultiRefSliceAlignmentMetadataReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
+            final Map<Integer, SliceAlignmentMetadata> metadataMap = reader.getReferenceMetadata();
 
-            Assert.assertEquals(spans.size(), 2);
-            Assert.assertTrue(spans.containsKey(1));
-            Assert.assertTrue(spans.containsKey(2));
-            Assert.assertEquals(spans.get(1), new AlignmentSpan(1, 9, 3));
-            Assert.assertEquals(spans.get(2), new AlignmentSpan(2, 3, 1));
+            Assert.assertEquals(metadataMap.size(), 2);
+            Assert.assertTrue(metadataMap.containsKey(1));
+            Assert.assertTrue(metadataMap.containsKey(2));
+            Assert.assertEquals(metadataMap.get(1), new SliceAlignmentMetadata(1, 9, 3));
+            Assert.assertEquals(metadataMap.get(2), new SliceAlignmentMetadata(2, 3, 1));
         }
     }
 }

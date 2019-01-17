@@ -18,11 +18,16 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Container {
@@ -57,6 +62,21 @@ public class Container {
      * Container start in the stream.
      */
     public long offset;
+
+    public Map<Integer, SliceAlignmentMetadata> getSliceMetadata(final ValidationStringency validationStringency) {
+        final Map<Integer, SliceAlignmentMetadata> sliceMetadataMap  = new HashMap<>();
+
+        // iterate through the container's slices, parsing multi-ref into individual references,
+        // and recombining slice metadata per-reference as necessary
+
+        Arrays.stream(slices)
+                .flatMap(slice ->
+                        slice.getAlignmentMetadata(header, validationStringency).entrySet().stream())
+                .forEach(metadataMapEntry ->
+                        sliceMetadataMap.merge(metadataMapEntry.getKey(), metadataMapEntry.getValue(), SliceAlignmentMetadata::add));
+
+        return sliceMetadataMap;
+    }
 
     public List<CRAIEntry> getCRAIEntries() {
         return Arrays.stream(slices)

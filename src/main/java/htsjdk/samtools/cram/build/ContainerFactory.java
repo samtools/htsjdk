@@ -29,7 +29,7 @@ import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import htsjdk.samtools.util.RuntimeIOException;
 

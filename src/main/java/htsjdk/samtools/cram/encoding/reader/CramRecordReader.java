@@ -23,6 +23,7 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;

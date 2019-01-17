@@ -4,7 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;

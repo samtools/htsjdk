@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;

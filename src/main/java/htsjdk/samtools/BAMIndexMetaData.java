@@ -23,7 +23,7 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
 import java.io.File;

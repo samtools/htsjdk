@@ -7,6 +7,8 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.util.Log;
 
 import java.io.*;
 import java.util.ArrayList;

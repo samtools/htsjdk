@@ -38,26 +38,22 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Class for both constructing BAM index content and writing it out.
@@ -124,29 +120,36 @@ public class CRAMBAIIndexer {
             slice.containerOffset = container.offset;
             slice.index = sliceIndex++;
             if (slice.isMultiref()) {
-                final ContainerParser parser = new ContainerParser(indexBuilder.bamHeader);
-                final Map<Integer, AlignmentSpan> refSet = parser.getReferences(container, validationStringency);
-                final Slice fakeSlice = new Slice();
+                final Map<Integer, SliceAlignmentMetadata> metadataMap = slice.getMultiRefAlignmentMetadata(container.header, validationStringency);
                 slice.containerOffset = container.offset;
                 slice.index = sliceIndex++;
-                /**
-                 * Unmapped span must be processed after mapped spans:
-                 */
-                AlignmentSpan unmappedSpan = refSet.remove(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
-                for (final int refId : new TreeSet<>(refSet.keySet())) {
-                    final AlignmentSpan span = refSet.get(refId);
-                    fakeSlice.sequenceId = refId;
+
+                // References must be processed in order, with unmapped last
+
+                final SortedMap<Integer, SliceAlignmentMetadata> mapped = metadataMap
+                        .entrySet()
+                        .stream()
+                        .filter(entry -> entry.getKey() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, SliceAlignmentMetadata::add, TreeMap::new));
+
+                final SliceAlignmentMetadata unmapped = metadataMap.get(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+
+                for (final Map.Entry<Integer, SliceAlignmentMetadata> slicePerRef : mapped.entrySet()) {
+                    final SliceAlignmentMetadata metadata = slicePerRef.getValue();
+                    final Slice fakeSlice = new Slice();
+                    fakeSlice.sequenceId = slicePerRef.getKey();
                     fakeSlice.containerOffset = slice.containerOffset;
                     fakeSlice.offset = slice.offset;
                     fakeSlice.index = slice.index;
 
-                    fakeSlice.alignmentStart = span.getStart();
-                    fakeSlice.alignmentSpan = span.getSpan();
-                    fakeSlice.nofRecords = span.getCount();
+                    fakeSlice.alignmentStart = metadata.getAlignmentStart();
+                    fakeSlice.alignmentSpan = metadata.getAlignmentSpan();
+                    fakeSlice.nofRecords = metadata.getRecordCount();
                     processSingleReferenceSlice(fakeSlice);
                 }
-                if (unmappedSpan != null) {
-                    final AlignmentSpan span = unmappedSpan;
+
+                if (unmapped != null) {
+                    final Slice fakeSlice = new Slice();
                     fakeSlice.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
                     fakeSlice.containerOffset = slice.containerOffset;
                     fakeSlice.offset = slice.offset;
@@ -154,7 +157,7 @@ public class CRAMBAIIndexer {
 
                     fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
                     fakeSlice.alignmentSpan = 0;
-                    fakeSlice.nofRecords = span.getCount();
+                    fakeSlice.nofRecords = unmapped.getRecordCount();
                     processSingleReferenceSlice(fakeSlice);
                 }
             } else {

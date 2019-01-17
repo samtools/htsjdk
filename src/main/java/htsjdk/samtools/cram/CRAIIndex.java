@@ -5,6 +5,8 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.CRAMCRAIIndexer;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.slice.Slice;
+import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.ValidationStringency;
@@ -54,17 +56,18 @@ public class CRAIIndex {
         if (!container.isEOF()) {
             for (final Slice s: container.slices) {
                 if (s.sequenceId == Slice.MULTI_REFERENCE) {
-                    final Map<Integer, AlignmentSpan> spans = s.getMultiRefAlignmentSpans(container.header, ValidationStringency.DEFAULT_STRINGENCY);
+                    final Map<Integer, SliceAlignmentMetadata> metadataMap = s.getMultiRefAlignmentMetadata(container.header, ValidationStringency.DEFAULT_STRINGENCY);
 
-                    this.entries.addAll(spans.entrySet().stream()
+                    this.entries.addAll(metadataMap.entrySet().stream()
                             .map(e -> new CRAIEntry(e.getKey(),
-                                    e.getValue().getStart(),
-                                    e.getValue().getSpan(),
+                                    e.getValue().getAlignmentStart(),
+                                    e.getValue().getAlignmentSpan(),
                                     container.offset,
                                     container.landmarks[s.index],
                                     s.size))
                             .collect(Collectors.toList()));
                  } else {
+                    // TODO test that this is also correct for unmapped
                     entries.add(s.getCRAIEntry(container.offset));
                 }
             }

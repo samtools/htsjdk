@@ -1,10 +1,9 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.slice.SliceAlignmentMetadata;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
@@ -240,19 +239,19 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     }
 
     @Test
-    public void testIteratorSecondContainerSpan() throws IOException, IllegalAccessException {
+    public void testIteratorSecondContainerSpan() throws IOException {
         CramContainerIterator it = new CramContainerIterator(new ByteArrayInputStream(cramBytes));
         it.hasNext();
         it.next();
         it.hasNext();
         Container secondContainer = it.next();
         Assert.assertNotNull(secondContainer);
-        final Map<Integer, AlignmentSpan> references =
-                new ContainerParser(it.getCramHeader().getSamFileHeader()).getReferences(secondContainer, ValidationStringency.STRICT);
+        final Map<Integer, SliceAlignmentMetadata> references =
+                secondContainer.getSliceMetadata(ValidationStringency.STRICT);
         it.close();
 
         int refId = new TreeSet<>(references.keySet()).iterator().next();
-        final AlignmentSpan alignmentSpan = references.get(refId);
+        final SliceAlignmentMetadata sliceAlignmentMetadata = references.get(refId);
 
         CRAMFileReader reader = new CRAMFileReader(
                 new ByteArraySeekableStream(cramBytes),
@@ -261,7 +260,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 ValidationStringency.STRICT);
 
         final BAMIndex index = reader.getIndex();
-        final SAMFileSpan spanOfSecondContainer = index.getSpanOverlapping(refId, alignmentSpan.getStart(), alignmentSpan.getStart()+ alignmentSpan.getSpan());
+        final SAMFileSpan spanOfSecondContainer = index.getSpanOverlapping(refId, sliceAlignmentMetadata.getAlignmentStart(), sliceAlignmentMetadata.getAlignmentStart()+ sliceAlignmentMetadata.getAlignmentSpan());
         Assert.assertNotNull(spanOfSecondContainer);
         Assert.assertFalse(spanOfSecondContainer.isEmpty());
         Assert.assertTrue(spanOfSecondContainer instanceof BAMFileSpan);
@@ -273,7 +272,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         while (iterator.hasNext()) {
             final SAMRecord record = iterator.next();
             if (record.getReferenceIndex().intValue() == refId) {
-                boolean overlaps = CoordMath.overlaps(record.getAlignmentStart(), record.getAlignmentEnd(), alignmentSpan.getStart(), alignmentSpan.getStart()+ alignmentSpan.getSpan());
+                boolean overlaps = CoordMath.overlaps(record.getAlignmentStart(), record.getAlignmentEnd(), sliceAlignmentMetadata.getAlignmentStart(), sliceAlignmentMetadata.getAlignmentStart()+ sliceAlignmentMetadata.getAlignmentSpan());
                 if (overlaps) matchFound = true;
             }
             counter++;

@@ -8,7 +8,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;

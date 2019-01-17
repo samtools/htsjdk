@@ -24,6 +24,7 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.io.LTF8;
 import htsjdk.samtools.cram.structure.block.*;
+import htsjdk.samtools.cram.structure.slice.Slice;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
