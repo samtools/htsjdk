@@ -35,7 +35,7 @@ public abstract class SliceMetadata {
      * @return the combined SliceMetadata
      * @throws CRAMException when attempting to combine different subclasses
      */
-    public abstract <T extends SliceMetadata> T add(final T other);
+    public abstract SliceMetadata add(final SliceMetadata other);
 
     public int getRecordCount() {
         return count;

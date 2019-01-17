@@ -37,8 +37,7 @@ public class MappedSliceMetadata extends SliceMetadata {
      * @throws CRAMException when attempting to combine different subclasses
      */
     @Override
-    @SuppressWarnings("unchecked")
-    public <T extends SliceMetadata> T add(final T other) {
+    public MappedSliceMetadata add(final SliceMetadata other) {
         if (this.getClass() != other.getClass()) {
             throw new CRAMException("Cannot combine MappedSliceMetadata objects with UnmappedSliceMetadata objects");
         }
@@ -49,7 +48,7 @@ public class MappedSliceMetadata extends SliceMetadata {
         final int span = Math.max(this.start + this.span, that.getAlignmentStart() + that.getAlignmentSpan()) - start;
         final int count = this.count + other.count;
 
-        return (T) new MappedSliceMetadata(start, span, count);
+        return new MappedSliceMetadata(start, span, count);
     }
 
     public int getAlignmentStart() {

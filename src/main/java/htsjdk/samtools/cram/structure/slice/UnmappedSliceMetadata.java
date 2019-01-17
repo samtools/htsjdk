@@ -20,12 +20,11 @@ public class UnmappedSliceMetadata extends SliceMetadata {
      * @throws CRAMException when attempting to combine different subclasses
      */
     @Override
-    @SuppressWarnings("unchecked")
-    public <T extends SliceMetadata> T add(final T other) {
+    public UnmappedSliceMetadata add(final SliceMetadata other) {
         if (this.getClass() != other.getClass()) {
             throw new CRAMException("Cannot combine MappedSliceMetadata objects with UnmappedSliceMetadata objects");
         }
 
-        return (T) new UnmappedSliceMetadata(this.count + other.count);
+        return new UnmappedSliceMetadata(this.count + other.count);
     }
 }
