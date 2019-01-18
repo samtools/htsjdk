@@ -84,6 +84,7 @@ public class ContainerFactory {
             slices.add(slice);
 
             // assuming one sequence per container max:
+            // TODO: enforce this assumption and also enable multi-ref
             if (container.sequenceId == -1 && slice.sequenceId != -1)
                 container.sequenceId = slice.sequenceId;
         }
@@ -95,6 +96,7 @@ public class ContainerFactory {
         return container;
     }
 
+    // TODO: enforce slice "types" / state management per spec discussions
     private static void calculateAlignmentBoundaries(final Container container) {
         int start = Integer.MAX_VALUE;
         int end = Integer.MIN_VALUE;
@@ -111,6 +113,7 @@ public class ContainerFactory {
         }
     }
 
+    // TODO: enforce slice "types" / state management per spec discussions
     private static Slice buildSlice(final List<CramCompressionRecord> records,
                                     final CompressionHeader header) {
         final Map<Integer, ByteArrayOutputStream> externalBlockMap = new HashMap<>();
@@ -149,8 +152,7 @@ public class ContainerFactory {
             slice.sliceTags = hasher.getAsTags();
         }
 
-        if (slice.sequenceId == Slice.MULTI_REFERENCE
-                || minAlStart == Integer.MAX_VALUE) {
+        if (slice.sequenceId == Slice.MULTI_REFERENCE || minAlStart == Integer.MAX_VALUE) {
             slice.alignmentStart = Slice.NO_ALIGNMENT_START;
             slice.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
         } else {

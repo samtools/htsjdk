@@ -81,7 +81,7 @@ public class SliceMetadataTest extends HtsjdkTest {
         return s;
     }
 
-    private static Container newMultiRefContainer(final boolean includeUnmapped) {
+    private static Container newMultiRefContainer() {
         final SAMFileHeader samHeader = new SAMFileHeader();
         samHeader.addSequence(new SAMSequenceRecord("1", 100));
         samHeader.addSequence(new SAMSequenceRecord("2", 200));
@@ -102,11 +102,6 @@ public class SliceMetadataTest extends HtsjdkTest {
             record.readBases = record.qualityScores = bases;
             record.readName = Integer.toString(i);
             record.readFeatures = Collections.emptyList();
-
-            if (includeUnmapped && i < 2) {
-                record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-            }
-
             records.add(record);
         }
 
@@ -121,11 +116,8 @@ public class SliceMetadataTest extends HtsjdkTest {
 
     @DataProvider(name = "sliceTest")
     private static Object[][] sliceTestData() {
-        final Container multiRefContainer = newMultiRefContainer(false);
+        final Container multiRefContainer = newMultiRefContainer();
         final Slice multiRefSlice = multiRefContainer.slices[0];
-
-        final Container multiRefContainerWithUnmapped = newMultiRefContainer(true);
-        final Slice multiRefSliceWithUnmapped = multiRefContainerWithUnmapped.slices[0];
 
         return new Object[][] {
                 {
@@ -154,20 +146,7 @@ public class SliceMetadataTest extends HtsjdkTest {
                             // two records for sequence 1: 2-6 and 4-8
                             put(1, new MappedSliceMetadata(2, 7, 2));
                         }}
-                },
-                {
-                        multiRefSliceWithUnmapped,
-                        multiRefContainerWithUnmapped.header,
-                        3,
-                        new HashMap<Integer, SliceMetadata>() {{
-                            // two unmapped records: 1-5 and 2-6
-                            put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, new UnmappedSliceMetadata(2));
-                            // one record for sequence 0: 3-7
-                            put(0, new MappedSliceMetadata(3, 5, 1));
-                            // one record for sequence 1: 4-8
-                            put(1, new MappedSliceMetadata(4, 5, 1));
-                        }}
-                },
+                }
         };
     }
 
@@ -238,62 +217,22 @@ public class SliceMetadataTest extends HtsjdkTest {
     }
 
     @Test
-    public void testMappedAndUnmappedContainer() {
-        SAMFileHeader samFileHeader = new SAMFileHeader();
-        ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i=0; i<10; i++) {
-            CramCompressionRecord record = new CramCompressionRecord();
-            record.readBases="AAA".getBytes();
-            record.qualityScores="!!!".getBytes();
-            record.readName=""+i;
-            record.alignmentStart=i+1;
-
-            record.setMultiFragment(false);
-            if (i%2==0) {
-                record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-                record.setSegmentUnmapped(true);
-            } else {
-                record.sequenceId=0;
-                record.readFeatures = Collections.emptyList();
-                record.setSegmentUnmapped(false);
-            }
-            records.add(record);
-        }
-
-        Container container = factory.buildContainer(records);
-        Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, Slice.MULTI_REFERENCE);
-
-        final Map<Integer, SliceMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
-        Assert.assertNotNull(referenceMap);
-        Assert.assertEquals(referenceMap.size(), 2);
-        Assert.assertTrue(referenceMap.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
-        Assert.assertTrue(referenceMap.containsKey(0));
-    }
-
-    @Test
     public void testMultirefContainer() {
         SAMFileHeader samFileHeader = new SAMFileHeader();
         ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
         List<CramCompressionRecord> records = new ArrayList<>();
         for (int i=0; i<10; i++) {
             CramCompressionRecord record = new CramCompressionRecord();
-            record.readBases="AAA".getBytes();
-            record.qualityScores="!!!".getBytes();
-            record.readName=""+i;
-            record.alignmentStart=i+1;
+            record.readBases = "AAA".getBytes();
+            record.qualityScores = "!!!".getBytes();
+            record.readName = "" + i;
+            record.alignmentStart = i + 1;
             record.readLength = 3;
 
             record.setMultiFragment(false);
-            if (i < 9) {
-                record.sequenceId=i;
-                record.readFeatures = Collections.emptyList();
-                record.setSegmentUnmapped(false);
-            } else {
-                record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-                record.setSegmentUnmapped(true);
-            }
+            record.sequenceId = i;
+            record.readFeatures = Collections.emptyList();
+            record.setSegmentUnmapped(false);
             records.add(record);
         }
 
@@ -304,10 +243,11 @@ public class SliceMetadataTest extends HtsjdkTest {
         final Map<Integer, SliceMetadata> referenceMap = container.getSliceMetadata(ValidationStringency.STRICT);
         Assert.assertNotNull(referenceMap);
         Assert.assertEquals(referenceMap.size(), 10);
-        Assert.assertTrue(referenceMap.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
-        for (int i=0; i<9; i++) {
+        for (int i=0; i<10; i++) {
             Assert.assertTrue(referenceMap.containsKey(i));
-            MappedSliceMetadata metadata = (MappedSliceMetadata) referenceMap.get(i);
+            final SliceMetadata tempMetadata = referenceMap.get(i);
+            Assert.assertTrue(tempMetadata instanceof MappedSliceMetadata);
+            final MappedSliceMetadata metadata = (MappedSliceMetadata) tempMetadata;
             Assert.assertEquals(metadata.getRecordCount(), 1);
             Assert.assertEquals(metadata.getAlignmentStart(), i+1);
             Assert.assertEquals(metadata.getAlignmentSpan(), 3);
