@@ -77,7 +77,7 @@ public class ContainerParser {
 
     private static Map<Integer, AlignmentSpan> addAllSpans(final Map<Integer, AlignmentSpan> spanMap, final Map<Integer, AlignmentSpan> addition) {
         for (final Map.Entry<Integer, AlignmentSpan> entry:addition.entrySet()) {
-            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getCount(), entry.getValue().getSpan(), spanMap);
+            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getSpan(), entry.getValue().getCount(), spanMap);
         }
         return spanMap;
     }
