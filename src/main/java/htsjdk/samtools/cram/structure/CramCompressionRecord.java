@@ -210,6 +210,17 @@ public class CramCompressionRecord {
         flags = segmentUnmapped ? flags | SEGMENT_UNMAPPED_FLAG : flags & ~SEGMENT_UNMAPPED_FLAG;
     }
 
+    /**
+     * Does this record have a valid placement / alignment location?
+     * It must have both a valid reference sequence ID and alignment start position to qualify.
+     *
+     * @return true is the record is placed
+     */
+    public boolean isPlaced() {
+        return sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
+    }
+
     public boolean isFirstSegment() {
         return (flags & FIRST_SEGMENT_FLAG) != 0;
     }

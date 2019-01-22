@@ -19,18 +19,29 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAIEntry;
+import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.digest.ContentDigests;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
+import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
+import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.ExternalBlock;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -246,8 +257,12 @@ public class Slice {
         }
     }
 
-    public boolean isMapped() {
+    public boolean isMappedSingleRef() {
         return sequenceId > SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+    }
+
+    public boolean isUnmapped() {
+        return sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
     }
 
     public boolean isMultiref() {
@@ -318,4 +333,113 @@ public class Slice {
     public CRAIEntry getCRAIEntry(final long containerStartOffset) {
         return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerStartOffset, offset, size);
     }
+
+    /**
+     * Create a Slice from CRAM Compression Records and a Compression Header
+     *
+     * @param records input CRAM Compression Records
+     * @param header the enclosing {@link Container}'s Compression Header
+     * @return a Slice corresponding to the given records
+     */
+    public static Slice buildSlice(final List<CramCompressionRecord> records,
+                                   final CompressionHeader header) {
+        final Map<Integer, ByteArrayOutputStream> externalBlockMap = new HashMap<>();
+        for (final int id : header.externalIds) {
+            externalBlockMap.put(id, new ByteArrayOutputStream());
+        }
+
+        final Slice slice = new Slice();
+        slice.nofRecords = records.size();
+
+        int minAlStart = Integer.MAX_VALUE;
+        int maxAlEnd = SAMRecord.NO_ALIGNMENT_START;
+        {
+            // @formatter:off
+            /*
+             * 1) Count slice bases.
+             * 2) Decide if the slice is single ref, unmapped or multi reference.
+             * 3) Detect alignment boundaries for the slice if not multi reference.
+             */
+            // @formatter:on
+
+            // Valid Slice states, by individual record contents:
+            //
+            // Single Reference: all records have valid placements/alignments on the same reference sequence
+            //      * records can be unmapped-but-placed
+            //      * reference can be external or embedded
+            // Multiple Reference: records may be placed or not, and may have differing reference sequences
+            //      * reference must not be embedded (not checked here)
+            // Unmapped: all records are unmapped and unplaced
+
+            final CramCompressionRecord firstRecord = records.get(0);
+            slice.sequenceId = firstRecord.isPlaced() ?
+                    firstRecord.sequenceId :
+                    SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+
+            final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
+            for (final CramCompressionRecord record : records) {
+                slice.bases += record.readLength;
+                hasher.add(record);
+
+                // flip an unmapped slice to multi-ref if the record is placed
+                if (slice.isUnmapped() && record.isPlaced()) {
+                    slice.sequenceId = MULTI_REFERENCE;
+                }
+                else if (slice.isMappedSingleRef()) {
+                    // flip a single-ref slice to multi-ref if the record is unplaced or on a different ref
+                    if (!record.isPlaced() || slice.sequenceId != record.sequenceId) {
+                        slice.sequenceId = MULTI_REFERENCE;
+                    }
+                    else {
+                        // calculate single ref slice alignment
+
+                        minAlStart = Math.min(record.alignmentStart, minAlStart);
+                        maxAlEnd = Math.max(record.getAlignmentEnd(), maxAlEnd);
+                    }
+                }
+            }
+
+            slice.sliceTags = hasher.getAsTags();
+        }
+
+        if (slice.isMappedSingleRef()) {
+            slice.alignmentStart = minAlStart;
+            slice.alignmentSpan = maxAlEnd - minAlStart + 1;
+        }
+        else {
+            slice.alignmentStart = NO_ALIGNMENT_START;
+            slice.alignmentSpan = NO_ALIGNMENT_SPAN;
+        }
+
+        try (final ByteArrayOutputStream bitBAOS = new ByteArrayOutputStream();
+             final DefaultBitOutputStream bitOutputStream = new DefaultBitOutputStream(bitBAOS)) {
+
+            final CramRecordWriter writer = new CramRecordWriter(bitOutputStream, externalBlockMap, header, slice.sequenceId);
+            writer.writeCramCompressionRecords(records, slice.alignmentStart);
+
+            bitOutputStream.close();
+            slice.coreBlock = Block.createRawCoreDataBlock(bitBAOS.toByteArray());
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+
+        slice.external = new HashMap<>();
+        for (final Integer contentId : externalBlockMap.keySet()) {
+            // remove after https://github.com/samtools/htsjdk/issues/1232
+            if (contentId == Block.NO_CONTENT_ID) {
+                throw new CRAMException("Valid Content ID required.  Given: " + contentId);
+            }
+
+            final ExternalCompressor compressor = header.externalCompressors.get(contentId);
+            final byte[] rawContent = externalBlockMap.get(contentId).toByteArray();
+            final ExternalBlock externalBlock = new ExternalBlock(compressor.getMethod(), contentId,
+                    compressor.compress(rawContent), rawContent.length);
+
+            slice.external.put(contentId, externalBlock);
+        }
+
+        return slice;
+    }
+
 }

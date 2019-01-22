@@ -9,16 +9,12 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -28,46 +24,36 @@ import java.util.Map;
 public class ContainerParserTest extends HtsjdkTest {
 
     @Test
-    public void testEOF() throws IOException {
-        ContainerParser parser = new ContainerParser(new SAMFileHeader());
-        ByteArrayOutputStream v2_baos = new ByteArrayOutputStream();
-        Version version = CramVersions.CRAM_v2_1;
-        CramIO.issueEOF(version, v2_baos);
-        Container container = ContainerIO.readContainer(version, new ByteArrayInputStream(v2_baos.toByteArray()));
-        Assert.assertTrue(container.isEOF());
-        Assert.assertTrue(parser.getRecords(container, null, ValidationStringency.STRICT).isEmpty());
-
-        ByteArrayOutputStream v3_baos = new ByteArrayOutputStream();
-        version = CramVersions.CRAM_v3;
-        CramIO.issueEOF(version, v3_baos);
-        container = ContainerIO.readContainer(version, new ByteArrayInputStream(v3_baos.toByteArray()));
-        Assert.assertTrue(container.isEOF());
-        Assert.assertTrue(parser.getRecords(container, null, ValidationStringency.STRICT).isEmpty());
+    public void testEOFv2() throws IOException {
+        final ContainerParser parser = new ContainerParser(new SAMFileHeader());
+        try (final ByteArrayOutputStream v2_baos = new ByteArrayOutputStream()) {
+            final Version version = CramVersions.CRAM_v2_1;
+            CramIO.issueEOF(version, v2_baos);
+            final Container container = ContainerIO.readContainer(version, new ByteArrayInputStream(v2_baos.toByteArray()));
+            Assert.assertTrue(container.isEOF());
+            Assert.assertTrue(parser.getRecords(container, null, ValidationStringency.STRICT).isEmpty());
+        }
     }
 
     @Test
-    public void testSingleRefContainer() throws IOException {
-        SAMFileHeader samFileHeader = new SAMFileHeader();
-        ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i=0; i<10; i++) {
-            CramCompressionRecord record = new CramCompressionRecord();
-            record.readBases="AAA".getBytes();
-            record.qualityScores="!!!".getBytes();
-            record.setSegmentUnmapped(false);
-            record.readName=""+i;
-            record.sequenceId=0;
-            record.setLastSegment(true);
-            record.readFeatures = Collections.emptyList();
-
-            records.add(record);
+    public void testEOFv3() throws IOException {
+        final ContainerParser parser = new ContainerParser(new SAMFileHeader());
+        try (final ByteArrayOutputStream v3_baos = new ByteArrayOutputStream()) {
+            final Version version = CramVersions.CRAM_v3;
+            CramIO.issueEOF(version, v3_baos);
+            final Container container = ContainerIO.readContainer(version, new ByteArrayInputStream(v3_baos.toByteArray()));
+            Assert.assertTrue(container.isEOF());
+            Assert.assertTrue(parser.getRecords(container, null, ValidationStringency.STRICT).isEmpty());
         }
+    }
 
-        Container container = factory.buildContainer(records);
-        Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, 0);
+    @Test
+    public void testSingleRefContainer() {
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        final ContainerParser parser = new ContainerParser(samFileHeader);
 
-        ContainerParser parser = new ContainerParser(samFileHeader);
+        final Container container = ContainerFactoryTest.getSingleRefContainer(samFileHeader);
+
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
         Assert.assertEquals(referenceSet.size(), 1);
@@ -75,112 +61,97 @@ public class ContainerParserTest extends HtsjdkTest {
     }
 
     @Test
-    public void testUnmappedContainer() throws IOException {
-        SAMFileHeader samFileHeader = new SAMFileHeader();
-        ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i=0; i<10; i++) {
-            CramCompressionRecord record = new CramCompressionRecord();
-            record.readBases="AAA".getBytes();
-            record.qualityScores="!!!".getBytes();
-            record.setSegmentUnmapped(true);
-            record.readName=""+i;
-            record.sequenceId= SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-            record.setLastSegment(true);
+    public void testUnmappedNoReferenceContainer() {
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        final ContainerParser parser = new ContainerParser(samFileHeader);
 
-            records.add(record);
-        }
+        final Container container = ContainerFactoryTest.getUnmappedNoRefContainer(samFileHeader);
 
-        Container container = factory.buildContainer(records);
-        Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
-
-        ContainerParser parser = new ContainerParser(samFileHeader);
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
         Assert.assertEquals(referenceSet.size(), 1);
         Assert.assertTrue(referenceSet.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
-
     }
 
     @Test
-    public void testMappedAndUnmappedContainer() throws IOException {
-        SAMFileHeader samFileHeader = new SAMFileHeader();
-        ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i=0; i<10; i++) {
-            CramCompressionRecord record = new CramCompressionRecord();
-            record.readBases="AAA".getBytes();
-            record.qualityScores="!!!".getBytes();
-            record.readName=""+i;
-            record.alignmentStart=i+1;
+    public void testUnmappedNoAlignmentStartContainer() {
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        final ContainerParser parser = new ContainerParser(samFileHeader);
 
-            record.setMultiFragment(false);
-            if (i%2==0) {
-                record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-                record.setSegmentUnmapped(true);
-            } else {
-                record.sequenceId=0;
-                record.readFeatures = Collections.emptyList();
-                record.setSegmentUnmapped(false);
-            }
-            records.add(record);
-        }
+        final Container container = ContainerFactoryTest.getUnmappedNoStartContainer(samFileHeader);
 
-
-
-        Container container = factory.buildContainer(records);
-        Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, Slice.MULTI_REFERENCE);
-
-        ContainerParser parser = new ContainerParser(samFileHeader);
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
-        Assert.assertEquals(referenceSet.size(), 2);
+        Assert.assertEquals(referenceSet.size(), 1);
         Assert.assertTrue(referenceSet.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
-        Assert.assertTrue(referenceSet.containsKey(0));
     }
 
     @Test
-    public void testMultirefContainer() throws IOException {
-        SAMFileHeader samFileHeader = new SAMFileHeader();
-        ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i=0; i<10; i++) {
-            CramCompressionRecord record = new CramCompressionRecord();
-            record.readBases="AAA".getBytes();
-            record.qualityScores="!!!".getBytes();
-            record.readName=""+i;
-            record.alignmentStart=i+1;
-            record.readLength = 3;
+    public void testMultirefContainer() {
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        final ContainerParser parser = new ContainerParser(samFileHeader);
 
-            record.setMultiFragment(false);
-            if (i < 9) {
-                record.sequenceId=i;
-                record.readFeatures = Collections.emptyList();
-                record.setSegmentUnmapped(false);
-            } else {
-                record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-                record.setSegmentUnmapped(true);
-            }
-            records.add(record);
-        }
+        final Container container = ContainerFactoryTest.getMultiRefContainer(samFileHeader);
 
-        Container container = factory.buildContainer(records);
-        Assert.assertEquals(container.nofRecords, 10);
-        Assert.assertEquals(container.sequenceId, Slice.MULTI_REFERENCE);
-
-        ContainerParser parser = new ContainerParser(samFileHeader);
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
         Assert.assertEquals(referenceSet.size(), 10);
-        Assert.assertTrue(referenceSet.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
-        for (int i=0; i<9; i++) {
+        for (int i = 0; i < 10; i++) {
             Assert.assertTrue(referenceSet.containsKey(i));
             AlignmentSpan span = referenceSet.get(i);
             Assert.assertEquals(span.getCount(), 1);
-            Assert.assertEquals(span.getStart(), i+1);
+            Assert.assertEquals(span.getStart(), i + 1);
             Assert.assertEquals(span.getSpan(), 3);
         }
+    }
+
+    @Test
+    public void testMultirefContainerWithUnmapped() {
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        final ContainerParser parser = new ContainerParser(samFileHeader);
+
+        final List<Container> containers = ContainerFactoryTest.getMultiRefContainersForStateTest(samFileHeader);
+
+        // first container is single-ref
+
+        final Map<Integer, AlignmentSpan> referenceSet0 = parser.getReferences(containers.get(0), ValidationStringency.STRICT);
+        Assert.assertNotNull(referenceSet0);
+        Assert.assertEquals(referenceSet0.size(), 1);
+
+        Assert.assertTrue(referenceSet0.containsKey(0));
+        final AlignmentSpan span0 = referenceSet0.get(0);
+        Assert.assertEquals(span0.getCount(), 1);
+        Assert.assertEquals(span0.getStart(), 1);
+        Assert.assertEquals(span0.getSpan(), 3);
+
+        // when other refs are added, subsequent containers are multiref
+
+        final Map<Integer, AlignmentSpan> referenceSet1 = parser.getReferences(containers.get(1), ValidationStringency.STRICT);
+        Assert.assertNotNull(referenceSet1);
+        Assert.assertEquals(referenceSet1.size(), 2);
+
+        // contains the span we checked earlier
+        Assert.assertTrue(referenceSet1.containsKey(0));
+        Assert.assertEquals(referenceSet1.get(0), span0);
+
+        Assert.assertTrue(referenceSet1.containsKey(1));
+        final AlignmentSpan span1 = referenceSet1.get(1);
+        Assert.assertEquals(span1.getCount(), 1);
+        Assert.assertEquals(span1.getStart(), 2);
+        Assert.assertEquals(span1.getSpan(), 3);
+
+        final Map<Integer, AlignmentSpan> referenceSet2 = parser.getReferences(containers.get(2), ValidationStringency.STRICT);
+        Assert.assertNotNull(referenceSet2);
+        Assert.assertEquals(referenceSet2.size(), 3);
+
+        // contains the spans we checked earlier
+        Assert.assertTrue(referenceSet2.containsKey(0));
+        Assert.assertEquals(referenceSet2.get(0), span0);
+        Assert.assertTrue(referenceSet2.containsKey(1));
+        Assert.assertEquals(referenceSet2.get(1), span1);
+
+        Assert.assertTrue(referenceSet2.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+        final AlignmentSpan span2 = referenceSet2.get(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        Assert.assertEquals(span2.getCount(), 1);
     }
 }
