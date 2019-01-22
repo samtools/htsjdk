@@ -26,6 +26,7 @@
 package htsjdk.variant.vcf;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * @author ebanks
@@ -61,7 +62,7 @@ public class VCFFilterHeaderLine extends VCFSimpleHeaderLine  {
      * @param version   the vcf header version
      */
     public VCFFilterHeaderLine(final String line, final VCFHeaderVersion version) {
-        super(line, version, "FILTER", Arrays.asList("ID", "Description"));
+        super(line, version, "FILTER", Arrays.asList("ID", "Description"), Collections.emptyList());
     }
 
     @Override

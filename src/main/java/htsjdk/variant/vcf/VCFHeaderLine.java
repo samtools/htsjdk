@@ -159,7 +159,9 @@ public class VCFHeaderLine implements Comparable, Serializable {
             builder.append('=');
             builder.append(entry.getValue().toString().contains(",") ||
                            entry.getValue().toString().contains(" ") ||
-                           entry.getKey().equals("Description") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
+                           entry.getKey().equals("Description") ||
+                           entry.getKey().equals("Source") || // As per VCFv4.2, Source and Version should be surrounded by double quotes
+                           entry.getKey().equals("Version") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
         }
         builder.append('>');
         return builder.toString();

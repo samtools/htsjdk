@@ -28,6 +28,7 @@ package htsjdk.variant.vcf;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.TribbleException;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -49,7 +50,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
      * @param key            the key for this header line
      */
     public VCFContigHeaderLine(final String line, final VCFHeaderVersion version, final String key, final int contigIndex) {
-        super(line, version, key, null);
+        super(line, version, key, null, Collections.emptyList());
 	    if (contigIndex < 0) throw new TribbleException("The contig index is less than zero.");
         this.contigIndex = contigIndex;
     }
