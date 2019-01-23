@@ -277,6 +277,24 @@ public class ContainerFactoryTest extends HtsjdkTest {
     }
 
     @Test(expectedExceptions = CRAMException.class)
+    public void differentReferencesBoundariesTest() {
+        final Slice one = new Slice();
+        one.sequenceId = 5;
+        one.alignmentStart = 10;
+        one.alignmentSpan = 15;
+
+        final Slice another = new Slice();
+        another.sequenceId = 2;
+        another.alignmentStart = 1;
+        another.alignmentSpan = 10;
+
+        final Container container = new Container();
+        container.slices = new Slice[]{one, another};
+
+        ContainerFactory.calculateAlignmentBoundaries(container);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
     public void singleAndUnmappedBoundariesTest() {
         final Slice single = new Slice();
         single.sequenceId = 5;
