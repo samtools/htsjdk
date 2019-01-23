@@ -64,7 +64,9 @@ import java.util.zip.GZIPInputStream;
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
     public final static int MAX_ALLELE_SIZE_BEFORE_WARNING = (int)Math.pow(2, 20);
 
-    protected final static int NUM_STANDARD_FIELDS = 8;  // INFO is the 8th column
+    protected final static int NUM_STANDARD_FIELDS = 8;  // INFO is the 8th
+
+    private final static  int MAX_ALLELE_LENGTH_FOR_CACHING = 8;
 
     // we have to store the list of strings that make up the header until they're needed
     protected VCFHeader header = null;
@@ -333,7 +335,13 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             builder.id(parts[2]);
 
         final String ref = getCachedString(parts[3].toUpperCase());
-        final String alts = getCachedString(parts[4]);
+        String alts = parts[4];
+        if (!(alts.contains(".") || alts.length() > MAX_ALLELE_LENGTH_FOR_CACHING || (alts.length() > 1 && (alts.contains("[") || alts.contains("]") || alts.contains("."))))) {
+            // don't cache multiple alt allele which we're going to strsplit anyway
+            // don't cache long alleles as they're probably unique
+            // don't cache breakpoint/single breakend alleles as they're probably unique
+            alts = getCachedString(alts);
+        }
         builder.log10PError(parseQual(parts[5]));
 
         final List<String> filters = parseFilters(getCachedString(parts[6]));
@@ -610,15 +618,14 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     /**
-     * return true if this is a symbolic allele (e.g. <SOMETAG>) or
-     * structural variation breakend (with [ or ]), otherwise false
+     * return true if this is a symbolic allele (e.g. <SOMETAG>),
+     * structural variation breakend (with [ or ]), or single breakend (e.g. ATTA.),
+     * otherwise false
      * @param allele the allele to check
      * @return true if the allele is a symbolic allele, otherwise false
      */
     private static boolean isSymbolicAllele(String allele) {
-        return (allele != null && allele.length() > 2 &&
-                ((allele.startsWith("<") && allele.endsWith(">")) ||
-                        (allele.contains("[") || allele.contains("]"))));
+        return Allele.wouldBeSymbolicAllele(allele.getBytes());
     }
 
     /**

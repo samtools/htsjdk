@@ -300,10 +300,36 @@ public class Allele implements Comparable<Allele>, Serializable {
     	if ( bases.length <= 1 )
             return false;
         else {
-            final String strBases = new String(bases);
-            return (bases[0] == '<' || bases[bases.length-1] == '>') || // symbolic or large insertion
-            		(bases[0] == '.' || bases[bases.length-1] == '.') || // single breakend
-                    (strBases.contains("[") || strBases.contains("]")); // mated breakend
+            return bases[0] == '<' || bases[bases.length - 1] == '>' ||
+                    wouldBeBreakpoint(bases) ||
+                    wouldBeSingleBreakend(bases);
+        }
+    }
+    /**
+     * @param bases  bases representing an allele
+     * @return true if the bases represent a symbolic allele in breakpoint notation
+     */
+    public static boolean wouldBeBreakpoint(final byte[] bases) {
+        if ( bases.length <= 1 )
+            return false;
+        else {
+            for (int i = 0; i < bases.length; i++) {
+                if (bases[i] == '[' || bases[i] == ']') {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+    /**
+     * @param bases  bases representing an allele
+     * @return true if the bases represent a symbolic allele in single breakend notation
+     */
+    public static boolean wouldBeSingleBreakend(final byte[] bases) {
+        if ( bases.length <= 1 )
+            return false;
+        else {
+            return bases[0] == '.' || bases[bases.length - 1] == '.';
         }
     }
 
@@ -420,6 +446,10 @@ public class Allele implements Comparable<Allele>, Serializable {
 
     // Returns true if this Allele is symbolic (i.e. no well-defined base sequence)
     public boolean isSymbolic()         { return isSymbolic; }
+
+    public boolean isBreakpoint()         { return wouldBeBreakpoint(bases); }
+
+    public boolean isSingleBreakend()         { return wouldBeSingleBreakend(bases); }
 
     // Returns a nice string representation of this object
     public String toString() {
