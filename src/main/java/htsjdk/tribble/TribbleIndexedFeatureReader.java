@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
@@ -30,10 +31,14 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -137,11 +142,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (requireIndex) {
                 this.loadIndex();
                 if (!this.hasIndex()) {
-                    File check = new File ("/home/check.txt");
-                    if (!check.createNewFile())
-                    {
-                        throw new TribbleException("no file");
-                    }
                     throw new TribbleException("An index is required, but none found.");
                 }
             }
@@ -170,19 +170,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     private void loadIndex() throws IOException {
         String indexFile = Tribble.indexFile(this.path);
 
-        final File tempIndex = new File("index111", TabixUtils.STANDARD_INDEX_EXTENSION);
-        boolean newFile = tempIndex.createNewFile();
-        if (newFile) {
-            System.out.print("Created");
-        }
-        final  FeatureCodec codec = new VCFCodec();
-
-        final File tmp = new File(this.path);
-        final Index indexS = IndexFactory.createIndex(tmp, codec, IndexFactory.IndexType.TABIX);
-
-        // write the index to a file
-        indexS.write(tempIndex);
-
         if (ParsingUtils.resourceExists(indexFile)) {
             index = IndexFactory.loadIndex(indexFile, indexWrapper);
         } else {
@@ -191,9 +178,17 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (ParsingUtils.resourceExists(indexFile)) {
                 index = IndexFactory.loadIndex(indexFile, indexWrapper);
             } else {
-                //index = IndexFactory.createIndex(tmp, codec, IndexFactory.IndexType.TABIX);
-                indexFile = tempIndex.getAbsolutePath();
-                index = IndexFactory.loadIndex(indexFile, indexWrapper);
+                //if there is no index we create it
+                final File inputVCF = new File("/home/sonya/picard/chimeric_test.vcf");
+
+                final TabixIndex tabixIndexGz = IndexFactory.createTabixIndex(inputVCF, new VCFCodec(), null);
+                tabixIndexGz.writeBasedOnFeatureFile(inputVCF);
+                final File tmpIndex = Tribble.tabixIndexFile(inputVCF);
+                tmpIndex.deleteOnExit();
+
+                indexFile = tmpIndex.getAbsolutePath();
+                index = IndexFactory.loadIndex(indexFile);
+
             }
         }
         this.needCheckForIndex = false;
