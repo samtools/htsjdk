@@ -277,4 +277,34 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertEquals("ATCGA", Allele.extend(Allele.create("AT"), "CGA".getBytes()).toString());
         Assert.assertEquals("ATCGA", Allele.extend(Allele.create("ATC"), "GA".getBytes()).toString());
     }
+    @Test
+    public void testWouldBeSymbolic() {
+        Assert.assertTrue(Allele.wouldBeSymbolicAllele("<DEL>".getBytes()));
+        Assert.assertTrue(Allele.wouldBeSymbolicAllele("AAAAAA[chr1:1234[".getBytes()));
+        Assert.assertTrue(Allele.wouldBeSymbolicAllele("AAAAAA]chr1:1234]".getBytes()));
+        Assert.assertTrue(Allele.wouldBeSymbolicAllele("A.".getBytes()));
+        Assert.assertTrue(Allele.wouldBeSymbolicAllele(".A".getBytes()));
+        Assert.assertFalse(Allele.wouldBeSymbolicAllele("AA".getBytes()));
+        Assert.assertFalse(Allele.wouldBeSymbolicAllele("A".getBytes()));
+    }
+    @Test
+    public void testWouldBeBreakpoint() {
+        Assert.assertFalse(Allele.wouldBeBreakpoint("<DEL>".getBytes()));
+        Assert.assertTrue(Allele.wouldBeBreakpoint("AAAAAA[chr1:1234[".getBytes()));
+        Assert.assertTrue(Allele.wouldBeBreakpoint("AAAAAA]chr1:1234]".getBytes()));
+        Assert.assertFalse(Allele.wouldBeBreakpoint("A.".getBytes()));
+        Assert.assertFalse(Allele.wouldBeBreakpoint(".A".getBytes()));
+        Assert.assertFalse(Allele.wouldBeBreakpoint("AA".getBytes()));
+        Assert.assertFalse(Allele.wouldBeBreakpoint("A".getBytes()));
+    }
+    @Test
+    public void testWouldBeBreakend() {
+        Assert.assertFalse(Allele.wouldBeSingleBreakend("<DEL>".getBytes()));
+        Assert.assertFalse(Allele.wouldBeSingleBreakend("AAAAAA[chr1:1234[".getBytes()));
+        Assert.assertFalse(Allele.wouldBeSingleBreakend("AAAAAA]chr1:1234]".getBytes()));
+        Assert.assertTrue(Allele.wouldBeSingleBreakend("A.".getBytes()));
+        Assert.assertTrue(Allele.wouldBeSingleBreakend(".A".getBytes()));
+        Assert.assertFalse(Allele.wouldBeSingleBreakend("AA".getBytes()));
+        Assert.assertFalse(Allele.wouldBeSingleBreakend("A".getBytes()));
+    }
 }
