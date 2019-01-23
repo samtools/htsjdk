@@ -41,7 +41,7 @@ import java.util.Date;
  */
 public final class Log {
     /** Enumeration for setting log levels. */
-    public enum LogLevel { ERROR, WARNING, INFO, DEBUG }
+    public enum LogLevel { ERROR, WARN, INFO, DEBUG }
 
     private static LogLevel globalLogLevel = LogLevel.INFO;
     private static PrintStream out = System.err;
@@ -182,7 +182,7 @@ public final class Log {
      *        to form the log message.
      */
     public final void warn(final Throwable throwable, final Object... messageParts) {
-        emit(LogLevel.WARNING, throwable, messageParts);
+        emit(LogLevel.WARN, throwable, messageParts);
     }
 
     /**
@@ -222,7 +222,7 @@ public final class Log {
      *        to form the log message.
      */
     public final void warn(final Object... messageParts) {
-        emit(LogLevel.WARNING, null, messageParts);
+        emit(LogLevel.WARN, null, messageParts);
     }
 
     /**
