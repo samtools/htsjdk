@@ -39,7 +39,7 @@ package htsjdk.samtools.util;
     public static final String BARCODE_SEQUENCE_DELIMITER = "-";
 
     /**
-     * The recommend separator to use when specifying multiple barcode quality scores together int eh same tag.
+     * The recommend separator to use when specifying multiple barcode quality scores together in the same tag.
      */
     public static final String BARCODE_QUALITY_DELIMITER = " ";
 }
