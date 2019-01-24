@@ -108,7 +108,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
      * Note that an input of null results in unsetting the attribute while an empty list is set as a tag with an empty value.
      * @param barcodes a list of barcodes to associate with this read group
      */
-    public void setBarcodes(List<String> barcodes) {
+    public void setBarcodes(final List<String> barcodes) {
         if (barcodes == null) {
             setAttribute(BARCODE_TAG, null);
         } else {
