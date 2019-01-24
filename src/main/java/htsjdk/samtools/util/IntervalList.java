@@ -273,7 +273,7 @@ public class IntervalList implements Iterable<Interval> {
         }
 
         final List<Interval> unique = new ArrayList<>();
-        final TreeSet<Interval> toBeMerged = new TreeSet<>();
+        final List<Interval> toBeMerged = new ArrayList<>();
         Interval current = null;
 
         for (final Interval next : intervals) {
@@ -383,11 +383,12 @@ public class IntervalList implements Iterable<Interval> {
     /**
      * Merges a sorted collection of intervals and optionally concatenates unique names or takes the first name.
      */
-    static Interval merge(final SortedSet<Interval> intervals, final boolean concatenateNames) {
-        final String chrom = intervals.first().getContig();
-        int start = intervals.first().getStart();
-        int end = intervals.last().getEnd();
-        final boolean neg = intervals.first().isNegativeStrand();
+    static Interval merge(final Iterable<Interval> intervals, final boolean concatenateNames) {
+        final Interval first = intervals.iterator().next();
+        final String chrom = first.getContig();
+        int start = first.getStart();
+        int end = start;
+        final boolean neg = first.isNegativeStrand();
         final LinkedHashSet<String> names = new LinkedHashSet<>();
         final String name;
 

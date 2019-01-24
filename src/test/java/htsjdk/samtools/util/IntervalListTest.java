@@ -238,6 +238,21 @@ public class IntervalListTest extends HtsjdkTest {
                 CollectionUtil.makeCollection(list.iterator()));
     }
 
+
+    @Test
+    public void testUnionSamePosition() {
+        final IntervalList iList= new IntervalList(fileHeader);
+
+        final List<Interval> intervals = Arrays.asList(
+                new Interval("1", 2, 100, true, "test1"),
+                new Interval("1", 2, 100, true, "test2")
+        );
+        iList.addall(intervals);
+        final List<Interval> uniqued = iList.uniqued().getIntervals();
+        Assert.assertEquals(uniqued.size(),1);
+        Assert.assertEquals(uniqued.get(0).getName(),"test1|test2");
+    }
+
     @DataProvider(name = "invertData")
     public Object[][] invertData() {
         final IntervalList invert1 = new IntervalList(fileHeader);
