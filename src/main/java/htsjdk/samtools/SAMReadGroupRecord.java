@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 
 import htsjdk.samtools.util.Iso8601Date;
+import htsjdk.samtools.util.SamConstants;
 
 import java.util.*;
 
@@ -48,11 +49,6 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     public static final String PLATFORM_UNIT_TAG = "PU";
     public static final String READ_GROUP_SAMPLE_TAG = "SM";
     public static final String BARCODE_TAG = "BC";
-
-    /**
-     * The recommended separator for the {@link #BARCODE_TAG} when there are multiple bar codes associated with this read group.
-     */
-    public static final String BARCODE_SEPARATOR = "-";
 
 
     /* Platform values for the @RG-PL tag */
@@ -103,7 +99,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         } else if (barcodeString.isEmpty()) {
             return Collections.emptyList();
         } else {
-            return Arrays.asList(barcodeString.split(BARCODE_SEPARATOR));
+            return Arrays.asList(barcodeString.split(SamConstants.BARCODE_SEQUENCE_DELIMITER));
         }
     }
 
@@ -119,7 +115,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
             if (barcodes.stream().anyMatch(String::isEmpty)) {
                 throw new IllegalArgumentException("A barcode must not be an empty String");
             }
-           setAttribute(BARCODE_TAG, String.join(BARCODE_SEPARATOR, barcodes));
+           setAttribute(BARCODE_TAG, String.join(SamConstants.BARCODE_SEQUENCE_DELIMITER, barcodes));
         }
     }
 

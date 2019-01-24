@@ -30,9 +30,16 @@ package htsjdk.samtools.util;
  */
  public final class SamConstants {
 
-    //No need to instantiate this class since all the onstants should be static
+    //No need to instantiate this class since all the constants should be static
     private SamConstants(){};
 
-    final static String BARCODE_SEQUENCE_DELIMITER = "-";
-    final static String BARCODE_QUALITY_DELIMITER = " ";
+    /**
+     * The recommended separator to use when specifying multiple barcodes together in the same tag.
+     */
+    public static final String BARCODE_SEQUENCE_DELIMITER = "-";
+
+    /**
+     * The recommend separator to use when specifying multiple barcode quality scores together int eh same tag.
+     */
+    public static final String BARCODE_QUALITY_DELIMITER = " ";
 }
