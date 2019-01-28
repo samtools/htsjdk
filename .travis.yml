@@ -11,6 +11,7 @@ cache:
 jdk:
   - oraclejdk8
   - openjdk8
+  - openjdk11
 matrix:
   fast_finish: true
   allow_failures: 
@@ -36,5 +37,5 @@ after_success:
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";
     echo "JAVA_HOME='$JAVA_HOME'";
     if [ "$TRAVIS_BRANCH" == "master" ]; then
-       ./gradlew uploadArchives;
+       ./gradlew publish;
     fi
