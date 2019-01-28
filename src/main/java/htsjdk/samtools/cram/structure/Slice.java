@@ -257,16 +257,30 @@ public class Slice {
         }
     }
 
-    public boolean isMappedSingleRef() {
-        return ! isUnmapped() && ! isMultiref();
-    }
-
+    /**
+     * Does this Slice contain only unplaced reads (whether their unmapped flags are set or not)?
+     * @return true if the Slice is designated as Unmapped
+     */
     public boolean isUnmapped() {
         return sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
     }
 
+    /**
+     * Does this Slice contain either:
+     * - reads placed on multiple references
+     * - or a combination of placed and unplaced reads?
+     * @return true if the Slice contains reads places on multiple references or are a combination of placed and unplaced
+     */
     public boolean isMultiref() {
         return sequenceId == Slice.MULTI_REFERENCE;
+    }
+
+    /**
+     * Does this Slice contain reads placed on a single reference (whether their unmapped flags are set or not)?
+     * @return true if all reads in the Slice are placed on a single reference
+     */
+    public boolean isMappedSingleRef() {
+        return ! isUnmapped() && ! isMultiref();
     }
 
     private BitInputStream getCoreBlockInputStream() {
