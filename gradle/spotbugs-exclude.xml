@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <!-- Dm: Reliance on default encoding -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dm-reliance-on-default-encoding-dm-default-encoding -->
+        <Bug pattern="DM_DEFAULT_ENCODING" />
+    </Match>
+    <Match>
+        <!-- It's OK for test classes to create one-off Random objects -->
+        <!-- DMI: Random object created and used only once -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dmi-random-object-created-and-used-only-once-dmi-random-used-only-once -->
+        <Class name="~.*\.*Test" />
+        <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE" />
+    </Match>
+    <Match>
+        <!-- See note in BlockCompressedInputStreamTest.CountingInflater -->
+        <!-- ST: Write to static field from instance method  -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#st-write-to-static-field-from-instance-method-st-write-to-static-from-instance-method -->
+        <Class name="htsjdk.samtools.util.BlockCompressedInputStreamTest" />
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" />
+    </Match>
+
+</FindBugsFilter>
