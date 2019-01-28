@@ -258,7 +258,7 @@ public class Slice {
     }
 
     public boolean isMappedSingleRef() {
-        return sequenceId > SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+        return ! isUnmapped() && ! isMultiref();
     }
 
     public boolean isUnmapped() {
