@@ -109,6 +109,8 @@ public class Defaults {
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
+
+    public static final String SAMJDK_PREFIX = "samjdk";
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
         CREATE_MD5 = getBooleanProperty("create_md5", false);
@@ -162,7 +164,7 @@ public class Defaults {
      * applications started with  -Djava.security.manager  . */
     private static String getStringProperty(final String name, final String def) {
         try {
-            return System.getProperty("samjdk." + name, def);
+            return System.getProperty(Defaults.SAMJDK_PREFIX + name, def);
         } catch (final java.security.AccessControlException error) {
             log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning default value: " + def );
             return def;
@@ -174,7 +176,7 @@ public class Defaults {
      * applications started with  -Djava.security.manager  this method returns false. */
     private static boolean hasProperty(final String name){
         try {
-            return null != System.getProperty("samjdk." + name);
+            return null != System.getProperty(Defaults.SAMJDK_PREFIX + name);
         } catch (final java.security.AccessControlException error) {
             log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning false");
             return false;
