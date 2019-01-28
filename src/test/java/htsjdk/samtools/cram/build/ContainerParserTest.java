@@ -9,6 +9,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
+import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -52,7 +53,13 @@ public class ContainerParserTest extends HtsjdkTest {
         final SAMFileHeader samFileHeader = new SAMFileHeader();
         final ContainerParser parser = new ContainerParser(samFileHeader);
 
+        final int recordCount = 10;
+        final int sequenceId = 0;
+        final int alignmentStart = 1;
+        final int alignmentSpan = 12;
+
         final Container container = ContainerFactoryTest.getSingleRefContainer(samFileHeader);
+        ContainerFactoryTest.assertContainerState(container, recordCount, sequenceId, alignmentStart, alignmentSpan);
 
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
@@ -66,6 +73,7 @@ public class ContainerParserTest extends HtsjdkTest {
         final ContainerParser parser = new ContainerParser(samFileHeader);
 
         final Container container = ContainerFactoryTest.getUnmappedNoRefContainer(samFileHeader);
+        ContainerFactoryTest.assertContainerState(container, 10, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
@@ -79,6 +87,7 @@ public class ContainerParserTest extends HtsjdkTest {
         final ContainerParser parser = new ContainerParser(samFileHeader);
 
         final Container container = ContainerFactoryTest.getUnmappedNoStartContainer(samFileHeader);
+        ContainerFactoryTest.assertContainerState(container, 10, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
@@ -92,6 +101,7 @@ public class ContainerParserTest extends HtsjdkTest {
         final ContainerParser parser = new ContainerParser(samFileHeader);
 
         final Container container = ContainerFactoryTest.getMultiRefContainer(samFileHeader);
+        ContainerFactoryTest.assertContainerState(container, 10, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet);
@@ -114,6 +124,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
         // first container is single-ref
 
+        ContainerFactoryTest.assertContainerState(containers.get(0), 1, 0, 1, 3);
         final Map<Integer, AlignmentSpan> referenceSet0 = parser.getReferences(containers.get(0), ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet0);
         Assert.assertEquals(referenceSet0.size(), 1);
@@ -126,6 +137,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
         // when other refs are added, subsequent containers are multiref
 
+        ContainerFactoryTest.assertContainerState(containers.get(1), 2, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
         final Map<Integer, AlignmentSpan> referenceSet1 = parser.getReferences(containers.get(1), ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet1);
         Assert.assertEquals(referenceSet1.size(), 2);
@@ -140,6 +152,8 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(span1.getStart(), 2);
         Assert.assertEquals(span1.getSpan(), 3);
 
+
+        ContainerFactoryTest.assertContainerState(containers.get(2), 3, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
         final Map<Integer, AlignmentSpan> referenceSet2 = parser.getReferences(containers.get(2), ValidationStringency.STRICT);
         Assert.assertNotNull(referenceSet2);
         Assert.assertEquals(referenceSet2.size(), 3);
