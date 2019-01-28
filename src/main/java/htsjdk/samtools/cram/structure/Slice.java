@@ -335,7 +335,9 @@ public class Slice {
     }
 
     /**
-     * Create a Slice from CRAM Compression Records and a Compression Header
+     * Create a single Slice from CRAM Compression Records and a Compression Header.
+     * The caller is responsible for appropriate subdivision of records into
+     * containers and slices.
      *
      * @param records input CRAM Compression Records
      * @param header the enclosing {@link Container}'s Compression Header
