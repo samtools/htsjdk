@@ -214,7 +214,7 @@ public class CramCompressionRecord {
      * Does this record have a valid placement / alignment location?
      * It must have both a valid reference sequence ID and alignment start position to qualify.
      *
-     * @return true is the record is placed
+     * @return true if the record is placed
      */
     public boolean isPlaced() {
         return sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
