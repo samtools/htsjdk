@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -72,44 +71,10 @@ public class ContainerFactory {
             slices.add(slice);
         }
 
-        container.slices = slices.toArray(new Slice[0]);
-        calculateAlignmentBoundaries(container);
+        container.finalizeContainerState(slices.toArray(new Slice[0]));
 
         globalRecordCounter += records.size();
         return container;
-    }
-
-    static void calculateAlignmentBoundaries(final Container container) {
-        int start = Integer.MAX_VALUE;
-        int end = Integer.MIN_VALUE;
-
-        // in general practice, the only slice
-        final Slice firstSlice = container.slices[0];
-        container.sequenceId = firstSlice.sequenceId;
-
-        for (final Slice slice : container.slices) {
-            if (slice.sequenceId != container.sequenceId) {
-                final String msg = String.format(
-                        "Slices in Container have conflicting reference sequences: %d and %d ",
-                        slice.sequenceId, container.sequenceId);
-                throw new CRAMException(msg);
-            }
-
-            if (slice.isMappedSingleRef()) {
-                start = Math.min(start, slice.alignmentStart);
-                end = Math.max(end, slice.alignmentStart + slice.alignmentSpan);
-            }
-        }
-
-        // equivalent to "are all slices mapped" because we enforce identical ref seq IDs
-        if (firstSlice.isMappedSingleRef()) {
-            container.alignmentStart = start;
-            container.alignmentSpan = end - start;
-        }
-        else {
-            container.alignmentStart = Slice.NO_ALIGNMENT_START;
-            container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
-        }
     }
 
     public boolean isPreserveReadNames() {
