@@ -29,7 +29,7 @@ import java.io.*;
 
 public class TestUtil {
 
-    public static int RANDOM_SEED = 42;
+    public static final int RANDOM_SEED = 42;
 
 
     /**

@@ -36,7 +36,7 @@ import java.util.LinkedList;
  */
 public class IntervalIndexCreator extends TribbleIndexCreator {
 
-    public static int DEFAULT_FEATURE_COUNT = 600;
+    public static final int DEFAULT_FEATURE_COUNT = 600;
 
     /**
      * Maximum number of features stored per interval.

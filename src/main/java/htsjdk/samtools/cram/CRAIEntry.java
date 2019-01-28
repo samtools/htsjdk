@@ -140,7 +140,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         }
     };
 
-    public static Comparator<CRAIEntry> byStartDesc = new Comparator<CRAIEntry>() {
+    public static final Comparator<CRAIEntry> byStartDesc = new Comparator<CRAIEntry>() {
 
         @Override
         public int compare(CRAIEntry o1, CRAIEntry o2) {

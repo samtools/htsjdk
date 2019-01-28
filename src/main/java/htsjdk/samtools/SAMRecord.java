@@ -164,12 +164,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Tags that are known to need the reverse complement if the read is reverse complemented.
      */
     @SuppressWarnings("deprecated")
-    public static List<String> TAGS_TO_REVERSE_COMPLEMENT = Arrays.asList(SAMTag.E2.name(), SAMTag.SQ.name());
+    public static final List<String> TAGS_TO_REVERSE_COMPLEMENT = Arrays.asList(SAMTag.E2.name(), SAMTag.SQ.name());
 
     /**
      * Tags that are known to need the reverse if the read is reverse complemented.
      */
-    public static List<String> TAGS_TO_REVERSE = Arrays.asList(SAMTag.OQ.name(), SAMTag.U2.name());
+    public static final List<String> TAGS_TO_REVERSE = Arrays.asList(SAMTag.OQ.name(), SAMTag.U2.name());
 
     private String mReadName = null;
     private byte[] mReadBases = NULL_SEQUENCE;
