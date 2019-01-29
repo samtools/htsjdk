@@ -41,19 +41,33 @@ import java.util.Date;
  */
 public final class Log {
     /** Enumeration for setting log levels. */
-    public enum LogLevel { ERROR, WARNING, INFO, DEBUG }
+    public enum LogLevel {
+        ERROR(0),
+        /** @deprecated  prefer {@link #WARN} instead which matches other common java logging systems. */
+        @Deprecated WARNING(1),
+        WARN(1),
+        INFO(2),
+        DEBUG(3);
+
+        int getLogPriority() {
+            return logPriority;
+        }
+
+        private final int logPriority;
+        LogLevel(int logPriority) {
+            this.logPriority = logPriority;
+        }
+    }
 
     private static LogLevel globalLogLevel = LogLevel.INFO;
     private static PrintStream out = System.err;
 
-    private final Class<?> clazz;
     private final String className;
 
     /**
      * Private constructor
      */
     private Log(final Class<?> clazz) {
-        this.clazz = clazz;
         this.className = clazz.getSimpleName();
     }
 
@@ -104,7 +118,7 @@ public final class Log {
 
     /** Returns true if the specified log level is enabled otherwise false. */
     public static final boolean isEnabled(final LogLevel level) {
-        return level.ordinal() <= globalLogLevel.ordinal();
+        return level.getLogPriority() <= globalLogLevel.getLogPriority();
     }
 
     /**
@@ -182,7 +196,7 @@ public final class Log {
      *        to form the log message.
      */
     public final void warn(final Throwable throwable, final Object... messageParts) {
-        emit(LogLevel.WARNING, throwable, messageParts);
+        emit(LogLevel.WARN, throwable, messageParts);
     }
 
     /**
@@ -222,7 +236,7 @@ public final class Log {
      *        to form the log message.
      */
     public final void warn(final Object... messageParts) {
-        emit(LogLevel.WARNING, null, messageParts);
+        emit(LogLevel.WARN, null, messageParts);
     }
 
     /**
