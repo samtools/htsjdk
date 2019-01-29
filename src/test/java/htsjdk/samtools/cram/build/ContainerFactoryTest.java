@@ -18,7 +18,9 @@ import java.util.List;
  * Created by vadim on 15/12/2015.
  */
 public class ContainerFactoryTest extends HtsjdkTest {
-    static SAMFileHeader getSAMFileHeaderForTests() {
+    private static final SAMFileHeader header = initializeSAMFileHeaderForTests();
+
+    private static SAMFileHeader initializeSAMFileHeaderForTests() {
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("0", 10));
         header.addSequence(new SAMSequenceRecord("1", 10));
@@ -30,6 +32,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
         header.addSequence(new SAMSequenceRecord("7", 10));
         header.addSequence(new SAMSequenceRecord("8", 10));
         header.addSequence(new SAMSequenceRecord("9", 10));
+        return header;
+    }
+
+    static SAMFileHeader getSAMFileHeaderForTests() {
         return header;
     }
 
