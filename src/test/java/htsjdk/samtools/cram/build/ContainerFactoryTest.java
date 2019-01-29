@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.build;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
@@ -17,9 +18,22 @@ import java.util.List;
  * Created by vadim on 15/12/2015.
  */
 public class ContainerFactoryTest extends HtsjdkTest {
+    static SAMFileHeader getSAMFileHeaderForTests() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("0", 10));
+        header.addSequence(new SAMSequenceRecord("1", 10));
+        header.addSequence(new SAMSequenceRecord("2", 10));
+        header.addSequence(new SAMSequenceRecord("3", 10));
+        header.addSequence(new SAMSequenceRecord("4", 10));
+        header.addSequence(new SAMSequenceRecord("5", 10));
+        header.addSequence(new SAMSequenceRecord("6", 10));
+        header.addSequence(new SAMSequenceRecord("7", 10));
+        header.addSequence(new SAMSequenceRecord("8", 10));
+        header.addSequence(new SAMSequenceRecord("9", 10));
+        return header;
+    }
 
-    public static Container getSingleRefContainer(final SAMFileHeader samFileHeader) {
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+    static List<CramCompressionRecord> getSingleRefRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
@@ -30,12 +44,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
             records.add(record);
         }
-
-        return factory.buildContainer(records);
+        return records;
     }
 
-    public static Container getUnmappedNoRefContainer(final SAMFileHeader samFileHeader) {
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+    static List<CramCompressionRecord> getUnmappedNoRefRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
@@ -43,12 +55,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
             record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
             records.add(record);
         }
-
-        return factory.buildContainer(records);
+        return records;
     }
 
-    public static Container getUnmappedNoStartContainer(final SAMFileHeader samFileHeader) {
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+    static List<CramCompressionRecord> getUnmappedNoStartRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
@@ -57,12 +67,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
             record.setLastSegment(true);
             records.add(record);
         }
-
-        return factory.buildContainer(records);
+        return records;
     }
 
-    public static Container getMultiRefContainer(final SAMFileHeader samFileHeader) {
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+    static List<CramCompressionRecord> getMultiRefRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
@@ -74,12 +82,11 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
             records.add(record);
         }
-
-        return factory.buildContainer(records);
+        return records;
     }
 
-    public static List<Container> getMultiRefContainersForStateTest(final SAMFileHeader samFileHeader) {
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+    static List<Container> getMultiRefContainersForStateTest() {
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
         final List<Container> testContainers = new ArrayList<>(3);
 
         final List<CramCompressionRecord> records = new ArrayList<>();
@@ -107,7 +114,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         return testContainers;
     }
 
-    public static CramCompressionRecord createMappedRecord(int i) {
+    private static CramCompressionRecord createMappedRecord(int i) {
         final CramCompressionRecord record = new CramCompressionRecord();
         record.readBases = "AAA".getBytes();
         record.qualityScores = "!!!".getBytes();
@@ -123,46 +130,40 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
     @Test
     public void testMapped() {
-        final SAMFileHeader header = new SAMFileHeader();
-
         final int recordCount = 10;
         final int sequenceId = 0;
         final int alignmentStart = 1;
         final int alignmentSpan = 12;
 
-        final Container container = getSingleRefContainer(header);
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
+        final Container container = factory.buildContainer(getSingleRefRecords());
         assertContainerState(container, recordCount, sequenceId, alignmentStart, alignmentSpan);
     }
 
     @Test
     public void testUnmappedNoReferenceId() {
-        final SAMFileHeader header = new SAMFileHeader();
-
-        final Container container = getUnmappedNoRefContainer(header);
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
+        final Container container = factory.buildContainer(getUnmappedNoRefRecords());
         assertContainerState(container, 10, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
     public void testUnmappedNoAlignmentStart() {
-        final SAMFileHeader header = new SAMFileHeader();
-
-        final Container container = getUnmappedNoStartContainer(header);
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
+        final Container container = factory.buildContainer(getUnmappedNoStartRecords());
         assertContainerState(container, 10, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
     public void testMultiref() {
-        final SAMFileHeader header = new SAMFileHeader();
-
-        final Container container = getMultiRefContainer(header);
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
+        final Container container = factory.buildContainer(getMultiRefRecords());
         assertContainerState(container, 10, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
     public void testMultirefWithStateTransitions() {
-        final SAMFileHeader header = new SAMFileHeader();
-
-        final List<Container> containers = getMultiRefContainersForStateTest(header);
+        final List<Container> containers = getMultiRefContainersForStateTest();
 
         // first container is single-ref
         assertContainerState(containers.get(0), 1, 0, 1, 3);
@@ -177,8 +178,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
     @Test
     public void singleRefWithUnmappedNoRef() {
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
@@ -197,8 +197,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
     @Test
     public void singleRefWithUnmappedNoStart() {
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
@@ -219,8 +218,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
     @Test
     public void multiRefWithUnmappedNoRef() {
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
@@ -238,8 +236,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
     @Test
     public void multiRefWithUnmappedNoStart() {
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
-        final ContainerFactory factory = new ContainerFactory(samFileHeader, 10);
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
@@ -255,7 +252,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         assertContainerState(container, 10, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
-    public static void assertContainerState(final Container container, 
+    private static void assertContainerState(final Container container,
                                             final int recordCount, 
                                             final int sequenceId, 
                                             final int alignmentStart, 
