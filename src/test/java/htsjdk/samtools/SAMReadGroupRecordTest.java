@@ -29,7 +29,10 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -145,4 +148,24 @@ public class SAMReadGroupRecordTest extends HtsjdkTest {
         }
     }
 
+    @DataProvider
+    public Object[][] getBarcodes() {
+        return new Object[][] {
+                {null, null},
+                {Collections.emptyList(), ""},
+                {Collections.singletonList("aa"), "aa"},
+                {Arrays.asList("aa", "ac"), "aa-ac"},
+                {Arrays.asList("aa", "ca", "gg"), "aa-ca-gg"}
+        };
+    }
+
+    @Test(dataProvider = "getBarcodes")
+    public void testGetAndSetBarcodes(List<String> barcodes, String encoded){
+        final SAMReadGroupRecord readGroup = new SAMReadGroupRecord("ReadGroup");
+        Assert.assertNull(readGroup.getBarcodes());
+        Assert.assertNull(readGroup.getAttribute(SAMReadGroupRecord.BARCODE_TAG));
+        readGroup.setBarcodes(barcodes);
+        Assert.assertEquals(readGroup.getBarcodes(), barcodes);
+        Assert.assertEquals(readGroup.getAttribute(SAMReadGroupRecord.BARCODE_TAG), encoded);
+    }
 }
