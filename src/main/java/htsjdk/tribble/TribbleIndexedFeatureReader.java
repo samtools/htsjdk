@@ -179,7 +179,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                 index = IndexFactory.loadIndex(indexFile, indexWrapper);
             } else {
                 //if there is no index we create it
-                final File inputVCF = new File("/home/sonya/picard/chimeric_test.vcf");
+                final File inputVCF = new File(this.path.replace("file://","") );
 
                 final TabixIndex tabixIndexGz = IndexFactory.createTabixIndex(inputVCF, new VCFCodec(), null);
                 tabixIndexGz.writeBasedOnFeatureFile(inputVCF);
