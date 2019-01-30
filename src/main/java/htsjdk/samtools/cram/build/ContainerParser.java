@@ -77,12 +77,12 @@ public class ContainerParser {
 
     private static Map<Integer, AlignmentSpan> addAllSpans(final Map<Integer, AlignmentSpan> spanMap, final Map<Integer, AlignmentSpan> addition) {
         for (final Map.Entry<Integer, AlignmentSpan> entry:addition.entrySet()) {
-            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getCount(), entry.getValue().getSpan(), spanMap);
+            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getSpan(), entry.getValue().getCount(), spanMap);
         }
         return spanMap;
     }
 
-    Map<Integer, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
+    private Map<Integer, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
         final Map<Integer, AlignmentSpan> spanMap = new HashMap<>();
         switch (slice.sequenceId) {
             case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
@@ -99,10 +99,9 @@ public class ContainerParser {
         return spanMap;
     }
 
-    ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                                final Slice slice,
-                                                final CompressionHeader header,
-                                                final ValidationStringency validationStringency) {
+    private ArrayList<CramCompressionRecord> getRecords(final Slice slice,
+                                                        final CompressionHeader header,
+                                                        final ValidationStringency validationStringency) {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
         switch (slice.sequenceId) {
             case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
@@ -118,9 +117,7 @@ public class ContainerParser {
 
         final CramRecordReader reader = slice.createCramRecordReader(header, validationStringency);
 
-        if (records == null) {
-            records = new ArrayList<>(slice.nofRecords);
-        }
+        final ArrayList<CramCompressionRecord> records = new ArrayList<>(slice.nofRecords);
 
         int prevStart = slice.alignmentStart;
         for (int i = 0; i < slice.nofRecords; i++) {
@@ -151,11 +148,5 @@ public class ContainerParser {
         }
 
         return records;
-    }
-
-    List<CramCompressionRecord> getRecords(final Slice slice,
-                                           final CompressionHeader header,
-                                           final ValidationStringency validationStringency) {
-        return getRecords(null, slice, header, validationStringency);
     }
 }

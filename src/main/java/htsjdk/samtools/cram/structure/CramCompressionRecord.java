@@ -202,12 +202,33 @@ public class CramCompressionRecord {
         flags = multiFragment ? flags | MULTI_FRAGMENT_FLAG : flags & ~MULTI_FRAGMENT_FLAG;
     }
 
+    /**
+     * Does this record have the mapped flag set? This is independent of placement/alignment status.
+     * Unmapped records may be stored in the same {@link Slice}s and {@link Container}s as mapped
+     * records if they are placed.
+     *
+     * @see #isPlaced()
+     * @return true if the record is unmapped
+     */
     public boolean isSegmentUnmapped() {
         return (flags & SEGMENT_UNMAPPED_FLAG) != 0;
     }
 
     public void setSegmentUnmapped(final boolean segmentUnmapped) {
         flags = segmentUnmapped ? flags | SEGMENT_UNMAPPED_FLAG : flags & ~SEGMENT_UNMAPPED_FLAG;
+    }
+
+    /**
+     * Does this record have a valid placement/alignment location? This is independent of mapping status.
+     * It must have both a valid reference sequence ID and alignment start position to qualify.
+     * Unplaced reads may only be stored in Unmapped or Multiple Reference {@link Slice}s and {@link Container}s.
+     *
+     * @see #isSegmentUnmapped()
+     * @return true if the record is placed
+     */
+    public boolean isPlaced() {
+        return sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
     }
 
     public boolean isFirstSegment() {

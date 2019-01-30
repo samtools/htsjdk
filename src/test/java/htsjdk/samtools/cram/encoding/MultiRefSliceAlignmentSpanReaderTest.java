@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.encoding;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
@@ -47,13 +48,13 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         initialRecords.get(2).readBases = commonRead.getBytes();
         initialRecords.get(2).readLength = commonRead.length();
 
-        // span 1:7,9
-        initialRecords.get(3).sequenceId = 1;
+        // span <unmapped>
+        initialRecords.get(3).sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
         initialRecords.get(3).alignmentStart = 7;
         initialRecords.get(3).readBases = commonRead.getBytes();
         initialRecords.get(3).readLength = commonRead.length();
 
-        // span totals -> 1:1,9 and 2:2,4
+        // span totals -> 1:1,5 and 2:2,4
 
         return initialRecords;
     }
@@ -81,11 +82,13 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
             final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
             final Map<Integer, AlignmentSpan> spans = reader.getReferenceSpans();
 
-            Assert.assertEquals(spans.size(), 2);
+            Assert.assertEquals(spans.size(), 3);
             Assert.assertTrue(spans.containsKey(1));
             Assert.assertTrue(spans.containsKey(2));
-            Assert.assertEquals(spans.get(1), new AlignmentSpan(1, 9, 3));
+            Assert.assertTrue(spans.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+            Assert.assertEquals(spans.get(1), new AlignmentSpan(1, 5, 2));
             Assert.assertEquals(spans.get(2), new AlignmentSpan(2, 3, 1));
+            Assert.assertNotNull(spans.get(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
         }
     }
 }

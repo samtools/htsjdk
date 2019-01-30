@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.CRAIEntry;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.structure.block.Block;
 
 import java.util.Arrays;
@@ -57,6 +58,63 @@ public class Container {
      * Container start in the stream.
      */
     public long offset;
+
+    /**
+     * Derive the container's state/type from its {@link Slice}s.
+     *
+     * A Single Reference Container contains only Single Reference Slices.
+     * - set the Container's Sequence ID to be the same as those slices
+     * - set the Container's Alignment Start and Span to cover all slices
+     *
+     * A Multiple Reference Container contains only Multiple Reference Slices.
+     * - set the Container's Sequence ID to multi-ref (-2)
+     * - unset the Container's Alignment Start and Span
+     *
+     * An Unmapped Container contains only Unmapped Slices.
+     * - set the Container's Sequence ID to multi-ref (-1)
+     * - unset the Container's Alignment Start and Span
+     *
+     * Any other combination is invalid.
+     *
+     * TODO for general Container refactoring: make this part of construction
+     *
+     * @param containerSlices the constituent Slices of the Container
+     * @throws CRAMException for invalid Container states
+     */
+    public void finalizeContainerState(final Slice... containerSlices) {
+        slices = containerSlices;
+
+        int start = Integer.MAX_VALUE;
+        int end = Integer.MIN_VALUE;
+
+        // in general practice, the only slice
+        final Slice firstSlice = slices[0];
+        sequenceId = firstSlice.sequenceId;
+
+        for (final Slice slice : slices) {
+            if (slice.sequenceId != sequenceId) {
+                final String msg = String.format(
+                        "Slices in Container have conflicting reference sequences: %d and %d ",
+                        slice.sequenceId, sequenceId);
+                throw new CRAMException(msg);
+            }
+
+            if (slice.isMappedSingleRef()) {
+                start = Math.min(start, slice.alignmentStart);
+                end = Math.max(end, slice.alignmentStart + slice.alignmentSpan);
+            }
+        }
+
+        // because we enforce identical ref seq IDs, this checks that all slices are mapped
+        if (firstSlice.isMappedSingleRef()) {
+            alignmentStart = start;
+            alignmentSpan = end - start;
+        }
+        else {
+            alignmentStart = Slice.NO_ALIGNMENT_START;
+            alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+        }
+    }
 
     public List<CRAIEntry> getCRAIEntries() {
         return Arrays.stream(slices)
