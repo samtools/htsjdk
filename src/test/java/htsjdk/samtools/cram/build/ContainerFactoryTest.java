@@ -22,6 +22,9 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
     private static SAMFileHeader initializeSAMFileHeaderForTests() {
         final SAMFileHeader header = new SAMFileHeader();
+
+        // arbitrary names and length.  Just ensure we have 10 different valid refs.
+
         header.addSequence(new SAMSequenceRecord("0", 10));
         header.addSequence(new SAMSequenceRecord("1", 10));
         header.addSequence(new SAMSequenceRecord("2", 10));
@@ -32,6 +35,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         header.addSequence(new SAMSequenceRecord("7", 10));
         header.addSequence(new SAMSequenceRecord("8", 10));
         header.addSequence(new SAMSequenceRecord("9", 10));
+
         return header;
     }
 
@@ -39,9 +43,9 @@ public class ContainerFactoryTest extends HtsjdkTest {
         return header;
     }
 
-    static List<CramCompressionRecord> getSingleRefRecords() {
+    static List<CramCompressionRecord> getSingleRefRecords(final int recordCount) {
         final List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < recordCount; i++) {
             final CramCompressionRecord record = createMappedRecord(i);
 
             if (i % 2 == 0) {
@@ -142,7 +146,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         final int alignmentSpan = 12;
 
         final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
-        final Container container = factory.buildContainer(getSingleRefRecords());
+        final Container container = factory.buildContainer(getSingleRefRecords(recordCount));
         assertContainerState(container, recordCount, sequenceId, alignmentStart, alignmentSpan);
     }
 

@@ -1,14 +1,11 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * A class representing CRAI index entry: file and alignment offsets for each slice.

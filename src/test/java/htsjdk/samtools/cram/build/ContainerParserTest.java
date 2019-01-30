@@ -24,6 +24,8 @@ import java.util.*;
  */
 public class ContainerParserTest extends HtsjdkTest {
 
+    static private final int TEST_RECORD_COUNT = 10;
+
     @DataProvider(name = "eof")
     private Object[][] eofData() {
         return new Object[][] {
@@ -47,7 +49,7 @@ public class ContainerParserTest extends HtsjdkTest {
     private Object[][] refTestData() {
         return new Object[][] {
                 {
-                        ContainerFactoryTest.getSingleRefRecords(),
+                        ContainerFactoryTest.getSingleRefRecords(TEST_RECORD_COUNT),
                         new HashSet<Integer>() {{
                             add(0);
                         }}
@@ -69,7 +71,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
     @Test(dataProvider = "containersForRefTests")
     public void paramTest(final List<CramCompressionRecord> records, final Set<Integer> expectedKeys) {
-        final ContainerFactory factory = new ContainerFactory(ContainerFactoryTest.getSAMFileHeaderForTests(), 10);
+        final ContainerFactory factory = new ContainerFactory(ContainerFactoryTest.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
         final Container container = factory.buildContainer(records);
 
         final ContainerParser parser = new ContainerParser(ContainerFactoryTest.getSAMFileHeaderForTests());
@@ -77,10 +79,10 @@ public class ContainerParserTest extends HtsjdkTest {
         final Map<Integer, AlignmentSpan> referenceSet = parser.getReferences(container, ValidationStringency.STRICT);
         Assert.assertEquals(referenceSet.keySet(), expectedKeys);
 
+        final List<CramCompressionRecord> roundTripRecords = parser.getRecords(container, null, ValidationStringency.STRICT);
         // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
-        //
-        //final List<CramCompressionRecord> roundTripRecords = parser.getRecords(container, null, ValidationStringency.STRICT);
         //Assert.assertEquals(roundTripRecords, records);
+        Assert.assertEquals(roundTripRecords.size(), TEST_RECORD_COUNT);
     }
 
    @Test
@@ -90,7 +92,7 @@ public class ContainerParserTest extends HtsjdkTest {
            expectedSpans.put(i, new AlignmentSpan(i + 1, 3, 1));
        }
 
-       final ContainerFactory factory = new ContainerFactory(ContainerFactoryTest.getSAMFileHeaderForTests(), 10);
+       final ContainerFactory factory = new ContainerFactory(ContainerFactoryTest.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
        final Container container = factory.buildContainer(ContainerFactoryTest.getMultiRefRecords());
 
        final ContainerParser parser = new ContainerParser(ContainerFactoryTest.getSAMFileHeaderForTests());
