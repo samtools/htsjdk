@@ -4,6 +4,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -110,7 +111,7 @@ public class Defaults {
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
 
-    public static final String SAMJDK_PREFIX = "samjdk";
+    public static final String SAMJDK_PREFIX = "samjdk.";
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
         CREATE_MD5 = getBooleanProperty("create_md5", false);
@@ -198,7 +199,14 @@ public class Defaults {
     /** Gets a File system property, prefixed with "samjdk." using the default if the property does not exist. */
     private static File getFileProperty(final String name, final String def) {
         final String value = getStringProperty(name, def);
-        // TODO: assert that it is readable
-        return (null == value) ? null : new File(value);
+        Optional<File> maybeFile = Optional.ofNullable(value).map(File::new);
+        maybeFile.ifPresent(f -> {
+            if(!f.exists()){
+                log.warn(String.format("File property for %s has value %s. However file %s doesn't exist.", name, value, f.getAbsolutePath()));
+            } else {
+                log.info(String.format("Found file for property %s: %s ",name, f.getAbsolutePath()));
+            }
+        });
+        return maybeFile.orElse(null);
     }
 }
