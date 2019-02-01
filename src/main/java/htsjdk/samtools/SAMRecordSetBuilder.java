@@ -359,14 +359,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * If there's a cigar with read-length >0, will use that length for reads. Otherwise will use length = 36
      */
     private void fillInBases(final SAMRecord rec) {
-        final int length = getReadLengthFromCigar(rec);
-        final byte[] bases = new byte[length];
-
-        for (int i = 0; i < length; ++i) {
-            bases[i] = BASES[this.random.nextInt(BASES.length)];
-        }
-
-        rec.setReadBases(bases);
+        rec.setReadBases(SequenceUtil.getRandomBases(random, getReadLengthFromCigar(rec)));
     }
 
     /**
