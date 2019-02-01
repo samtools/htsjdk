@@ -21,10 +21,10 @@ import java.util.List;
 public class BamFileIoUtils {
     private static final Log LOG = Log.getInstance(BamFileIoUtils.class);
 
-    public static final String BAM_FILE_EXTENSION = ".bam";
+    public static final String BAM_FILE_EXTENSION = "." + SamReader.Type.BAM_TYPE.fileExtension();
 
     public static boolean isBamFile(final File file) {
-        return ((file != null) && file.getName().endsWith(BAM_FILE_EXTENSION));
+        return ((file != null) && SamReader.Type.BAM_TYPE.hasValidFileExtension(file.getName()));
     }
 
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile) {

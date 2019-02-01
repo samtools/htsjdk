@@ -44,7 +44,7 @@ dependencies {
     testCompile "org.testng:testng:6.14.3"
     testCompile "com.google.jimfs:jimfs:1.1"
     testCompile "com.google.guava:guava:26.0-jre"
- }
+}
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -61,7 +61,7 @@ defaultTasks 'jar'
 jar {
     manifest {
         attributes 'Implementation-Title': 'HTSJDK',
-                'Implementation-Vendor' : 'Samtools Organization',
+                'Implementation-Vendor': 'Samtools Organization',
                 'Implementation-Version': version
     }
 }
@@ -87,6 +87,16 @@ task findScalaAndJavaTypes(type: Exec) {
     commandLine './scripts/checkScalaAndJavaFiles.sh'
 }
 
+
+task testWithDefaultReference(type: Test) {
+    description = "Run tests with a default reference File"
+    jvmArgs += '-Dsamjdk.reference_fasta=src/test/resources/htsjdk/samtools/cram/ce.fa'
+
+    tags {
+        include "defaultReference"
+    }
+}
+
 test {
     description = "Runs the unit tests other than the SRA tests"
 
@@ -101,11 +111,12 @@ test {
     tags {
         exclude "slow"
         exclude "broken"
+        exclude "defaultReference"
         exclude "ftp"
         if (System.env.CI == "false") exclude "sra"
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
-} dependsOn findScalaAndJavaTypes
+} dependsOn findScalaAndJavaTypes, testWithDefaultReference
 
 
 task testFTP(type: Test) {
@@ -149,7 +160,7 @@ task sourcesJar(type: Jar) {
 }
 
 /**
- *This specifies what artifacts will be built and uploaded when performing a maven upload.
+ * This specifies what artifacts will be built and uploaded when performing a maven upload.
  */
 artifacts {
     archives jar
@@ -213,7 +224,7 @@ uploadArchives {
             }
         }
     }
-    doFirst{
+    doFirst {
         System.out.println("Uploading version $version")
     }
 }
