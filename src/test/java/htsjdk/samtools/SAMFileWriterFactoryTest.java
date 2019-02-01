@@ -43,6 +43,7 @@ import java.nio.file.Paths;
 
 import static htsjdk.samtools.SamReader.Type.*;
 
+@SuppressWarnings("EmptyTryBlock")
 public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
@@ -464,9 +465,9 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
     public void testMakeWriterForSamExtension() throws IOException {
         final File tmpFile = File.createTempFile("testMakeWriterForSamExtension", "." + SAM_TYPE.fileExtension());
         tmpFile.deleteOnExit();
-        try (SAMFileWriter samFileWriter = new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, tmpFile, null)) {}
+        try (SAMFileWriter ignored = new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, tmpFile, null)) {}
 
-        try (final FileInputStream fis = new FileInputStream(tmpFile)) {
+        try (FileInputStream fis = new FileInputStream(tmpFile)) {
             for (byte b : "@HD\tVN:".getBytes()) {
                 Assert.assertEquals((byte) (fis.read() & 0xFF), b);
             }
@@ -488,22 +489,20 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         cramTmpFile.deleteOnExit();
         final File refTmpFile = File.createTempFile("testMakeWriterForCramExtension", ".fa");
         refTmpFile.deleteOnExit();
-        try (SAMFileWriter samFileWriter = new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, cramTmpFile, refTmpFile)) {}
+        try(SAMFileWriter ignored = new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, cramTmpFile, refTmpFile)) {}
 
         Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(cramTmpFile))));
     }
 
-    @Test(groups = "defaultReference")
+    @Test(groups = {"defaultReference"})
     public void testMakeWriterForCramExtensionNoReference() throws IOException {
 
-        System.out.println("in testMakeWriterForCramExtensionNoReference");
         final File cramTmpFile = File.createTempFile("testMakeWriterForCramExtension", "." + CRAM_TYPE.fileExtension());
         cramTmpFile.deleteOnExit();
         try (SAMFileWriter samFileWriter = new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, cramTmpFile, null)) {
             fillSmallBam(samFileWriter);
         }
         Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(cramTmpFile))));
-        System.out.println("testMakeWriterForCramExtensionNoReference out");
     }
 
     @Test

@@ -201,10 +201,10 @@ public class Defaults {
         final String value = getStringProperty(name, def);
         Optional<File> maybeFile = Optional.ofNullable(value).map(File::new);
         maybeFile.ifPresent(f -> {
-            if(!f.exists()){
-                log.warn(String.format("File property for %s has value %s. However file %s doesn't exist.", name, value, f.getAbsolutePath()));
+            if (!f.exists()) {
+                log.warn(String.format("File property for %s has value %s. However file %s doesn't exist.", SAMJDK_PREFIX + name, value, f.getAbsolutePath()));
             } else {
-                log.info(String.format("Found file for property %s: %s ",name, f.getAbsolutePath()));
+                log.info(String.format("Found file for property %s: %s ", SAMJDK_PREFIX + name, f.getAbsolutePath()));
             }
         });
         return maybeFile.orElse(null);
