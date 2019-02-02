@@ -7,10 +7,10 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-@Test(groups={"ftp"})
+@Test(groups="ftp")
 public class EnaRefServiceTest extends HtsjdkTest {
 
-    @DataProvider()
+    @DataProvider(name="testEnaRefServiceData")
     public Object[][] testEnaRefServiceData(){
         return new Object[][]{{"57151e6196306db5d9f33133572a5482"},
                 {"0000088cbcebe818eb431d58c908c698"}};
