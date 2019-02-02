@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Method;
 import java.util.NoSuchElementException;
 
-@Test(groups = {"sra"})
+@Test(groups = "sra")
 public abstract class AbstractSRATest extends HtsjdkTest {
     private static boolean canResolveNetworkAccession = false;
     private static String checkAccession = "SRR000123";

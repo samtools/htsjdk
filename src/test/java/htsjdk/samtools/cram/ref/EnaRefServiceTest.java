@@ -17,7 +17,7 @@ public class EnaRefServiceTest extends HtsjdkTest {
     }
 
     //calling this an FTP test so that it could fail in travis
-    @Test(dataProvider = "testEnaRefServiceData", groups={"ftp"})
+    @Test(dataProvider = "testEnaRefServiceData")
     public void testEnaRefService(final String md5) throws IOException, GaveUpException {
         Assert.assertNotNull(new EnaRefService().getSequence(md5));
     }
