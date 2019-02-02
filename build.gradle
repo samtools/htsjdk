@@ -133,8 +133,8 @@ task testSRA(type: Test) {
     description = "Run the SRA tests"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
-    include "sra"
     tags {
+        include "sra"
         exclude "slow"
         exclude "broken"
     }

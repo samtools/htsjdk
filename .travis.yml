@@ -14,13 +14,13 @@ jdk:
 matrix:
   fast_finish: true
   allow_failures: 
-     - env: TEST_TYPE=FTP
      - env: TEST_TYPE=SRA
+     - env: TEST_TYPE=FTP
   include:
      - jdk: oraclejdk8
-       env: TEST_TYPE=FTP
-     - jdk: oraclejdk8
        env: TEST_TYPE=SRA
+     - jdk: oraclejdk8
+       env: TEST_TYPE=FTP
 
 script:
   - if [[ $TEST_TYPE == "FTP" ]]; then
