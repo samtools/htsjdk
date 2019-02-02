@@ -21,7 +21,7 @@ public class SRAReferenceTest extends AbstractSRATest {
         };
     }
 
-    @Test(dataProvider = "testReference")
+    @Test(dataProvider = "testReference", groups={"sra"})
     public void testReference(String acc, String refContig, int refStart, int refStop, String refBases) {
         final ReferenceSequenceFile refSeqFile = new SRAIndexedSequenceFile(new SRAAccession(acc));
         final ReferenceSequence refSeq = refSeqFile.getSubsequenceAt(refContig, refStart, refStop);
@@ -61,7 +61,7 @@ public class SRAReferenceTest extends AbstractSRATest {
         };
     }
 
-    @Test(dataProvider = "testReferenceMt")
+    @Test(dataProvider = "testReferenceMt", groups={"sra"})
     public void testReferenceMt(String acc, List<TestReferenceMtData> parallelTests) throws Exception {
         final ReferenceSequenceFile refSeqFile = new SRAIndexedSequenceFile(new SRAAccession(acc));
         final long timeout = 1000L * 5; // just in case

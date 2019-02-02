@@ -108,12 +108,13 @@ test {
         jvmArgs += '-Dsamjdk.sra_libraries_download=true'
     }
 
+    excludeGroups 'sra'
+
     tags {
         exclude "slow"
         exclude "broken"
         exclude "defaultReference"
         exclude "ftp"
-        exclude "sra"
         //if (System.env.CI == "false") exclude "sra"
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
@@ -133,7 +134,7 @@ task testSRA(type: Test) {
     description = "Run the SRA tests"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
-    include "SRA"
+    include "sra"
     tags {
         exclude "slow"
         exclude "broken"
