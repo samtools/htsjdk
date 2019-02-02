@@ -108,13 +108,12 @@ test {
         jvmArgs += '-Dsamjdk.sra_libraries_download=true'
     }
 
-    excludeGroups 'sra'
-
     tags {
         exclude "slow"
         exclude "broken"
         exclude "defaultReference"
         exclude "ftp"
+        exclude 'sra'
         //if (System.env.CI == "false") exclude "sra"
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
