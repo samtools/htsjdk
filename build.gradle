@@ -113,8 +113,7 @@ test {
         exclude "broken"
         exclude "defaultReference"
         exclude "ftp"
-        exclude 'sra'
-        //if (System.env.CI == "false") exclude "sra"
+        exclude "sra"
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
 } dependsOn findScalaAndJavaTypes, testWithDefaultReference
