@@ -15,12 +15,15 @@ matrix:
   fast_finish: true
   allow_failures: 
      - env: TEST_TYPE=FTP
+     - env: TEST_TYPE=SRA
   include:
      - jdk: oraclejdk8
        env: TEST_TYPE=FTP
 script:
   - if [[ $TEST_TYPE == "FTP" ]]; then
         ./gradlew testFTP jacocoTestReport;
+    elif [[ $TEST_TYPE == "SRA" ]]; then
+        ./gradlew testSRA jacocoTestReport;
     else
         ./gradlew test jacocoTestReport;
     fi

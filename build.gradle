@@ -113,7 +113,8 @@ test {
         exclude "broken"
         exclude "defaultReference"
         exclude "ftp"
-        if (System.env.CI == "false") exclude "sra"
+        exclude "sra"
+        //if (System.env.CI == "false") exclude "sra"
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
 } dependsOn findScalaAndJavaTypes, testWithDefaultReference
@@ -132,6 +133,7 @@ task testSRA(type: Test) {
     description = "Run the SRA tests"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
+    include "SRA"
     tags {
         exclude "slow"
         exclude "broken"
