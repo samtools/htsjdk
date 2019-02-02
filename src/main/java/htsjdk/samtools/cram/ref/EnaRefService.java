@@ -22,7 +22,7 @@ public class EnaRefService {
     byte[] getSequence(final String md5) {
         final int restBetweenTries_ms = 0;
         final int maxTries = 1;
-        final int timeout_ms = 5000;
+        final int timeout_ms = 0;
         return getSequence(md5, timeout_ms, maxTries, restBetweenTries_ms);
     }
 
