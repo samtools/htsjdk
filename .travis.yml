@@ -19,6 +19,9 @@ matrix:
   include:
      - jdk: oraclejdk8
        env: TEST_TYPE=FTP
+     - jdk: oraclejdk8
+       env: TEST_TYPE=SRA
+
 script:
   - if [[ $TEST_TYPE == "FTP" ]]; then
         ./gradlew testFTP jacocoTestReport;
