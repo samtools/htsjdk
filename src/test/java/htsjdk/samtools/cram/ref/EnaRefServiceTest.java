@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
+//calling this an FTP test so that it could fail in travis
 @Test(groups="ftp")
 public class EnaRefServiceTest extends HtsjdkTest {
 
@@ -16,7 +17,6 @@ public class EnaRefServiceTest extends HtsjdkTest {
                 {"0000088cbcebe818eb431d58c908c698"}};
     }
 
-    //calling this an FTP test so that it could fail in travis
     @Test(dataProvider = "testEnaRefServiceData")
     public void testEnaRefServiceData(final String md5) throws IOException, GaveUpException {
         Assert.assertNotNull(new EnaRefService().getSequence(md5));
