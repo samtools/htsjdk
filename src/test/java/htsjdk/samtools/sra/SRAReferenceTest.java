@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Test()
 public class SRAReferenceTest extends AbstractSRATest {
     @DataProvider(name = "testReference")
     private Object[][] createDataForReference() {
