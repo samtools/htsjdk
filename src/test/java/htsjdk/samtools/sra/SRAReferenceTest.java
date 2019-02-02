@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Test(groups = {"sra"})
+@Test()
 public class SRAReferenceTest extends AbstractSRATest {
     @DataProvider(name = "testReference")
     private Object[][] createDataForReference() {
@@ -22,7 +22,7 @@ public class SRAReferenceTest extends AbstractSRATest {
         };
     }
 
-    @Test(dataProvider = "testReference", groups={"sra"})
+    @Test(dataProvider = "testReference")
     public void testReference(String acc, String refContig, int refStart, int refStop, String refBases) {
         final ReferenceSequenceFile refSeqFile = new SRAIndexedSequenceFile(new SRAAccession(acc));
         final ReferenceSequence refSeq = refSeqFile.getSubsequenceAt(refContig, refStart, refStop);
@@ -62,7 +62,7 @@ public class SRAReferenceTest extends AbstractSRATest {
         };
     }
 
-    @Test(dataProvider = "testReferenceMt", groups={"sra"})
+    @Test(dataProvider = "testReferenceMt")
     public void testReferenceMt(String acc, List<TestReferenceMtData> parallelTests) throws Exception {
         final ReferenceSequenceFile refSeqFile = new SRAIndexedSequenceFile(new SRAAccession(acc));
         final long timeout = 1000L * 5; // just in case
