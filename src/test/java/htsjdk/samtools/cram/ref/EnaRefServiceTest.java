@@ -7,8 +7,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-//calling this an FTP test so that it could fail in travis
-@Test(groups="ftp")
+@Test(groups="ena")
 public class EnaRefServiceTest extends HtsjdkTest {
 
     @DataProvider(name="testEnaRefServiceData")

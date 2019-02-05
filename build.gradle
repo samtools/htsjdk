@@ -104,16 +104,14 @@ test {
         events "failed", "skipped"
     }
 
-    if (System.env.CI == "true") {
-        jvmArgs += '-Dsamjdk.sra_libraries_download=true'
-    }
-
     tags {
         exclude "slow"
         exclude "broken"
         exclude "defaultReference"
         exclude "ftp"
         exclude "sra"
+        exclude "ena"
+
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
 } dependsOn findScalaAndJavaTypes, testWithDefaultReference
@@ -128,12 +126,13 @@ task testFTP(type: Test) {
     }
 }
 
-task testSRA(type: Test) {
-    description = "Run the SRA tests"
+task testExternalApis(type: Test) {
+    description = "Run the SRA and ENA tests (external APIs"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
     tags {
         include "sra"
+        include "ena"
         exclude "slow"
         exclude "broken"
     }
