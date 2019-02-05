@@ -215,7 +215,7 @@ public class VCFEncoder {
     private static double round(final double value, final int digits) {
         final double x = Math.pow(10, digits);
 
-        return ((int) (value * x)) / x;
+        return Math.round(value * x) / x;
     }
 
     /**
@@ -223,6 +223,8 @@ public class VCFEncoder {
      * <tr><td>Number</td><td>Stored As</td></tr>
      * <tr><td>-------</td><td>------------</td></tr>
      * <tr><td>0.0</td><td>0.0</td></tr>
+     * <tr><td>12345.6789</td><td>12346</td></tr>
+     * <tr><td>123456.789</td><td>1.2346e4</td></tr>
      * <tr><td>1.0</td><td>1.0</td></tr>
      * <tr><td>1.12345</td><td>1.12345</td></tr>
      * <tr><td>1.33333333333</td><td>1.33333</td></tr>
@@ -234,12 +236,14 @@ public class VCFEncoder {
      * <tr><td>0.000001</td><td>0.000001</td></tr>
      * <tr><td>0.000001</td><td>1.0e-6</td></tr>
      * <tr><td>0.50000001</td><td>0.5</td></tr>
+     * <tr><td>0.49999999</td><td>0.5</td></tr>
      * <tr><td>0.012345</td><td>1.23450e-02</td></tr>
+     * <tr><td>0.0122999</td><td>1.23000e-02</td></tr>
      * <tr><td>0.0033333333</td><td>3.33333e-03</td></tr>
      * </table>
      */
     public static String formatVCFDouble(final double d) {
-        final int numSignificant = 5;
+        final int numSignificant = 3;
         final double lowerLimit = Math.pow(10, -numSignificant);
         if (d == 0.0) {
             return "0.0";
@@ -251,24 +255,20 @@ public class VCFEncoder {
             return df.format(round(d, numSignificant));
         } else {
             // transform 0.00123456 into 0.123456 / 1000
-            int denominator = 1;
-            int denominatorCount = 0;
-            while (d * denominator < 1.0) {
-                denominator *= 10;
-                denominatorCount++;
-            }
+            final int denominatorCount = (int) Math.floor(Math.log10(d));
+            final double denominator = Math.pow(10, denominatorCount);
+
             // transform 1.23456 / 1000 into 1.2345 / 1000 (i.e. roundedValue / denominator)
             final double roundedValue = round(d * denominator, numSignificant);
             final double finalValue = roundedValue / denominator;
             // if the rounded value when casted to into int and back to double is the same (ex. 1.0 or 6.0) and greater
             // or equal to the lower limit, then return (roundedValue / denominator), otherwise use "e" format
-            if (roundedValue == (double) (int) roundedValue && finalValue >= lowerLimit) {
-                return String.format("%." + denominatorCount + "f", finalValue);
-            } else {
-                return String.format("%." + numSignificant + "e", finalValue);
-            }
+            final String string1 = String.format("%." + denominatorCount + "f", finalValue);
+            final String string2 = String.format("%." + numSignificant + "e", finalValue);
+            return string1.length() <= string2.length() ? string1 : string2;
         }
     }
+
 
     static int countOccurrences(final char c, final String s) {
         int count = 0;
