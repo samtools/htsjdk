@@ -127,7 +127,7 @@ task testFTP(type: Test) {
 }
 
 task testExternalApis(type: Test) {
-    description = "Run the SRA and ENA tests (external APIs"
+    description = "Run the SRA and ENA tests (tests that interact with external APIs)"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
     tags {
