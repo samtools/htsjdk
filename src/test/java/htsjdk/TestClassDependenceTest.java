@@ -21,8 +21,7 @@ import java.util.*;
  */
 public class TestClassDependenceTest extends HtsjdkTest {
 
-
-    // since there are assertions inside the dataprovider, this test check that the dataprovider completes succeessfully.
+    // since there are assertions inside the dataprovider, this test checks that the dataprovider completes succeessfully.
     // This is needed since a failing data-provider will result in silently skipping the tests that rely on it.
 
     // This idea led to the creation of {@link TestDataProviders}, which renders it no-longer needed....

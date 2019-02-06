@@ -68,6 +68,4 @@ public class SRAQueryTest extends AbstractSRATest {
 
         assertCorrectCountsOfMappedAndUnmappedRecords(samRecordIterator, expectedNumMapped, expectedNumUnmapped);
     }
-
-
 }

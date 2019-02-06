@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
+@Test(groups="ena")
 public class EnaRefServiceTest extends HtsjdkTest {
 
     @DataProvider(name="testEnaRefServiceData")
