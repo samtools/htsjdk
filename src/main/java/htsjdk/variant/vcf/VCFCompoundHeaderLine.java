@@ -28,7 +28,6 @@ package htsjdk.variant.vcf;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.GenotypeLikelihoods;
-import htsjdk.variant.variantcontext.VariantContext;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -95,7 +94,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @param vc
      * @return
      */
-    public int getCount(final VariantContext vc) {
+    public int getCount(final VcfDataLine vc) {
         switch (countType) {
             case INTEGER:
                 return count;

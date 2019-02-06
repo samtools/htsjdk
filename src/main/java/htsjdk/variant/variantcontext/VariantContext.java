@@ -29,11 +29,7 @@ import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
-import htsjdk.variant.vcf.VCFCompoundHeaderLine;
-import htsjdk.variant.vcf.VCFConstants;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLineCount;
-import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -216,7 +212,7 @@ import java.util.stream.Collectors;
  * <!-- </s3> -->
  *
  */
-public class VariantContext implements Feature, Serializable {
+public class VariantContext implements Feature, Serializable, VcfDataLine {
     public static final long serialVersionUID = 1L;
 
     private final static boolean WARN_ABOUT_BAD_END = true;
@@ -260,6 +256,7 @@ public class VariantContext implements Feature, Serializable {
 * Determine which genotype fields are in use in the genotypes in VC
 * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
 */
+    @Override
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
         final Set<String> keys = new HashSet<>();
 
@@ -595,6 +592,7 @@ public class VariantContext implements Feature, Serializable {
      *
      * @return true if this is a variant allele, false if it's reference
      */
+    @Override
     public boolean isVariant() { return getType() != Type.NO_VARIATION; }
 
     /**
@@ -698,6 +696,7 @@ public class VariantContext implements Feature, Serializable {
         return ! hasID();
     }
 
+    @Override
     public String getID() {
         return ID;
     }
@@ -710,14 +709,21 @@ public class VariantContext implements Feature, Serializable {
     // ---------------------------------------------------------------------------------------------------------
     public String getSource()                   { return commonInfo.getName(); }
     public Set<String> getFiltersMaybeNull()    { return commonInfo.getFiltersMaybeNull(); }
+    @Override
     public Set<String> getFilters()             { return commonInfo.getFilters(); }
+    @Override
     public boolean isFiltered()                 { return commonInfo.isFiltered(); }
     public boolean isNotFiltered()              { return commonInfo.isNotFiltered(); }
+    @Override
     public boolean filtersWereApplied()         { return commonInfo.filtersWereApplied(); }
+    @Override
     public boolean hasLog10PError()             { return commonInfo.hasLog10PError(); }
+    @Override
     public double getLog10PError()              { return commonInfo.getLog10PError(); }
+    @Override
     public double getPhredScaledQual()          { return commonInfo.getPhredScaledQual(); }
 
+    @Override
     public Map<String, Object>  getAttributes() { return commonInfo.getAttributes(); }
     public boolean hasAttribute(String key)     { return commonInfo.hasAttribute(key); }
     public Object getAttribute(String key)      { return commonInfo.getAttribute(key); }
@@ -750,6 +756,7 @@ public class VariantContext implements Feature, Serializable {
     /**
      * @return the reference allele for this context
      */
+    @Override
     public Allele getReference() {
         Allele ref = REF;
         if ( ref == null )
@@ -768,6 +775,7 @@ public class VariantContext implements Feature, Serializable {
     /**
      * @return The number of segregating alleles in this context
      */
+    @Override
     public int getNAlleles() {
         return alleles.size();
     }
@@ -780,6 +788,7 @@ public class VariantContext implements Feature, Serializable {
      * @param defaultPloidy the default ploidy, if all samples are no-called
      * @return default, or the max ploidy
      */
+    @Override
     public int getMaxPloidy(final int defaultPloidy) {
         return genotypes.getMaxPloidy(defaultPloidy);
     }
@@ -839,6 +848,7 @@ public class VariantContext implements Feature, Serializable {
      *
      * @return the set of alleles
      */
+    @Override
     public List<Allele> getAlleles() { return alleles; }
 
     /**
@@ -848,6 +858,7 @@ public class VariantContext implements Feature, Serializable {
      *
      * @return the set of alternate alleles
      */
+    @Override
     public List<Allele> getAlternateAlleles() {
         return alleles.subList(1, alleles.size());
     }
@@ -875,6 +886,7 @@ public class VariantContext implements Feature, Serializable {
      * @return the ith non-reference allele in this context
      * @throws IllegalArgumentException if i is invalid
      */
+    @Override
     public Allele getAlternateAllele(int i) {
         return alleles.get(i+1);
     }
@@ -937,6 +949,7 @@ public class VariantContext implements Feature, Serializable {
     /**
      * @return set of all Genotypes associated with this context
      */
+    @Override
     public GenotypesContext getGenotypes() {
         return genotypes;
     }
@@ -996,6 +1009,7 @@ public class VariantContext implements Feature, Serializable {
      *
      * @return the Genotype associated with the given sample in this context or null if the sample is not in this context
      */
+    @Override
     public Genotype getGenotype(String sample) {
         return getGenotypes().get(sample);
     }

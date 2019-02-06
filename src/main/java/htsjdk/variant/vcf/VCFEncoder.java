@@ -1,5 +1,6 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.variantcontext.Allele;
@@ -13,11 +14,7 @@ import htsjdk.variant.variantcontext.writer.IntGenotypeFieldAccessors;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Functions specific to encoding VCF records.
@@ -69,7 +66,7 @@ public class VCFEncoder {
     /**
      * encodes a {@link VariantContext} as a VCF line
      *
-     * Depending on the use case it may be more efficient to {@link #write(Appendable, VariantContext)} directly
+     * Depending on the use case it may be more efficient to {@link #write(Appendable, VcfDataLine)} directly
      * instead of creating an intermediate string.
      *
      * @return the VCF line
@@ -96,7 +93,7 @@ public class VCFEncoder {
      * @return the java.lang.Appendable 'vcfOutput'
      * @throws IOException
      */
-    public void write(final Appendable vcfOutput, final VariantContext context) throws IOException {
+    public void write(final Appendable vcfOutput, final VcfDataLine context) throws IOException {
         if (this.header == null) {
             throw new NullPointerException("The header field must be set on the VCFEncoder before encoding records.");
         }
@@ -178,7 +175,7 @@ public class VCFEncoder {
         return this.allowMissingFieldsInHeader;
     }
 
-    private String getFilterString(final VariantContext vc) {
+    private String getFilterString(final VcfDataLine vc) {
         if (vc.isFiltered()) {
             for (final String filter : vc.getFilters()) {
                 if (!this.header.hasFilterLine(filter)) fieldIsMissingFromHeaderError(vc, filter, "FILTER");
@@ -196,7 +193,7 @@ public class VCFEncoder {
         return s;
     }
 
-    private void fieldIsMissingFromHeaderError(final VariantContext vc, final String id, final String field) {
+    private void fieldIsMissingFromHeaderError(final Locatable vc, final String id, final String field) {
         if (!allowMissingFieldsInHeader)
             throw new IllegalStateException("Key " + id + " found in VariantContext field " + field
                                                     + " at " + vc.getContig() + ":" + vc.getStart()
@@ -293,7 +290,8 @@ public class VCFEncoder {
      * @param vcfoutput VCF output
      * @throws IOException
      */
-    private void appendGenotypeData(final VariantContext vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final Appendable vcfoutput) throws IOException {final int ploidy = vc.getMaxPloidy(2);
+    private void appendGenotypeData(final VcfDataLine vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final Appendable vcfoutput) throws IOException {
+        final int ploidy = vc.getMaxPloidy(2);
 
         for (final String sample : this.header.getGenotypeSamples()) {
             vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
@@ -407,8 +405,8 @@ public class VCFEncoder {
         }
     }
 
-    public Map<Allele, String> buildAlleleStrings(final VariantContext vc) {
-        final Map<Allele, String> alleleMap = new HashMap<Allele, String>(vc.getAlleles().size() + 1);
+    public Map<Allele, String> buildAlleleStrings(final VcfDataLine vc) {
+        final Map<Allele, String> alleleMap = new HashMap<>(vc.getAlleles().size() + 1);
         alleleMap.put(Allele.NO_CALL, VCFConstants.EMPTY_ALLELE); // convenience for lookup
 
         final List<Allele> alleles = vc.getAlleles();

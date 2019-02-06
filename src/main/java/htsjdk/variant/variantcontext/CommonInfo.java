@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 
+import htsjdk.samtools.util.QualityUtil;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
@@ -151,7 +152,7 @@ public final class CommonInfo implements Serializable {
      *
      * @return double - Phred scaled quality score
      */
-    public double getPhredScaledQual() { return (getLog10PError() * -10) + 0.0; }
+    public double getPhredScaledQual() { return QualityUtil.convertLog10PErrorToPhredScale(getLog10PError()); }
 
     public void setLog10PError(double log10PError) {
         if ( log10PError > 0 && log10PError != NO_LOG10_PERROR)

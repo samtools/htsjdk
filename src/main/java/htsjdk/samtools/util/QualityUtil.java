@@ -74,4 +74,8 @@ public final class QualityUtil {
 
         return sum;
     }
+
+    public static double convertLog10PErrorToPhredScale(double log10PError) {
+        return (log10PError * -10) + 0.0;
+    }
 }
