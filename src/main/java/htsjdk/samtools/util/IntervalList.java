@@ -480,14 +480,14 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #union(java.util.Collection)}.
+     * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #concatenate(Collection)}
      */
     public static IntervalList fromFiles(final Collection<File> intervalListFiles) {
         final Collection<IntervalList> intervalLists = new ArrayList<>();
         for (final File file : intervalListFiles) {
             intervalLists.add(IntervalList.fromFile(file));
         }
-        return IntervalList.union(intervalLists);
+        return IntervalList.concatenate(intervalLists);
     }
 
     /**
