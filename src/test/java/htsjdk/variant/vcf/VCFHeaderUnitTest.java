@@ -596,9 +596,9 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(md5SumFile(myTempFile), md5sum);
     }
 
-    public static int VCF4headerStringCount = 16;
+    public static final int VCF4headerStringCount = 16;
 
-    public static String VCF4headerStrings =
+    public static final String VCF4headerStrings =
             "##fileformat=VCFv4.2\n" +
                     "##filedate=2010-06-21\n" +
                     "##reference=NCBI36\n" +
@@ -618,7 +618,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
 
 
-    public static String VCF4headerStrings_with_negativeOne =
+    public static final String VCF4headerStrings_with_negativeOne =
             "##fileformat=VCFv4.2\n" +
                     "##filedate=2010-06-21\n" +
                     "##reference=NCBI36\n" +

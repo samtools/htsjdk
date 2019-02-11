@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2007-2011 by The Broad Institute of MIT and Harvard.  All Rights Reserved.
  *
@@ -38,7 +39,7 @@ public class FTPClient {
 
     private Socket commandSocket = null;
 
-    public static int READ_TIMEOUT = 5 * 60 * 1000;
+    public static final int READ_TIMEOUT = 5 * 60 * 1000;
 
     /**
      * Stream to write commands.

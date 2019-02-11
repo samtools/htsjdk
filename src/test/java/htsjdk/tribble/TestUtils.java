@@ -37,7 +37,7 @@ import java.util.List;
  * Date: 2012-Dec-13
  */
 public class TestUtils {
-    public static String DATA_DIR = "src/test/resources/htsjdk/tribble/";
+    public static final String DATA_DIR = "src/test/resources/htsjdk/tribble/";
 
     /**
      * A utility method for copying a tribble file (and possibly its index) into a Jimfs-like FileSystem

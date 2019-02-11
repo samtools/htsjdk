@@ -36,11 +36,11 @@ public class TabixFormat implements Cloneable {
     public static final int UCSC_FLAGS    = GENERIC_FLAGS | ZERO_BASED;
 
     /** Predefined headers for known formats */
-    public static TabixFormat GFF = new TabixFormat(GENERIC_FLAGS, 1, 4, 5, '#', 0);
-    public static TabixFormat BED = new TabixFormat(UCSC_FLAGS, 1, 2, 3, '#', 0);
-    public static TabixFormat PSLTBL = new TabixFormat(UCSC_FLAGS, 15, 17, 18, '#', 0);
-    public static TabixFormat SAM = new TabixFormat(SAM_FLAGS, 3, 4, 0, '@', 0);
-    public static TabixFormat VCF = new TabixFormat(VCF_FLAGS, 1, 2, 0, '#', 0);
+    public static final TabixFormat GFF = new TabixFormat(GENERIC_FLAGS, 1, 4, 5, '#', 0);
+    public static final TabixFormat BED = new TabixFormat(UCSC_FLAGS, 1, 2, 3, '#', 0);
+    public static final TabixFormat PSLTBL = new TabixFormat(UCSC_FLAGS, 15, 17, 18, '#', 0);
+    public static final TabixFormat SAM = new TabixFormat(SAM_FLAGS, 3, 4, 0, '@', 0);
+    public static final TabixFormat VCF = new TabixFormat(VCF_FLAGS, 1, 2, 0, '#', 0);
 
     /** Describes interpretation of file being indexed.  See FLAGS constants above. */
     public int flags;
