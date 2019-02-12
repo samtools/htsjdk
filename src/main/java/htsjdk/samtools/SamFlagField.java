@@ -69,7 +69,7 @@ public enum SamFlagField {
         }
         @Override
         protected int parseWithoutValidation(final String flag) {
-            return Integer.valueOf(flag.substring(2), 16);
+            return Integer.parseInt(flag.substring(2), 16);
         }
     },
     OCTAL {
@@ -79,7 +79,7 @@ public enum SamFlagField {
         }
         @Override
         protected int parseWithoutValidation(final String flag) {
-            return Integer.valueOf(flag, 8);
+            return Integer.parseInt(flag, 8);
         }
     },
     STRING {

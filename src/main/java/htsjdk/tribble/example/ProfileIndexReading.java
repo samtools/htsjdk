@@ -42,7 +42,7 @@ public class ProfileIndexReading {
         if (args.length < 2)
             printUsage();
 
-        int iterations = Integer.valueOf(args[0]);
+        int iterations = Integer.parseInt(args[0]);
         for ( int j = 1; j < args.length; j++  ) {
             String indexFile = args[j];
             System.out.printf("Reading %s%n", indexFile);

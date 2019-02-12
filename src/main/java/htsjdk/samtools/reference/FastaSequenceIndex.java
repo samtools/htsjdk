@@ -156,10 +156,10 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
 
                 // Parse the index line.
                 String contig = tokens.group(1);
-                long size = Long.valueOf(tokens.group(2));
-                long location = Long.valueOf(tokens.group(3));
-                int basesPerLine = Integer.valueOf(tokens.group(4));
-                int bytesPerLine = Integer.valueOf(tokens.group(5));
+                long size = Long.parseLong(tokens.group(2));
+                long location = Long.parseLong(tokens.group(3));
+                int basesPerLine = Integer.parseInt(tokens.group(4));
+                int bytesPerLine = Integer.parseInt(tokens.group(5));
 
                 contig = SAMSequenceRecord.truncateSequenceName(contig);
                 // Build sequence structure
