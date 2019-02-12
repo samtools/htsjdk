@@ -183,10 +183,9 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
                 final TabixIndex tabixIndexGz = IndexFactory.createTabixIndex(inputVCF, new VCFCodec(), null);
                 tabixIndexGz.writeBasedOnFeatureFile(inputVCF);
-                final File tmpIndex = Tribble.tabixIndexFile(inputVCF);
-                tmpIndex.deleteOnExit();
+                final File createdIndexFile = Tribble.tabixIndexFile(inputVCF);
 
-                indexFile = tmpIndex.getAbsolutePath();
+                indexFile = createdIndexFile.getAbsolutePath();
                 index = IndexFactory.loadIndex(indexFile);
 
             }

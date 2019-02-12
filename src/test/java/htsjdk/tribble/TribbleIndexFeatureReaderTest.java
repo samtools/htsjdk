@@ -1,7 +1,11 @@
 package htsjdk.tribble;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import jdk.internal.org.objectweb.asm.tree.VarInsnNode;
@@ -12,6 +16,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.util.function.Function;
 
 
@@ -42,20 +47,57 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
         }
     }
 
-    @DataProvider(name = "1111")
-    public Object[][] createTribbleINdexedFile() {
-        return new Object[][]{
-                {new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf"), new VCFCodec()}
-            };
-        }
+    @Test
+    public void testIfIndexFileWasCreated() throws IOException {
+        String inputFilePath = "src/test/resources/htsjdk/tribble/tabix/chimeric_test.vcf";
+        try (TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader = new TribbleIndexedFeatureReader<>(inputFilePath, null,  new VCFCodec(), true)) {
+            Assert.assertTrue(featureReader.hasIndex());
 
-    @Test(dataProvider = "1111")
-    public void testBug1111(final File inputFile, final FeatureCodec codec) {
-        try {
-            TribbleIndexedFeatureReader obj = new TribbleIndexedFeatureReader(inputFile.getAbsolutePath(), null, codec, true);
-        } catch (java.io.IOException e) {
-            System.out.print("lol");
-        };
+            String indexFilePath = Tribble.indexFile("file//" + inputFilePath);
+            File indexFile = new File(indexFilePath);
+            indexFile.delete();
+        }
+    }
+
+    @Test
+    public void testIfIndexFileWasRecreated() throws IOException {
+        String inputFilePath = "src/test/resources/htsjdk/tribble/tabix/chimeric_test.vcf";
+        long initialTime = 0;
+        long modifiedTime = 0;
+        try (TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader = new TribbleIndexedFeatureReader<>(inputFilePath, null,  new VCFCodec(), true)) {
+            Assert.assertTrue(featureReader.hasIndex());
+        }
+            String initialIndexFilePath = Tribble.indexFile("file//" + inputFilePath);
+            File initialIndexFile = new File(initialIndexFilePath);
+            initialTime = initialIndexFile.lastModified();
+
+        try(TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader = new TribbleIndexedFeatureReader<>(inputFilePath, null,  new VCFCodec(), true)) {
+            Assert.assertTrue(featureReader.hasIndex());
+        }
+            String modifiedIndexFilePath = Tribble.indexFile("file//" + inputFilePath);
+            File modifiedIndexFile = new File(modifiedIndexFilePath);
+            modifiedTime = modifiedIndexFile.lastModified();
+            Assert.assertEquals(initialTime, modifiedTime);
+
+            initialIndexFile.delete();
+    }
+
+    @Test
+    public void testTryToReadCreatedIndexFile() throws  Exception {
+        String inputFilePath = "src/test/resources/htsjdk/tribble/tabix/chimeric_test.vcf";
+        try (TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader = new TribbleIndexedFeatureReader<>(inputFilePath, null,  new VCFCodec(), true)) {
+            Assert.assertTrue(featureReader.hasIndex());
+        }
+        File inputFile = new File(inputFilePath + ".tbi");
+        final TabixIndex index = new TabixIndex(inputFile);
+        final File indexFile = File.createTempFile("TabixIndexTest.", TabixUtils.STANDARD_INDEX_EXTENSION);
+        indexFile.deleteOnExit();
+        final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(indexFile));
+        index.write(los);
+        los.close();
+        final TabixIndex index2 = new TabixIndex(indexFile);
+        Assert.assertEquals(index, index2);
+        inputFile.deleteOnExit();
     }
 
 }
