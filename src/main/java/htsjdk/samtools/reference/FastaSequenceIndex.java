@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.MatchResult;
 
@@ -133,6 +134,11 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
                 return false;
         }
         return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sequenceEntries);
     }
 
     /**
