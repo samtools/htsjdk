@@ -319,7 +319,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         builder.chr(chr);
         int pos = -1;
         try {
-            pos = Integer.valueOf(parts[1]);
+            pos = Integer.parseInt(parts[1]);
         } catch (NumberFormatException e) {
             generateException(parts[1] + " is not a valid start position in the VCF format");
         }
@@ -344,7 +344,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if ( attrs.containsKey(VCFConstants.END_KEY) ) {
             // update stop with the end key if provided
             try {
-                builder.stop(Integer.valueOf(attrs.get(VCFConstants.END_KEY).toString()));
+                builder.stop(Integer.parseInt(attrs.get(VCFConstants.END_KEY).toString()));
             } catch (Exception e) {
                 generateException("the END value in the INFO field is not valid");
             }
@@ -486,7 +486,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             return Allele.NO_CALL;
         final int i;
         try {
-            i = Integer.valueOf(index);
+            i = Integer.parseInt(index);
         } catch ( NumberFormatException e ) {
             throw new TribbleException.InternalCodecException("The following invalid GT allele index was encountered in the file: " + index);
         }
@@ -741,7 +741,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                                 gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i)).getAsPLs());
                             }
                         } else if (gtKey.equals(VCFConstants.DEPTH_KEY)) {
-                            gb.DP(Integer.valueOf(genotypeValues.get(i)));
+                            gb.DP(Integer.parseInt(genotypeValues.get(i)));
                         } else {
                             gb.attribute(gtKey, genotypeValues.get(i));
                         }

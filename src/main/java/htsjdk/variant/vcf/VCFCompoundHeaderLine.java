@@ -227,7 +227,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
             countType = VCFHeaderLineCount.UNBOUNDED;
         } else {
             countType = VCFHeaderLineCount.INTEGER;
-            count = Integer.valueOf(numberStr);
+            count = Integer.parseInt(numberStr);
 
         }
 

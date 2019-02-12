@@ -60,7 +60,7 @@ public class LinearIndex extends AbstractIndex {
     private final static int MAX_BIN_WIDTH = 1 * 1000 * 1000 * 1000; //  widths must be less than 1 billion
 
     // 1MB: we will no merge bins with any features in them beyond this size, no matter how sparse, per chromosome
-    private static final long MAX_BIN_WIDTH_FOR_OCCUPIED_CHR_INDEX = Long.valueOf(System.getProperty("MAX_BIN_WIDTH_FOR_OCCUPIED_CHR_INDEX", "1024000"));
+    private static final long MAX_BIN_WIDTH_FOR_OCCUPIED_CHR_INDEX = Long.parseLong(System.getProperty("MAX_BIN_WIDTH_FOR_OCCUPIED_CHR_INDEX", "1024000"));
 
     public static boolean enableAdaptiveIndexing = true;
 

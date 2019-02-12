@@ -1253,7 +1253,7 @@ public class VariantContext implements Feature, Serializable {
 
         // AN
         if (hasAttribute(VCFConstants.ALLELE_NUMBER_KEY)) {
-            final int reportedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
+            final int reportedAN = Integer.parseInt(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
             final int observedAN = getCalledChrCount();
             if ( reportedAN != observedAN )
                 throw new TribbleException.InternalCodecException(String.format("the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedAN, observedAN));
@@ -1277,7 +1277,7 @@ public class VariantContext implements Feature, Serializable {
 
             for (int i = 0; i < observedACs.size(); i++) {
                 // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
-                final int reportedAC = Integer.valueOf(reportedACs.get(i).toString());
+                final int reportedAC = Integer.parseInt(reportedACs.get(i).toString());
                 if (reportedAC != observedACs.get(i))
                     throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), reportedAC, observedACs.get(i)));
             }

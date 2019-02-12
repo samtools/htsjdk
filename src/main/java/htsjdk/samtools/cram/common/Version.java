@@ -18,9 +18,9 @@ public class Version implements Comparable<Version> {
 
     public Version(final String version) {
         final String[] numbers = version.split("[\\.\\-b]");
-        major = Integer.valueOf(numbers[0]);
-        minor = Integer.valueOf(numbers[1]);
-        if (numbers.length > 3) build = Integer.valueOf(numbers[3]);
+        major = Integer.parseInt(numbers[0]);
+        minor = Integer.parseInt(numbers[1]);
+        if (numbers.length > 3) build = Integer.parseInt(numbers[3]);
         else build = 0;
     }
 
