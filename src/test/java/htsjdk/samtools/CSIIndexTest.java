@@ -2,7 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -39,7 +39,7 @@ public class CSIIndexTest extends HtsjdkTest {
     public static final int BAI_EQUIVALENT_MIN_SHIFT = 14;
     public static final int BAI_EQUIVALENT_BIN_DEPTH = 6;
 
-    @BeforeTest
+    @BeforeClass
     public void init() {
         bai = new DiskBasedBAMFileIndex(new File(TEST_DATA_DIR, "index_test.bam.bai"), null);
         csi = new CSIIndex(new File(TEST_DATA_DIR, "index_test.bam.csi"), false, null);
