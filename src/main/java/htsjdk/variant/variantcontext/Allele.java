@@ -294,7 +294,7 @@ public class Allele implements Comparable<Allele>, Serializable {
 
     /**
      * @param bases  bases representing an allele
-     * @return true if the bases represent a symbolic allele
+     * @return true if the bases represent a symbolic allele, including breakpoints and breakends
      */
     public static boolean wouldBeSymbolicAllele(final byte[] bases) {
     	if ( bases.length <= 1 )
@@ -305,16 +305,18 @@ public class Allele implements Comparable<Allele>, Serializable {
                     wouldBeSingleBreakend(bases);
         }
     }
+
     /**
      * @param bases  bases representing an allele
-     * @return true if the bases represent a symbolic allele in breakpoint notation
+     * @return true if the bases represent a symbolic allele in breakpoint notation, (ex: G]17:198982] or ]13:123456]T )
      */
     public static boolean wouldBeBreakpoint(final byte[] bases) {
         if ( bases.length <= 1 )
             return false;
         else {
             for (int i = 0; i < bases.length; i++) {
-                if (bases[i] == '[' || bases[i] == ']') {
+                final byte base = bases[i];
+                if (base == '[' || base == ']') {
                     return true;
                 }
             }
@@ -323,7 +325,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     }
     /**
      * @param bases  bases representing an allele
-     * @return true if the bases represent a symbolic allele in single breakend notation
+     * @return true if the bases represent a symbolic allele in single breakend notation (ex: .A or A. )
      */
     public static boolean wouldBeSingleBreakend(final byte[] bases) {
         if ( bases.length <= 1 )
@@ -434,21 +436,24 @@ public class Allele implements Comparable<Allele>, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    // Returns true if this is the NO_CALL allele
+    /** @return true if this is the NO_CALL allele */
     public boolean isNoCall()           { return isNoCall; }
     // Returns true if this is not the NO_CALL allele
     public boolean isCalled()           { return ! isNoCall(); }
 
-    // Returns true if this Allele is the reference allele
+    /** @return true if this Allele is the reference allele */
     public boolean isReference()        { return isRef; }
-    // Returns true if this Allele is not the reference allele
+
+    /** @return true if this Allele is not the reference allele */
     public boolean isNonReference()     { return ! isReference(); }
 
-    // Returns true if this Allele is symbolic (i.e. no well-defined base sequence)
+    /** @return true if this Allele is symbolic (i.e. no well-defined base sequence), this includes breakpoints and breakends */
     public boolean isSymbolic()         { return isSymbolic; }
 
+    /** @return true if this Allele is a breakpoint ( ex: G]17:198982] or ]13:123456]T ) */
     public boolean isBreakpoint()         { return wouldBeBreakpoint(bases); }
 
+    /** @return true if this Allele is a single breakend (ex: .A or A.) */
     public boolean isSingleBreakend()         { return wouldBeSingleBreakend(bases); }
 
     // Returns a nice string representation of this object

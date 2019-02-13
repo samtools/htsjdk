@@ -66,8 +66,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
     protected final static int NUM_STANDARD_FIELDS = 8;  // INFO is the 8th
 
-    private final static  int MAX_ALLELE_LENGTH_FOR_CACHING = 8;
-
     // we have to store the list of strings that make up the header until they're needed
     protected VCFHeader header = null;
     protected VCFHeaderVersion version = null;
@@ -334,18 +332,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         else
             builder.id(parts[2]);
 
-        final String ref = getCachedString(parts[3].toUpperCase());
-        String alts = parts[4];
-        if (!(alts.contains(".") || alts.length() > MAX_ALLELE_LENGTH_FOR_CACHING || (alts.length() > 1 && (alts.contains("[") || alts.contains("]") || alts.contains("."))))) {
-            // don't cache multiple alt allele which we're going to strsplit anyway
-            // don't cache long alleles as they're probably unique
-            // don't cache breakpoint/single breakend alleles as they're probably unique
-            alts = getCachedString(alts);
-        }
+        final String ref = parts[3].toUpperCase();
+        final String alts = parts[4];
         builder.log10PError(parseQual(parts[5]));
 
         final List<String> filters = parseFilters(getCachedString(parts[6]));
-        if ( filters != null ) builder.filters(new HashSet<String>(filters));
+        if ( filters != null ) builder.filters(new HashSet<>(filters));
         final Map<String, Object> attrs = parseInfo(parts[7]);
         builder.attributes(attrs);
 
@@ -585,7 +577,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             System.err.println(String.format("Allele detected with length %d exceeding max size %d at approximately line %d, likely resulting in degraded VCF processing performance", allele.length(), MAX_ALLELE_SIZE_BEFORE_WARNING, lineNo));
         }
 
-        if ( isSymbolicAllele(allele) ) {
+        if (Allele.wouldBeSymbolicAllele(allele.getBytes())) {
             if ( isRef ) {
                 generateException("Symbolic alleles not allowed as reference allele: " + allele, lineNo);
             }
@@ -615,17 +607,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if ( allele.contains("[") || allele.contains("]") || allele.contains(":") || allele.contains(".") )
             return "VCF support for complex rearrangements with breakends has not yet been implemented";
         return "unparsable vcf record with allele " + allele;
-    }
-
-    /**
-     * return true if this is a symbolic allele (e.g. <SOMETAG>),
-     * structural variation breakend (with [ or ]), or single breakend (e.g. ATTA.),
-     * otherwise false
-     * @param allele the allele to check
-     * @return true if the allele is a symbolic allele, otherwise false
-     */
-    private static boolean isSymbolicAllele(String allele) {
-        return Allele.wouldBeSymbolicAllele(allele.getBytes());
     }
 
     /**

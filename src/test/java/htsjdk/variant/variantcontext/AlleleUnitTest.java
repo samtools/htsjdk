@@ -289,6 +289,8 @@ public class AlleleUnitTest extends VariantBaseTest {
     }
     @Test
     public void testWouldBeBreakpoint() {
+        Assert.assertTrue(Allele.wouldBeBreakpoint("G]17:198982]".getBytes()));
+        Assert.assertTrue(Allele.wouldBeBreakpoint("]13:123456]T".getBytes()));
         Assert.assertFalse(Allele.wouldBeBreakpoint("<DEL>".getBytes()));
         Assert.assertTrue(Allele.wouldBeBreakpoint("AAAAAA[chr1:1234[".getBytes()));
         Assert.assertTrue(Allele.wouldBeBreakpoint("AAAAAA]chr1:1234]".getBytes()));
@@ -299,6 +301,8 @@ public class AlleleUnitTest extends VariantBaseTest {
     }
     @Test
     public void testWouldBeBreakend() {
+        Assert.assertFalse(Allele.wouldBeSingleBreakend("G]17:198982]".getBytes()));
+        Assert.assertFalse(Allele.wouldBeSingleBreakend("]13:123456]T".getBytes()));
         Assert.assertFalse(Allele.wouldBeSingleBreakend("<DEL>".getBytes()));
         Assert.assertFalse(Allele.wouldBeSingleBreakend("AAAAAA[chr1:1234[".getBytes()));
         Assert.assertFalse(Allele.wouldBeSingleBreakend("AAAAAA]chr1:1234]".getBytes()));
