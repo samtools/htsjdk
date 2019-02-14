@@ -152,13 +152,22 @@ public class CramCompressionRecord {
         return stringBuilder.toString();
     }
 
-    public int getAlignmentSpan() {
-        if (alignmentSpan < 0) calculateAlignmentBoundaries();
+    public int getAlignmentSpan(final boolean APDelta) {
+        if (alignmentSpan < 0) {
+            calculateAlignmentBoundaries(APDelta);
+        }
         return alignmentSpan;
     }
 
-    void calculateAlignmentBoundaries() {
-        if (isSegmentUnmapped()) {
+    public int getAlignmentEnd(final boolean APDelta) {
+        if (alignmentEnd < 0) {
+            calculateAlignmentBoundaries(APDelta);
+        }
+        return alignmentEnd;
+    }
+
+    void calculateAlignmentBoundaries(final boolean APDelta) {
+        if (! isPlaced(APDelta)) {
             alignmentSpan = 0;
             alignmentEnd = SAMRecord.NO_ALIGNMENT_START;
         } else if (readFeatures == null || readFeatures.isEmpty()) {
@@ -189,11 +198,6 @@ public class CramCompressionRecord {
         }
     }
 
-    public int getAlignmentEnd() {
-        if (alignmentEnd < 0) calculateAlignmentBoundaries();
-        return alignmentEnd;
-    }
-
     public boolean isMultiFragment() {
         return (flags & MULTI_FRAGMENT_FLAG) != 0;
     }
@@ -207,7 +211,7 @@ public class CramCompressionRecord {
      * Unmapped records may be stored in the same {@link Slice}s and {@link Container}s as mapped
      * records if they are placed.
      *
-     * @see #isPlaced()
+     * @see #isPlaced(boolean)
      * @return true if the record is unmapped
      */
     public boolean isSegmentUnmapped() {
@@ -220,15 +224,20 @@ public class CramCompressionRecord {
 
     /**
      * Does this record have a valid placement/alignment location? This is independent of mapping status.
-     * It must have both a valid reference sequence ID and alignment start position to qualify.
-     * Unplaced reads may only be stored in Unmapped or Multiple Reference {@link Slice}s and {@link Container}s.
+     * It must have a valid reference sequence ID to qualify, as well as a valid alignment start position
+     * in the case of absolute (non-APDelta) position storage.
      *
      * @see #isSegmentUnmapped()
      * @return true if the record is placed
      */
-    public boolean isPlaced() {
-        return sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
-                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
+    public boolean isPlaced(final boolean APDelta) {
+        // if an absolute alignment start coordinate is required but we have none, it's unplaced
+        if (! APDelta && alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+            return false;
+        }
+
+        // it's also unplaced if we have no reference
+        return sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
     }
 
     public boolean isFirstSegment() {

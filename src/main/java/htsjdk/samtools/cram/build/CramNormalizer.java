@@ -94,7 +94,7 @@ public class CramNormalizer {
             for (final CramCompressionRecord record : records) {
                 if (record.previous != null) continue;
                 if (record.next == null) continue;
-                restoreMateInfo(record);
+                restoreMateInfo(record, header.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
             }
         }
 
@@ -137,7 +137,8 @@ public class CramNormalizer {
         restoreQualityScores(defaultQualityScore, records);
     }
 
-    private static void restoreMateInfo(final CramCompressionRecord record) {
+    private static void restoreMateInfo(final CramCompressionRecord record,
+                                        final boolean coordinateSorted) {
         if (record.next == null) {
 
             return;
@@ -155,7 +156,7 @@ public class CramNormalizer {
 //        record.setFirstSegment(true);
 //        last.setLastSegment(true);
 
-        final int templateLength = computeInsertSize(record, last);
+        final int templateLength = computeInsertSize(record, last, coordinateSorted);
         record.templateSize = templateLength;
         last.templateSize = -templateLength;
     }
@@ -326,10 +327,12 @@ public class CramNormalizer {
      *
      * @param firstEnd  first mate of the pair
      * @param secondEnd second mate of the pair
+     * @param coordinateSorted do these records have APDelta set?
      * @return template length
      */
     public static int computeInsertSize(final CramCompressionRecord firstEnd,
-                                        final CramCompressionRecord secondEnd) {
+                                        final CramCompressionRecord secondEnd,
+                                        final boolean coordinateSorted) {
         if (firstEnd.isSegmentUnmapped() || secondEnd.isSegmentUnmapped()) {
             return 0;
         }
@@ -337,8 +340,8 @@ public class CramNormalizer {
             return 0;
         }
 
-        final int firstEnd5PrimePosition = firstEnd.isNegativeStrand() ? firstEnd.getAlignmentEnd() : firstEnd.alignmentStart;
-        final int secondEnd5PrimePosition = secondEnd.isNegativeStrand() ? secondEnd.getAlignmentEnd() : secondEnd.alignmentStart;
+        final int firstEnd5PrimePosition = firstEnd.isNegativeStrand() ? firstEnd.getAlignmentEnd(coordinateSorted) : firstEnd.alignmentStart;
+        final int secondEnd5PrimePosition = secondEnd.isNegativeStrand() ? secondEnd.getAlignmentEnd(coordinateSorted) : secondEnd.alignmentStart;
 
         final int adjustment = (secondEnd5PrimePosition >= firstEnd5PrimePosition) ? +1 : -1;
         return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;
