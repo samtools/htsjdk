@@ -192,6 +192,7 @@ public class IntervalList implements Iterable<Interval> {
         return value;
     }
 
+
     /**
      * Sorts and uniques the list of intervals held within this interval list.
      *
@@ -252,7 +253,7 @@ public class IntervalList implements Iterable<Interval> {
      * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames) {
-        return getUniqueIntervals(list, concatenateNames, false);
+        return getUniqueIntervals(list, true, concatenateNames, false);
     }
 
     //NO SIDE EFFECTS HERE!
@@ -260,10 +261,11 @@ public class IntervalList implements Iterable<Interval> {
     /**
      * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
      *
+     * @param combineAbuttingIntervals   If true, intervals that are abutting will be combined into one interval.
      * @param concatenateNames   If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      * @param enforceSameStrands enforce that merged intervals have the same strand, otherwise ignore.
      */
-    public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames, final boolean enforceSameStrands) {
+    public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean combineAbuttingIntervals, final boolean concatenateNames, final boolean enforceSameStrands) {
 
         final List<Interval> intervals;
         if (list.getHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
