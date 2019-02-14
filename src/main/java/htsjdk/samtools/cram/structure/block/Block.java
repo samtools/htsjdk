@@ -52,6 +52,11 @@ public class Block {
     private final BlockContentType contentType;
 
     /**
+     * The External Block Content ID, or NO_CONTENT_ID for non-External block
+     */
+    private final int contentId;
+
+    /**
      * The content stored in this block, in compressed form (if applicable)
      */
     private final byte[] compressedContent;
@@ -66,15 +71,18 @@ public class Block {
      *
      * @param compressionMethod the block compression method.  Can be RAW, if uncompressed
      * @param contentType whether this is a header or data block, and which kind
+     * @param contentId the External Block Content ID, or NO_CONTENT_ID for non-External block
      * @param compressedContent the compressed form of the data to be stored in this block
      * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
     protected Block(final BlockCompressionMethod compressionMethod,
                     final BlockContentType contentType,
+                    final int contentId,
                     final byte[] compressedContent,
                     final int uncompressedLength) {
         this.compressionMethod = compressionMethod;
         this.contentType = contentType;
+        this.contentId = contentId;
         this.compressedContent = compressedContent;
         this.uncompressedLength = uncompressedLength;
 
@@ -83,21 +91,24 @@ public class Block {
 //            throw new CRAMException("Valid Content ID required for external blocks.");
 //        }
 
-        if (contentType != BlockContentType.EXTERNAL && getContentId() != Block.NO_CONTENT_ID) {
+        if (contentType != BlockContentType.EXTERNAL && contentId != Block.NO_CONTENT_ID) {
             throw new CRAMException("Cannot set a Content ID for non-external blocks.");
         }
     }
 
     /**
-     * Protected constructor of a generic Block, to be called by static factory methods and subclasses.
-     * Creates RAW blocks only.
+     * Create a new non-external block with the given uncompressed content.
+     * The block will have RAW (no) compression.
      *
      * @param contentType whether this is a header or data block, and which kind
      * @param rawContent the raw data to be stored in this block
      */
-    protected Block(final BlockContentType contentType,
-                    final byte[] rawContent) {
-        this(BlockCompressionMethod.RAW, contentType, rawContent, rawContent.length);
+    private static Block createRawNonExternalBlock(final BlockContentType contentType, final byte[] rawContent) {
+        if (contentType == BlockContentType.EXTERNAL) {
+            throw new CRAMException("Code error: cannot use the non-external factory method for EXTERNAL blocks.");
+        }
+
+        return new Block(BlockCompressionMethod.RAW, contentType, NO_CONTENT_ID, rawContent, rawContent.length);
     }
 
     /**
@@ -108,7 +119,7 @@ public class Block {
      * @return a new {@link Block} object
      */
     public static Block createRawFileHeaderBlock(final byte[] rawContent) {
-        return new Block(BlockContentType.FILE_HEADER, rawContent);
+        return createRawNonExternalBlock(BlockContentType.FILE_HEADER, rawContent);
     }
 
     /**
@@ -119,7 +130,7 @@ public class Block {
      * @return a new {@link Block} object
      */
     public static Block createRawCompressionHeaderBlock(final byte[] rawContent) {
-        return new Block(BlockContentType.COMPRESSION_HEADER, rawContent);
+        return createRawNonExternalBlock(BlockContentType.COMPRESSION_HEADER, rawContent);
     }
 
     /**
@@ -130,7 +141,7 @@ public class Block {
      * @return a new {@link Block} object
      */
     public static Block createRawSliceHeaderBlock(final byte[] rawContent) {
-        return new Block(BlockContentType.MAPPED_SLICE, rawContent);
+        return createRawNonExternalBlock(BlockContentType.MAPPED_SLICE, rawContent);
     }
 
     /**
@@ -141,7 +152,24 @@ public class Block {
      * @return a new {@link Block} object
      */
     public static Block createRawCoreDataBlock(final byte[] rawContent) {
-        return new Block(BlockContentType.CORE, rawContent);
+        return createRawNonExternalBlock(BlockContentType.CORE, rawContent);
+    }
+
+    /**
+     * Create a new external data block with the given compression method, uncompressed content, and content ID.
+     * The block will have EXTERNAL content type.
+     *
+     * @param compressionMethod the compression method used in this block
+     * @param contentId the external identifier for the block
+     * @param compressedContent the content of this block, in compressed mode
+     * @param uncompressedLength the length of the content stored in this block when uncompressed
+     */
+    public static Block createExternalBlock(final BlockCompressionMethod compressionMethod,
+                                            final int contentId,
+                                            final byte[] compressedContent,
+                                            final int uncompressedLength) {
+        return new Block(compressionMethod, BlockContentType.EXTERNAL,
+                contentId, compressedContent, uncompressedLength);
     }
 
     public final BlockCompressionMethod getCompressionMethod() {
@@ -157,14 +185,12 @@ public class Block {
     }
 
     /**
-     * Return the External Content ID for this block.
-     *
-     * Only ExternalBlocks have a meaningful Content ID, so that class overrides this method.
+     * Return the External Content ID for this block.  Only ExternalBlocks have a meaningful Content ID.
      *
      * @return the External Content ID, or NO_CONTENT_ID
      */
     public int getContentId() {
-        return NO_CONTENT_ID;
+        return contentId;
     }
 
     /**
@@ -232,11 +258,7 @@ public class Block {
                 }
             }
 
-            if (contentType == BlockContentType.EXTERNAL) {
-                return new ExternalBlock(compressionMethod, contentId, compressedContent, uncompressedSize);
-            } else {
-                return new Block(compressionMethod, contentType, compressedContent, uncompressedSize);
-            }
+            return new Block(compressionMethod, contentType, contentId, compressedContent, uncompressedSize);
         }
         catch (final IOException e) {
             throw new RuntimeIOException(e);
