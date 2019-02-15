@@ -85,8 +85,6 @@ public class CramCompressionRecordTest extends HtsjdkTest {
                               final boolean noStartExpectation) {
         final CramCompressionRecord r = new CramCompressionRecord();
 
-        // it's only Placed if both of these are valid
-
         r.sequenceId = 5;
         r.alignmentStart = 10;
         Assert.assertTrue(r.isPlaced(usePositionDeltaEncoding));

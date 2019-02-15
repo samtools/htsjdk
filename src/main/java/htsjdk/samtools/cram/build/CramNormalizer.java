@@ -94,7 +94,8 @@ public class CramNormalizer {
             for (final CramCompressionRecord record : records) {
                 if (record.previous != null) continue;
                 if (record.next == null) continue;
-                restoreMateInfo(record, header.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
+                final boolean usePositionDeltaEncoding = header.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
+                restoreMateInfo(record, usePositionDeltaEncoding);
             }
         }
 
@@ -138,7 +139,7 @@ public class CramNormalizer {
     }
 
     private static void restoreMateInfo(final CramCompressionRecord record,
-                                        final boolean coordinateSorted) {
+                                        final boolean usePositionDeltaEncoding) {
         if (record.next == null) {
 
             return;
@@ -156,7 +157,7 @@ public class CramNormalizer {
 //        record.setFirstSegment(true);
 //        last.setLastSegment(true);
 
-        final int templateLength = computeInsertSize(record, last, coordinateSorted);
+        final int templateLength = computeInsertSize(record, last, usePositionDeltaEncoding);
         record.templateSize = templateLength;
         last.templateSize = -templateLength;
     }
@@ -327,12 +328,12 @@ public class CramNormalizer {
      *
      * @param firstEnd  first mate of the pair
      * @param secondEnd second mate of the pair
-     * @param coordinateSorted do these records have APDelta set?
+     * @param usePositionDeltaEncoding do these records delta-encode their alignment starts?
      * @return template length
      */
     public static int computeInsertSize(final CramCompressionRecord firstEnd,
                                         final CramCompressionRecord secondEnd,
-                                        final boolean coordinateSorted) {
+                                        final boolean usePositionDeltaEncoding) {
         if (firstEnd.isSegmentUnmapped() || secondEnd.isSegmentUnmapped()) {
             return 0;
         }
@@ -340,8 +341,8 @@ public class CramNormalizer {
             return 0;
         }
 
-        final int firstEnd5PrimePosition = firstEnd.isNegativeStrand() ? firstEnd.getAlignmentEnd(coordinateSorted) : firstEnd.alignmentStart;
-        final int secondEnd5PrimePosition = secondEnd.isNegativeStrand() ? secondEnd.getAlignmentEnd(coordinateSorted) : secondEnd.alignmentStart;
+        final int firstEnd5PrimePosition = firstEnd.isNegativeStrand() ? firstEnd.getAlignmentEnd(usePositionDeltaEncoding) : firstEnd.alignmentStart;
+        final int secondEnd5PrimePosition = secondEnd.isNegativeStrand() ? secondEnd.getAlignmentEnd(usePositionDeltaEncoding) : secondEnd.alignmentStart;
 
         final int adjustment = (secondEnd5PrimePosition >= firstEnd5PrimePosition) ? +1 : -1;
         return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;

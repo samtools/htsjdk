@@ -121,63 +121,42 @@ public class SliceTests extends HtsjdkTest {
                           final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, null, coordinateSorted);
         final Slice slice = Slice.buildSlice(records, header);
-
-        Assert.assertEquals(slice.nofRecords, expectedRecordCount);
-        Assert.assertEquals(slice.sequenceId, expectedSequenceId);
-        Assert.assertEquals(slice.alignmentStart, expectedAlignmentStart);
-        Assert.assertEquals(slice.alignmentSpan, expectedAlignmentSpan);
-
-        if (expectedSequenceId == Slice.MULTI_REFERENCE) {
-            Assert.assertTrue(slice.isMultiref());
-        } else if (expectedSequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            Assert.assertTrue(slice.isUnmapped());
-        } else {
-            Assert.assertTrue(slice.isMappedSingleRef());
-        }
+        assertSliceState(slice, expectedRecordCount, expectedSequenceId, expectedAlignmentStart, expectedAlignmentSpan);
     }
 
     // show that a slice with a single ref will initially be built as single-ref
-    // but adding an additional refs will make it multiref
-    // and another will keep it multiref
+    // but adding an additional ref will make it multiref
+    // and more will keep it multiref (mapped or otherwise)
 
     @Test
     public void testBuildStates() {
         final List<CramCompressionRecord> records = new ArrayList<>();
 
-        final CramCompressionRecord record0 = createRecord(0, 0);
-        records.add(record0);
-
-        final CompressionHeader header0 = new CompressionHeaderFactory().build(records, null, true);
-        final Slice slice0 = Slice.buildSlice(records, header0);
-
-        Assert.assertEquals(slice0.nofRecords, 1);
-        Assert.assertEquals(slice0.sequenceId, 0);
-        Assert.assertEquals(slice0.alignmentStart, 1);
-        Assert.assertEquals(slice0.alignmentSpan, 3);
-
-        final CramCompressionRecord record1 = createRecord(1, 1);
+        final CramCompressionRecord record1 = createRecord(0, 0);
         records.add(record1);
-
         final CompressionHeader header1 = new CompressionHeaderFactory().build(records, null, true);
         final Slice slice1 = Slice.buildSlice(records, header1);
+        assertSliceState(slice1, 1, 0, 1, 3);
 
-        Assert.assertEquals(slice1.nofRecords, 2);
-        Assert.assertEquals(slice1.sequenceId, Slice.MULTI_REFERENCE);
-        Assert.assertEquals(slice1.alignmentStart, Slice.NO_ALIGNMENT_START);
-        Assert.assertEquals(slice1.alignmentSpan, Slice.NO_ALIGNMENT_SPAN);
+        final CramCompressionRecord record2 = createRecord(1, 1);
+        records.add(record2);
+        final CompressionHeader header2 = new CompressionHeaderFactory().build(records, null, true);
+        final Slice slice2 = Slice.buildSlice(records, header2);
+        assertSliceState(slice2, 2, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
-        final CramCompressionRecord unmapped = createRecord(2, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        final CramCompressionRecord record3 = createRecord(2, 2);
+        records.add(record3);
+        final CompressionHeader header3 = new CompressionHeaderFactory().build(records, null, true);
+        final Slice slice3 = Slice.buildSlice(records, header3);
+        assertSliceState(slice3, 3, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+
+        final CramCompressionRecord unmapped = createRecord(3, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
         unmapped.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
         unmapped.setSegmentUnmapped(true);
         records.add(unmapped);
-
-        final CompressionHeader header2 = new CompressionHeaderFactory().build(records, null, true);
-        final Slice slice2 = Slice.buildSlice(records, header2);
-
-        Assert.assertEquals(slice2.nofRecords, 3);
-        Assert.assertEquals(slice2.sequenceId, Slice.MULTI_REFERENCE);
-        Assert.assertEquals(slice2.alignmentStart, Slice.NO_ALIGNMENT_START);
-        Assert.assertEquals(slice2.alignmentSpan, Slice.NO_ALIGNMENT_SPAN);
+        final CompressionHeader header4 = new CompressionHeaderFactory().build(records, null, true);
+        final Slice slice4 = Slice.buildSlice(records, header4);
+        assertSliceState(slice4, 4, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
@@ -196,11 +175,27 @@ public class SliceTests extends HtsjdkTest {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, null, true);
 
         final Slice slice = Slice.buildSlice(records, header);
+        assertSliceState(slice, 2, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+    }
 
-        Assert.assertEquals(slice.nofRecords, 2);
-        Assert.assertTrue(slice.isMultiref());
-        Assert.assertEquals(slice.alignmentStart, Slice.NO_ALIGNMENT_START);
-        Assert.assertEquals(slice.alignmentSpan, Slice.NO_ALIGNMENT_SPAN);
+    private void assertSliceState(final Slice slice,
+                                  final int expectedRecordCount,
+                                  final int expectedSequenceId,
+                                  final int expectedAlignmentStart,
+                                  final int expectedAlignmentSpan) {
+
+        Assert.assertEquals(slice.nofRecords, expectedRecordCount);
+        Assert.assertEquals(slice.sequenceId, expectedSequenceId);
+        Assert.assertEquals(slice.alignmentStart, expectedAlignmentStart);
+        Assert.assertEquals(slice.alignmentSpan, expectedAlignmentSpan);
+
+        if (expectedSequenceId == Slice.MULTI_REFERENCE) {
+            Assert.assertTrue(slice.isMultiref());
+        } else if (expectedSequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+            Assert.assertTrue(slice.isUnmapped());
+        } else {
+            Assert.assertTrue(slice.isMappedSingleRef());
+        }
     }
 
     private CramCompressionRecord createRecord(final int index, final int sequenceId) {
