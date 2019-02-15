@@ -152,22 +152,22 @@ public class CramCompressionRecord {
         return stringBuilder.toString();
     }
 
-    public int getAlignmentSpan(final boolean APDelta) {
+    public int getAlignmentSpan(final boolean usePositionDeltaEncoding) {
         if (alignmentSpan < 0) {
-            calculateAlignmentBoundaries(APDelta);
+            calculateAlignmentBoundaries(usePositionDeltaEncoding);
         }
         return alignmentSpan;
     }
 
-    public int getAlignmentEnd(final boolean APDelta) {
+    public int getAlignmentEnd(final boolean usePositionDeltaEncoding) {
         if (alignmentEnd < 0) {
-            calculateAlignmentBoundaries(APDelta);
+            calculateAlignmentBoundaries(usePositionDeltaEncoding);
         }
         return alignmentEnd;
     }
 
-    void calculateAlignmentBoundaries(final boolean APDelta) {
-        if (! isPlaced(APDelta)) {
+    void calculateAlignmentBoundaries(final boolean usePositionDeltaEncoding) {
+        if (! isPlaced(usePositionDeltaEncoding)) {
             alignmentSpan = 0;
             alignmentEnd = SAMRecord.NO_ALIGNMENT_START;
         } else if (readFeatures == null || readFeatures.isEmpty()) {
@@ -225,14 +225,14 @@ public class CramCompressionRecord {
     /**
      * Does this record have a valid placement/alignment location? This is independent of mapping status.
      * It must have a valid reference sequence ID to qualify, as well as a valid alignment start position
-     * in the case of absolute (non-APDelta) position storage.
+     * in the case of absolute (non-usePositionDeltaEncoding) position storage.
      *
      * @see #isSegmentUnmapped()
      * @return true if the record is placed
      */
-    public boolean isPlaced(final boolean APDelta) {
+    public boolean isPlaced(final boolean usePositionDeltaEncoding) {
         // if an absolute alignment start coordinate is required but we have none, it's unplaced
-        if (! APDelta && alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+        if (! usePositionDeltaEncoding && alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
             return false;
         }
 
