@@ -13,12 +13,12 @@ import java.util.ArrayList;
  * Created by vadim on 28/09/2015.
  */
 public class CramCompressionRecordTest extends HtsjdkTest {
-    @DataProvider(name = "tf")
+    @DataProvider(name = "deltaEncodingTrueFalse")
     private Object[][] tf() {
         return new Object[][] { {true}, {false}};
     }
 
-    @Test(dataProvider = "tf")
+    @Test(dataProvider = "deltaEncodingTrueFalse")
     public void test_getAlignmentEnd(final boolean usePositionDeltaEncoding) {
         CramCompressionRecord r = new CramCompressionRecord();
         r.alignmentStart = 1;
