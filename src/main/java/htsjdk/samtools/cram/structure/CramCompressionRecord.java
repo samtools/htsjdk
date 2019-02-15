@@ -24,6 +24,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
 import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
+import htsjdk.samtools.util.Log;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,6 +52,8 @@ public class CramCompressionRecord {
 
     private static final int UNINITIALIZED_END = -1;
     private static final int UNINITIALIZED_SPAN = -1;
+
+    private static final Log log = Log.getInstance(CramCompressionRecord.class);
 
     // sequential index of the record in a stream:
     public int index = 0;
@@ -239,21 +242,42 @@ public class CramCompressionRecord {
     }
 
     /**
-     * Does this record have a valid placement/alignment location? This is independent of mapping status.
-     * It must have a valid reference sequence ID to qualify, as well as a valid alignment start position
-     * in the case of absolute (non-usePositionDeltaEncoding) position storage.
+     * Does this record have a valid placement/alignment location?
+     *
+     * It must have a valid reference sequence ID to be considered placed.
+     * In the case of absolute (non-delta) position encoding, it must also have a
+     * valid alignment start position, so we need to know if it is delta-encoded.
+     *
+     * Normally we expect to see that the unmapped flag is set for unplaced reads,
+     * so we log a WARNING here if the read is unplaced yet somehow mapped.
      *
      * @see #isSegmentUnmapped()
+     * @param usePositionDeltaEncoding is this read's position delta-encoded?  if not, check alignment Start.
      * @return true if the record is placed
      */
     public boolean isPlaced(final boolean usePositionDeltaEncoding) {
-        // if an absolute alignment start coordinate is required but we have none, it's unplaced
-        if (! usePositionDeltaEncoding && alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+        boolean placed = isPlacedInternal(!usePositionDeltaEncoding);
+
+        if (!placed && !isSegmentUnmapped()) {
+            final String warning = String.format(
+                    "Cram Compression Record [%s] does not have the unmapped flag set, " +
+                            "but also does not have a valid placement on a reference sequence.",
+                    this.toString());
+            log.warn(warning);
+        }
+
+        return placed;
+    }
+
+    // check placement without regard to mapping; helper method for isPlaced()
+    private boolean isPlacedInternal(final boolean useAbsolutePositionEncoding) {
+        // placement requires a valid sequence ID
+        if (sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             return false;
         }
 
-        // it's also unplaced if we have no reference
-        return sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+        // if an absolute alignment start coordinate is required but we have none, it's unplaced
+        return ! (useAbsolutePositionEncoding && alignmentStart == SAMRecord.NO_ALIGNMENT_START);
     }
 
     public boolean isFirstSegment() {
