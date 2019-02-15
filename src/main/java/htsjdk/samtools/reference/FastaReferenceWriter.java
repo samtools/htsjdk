@@ -32,6 +32,7 @@ import org.apache.commons.compress.utils.CountingOutputStream;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -183,15 +184,14 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param dictOutput  the (uncompressed) output stream to the dictFile, if requested, {@code null} if none should be generated.
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      */
-    protected FastaReferenceWriter(final int basesPerLine,
+    FastaReferenceWriter(final int basesPerLine,
                                    final OutputStream fastaOutput,
                                    final OutputStream indexOutput,
                                    final OutputStream dictOutput) {
         this.defaultBasePerLine = basesPerLine;
         this.fastaStream = new CountingOutputStream(fastaOutput);
         this.indexWriter = indexOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(indexOutput, CHARSET);
-        final BufferedWriter dictWriter = new BufferedWriter(dictOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(dictOutput, CHARSET));
-        this.dictWriter = dictWriter;
+        this.dictWriter = dictOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(dictOutput, CHARSET);
         this.dictCodec = new SAMSequenceDictionaryCodec(dictWriter);
         this.dictCodec.encodeHeaderLine(false);
     }
@@ -441,7 +441,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      */
     public FastaReferenceWriter appendBases(final String basesBases)
             throws IOException {
-        return appendBases(basesBases.getBytes("ASCII"));
+        return appendBases(basesBases.getBytes(StandardCharsets.US_ASCII));
     }
 
     /**
@@ -592,20 +592,22 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * </p>
      *
      * @throws IOException if such exception is thrown when closing output writers and output streams.
+     * @throws IllegalStateException if closing without writing any sequences or closing when writing a sequence is in progress
      */
+    @Override
     public void close() throws IOException {
-        try {
-            if (!closed) {
+        if (!closed) {
+            try {
                 closeSequence();
                 if (sequenceNames.isEmpty()) {
                     throw new IllegalStateException("no sequences were added to the reference");
                 }
+            } finally {
+                closed = true;
                 fastaStream.close();
                 indexWriter.close();
                 dictWriter.close();
             }
-        } finally {
-            closed = true;
         }
     }
 

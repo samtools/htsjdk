@@ -26,6 +26,7 @@ package htsjdk.samtools.reference;
 
 import htsjdk.utils.ValidationUtils;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -211,13 +212,13 @@ public class FastaReferenceWriterBuilder {
         checkBasesPerLine(basesPerLine);
 
         if (fastaFile != null) {
-            fastaOutput = Files.newOutputStream(fastaFile);
+            fastaOutput = new BufferedOutputStream(Files.newOutputStream(fastaFile));
         }
         if (indexFile != null) {
-            indexOutput = Files.newOutputStream(indexFile);
+            indexOutput = new BufferedOutputStream(Files.newOutputStream(indexFile));
         }
         if (dictFile != null) {
-            dictOutput = Files.newOutputStream(dictFile);
+            dictOutput = new BufferedOutputStream(Files.newOutputStream(dictFile));
         }
 
         return new FastaReferenceWriter(basesPerLine, fastaOutput, indexOutput, dictOutput);

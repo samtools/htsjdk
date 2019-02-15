@@ -62,7 +62,7 @@ public class SAMTextHeaderCodec {
     private ValidationStringency validationStringency = ValidationStringency.SILENT;
 
     // These attributes are populated when generating text
-    private BufferedWriter writer;
+    private Writer writer;
 
     private static final String TAG_KEY_VALUE_SEPARATOR = ":";
     private static final char TAG_KEY_VALUE_SEPARATOR_CHAR = ':';
@@ -73,7 +73,7 @@ public class SAMTextHeaderCodec {
     public static final String COMMENT_PREFIX = HEADER_LINE_START + HeaderRecordType.CO.name() + FIELD_SEPARATOR;
     private static final Log log = Log.getInstance(SAMTextHeaderCodec.class);
 
-    void setWriter(final BufferedWriter writer) {
+    void setWriter(final Writer writer) {
         this.writer = writer;
     }
 
