@@ -156,33 +156,39 @@ public class CramCompressionRecord {
     }
 
     /**
-     *
-     * @param usePositionDeltaEncoding
-     * @return
+     * Check whether alignmentSpan has been initialized, and do so if it has not
+     * @param usePositionDeltaEncoding is this record's position delta-encoded? used to call isPlaced()
+     * @return the initialized alignmentSpan
      */
     public int getAlignmentSpan(final boolean usePositionDeltaEncoding) {
         if (alignmentSpan == UNINITIALIZED_SPAN) {
-            calculateAlignmentBoundaries(usePositionDeltaEncoding);
+            intializeAlignmentBoundaries(usePositionDeltaEncoding);
         }
         return alignmentSpan;
     }
 
+    /**
+     * Check whether alignmentEnd has been initialized, and do so if it has not
+     * @param usePositionDeltaEncoding is this record's position delta-encoded? used to call isPlaced()
+     * @return the initialized alignmentEnd
+     */
     public int getAlignmentEnd(final boolean usePositionDeltaEncoding) {
         if (alignmentEnd == UNINITIALIZED_END) {
-            calculateAlignmentBoundaries(usePositionDeltaEncoding);
+            intializeAlignmentBoundaries(usePositionDeltaEncoding);
         }
         return alignmentEnd;
     }
 
-    void calculateAlignmentBoundaries(final boolean usePositionDeltaEncoding) {
+    private void intializeAlignmentBoundaries(final boolean usePositionDeltaEncoding) {
         if (! isPlaced(usePositionDeltaEncoding)) {
             alignmentSpan = 0;
             alignmentEnd = SAMRecord.NO_ALIGNMENT_START;
-        } else if (readFeatures == null || readFeatures.isEmpty()) {
-            alignmentSpan = readLength;
-            alignmentEnd = alignmentStart + alignmentSpan - 1;
-        } else {
-            alignmentSpan = readLength;
+            return;
+        }
+
+        alignmentSpan = readLength;
+
+        if (readFeatures != null) {
             for (final ReadFeature readFeature : readFeatures) {
                 switch (readFeature.getOperator()) {
                     case InsertBase.operator:
@@ -202,8 +208,10 @@ public class CramCompressionRecord {
                         break;
                 }
             }
-            alignmentEnd = alignmentStart + alignmentSpan - 1;
+
         }
+
+        alignmentEnd = alignmentStart + alignmentSpan - 1;
     }
 
     public boolean isMultiFragment() {
