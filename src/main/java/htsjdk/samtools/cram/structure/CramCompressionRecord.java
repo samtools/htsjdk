@@ -49,12 +49,15 @@ public class CramCompressionRecord {
     private static final int HAS_MATE_DOWNSTREAM_FLAG = 0x4;
     private static final int UNKNOWN_BASES = 0x8;
 
+    private static final int UNINITIALIZED_END = -1;
+    private static final int UNINITIALIZED_SPAN = -1;
+
     // sequential index of the record in a stream:
     public int index = 0;
     public int alignmentStart;
     public int alignmentDelta;
-    private int alignmentEnd = -1;
-    private int alignmentSpan = -1;
+    private int alignmentEnd = UNINITIALIZED_END;
+    private int alignmentSpan = UNINITIALIZED_SPAN;
 
     public int readLength;
 
@@ -152,15 +155,20 @@ public class CramCompressionRecord {
         return stringBuilder.toString();
     }
 
+    /**
+     *
+     * @param usePositionDeltaEncoding
+     * @return
+     */
     public int getAlignmentSpan(final boolean usePositionDeltaEncoding) {
-        if (alignmentSpan < 0) {
+        if (alignmentSpan == UNINITIALIZED_SPAN) {
             calculateAlignmentBoundaries(usePositionDeltaEncoding);
         }
         return alignmentSpan;
     }
 
     public int getAlignmentEnd(final boolean usePositionDeltaEncoding) {
-        if (alignmentEnd < 0) {
+        if (alignmentEnd == UNINITIALIZED_END) {
             calculateAlignmentBoundaries(usePositionDeltaEncoding);
         }
         return alignmentEnd;
