@@ -282,7 +282,7 @@ public class IntervalList implements Iterable<Interval> {
             if (current == null) {
                 toBeMerged.add(next);
                 current = next;
-            } else if (current.intersects(next) || current.abuts(next)) {
+            } else if (current.intersects(next) || (combineAbuttingIntervals && current.abuts(next))) {
                 if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) {
                     throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
                 }

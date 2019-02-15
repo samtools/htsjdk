@@ -74,7 +74,7 @@ public class IntervalUtil {
         }
     }
 
-    static class IntervalListCombiner {
+    public static class IntervalCombiner {
         private boolean combineAbutting = true;
         private boolean concatenateNames = true;
 
@@ -82,24 +82,27 @@ public class IntervalUtil {
             return combineAbutting;
         }
 
-        public void setCombineAbutting(final boolean combineAbutting) {
+        public IntervalCombiner setCombineAbutting(final boolean combineAbutting) {
             this.combineAbutting = combineAbutting;
+            return this;
         }
 
         public boolean isConcatenateNames() {
             return concatenateNames;
         }
 
-        public void setConcatenateNames(final boolean concatenateNames) {
+        public IntervalCombiner setConcatenateNames(final boolean concatenateNames) {
             this.concatenateNames = concatenateNames;
+            return this;
         }
 
         public boolean isEnforceSameStrand() {
             return enforceSameStrand;
         }
 
-        public void setEnforceSameStrand(final boolean enforceSameStrand) {
+        public IntervalCombiner setEnforceSameStrand(final boolean enforceSameStrand) {
             this.enforceSameStrand = enforceSameStrand;
+            return this;
         }
 
         private boolean enforceSameStrand = false;
