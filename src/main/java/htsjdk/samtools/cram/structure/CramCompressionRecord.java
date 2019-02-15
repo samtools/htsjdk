@@ -272,7 +272,7 @@ public class CramCompressionRecord {
     // check placement without regard to mapping; helper method for isPlaced()
     private boolean isPlacedInternal(final boolean useAbsolutePositionEncoding) {
         // placement requires a valid sequence ID
-        if (sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             return false;
         }
 
