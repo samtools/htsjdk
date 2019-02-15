@@ -24,6 +24,8 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
+import htsjdk.samtools.reference.FastaReferenceWriter;
+import htsjdk.samtools.reference.FastaReferenceWriterBuilder;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
@@ -31,14 +33,8 @@ import htsjdk.samtools.util.TestUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.TreeSet;
+import java.nio.file.Path;
+import java.util.*;
 
 /**
  * Factory class for creating SAMRecords for testing purposes. Various methods can be called
@@ -73,7 +69,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
     private boolean unmappedHasBasesAndQualities = true;
 
-    public static final int DEFAULT_CHROMOSOME_LENGTH = 200000000;
+    public static final int DEFAULT_CHROMOSOME_LENGTH = 200_000_000;
 
     public static final ScoringStrategy DEFAULT_DUPLICATE_SCORING_STRATEGY = ScoringStrategy.TOTAL_MAPPED_REFERENCE_LENGTH;
 
@@ -105,7 +101,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
     public SAMRecordSetBuilder(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder, final boolean addReadGroup,
                                final int defaultChromosomeLength, final ScoringStrategy duplicateScoringStrategy) {
-        final List<SAMSequenceRecord> sequences = new ArrayList<SAMSequenceRecord>();
+        final List<SAMSequenceRecord> sequences = new ArrayList<>();
         for (final String chrom : chroms) {
             final SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(chrom, defaultChromosomeLength);
             sequences.add(sequenceRecord);
@@ -121,16 +117,16 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             } else {
                 comparator = new SAMRecordCoordinateComparator();
             }
-            this.records = new TreeSet<SAMRecord>(comparator);
+            this.records = new TreeSet<>(comparator);
         } else {
-            this.records = new ArrayList<SAMRecord>();
+            this.records = new ArrayList<>();
         }
 
         if (addReadGroup) {
             final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(READ_GROUP_ID);
             readGroupRecord.setSample(SAMPLE);
             readGroupRecord.setPlatform("ILLUMINA");
-            final List<SAMReadGroupRecord> readGroups = new ArrayList<SAMReadGroupRecord>();
+            final List<SAMReadGroupRecord> readGroups = new ArrayList<>();
             readGroups.add(readGroupRecord);
             this.header.setReadGroups(readGroups);
         }
@@ -156,8 +152,6 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
     /**
      * Set the seed of the random number generator for cases in which repeatable result is desired.
-     *
-     * @param seed
      */
     public void setRandomSeed(final long seed) {
         random.setSeed(seed);
@@ -312,7 +306,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
                              final boolean recordUnmapped, final String cigar, final String qualityString,
                              final int defaultQuality, final boolean isSecondary) throws SAMException {
         final htsjdk.samtools.SAMRecord rec = createReadNoFlag(name, contig, start, negativeStrand, recordUnmapped, cigar, qualityString, defaultQuality);
-        if (isSecondary) rec.setSecondaryAlignment(true);
+        if (isSecondary) {
+            rec.setSecondaryAlignment(true);
+        }
         this.records.add(rec);
         return rec;
     }
@@ -325,8 +321,12 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
                              final boolean recordUnmapped, final String cigar, final String qualityString,
                              final int defaultQuality, final boolean isSecondary, final boolean isSupplementary) throws SAMException {
         final htsjdk.samtools.SAMRecord rec = createReadNoFlag(name, contig, start, negativeStrand, recordUnmapped, cigar, qualityString, defaultQuality);
-        if (isSecondary) rec.setSecondaryAlignment(true);
-        if (isSupplementary) rec.setSupplementaryAlignmentFlag(true);
+        if (isSecondary) {
+            rec.setSecondaryAlignment(true);
+        }
+        if (isSupplementary) {
+            rec.setSupplementaryAlignmentFlag(true);
+        }
         this.records.add(rec);
         return rec;
     }
@@ -346,11 +346,12 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
     }
 
-    /** If the record contains a cigar with non-zero read length, return that length, otherwise, return readLength
+    /**
+     * If the record contains a cigar with non-zero read length, return that length, otherwise, return readLength
      */
     private int getReadLengthFromCigar(final SAMRecord rec) {
-        return ( rec.getCigar() != null &&
-                 rec.getCigar().getReadLength() != 0 ) ? rec.getCigar().getReadLength() : readLength;
+        return (rec.getCigar() != null &&
+                rec.getCigar().getReadLength() != 0) ? rec.getCigar().getReadLength() : readLength;
     }
 
     /**
@@ -384,7 +385,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end1.setAlignmentStart(start1);
         end1.setReadNegativeStrandFlag(false);
         end1.setCigarString(readLength + "M");
-        if (useNmFlag) end1.setAttribute(ReservedTagConstants.NM, 0);
+        if (useNmFlag) {
+            end1.setAttribute(ReservedTagConstants.NM, 0);
+        }
         end1.setMappingQuality(255);
         end1.setReadPairedFlag(true);
         end1.setProperPairFlag(true);
@@ -404,7 +407,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end2.setAlignmentStart(start2);
         end2.setReadNegativeStrandFlag(true);
         end2.setCigarString(readLength + "M");
-        if (useNmFlag) end2.setAttribute(ReservedTagConstants.NM, 0);
+        if (useNmFlag) {
+            end2.setAttribute(ReservedTagConstants.NM, 0);
+        }
         end2.setMappingQuality(255);
         end2.setReadPairedFlag(true);
         end2.setProperPairFlag(true);
@@ -444,7 +449,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
                                    final boolean record1Unmapped, final boolean record2Unmapped, final String cigar1,
                                    final String cigar2, final boolean strand1, final boolean strand2, final boolean record1NonPrimary,
                                    final boolean record2NonPrimary, final int defaultQuality) {
-        final List<SAMRecord> recordsList = new LinkedList<SAMRecord>();
+        final List<SAMRecord> recordsList = new LinkedList<>();
 
         final SAMRecord end1 = createReadNoFlag(name, contig1, start1, strand1, record1Unmapped, cigar1, null, defaultQuality);
         final SAMRecord end2 = createReadNoFlag(name, contig2, start2, strand2, record2Unmapped, cigar2, null, defaultQuality);
@@ -459,11 +464,19 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end2.setReadPairedFlag(true);
         end2.setSecondOfPairFlag(true);
 
-        if (record1NonPrimary) end1.setSecondaryAlignment(true);
-        if (record2NonPrimary) end2.setSecondaryAlignment(true);
+        if (record1NonPrimary) {
+            end1.setSecondaryAlignment(true);
+        }
+        if (record2NonPrimary) {
+            end2.setSecondaryAlignment(true);
+        }
 
-        if (record1NonPrimary) end1.setSecondaryAlignment(true);
-        if (record2NonPrimary) end2.setSecondaryAlignment(true);
+        if (record1NonPrimary) {
+            end1.setSecondaryAlignment(true);
+        }
+        if (record2NonPrimary) {
+            end2.setSecondaryAlignment(true);
+        }
 
         // set mate info
         SamPairUtil.setMateInfo(end1, end2, true);
@@ -578,7 +591,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
 
         this.header.setAttribute("VN", "1.0");
-        try(final SAMFileWriter w = this.useBamFile ?
+        try (final SAMFileWriter w = this.useBamFile ?
                 new SAMFileWriterFactory().makeBAMWriter(this.header, true, tempFile) :
                 new SAMFileWriterFactory().makeSAMWriter(this.header, true, tempFile)) {
             for (final SAMRecord r : this.getRecords()) {
@@ -597,4 +610,22 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         this.readLength = readLength;
     }
 
+    public void writeRandomReference(final Path fasta) throws IOException {
+        final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder();
+        final FastaReferenceWriter writer = builder.setFastaFile(fasta).build();
+
+        final Random random = new Random();
+        getHeader().getSequenceDictionary()
+                .getSequences()
+                .forEach(seq -> {
+                    try {
+                        writer.startSequence(seq.getSequenceName());
+                        random.setSeed(seq.getSequenceName().hashCode());
+                        writer.appendBases(SequenceUtil.getRandomBases(random, seq.getSequenceLength()));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
 }
+
