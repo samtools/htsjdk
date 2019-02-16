@@ -611,21 +611,23 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     }
 
     public void writeRandomReference(final Path fasta) throws IOException {
-        final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder();
-        final FastaReferenceWriter writer = builder.setFastaFile(fasta).build();
+        final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder().setFastaFile(fasta);
 
-        final Random random = new Random();
-        getHeader().getSequenceDictionary()
-                .getSequences()
-                .forEach(seq -> {
-                    try {
-                        writer.startSequence(seq.getSequenceName());
-                        random.setSeed(seq.getSequenceName().hashCode());
-                        writer.appendBases(SequenceUtil.getRandomBases(random, seq.getSequenceLength()));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
+        try (FastaReferenceWriter writer = builder.build()) {
+
+            final Random random = new Random();
+            getHeader().getSequenceDictionary()
+                    .getSequences()
+                    .forEach(seq -> {
+                        try {
+                            writer.startSequence(seq.getSequenceName());
+                            random.setSeed(seq.getSequenceName().hashCode());
+                            writer.appendBases(SequenceUtil.getRandomBases(random, seq.getSequenceLength()));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
+        }
     }
 }
 
