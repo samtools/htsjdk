@@ -259,7 +259,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final int recordLength;
         try {
             recordLength = this.binaryCodec.readInt();
-        } catch (RuntimeEOFException e) {
+        } catch (final RuntimeEOFException e) {
             return null;
         }
 
