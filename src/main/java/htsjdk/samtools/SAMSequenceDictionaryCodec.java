@@ -25,7 +25,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.LineReader;
-import java.io.BufferedWriter;
+
 import java.io.Writer;
 
 /**
