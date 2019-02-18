@@ -45,7 +45,7 @@ import java.util.NoSuchElementException;
  * @author vadim
  */
 @SuppressWarnings("UnusedDeclaration")
-public class CRAMFileReader extends SamReader.ReaderImplementation implements SamReader.Indexing {
+public class CRAMFileReader extends SamReader.ReaderImplementation implements SamReader.Indexing, AutoCloseable {
     private File cramFile;
     private final CRAMReferenceSource referenceSource;
     private InputStream inputStream;

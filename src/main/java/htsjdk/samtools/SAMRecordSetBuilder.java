@@ -101,22 +101,12 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
     public SAMRecordSetBuilder(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder, final boolean addReadGroup,
                                final int defaultChromosomeLength, final ScoringStrategy duplicateScoringStrategy) {
-        final List<SAMSequenceRecord> sequences = new ArrayList<>();
-        for (final String chrom : chroms) {
-            final SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(chrom, defaultChromosomeLength);
-            sequences.add(sequenceRecord);
-        }
 
-        this.header = new SAMFileHeader();
-        this.header.setSequenceDictionary(new SAMSequenceDictionary(sequences));
-        this.header.setSortOrder(sortOrder);
-        if (sortForMe) {
-            final SAMRecordComparator comparator;
-            if (sortOrder == SAMFileHeader.SortOrder.queryname) {
-                comparator = new SAMRecordQueryNameComparator();
-            } else {
-                comparator = new SAMRecordCoordinateComparator();
-            }
+        this.header = makeDefaultHeader(sortOrder, defaultChromosomeLength);
+
+        final SAMRecordComparator comparator = sortOrder.getComparatorInstance();
+
+        if (sortForMe && comparator != null) {
             this.records = new TreeSet<>(comparator);
         } else {
             this.records = new ArrayList<>();
@@ -610,19 +600,77 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         this.readLength = readLength;
     }
 
+    /**
+     * creates a simple header
+     *
+     * @param sortOrder   Use this sort order in the header
+     * @param contigLength length of the other contigs
+     * @return newly formed header
+     */
+    static public SAMFileHeader makeDefaultHeader(final SAMFileHeader.SortOrder sortOrder, final int contigLength) {
+        final List<SAMSequenceRecord> sequences = new ArrayList<>();
+        for (final String chrom : chroms) {
+            final SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(chrom, contigLength);
+            sequences.add(sequenceRecord);
+        }
+
+
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSequenceDictionary(new SAMSequenceDictionary(sequences));
+        header.setSortOrder(sortOrder);
+        return header;
+    }
+
+
+    /**
+     * Writes a random (but deterministic) reference file given a {@link SAMFileHeader}
+     * output file is expected to have a non-compressed fasta suffix.
+     * Method will also write .dict and .fai files next to the reference file.
+     * files next to the provided. Will use the current {@link SAMFileHeader} to model
+     * the reference on.
+     *
+     * @param fasta Path to output reference where it will be written. No checks will be
+     *              performed regarding the writability, or existence of the files prior to writing.
+     * @throws IOException In case of problem during writing the files.
+     **/
+
     public void writeRandomReference(final Path fasta) throws IOException {
+        writeRandomReference(getHeader(), fasta);
+    }
+
+    /**
+     * Writes a random (but deterministic) reference file given a {@link SAMFileHeader}
+     * output file is expected to have a non-compressed fasta suffix.
+     * Method will also write .dict and .fai files next to the reference file.
+     * files next to the provided
+     *
+     * @param header Header file to base the reference on. Length and names of sequences will be
+     *               taken from here, as will the order of the contigs in the reference.
+     * @param fasta  Path to output reference where it will be written. No checks will be performed
+     *               regarding the writability, or existence of the files prior to writing.
+     * @throws IOException In case of problem during writing the files.
+     **/
+    public static void writeRandomReference(final SAMFileHeader header, final Path fasta) throws IOException {
+        final int MAX_WRITE_AT_A_TIME = 10_000;
+        final byte[] buffer = new byte[MAX_WRITE_AT_A_TIME];
         final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder().setFastaFile(fasta);
 
         try (FastaReferenceWriter writer = builder.build()) {
 
             final Random random = new Random();
-            getHeader().getSequenceDictionary()
+            header.getSequenceDictionary()
                     .getSequences()
                     .forEach(seq -> {
                         try {
                             writer.startSequence(seq.getSequenceName());
-                            random.setSeed(seq.getSequenceName().hashCode());
-                            writer.appendBases(SequenceUtil.getRandomBases(random, seq.getSequenceLength()));
+                            random.setSeed(Objects.hash(seq.getSequenceName(), seq.getSequenceLength()));
+                            int written = 0;
+                            while (written < seq.getSequenceLength()) {
+                                final int writeLength = Math.min(seq.getSequenceLength() - written, MAX_WRITE_AT_A_TIME);
+                                SequenceUtil.getRandomBases(random, writeLength, buffer);
+                                writer.appendBases(buffer, 0, writeLength);
+                                written += writeLength;
+                            }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }

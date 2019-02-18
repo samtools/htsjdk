@@ -1084,13 +1084,27 @@ public class SequenceUtil {
      * @return an array of random DNA bases of the requested length.
      */
     static public byte[] getRandomBases(Random random, final int length) {
-        ValidationUtils.validateArg(length>=0, "length must be positive");
         final byte[] bases = new byte[length];
+        getRandomBases(random, length, bases);
+        return bases;
+    }
+
+    /**
+     * Fills an array of bytes with random DNA bases. Will overwrite
+     * first {@code length} byte with new bases. if {@code length} is
+     * less than the size of the input array, the remaining bases will
+     * not be modified.
+     *
+     * @param random A {@link Random} object to use for drawing random bases
+     * @param length How many bases to return.
+     * @param bases  Array to use for bases (from index 0)
+     */
+    static public void getRandomBases(Random random, final int length, final byte[] bases) {
+        ValidationUtils.validateArg(length >= 0, "length must be positive");
+        ValidationUtils.validateArg(length <= bases.length, "length must no larger than size of input array");
 
         for (int i = 0; i < length; ++i) {
             bases[i] = VALID_BASES_UPPER[random.nextInt(VALID_BASES_UPPER.length)];
         }
-
-        return bases;
     }
 }
