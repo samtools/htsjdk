@@ -25,7 +25,8 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.LineReader;
-import java.io.BufferedWriter;
+
+import java.io.Writer;
 
 /**
  * "On the fly" codec SAMSequenceDictionaryCodec.
@@ -67,7 +68,7 @@ public class SAMSequenceDictionaryCodec {
 
     private final SAMTextHeaderCodec codec;
 
-    public SAMSequenceDictionaryCodec(final BufferedWriter writer) {
+    public SAMSequenceDictionaryCodec(final Writer writer) {
         codec = new SAMTextHeaderCodec();
         codec.setmFileHeader(EMPTY_HEADER);
         codec.setWriter(writer);
