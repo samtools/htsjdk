@@ -29,7 +29,7 @@ import java.io.OutputStream;
 
 public class IntervalCodec implements SortingCollection.Codec<Interval> {
 
-    private SAMSequenceDictionary dict;
+    private final SAMSequenceDictionary dict;
 
     private final BinaryCodec binaryCodec = new BinaryCodec();
 

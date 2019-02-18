@@ -29,11 +29,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTextHeaderCodec;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -601,35 +597,14 @@ public class IntervalList implements Iterable<Interval> {
      * @param file a file to write to.  If exists it will be overwritten.
      */
     public void write(final File file) {
-        try (final BufferedWriter out = IOUtil.openFileForBufferedWriting(file)) {
-            final FormatUtil format = new FormatUtil();
-
-            // Write out the header
-            if (this.header != null) {
-                final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-                codec.encode(out, this.header);
-            }
-
-            // Write out the intervals
+        try {
+            final IntervalListWriter writer = new IntervalListWriter(file, this.header);
             for (final Interval interval : this) {
-                out.write(interval.getContig());
-                out.write('\t');
-                out.write(format.format(interval.getStart()));
-                out.write('\t');
-                out.write(format.format(interval.getEnd()));
-                out.write('\t');
-                out.write(interval.isPositiveStrand() ? '+' : '-');
-                out.write('\t');
-                if (interval.getName() != null) {
-                    out.write(interval.getName());
-                } else {
-                    out.write(".");
-                }
-                out.newLine();
+                writer.write(interval);
             }
-
-            out.flush();
-        } catch (final IOException ioe) {
+            writer.close();
+        }
+        catch (final IOException ioe) {
             throw new SAMException("Error writing out interval list to file: " + file.getAbsolutePath(), ioe);
         }
     }
