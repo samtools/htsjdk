@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
@@ -7,6 +9,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by vadim on 28/09/2015.
@@ -84,5 +87,42 @@ public class CramCompressionRecordTest extends HtsjdkTest {
 
         r.alignmentStart = 15;
         Assert.assertTrue(r.isPlaced());
+    }
+
+    @Test
+    public void testEqualsAndHashCodeAreConsistent() {
+        final List<CramCompressionRecord> records = new ArrayList<>();
+
+        for (int alignmentStart : new int[] {0, 1}) {
+            for (int readLength : new int[] {100, 101}) {
+                for (int flags : new int[] {0, 0x4}) {
+                    for (List<ReadFeature> readFeatures : Lists.<List<ReadFeature>>newArrayList(null, new ArrayList<>())) {
+                        for (String readName : new String[] {null, "r"}) {
+                            for (byte[] readBases : new byte[][]{null, new byte[]{(byte) 'A', (byte) 'C'}}) {
+                                for (byte[] qualityScores : new byte[][]{null, new byte[]{(byte) 1, (byte) 2}}) {
+                                    final CramCompressionRecord r = new CramCompressionRecord();
+                                    r.alignmentStart = alignmentStart;
+                                    r.readLength = readLength;
+                                    r.flags = flags;
+                                    r.readFeatures = readFeatures;
+                                    r.readName = readName;
+                                    r.readBases = readBases;
+                                    r.qualityScores = qualityScores;
+                                    records.add(r);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (CramCompressionRecord r1 : records) {
+            for (CramCompressionRecord r2 : records) {
+                if (r1.equals(r2)) {
+                    Assert.assertEquals(r1.hashCode(), r2.hashCode(), String.format("Comparing %s and %s", r1, r2));
+                }
+            }
+        }
     }
 }

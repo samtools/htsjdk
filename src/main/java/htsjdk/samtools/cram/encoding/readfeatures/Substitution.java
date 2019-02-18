@@ -119,6 +119,9 @@ public class Substitution implements Serializable, ReadFeature {
 
     @Override
     public int hashCode() {
+        if (code == NO_CODE) {
+            return Objects.hash(position);
+        }
         return Objects.hash(position, base, referenceBase, code);
     }
 

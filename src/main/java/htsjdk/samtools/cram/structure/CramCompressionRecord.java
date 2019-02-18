@@ -136,7 +136,10 @@ public class CramCompressionRecord {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(alignmentStart, readLength, recordsToNextFragment, mappingQuality, readFeatures, flags, readName);
+        int result = Objects.hash(alignmentStart, readLength, recordsToNextFragment, mappingQuality, flags, readName);
+        if (readFeatures != null && !readFeatures.isEmpty()) {
+            result = 31 * result + Objects.hash(readFeatures);
+        }
         result = 31 * result + Arrays.hashCode(readBases);
         result = 31 * result + Arrays.hashCode(qualityScores);
         return result;
