@@ -109,6 +109,7 @@ test {
         exclude "broken"
         exclude "defaultReference"
         exclude "ftp"
+        exclude "http"
         exclude "sra"
         exclude "ena"
 
@@ -127,11 +128,12 @@ task testFTP(type: Test) {
 }
 
 task testExternalApis(type: Test) {
-    description = "Run the SRA and ENA tests (tests that interact with external APIs)"
+    description = "Run the SRA, ENA, and HTTP tests (tests that interact with external APIs)"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
     tags {
         include "sra"
+        include "http"
         include "ena"
         exclude "slow"
         exclude "broken"
