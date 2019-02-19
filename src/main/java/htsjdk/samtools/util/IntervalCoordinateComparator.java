@@ -78,4 +78,3 @@ public class IntervalCoordinateComparator implements Comparator<Interval>, Seria
         return retval;
     }
 }
-}

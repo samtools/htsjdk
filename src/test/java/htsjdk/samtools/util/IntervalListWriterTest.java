@@ -36,14 +36,16 @@ public class IntervalListWriterTest extends HtsjdkTest {
         expectedList.add(new Interval("chr1", 50, 150, true, "number-5"));
         expectedList.add(new Interval("chr1", 150, 250, false, "number-6"));
 
-        final IntervalListWriter writer = new IntervalListWriter(tempFile, new SAMFileHeader(this.dict));
+        final IntervalListWriter writer = new IntervalListWriter(tempFile.toPath(), new SAMFileHeader(this.dict));
         for (final Interval interval : expectedList.getIntervals()) {
             writer.write(interval);
         }
         writer.close();
 
         final IntervalList actualList = IntervalList.fromFile(tempFile);
-
+        final SAMSequenceDictionary actualDict = actualList.getHeader().getSequenceDictionary();
+        final SAMSequenceDictionary expectedDict = expectedList.getHeader().getSequenceDictionary();
+        Assert.assertTrue(actualDict.isSameDictionary(expectedDict));
         Assert.assertEquals(
                 actualList.getIntervals(),
                 expectedList.getIntervals()

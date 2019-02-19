@@ -592,21 +592,30 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
+     * Writes out the list of intervals to the supplied path.
+     *
+     * @param path a path to write to.  If exists it will be overwritten.
+     */
+    public void write(final Path path) {
+        try {
+            try (IntervalListWriter writer = new IntervalListWriter(path, this.header)) {
+                for (final Interval interval : this) {
+                    writer.write(interval);
+                }
+            }
+        }
+        catch (final IOException ioe) {
+            throw new SAMException("Error writing out interval list to file: " + path.toAbsolutePath(), ioe);
+        }
+    }
+
+    /**
      * Writes out the list of intervals to the supplied file.
      *
      * @param file a file to write to.  If exists it will be overwritten.
      */
     public void write(final File file) {
-        try {
-            final IntervalListWriter writer = new IntervalListWriter(file, this.header);
-            for (final Interval interval : this) {
-                writer.write(interval);
-            }
-            writer.close();
-        }
-        catch (final IOException ioe) {
-            throw new SAMException("Error writing out interval list to file: " + file.getAbsolutePath(), ioe);
-        }
+        this.write(file.toPath());
     }
 
     /**

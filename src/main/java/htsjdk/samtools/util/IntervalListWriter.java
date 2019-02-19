@@ -30,6 +30,7 @@ import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Writes out the list of intervals to the supplied file.  This class is particularly useful if we have many intervals
@@ -41,18 +42,18 @@ public class IntervalListWriter implements Closeable {
     private final FormatUtil format = new FormatUtil();
 
     /** Creates a new writer, writing a header to the file.
-     * @param file a file to write to.  If exists it will be overwritten.
+     * @param path a path to write to.  If exists it will be overwritten.
      */
-    public IntervalListWriter(final File file) {
-        this(file, null);
+    public IntervalListWriter(final Path path) {
+        this(path, null);
     }
 
     /** Creates a new writer, writing a header to the file.
-     * @param file a file to write to.  If exists it will be overwritten.
+     * @param path a file to write to.  If exists it will be overwritten.
      * @param header the header to write.
      */
-    public IntervalListWriter(final File file, final SAMFileHeader header) {
-        out = IOUtil.openFileForBufferedWriting(file);
+    public IntervalListWriter(final  Path path, final SAMFileHeader header) {
+        out = IOUtil.openFileForBufferedWriting(path.toFile());
 
         // Write out the header
         if (header != null) {
@@ -67,9 +68,9 @@ public class IntervalListWriter implements Closeable {
     public void write(final Interval interval) throws IOException {
         out.write(interval.getContig());
         out.write('\t');
-        out.write(format.format(interval.getStart()));
+        out.write(Integer.toString(interval.getStart()));
         out.write('\t');
-        out.write(format.format(interval.getEnd()));
+        out.write(Integer.toString(interval.getEnd()));
         out.write('\t');
         out.write(interval.isPositiveStrand() ? '+' : '-');
         out.write('\t');
