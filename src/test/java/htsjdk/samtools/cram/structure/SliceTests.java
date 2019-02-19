@@ -200,7 +200,8 @@ public class SliceTests extends HtsjdkTest {
         }
     }
 
-    private CramCompressionRecord createRecord(final int index, final int sequenceId) {
+    private CramCompressionRecord createRecord(final int index,
+                                               final int sequenceId) {
         final CramCompressionRecord record = new CramCompressionRecord();
         record.readBases = "AAA".getBytes();
         record.qualityScores = "!!!".getBytes();
@@ -210,46 +211,57 @@ public class SliceTests extends HtsjdkTest {
         record.alignmentStart = index + 1;
         record.setLastSegment(true);
         record.readFeatures = Collections.emptyList();
+        record.setSegmentUnmapped(false);
+        return record;
+    }
 
+    // set half of the records created as unmapped, alternating by index
+
+    private CramCompressionRecord createRecordHalfUnmapped(final int index,
+                                                           final int sequenceId) {
+        final CramCompressionRecord record = createRecord(index, sequenceId);
         if (index % 2 == 0) {
             record.setSegmentUnmapped(true);
         } else {
             record.setSegmentUnmapped(false);
         }
-
         return record;
     }
 
     private List<CramCompressionRecord> getSingleRefRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < TEST_RECORD_COUNT; i++) {
-            records.add(createRecord(i, 0));
+        for (int index = 0; index < TEST_RECORD_COUNT; index++) {
+            records.add(createRecordHalfUnmapped(index, 0));
         }
         return records;
     }
 
     private List<CramCompressionRecord> getMultiRefRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < TEST_RECORD_COUNT; i++) {
-            records.add(createRecord(i, i));
+        for (int index = 0; index < TEST_RECORD_COUNT; index++) {
+            records.add(createRecordHalfUnmapped(index, index));
         }
         return records;
     }
 
+
     private List<CramCompressionRecord> getNoRefRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < TEST_RECORD_COUNT; i++) {
-            records.add(createRecord(i, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+        for (int index = 0; index < TEST_RECORD_COUNT; index++) {
+            final CramCompressionRecord record = createRecord(index, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+            record.setSegmentUnmapped(true);
+            records.add(record);
         }
         return records;
     }
 
     private List<CramCompressionRecord> getNoStartRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < TEST_RECORD_COUNT; i++) {
-            final CramCompressionRecord rec = createRecord(i, i);
-            rec.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-            records.add(rec);
+        for (int index = 0; index < TEST_RECORD_COUNT; index++) {
+            final CramCompressionRecord record = createRecord(index, index);
+            record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+            record.setSegmentUnmapped(true);
+            records.add(record);
         }
         return records;
     }
