@@ -184,8 +184,8 @@ public class CramCompressionRecord {
 
     private void intializeAlignmentBoundaries(final boolean usePositionDeltaEncoding) {
         if (!isPlaced(usePositionDeltaEncoding)) {
-            alignmentSpan = 0;
-            alignmentEnd = SAMRecord.NO_ALIGNMENT_START;
+            alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+            alignmentEnd = Slice.NO_ALIGNMENT_END;
             return;
         }
 

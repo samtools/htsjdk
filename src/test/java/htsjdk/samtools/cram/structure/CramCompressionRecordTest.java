@@ -162,4 +162,27 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         r.setSegmentUnmapped(!mapped);
         Assert.assertEquals(r.isPlaced(usePositionDeltaEncoding), placementExpectation);
     }
+
+    @Test(dataProvider = "placedTests")
+    public void test_placementForAlignmentSpanAndEnd(final int sequenceId,
+                                                     final int alignmentStart,
+                                                     final boolean mapped,
+                                                     final boolean usePositionDeltaEncoding,
+                                                     final boolean placementExpectation) {
+        final CramCompressionRecord r = new CramCompressionRecord();
+        r.sequenceId = sequenceId;
+        r.alignmentStart = alignmentStart;
+        r.setSegmentUnmapped(!mapped);
+        final int readLength = 100;
+        r.readLength = readLength;
+
+        if (placementExpectation) {
+            Assert.assertEquals(r.getAlignmentSpan(usePositionDeltaEncoding), readLength);
+            Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), alignmentStart + readLength - 1);
+        }
+        else {
+            Assert.assertEquals(r.getAlignmentSpan(usePositionDeltaEncoding), Slice.NO_ALIGNMENT_SPAN);
+            Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), Slice.NO_ALIGNMENT_END);
+        }
+    }
 }

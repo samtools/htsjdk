@@ -52,6 +52,7 @@ public class Slice {
     public static final int MULTI_REFERENCE = -2;
     public static final int NO_ALIGNMENT_START = -1;
     public static final int NO_ALIGNMENT_SPAN = 0;
+    public static final int NO_ALIGNMENT_END = SAMRecord.NO_ALIGNMENT_START; // 0
     private static final Log log = Log.getInstance(Slice.class);
 
     // as defined in the specs:
