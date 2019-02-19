@@ -20,13 +20,15 @@ public class CramCompressionRecordTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "deltaEncodingTrueFalse")
-    public void test_getAlignmentSpan(final boolean usePositionDeltaEncoding) {
+    public void test_getAlignmentSpanAndEnd(final boolean usePositionDeltaEncoding) {
         CramCompressionRecord r = new CramCompressionRecord();
         int readLength = 100;
         r.alignmentStart = 5;
         r.readLength = readLength;
         r.setSegmentUnmapped(false);
-        Assert.assertEquals(r.getAlignmentSpan(usePositionDeltaEncoding), r.readLength);
+
+        int expectedSpan = r.readLength;
+        assertSpanAndEnd(r, usePositionDeltaEncoding, expectedSpan);
 
         r = new CramCompressionRecord();
         r.alignmentStart = 10;
@@ -35,7 +37,9 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         r.readFeatures = new ArrayList<>();
         String softClip = "AAA";
         r.readFeatures.add(new SoftClip(1, softClip.getBytes()));
-        Assert.assertEquals(r.getAlignmentSpan(usePositionDeltaEncoding), r.readLength - softClip.length());
+
+        expectedSpan = r.readLength - softClip.length();
+        assertSpanAndEnd(r, usePositionDeltaEncoding, expectedSpan);
 
         r = new CramCompressionRecord();
         r.alignmentStart = 20;
@@ -44,7 +48,9 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         r.readFeatures = new ArrayList<>();
         int deletionLength = 5;
         r.readFeatures.add(new Deletion(1, deletionLength));
-        Assert.assertEquals(r.getAlignmentSpan(usePositionDeltaEncoding), r.readLength + deletionLength);
+
+        expectedSpan = r.readLength + deletionLength;
+        assertSpanAndEnd(r, usePositionDeltaEncoding, expectedSpan);
 
         r = new CramCompressionRecord();
         r.alignmentStart = 30;
@@ -53,7 +59,9 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         r.readFeatures = new ArrayList<>();
         String insertion = "CCCCCCCCCC";
         r.readFeatures.add(new Insertion(1, insertion.getBytes()));
-        Assert.assertEquals(r.getAlignmentSpan(usePositionDeltaEncoding), r.readLength - insertion.length());
+
+        expectedSpan = r.readLength - insertion.length();
+        assertSpanAndEnd(r, usePositionDeltaEncoding, expectedSpan);
 
         r = new CramCompressionRecord();
         r.alignmentStart = 40;
@@ -61,52 +69,17 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         r.setSegmentUnmapped(false);
         r.readFeatures = new ArrayList<>();
         r.readFeatures.add(new InsertBase(1, (byte) 'A'));
-        Assert.assertEquals(r.getAlignmentSpan(usePositionDeltaEncoding), r.readLength - 1);
+
+        expectedSpan = r.readLength - 1;
+        assertSpanAndEnd(r, usePositionDeltaEncoding, expectedSpan);
     }
 
-    @Test(dataProvider = "deltaEncodingTrueFalse")
-    public void test_getAlignmentEnd(final boolean usePositionDeltaEncoding) {
-        CramCompressionRecord r = new CramCompressionRecord();
-        int readLength = 100;
-        r.alignmentStart = 5;
-        r.readLength = readLength;
-        r.setSegmentUnmapped(false);
-        Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), r.readLength + r.alignmentStart - 1);
-
-        r = new CramCompressionRecord();
-        r.alignmentStart = 10;
-        r.readLength = readLength;
-        r.setSegmentUnmapped(false);
-        r.readFeatures = new ArrayList<>();
-        String softClip = "AAA";
-        r.readFeatures.add(new SoftClip(1, softClip.getBytes()));
-        Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), r.readLength + r.alignmentStart - 1 - softClip.length());
-
-        r = new CramCompressionRecord();
-        r.alignmentStart = 20;
-        r.readLength = readLength;
-        r.setSegmentUnmapped(false);
-        r.readFeatures = new ArrayList<>();
-        int deletionLength = 5;
-        r.readFeatures.add(new Deletion(1, deletionLength));
-        Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), r.readLength + r.alignmentStart - 1 + deletionLength);
-
-        r = new CramCompressionRecord();
-        r.alignmentStart = 30;
-        r.readLength = readLength;
-        r.setSegmentUnmapped(false);
-        r.readFeatures = new ArrayList<>();
-        String insertion = "CCCCCCCCCC";
-        r.readFeatures.add(new Insertion(1, insertion.getBytes()));
-        Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), r.readLength + r.alignmentStart - 1 - insertion.length());
-
-        r = new CramCompressionRecord();
-        r.alignmentStart = 40;
-        r.readLength = readLength;
-        r.setSegmentUnmapped(false);
-        r.readFeatures = new ArrayList<>();
-        r.readFeatures.add(new InsertBase(1, (byte) 'A'));
-        Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), r.readLength + r.alignmentStart - 1 - 1);
+    private void assertSpanAndEnd(final CramCompressionRecord r,
+                                  final boolean usePositionDeltaEncoding,
+                                  final int expectedSpan) {
+        final int expectedEnd = expectedSpan + r.alignmentStart - 1;
+        Assert.assertEquals(r.getAlignmentSpan(usePositionDeltaEncoding), expectedSpan);
+        Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), expectedEnd);
     }
 
     // show that alignmentEnd and alignmentSpan are set once only and do not update
