@@ -8,16 +8,14 @@ import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
-import jdk.internal.org.objectweb.asm.tree.VarInsnNode;
+//import jdk.internal.org.objectweb.asm.tree.VarInsnNode;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
-import java.util.function.Function;
+
 
 
 public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
@@ -53,8 +51,8 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
         try (TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader = new TribbleIndexedFeatureReader<>(inputFilePath, null,  new VCFCodec(), true)) {
             Assert.assertTrue(featureReader.hasIndex());
 
-            String indexFilePath = Tribble.indexFile("file//" + inputFilePath);
-            File indexFile = new File(indexFilePath);
+            final String indexFilePath = Tribble.indexFile("file//" + inputFilePath);
+            final File indexFile = new File(indexFilePath);
             indexFile.delete();
         }
     }
@@ -68,14 +66,14 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
             Assert.assertTrue(featureReader.hasIndex());
         }
             String initialIndexFilePath = Tribble.indexFile("file//" + inputFilePath);
-            File initialIndexFile = new File(initialIndexFilePath);
+            final File initialIndexFile = new File(initialIndexFilePath);
             initialTime = initialIndexFile.lastModified();
 
         try(TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader = new TribbleIndexedFeatureReader<>(inputFilePath, null,  new VCFCodec(), true)) {
             Assert.assertTrue(featureReader.hasIndex());
         }
-            String modifiedIndexFilePath = Tribble.indexFile("file//" + inputFilePath);
-            File modifiedIndexFile = new File(modifiedIndexFilePath);
+            final String modifiedIndexFilePath = Tribble.indexFile("file//" + inputFilePath);
+            final File modifiedIndexFile = new File(modifiedIndexFilePath);
             modifiedTime = modifiedIndexFile.lastModified();
             Assert.assertEquals(initialTime, modifiedTime);
 

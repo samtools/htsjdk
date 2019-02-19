@@ -40,12 +40,13 @@ import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFUtils;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import javax.print.DocFlavor;
+import java.io.*;
 import java.net.URI;
+import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,6 +55,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
+
+import static htsjdk.samtools.util.IOUtil.isUrl;
+
 
 /**
  * A reader for text feature files  (i.e. not tabix files).   This includes tribble-indexed and non-indexed files.  If
@@ -179,7 +183,21 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                 index = IndexFactory.loadIndex(indexFile, indexWrapper);
             } else {
                 //if there is no index we create it
-                final File inputVCF = new File(this.path.replace("file://","") );
+
+                if (isUrl(this.path)) {
+                    new File("TribbleTmpDir").mkdir();
+                    final File inputVCF = File.createTempFile("tmpURLFile", ".vcf", new File ("TribbleTmpDir"));
+                    inputVCF.deleteOnExit();
+                    URL url = new URL(this.path);
+                    ReadableByteChannel rbc = Channels.newChannel((url.openStream()));
+                    FileOutputStream out = new FileOutputStream("tempURLFile.vcf");
+                    out.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                    rbc.close();
+                    out.close();
+                    this.path = "file://" + inputVCF.getAbsolutePath();
+                }
+
+                final File inputVCF = new File(this.path.replace("file://", ""));
 
                 final TabixIndex tabixIndexGz = IndexFactory.createTabixIndex(inputVCF, new VCFCodec(), null);
                 tabixIndexGz.writeBasedOnFeatureFile(inputVCF);
@@ -187,7 +205,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
                 indexFile = createdIndexFile.getAbsolutePath();
                 index = IndexFactory.loadIndex(indexFile);
-
             }
         }
         this.needCheckForIndex = false;
