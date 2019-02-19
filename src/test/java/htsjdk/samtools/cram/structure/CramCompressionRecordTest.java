@@ -93,11 +93,17 @@ public class CramCompressionRecordTest extends HtsjdkTest {
     public void testEqualsAndHashCodeAreConsistent() {
         final List<CramCompressionRecord> records = new ArrayList<>();
 
+        final List<ReadFeature> features = new ArrayList<>();
+        String softClip = "AAA";
+        features.add(new SoftClip(1, softClip.getBytes()));
+        String insertion = "CCCCCCCCCC";
+        features.add(new Insertion(1, insertion.getBytes()));
+
         for (int alignmentStart : new int[] {0, 1}) {
             for (int readLength : new int[] {100, 101}) {
                 for (int flags : new int[] {0, 0x4}) {
-                    for (List<ReadFeature> readFeatures : Lists.<List<ReadFeature>>newArrayList(null, new ArrayList<>())) {
-                        for (String readName : new String[] {null, "r"}) {
+                    for (List<ReadFeature> readFeatures : Lists.<List<ReadFeature>>newArrayList(null, new ArrayList<>(), features)) {
+                        for (String readName : new String[] {null, "", "r"}) {
                             for (byte[] readBases : new byte[][]{null, new byte[]{(byte) 'A', (byte) 'C'}}) {
                                 for (byte[] qualityScores : new byte[][]{null, new byte[]{(byte) 1, (byte) 2}}) {
                                     final CramCompressionRecord r = new CramCompressionRecord();

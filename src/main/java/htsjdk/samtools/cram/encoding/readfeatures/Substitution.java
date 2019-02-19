@@ -122,7 +122,7 @@ public class Substitution implements Serializable, ReadFeature {
         if (code == NO_CODE) {
             return Objects.hash(position);
         }
-        return Objects.hash(position, base, referenceBase, code);
+        return Objects.hash(position, base, referenceBase);
     }
 
     @Override

@@ -36,7 +36,7 @@ public class ReadFeaturesTest extends HtsjdkTest {
         for (int position : new int[] {0, 1}) {
             for (byte base : new byte[] {(byte) -1, (byte) 'A'}) {
                 for (byte referenceBase : new byte[] {(byte) -1, (byte) 'C'}) {
-                    for (byte code : new byte[] {Substitution.NO_CODE, (byte) 2}) {
+                    for (byte code : new byte[] {Substitution.NO_CODE, (byte) 1, (byte) 2}) {
                         Substitution substitution = new Substitution(position, base, referenceBase);
                         substitution.setCode(code);
                         substitutions.add(substitution);
