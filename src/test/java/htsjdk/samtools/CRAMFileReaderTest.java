@@ -32,10 +32,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
@@ -47,9 +44,12 @@ public class CRAMFileReaderTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
     private static final File CRAM_WITH_CRAI = new File(TEST_DATA_DIR, "cram_with_crai_index.cram");
     private static final File CRAM_WITHOUT_CRAI = new File(TEST_DATA_DIR, "cram_query_sorted.cram");
-    private static final ReferenceSource REFERENCE = createReferenceSource();
     private static final File INDEX_FILE = new File(TEST_DATA_DIR, "cram_with_crai_index.cram.crai");
 
+    // fake reference
+    private static final ReferenceSource REFERENCE = createReferenceSource();
+    // real reference for tests which need it
+    private static final File REFERENCE_FILE = new File(TEST_DATA_DIR, "hg19mini.fasta");
 
     @BeforeClass
     public void initClass() {
@@ -239,5 +239,37 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         final SAMRecordIterator iterator = reader.getIterator();
         Assert.assertNotNull(iterator.next());
         Assert.assertThrows(NoSuchElementException.class, iterator::next);
+    }
+
+    // confirm that we can apply a SAMFileSource to SAMRecords via enableFileSource()
+
+    // also capture the behavior demonstrated in https://github.com/samtools/htsjdk/issues/1293
+
+    @Test
+    public void enableFileSourceTest() throws IOException {
+        // need to use the real reference here because the iterator validates it
+        final ReferenceSource refSource = new ReferenceSource(REFERENCE_FILE);
+
+        try (final FileInputStream fileStream = new FileInputStream(CRAM_WITH_CRAI);
+             final SamReader samReader = SamReaderFactory
+                .make()
+                .referenceSource(refSource)
+                .open(CRAM_WITH_CRAI)) {
+
+            // note: CRAMFileReader.getIterator() replaces its underlying CRAMIterator
+            // if CRAMFileReader was constructed using a File argument.
+            // here we use the InputStream constructor instead to avoid this
+
+            final CRAMFileReader cramReader = new CRAMFileReader(fileStream, INDEX_FILE, refSource, ValidationStringency.STRICT);
+
+            // enableFileSource() only affects the *current* underlying CRAMIterator which may get replaced.
+
+            cramReader.enableFileSource(samReader, true);
+
+            final SAMRecord record = cramReader.getIterator().next();
+            Assert.assertEquals(record.getFileSource().getReader(), samReader);
+
+            cramReader.close();
+        }
     }
 }
