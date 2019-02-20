@@ -29,7 +29,6 @@ import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.structure.block.Block;
-import htsjdk.samtools.cram.structure.block.ExternalBlock;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
@@ -449,7 +448,7 @@ public class Slice {
 
             final ExternalCompressor compressor = header.externalCompressors.get(contentId);
             final byte[] rawContent = externalBlockMap.get(contentId).toByteArray();
-            final ExternalBlock externalBlock = new ExternalBlock(compressor.getMethod(), contentId,
+            final Block externalBlock = Block.createExternalBlock(compressor.getMethod(), contentId,
                     compressor.compress(rawContent), rawContent.length);
 
             slice.external.put(contentId, externalBlock);

@@ -41,7 +41,6 @@ public class CRAMIterator implements SAMRecordIterator {
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
     private final ArrayList<SAMRecord> records;
-    private SAMRecord nextRecord = null;
     private final CramNormalizer normalizer;
     private byte[] refs;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
@@ -131,20 +130,17 @@ public class CRAMIterator implements SAMRecordIterator {
         if (containerIterator != null) {
             if (!containerIterator.hasNext()) {
                 records.clear();
-                nextRecord = null;
                 return;
             }
             container = containerIterator.next();
             if (container.isEOF()) {
                 records.clear();
-                nextRecord = null;
                 return;
             }
         } else {
             container = ContainerIO.readContainer(cramHeader.getVersion(), countingInputStream);
             if (container.isEOF()) {
                 records.clear();
-                nextRecord = null;
                 return;
             }
         }
@@ -209,10 +205,9 @@ public class CRAMIterator implements SAMRecordIterator {
             if (mReader != null) {
                 final long chunkStart = (container.offset << 16) | cramRecord.sliceIndex;
                 final long chunkEnd = ((container.offset << 16) | cramRecord.sliceIndex) + 1;
-                nextRecord.setFileSource(new SAMFileSource(mReader,
-                        new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
+                samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
-
+            
             records.add(samRecord);
         }
         cramRecords.clear();

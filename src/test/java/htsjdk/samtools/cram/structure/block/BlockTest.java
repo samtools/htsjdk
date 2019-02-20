@@ -1,10 +1,10 @@
-package htsjdk.samtools.cram.structure;
+package htsjdk.samtools.cram.structure.block;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
-import htsjdk.samtools.cram.structure.block.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -102,12 +102,39 @@ public class BlockTest extends HtsjdkTest {
         final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();
         final byte[] compressedData = compressor.compress(uncompressedData);
 
-        final Block extBlock = new ExternalBlock(compressor.getMethod(), contentID, compressedData, uncompressedData.length);
+        final Block extBlock = Block.createExternalBlock(compressor.getMethod(), contentID, compressedData, uncompressedData.length);
 
         final Block rtBlock2 = roundTrip(extBlock, CramVersions.CRAM_v2_1);
         contentCheck(rtBlock2, uncompressedData, compressedData);
 
         final Block rtBlock3 = roundTrip(extBlock, CramVersions.CRAM_v3);
         contentCheck(rtBlock3, uncompressedData, compressedData);
+    }
+
+    @DataProvider(name = "nonExternalTypes")
+    private Object[][] nonExternalTypes() {
+        return new Object[][] {
+                {BlockContentType.COMPRESSION_HEADER},
+                {BlockContentType.CORE},
+                {BlockContentType.MAPPED_SLICE},
+                {BlockContentType.FILE_HEADER},
+                {BlockContentType.RESERVED},
+        };
+    }
+
+    // show that we can build all non-external Block types with NO_CONTENT_ID
+    // but we can't if they have other values
+
+    @Test(dataProvider = "nonExternalTypes")
+    public void nonExternalContentId(final BlockContentType contentType) {
+        new Block(BlockCompressionMethod.RAW, contentType, Block.NO_CONTENT_ID, new byte[0], 0);
+    }
+
+    // show that non-external content types cannot have valid contentIds
+
+    @Test(dataProvider = "nonExternalTypes", expectedExceptions = CRAMException.class)
+    public void nonExternalContentIdNegative(final BlockContentType contentType) {
+        final int VALID_CONTENT_ID = 1;
+        new Block(BlockCompressionMethod.RAW, contentType, VALID_CONTENT_ID, new byte[0], 0);
     }
 }
