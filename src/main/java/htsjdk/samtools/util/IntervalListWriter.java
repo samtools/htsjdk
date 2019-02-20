@@ -37,9 +37,9 @@ import java.nio.file.Path;
  * to write, such that they all cannot be held in memory, for example in an {@link IntervalList}.
  */
 public class IntervalListWriter implements Closeable {
+    private static final char TAB = '\t';
 
     private final BufferedWriter out;
-    private final FormatUtil format = new FormatUtil();
 
     /** Creates a new writer, writing a header to the file.
      * @param path a path to write to.  If exists it will be overwritten.
@@ -52,8 +52,8 @@ public class IntervalListWriter implements Closeable {
      * @param path a file to write to.  If exists it will be overwritten.
      * @param header the header to write.
      */
-    public IntervalListWriter(final  Path path, final SAMFileHeader header) {
-        out = IOUtil.openFileForBufferedWriting(path.toFile());
+    public IntervalListWriter(final Path path, final SAMFileHeader header) {
+        out = IOUtil.openFileForBufferedWriting(path);
 
         // Write out the header
         if (header != null) {
@@ -67,23 +67,19 @@ public class IntervalListWriter implements Closeable {
      */
     public void write(final Interval interval) throws IOException {
         out.write(interval.getContig());
-        out.write('\t');
+        out.write(TAB);
         out.write(Integer.toString(interval.getStart()));
-        out.write('\t');
+        out.write(TAB);
         out.write(Integer.toString(interval.getEnd()));
-        out.write('\t');
+        out.write(TAB);
         out.write(interval.isPositiveStrand() ? '+' : '-');
-        out.write('\t');
-        if(interval.getName() != null){
-            out.write(interval.getName());
-        }
-        else{
-            out.write(".");
-        }
+        out.write(TAB);
+        out.write(interval.getName() != null ? interval.getName() : ".");
         out.newLine();
     }
 
     /** Closes the writer. */
+    @Override
     public void close() throws IOException {
         out.flush();
         out.close();

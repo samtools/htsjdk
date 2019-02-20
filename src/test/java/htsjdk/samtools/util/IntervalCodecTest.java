@@ -59,27 +59,26 @@ public class IntervalCodecTest extends HtsjdkTest {
         expectedList.add(new Interval("chr1", 50, 150, true, "number-5"));
         expectedList.add(new Interval("chr1", 150, 250, false, "number-6"));
 
-        final OutputStream outputStream = new FileOutputStream(tempFile);
-        final IntervalCodec writeCodec = new IntervalCodec(this.dict);
-        writeCodec.setOutputStream(outputStream);
-        for (final Interval interval : expectedList.getIntervals()) {
-            writeCodec.encode(interval);
+        try(final OutputStream outputStream = new FileOutputStream(tempFile)) {
+            final IntervalCodec writeCodec = new IntervalCodec(this.dict);
+            writeCodec.setOutputStream(outputStream);
+            for (final Interval interval : expectedList.getIntervals()) {
+                writeCodec.encode(interval);
+            }
         }
-        outputStream.close();
 
         final IntervalCodec readCodec = new IntervalCodec(this.dict);
-        final InputStream inputStream = new FileInputStream(tempFile);
-        readCodec.setInputStream(inputStream);
-        while (true) {
-            final Interval interval = readCodec.decode();
-            if (interval == null) {
-                break;
-            }
-            else {
-                actualList.add(interval);
+        try(final InputStream inputStream = new FileInputStream(tempFile)) {
+            readCodec.setInputStream(inputStream);
+            while (true) {
+                final Interval interval = readCodec.decode();
+                if (interval == null) {
+                    break;
+                } else {
+                    actualList.add(interval);
+                }
             }
         }
-        inputStream.close();
 
         Assert.assertEquals(
                 actualList.getIntervals(),
