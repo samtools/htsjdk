@@ -100,13 +100,17 @@ Broadly speaking the majority of the code is covered under the MIT license with 
 
 ### Java Minimum Version Support Policy
 
-We will support all Java SE versions supported by Oracle until at least six months after Oracle's Public Updates period has ended ([see this link](http://www.oracle.com/technetwork/java/eol-135779.html)).
+Htsjkd currently targets Java 8 and is tested on both 8 and 11.
+We do not currently plan to support versions of Java which are not long-term-support releases (ex: 9, 10, or 12).  
 
-Java SE Major Release | End of Java SE Oracle Public Updates | Proposed End of Support in HTSJDK | Actual End of Support in HTSJDK
+We will notify the community at least 6 months before we plan to stop support fora Java 8.  
+
+Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support | Proposed End of Support in HTSJDK | Actual End of Support in HTSJDK
 ---- | ---- | ---- | ----
-6 | Feb 2013 | Aug 2013 | Oct 2015
-7 | Apr 2015 | Oct 2015 | Oct 2015
-8 | Jul 2018 | Jul 2018 | TBD
+6  | Feb 2013 | Aug 2013 | Oct 2015
+7  | Apr 2015 | Oct 2015 | Oct 2015
+8  | Jan 2019 | TBD      | TBD
+11 | Sep 2022 | TBD      | TBD
 
 
 HTSJDK is migrating to semantic versioning (http://semver.org/). We will eventually adhere to it strictly and bump our major version whenever there are breaking changes to our API, but until we more clearly define what constitutes our official API, clients should assume that every release potentially contains at least minor changes to public methods.
