@@ -55,6 +55,16 @@ public class ContainerParserTest extends HtsjdkTest {
                         }}
                 },
                 {
+                        ContainerFactoryTest.getUnmappedRecords(),
+                        new HashSet<Integer>() {{
+                            add(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+                        }}
+                },
+
+                // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
+                // but not both.  We treat these weird edge cases as unplaced.
+
+                {
                         ContainerFactoryTest.getUnmappedNoRefRecords(),
                         new HashSet<Integer>() {{
                             add(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);

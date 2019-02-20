@@ -89,6 +89,16 @@ public class SliceTests extends HtsjdkTest {
                         TEST_RECORD_COUNT, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 },
                 {
+                        getUnplacedRecords(),
+                        true,
+                        TEST_RECORD_COUNT, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                },
+
+
+                // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
+                // but not both.  We treat these weird edge cases as unplaced.
+
+                {
                         getNoRefRecords(),
                         true,
                         TEST_RECORD_COUNT, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
@@ -244,6 +254,19 @@ public class SliceTests extends HtsjdkTest {
         return records;
     }
 
+    private List<CramCompressionRecord> getUnplacedRecords() {
+        final List<CramCompressionRecord> records = new ArrayList<>();
+        for (int index = 0; index < TEST_RECORD_COUNT; index++) {
+            final CramCompressionRecord record = createRecord(index, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+            record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+            record.setSegmentUnmapped(true);
+            records.add(record);
+        }
+        return records;
+    }
+
+    // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
+    // but not both.  We treat these weird edge cases as unplaced.
 
     private List<CramCompressionRecord> getNoRefRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();

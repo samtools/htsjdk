@@ -133,6 +133,10 @@ public class CramCompressionRecordTest extends HtsjdkTest {
 
                         boolean placementExpectation = true;
 
+                        // we also expect that read sequenceIds and alignmentStart are both valid or both invalid.
+                        // however: we do handle the edge case where only one of the pair is valid
+                        // by marking it as unplaced.
+
                         if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
                             placementExpectation = false;
                         }
