@@ -29,11 +29,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTextHeaderCodec;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -596,42 +592,30 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
+     * Writes out the list of intervals to the supplied path.
+     *
+     * @param path a path to write to.  If exists it will be overwritten.
+     */
+    public void write(final Path path) {
+        try {
+            try (IntervalListWriter writer = new IntervalListWriter(path, this.header)) {
+                for (final Interval interval : this) {
+                    writer.write(interval);
+                }
+            }
+        }
+        catch (final IOException ioe) {
+            throw new SAMException("Error writing out interval list to file: " + path.toAbsolutePath(), ioe);
+        }
+    }
+
+    /**
      * Writes out the list of intervals to the supplied file.
      *
      * @param file a file to write to.  If exists it will be overwritten.
      */
     public void write(final File file) {
-        try (final BufferedWriter out = IOUtil.openFileForBufferedWriting(file)) {
-            final FormatUtil format = new FormatUtil();
-
-            // Write out the header
-            if (this.header != null) {
-                final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-                codec.encode(out, this.header);
-            }
-
-            // Write out the intervals
-            for (final Interval interval : this) {
-                out.write(interval.getContig());
-                out.write('\t');
-                out.write(format.format(interval.getStart()));
-                out.write('\t');
-                out.write(format.format(interval.getEnd()));
-                out.write('\t');
-                out.write(interval.isPositiveStrand() ? '+' : '-');
-                out.write('\t');
-                if (interval.getName() != null) {
-                    out.write(interval.getName());
-                } else {
-                    out.write(".");
-                }
-                out.newLine();
-            }
-
-            out.flush();
-        } catch (final IOException ioe) {
-            throw new SAMException("Error writing out interval list to file: " + file.getAbsolutePath(), ioe);
-        }
+        this.write(file.toPath());
     }
 
     /**
@@ -897,58 +881,5 @@ public class IntervalList implements Iterable<Interval> {
         int result = header.hashCode();
         result = 31 * result + intervals.hashCode();
         return result;
-    }
-}
-
-/**
- * Comparator that orders intervals based on their sequence index, by coordinate
- * then by strand and finally by name.
- */
-class IntervalCoordinateComparator implements Comparator<Interval>, Serializable {
-    private static final long serialVersionUID = 1L;
-
-    private final SAMFileHeader header;
-
-    /**
-     * Constructs a comparator using the supplied sequence header.
-     */
-    IntervalCoordinateComparator(final SAMFileHeader header) {
-        this.header = header;
-    }
-
-    @Override
-    public int compare(final Interval lhs, final Interval rhs) {
-        final int lhsIndex = this.header.getSequenceIndex(lhs.getContig());
-        final int rhsIndex = this.header.getSequenceIndex(rhs.getContig());
-        int retval = lhsIndex - rhsIndex;
-
-        if (retval == 0) {
-            retval = lhs.getStart() - rhs.getStart();
-        }
-        if (retval == 0) {
-            retval = lhs.getEnd() - rhs.getEnd();
-        }
-        if (retval == 0) {
-            if (lhs.isPositiveStrand() && rhs.isNegativeStrand()) {
-                retval = -1;
-            } else if (lhs.isNegativeStrand() && rhs.isPositiveStrand()) {
-                retval = 1;
-            }
-        }
-        if (retval == 0) {
-            if (lhs.getName() == null) {
-                if (rhs.getName() == null) {
-                    return 0;
-                } else {
-                    return -1;
-                }
-            } else if (rhs.getName() == null) {
-                return 1;
-            } else {
-                return lhs.getName().compareTo(rhs.getName());
-            }
-        }
-
-        return retval;
     }
 }
