@@ -118,8 +118,8 @@ class StringUtilTest extends UnitSpec {
 
   it should "wrap text when lines are longer than length give" in {
     val result = StringUtil.wordWrap(textForWrapping, 15)
-    result.lines.size shouldBe 5
-    result.lines.foreach(line => line.length should be <= 15)
+    result.linesIterator.size shouldBe 5
+    result.linesIterator.foreach(line => line.length should be <= 15)
   }
 
   "StringUtil.intValuesToString(int[])" should "generate a CSV string of ints" in {

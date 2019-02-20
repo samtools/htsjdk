@@ -87,17 +87,11 @@ public class MergingIterator<T> implements CloseableIterator<T> {
 		// should we throw? it's prob'ly an error.
 	}
 
-	/**
-	 * @see java.util.Iterator<T>.hasNext
-	 */
 	@Override
 	public boolean hasNext() {
 		return ! this.queue.isEmpty();
 	}
 
-	/**
-	 * @see java.util.Iterator<T>.next
-	 */
 	@Override
 	public T next() {
 		if ( ! this.hasNext()) throw new NoSuchElementException();
