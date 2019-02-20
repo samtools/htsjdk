@@ -269,6 +269,7 @@ public final class GZIIndex {
     /**
      * Loads the index from the provided input stream.
      *
+     * @param source The named source of the reference file (used in error messages). May be null if unknown.
      * @param indexIn the input stream for the index to load.
      *
      * @return loaded index.
@@ -284,6 +285,16 @@ public final class GZIIndex {
         }
     }
 
+    /**
+     * Loads the index from the provided channel.
+     *
+     * @param source The named source of the reference file (used in error messages). May be null if unknown.
+     * @param channel the channel to read the index from.
+     *
+     * @return loaded index.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
     public static final GZIIndex loadIndex(final String source, final ReadableByteChannel channel) throws IOException {
         // allocate a buffer for re-use for read each byte
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);

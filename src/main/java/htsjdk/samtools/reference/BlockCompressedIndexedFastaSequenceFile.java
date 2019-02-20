@@ -78,6 +78,14 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
         }
     }
 
+    /**
+     * Initialize the given indexed fasta sequence file stream.
+     * @param source The named source of the reference file (used in error messages).
+     * @param in The input stream to read the fasta file from; should not be decompressed already.
+     * @param index The fasta index.
+     * @param dictionary The sequence dictionary, or null if there isn't one.
+     * @param gziIndex The GZI index; may not be null.
+     */
     public BlockCompressedIndexedFastaSequenceFile(final String source, final SeekableStream in, final FastaSequenceIndex index, final SAMSequenceDictionary dictionary, final GZIIndex gziIndex) {
         super(source, index, dictionary);
         if (gziIndex == null) {
