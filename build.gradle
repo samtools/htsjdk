@@ -178,13 +178,13 @@ publishing {
                 name = 'HTSJDK'
                 packaging = 'jar'
                 description = 'A Java API for high-throughput sequencing data (HTS) formats'
-                url = 'http://samtools.github.io/htsjdk/'
+                url = 'https://samtools.github.io/htsjdk/'
 
                 developers {
                     developer {
-                        id = 'picard'
-                        name = 'Picard Team'
-                        url = 'http://broadinstitute.github.io/picard'
+                        id = 'htsjdk'
+                        name = 'Htsjdk Team'
+                        url = 'https://github.com/samtools/htsjdk'
                     }
                 }
 
