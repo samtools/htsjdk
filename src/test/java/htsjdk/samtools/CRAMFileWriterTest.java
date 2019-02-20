@@ -32,6 +32,7 @@ import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -46,9 +47,16 @@ import java.util.List;
 
 public class CRAMFileWriterTest extends HtsjdkTest {
 
+    final LogLevel globalLogLevel = Log.getGlobalLogLevel();
+
     @BeforeClass
     public void initClass() {
         Log.setGlobalLogLevel(LogLevel.ERROR);
+    }
+
+    @AfterClass
+    public void finitClass() {
+        Log.setGlobalLogLevel(globalLogLevel);
     }
 
     @Test(description = "Test for lossy CRAM compression invariants.")
@@ -159,9 +167,6 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     }
 
     private void doTest(final List<SAMRecord> samRecords) {
-
-        //TODO: records come with their own header...best to set it up right with SAMRecordSetBuilder...
-
         final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
         final ReferenceSource refSource = createReferenceSource();
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
