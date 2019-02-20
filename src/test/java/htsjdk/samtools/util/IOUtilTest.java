@@ -67,7 +67,7 @@ public class IOUtilTest extends HtsjdkTest {
     private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ", "for breakfast  ", "wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
     private static final String TEST_FILE_PREFIX = "htsjdk-IOUtilTest";
-    private static final String TEST_FILE_EXTENSIONS[] = {".txt", ".txt.gz"};
+    private static final String[] TEST_FILE_EXTENSIONS = {".txt", ".txt.gz"};
     private static final String TEST_STRING = "bar!";
 
     private File existingTempFile;
@@ -154,7 +154,7 @@ public class IOUtilTest extends HtsjdkTest {
         File lnToSymlink = new File(lnDir, "symlink.txt");
         lnToSymlink.deleteOnExit();
 
-        File files[] = {actual, symlink, lnToActual, lnToSymlink};
+        File[] files = {actual, symlink, lnToActual, lnToSymlink};
         for (File f : files) {
             Assert.assertEquals(IOUtil.getFullCanonicalPath(f), actual.getCanonicalPath());
         }
@@ -579,6 +579,25 @@ public class IOUtilTest extends HtsjdkTest {
                 Assert.assertTrue(previousSize >= newSize);
             }
             previousSize = newSize;
+        }
+    }
+
+    @DataProvider
+    public Object[][] getExtensions(){
+        return new Object[][]{{".gz"}, {".bfq"}, {".txt"}};
+    }
+
+    @Test(dataProvider = "getExtensions")
+    public void testReadWriteJimfs(String extension) throws IOException {
+        final Path jmfsRoot = inMemoryFileSystem.getRootDirectories().iterator().next();
+        final Path tmp = Files.createTempFile(jmfsRoot, "test", extension);
+        final String expected = "lorem ipswitch, nantucket, bucket";
+        try( final Writer out = IOUtil.openFileForBufferedWriting(tmp)){
+            out.write(expected);
+        }
+        try( final BufferedReader in = IOUtil.openFileForBufferedReading(tmp)){
+            final String actual = in.readLine();
+            Assert.assertEquals(actual, expected);
         }
     }
 

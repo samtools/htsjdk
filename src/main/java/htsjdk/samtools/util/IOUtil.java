@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SamStreams;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
@@ -55,11 +54,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -107,10 +102,12 @@ public class IOUtil {
 
     public static final String DICT_FILE_EXTENSION = ".dict";
 
-    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 
     /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
     public static final int GZIP_HEADER_READ_LENGTH = 8000;
+
+    private static final OpenOption[] EMPTY_OPEN_OPTIONS = new OpenOption[0];
 
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
     /**
@@ -625,8 +622,7 @@ public class IOUtil {
     public static InputStream openFileForReading(final Path path) {
 
         try {
-            if (path.getFileName().toString().endsWith(".gz") ||
-                path.getFileName().toString().endsWith(".bfq"))  {
+            if (hasGzipFileExtension(path))  {
                 return openGzipFileForReading(path);
             }
             else {
@@ -672,30 +668,46 @@ public class IOUtil {
      * @return the output stream to write to
      */
     public static OutputStream openFileForWriting(final File file) {
-        return openFileForWriting(file, false);
+        return openFileForWriting(toPath(file));
     }
 
     /**
-     * Opens a file for writing
+     * Opens a file for writing, gzip it if it ends with ".gz" or "bfq"
      *
      * @param file  the file to write to
      * @param append    whether to append to the file if it already exists (we overwrite it if false)
      * @return the output stream to write to
      */
     public static OutputStream openFileForWriting(final File file, final boolean append) {
+        return openFileForWriting(toPath(file), getAppendOpenOption(append));
+    }
 
+    /**
+     * Opens a file for writing, gzip it if it ends with ".gz" or "bfq"
+     *
+     * @param path  the file to write to
+     * @param openOptions options to use when opening the file
+     * @return the output stream to write to
+     */
+    public static OutputStream openFileForWriting(final Path path, OpenOption... openOptions) {
         try {
-            if (file.getName().endsWith(".gz") ||
-                file.getName().endsWith(".bfq")) {
-                return openGzipFileForWriting(file, append);
+            if(hasGzipFileExtension(path)) {
+                return openGzipFileForWriting(path, openOptions);
+            } else {
+                return Files.newOutputStream(path, openOptions);
             }
-            else {
-                return new FileOutputStream(file, append);
-            }
+        } catch (final IOException ioe) {
+            throw new SAMException("Error opening file for writing: " + path.toUri().toString(), ioe);
         }
-        catch (IOException ioe) {
-            throw new SAMException("Error opening file for writing: " + file.getName(), ioe);
-        }
+    }
+
+    /**
+     * check if the file name ends with .gz, .gzip, or .bfq
+     */
+    private static boolean hasGzipFileExtension(Path path) {
+        final List<String> gzippedEndings = Arrays.asList(".gz", ".gzip", ".bfq");
+        final String fileName = path.getFileName().toString();
+        return gzippedEndings.stream().anyMatch(fileName::endsWith);
     }
 
     /**
@@ -708,16 +720,29 @@ public class IOUtil {
     /**
      * Preferred over PrintStream and PrintWriter because an exception is thrown on I/O error
      */
+    public static BufferedWriter openFileForBufferedWriting(final Path path, final OpenOption ... openOptions) {
+        return new BufferedWriter(new OutputStreamWriter(openFileForWriting(path, openOptions)), Defaults.NON_ZERO_BUFFER_SIZE);
+    }
+
+    /**
+     * Preferred over PrintStream and PrintWriter because an exception is thrown on I/O error
+     */
     public static BufferedWriter openFileForBufferedWriting(final File file) {
-        return openFileForBufferedWriting(file, false);
+        return openFileForBufferedWriting(IOUtil.toPath(file));
     }
 
     /**
      * Preferred over PrintStream and PrintWriter because an exception is thrown on I/O error
      */
     public static BufferedWriter openFileForBufferedUtf8Writing(final File file) {
-        return new BufferedWriter(new OutputStreamWriter(openFileForWriting(file), Charset.forName("UTF-8")),
-                Defaults.NON_ZERO_BUFFER_SIZE);
+        return openFileForBufferedUtf8Writing(IOUtil.toPath(file));
+    }
+
+    /**
+     * Preferred over PrintStream and PrintWriter because an exception is thrown on I/O error
+     */
+    public static BufferedWriter openFileForBufferedUtf8Writing(final Path path) {
+        return new BufferedWriter(new OutputStreamWriter(openFileForWriting(path), Charset.forName("UTF-8")), Defaults.NON_ZERO_BUFFER_SIZE);
     }
 
     /**
@@ -738,23 +763,42 @@ public class IOUtil {
      * @return the output stream to write to
      */
     public static OutputStream openGzipFileForWriting(final File file, final boolean append) {
+        return openGzipFileForWriting(IOUtil.toPath(file), getAppendOpenOption(append));
+    }
 
+    /**
+     * converts a boolean into an array containing either the append option or nothing
+     */
+    private static OpenOption[] getAppendOpenOption(boolean append) {
+        return append ? new OpenOption[]{StandardOpenOption.APPEND} : EMPTY_OPEN_OPTIONS;
+    }
+
+    /**
+     * Opens a GZIP encoded file for writing
+     *
+     * @param path the file to write to
+     * @param openOptions options to control how the file is opened
+     * @return the output stream to write to
+     */
+    public static OutputStream openGzipFileForWriting(final Path path, final OpenOption ... openOptions) {
         try {
+            final OutputStream out = Files.newOutputStream(path, openOptions);
             if (Defaults.BUFFER_SIZE > 0) {
-            return new CustomGzipOutputStream(new FileOutputStream(file, append),
-                                              Defaults.BUFFER_SIZE,
-                                              compressionLevel);
+                return new CustomGzipOutputStream(out, Defaults.BUFFER_SIZE, compressionLevel);
             } else {
-                return new CustomGzipOutputStream(new FileOutputStream(file, append), compressionLevel);
+                return new CustomGzipOutputStream(out, compressionLevel);
             }
-        }
-        catch (IOException ioe) {
-            throw new SAMException("Error opening file for writing: " + file.getName(), ioe);
+        } catch (final IOException ioe) {
+            throw new SAMException("Error opening file for writing: " + path.toUri().toString(), ioe);
         }
     }
 
     public static OutputStream openFileForMd5CalculatingWriting(final File file) {
-        return new Md5CalculatingOutputStream(IOUtil.openFileForWriting(file), new File(file.getAbsolutePath() + ".md5"));
+        return openFileForMd5CalculatingWriting(toPath(file));
+    }
+
+    public static OutputStream openFileForMd5CalculatingWriting(final Path file) {
+        return new Md5CalculatingOutputStream(IOUtil.openFileForWriting(file), file.resolve(".md5"));
     }
 
     /**
