@@ -102,7 +102,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     public SAMRecordSetBuilder(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder, final boolean addReadGroup,
                                final int defaultChromosomeLength, final ScoringStrategy duplicateScoringStrategy) {
 
-        this.header = makeDefaultHeader(sortOrder, defaultChromosomeLength,addReadGroup);
+        this.header = makeDefaultHeader(sortOrder, defaultChromosomeLength, addReadGroup);
 
         final SAMRecordComparator comparator = sortOrder.getComparatorInstance();
 

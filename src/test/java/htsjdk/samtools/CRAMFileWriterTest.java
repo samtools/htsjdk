@@ -166,6 +166,10 @@ public class CRAMFileWriterTest extends HtsjdkTest {
                 Assert.assertEquals(actualRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()),
                         actualRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()), expectedRecord.getReadName());
 
+                actualRecord.getAttributes().forEach(tv -> {
+                    Assert.assertEquals(tv.value, expectedRecord.getAttribute(tv.tag));
+                });
+
             }
         }
     }
