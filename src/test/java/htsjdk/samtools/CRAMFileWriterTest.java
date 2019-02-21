@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 public class CRAMFileWriterTest extends HtsjdkTest {
 
     final LogLevel globalLogLevel = Log.getGlobalLogLevel();
+    final File SAM_TOOLS_TEST_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @BeforeClass
     public void initClass() {
@@ -129,7 +130,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     }
 
     private ReferenceSource createReferenceSource() {
-        byte[] refBases = new byte[1024 * 1024];
+        final byte[] refBases = new byte[1024 * 1024];
         Arrays.fill(refBases, (byte) 'A');
         InMemoryReferenceSequenceFile rsf = new InMemoryReferenceSequenceFile();
         rsf.add("chr1", refBases);
@@ -249,10 +250,10 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     @Test
     public void test_roundtrip_tlen_preserved() throws IOException {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final ReferenceSource source = new ReferenceSource(new File("src/test/resources/htsjdk/samtools/cram_tlen.fasta"));
+        final ReferenceSource source = new ReferenceSource(new File(SAM_TOOLS_TEST_DIR, "cram_tlen.fasta"));
         final List<SAMRecord> records = new ArrayList<>();
 
-        try (SamReader reader = SamReaderFactory.make().open(new File("src/test/resources/htsjdk/samtools/cram_tlen_reads.sorted.sam"))) {
+        try (SamReader reader = SamReaderFactory.make().open(new File(SAM_TOOLS_TEST_DIR, "cram_tlen_reads.sorted.sam"))) {
             try (CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram")) {
                 for (final SAMRecord record : reader) {
                     writer.addAlignment(record);
@@ -281,9 +282,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final File outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".", ".tmp");
         outputDir.deleteOnExit();
         final Path output = new File(outputDir, "input.cram").toPath();
-
-        final SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();
-
+        IOUtil.deleteOnExit(output);
         final Path fastaDir = IOUtil.createTempDir("CRAMFileWriterTest", "").toPath();
         IOUtil.deleteOnExit(fastaDir);
         final Path newFasta = fastaDir.resolve("input.fasta");
@@ -292,13 +291,12 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         IOUtil.deleteOnExit(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(newFasta));
 
         final SAMRecordSetBuilder samRecordSetBuilder = new SAMRecordSetBuilder();
-        samRecordSetBuilder.setHeader(SAMRecordSetBuilder.makeDefaultHeader(SAMFileHeader.SortOrder.coordinate,10_000,true));//may this the problem?
-
+        samRecordSetBuilder.setHeader(SAMRecordSetBuilder.makeDefaultHeader(SAMFileHeader.SortOrder.coordinate, 10_000, true));
         samRecordSetBuilder.writeRandomReference(newFasta);
 
         final List<SAMRecord> records = new ArrayList<>();
 
-        try (SAMFileWriter writer = samFileWriterFactory.makeWriter(samRecordSetBuilder.getHeader(), true, output, newFasta)) {
+        try (SAMFileWriter writer = new SAMFileWriterFactory().makeWriter(samRecordSetBuilder.getHeader(), true, output, newFasta)) {
 
             for (int position = 1; position <= 10000; position += 1) {
                 samRecordSetBuilder.addFrag("read_" + position, 0, position, false);
@@ -324,18 +322,19 @@ public class CRAMFileWriterTest extends HtsjdkTest {
 
     @Test
     public void testCRAMQuerySort() throws IOException {
-        final File input = new File("src/test/resources/htsjdk/samtools/cram_query_sorted.cram");
-        final File reference = new File("src/test/resources/htsjdk/samtools/cram_query_sorted.fasta");
+        final File input = new File(SAM_TOOLS_TEST_DIR, "cram_query_sorted.cram");
+        final File reference = new File(SAM_TOOLS_TEST_DIR, "cram_query_sorted.fasta");
         final File outputFile = File.createTempFile("tmp.", ".cram");
+        final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault().referenceSequence(reference);
 
-        try (final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input);
+        try (final SamReader reader = samReaderFactory.open(input);
              final SAMFileWriter writer = new SAMFileWriterFactory().makeWriter(reader.getFileHeader().clone(), false, outputFile, reference)) {
-            for (SAMRecord rec : reader) {
+            for (final SAMRecord rec : reader) {
                 writer.addAlignment(rec);
             }
         }
 
-        try (final SamReader outReader = SamReaderFactory.makeDefault().referenceSequence(reference).open(outputFile)) {
+        try (final SamReader outReader = samReaderFactory.open(outputFile)) {
             String prevName = null;
             for (final SAMRecord rec : outReader) {
                 if (prevName == null) {
