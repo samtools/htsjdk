@@ -1084,8 +1084,8 @@ public class SequenceUtil {
      * @return an array of random DNA bases of the requested length.
      */
     static public byte[] getRandomBases(Random random, final int length) {
-        if (length <= 0) {
-            throw new IllegalArgumentException("length must be greater than zero! got " + length);
+        if (length < 0) {
+            throw new IllegalArgumentException("length must be no smaller than zero! got " + length);
         }
         final byte[] bases = new byte[length];
         getRandomBases(random, length, bases);
