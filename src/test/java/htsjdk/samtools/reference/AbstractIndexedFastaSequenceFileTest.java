@@ -27,10 +27,7 @@ package htsjdk.samtools.reference;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.GZIIndex;
-import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -39,6 +36,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 /**
  * Test the indexed fasta sequence file reader.
@@ -46,6 +46,7 @@ import java.io.IOException;
 public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
     private static final File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
+    private static final File SEQUENCE_FILE_DICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.dict");
     private static final File SEQUENCE_FILE_INDEX = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.fai");
     private static final File SEQUENCE_FILE_BGZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
     private static final File SEQUENCE_FILE_GZI = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz.gzi");
@@ -352,5 +353,17 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     @Test(expectedExceptions = SAMException.class)
     public void testBadInputForBlockCompressedIndexedFastaSequenceFile() throws Exception {
         new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE.toPath());
+    }
+
+    @Test
+    public void testCanCreateBlockCompressedIndexedWithSpecifiedGZIAndDict() throws IOException {
+        final Path moved = Files.createTempFile("moved", ".fasta.gz");
+        Files.copy(SEQUENCE_FILE_BGZ.toPath(), moved, StandardCopyOption.REPLACE_EXISTING);
+        IOUtil.deleteOnExit(moved);
+        try( ReferenceSequenceFile withNoAdacentIndex = new BlockCompressedIndexedFastaSequenceFile(moved, new FastaSequenceIndex(SEQUENCE_FILE_INDEX), GZIIndex.loadIndex(SEQUENCE_FILE_GZI.toPath()));
+             ReferenceSequenceFile withFilesAdjacent = new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_BGZ.toPath())){
+            Assert.assertEquals(withNoAdacentIndex.getSubsequenceAt("chrM", 100, 1000).getBases(),
+            withFilesAdjacent.getSubsequenceAt("chrM", 100, 1000).getBases());
+        }
     }
 }
