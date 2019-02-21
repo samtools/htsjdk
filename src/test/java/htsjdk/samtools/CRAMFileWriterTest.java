@@ -28,7 +28,6 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
 import org.testng.Assert;
@@ -44,6 +43,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CRAMFileWriterTest extends HtsjdkTest {
 
@@ -162,6 +162,10 @@ public class CRAMFileWriterTest extends HtsjdkTest {
                         expectedRecord.getMateReferenceName());
                 Assert.assertEquals(actualRecord.getReadBases(), expectedRecord.getReadBases());
                 Assert.assertEquals(actualRecord.getBaseQualities(), expectedRecord.getBaseQualities());
+
+                Assert.assertEquals(actualRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()),
+                        actualRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()), expectedRecord.getReadName());
+
             }
         }
     }
@@ -276,17 +280,21 @@ public class CRAMFileWriterTest extends HtsjdkTest {
 
         final SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();
 
-        final Path fasta = IOUtil.getPath("Testinput.fasta");
-        IOUtil.deleteOnExit(fasta);
-        IOUtil.deleteOnExit(ReferenceSequenceFileFactory.getFastaIndexFileName(fasta));
-        IOUtil.deleteOnExit(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(fasta));
+        final Path fastaDir = IOUtil.createTempDir("CRAMFileWriterTest", "").toPath();
+        IOUtil.deleteOnExit(fastaDir);
+        final Path newFasta = fastaDir.resolve("input.fasta");
+        IOUtil.deleteOnExit(newFasta);
+        IOUtil.deleteOnExit(ReferenceSequenceFileFactory.getFastaIndexFileName(newFasta));
+        IOUtil.deleteOnExit(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(newFasta));
 
         final SAMRecordSetBuilder samRecordSetBuilder = new SAMRecordSetBuilder();
-        samRecordSetBuilder.writeRandomReference(fasta);
+        samRecordSetBuilder.setHeader(SAMRecordSetBuilder.makeDefaultHeader(SAMFileHeader.SortOrder.coordinate,10_000,true));//may this the problem?
+
+        samRecordSetBuilder.writeRandomReference(newFasta);
 
         final List<SAMRecord> records = new ArrayList<>();
 
-        try (SAMFileWriter writer = samFileWriterFactory.makeWriter(samRecordSetBuilder.getHeader(), true, output, fasta.toFile())) {
+        try (SAMFileWriter writer = samFileWriterFactory.makeWriter(samRecordSetBuilder.getHeader(), true, output, newFasta)) {
 
             for (int position = 1; position <= 10000; position += 1) {
                 samRecordSetBuilder.addFrag("read_" + position, 0, position, false);
@@ -297,7 +305,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
             });
         }
 
-        try (SamReader cramReader = SamReaderFactory.make().referenceSequence(fasta).open(output)) {
+        try (SamReader cramReader = SamReaderFactory.make().referenceSequence(newFasta).open(output)) {
             final SAMRecordIterator iterator = cramReader.iterator();
             int i = 0;
             while (iterator.hasNext()) {
@@ -305,7 +313,6 @@ public class CRAMFileWriterTest extends HtsjdkTest {
                 final SAMRecord record2 = records.get(i++);
                 Assert.assertEquals(record1.getInferredInsertSize(), record2.getInferredInsertSize(), record1.getReadName());
                 Assert.assertEquals(record1, record2, record1.getReadName());
-                Assert.assertEquals((Locatable) record1, (Locatable) record2);
             }
             Assert.assertEquals(records.size(), i);
         }

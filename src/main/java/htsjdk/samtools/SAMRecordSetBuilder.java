@@ -51,7 +51,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20",
             "chr21", "chr22", "chrX", "chrY", "chrM"
     };
-    private static final byte[] BASES = {'A', 'C', 'G', 'T'};
+
     private static final String READ_GROUP_ID = "1";
     private static final String SAMPLE = "FREE_SAMPLE";
     private final Random random = new Random(TestUtil.RANDOM_SEED);
@@ -102,7 +102,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     public SAMRecordSetBuilder(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder, final boolean addReadGroup,
                                final int defaultChromosomeLength, final ScoringStrategy duplicateScoringStrategy) {
 
-        this.header = makeDefaultHeader(sortOrder, defaultChromosomeLength);
+        this.header = makeDefaultHeader(sortOrder, defaultChromosomeLength,addReadGroup);
 
         final SAMRecordComparator comparator = sortOrder.getComparatorInstance();
 
@@ -110,15 +110,6 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             this.records = new TreeSet<>(comparator);
         } else {
             this.records = new ArrayList<>();
-        }
-
-        if (addReadGroup) {
-            final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(READ_GROUP_ID);
-            readGroupRecord.setSample(SAMPLE);
-            readGroupRecord.setPlatform("ILLUMINA");
-            final List<SAMReadGroupRecord> readGroups = new ArrayList<>();
-            readGroups.add(readGroupRecord);
-            this.header.setReadGroups(readGroups);
         }
     }
 
@@ -607,17 +598,25 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * @param contigLength length of the other contigs
      * @return newly formed header
      */
-    static public SAMFileHeader makeDefaultHeader(final SAMFileHeader.SortOrder sortOrder, final int contigLength) {
+    static public SAMFileHeader makeDefaultHeader(final SAMFileHeader.SortOrder sortOrder, final int contigLength, final boolean addReadGroup) {
         final List<SAMSequenceRecord> sequences = new ArrayList<>();
         for (final String chrom : chroms) {
             final SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(chrom, contigLength);
             sequences.add(sequenceRecord);
         }
 
-
         final SAMFileHeader header = new SAMFileHeader();
         header.setSequenceDictionary(new SAMSequenceDictionary(sequences));
         header.setSortOrder(sortOrder);
+
+        if (addReadGroup) {
+            final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(READ_GROUP_ID);
+            readGroupRecord.setSample(SAMPLE);
+            readGroupRecord.setPlatform("ILLUMINA");
+            final List<SAMReadGroupRecord> readGroups = new ArrayList<>();
+            readGroups.add(readGroupRecord);
+            header.setReadGroups(readGroups);
+        }
         return header;
     }
 
