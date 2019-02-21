@@ -595,15 +595,15 @@ public class IOUtilTest extends HtsjdkTest {
         final Path jmfsRoot = inMemoryFileSystem.getRootDirectories().iterator().next();
         final Path tmp = Files.createTempFile(jmfsRoot, "test", extension);
         final String expected = "lorem ipswitch, nantucket, bucket";
-        try( final Writer out = IOUtil.openFileForBufferedWriting(tmp)){
+        try (Writer out = IOUtil.openFileForBufferedWriting(tmp)){
             out.write(expected);
         }
 
-        try( final InputStream in = new BufferedInputStream(Files.newInputStream(tmp))){
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(tmp))){
                Assert.assertEquals(IOUtil.isGZIPInputStream(in), gzipped);
         }
 
-        try( final BufferedReader in = IOUtil.openFileForBufferedReading(tmp)){
+        try (BufferedReader in = IOUtil.openFileForBufferedReading(tmp)){
             final String actual = in.readLine();
             Assert.assertEquals(actual, expected);
         }
