@@ -100,10 +100,10 @@ Broadly speaking the majority of the code is covered under the MIT license with 
 
 ### Java Minimum Version Support Policy
 
-Htsjkd currently targets Java 8 and is tested on both 8 and 11.
+Htsjdk currently targets Java 8 and is tested on both 8 and 11.
 We do not currently plan to support versions of Java which are not long-term-support releases (ex: 9, 10, or 12).  
 
-We will notify the community at least 6 months before we plan to stop support fora Java 8.  
+We will notify the community at least 6 months before we plan to stop support for Java 8.  
 
 Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support | Proposed End of Support in HTSJDK | Actual End of Support in HTSJDK
 ---- | ---- | ---- | ----
