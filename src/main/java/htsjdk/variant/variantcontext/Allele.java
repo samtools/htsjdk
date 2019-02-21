@@ -311,7 +311,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @return true if the bases represent a symbolic allele in breakpoint notation, (ex: G]17:198982] or ]13:123456]T )
      */
     public static boolean wouldBeBreakpoint(final byte[] bases) {
-        if ( bases.length <= 1 )
+        if (bases.length <= 1) {
             return false;
         else {
             for (int i = 0; i < bases.length; i++) {
