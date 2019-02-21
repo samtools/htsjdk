@@ -118,6 +118,11 @@ public class Allele implements Comparable<Allele>, Serializable {
     public static final long serialVersionUID = 1L;
 
     private static final byte[] EMPTY_ALLELE_BASES = new byte[0];
+    private static final char SINGLE_BREAKEND_INDICATOR = '.';
+    private static final char BREAKEND_EXTENDING_RIGHT = '[';
+    private static final char BREAKEND_EXTENDING_LEFT = ']';
+    private static final char SYMBOLIC_ALLELE_START = '<';
+    private static final char SYMBOLIC_ALLELE_END = '>';
 
     private boolean isRef = false;
     private boolean isNoCall = false;
@@ -300,7 +305,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     	if ( bases.length <= 1 )
             return false;
         else {
-            return bases[0] == '<' || bases[bases.length - 1] == '>' ||
+            return bases[0] == SYMBOLIC_ALLELE_START || bases[bases.length - 1] == SYMBOLIC_ALLELE_END ||
                     wouldBeBreakpoint(bases) ||
                     wouldBeSingleBreakend(bases);
         }
@@ -313,15 +318,14 @@ public class Allele implements Comparable<Allele>, Serializable {
     public static boolean wouldBeBreakpoint(final byte[] bases) {
         if (bases.length <= 1) {
             return false;
-        else {
-            for (int i = 0; i < bases.length; i++) {
-                final byte base = bases[i];
-                if (base == '[' || base == ']') {
-                    return true;
-                }
-            }
-            return false;
         }
+        for (int i = 0; i < bases.length; i++) {
+            final byte base = bases[i];
+            if (base == BREAKEND_EXTENDING_LEFT || base == BREAKEND_EXTENDING_RIGHT) {
+                return true;
+            }
+        }
+        return false;
     }
     /**
      * @param bases  bases representing an allele
@@ -331,7 +335,7 @@ public class Allele implements Comparable<Allele>, Serializable {
         if ( bases.length <= 1 )
             return false;
         else {
-            return bases[0] == '.' || bases[bases.length - 1] == '.';
+            return bases[0] == SINGLE_BREAKEND_INDICATOR || bases[bases.length - 1] == SINGLE_BREAKEND_INDICATOR;
         }
     }
 
