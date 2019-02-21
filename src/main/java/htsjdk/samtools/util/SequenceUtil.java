@@ -253,10 +253,10 @@ public class SequenceUtil {
             }
             for (int i = 0; i < sizeToTest; ++i) {
                 if (!s1.get(i).isSameSequence(s2.get(i))) {
-                    String s1Attrs = "";
+                    StringBuilder s1Attrs = new StringBuilder();
                     for (final java.util.Map.Entry<String, String> entry : s1.get(i)
                             .getAttributes()) {
-                        s1Attrs += "/" + entry.getKey() + "=" + entry.getValue();
+                        s1Attrs.append("/").append(entry.getKey()).append("=").append(entry.getValue());
                     }
                     String s2Attrs = "";
                     for (final java.util.Map.Entry<String, String> entry : s2.get(i)
@@ -911,15 +911,24 @@ public class SequenceUtil {
         }
     }
 
-    public static String calculateMD5String(final byte[] data)
-            throws NoSuchAlgorithmException {
+    public static String calculateMD5String(final byte[] data) {
         return SequenceUtil.calculateMD5String(data, 0, data.length);
     }
 
     public static String calculateMD5String(final byte[] data, final int offset, final int len) {
         final byte[] digest = calculateMD5(data, offset, len);
+        return md5DigestToString(digest);
+    }
+
+    /**
+     * Convets the result of an md5Digest to a string
+     * @param digest digest that needs to be converted to a string
+     * @return string representing the md5
+     */
+    public static String md5DigestToString(final byte[] digest) {
         return String.format("%032x", new BigInteger(1, digest));
     }
+
 
     public static byte[] calculateMD5(final byte[] data, final int offset, final int len) {
         final MessageDigest md5_MessageDigest;

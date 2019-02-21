@@ -30,11 +30,17 @@ import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.ValidationUtils;
 import org.apache.commons.compress.utils.CountingOutputStream;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Writes a FASTA formatted reference file.
@@ -125,6 +131,12 @@ public final class FastaReferenceWriter implements AutoCloseable {
      */
     private final Writer dictWriter;
 
+
+    /**
+     * the md5 digester (or null if not adding md5)
+     */
+    private final MessageDigest md5Digester;
+
     /**
      * Output codec for the dictionary.
      */
@@ -184,10 +196,17 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param dictOutput  the (uncompressed) output stream to the dictFile, if requested, {@code null} if none should be generated.
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      */
-    FastaReferenceWriter(final int basesPerLine,
+    FastaReferenceWriter(final int basesPerLine, final boolean addMd5,
                                    final OutputStream fastaOutput,
                                    final OutputStream indexOutput,
                                    final OutputStream dictOutput) {
+
+        try {
+            this.md5Digester = addMd5 ? MessageDigest.getInstance("MD5") : null;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Couldn't get md5 algorithm!", e);
+        }
+
         this.defaultBasePerLine = basesPerLine;
         this.fastaStream = new CountingOutputStream(fastaOutput);
         this.indexWriter = indexOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(indexOutput, CHARSET);
@@ -396,6 +415,10 @@ public final class FastaReferenceWriter implements AutoCloseable {
         fastaStream.write(builder.toString().getBytes(CHARSET));
         fastaStream.write(LINE_SEPARATOR);
         currentSequenceOffset = fastaStream.getBytesWritten();
+
+        if (md5Digester != null) {
+            md5Digester.reset();
+        }
         return this;
     }
 
@@ -425,7 +448,11 @@ public final class FastaReferenceWriter implements AutoCloseable {
     }
 
     private void writeDictEntry() {
-        dictCodec.encodeSequenceRecord(new SAMSequenceRecord(currentSequenceName, (int) currentBasesCount));
+        final SAMSequenceRecord samSequenceRecord = new SAMSequenceRecord(currentSequenceName, (int) currentBasesCount);
+        if (md5Digester != null) {
+            SequenceUtil.md5DigestToString(md5Digester.digest());
+        }
+        dictCodec.encodeSequenceRecord(samSequenceRecord);
     }
 
     /**
@@ -493,6 +520,9 @@ public final class FastaReferenceWriter implements AutoCloseable {
             }
             final int nextLength = Math.min(to - next, currentBasesPerLine - currentLineBasesCount);
             fastaStream.write(bases, next, nextLength);
+            if (md5Digester != null) {
+                md5Digester.update(new String(bases, next, nextLength).toUpperCase().getBytes());
+            }
             currentLineBasesCount += nextLength;
             next += nextLength;
         }

@@ -4,16 +4,15 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CollectionUtil;
+import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.stream.Collectors;
+import java.nio.file.Path;
 
 public class SAMRecordSetBuilderTest extends HtsjdkTest {
 
@@ -26,50 +25,51 @@ public class SAMRecordSetBuilderTest extends HtsjdkTest {
                 50000);
 
 
-        final File dir = TestUtil.getTempDirectory("SAMRecordSetBuilderTest", "testWriteRandomReference");
-        final File fasta = new File(dir, "output.fa");
-        final File dict = new File(dir, "output.dict");
+        final Path dir = TestUtil.getTempDirectory("SAMRecordSetBuilderTest", "testWriteRandomReference").toPath();
+        final Path fasta = dir.resolve( "output.fa");
+        final Path dict = dir.resolve(  "output.dict");
 
-        samRecords.writeRandomReference(fasta.toPath());
-        checkFastaFile(samRecords.getHeader(),fasta,dict);
+        samRecords.writeRandomReference(fasta);
+        checkFastaFile(samRecords.getHeader(), fasta, dict);
         TestUtil.recursiveDelete(dir);
     }
 
-    @DataProvider
-    Iterator<Object[]> fastaExtensions() {
-        return ReferenceSequenceFileFactory.FASTA_EXTENSIONS.stream()
-                .filter(s -> !s.endsWith(".gz"))
-                .map(s -> new Object[]{s})
-                .collect(Collectors.toList())
-                .iterator();
-    }
-
-    @Test(dataProvider = "fastaExtensions")
-    public void testWriteRandomReference(final String extension) throws IOException {
-        final File dir = TestUtil.getTempDirectory("SAMRecordSetBuilderTest", "testWriteRandomReference");
+    @Test
+    public void testDeterministicWriteRandomReference() throws IOException {
+        final Path dir1 = TestUtil.getTempDirectory("SAMRecordSetBuilderTest", "testWriteRandomReference").toPath();
+        final Path dir2 = TestUtil.getTempDirectory("SAMRecordSetBuilderTest", "testWriteRandomReference").toPath();
 
         try {
-            final SAMFileHeader header = new SAMFileHeader();
-            header.addSequence(new SAMSequenceRecord("contig1", 100));
-            header.addSequence(new SAMSequenceRecord("contig2", 200));
-            header.addSequence(new SAMSequenceRecord("contig3", 300));
-            header.addSequence(new SAMSequenceRecord("chr_order", 50));
+            for (final Path dir : CollectionUtil.makeSet(dir1, dir2)) {
+                final SAMFileHeader header = new SAMFileHeader();
+                header.addSequence(new SAMSequenceRecord("contig1", 100));
+                header.addSequence(new SAMSequenceRecord("contig2", 200));
+                header.addSequence(new SAMSequenceRecord("contig3", 300));
+                header.addSequence(new SAMSequenceRecord("chr_order", 50));
 
-            final File fasta = new File(dir, "output" + extension);
-            final File dict = new File(dir, "output.dict");
-            SAMRecordSetBuilder.writeRandomReference(header, fasta.toPath());
+                final Path fasta = dir.resolve("output.fasta");
+                final Path dict = dir.resolve("output.dict");
+                SAMRecordSetBuilder.writeRandomReference(header, fasta);
 
-            checkFastaFile(header, fasta, dict);
+                checkFastaFile(header, fasta, dict);
+            }
+            SAMSequenceDictionary dict1 = SAMSequenceDictionaryExtractor.extractDictionary(dir1.resolve("output.dict"));
+            SAMSequenceDictionary dict2 = SAMSequenceDictionaryExtractor.extractDictionary(dir2.resolve("output.dict"));
+
+            Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1, dict2));
+
+
         } finally {
-            TestUtil.recursiveDelete(dir);
+            TestUtil.recursiveDelete(dir1);
+            TestUtil.recursiveDelete(dir2);
         }
     }
 
-    static private void checkFastaFile(final SAMFileHeader header, final File fasta, final File dict) throws IOException {
-        final SAMSequenceDictionary samSequenceDictionary = SAMSequenceDictionaryExtractor.extractDictionary(dict.toPath());
+    static public void checkFastaFile(final SAMFileHeader header, final Path fasta, final Path dict) throws IOException {
+        final SAMSequenceDictionary samSequenceDictionary = SAMSequenceDictionaryExtractor.extractDictionary(dict);
         Assert.assertTrue(header.getSequenceDictionary().isSameDictionary(samSequenceDictionary));
 
-        try (ReferenceSequenceFile sequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(fasta.toPath())) {
+        try (ReferenceSequenceFile sequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(fasta)) {
 
             header.getSequenceDictionary().getSequences().forEach(s -> {
 
@@ -78,7 +78,18 @@ public class SAMRecordSetBuilderTest extends HtsjdkTest {
                 Assert.assertEquals(referenceSequence.getBases().length, referenceSequence.length());
                 Assert.assertEquals(referenceSequence.length(), s.getSequenceLength());
                 Assert.assertEquals(referenceSequence.getName(), s.getSequenceName());
+                if (s.getMd5() != null) {
+                    Assert.assertEquals(s.getMd5(), sequenceFile.getSequenceDictionary().getSequence(referenceSequence.getName()).getMd5());
+                }
             });
+            // the md5's should be all different
+            if (header.getSequenceDictionary().size() > 1) {
+                final String md5 = header.getSequence(0).getMd5();
+                header.getSequenceDictionary().getSequences().stream().skip(1).forEach(s -> {
+                    Assert.assertNotEquals(md5, header.getSequence(1).getMd5(),
+                            "md5s of sequence " + header.getSequence(0).getSequenceName() + " and " + s.getSequenceName() + " are the same!");
+                });
+            }
         }
     }
 }

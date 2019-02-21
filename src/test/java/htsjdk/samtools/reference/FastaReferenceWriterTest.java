@@ -1,11 +1,11 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.*;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.TestUtil;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -617,5 +617,40 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
             }
         }
         return result.toArray(new Object[result.size()][]);
+    }
+
+    @DataProvider
+    Iterator<Object[]> fastaExtensions() {
+        return ReferenceSequenceFileFactory.FASTA_EXTENSIONS.stream()
+                .filter(s -> !s.endsWith(".gz"))
+                .map(s -> new Object[]{s})
+                .collect(Collectors.toList())
+                .iterator();
+    }
+
+    @Test(dataProvider = "fastaExtensions")
+    public void testWriteRandomReference(final String extension) throws IOException {
+        final Path dir = TestUtil.getTempDirectory("SAMRecordSetBuilderTest", "testWriteRandomReference").toPath();
+
+        try {
+            final SAMFileHeader header = new SAMFileHeader();
+            header.addSequence(new SAMSequenceRecord("contig1", 100));
+            header.addSequence(new SAMSequenceRecord("contig2", 200));
+            header.addSequence(new SAMSequenceRecord("contig3", 300));
+            header.addSequence(new SAMSequenceRecord("chr_order", 50));
+
+            header.getSequence(0).setMd5("f7af8fe3e8dfa76f82c9d240989729e4");
+            header.getSequence(1).setMd5("5502e190713535d3cf6f2959320fe869");
+            header.getSequence(2).setMd5("857e8bca42fb4133e8cddc4384ffe3f6");
+            header.getSequence(3).setMd5("6560c97939fe6332f6439ac443ebeefb");
+
+            final Path fasta = dir.resolve( "output" + extension);
+            final Path dict = dir.resolve(  "output.dict");
+            SAMRecordSetBuilder.writeRandomReference(header, fasta);
+
+            SAMRecordSetBuilderTest.checkFastaFile(header, fasta, dict);
+        } finally {
+            TestUtil.recursiveDelete(dir);
+        }
     }
 }

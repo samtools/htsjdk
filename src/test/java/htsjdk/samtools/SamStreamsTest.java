@@ -99,10 +99,25 @@ public class SamStreamsTest extends HtsjdkTest {
                 {"cram_with_bai_index.cram", true, false },
                 {"compressed.bam", true, true },
                 {"unsorted.sam", true, false },
+        };
+    }
+
+    @Test(dataProvider = "sourceLikeBam")
+    public void sourceLikeBam(
+            final String resourceName,
+            final boolean isFile,
+            final boolean expected) throws IOException
+    {
+        sourceLikeBamImpl(resourceName, isFile, expected);
+    }
+
+
+    @DataProvider(name = "sourceLikeBamRemote")
+    public Object[][] sourceLikeBamDataRemote() {
+        return new Object[][] {
                 // fails due to a combination of https://github.com/samtools/htsjdk/issues/619 and
                 // https://github.com/samtools/htsjdk/issues/618
-                //{"ftp://ftp.broadinstitute.org/dummy.cram", false, false},
-                {"ftp://ftp.broadinstitute.org/dummy.bam", false, true},
+                //{"ftp://ftp.broadinstitute.org/dummy.cram", false, false},{"ftp://ftp.broadinstitute.org/dummy.bam", false, true},
                 {"http://www.broadinstitute.org/dummy.bam", false, true},
                 {"https://www.broadinstitute.org/dummy.bam", false, true},
                 {"http://www.broadinstitute.org/dummy.bam?alt=media", false, true},
@@ -112,8 +127,18 @@ public class SamStreamsTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "sourceLikeBam")
-    public void sourceLikeBam(
+    @Test(dataProvider = "sourceLikeBamRemote",groups = "ftp")
+    public void sourceLikeBamRemote(
+            final String resourceName,
+            final boolean isFile,
+            final boolean expected) throws IOException
+    {
+        sourceLikeBamImpl(resourceName, isFile, expected);
+    }
+
+
+
+    public void sourceLikeBamImpl(
             final String resourceName,
             final boolean isFile,
             final boolean expected) throws IOException

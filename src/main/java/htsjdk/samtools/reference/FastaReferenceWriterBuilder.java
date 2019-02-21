@@ -49,6 +49,7 @@ public class FastaReferenceWriterBuilder {
     private Path fastaFile;
     private boolean makeFaiOutput = true;
     private boolean makeDictOutput = true;
+    private boolean addMd5 = true;
     private int basesPerLine = FastaReferenceWriter.DEFAULT_BASES_PER_LINE;
     private Path indexFile;
     private Path dictFile;
@@ -221,6 +222,14 @@ public class FastaReferenceWriterBuilder {
             dictOutput = new BufferedOutputStream(Files.newOutputStream(dictFile));
         }
 
-        return new FastaReferenceWriter(basesPerLine, fastaOutput, indexOutput, dictOutput);
+        return new FastaReferenceWriter(basesPerLine, addMd5, fastaOutput, indexOutput, dictOutput);
+    }
+
+    public boolean getAddMd5() {
+        return addMd5;
+    }
+
+    public void setAddMd5(final boolean addMd5) {
+        this.addMd5 = addMd5;
     }
 }
