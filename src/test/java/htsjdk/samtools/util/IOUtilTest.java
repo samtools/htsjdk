@@ -584,17 +584,25 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getExtensions(){
-        return new Object[][]{{".gz"}, {".bfq"}, {".txt"}};
+        return new Object[][]{
+                {".gz", true},
+                {".bfq", true},
+                {".txt", false}};
     }
 
     @Test(dataProvider = "getExtensions")
-    public void testReadWriteJimfs(String extension) throws IOException {
+    public void testReadWriteJimfs(String extension, boolean gzipped) throws IOException {
         final Path jmfsRoot = inMemoryFileSystem.getRootDirectories().iterator().next();
         final Path tmp = Files.createTempFile(jmfsRoot, "test", extension);
         final String expected = "lorem ipswitch, nantucket, bucket";
         try( final Writer out = IOUtil.openFileForBufferedWriting(tmp)){
             out.write(expected);
         }
+
+        try( final InputStream in = new BufferedInputStream(Files.newInputStream(tmp))){
+               Assert.assertEquals(IOUtil.isGZIPInputStream(in), gzipped);
+        }
+
         try( final BufferedReader in = IOUtil.openFileForBufferedReading(tmp)){
             final String actual = in.readLine();
             Assert.assertEquals(actual, expected);
