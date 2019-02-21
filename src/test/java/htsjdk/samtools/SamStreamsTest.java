@@ -92,7 +92,6 @@ public class SamStreamsTest extends HtsjdkTest {
         Assert.assertEquals(SamStreams.sourceLikeCram(strm), expected);
     }
 
-
     @DataProvider(name = "sourceLikeBam")
     public Object[][] sourceLikeBamData() {
         return new Object[][] {
@@ -110,7 +109,6 @@ public class SamStreamsTest extends HtsjdkTest {
     {
         sourceLikeBamImpl(resourceName, isFile, expected);
     }
-
 
     @DataProvider(name = "sourceLikeBamRemote")
     public Object[][] sourceLikeBamDataRemote() {
@@ -135,8 +133,6 @@ public class SamStreamsTest extends HtsjdkTest {
     {
         sourceLikeBamImpl(resourceName, isFile, expected);
     }
-
-
 
     public void sourceLikeBamImpl(
             final String resourceName,
