@@ -1084,9 +1084,7 @@ public class SequenceUtil {
      * @return an array of random DNA bases of the requested length.
      */
     static public byte[] getRandomBases(Random random, final int length) {
-        if (length < 0) {
-            throw new IllegalArgumentException("length must be no smaller than zero! got " + length);
-        }
+        ValidationUtils.validateArg(length >= 0, "length must be non-negative");
         final byte[] bases = new byte[length];
         getRandomBases(random, length, bases);
         return bases;
@@ -1103,7 +1101,7 @@ public class SequenceUtil {
      * @param bases  Array to use for bases (from index 0)
      */
     static public void getRandomBases(Random random, final int length, final byte[] bases) {
-        ValidationUtils.validateArg(length >= 0, "length must be positive");
+        ValidationUtils.validateArg(length >= 0, "length must be non-negative");
         ValidationUtils.validateArg(length <= bases.length, "length must no larger than size of input array");
 
         for (int i = 0; i < length; ++i) {
