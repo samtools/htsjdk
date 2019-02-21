@@ -57,6 +57,21 @@ public class ContainerFactoryTest extends HtsjdkTest {
         return records;
     }
 
+    static List<CramCompressionRecord> getUnmappedRecords() {
+        final List<CramCompressionRecord> records = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            final CramCompressionRecord record = createMappedRecord(i);
+            record.setSegmentUnmapped(true);
+            record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+            record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+            records.add(record);
+        }
+        return records;
+    }
+
+    // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
+    // but not both.  We treat these weird edge cases as unplaced.
+
     static List<CramCompressionRecord> getUnmappedNoRefRecords() {
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
@@ -149,6 +164,16 @@ public class ContainerFactoryTest extends HtsjdkTest {
         final Container container = factory.buildContainer(getSingleRefRecords(recordCount));
         assertContainerState(container, recordCount, sequenceId, alignmentStart, alignmentSpan);
     }
+
+    @Test
+    public void testUnmapped() {
+        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
+        final Container container = factory.buildContainer(getUnmappedRecords());
+        assertContainerState(container, 10, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+    }
+
+    // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
+    // but not both.  We treat these weird edge cases as unplaced.
 
     @Test
     public void testUnmappedNoReferenceId() {

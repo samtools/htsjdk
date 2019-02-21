@@ -379,8 +379,8 @@ public class CRAMContainerStreamWriter {
                     while (last.next != null) last = last.next;
 
                     if (cramRecord.isFirstSegment() && last.isLastSegment()) {
-
-                        final int templateLength = CramNormalizer.computeInsertSize(cramRecord, last);
+                        final boolean coordinateSorted = (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
+                        final int templateLength = CramNormalizer.computeInsertSize(cramRecord, last, coordinateSorted);
 
                         if (cramRecord.templateSize == templateLength) {
                             last = cramRecord.next;
