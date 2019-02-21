@@ -691,7 +691,7 @@ public class IOUtil {
      */
     public static OutputStream openFileForWriting(final Path path, OpenOption... openOptions) {
         try {
-            if(hasGzipFileExtension(path)) {
+            if (hasGzipFileExtension(path)) {
                 return openGzipFileForWriting(path, openOptions);
             } else {
                 return Files.newOutputStream(path, openOptions);
