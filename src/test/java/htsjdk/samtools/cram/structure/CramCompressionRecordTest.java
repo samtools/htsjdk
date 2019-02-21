@@ -82,13 +82,13 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         Assert.assertEquals(r.getAlignmentEnd(usePositionDeltaEncoding), expectedEnd);
     }
 
-    // show that alignmentEnd and alignmentSpan are set once only and do not update
-    // to reflect the state of the record
+    // https://github.com/samtools/htsjdk/issues/1301
 
-    // TODO: is this the behavior we actually want?
+    // demonstrate the bug: alignmentEnd and alignmentSpan are set once only
+    // and do not update to reflect the state of the record
 
     @Test(dataProvider = "deltaEncodingTrueFalse")
-    public void testNoReinitialization(final boolean usePositionDeltaEncoding) {
+    public void demonstrateBug1301(final boolean usePositionDeltaEncoding) {
         final CramCompressionRecord r = new CramCompressionRecord();
         final int alignmentStart = 5;
         final int readLength = 100;

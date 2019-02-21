@@ -182,6 +182,9 @@ public class CramCompressionRecord {
         return alignmentEnd;
     }
 
+    // https://github.com/samtools/htsjdk/issues/1301
+    // does not update alignmentSpan/alignmentEnd when the record changes
+
     private void intializeAlignmentBoundaries(final boolean usePositionDeltaEncoding) {
         if (!isPlaced(usePositionDeltaEncoding)) {
             alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
