@@ -194,7 +194,8 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
         }
 
         // Write out a header row with the type of the metric class
-        out.append(METRIC_HEADER + getBeanType().getName());
+        out.append(METRIC_HEADER);
+        out.append(getBeanType().getName());
         out.newLine();
 
         // Write out the column headers
