@@ -58,7 +58,6 @@ public class SAMRecordSetBuilderTest extends HtsjdkTest {
 
             Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1, dict2));
 
-
         } finally {
             TestUtil.recursiveDelete(dir1);
             TestUtil.recursiveDelete(dir2);
@@ -79,17 +78,21 @@ public class SAMRecordSetBuilderTest extends HtsjdkTest {
                 Assert.assertEquals(referenceSequence.length(), s.getSequenceLength());
                 Assert.assertEquals(referenceSequence.getName(), s.getSequenceName());
                 if (s.getMd5() != null) {
-                    Assert.assertEquals(s.getMd5(), sequenceFile.getSequenceDictionary().getSequence(referenceSequence.getName()).getMd5());
+                    Assert.assertEquals(sequenceFile.getSequenceDictionary().getSequence(referenceSequence.getName()).getMd5(), s.getMd5());
                 }
             });
             // the md5's should be all different
-            if (header.getSequenceDictionary().size() > 1) {
-                final String md5 = header.getSequence(0).getMd5();
-                header.getSequenceDictionary().getSequences().stream().skip(1).forEach(s -> {
-                    Assert.assertNotEquals(md5, header.getSequence(1).getMd5(),
-                            "md5s of sequence " + header.getSequence(0).getSequenceName() + " and " + s.getSequenceName() + " are the same!");
-                });
+            if (samSequenceDictionary.size() > 1) {
+                final String md5 = samSequenceDictionary.getSequence(0).getMd5();
+
+                if (md5 != null) {
+                    samSequenceDictionary.getSequences().stream().skip(1).forEach(s -> {
+                        Assert.assertNotEquals(md5, s.getMd5(),
+                                "md5s of sequence " + samSequenceDictionary.getSequence(0).getSequenceName() + " and " + s.getSequenceName() + " are the same!");
+                    });
+                }
             }
         }
     }
+
 }

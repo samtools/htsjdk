@@ -652,7 +652,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     public static void writeRandomReference(final SAMFileHeader header, final Path fasta) throws IOException {
         final int MAX_WRITE_AT_A_TIME = 10_000;
         final byte[] buffer = new byte[MAX_WRITE_AT_A_TIME];
-        final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder().setFastaFile(fasta);
+        final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder().setAddMd5(true).setFastaFile(fasta);
 
         try (FastaReferenceWriter writer = builder.build()) {
 

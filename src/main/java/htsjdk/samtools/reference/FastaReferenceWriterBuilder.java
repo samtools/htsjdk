@@ -229,7 +229,8 @@ public class FastaReferenceWriterBuilder {
         return addMd5;
     }
 
-    public void setAddMd5(final boolean addMd5) {
+    public FastaReferenceWriterBuilder setAddMd5(final boolean addMd5) {
         this.addMd5 = addMd5;
+        return this;
     }
 }

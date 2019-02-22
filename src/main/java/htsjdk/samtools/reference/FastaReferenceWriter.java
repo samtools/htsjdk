@@ -450,7 +450,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
     private void writeDictEntry() {
         final SAMSequenceRecord samSequenceRecord = new SAMSequenceRecord(currentSequenceName, (int) currentBasesCount);
         if (md5Digester != null) {
-            SequenceUtil.md5DigestToString(md5Digester.digest());
+            samSequenceRecord.setMd5(SequenceUtil.md5DigestToString(md5Digester.digest()));
         }
         dictCodec.encodeSequenceRecord(samSequenceRecord);
     }
