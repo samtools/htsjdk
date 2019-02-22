@@ -82,13 +82,19 @@ public class OverlapDetector<T> {
         final int start = interval.getStart() + this.lhsBuffer;
         final int end   = interval.getEnd()   - this.lhsBuffer;
 
-        final Set<T> objects = new HashSet<>(1);
-        objects.add(object);
+        final Set<T> newValue = Collections.singleton(object);
         if (start <= end) {  // Don't put in sequences that have no overlappable bases
-            final Set<T> alreadyThere = tree.put(start, end, objects);
+            final Set<T> alreadyThere = tree.put(start, end, newValue);
             if (alreadyThere != null) {
-                alreadyThere.add(object);
-                tree.put(start, end, alreadyThere);
+                if( alreadyThere.size() == 1){
+                    Set<T> mutableSet = new HashSet<>(2);
+                    mutableSet.addAll(alreadyThere);
+                    mutableSet.add(object);
+                    tree.put(start, end, mutableSet);
+                } else {
+                    alreadyThere.add(object);
+                    tree.put(start, end, alreadyThere);
+                }
             }
         }
     }
