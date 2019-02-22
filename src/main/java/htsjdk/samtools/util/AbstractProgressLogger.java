@@ -24,6 +24,8 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private String lastChrom = null;
     private int lastPos = 0;
     private String lastReadName = null;
+    private long countNonIncreasing = 0;
+    final private long PRINT_READ_NAME_THRESHOLD = 1000;
 
     /**
      * Construct an AbstractProgressLogger.
@@ -63,10 +65,10 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         else readInfo = this.lastChrom + ":" + fmt.format(this.lastPos);
 
         final String rnInfo;
-        if(lastReadName != null) {
+
+        if (lastReadName != null && countNonIncreasing > PRINT_READ_NAME_THRESHOLD) {
             rnInfo = ".  Last read name: " + lastReadName;
-        }
-        else {
+        } else {
             rnInfo = "";
         }
 
@@ -81,7 +83,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
      * @return boolean true if logging was triggered, false otherwise
      */
     public synchronized boolean log() {
-        if (this.processed % this.n != 0) {
+        if (processed % this.n != 0) {
             record();
             return true;
         }
@@ -91,13 +93,21 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     }
 
     protected synchronized boolean record(final String chrom, final int pos, final String rname) {
-        this.lastChrom = chrom;
-        this.lastPos = pos;
-        this.lastReadName = rname;
-        if (this.lastStartTime == -1) {
-            this.lastStartTime = System.currentTimeMillis();
+        lastChrom = chrom;
+        if (pos >= lastPos) {
+            countNonIncreasing = Math.max(0, countNonIncreasing--);
+        } else {
+            countNonIncreasing++;
+            if (countNonIncreasing == PRINT_READ_NAME_THRESHOLD) {
+                log("Seen many non-increasing record positions. Printing Readnames as well.");
+            }
         }
-        if (++this.processed % this.n == 0) {
+        lastPos = pos;
+        lastReadName = rname;
+        if (lastStartTime == -1) {
+            lastStartTime = System.currentTimeMillis();
+        }
+        if (++processed % n == 0) {
             record();
             return true;
         }
@@ -119,8 +129,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     public synchronized boolean record(final SAMRecord rec) {
         if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(rec.getReferenceName())) {
             return record(null, 0, rec.getReadName());
-        }
-        else {
+        } else {
             return record(rec.getReferenceName(), rec.getAlignmentStart(), rec.getReadName());
         }
     }
@@ -152,9 +161,11 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
 
     /** Left pads a string until it is at least the given length. */
     private String pad (String in, final int length) {
-        while (in.length() < length) {
-            in = " " + in;
+        StringBuilder inBuilder = new StringBuilder(in);
+        while (inBuilder.length() < length) {
+            inBuilder.insert(0, " ");
         }
+        in = inBuilder.toString();
 
         return in;
     }
