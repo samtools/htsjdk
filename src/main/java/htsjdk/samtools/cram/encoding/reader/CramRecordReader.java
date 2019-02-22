@@ -162,7 +162,7 @@ public class CramRecordReader {
      *
      * @param cramRecord the Cram Compression Record to read into
      */
-    public void read(final CramCompressionRecord cramRecord) {
+    public void read(final CramCompressionRecord cramRecord, final int prevAlignmentStart) {
         try {
             // int mark = testCodec.readData();
             // if (Writer.TEST_MARK != mark) {
@@ -181,8 +181,9 @@ public class CramRecordReader {
 
             cramRecord.readLength = readLengthCodec.readData();
             if (APDelta) {
-                cramRecord.alignmentDelta = alignmentStartCodec.readData();
-            } else {
+                cramRecord.alignmentStart = prevAlignmentStart + alignmentStartCodec.readData();
+            }
+            else {
                 cramRecord.alignmentStart = alignmentStartCodec.readData();
             }
 
@@ -330,4 +331,5 @@ public class CramRecordReader {
             throw new RuntimeIOException(e);
         }
     }
+
 }

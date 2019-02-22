@@ -10,6 +10,7 @@ import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -59,8 +60,13 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         return initialRecords;
     }
 
-    @Test
-    public void testSpans() throws IOException {
+    @DataProvider(name = "coordSortedTrueFalse")
+    private Object[][] tf() {
+        return new Object[][] { {true}, {false}};
+    }
+
+    @Test(dataProvider = "coordSortedTrueFalse")
+    public void testSpans(final boolean coordinateSorted) throws IOException {
         final List<CramCompressionRecord> initialRecords = initSpanRecords();
 
         // note for future refactoring
@@ -68,18 +74,18 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         // which is the only way to set a record's tagIdsIndex
         // which would otherwise be null
 
-        final boolean sorted = false;
-        final CompressionHeader header = createHeader(initialRecords, sorted);
+        final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
 
         final int refId = Slice.MULTI_REFERENCE;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
-        final byte[] written = write(initialRecords, header, refId, outputMap);
+        int initialAlignmentStart = initialRecords.get(0).alignmentStart;
+        final byte[] written = write(initialRecords, outputMap, header, refId, initialAlignmentStart);
 
         final Map<Integer, ByteArrayInputStream> inputMap = createInputMap(outputMap);
         try (final ByteArrayInputStream is = new ByteArrayInputStream(written);
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
-            final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
+            final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, initialAlignmentStart, initialRecords.size());
             final Map<Integer, AlignmentSpan> spans = reader.getReferenceSpans();
 
             Assert.assertEquals(spans.size(), 3);

@@ -146,13 +146,13 @@ public class CramRecordWriter {
      * Writes a series of Cram Compression Records, using this class's Encodings
      *
      * @param records the Cram Compression Records to write
-     * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
+     * @param initialAlignmentStart the alignmentStart of the enclosing {@link Slice}, for delta calculation
      */
-    public void writeCramCompressionRecords(final List<CramCompressionRecord> records, int prevAlignmentStart) {
+    public void writeCramCompressionRecords(final List<CramCompressionRecord> records, final int initialAlignmentStart) {
+        int prevAlignmentStart = initialAlignmentStart;
         for (final CramCompressionRecord record : records) {
-            record.alignmentDelta = record.alignmentStart - prevAlignmentStart;
+            writeRecord(record, prevAlignmentStart);
             prevAlignmentStart = record.alignmentStart;
-            writeRecord(record);
         }
     }
 
@@ -160,8 +160,9 @@ public class CramRecordWriter {
      * Write a Cram Compression Record, using this class's Encodings
      *
      * @param r the Cram Compression Record to write
+     * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
      */
-    private void writeRecord(final CramCompressionRecord r) {
+    private void writeRecord(final CramCompressionRecord r, final int prevAlignmentStart) {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
         if (refId == Slice.MULTI_REFERENCE) {
@@ -171,7 +172,8 @@ public class CramRecordWriter {
         readLengthC.writeData(r.readLength);
 
         if (AP_delta) {
-            alStartC.writeData(r.alignmentDelta);
+            final int alignmentDelta = r.alignmentStart - prevAlignmentStart;
+            alStartC.writeData(alignmentDelta);
         } else {
             alStartC.writeData(r.alignmentStart);
         }

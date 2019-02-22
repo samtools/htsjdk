@@ -32,9 +32,9 @@ import java.util.Map;
  */
 public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
     /**
-     * Alignment start to start counting from
+     * Alignment start to of the previous record, for delta-encoding if necessary
      */
-    private int currentAlignmentStart;
+    private int prevAlignmentStart;
 
     /**
      * Detected sequence spans
@@ -60,7 +60,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final int recordCount) {
         super(coreInputStream, externalInputMap, header, Slice.MULTI_REFERENCE, validationStringency);
 
-        this.currentAlignmentStart = initialAlignmentStart;
+        this.prevAlignmentStart = initialAlignmentStart;
 
         for (int i = 0; i < recordCount; i++) {
             readCramRecord();
@@ -73,18 +73,13 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
 
     private void readCramRecord() {
         final CramCompressionRecord cramRecord = new CramCompressionRecord();
-        super.read(cramRecord);
-
-        if (APDelta) {
-            currentAlignmentStart += cramRecord.alignmentDelta;
-        } else {
-            currentAlignmentStart = cramRecord.alignmentStart;
-        }
+        super.read(cramRecord, prevAlignmentStart);
+        prevAlignmentStart = cramRecord.alignmentStart;
 
         if (!spans.containsKey(cramRecord.sequenceId)) {
-            spans.put(cramRecord.sequenceId, new AlignmentSpan(currentAlignmentStart, cramRecord.readLength));
+            spans.put(cramRecord.sequenceId, new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength));
         } else {
-            spans.get(cramRecord.sequenceId).addSingle(currentAlignmentStart, cramRecord.readLength);
+            spans.get(cramRecord.sequenceId).addSingle(cramRecord.alignmentStart, cramRecord.readLength);
         }
     }
 }

@@ -119,13 +119,14 @@ public class ContainerParser {
 
         final ArrayList<CramCompressionRecord> records = new ArrayList<>(slice.nofRecords);
 
-        int prevStart = slice.alignmentStart;
+        int prevAlignmentStart = slice.alignmentStart;
         for (int i = 0; i < slice.nofRecords; i++) {
             final CramCompressionRecord record = new CramCompressionRecord();
             record.sliceIndex = slice.index;
             record.index = i;
 
-            reader.read(record);
+            reader.read(record, prevAlignmentStart);
+            prevAlignmentStart = record.alignmentStart;
 
             if (record.sequenceId == slice.sequenceId) {
                 record.sequenceName = seqName;
@@ -140,11 +141,6 @@ public class ContainerParser {
             }
 
             records.add(record);
-
-            if (header.APDelta) {
-                prevStart += record.alignmentDelta;
-                record.alignmentStart = prevStart;
-            }
         }
 
         return records;

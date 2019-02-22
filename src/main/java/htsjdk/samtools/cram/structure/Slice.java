@@ -388,7 +388,7 @@ public class Slice {
             // Unmapped: all records are unmapped and unplaced
 
             final CramCompressionRecord firstRecord = records.get(0);
-            slice.sequenceId = firstRecord.isPlaced(header.APDelta) ?
+            slice.sequenceId = firstRecord.isPlaced() ?
                     firstRecord.sequenceId :
                     SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
 
@@ -398,19 +398,19 @@ public class Slice {
                 hasher.add(record);
 
                 // flip an unmapped slice to multi-ref if the record is placed
-                if (slice.isUnmapped() && record.isPlaced(header.APDelta)) {
+                if (slice.isUnmapped() && record.isPlaced()) {
                     slice.sequenceId = MULTI_REFERENCE;
                 }
                 else if (slice.isMappedSingleRef()) {
                     // flip a single-ref slice to multi-ref if the record is unplaced or on a different ref
-                    if (!record.isPlaced(header.APDelta) || slice.sequenceId != record.sequenceId) {
+                    if (!record.isPlaced() || slice.sequenceId != record.sequenceId) {
                         slice.sequenceId = MULTI_REFERENCE;
                     }
                     else {
                         // calculate single ref slice alignment
 
                         minAlStart = Math.min(record.alignmentStart, minAlStart);
-                        maxAlEnd = Math.max(record.getAlignmentEnd(header.APDelta), maxAlEnd);
+                        maxAlEnd = Math.max(record.getAlignmentEnd(), maxAlEnd);
                     }
                 }
             }
