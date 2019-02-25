@@ -36,6 +36,13 @@
         <Bug pattern="SC_START_IN_CTOR" />
     </Match>
     <Match>
+        <!-- Redundant null check is OK in this case, for clarity  -->
+        <!-- RCN: Redundant nullcheck of value known to be non-null  -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#rcn-redundant-nullcheck-of-value-known-to-be-non-null-rcn-redundant-nullcheck-of-nonnull-value -->
+        <Class name="htsjdk.variant.vcf.AbstractVCFCodec" />
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE" />
+    </Match>
+    <Match>
         <!-- It's OK for test classes to create one-off Random objects -->
         <!-- DMI: Random object created and used only once -->
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dmi-random-object-created-and-used-only-once-dmi-random-used-only-once -->
