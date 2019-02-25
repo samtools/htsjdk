@@ -49,6 +49,15 @@
         <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE" />
     </Match>
     <Match>
+        <!-- FE: Test for floating point equality -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#fe-test-for-floating-point-equality-fe-floating-point-equality -->
+        <Or>
+            <Class name="htsjdk.samtools.util.Histogram" />
+            <Class name="htsjdk.tribble.index.linear.LinearIndex$ChrIndex" />
+        </Or>
+        <Bug pattern="FE_FLOATING_POINT_EQUALITY" />
+    </Match>
+    <Match>
         <!-- It's OK for test classes to create one-off Random objects -->
         <!-- DMI: Random object created and used only once -->
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dmi-random-object-created-and-used-only-once-dmi-random-used-only-once -->
