@@ -264,7 +264,9 @@ public class CramCompressionRecord {
      * @return true if the record is placed
      */
     boolean isPlaced() {
-        boolean placed = isPlacedInternal();
+        // placement requires a valid sequence ID and alignment start coordinate
+        boolean placed = sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
 
         if (!placed && !isSegmentUnmapped()) {
             final String warning = String.format(
@@ -275,17 +277,6 @@ public class CramCompressionRecord {
         }
 
         return placed;
-    }
-
-    // check placement without regard to mapping; helper method for isPlaced()
-    private boolean isPlacedInternal() {
-        // placement requires a valid sequence ID
-        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            return false;
-        }
-
-        // an alignment start coordinate is required for placement too
-        return ! (alignmentStart == SAMRecord.NO_ALIGNMENT_START);
     }
 
     public boolean isFirstSegment() {

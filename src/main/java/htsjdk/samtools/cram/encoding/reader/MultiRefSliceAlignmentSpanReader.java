@@ -32,7 +32,7 @@ import java.util.Map;
  */
 public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
     /**
-     * Alignment start to of the previous record, for delta-encoding if necessary
+     * Alignment start of the previous record, for delta-encoding if necessary
      */
     private int prevAlignmentStart;
 
