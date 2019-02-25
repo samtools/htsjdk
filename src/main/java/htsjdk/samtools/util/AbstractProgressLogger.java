@@ -138,7 +138,9 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     @Override
     public boolean record(final SAMRecord... recs) {
         boolean triggered = false;
-        for (final SAMRecord rec : recs) triggered = record(rec) || triggered;
+        for (final SAMRecord rec : recs) {
+            triggered = record(rec) || triggered;
+        }
         return triggered;
     }
 
@@ -161,7 +163,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
 
     /** Left pads a string until it is at least the given length. */
     private String pad (String in, final int length) {
-        StringBuilder inBuilder = new StringBuilder(in);
+        final StringBuilder inBuilder = new StringBuilder(in);
         while (inBuilder.length() < length) {
             inBuilder.insert(0, " ");
         }
