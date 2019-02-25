@@ -30,6 +30,12 @@
         <Bug pattern="DM_GC" />
     </Match>
     <Match>
+        <!-- SC: Constructor invokes Thread.start() -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#sc-constructor-invokes-thread-start-sc-start-in-ctor -->
+        <Class name="htsjdk.samtools.util.AbstractAsyncWriter" />
+        <Bug pattern="SC_START_IN_CTOR" />
+    </Match>
+    <Match>
         <!-- It's OK for test classes to create one-off Random objects -->
         <!-- DMI: Random object created and used only once -->
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dmi-random-object-created-and-used-only-once-dmi-random-used-only-once -->
