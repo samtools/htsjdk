@@ -297,7 +297,7 @@ public class AlleleUnitTest extends VariantBaseTest {
                 {"AAAAAA[chr1:1234[",   true, true, false},
                 {"AAAAAA]chr1:1234]",   true, true, false},
                 {"A.",                  true, false, true},
-                {".A",                  false, true, true},
+                {".A",                  true, false, true},
                 {"AA",                  false, false, false},
                 {"A",                   false, false, false}
         };
