@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -645,9 +644,7 @@ public class SortingCollection<T> implements Iterable<T> {
         }
     }
 
-    class PeekFileRecordIteratorComparator implements Comparator<PeekFileRecordIterator>, Serializable {
-        private static final long serialVersionUID = 1L;
-
+    class PeekFileRecordIteratorComparator implements Comparator<PeekFileRecordIterator> {
         @Override
         public int compare(final PeekFileRecordIterator lhs, final PeekFileRecordIterator rhs) {
             final int result = comparator.compare(lhs.peek(), rhs.peek());
