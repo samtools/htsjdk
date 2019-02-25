@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
     <Match>
+        <!-- This class of warnings could be evaluated at some point -->
         <!-- Dm: Reliance on default encoding -->
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dm-reliance-on-default-encoding-dm-default-encoding -->
         <Bug pattern="DM_DEFAULT_ENCODING" />
+    </Match>
+    <Match>
+        <!-- SAMFileHeader#clone is public but we don't implement Cloneable (since Java's cloning mechanism is discouraged -->
+        <!-- CN: Class defines clone() but doesn’t implement Cloneable   -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#cn-class-defines-clone-but-doesn-t-implement-cloneable-cn-implements-clone-but-not-cloneable -->
+        <Class name="htsjdk.samtools.SAMFileHeader" />
+        <Bug pattern="CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE" />
     </Match>
     <Match>
         <!-- It's OK for test classes to create one-off Random objects -->
