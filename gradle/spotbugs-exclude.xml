@@ -20,6 +20,16 @@
         <Bug pattern="MS_MUTABLE_ARRAY" />
     </Match>
     <Match>
+        <!-- DM_GC: Explicit garbage collection; extremely dubious except in benchmarking code -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dm-explicit-garbage-collection-extremely-dubious-except-in-benchmarking-code-dm-gc -->
+        <Or>
+            <Class name="htsjdk.samtools.util.FileAppendStreamLRUCache$Functor" />
+            <Class name="htsjdk.samtools.util.SortingCollection" />
+            <Class name="htsjdk.samtools.util.SortingCollection$MergingIterator" />
+        </Or>
+        <Bug pattern="DM_GC" />
+    </Match>
+    <Match>
         <!-- It's OK for test classes to create one-off Random objects -->
         <!-- DMI: Random object created and used only once -->
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dmi-random-object-created-and-used-only-once-dmi-random-used-only-once -->
