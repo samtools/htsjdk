@@ -36,6 +36,12 @@
         <Bug pattern="SC_START_IN_CTOR" />
     </Match>
     <Match>
+        <!-- ST: Write to static field from instance method  -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#st-write-to-static-field-from-instance-method-st-write-to-static-from-instance-method -->
+        <Class name="htsjdk.tribble.util.HTTPHelper" />
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" />
+    </Match>
+    <Match>
         <!-- Redundant null check is OK in this case, for clarity  -->
         <!-- RCN: Redundant nullcheck of value known to be non-null  -->
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#rcn-redundant-nullcheck-of-value-known-to-be-non-null-rcn-redundant-nullcheck-of-nonnull-value -->
