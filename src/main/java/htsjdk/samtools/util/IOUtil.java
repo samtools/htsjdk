@@ -94,7 +94,14 @@ public class IOUtil {
     public static final String COMPRESSED_VCF_INDEX_EXTENSION = ".tbi";
 
     /** Possible extensions for VCF files and related formats. */
-    public static final String[] VCF_EXTENSIONS = {VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION};
+    public static final List<String> VCF_EXTENSIONS_LIST = Collections.unmodifiableList(Arrays.asList(VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION));
+
+    /**
+     * Possible extensions for VCF files and related formats.
+     * @deprecated Use {@link #VCF_EXTENSIONS_LIST} instead.
+     */
+    @Deprecated
+    public static final String[] VCF_EXTENSIONS = VCF_EXTENSIONS_LIST.toArray(new String[0]);
 
     public static final String INTERVAL_LIST_FILE_EXTENSION = IntervalList.INTERVAL_LIST_FILE_EXTENSION;
 
