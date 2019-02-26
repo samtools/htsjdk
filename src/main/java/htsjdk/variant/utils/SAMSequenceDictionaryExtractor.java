@@ -25,6 +25,7 @@
 package htsjdk.variant.utils;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CollectionUtil;
@@ -49,7 +50,7 @@ public class SAMSequenceDictionaryExtractor {
         FASTA(ReferenceSequenceFileFactory.FASTA_EXTENSIONS) {
 
             @Override
-            SAMSequenceDictionary extractDictionary(Path reference) {
+            SAMSequenceDictionary extractDictionary(final Path reference) {
                 final SAMSequenceDictionary dict = ReferenceSequenceFileFactory.getReferenceSequenceFile(reference).getSequenceDictionary();
                 if (dict == null)
                     throw new SAMException("Could not find dictionary next to reference file " + reference.toUri().toString());
@@ -70,17 +71,24 @@ public class SAMSequenceDictionaryExtractor {
                 }
             }
         },
+        CRAM(CramIO.CRAM_FILE_EXTENSION) {
+            
+            @Override
+            SAMSequenceDictionary extractDictionary(final Path cram) {
+                    return CRAMIterator.extractDictionary(cram);
+            }
+        },
         SAM(IOUtil.SAM_FILE_EXTENSION, BamFileIoUtils.BAM_FILE_EXTENSION) {
 
             @Override
-            SAMSequenceDictionary extractDictionary(Path sam) {
+            SAMSequenceDictionary extractDictionary(final Path sam) {
                 return SamReaderFactory.makeDefault().getFileHeader(sam).getSequenceDictionary();
             }
         },
         VCF(IOUtil.VCF_EXTENSIONS) {
 
             @Override
-            SAMSequenceDictionary extractDictionary(Path vcf) {
+            SAMSequenceDictionary extractDictionary(final Path vcf) {
                 try (VCFFileReader vcfPathReader = new VCFFileReader(vcf, false)){
                     return vcfPathReader.getFileHeader().getSequenceDictionary();
                 }
@@ -89,7 +97,7 @@ public class SAMSequenceDictionaryExtractor {
         INTERVAL_LIST(IOUtil.INTERVAL_LIST_FILE_EXTENSION) {
 
             @Override
-            SAMSequenceDictionary extractDictionary(Path intervalList) {
+            SAMSequenceDictionary extractDictionary(final Path intervalList) {
                 return IntervalList.fromPath(intervalList).getHeader().getSequenceDictionary();
             }
         };
