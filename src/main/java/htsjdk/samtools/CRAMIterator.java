@@ -32,23 +32,12 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator {
-    
-    /** A CRAMReferenceSource that is never invoked . It's used in {@link #extractDictionary(Path)}*/
-    private static final CRAMReferenceSource NIL_CRAM_REFERENCE_SRC = new CRAMReferenceSource() {
-        @Override
-        public byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, boolean tryNameVariants) {
-            throw new IllegalStateException("CRAMReferenceSource.getReferenceBases shouldn't be called");
-            }
-    };
     
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
@@ -315,18 +304,4 @@ public class CRAMIterator implements SAMRecordIterator {
         return cramHeader.getSamFileHeader();
     }
 
-    /** extracts a {@link SAMSequenceDictionary} from a cram file.
-     * @return the dictionary of the cram file
-     * @throws SAMException if a dictionary cannot be extracted
-     */
-    public static SAMSequenceDictionary extractDictionary(final Path cramPath) {
-        IOUtil.assertFileIsReadable(cramPath);
-        try (final InputStream in = Files.newInputStream(cramPath)) {
-            try(final CRAMIterator iter= new CRAMIterator(in, NIL_CRAM_REFERENCE_SRC, ValidationStringency.SILENT)) {
-                return iter.getSAMFileHeader().getSequenceDictionary();
-            }
-        } catch (final Exception err) {
-           throw new SAMException("Cannot extract dictionary from "+cramPath, err);
-        }
-    }
 }
