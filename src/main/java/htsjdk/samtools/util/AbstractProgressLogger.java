@@ -93,14 +93,13 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     }
 
     protected synchronized boolean record(final String chrom, final int pos, final String rname) {
-        lastChrom = chrom;
-        if (pos >= lastPos) {
-            countNonIncreasing = Math.max(0, countNonIncreasing--);
-        } else {
+        if (lastChrom.equals(chrom) && pos < lastPos) {
             countNonIncreasing++;
             if (countNonIncreasing == PRINT_READ_NAME_THRESHOLD) {
-                log("Seen many non-increasing record positions. Printing Readnames as well.");
+                log("Seen many non-increasing record positions. Printing Read-names as well.");
             }
+        } else {
+            lastChrom = chrom;
         }
         lastPos = pos;
         lastReadName = rname;
@@ -110,8 +109,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         if (++processed % n == 0) {
             record();
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -151,7 +149,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     public long getElapsedSeconds() { return (System.currentTimeMillis() - this.startTime) / 1000; }
 
     /** Resets the start time to now and the number of records to zero. */
-    public void reset() {
+    public synchronized void reset() {
         startTime = System.currentTimeMillis();
         processed = 0;
         // Set to -1 until the first record is added
@@ -159,17 +157,17 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         lastChrom = null;
         lastPos = 0;
         lastReadName = null;
+        countNonIncreasing = 0;
     }
 
     /** Left pads a string until it is at least the given length. */
-    private String pad (String in, final int length) {
-        final StringBuilder inBuilder = new StringBuilder(in);
-        while (inBuilder.length() < length) {
-            inBuilder.insert(0, " ");
+    protected static String pad(final String in, final int length) {
+        final StringBuilder inBuilder = new StringBuilder(Math.max(length, in.length()));
+        while (inBuilder.length() < length - in.length()) {
+            inBuilder.append(" ");
         }
-        in = inBuilder.toString();
 
-        return in;
+        return inBuilder.append(in).toString();
     }
 
     /** Formats a number of seconds into hours:minutes:seconds. */

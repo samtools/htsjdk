@@ -117,7 +117,7 @@ public final class Log {
      */
     private void emit(final LogLevel level, final Throwable throwable, final Object... parts) {
         if (isEnabled(level)) {
-        	StringBuffer tmp = new StringBuffer();
+            final StringBuffer tmp = new StringBuffer();
             tmp.append(level.name())
                     .append('\t')
                     .append(getTimestamp())
@@ -145,10 +145,10 @@ public final class Log {
 
             // Print out the exception if there is one
             if (throwable != null) {
-             	synchronized (this.out) {
+                synchronized (this.out) {
                     this.out.println(tmp.toString());
                     throwable.printStackTrace(this.out);
-             	}
+                }
             }
             else {
                 this.out.println(tmp.toString());
