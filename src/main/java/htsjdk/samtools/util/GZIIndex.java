@@ -25,9 +25,12 @@
 package htsjdk.samtools.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -258,66 +261,99 @@ public final class GZIIndex {
         if (indexPath == null) {
             throw new IllegalArgumentException("null input path");
         }
+        try (final ReadableByteChannel channel = Files.newByteChannel(indexPath)) {
+            return loadIndex(indexPath.toUri().toString(), channel);
+        }
+    }
+
+    /**
+     * Loads the index from the provided input stream.
+     *
+     * @param source The named source of the reference file (used in error messages). May be null if unknown.
+     * @param indexIn the input stream for the index to load.
+     *
+     * @return loaded index.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
+    public static final GZIIndex loadIndex(final String source, final InputStream indexIn) throws IOException {
+        if (indexIn == null) {
+            throw new IllegalArgumentException("null input stream");
+        }
+        try (final ReadableByteChannel channel = Channels.newChannel(indexIn)) {
+            return loadIndex(source, channel);
+        }
+    }
+
+    /**
+     * Loads the index from the provided channel.
+     *
+     * @param source The named source of the reference file (used in error messages). May be null if unknown.
+     * @param channel the channel to read the index from.
+     *
+     * @return loaded index.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
+    public static final GZIIndex loadIndex(final String source, final ReadableByteChannel channel) throws IOException {
         // allocate a buffer for re-use for read each byte
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-        try (final ByteChannel channel = Files.newByteChannel(indexPath)) {
-            if (Long.BYTES != channel.read(buffer)) {
-                throw getCorruptedIndexException(indexPath, "less than " + Long.BYTES+ "bytes", null);
-            }
-            buffer.flip();
-
-            final int numberOfEntries;
-            try {
-                numberOfEntries = Math.toIntExact(buffer.getLong());
-            } catch (ArithmeticException e) {
-                buffer.flip();
-                throw getCorruptedIndexException(indexPath,
-                        String.format("HTSJDK cannot handle more than %d entries in .gzi index, but found %s",
-                                Integer.MAX_VALUE, buffer.getLong()),
-                        e);
-            }
-
-            // allocate array with the entries and add the first one
-            final List<IndexEntry> entries = new ArrayList<>(numberOfEntries);
-
-            // create a new buffer with the correct size and read into it
-            buffer = allocateBuffer(numberOfEntries, false);
-            channel.read(buffer);
-            buffer.flip();
-
-            for (int i = 0; i < numberOfEntries; i++) {
-                final IndexEntry entry;
-                try {
-                    entry = new IndexEntry(buffer.getLong(), buffer.getLong());
-                } catch (IllegalArgumentException e) {
-                    throw getCorruptedIndexException(indexPath, e.getMessage(), e);
-                }
-                // check if the entry is increasing in order
-                if (i == 0) {
-                    if (entry.getUncompressedOffset() == 0 && entry.getCompressedOffset() == 0) {
-                        throw getCorruptedIndexException(indexPath, "first block index entry should not be present", null);
-                    }
-                } else if (entries.get(i - 1).getCompressedOffset() >= entry.getCompressedOffset()
-                        || entries.get(i - 1).getUncompressedOffset() >= entry.getUncompressedOffset()) {
-                    throw getCorruptedIndexException(indexPath,
-                            String.format("index entries in misplaced order - %s vs %s",
-                                    entries.get(i - 1), entry),
-                            null);
-                }
-
-                entries.add(entry);
-            }
-
-            return new GZIIndex(entries);
+        if (Long.BYTES != channel.read(buffer)) {
+            throw getCorruptedIndexException(source, "less than " + Long.BYTES+ "bytes", null);
         }
+        buffer.flip();
+
+        final int numberOfEntries;
+        try {
+            numberOfEntries = Math.toIntExact(buffer.getLong());
+        } catch (ArithmeticException e) {
+            buffer.flip();
+            throw getCorruptedIndexException(source,
+                    String.format("HTSJDK cannot handle more than %d entries in .gzi index, but found %s",
+                            Integer.MAX_VALUE, buffer.getLong()),
+                    e);
+        }
+
+        // allocate array with the entries and add the first one
+        final List<IndexEntry> entries = new ArrayList<>(numberOfEntries);
+
+        // create a new buffer with the correct size and read into it
+        buffer = allocateBuffer(numberOfEntries, false);
+        channel.read(buffer);
+        buffer.flip();
+
+        for (int i = 0; i < numberOfEntries; i++) {
+            final IndexEntry entry;
+            try {
+                entry = new IndexEntry(buffer.getLong(), buffer.getLong());
+            } catch (IllegalArgumentException e) {
+                throw getCorruptedIndexException(source, e.getMessage(), e);
+            }
+            // check if the entry is increasing in order
+            if (i == 0) {
+                if (entry.getUncompressedOffset() == 0 && entry.getCompressedOffset() == 0) {
+                    throw getCorruptedIndexException(source, "first block index entry should not be present", null);
+                }
+            } else if (entries.get(i - 1).getCompressedOffset() >= entry.getCompressedOffset()
+                    || entries.get(i - 1).getUncompressedOffset() >= entry.getUncompressedOffset()) {
+                throw getCorruptedIndexException(source,
+                        String.format("index entries in misplaced order - %s vs %s",
+                                entries.get(i - 1), entry),
+                        null);
+            }
+
+            entries.add(entry);
+        }
+
+        return new GZIIndex(entries);
     }
 
-    private static final IOException getCorruptedIndexException(final Path indexPath, final String msg, final Exception e) {
+    private static final IOException getCorruptedIndexException(final String source, final String msg, final Exception e) {
         return new IOException(String.format("Corrupted index file: %s (%s)",
                 msg,
-                indexPath == null ? "unknown" : indexPath.toUri()),
+                source == null ? "unknown" : source),
                 e);
     }
 
