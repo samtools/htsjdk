@@ -37,7 +37,7 @@ public class IntervalListWriterTest extends HtsjdkTest {
 
     @Test
     public void testEndToEndOnPath() throws IOException {
-        try(FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path tempFile = Files.createTempFile(jimfs.getRootDirectories().iterator().next(), "IntervalListWriterTest.", ".interval_list");
             testEndToEnd(tempFile);
         }
