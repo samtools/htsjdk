@@ -31,12 +31,14 @@ import org.testng.annotations.Test;
 import org.testng.Assert;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * @author farjoun on 4/9/14.
  */
 public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
-    String path = "src/test/resources/htsjdk/variant/utils/SamSequenceDictionaryExtractor/";
+    final String path = "src/test/resources/htsjdk/variant/utils/SamSequenceDictionaryExtractor/";
 
     @DataProvider(name = "testExtractDictionaries")
     public Object[][] dictionaries() {
@@ -49,13 +51,14 @@ public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
                 new Object[]{"test2_comp.interval_list", "Homo_sapiens_assembly18.trimmed.dict"},
                 new Object[]{"ScreenSamReads.100.input.sam", "test3_comp.interval_list"},
                 new Object[]{"ScreenSamReads.100.input.sam", "test4_comp.interval_list"},
+                new Object[]{"toy.cram", "toy.dict"}
         };
     }
 
     @Test(dataProvider = "testExtractDictionaries")
     public void testExtractDictionary(final String dictSource, final String dictExpected) throws Exception {
-        final File dictSourceFile = new File(path, dictSource);
-        final File dictExpectedFile = new File(path, dictExpected);
+        final Path dictSourceFile = Paths.get(path, dictSource);
+        final Path dictExpectedFile = Paths.get(path, dictExpected);
         final SAMSequenceDictionary dict1 = SAMSequenceDictionaryExtractor.extractDictionary(dictSourceFile);
         final SAMSequenceDictionary dict2 = SAMSequenceDictionaryExtractor.extractDictionary(dictExpectedFile);
 
