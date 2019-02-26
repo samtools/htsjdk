@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
+import htsjdk.tribble.annotation.Strand;
 
 import java.util.Collection;
 
@@ -99,6 +100,13 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
      */
     public boolean isPositiveStrand() {
         return !this.negativeStrand;
+    }
+
+    /**
+     * Return the {@link Strand} this interval is on.
+     */
+    public Strand getStrand(){
+        return isNegativeStrand() ? Strand.NEGATIVE : Strand.FORWARD;
     }
 
     /**
@@ -210,7 +218,7 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
     }
 
     public String toString() {
-        return getContig() + ":" + getStart() + "-" + getEnd() + "\t" + (negativeStrand ? '-' : '+') + "\t" + ((null == name) ? '.' : name);
+        return getContig() + ":" + getStart() + "-" + getEnd() + "\t" + getStrand().encode() + "\t" + ((null == name) ? '.' : name);
     }
 
     @Override

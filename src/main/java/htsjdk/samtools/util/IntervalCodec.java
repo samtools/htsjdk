@@ -43,7 +43,7 @@ public class IntervalCodec implements SortingCollection.Codec<Interval> {
 
     @Override
     public IntervalCodec clone() {
-        return new IntervalCodec(this.dict);
+        return new IntervalCodec(dict);
     }
 
 
@@ -52,15 +52,15 @@ public class IntervalCodec implements SortingCollection.Codec<Interval> {
      */
     @Override
     public void setOutputStream(final OutputStream os) {
-        this.binaryCodec.setOutputStream(os);
+        binaryCodec.setOutputStream(os);
     }
 
     /**
      * Sets the output stream that records will be written to.
      */
     public void setOutputStream(final OutputStream os, final String filename) {
-        this.binaryCodec.setOutputStream(os);
-        this.binaryCodec.setOutputFileName(filename);
+        binaryCodec.setOutputStream(os);
+        binaryCodec.setOutputFileName(filename);
     }
 
     /**
@@ -68,15 +68,15 @@ public class IntervalCodec implements SortingCollection.Codec<Interval> {
      */
     @Override
     public void setInputStream(final InputStream is) {
-        this.binaryCodec.setInputStream(is);
+        binaryCodec.setInputStream(is);
     }
 
     /**
      * Sets the input stream that records will be read from.
      */
     public void setInputStream(final InputStream is, final String filename) {
-        this.binaryCodec.setInputStream(is);
-        this.binaryCodec.setInputFileName(filename);
+        binaryCodec.setInputStream(is);
+        binaryCodec.setInputFileName(filename);
     }
 
     /**
@@ -86,13 +86,13 @@ public class IntervalCodec implements SortingCollection.Codec<Interval> {
     @Override
     public void encode(final Interval interval) {
         final String name = interval.getName();
-        this.binaryCodec.writeInt(this.dict.getSequenceIndex(interval.getContig()));
-        this.binaryCodec.writeInt(interval.getStart());
-        this.binaryCodec.writeInt(interval.getEnd());
-        this.binaryCodec.writeBoolean(interval.isNegativeStrand());
-        this.binaryCodec.writeBoolean(name != null);
+        binaryCodec.writeInt(dict.getSequenceIndex(interval.getContig()));
+        binaryCodec.writeInt(interval.getStart());
+        binaryCodec.writeInt(interval.getEnd());
+        binaryCodec.writeBoolean(interval.isNegativeStrand());
+        binaryCodec.writeBoolean(name != null);
         if (name != null) {
-            this.binaryCodec.writeString(name, false, true);
+            binaryCodec.writeString(name, false, true);
         }
     }
 
@@ -104,16 +104,16 @@ public class IntervalCodec implements SortingCollection.Codec<Interval> {
     public Interval decode() {
         final int sequenceIndex;
         try {
-            sequenceIndex = this.binaryCodec.readInt();
+            sequenceIndex = binaryCodec.readInt();
         } catch (final RuntimeEOFException e) {
             return null;
         }
         return new Interval(
-            this.dict.getSequence(sequenceIndex).getSequenceName(),
-            this.binaryCodec.readInt(),
-            this.binaryCodec.readInt(),
-            this.binaryCodec.readBoolean(),
-             (this.binaryCodec.readBoolean()) ? this.binaryCodec.readNullTerminatedString() : null
+            dict.getSequence(sequenceIndex).getSequenceName(),
+            binaryCodec.readInt(),
+            binaryCodec.readInt(),
+            binaryCodec.readBoolean(),
+             (binaryCodec.readBoolean()) ? binaryCodec.readNullTerminatedString() : null
         );
     }
 }

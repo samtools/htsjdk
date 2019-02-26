@@ -25,6 +25,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMTextHeaderCodec;
+import htsjdk.tribble.annotation.Strand;
 
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -72,7 +73,7 @@ public class IntervalListWriter implements Closeable {
         out.write(TAB);
         out.write(Integer.toString(interval.getEnd()));
         out.write(TAB);
-        out.write(interval.isPositiveStrand() ? '+' : '-');
+        out.write(interval.getStrand().encode());
         out.write(TAB);
         out.write(interval.getName() != null ? interval.getName() : ".");
         out.newLine();

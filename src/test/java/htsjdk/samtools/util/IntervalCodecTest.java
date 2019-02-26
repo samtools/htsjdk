@@ -74,9 +74,8 @@ public class IntervalCodecTest extends HtsjdkTest {
                 final Interval interval = readCodec.decode();
                 if (interval == null) {
                     break;
-                } else {
-                    actualList.add(interval);
                 }
+                actualList.add(interval);
             }
         }
 
