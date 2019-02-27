@@ -59,7 +59,6 @@ public class CramCompressionRecord {
     // sequential index of the record in a stream:
     public int index = 0;
     public int alignmentStart;
-    public int alignmentDelta;
     private int alignmentEnd = UNINITIALIZED_END;
     private int alignmentSpan = UNINITIALIZED_SPAN;
 
@@ -129,7 +128,6 @@ public class CramCompressionRecord {
 
         if (!Arrays.equals(readBases, cramRecord.readBases)) return false;
         return Arrays.equals(qualityScores, cramRecord.qualityScores) && areEqual(flags, cramRecord.flags) && areEqual(readName, cramRecord.readName);
-
     }
 
     private boolean areEqual(final Object o1, final Object o2) {
@@ -156,7 +154,7 @@ public class CramCompressionRecord {
         final StringBuilder stringBuilder = new StringBuilder("[");
         if (readName != null) stringBuilder.append(readName).append("; ");
         stringBuilder.append("flags=").append(flags)
-                .append("; alignmentOffset=").append(alignmentDelta)
+                .append("; alignmentStart=").append(alignmentStart)
                 .append("; mateOffset=").append(recordsToNextFragment)
                 .append("; mappingQuality=").append(mappingQuality);
 
@@ -172,24 +170,22 @@ public class CramCompressionRecord {
 
     /**
      * Check whether alignmentSpan has been initialized, and do so if it has not
-     * @param usePositionDeltaEncoding is this record's position delta-encoded? used to call isPlaced()
      * @return the initialized alignmentSpan
      */
-    public int getAlignmentSpan(final boolean usePositionDeltaEncoding) {
+    public int getAlignmentSpan() {
         if (alignmentSpan == UNINITIALIZED_SPAN) {
-            intializeAlignmentBoundaries(usePositionDeltaEncoding);
+            intializeAlignmentBoundaries();
         }
         return alignmentSpan;
     }
 
     /**
      * Check whether alignmentEnd has been initialized, and do so if it has not
-     * @param usePositionDeltaEncoding is this record's position delta-encoded? used to call isPlaced()
      * @return the initialized alignmentEnd
      */
-    public int getAlignmentEnd(final boolean usePositionDeltaEncoding) {
+    public int getAlignmentEnd() {
         if (alignmentEnd == UNINITIALIZED_END) {
-            intializeAlignmentBoundaries(usePositionDeltaEncoding);
+            intializeAlignmentBoundaries();
         }
         return alignmentEnd;
     }
@@ -197,8 +193,8 @@ public class CramCompressionRecord {
     // https://github.com/samtools/htsjdk/issues/1301
     // does not update alignmentSpan/alignmentEnd when the record changes
 
-    private void intializeAlignmentBoundaries(final boolean usePositionDeltaEncoding) {
-        if (!isPlaced(usePositionDeltaEncoding)) {
+    private void intializeAlignmentBoundaries() {
+        if (!isPlaced()) {
             alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
             alignmentEnd = Slice.NO_ALIGNMENT_END;
             return;
@@ -244,7 +240,7 @@ public class CramCompressionRecord {
      * Unmapped records may be stored in the same {@link Slice}s and {@link Container}s as mapped
      * records if they are placed.
      *
-     * @see #isPlaced(boolean)
+     * @see #isPlaced()
      * @return true if the record is unmapped
      */
     public boolean isSegmentUnmapped() {
@@ -258,19 +254,19 @@ public class CramCompressionRecord {
     /**
      * Does this record have a valid placement/alignment location?
      *
-     * It must have a valid reference sequence ID to be considered placed.
-     * In the case of absolute (non-delta) position encoding, it must also have a
-     * valid alignment start position, so we need to know if it is delta-encoded.
+     * It must have a valid reference sequence ID and a valid alignment start position
+     * to be considered placed.
      *
      * Normally we expect to see that the unmapped flag is set for unplaced reads,
      * so we log a WARNING here if the read is unplaced yet somehow mapped.
      *
      * @see #isSegmentUnmapped()
-     * @param usePositionDeltaEncoding is this read's position delta-encoded?  if not, check alignment Start.
      * @return true if the record is placed
      */
-    public boolean isPlaced(final boolean usePositionDeltaEncoding) {
-        boolean placed = isPlacedInternal(!usePositionDeltaEncoding);
+    boolean isPlaced() {
+        // placement requires a valid sequence ID and alignment start coordinate
+        boolean placed = sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
 
         if (!placed && !isSegmentUnmapped()) {
             final String warning = String.format(
@@ -281,17 +277,6 @@ public class CramCompressionRecord {
         }
 
         return placed;
-    }
-
-    // check placement without regard to mapping; helper method for isPlaced()
-    private boolean isPlacedInternal(final boolean useAbsolutePositionEncoding) {
-        // placement requires a valid sequence ID
-        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            return false;
-        }
-
-        // if an absolute alignment start coordinate is required but we have none, it's unplaced
-        return ! (useAbsolutePositionEncoding && alignmentStart == SAMRecord.NO_ALIGNMENT_START);
     }
 
     public boolean isFirstSegment() {
@@ -407,5 +392,4 @@ public class CramCompressionRecord {
     public void setSupplementary(final boolean supplementary) {
         flags = supplementary ? flags | SUPPLEMENTARY_FLAG : flags & ~SUPPLEMENTARY_FLAG;
     }
-
 }

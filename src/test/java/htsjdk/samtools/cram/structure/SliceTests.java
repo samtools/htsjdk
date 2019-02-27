@@ -77,49 +77,47 @@ public class SliceTests extends HtsjdkTest {
 
     @DataProvider(name = "forBuildTests")
     private Object[][] forBuildTests() {
-        return new Object[][] {
+        final List<Object[]> retval = new ArrayList<>();
+        final boolean[] coordinateSorteds = new boolean[] { true, false };
+        for (final boolean coordSorted : coordinateSorteds) {
+            retval.add(new Object[]
                 {
                         getSingleRefRecords(),
-                        true,
+                        coordSorted,
                         TEST_RECORD_COUNT, 0, 1, 12
-                },
+                });
+            retval.add(new Object[]
                 {
                         getMultiRefRecords(),
-                        true,
+                        coordSorted,
                         TEST_RECORD_COUNT, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
-                },
+                });
+            retval.add(new Object[]
                 {
                         getUnplacedRecords(),
-                        true,
+                        coordSorted,
                         TEST_RECORD_COUNT, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
-                },
+                });
 
 
                 // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
                 // but not both.  We treat these weird edge cases as unplaced.
 
+            retval.add(new Object[]
                 {
                         getNoRefRecords(),
-                        true,
+                        coordSorted,
                         TEST_RECORD_COUNT, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
-                },
-
-                // show that not having a valid alignment start does nothing
-                // in the Coordinate-Sorted case (so it remains a Multi-Ref Slice)
-                // but causes the reads to be marked as Unplaced otherwise (so it becomes an Unmapped Slice)
-
+                });
+            retval.add(new Object[]
                 {
                         getNoStartRecords(),
-                        true,
-                        TEST_RECORD_COUNT, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
-                },
-                {
-                        getNoStartRecords(),
-                        false,
+                        coordSorted,
                         TEST_RECORD_COUNT, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
-                },
+                });
+        }
 
-        };
+        return retval.toArray(new Object[0][0]);
     }
 
     @Test(dataProvider = "forBuildTests")

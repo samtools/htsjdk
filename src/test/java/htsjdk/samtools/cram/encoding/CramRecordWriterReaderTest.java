@@ -8,6 +8,7 @@ import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -19,15 +20,16 @@ import java.util.Map;
 
 public class CramRecordWriterReaderTest extends CramRecordTestHelper {
     private CramCompressionRecord read(final byte[] dataBytes,
+                                       final Map<Integer, ByteArrayInputStream> inputMap,
                                        final CompressionHeader header,
                                        final int refId,
-                                       final Map<Integer, ByteArrayInputStream> inputMap) throws IOException {
+                                       final int prevAlignmentStart) throws IOException {
         try (final ByteArrayInputStream is = new ByteArrayInputStream(dataBytes);
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
             final CramRecordReader reader = new CramRecordReader(bis, inputMap, header, refId, ValidationStringency.DEFAULT_STRINGENCY);
             final CramCompressionRecord recordToRead = new CramCompressionRecord();
-            reader.read(recordToRead);
+            reader.read(recordToRead, prevAlignmentStart);
             return recordToRead;
         }
     }
@@ -52,8 +54,13 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
         return records;
     }
 
-    @Test
-    public void roundTripTest() throws IOException {
+    @DataProvider(name = "coordSortedTrueFalse")
+    private Object[][] tf() {
+        return new Object[][] { {true}, {false}};
+    }
+
+    @Test(dataProvider = "coordSortedTrueFalse")
+    public void roundTripTest(final boolean coordinateSorted) throws IOException {
         final List<CramCompressionRecord> initialRecords = initRTRecords();
 
         // note for future refactoring
@@ -61,17 +68,21 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
         // which is the only way to set a record's tagIdsIndex
         // which would otherwise be null
 
-        final boolean sorted = true;
-        final CompressionHeader header = createHeader(initialRecords, sorted);
+        final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
 
         final int refId = Slice.MULTI_REFERENCE;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
-        final byte[] written = write(initialRecords, header, refId, outputMap);
+        int initialAlignmentStart = initialRecords.get(0).alignmentStart;
+        final byte[] written = write(initialRecords, outputMap, header, refId, initialAlignmentStart);
 
         final Map<Integer, ByteArrayInputStream> inputMap = createInputMap(outputMap);
         final List<CramCompressionRecord> roundTripRecords = new ArrayList<>(initialRecords.size());
+
+        int prevAlignmentStart = initialAlignmentStart;
         for (int i = 0; i < initialRecords.size(); i++) {
-            roundTripRecords.add(read(written, header, refId, inputMap));
+            final CramCompressionRecord newRecord = read(written, inputMap, header, refId, prevAlignmentStart);
+            prevAlignmentStart = newRecord.alignmentStart;
+            roundTripRecords.add(newRecord);
         }
 
         Assert.assertEquals(roundTripRecords, initialRecords);

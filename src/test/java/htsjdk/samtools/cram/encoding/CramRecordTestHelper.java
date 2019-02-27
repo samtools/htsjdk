@@ -22,8 +22,8 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
 
     // attempt at minimal initialization for tests
 
-    CompressionHeader createHeader(final List<CramCompressionRecord> records, final boolean sorted) {
-        return new CompressionHeaderFactory().build(records, new SubstitutionMatrix(new long[256][256]), sorted);
+    CompressionHeader createHeader(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
+        return new CompressionHeaderFactory().build(records, new SubstitutionMatrix(new long[256][256]), coordinateSorted);
     }
 
     List<CramCompressionRecord> createRecords() {
@@ -124,14 +124,15 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
     }
 
     public byte[] write(final List<CramCompressionRecord> records,
+                        final Map<Integer, ByteArrayOutputStream> outputMap,
                         final CompressionHeader header,
                         final int refId,
-                        final Map<Integer, ByteArrayOutputStream> outputMap) throws IOException {
+                        final int initialAlignmentStart) throws IOException {
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
             final CramRecordWriter writer = new CramRecordWriter(bos, outputMap, header, refId);
-            writer.writeCramCompressionRecords(records, 0);
+            writer.writeCramCompressionRecords(records, initialAlignmentStart);
 
             return os.toByteArray();
         }

@@ -317,7 +317,6 @@ public class CRAMContainerStreamWriter {
         containerFactory.setPreserveReadNames(preserveReadNames);
 
         int index = 0;
-        int prevAlStart = start;
         for (final SAMRecord samRecord : samRecords) {
             if (samRecord.getReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && refSeqIndex != samRecord.getReferenceIndex()) {
                 // this may load all ref sequences into memory:
@@ -325,10 +324,7 @@ public class CRAMContainerStreamWriter {
             }
             final CramCompressionRecord cramRecord = sam2CramRecordFactory.createCramRecord(samRecord);
             cramRecord.index = ++index;
-            cramRecord.alignmentDelta = samRecord.getAlignmentStart() - prevAlStart;
             cramRecord.alignmentStart = samRecord.getAlignmentStart();
-            prevAlStart = samRecord.getAlignmentStart();
-
             cramRecords.add(cramRecord);
 
             if (preservation != null) preservation.addQualityScores(samRecord, cramRecord, tracks);
@@ -379,8 +375,7 @@ public class CRAMContainerStreamWriter {
                     while (last.next != null) last = last.next;
 
                     if (cramRecord.isFirstSegment() && last.isLastSegment()) {
-                        final boolean coordinateSorted = (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
-                        final int templateLength = CramNormalizer.computeInsertSize(cramRecord, last, coordinateSorted);
+                        final int templateLength = CramNormalizer.computeInsertSize(cramRecord, last);
 
                         if (cramRecord.templateSize == templateLength) {
                             last = cramRecord.next;

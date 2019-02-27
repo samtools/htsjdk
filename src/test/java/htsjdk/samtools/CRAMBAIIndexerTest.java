@@ -28,7 +28,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         record.setSegmentUnmapped(false);
         record.setMultiFragment(false);
         record.sequenceId = seqId;
-        record.alignmentStart =start;
+        record.alignmentStart = start;
         record.readBases = record.qualityScores = bases;
         record.readName = Integer.toString(recordIndex);
         record.readLength = readLength;
