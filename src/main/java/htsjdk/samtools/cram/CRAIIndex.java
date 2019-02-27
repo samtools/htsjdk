@@ -4,7 +4,9 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.CRAMCRAIIndexer;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.ValidationStringency;
@@ -53,11 +55,11 @@ public class CRAIIndex {
         // TODO: this should be refactored and delegate to container/slice
         if (!container.isEOF()) {
             for (final Slice s: container.slices) {
-                if (s.sequenceId == Slice.MULTI_REFERENCE) {
-                    final Map<Integer, AlignmentSpan> spans = s.getMultiRefAlignmentSpans(container.header, ValidationStringency.DEFAULT_STRINGENCY);
+                if (s.getReferenceContext().isMultiRef()) {
+                    final Map<ReferenceContext, AlignmentSpan> spans = s.getMultiRefAlignmentSpans(container.header, ValidationStringency.DEFAULT_STRINGENCY);
 
                     this.entries.addAll(spans.entrySet().stream()
-                            .map(e -> new CRAIEntry(e.getKey(),
+                            .map(e -> new CRAIEntry(e.getKey().getSequenceId(),
                                     e.getValue().getStart(),
                                     e.getValue().getSpan(),
                                     container.offset,
@@ -91,17 +93,17 @@ public class CRAIIndex {
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(baos, header);
 
         for (final CRAIEntry entry : full) {
-            final Slice slice = new Slice();
+            final Slice slice = new Slice(new ReferenceContext(entry.getSequenceId()));
             slice.containerOffset = entry.getContainerStartByteOffset();
             slice.alignmentStart = entry.getAlignmentStart();
             slice.alignmentSpan = entry.getAlignmentSpan();
-            slice.sequenceId = entry.getSequenceId();
+            slice.offset = entry.getSliceByteOffset();
+
             // NOTE: the recordCount and sliceIndex fields can't be derived from the CRAM index
             // so we can only set them to zero
             // see https://github.com/samtools/htsjdk/issues/531
             slice.nofRecords = 0;
             slice.index = 0;
-            slice.offset = entry.getSliceByteOffset();
 
             indexer.processSingleReferenceSlice(slice);
         }

@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
@@ -16,23 +17,22 @@ import java.util.List;
 public class CRAIEntryTest extends HtsjdkTest {
     @Test
     public void testFromContainer() {
-        final Container container = new Container();
-        final Slice slice = new Slice();
-        slice.sequenceId = 1;
+        final Slice slice = new Slice(new ReferenceContext(1));
         slice.alignmentStart = 2;
         slice.alignmentSpan = 3;
         slice.containerOffset = 4;
         slice.offset = 5;
         slice.size = 6;
+
+        final Container container = Container.initializeFromSlices(Collections.singletonList(slice));
         container.landmarks = new int[]{7};
-        container.slices = new Slice[]{slice};
 
         final List<CRAIEntry> entries = container.getCRAIEntries();
         Assert.assertNotNull(entries);
         Assert.assertEquals(entries.size(), 1);
         final CRAIEntry entry = entries.get(0);
 
-        Assert.assertEquals(entry.getSequenceId(), slice.sequenceId);
+        Assert.assertEquals(entry.getSequenceId(), slice.getReferenceContext().getSequenceId());
         Assert.assertEquals(entry.getAlignmentStart(), slice.alignmentStart);
         Assert.assertEquals(entry.getAlignmentSpan(), slice.alignmentSpan);
         Assert.assertEquals(entry.getContainerStartByteOffset(), slice.containerOffset);

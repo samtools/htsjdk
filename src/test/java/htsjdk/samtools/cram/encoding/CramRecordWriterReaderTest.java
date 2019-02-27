@@ -4,9 +4,9 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -22,12 +22,12 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
     private CramCompressionRecord read(final byte[] dataBytes,
                                        final Map<Integer, ByteArrayInputStream> inputMap,
                                        final CompressionHeader header,
-                                       final int refId,
+                                       final ReferenceContext refContext,
                                        final int prevAlignmentStart) throws IOException {
         try (final ByteArrayInputStream is = new ByteArrayInputStream(dataBytes);
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
-            final CramRecordReader reader = new CramRecordReader(bis, inputMap, header, refId, ValidationStringency.DEFAULT_STRINGENCY);
+            final CramRecordReader reader = new CramRecordReader(bis, inputMap, header, refContext, ValidationStringency.DEFAULT_STRINGENCY);
             final CramCompressionRecord recordToRead = new CramCompressionRecord();
             reader.read(recordToRead, prevAlignmentStart);
             return recordToRead;
@@ -70,17 +70,16 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
 
         final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
 
-        final int refId = Slice.MULTI_REFERENCE;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         int initialAlignmentStart = initialRecords.get(0).alignmentStart;
-        final byte[] written = write(initialRecords, outputMap, header, refId, initialAlignmentStart);
+        final byte[] written = write(initialRecords, outputMap, header, ReferenceContext.MULTIPLE, initialAlignmentStart);
 
         final Map<Integer, ByteArrayInputStream> inputMap = createInputMap(outputMap);
         final List<CramCompressionRecord> roundTripRecords = new ArrayList<>(initialRecords.size());
 
         int prevAlignmentStart = initialAlignmentStart;
         for (int i = 0; i < initialRecords.size(); i++) {
-            final CramCompressionRecord newRecord = read(written, inputMap, header, refId, prevAlignmentStart);
+            final CramCompressionRecord newRecord = read(written, inputMap, header, ReferenceContext.MULTIPLE, prevAlignmentStart);
             prevAlignmentStart = newRecord.alignmentStart;
             roundTripRecords.add(newRecord);
         }

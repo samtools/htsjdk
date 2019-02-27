@@ -8,6 +8,7 @@ import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.*;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 
 import java.io.ByteArrayInputStream;
@@ -126,12 +127,12 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
     public byte[] write(final List<CramCompressionRecord> records,
                         final Map<Integer, ByteArrayOutputStream> outputMap,
                         final CompressionHeader header,
-                        final int refId,
+                        final ReferenceContext refContext,
                         final int initialAlignmentStart) throws IOException {
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
-            final CramRecordWriter writer = new CramRecordWriter(bos, outputMap, header, refId);
+            final CramRecordWriter writer = new CramRecordWriter(bos, outputMap, header, refContext);
             writer.writeCramCompressionRecords(records, initialAlignmentStart);
 
             return os.toByteArray();

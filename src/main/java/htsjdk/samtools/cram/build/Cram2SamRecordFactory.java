@@ -74,13 +74,13 @@ public class Cram2SamRecordFactory {
         if (samRecord.getReadPairedFlag()) {
             samRecord.setMateReferenceIndex(cramRecord.mateSequenceID);
             samRecord
-                    .setMateAlignmentStart(cramRecord.mateAlignmentStart > 0 ? cramRecord.mateAlignmentStart : SAMRecord
-                            .NO_ALIGNMENT_START);
+                    .setMateAlignmentStart(cramRecord.mateAlignmentStart > 0 ?
+                            cramRecord.mateAlignmentStart :
+                            SAMRecord.NO_ALIGNMENT_START);
             samRecord.setMateNegativeStrandFlag(cramRecord.isMateNegativeStrand());
             samRecord.setMateUnmappedFlag(cramRecord.isMateUnmapped());
         } else {
-            samRecord
-                    .setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+            samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
             samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
         }
 

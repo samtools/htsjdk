@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.build.CramSpanContainerIterator;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -43,7 +44,7 @@ public class CRAMIterator implements SAMRecordIterator {
     private final CramHeader cramHeader;
     private final ArrayList<SAMRecord> records;
     private final CramNormalizer normalizer;
-    private byte[] refs;
+    private byte[] referenceBases;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
     public Container container;
     private SamReader mReader;
@@ -154,32 +155,39 @@ public class CRAMIterator implements SAMRecordIterator {
 
         parser.getRecords(container, cramRecords, validationStringency);
 
-        if (container.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            refs = new byte[]{};
-            prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-        } else if (container.sequenceId == Slice.MULTI_REFERENCE) {
-            refs = null;
-            prevSeqId = Slice.MULTI_REFERENCE;
-        } else if (prevSeqId < 0 || prevSeqId != container.sequenceId) {
-            final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
-                    .getSequence(container.sequenceId);
-            refs = referenceSource.getReferenceBases(sequence, true);
-            if (refs == null) {
-                throw new CRAMException(String.format("Contig %s not found in the reference file.", sequence.getSequenceName()));
-            }
-            prevSeqId = container.sequenceId;
+        final ReferenceContext containerContext = container.getReferenceContext();
+        switch (containerContext.getType()) {
+            case UNMAPPED_UNPLACED:
+                referenceBases = new byte[]{};
+                prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+                break;
+            case MULTI_REFERENCE:
+                referenceBases = null;
+                prevSeqId = ReferenceContext.REF_ID_MULTIPLE;
+                break;
+            default:
+                if (prevSeqId != containerContext.getSequenceId()) {
+                    final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
+                            .getSequence(containerContext.getSequenceId());
+                    referenceBases = referenceSource.getReferenceBases(sequence, true);
+                    if (referenceBases == null) {
+                        throw new CRAMException(String.format("Contig %s not found in the reference file.", sequence.getSequenceName()));
+                    }
+                    prevSeqId = containerContext.getSequenceId();
+                }
         }
 
         for (int i = 0; i < container.slices.length; i++) {
             final Slice slice = container.slices[i];
+            final ReferenceContext sliceContext = slice.getReferenceContext();
 
-            if (slice.sequenceId < 0)
+            if (! sliceContext.isMappedSingleRef())
                 continue;
 
-            if (!slice.validateRefMD5(refs)) {
+            if (!slice.validateRefMD5(referenceBases)) {
                 final String msg = String.format(
                         "Reference sequence MD5 mismatch for slice: sequence id %d, start %d, span %d, expected MD5 %s",
-                        slice.sequenceId,
+                        sliceContext.getSequenceId(),
                         slice.alignmentStart,
                         slice.alignmentSpan,
                         String.format("%032x", new BigInteger(1, slice.refMD5)));
@@ -187,7 +195,7 @@ public class CRAMIterator implements SAMRecordIterator {
             }
         }
 
-        normalizer.normalize(cramRecords, refs, 0,
+        normalizer.normalize(cramRecords, referenceBases, 0,
                 container.header.substitutionMatrix);
 
         final Cram2SamRecordFactory cramToSamRecordFactory = new Cram2SamRecordFactory(
@@ -198,7 +206,7 @@ public class CRAMIterator implements SAMRecordIterator {
             if (!cramRecord.isSegmentUnmapped()) {
                 final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
                         .getSequence(cramRecord.sequenceId);
-                refs = referenceSource.getReferenceBases(sequence, true);
+                referenceBases = referenceSource.getReferenceBases(sequence, true);
             }
 
             samRecord.setValidationStringency(validationStringency);

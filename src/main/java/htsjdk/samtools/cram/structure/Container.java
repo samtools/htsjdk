@@ -17,22 +17,24 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Container {
-    // container header as defined in the specs:
+    private final ReferenceContext referenceContext;
+
+    // container header as defined in the specs, in addition to sequenceId from ReferenceContext
     /**
      * Byte size of the content excluding header.
      */
     public int containerByteSize;
-    public int sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
     public int alignmentStart = Slice.NO_ALIGNMENT_START;
     public int alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
     public int nofRecords = 0;
@@ -60,18 +62,30 @@ public class Container {
     public long offset;
 
     /**
-     * Derive the container's state/type from its {@link Slice}s.
+     * Construct this Container by providing its {@link ReferenceContext}
+     * @param refContext the reference context associated with this container
+     */
+    public Container(final ReferenceContext refContext) {
+        this.referenceContext = refContext;
+    }
+
+    public ReferenceContext getReferenceContext() {
+        return referenceContext;
+    }
+
+    /**
+     * Derive the container's {@link ReferenceContext} from its {@link Slice}s.
      *
-     * A Single Reference Container contains only Single Reference Slices.
-     * - set the Container's Sequence ID to be the same as those slices
+     * A Single Reference Container contains only Single Reference Slices mapped to the same reference.
+     * - set the Container's ReferenceContext to be the same as those slices
      * - set the Container's Alignment Start and Span to cover all slices
      *
      * A Multiple Reference Container contains only Multiple Reference Slices.
-     * - set the Container's Sequence ID to multi-ref (-2)
+     * - set the Container's ReferenceContext to MULTIPLE
      * - unset the Container's Alignment Start and Span
      *
      * An Unmapped Container contains only Unmapped Slices.
-     * - set the Container's Sequence ID to multi-ref (-1)
+     * - set the Container's ReferenceContext to UNMAPPED
      * - unset the Container's Alignment Start and Span
      *
      * Any other combination is invalid.
@@ -80,40 +94,44 @@ public class Container {
      *
      * @param containerSlices the constituent Slices of the Container
      * @throws CRAMException for invalid Container states
+     * @return the initialized Container
      */
-    public void finalizeContainerState(final Slice... containerSlices) {
-        slices = containerSlices;
+    public static Container initializeFromSlices(final List<Slice> containerSlices) {
+        final Set<ReferenceContext> sliceRefContexts = containerSlices.stream()
+                .map(Slice::getReferenceContext)
+                .collect(Collectors.toSet());
 
-        int start = Integer.MAX_VALUE;
-        int end = Integer.MIN_VALUE;
-
-        // in general practice, the only slice
-        final Slice firstSlice = slices[0];
-        sequenceId = firstSlice.sequenceId;
-
-        for (final Slice slice : slices) {
-            if (slice.sequenceId != sequenceId) {
-                final String msg = String.format(
-                        "Slices in Container have conflicting reference sequences: %d and %d ",
-                        slice.sequenceId, sequenceId);
-                throw new CRAMException(msg);
-            }
-
-            if (slice.isMappedSingleRef()) {
-                start = Math.min(start, slice.alignmentStart);
-                end = Math.max(end, slice.alignmentStart + slice.alignmentSpan);
-            }
+        if (sliceRefContexts.isEmpty()) {
+            throw new CRAMException("Cannot construct a Container without any Slices");
+        }
+        else if (sliceRefContexts.size() > 1) {
+            throw new CRAMException("Cannot construct a Container from Slices with conflicting types or sequence IDs");
         }
 
-        // because we enforce identical ref seq IDs, this checks that all slices are mapped
-        if (firstSlice.isMappedSingleRef()) {
-            alignmentStart = start;
-            alignmentSpan = end - start;
+        final ReferenceContext commonRefContext = sliceRefContexts.iterator().next();
+
+        final Container container = new Container(commonRefContext);
+        container.slices = containerSlices.toArray(new Slice[0]);
+
+        if (commonRefContext.isMappedSingleRef()) {
+            int start = Integer.MAX_VALUE;
+            // end is start + span - 1.  We can do slightly easier math instead.
+            int endPlusOne = Integer.MIN_VALUE;
+
+            for (final Slice slice : containerSlices) {
+                start = Math.min(start, slice.alignmentStart);
+                endPlusOne = Math.max(endPlusOne, slice.alignmentStart + slice.alignmentSpan);
+            }
+
+            container.alignmentStart = start;
+            container.alignmentSpan = endPlusOne - start;
         }
         else {
-            alignmentStart = Slice.NO_ALIGNMENT_START;
-            alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+            container.alignmentStart = Slice.NO_ALIGNMENT_START;
+            container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
         }
+
+        return container;
     }
 
     public List<CRAIEntry> getCRAIEntries() {
@@ -125,17 +143,17 @@ public class Container {
     @Override
     public String toString() {
         return String
-                .format("seqID=%d, start=%d, span=%d, records=%d, slices=%d, blocks=%d.",
-                        sequenceId, alignmentStart, alignmentSpan, nofRecords,
+                .format("seqID=%s, start=%d, span=%d, records=%d, slices=%d, blocks=%d.",
+                        referenceContext, alignmentStart, alignmentSpan, nofRecords,
                         slices == null ? -1 : slices.length, blockCount);
     }
 
     public boolean isEOF() {
-        final boolean v3 = containerByteSize == 15 && sequenceId == -1
+        final boolean v3 = containerByteSize == 15 && referenceContext.isUnmappedUnplaced()
                 && alignmentStart == 4542278 && blockCount == 1
                 && nofRecords == 0 && (slices == null || slices.length == 0);
 
-        final boolean v2 = containerByteSize == 11 && sequenceId == -1
+        final boolean v2 = containerByteSize == 11 && referenceContext.isUnmappedUnplaced()
                 && alignmentStart == 4542278 && blockCount == 1
                 && nofRecords == 0 && (slices == null || slices.length == 0);
 

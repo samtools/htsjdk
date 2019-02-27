@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
@@ -24,12 +25,11 @@ import java.util.List;
  */
 public class SliceTests extends HtsjdkTest {
     private final int TEST_RECORD_COUNT = 10;
+    private final int READ_LENGTH_FOR_TEST_RECORDS = 123;
 
     @Test
     public void testUnmappedValidateRef() {
-        Slice slice = new Slice();
-        slice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-        slice.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+        final Slice slice = new Slice(ReferenceContext.UNMAPPED);
 
         Assert.assertTrue(slice.validateRefMD5(null));
         Assert.assertTrue(slice.validateRefMD5(new byte[0]));
@@ -40,8 +40,7 @@ public class SliceTests extends HtsjdkTest {
     public void test_validateRef() {
         byte[] ref = "AAAAA".getBytes();
         final byte[] md5 = SequenceUtil.calculateMD5(ref, 0, Math.min(5, ref.length));
-        Slice slice = new Slice();
-        slice.sequenceId = 0;
+        final Slice slice = new Slice(new ReferenceContext(0));
         slice.alignmentSpan = 5;
         slice.alignmentStart = 1;
         slice.setRefMD5(ref);
@@ -84,19 +83,20 @@ public class SliceTests extends HtsjdkTest {
                 {
                         getSingleRefRecords(),
                         coordSorted,
-                        TEST_RECORD_COUNT, 0, 1, 12
+                        new ReferenceContext(0), 1,
+                        READ_LENGTH_FOR_TEST_RECORDS + TEST_RECORD_COUNT - 1
                 });
             retval.add(new Object[]
                 {
                         getMultiRefRecords(),
                         coordSorted,
-                        TEST_RECORD_COUNT, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
             retval.add(new Object[]
                 {
                         getUnplacedRecords(),
                         coordSorted,
-                        TEST_RECORD_COUNT, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
 
 
@@ -107,13 +107,14 @@ public class SliceTests extends HtsjdkTest {
                 {
                         getNoRefRecords(),
                         coordSorted,
-                        TEST_RECORD_COUNT, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
+
             retval.add(new Object[]
                 {
                         getNoStartRecords(),
                         coordSorted,
-                        TEST_RECORD_COUNT, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
         }
 
@@ -123,13 +124,15 @@ public class SliceTests extends HtsjdkTest {
     @Test(dataProvider = "forBuildTests")
     public void testBuild(final List<CramCompressionRecord> records,
                           final boolean coordinateSorted,
-                          final int expectedRecordCount,
-                          final int expectedSequenceId,
+                          final ReferenceContext expectedReferenceContext,
                           final int expectedAlignmentStart,
                           final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, null, coordinateSorted);
+        final int globalRecordCounter = 12345;   // arbitrary
         final Slice slice = Slice.buildSlice(records, header);
-        assertSliceState(slice, expectedRecordCount, expectedSequenceId, expectedAlignmentStart, expectedAlignmentSpan);
+        final int expectedBaseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
+        assertSliceState(slice, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
+                TEST_RECORD_COUNT, expectedBaseCount);
     }
 
     // show that a slice with a single ref will initially be built as single-ref
@@ -142,21 +145,21 @@ public class SliceTests extends HtsjdkTest {
 
         final CramCompressionRecord record1 = createRecord(0, 0);
         records.add(record1);
-        assertSliceStateFromRecords(records, 1, 0, 1, 3);
+        assertSliceStateFromTestRecords(records, new ReferenceContext(0), 1, READ_LENGTH_FOR_TEST_RECORDS);
 
         final CramCompressionRecord record2 = createRecord(1, 1);
         records.add(record2);
-        assertSliceStateFromRecords(records, 2, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
         final CramCompressionRecord record3 = createRecord(2, 2);
         records.add(record3);
-        assertSliceStateFromRecords(records, 3, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
         final CramCompressionRecord unmapped = createRecord(3, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
         unmapped.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
         unmapped.setSegmentUnmapped(true);
         records.add(unmapped);
-        assertSliceStateFromRecords(records, 4, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
@@ -164,48 +167,49 @@ public class SliceTests extends HtsjdkTest {
         final List<CramCompressionRecord> records = new ArrayList<>();
 
         final CramCompressionRecord single = createRecord(1, 0);
+        single.readLength = 20;
         records.add(single);
 
         final CramCompressionRecord unmapped = createRecord(1, 0);
         unmapped.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
         unmapped.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
         unmapped.setSegmentUnmapped(true);
+        unmapped.readLength = 35;
         records.add(unmapped);
 
         final CompressionHeader header = new CompressionHeaderFactory().build(records, null, true);
 
+        final int globalRecordCounter = 98765;   // arbitrary
         final Slice slice = Slice.buildSlice(records, header);
-        assertSliceState(slice, 2, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        final int expectedBaseCount = 20 + 35;
+        assertSliceState(slice, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
+                records.size(), expectedBaseCount);
     }
 
-    private void assertSliceStateFromRecords(final List<CramCompressionRecord> records,
-                                             final int expectedRecordCount,
-                                             final int expectedSequenceId,
-                                             final int expectedAlignmentStart,
-                                             final int expectedAlignmentSpan) {
+    private void assertSliceStateFromTestRecords(final List<CramCompressionRecord> records,
+                                                 final ReferenceContext expectedReferenceContext,
+                                                 final int expectedAlignmentStart,
+                                                 final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, null, true);
         final Slice slice = Slice.buildSlice(records, header);
-        assertSliceState(slice, expectedRecordCount, expectedSequenceId, expectedAlignmentStart, expectedAlignmentSpan);
+        final int expectedGlobalRecordCounter = 0;   // first Slice
+        final int expectedBaseCount = records.size() * READ_LENGTH_FOR_TEST_RECORDS;
+        assertSliceState(slice, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
+                records.size(), expectedBaseCount);
     }
 
     private void assertSliceState(final Slice slice,
-                                  final int expectedRecordCount,
-                                  final int expectedSequenceId,
+                                  final ReferenceContext expectedReferenceContext,
                                   final int expectedAlignmentStart,
-                                  final int expectedAlignmentSpan) {
+                                  final int expectedAlignmentSpan,
+                                  final int expectedRecordCount,
+                                  final int expectedBaseCount) {
 
-        Assert.assertEquals(slice.nofRecords, expectedRecordCount);
-        Assert.assertEquals(slice.sequenceId, expectedSequenceId);
+        Assert.assertEquals(slice.getReferenceContext(), expectedReferenceContext);
         Assert.assertEquals(slice.alignmentStart, expectedAlignmentStart);
         Assert.assertEquals(slice.alignmentSpan, expectedAlignmentSpan);
-
-        if (expectedSequenceId == Slice.MULTI_REFERENCE) {
-            Assert.assertTrue(slice.isMultiref());
-        } else if (expectedSequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            Assert.assertTrue(slice.isUnmapped());
-        } else {
-            Assert.assertTrue(slice.isMappedSingleRef());
-        }
+        Assert.assertEquals(slice.nofRecords, expectedRecordCount);
+        Assert.assertEquals(slice.bases, expectedBaseCount);
     }
 
     private CramCompressionRecord createRecord(final int index,
@@ -213,7 +217,7 @@ public class SliceTests extends HtsjdkTest {
         final CramCompressionRecord record = new CramCompressionRecord();
         record.readBases = "AAA".getBytes();
         record.qualityScores = "!!!".getBytes();
-        record.readLength = 3;
+        record.readLength = READ_LENGTH_FOR_TEST_RECORDS;
         record.readName = "" + index;
         record.sequenceId = sequenceId;
         record.alignmentStart = index + 1;

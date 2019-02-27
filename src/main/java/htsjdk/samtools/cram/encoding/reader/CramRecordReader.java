@@ -21,6 +21,7 @@ import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -67,7 +68,7 @@ public class CramRecordReader {
 
     private final boolean captureReadNames;
     private final byte[][][] tagIdDictionary;
-    private final int refId;
+    private final ReferenceContext refContext;
     protected final ValidationStringency validationStringency;
 
     protected final boolean APDelta;
@@ -86,17 +87,17 @@ public class CramRecordReader {
      * @param coreInputStream Core data block bit stream, to be read by non-external Encodings
      * @param externalInputMap External data block byte stream map, to be read by external Encodings
      * @param header the associated Cram Compression Header
-     * @param refId the reference sequence ID to assign to these records
+     * @param refContext the reference context to assign to these records
      * @param validationStringency how strict to be when reading this CRAM record
      */
     public CramRecordReader(final BitInputStream coreInputStream,
                             final Map<Integer, ByteArrayInputStream> externalInputMap,
                             final CompressionHeader header,
-                            final int refId,
+                            final ReferenceContext refContext,
                             final ValidationStringency validationStringency) {
         this.captureReadNames = header.readNamesIncluded;
         this.tagIdDictionary = header.dictionary;
-        this.refId = refId;
+        this.refContext = refContext;
         this.validationStringency = validationStringency;
         this.APDelta = header.APDelta;
 
@@ -175,10 +176,11 @@ public class CramRecordReader {
 
             cramRecord.flags = bitFlagsCodec.readData();
             cramRecord.compressionFlags = compressionBitFlagsCodec.readData();
-            if (refId == Slice.MULTI_REFERENCE) {
+            if (refContext.isMultiRef()) {
                 cramRecord.sequenceId = refIdCodec.readData();
             } else {
-                cramRecord.sequenceId = refId;
+                // either unmapped (-1) or a valid ref
+                cramRecord.sequenceId = refContext.getSerializableId();
             }
 
             cramRecord.readLength = readLengthCodec.readData();
