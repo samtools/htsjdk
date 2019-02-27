@@ -73,8 +73,8 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
 
     private void readCramRecord() {
         final CramCompressionRecord cramRecord = new CramCompressionRecord();
-        super.read(cramRecord, prevAlignmentStart);
-        prevAlignmentStart = cramRecord.alignmentStart;
+
+        prevAlignmentStart = super.read(cramRecord, prevAlignmentStart);
 
         if (!spans.containsKey(cramRecord.sequenceId)) {
             spans.put(cramRecord.sequenceId, new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength));

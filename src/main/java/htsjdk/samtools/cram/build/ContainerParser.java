@@ -125,8 +125,8 @@ public class ContainerParser {
             record.sliceIndex = slice.index;
             record.index = i;
 
-            reader.read(record, prevAlignmentStart);
-            prevAlignmentStart = record.alignmentStart;
+            // read the new record and update the running prevAlignmentStart
+            prevAlignmentStart = reader.read(record, prevAlignmentStart);
 
             if (record.sequenceId == slice.sequenceId) {
                 record.sequenceName = seqName;
