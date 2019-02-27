@@ -128,7 +128,6 @@ public class SliceTests extends HtsjdkTest {
                           final int expectedAlignmentStart,
                           final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, null, coordinateSorted);
-        final int globalRecordCounter = 12345;   // arbitrary
         final Slice slice = Slice.buildSlice(records, header);
         final int expectedBaseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
         assertSliceState(slice, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
@@ -179,9 +178,8 @@ public class SliceTests extends HtsjdkTest {
 
         final CompressionHeader header = new CompressionHeaderFactory().build(records, null, true);
 
-        final int globalRecordCounter = 98765;   // arbitrary
         final Slice slice = Slice.buildSlice(records, header);
-        final int expectedBaseCount = 20 + 35;
+        final int expectedBaseCount = single.readLength + unmapped.readLength;
         assertSliceState(slice, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
                 records.size(), expectedBaseCount);
     }
@@ -192,7 +190,6 @@ public class SliceTests extends HtsjdkTest {
                                                  final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, null, true);
         final Slice slice = Slice.buildSlice(records, header);
-        final int expectedGlobalRecordCounter = 0;   // first Slice
         final int expectedBaseCount = records.size() * READ_LENGTH_FOR_TEST_RECORDS;
         assertSliceState(slice, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
                 records.size(), expectedBaseCount);

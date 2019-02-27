@@ -40,8 +40,8 @@ public class ContainerTest extends HtsjdkTest {
         Assert.assertTrue(container.getReferenceContext().isMappedSingleRef());
         Assert.assertEquals(container.getReferenceContext().getType(), ReferenceContextType.SINGLE_REFERENCE);
         Assert.assertEquals(container.getReferenceContext(), slice1.getReferenceContext());
-        Assert.assertEquals(container.alignmentStart, 10);
-        Assert.assertEquals(container.alignmentSpan, 30);      // 20 + 20 - 10
+        Assert.assertEquals(container.alignmentStart, slice1.alignmentStart);
+        Assert.assertEquals(container.alignmentSpan, slice2.alignmentStart + slice2.alignmentSpan - slice1.alignmentStart);      // 20 + 20 - 10
     }
 
     @Test
