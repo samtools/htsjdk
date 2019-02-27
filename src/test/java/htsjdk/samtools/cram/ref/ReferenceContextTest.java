@@ -62,12 +62,15 @@ public class ReferenceContextTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "sentinels", expectedExceptions = CRAMException.class)
-    public void testInvalidGetSequenceId(final int seqId) {
+    @Test(dataProvider = "sentinels")
+    public void testSentinelsGetSerializableId(final int seqId) {
         final ReferenceContext context = new ReferenceContext(seqId);
-        // works
         Assert.assertEquals(context.getSerializableId(), seqId);
-        // throws
+    }
+
+    @Test(dataProvider = "sentinels", expectedExceptions = CRAMException.class)
+    public void testSentinelsGetSequenceId(final int seqId) {
+        final ReferenceContext context = new ReferenceContext(seqId);
         context.getSequenceId();
     }
 }
