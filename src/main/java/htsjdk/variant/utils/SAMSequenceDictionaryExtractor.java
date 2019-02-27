@@ -26,19 +26,20 @@ package htsjdk.variant.utils;
 
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.BufferedLineReader;
-import htsjdk.samtools.util.CollectionUtil;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.*;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Small class for loading a SAMSequenceDictionary from a file
@@ -74,8 +75,18 @@ public class SAMSequenceDictionaryExtractor {
         CRAM(CramIO.CRAM_FILE_EXTENSION) {
             
             @Override
-            SAMSequenceDictionary extractDictionary(final Path cram) {
-                    return CRAMIterator.extractDictionary(cram);
+            SAMSequenceDictionary extractDictionary(final Path cramPath) {
+                IOUtil.assertFileIsReadable(cramPath);
+                try (final InputStream in = Files.newInputStream(cramPath)) {
+                    final CramHeader cramHeader = CramIO.readCramHeader(in);
+                    final Optional<SAMFileHeader> samHeader = Optional.ofNullable(cramHeader.getSamFileHeader());
+                    if (samHeader.isPresent()) {
+                        return samHeader.get().getSequenceDictionary();
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeIOException(e);
+                }
+                throw new SAMException(String.format("Can't retrieve sequence dictionary from %s", cramPath));
             }
         },
         SAM(IOUtil.SAM_FILE_EXTENSION, BamFileIoUtils.BAM_FILE_EXTENSION) {
