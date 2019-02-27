@@ -35,6 +35,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Objects;
 
 public class GenotypeLikelihoods {
     private final static int NUM_LIKELIHOODS_CACHE_N_ALLELES = 5;
@@ -156,6 +157,11 @@ public class GenotypeLikelihoods {
         // now a proper field-by-field evaluation can be made.
         // GLs are considered equal if the corresponding PLs are equal
         return Arrays.equals(getAsPLs(), that.getAsPLs());
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(getAsPLs());
     }
 
     //Return genotype likelihoods as an EnumMap with Genotypes as keys and likelihoods as values

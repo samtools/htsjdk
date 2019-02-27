@@ -167,7 +167,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         try {
             is.close();
         } catch (IOException ex) {
-            new TribbleException("Failed to close PositionalBufferedStream", ex);
+            throw new TribbleException("Failed to close PositionalBufferedStream", ex);
         }
     }
 

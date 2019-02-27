@@ -29,6 +29,7 @@ import htsjdk.samtools.util.Log;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 public class CramCompressionRecord {
     private static final int MULTI_FRAGMENT_FLAG = 0x1;
@@ -137,6 +138,17 @@ public class CramCompressionRecord {
 
     private boolean deepEquals(final Collection<?> c1, final Collection<?> c2) {
         return (c1 == null || c1.isEmpty()) && (c2 == null || c2.isEmpty()) || c1 != null && c1.equals(c2);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(alignmentStart, readLength, recordsToNextFragment, mappingQuality, flags, readName);
+        if (readFeatures != null && !readFeatures.isEmpty()) {
+            result = 31 * result + Objects.hash(readFeatures);
+        }
+        result = 31 * result + Arrays.hashCode(readBases);
+        result = 31 * result + Arrays.hashCode(qualityScores);
+        return result;
     }
 
     @Override

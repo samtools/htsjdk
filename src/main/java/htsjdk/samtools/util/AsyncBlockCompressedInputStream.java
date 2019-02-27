@@ -45,7 +45,7 @@ import java.util.concurrent.ThreadFactory;
  * Note that this implementation is not synchronized. If multiple threads access an instance concurrently, it must be synchronized externally. 
  */
 public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream {
-    private static final int READ_AHEAD_BUFFERS = (int)Math.ceil(Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
+    private static final int READ_AHEAD_BUFFERS = (int)Math.ceil((double) Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
     private static final Executor threadpool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
