@@ -1,11 +1,12 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.annotation.Strand;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class IntervalTest {
+public class IntervalTest extends HtsjdkTest {
     @DataProvider
     public Object[][] booleanProvider(){
         return new Object[][]{{true}, {false}};
