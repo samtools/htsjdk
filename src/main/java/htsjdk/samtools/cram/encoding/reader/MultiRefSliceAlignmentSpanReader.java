@@ -19,7 +19,6 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.cram.structure.Slice;
 
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
