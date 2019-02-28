@@ -9,44 +9,57 @@ import org.testng.annotations.Test;
 public class ReferenceContextTest extends HtsjdkTest {
 
     // test constructors and basic identity methods
-    
-    @Test
-    public void basicTest() {
-        final ReferenceContext refContext0 = new ReferenceContext(0);
-        Assert.assertTrue(refContext0.isMappedSingleRef());
-        Assert.assertFalse(refContext0.isUnmappedUnplaced());
-        Assert.assertFalse(refContext0.isMultiRef());
-        Assert.assertEquals(refContext0.getType(), ReferenceContextType.SINGLE_REFERENCE_TYPE);
-        Assert.assertEquals(refContext0.getSequenceId(), 0);
-        Assert.assertEquals(refContext0.getSerializableId(), 0);
 
-        final ReferenceContext refContext1 = new ReferenceContext(1);
-        Assert.assertTrue(refContext1.isMappedSingleRef());
-        Assert.assertFalse(refContext1.isUnmappedUnplaced());
-        Assert.assertFalse(refContext1.isMultiRef());
-        Assert.assertEquals(refContext1.getType(), ReferenceContextType.SINGLE_REFERENCE_TYPE);
-        Assert.assertEquals(refContext1.getSequenceId(), 1);
-        Assert.assertEquals(refContext1.getSerializableId(), 1);
+    @DataProvider(name = "validRefContexts")
+    private static Object[][] refContexts() {
+        return new Object[][] {
+                //context, expectedType, isSingle, isUnplaced, isMultiple, serializableID
+                {
+                        new ReferenceContext(0),
+                        ReferenceContextType.SINGLE_REFERENCE_TYPE,
+                        true, false, false, 0
+                },
+                {
+                        new ReferenceContext(1),
+                        ReferenceContextType.SINGLE_REFERENCE_TYPE,
+                        true, false, false, 1
+                },
+                {
+                        new ReferenceContext(ReferenceContext.UNMAPPED_UNPLACED_ID),
+                        ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
+                        false, true, false, ReferenceContext.UNMAPPED_UNPLACED_ID
+                },
+                {
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                        ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
+                        false, true, false, ReferenceContext.UNMAPPED_UNPLACED_ID
+                },
+                {
+                        new ReferenceContext(ReferenceContext.MULTIPLE_REFERENCE_ID),
+                        ReferenceContextType.MULTIPLE_REFERENCE_TYPE,
+                        false, false, true, ReferenceContext.MULTIPLE_REFERENCE_ID
+                },
+                {
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
+                        ReferenceContextType.MULTIPLE_REFERENCE_TYPE,
+                        false, false, true, ReferenceContext.MULTIPLE_REFERENCE_ID
+                },
+        };
+    }
 
-        final ReferenceContext unmapped = new ReferenceContext(ReferenceContext.UNMAPPED_UNPLACED_ID);
-        final ReferenceContext unmappedStatic = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
-        Assert.assertEquals(unmappedStatic, unmapped);
-
-        Assert.assertFalse(unmapped.isMappedSingleRef());
-        Assert.assertTrue(unmapped.isUnmappedUnplaced());
-        Assert.assertFalse(unmapped.isMultiRef());
-        Assert.assertEquals(unmapped.getType(), ReferenceContextType.UNMAPPED_UNPLACED_TYPE);
-        Assert.assertEquals(unmapped.getSerializableId(), ReferenceContext.UNMAPPED_UNPLACED_ID);
-
-        final ReferenceContext multi = new ReferenceContext(ReferenceContext.MULTIPLE_REFERENCE_ID);
-        final ReferenceContext multiStatic = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
-        Assert.assertEquals(multiStatic, multi);
-
-        Assert.assertFalse(multi.isMappedSingleRef());
-        Assert.assertFalse(multi.isUnmappedUnplaced());
-        Assert.assertTrue(multi.isMultiRef());
-        Assert.assertEquals(multi.getType(), ReferenceContextType.MULTIPLE_REFERENCE_TYPE);
-        Assert.assertEquals(multi.getSerializableId(), ReferenceContext.MULTIPLE_REFERENCE_ID);
+    @Test(dataProvider = "validRefContexts")
+    public void referenceContextTest(
+            final ReferenceContext refContext,
+            final ReferenceContextType expectedType,
+            final boolean expectedSingle,
+            final boolean expectedUnplaced,
+            final boolean expectedMulti,
+            final int expectedID) {
+        Assert.assertEquals(refContext.getType(), expectedType);
+        Assert.assertEquals(refContext.isMappedSingleRef(), expectedSingle);
+        Assert.assertEquals(refContext.isUnmappedUnplaced(), expectedUnplaced);
+        Assert.assertEquals(refContext.isMultiRef(), expectedMulti);
+        Assert.assertEquals(refContext.getSerializableId(), expectedID);
     }
 
     @Test(expectedExceptions = CRAMException.class)
