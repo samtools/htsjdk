@@ -42,6 +42,37 @@ public class ContainerParser {
         this.samFileHeader = samFileHeader;
     }
 
+    /**
+     * Iterate through all of this container's {@link Slice}s to derive a map of reference sequence IDs
+     * to {@link AlignmentSpan}s.  Used to create BAI Indexes.
+     *
+     * @param container the container to iterate through
+     * @param validationStringency stringency for validating records, passed to
+     * {@link Slice#getMultiRefAlignmentSpans(CompressionHeader, ValidationStringency)}
+     * @return the map of map of reference sequence IDs to AlignmentSpans.
+     */
+    public Map<ReferenceContext, AlignmentSpan> getSpans(final Container container, final ValidationStringency validationStringency) {
+        final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
+        for (final Slice slice : container.slices) {
+            switch (slice.getReferenceContext().getType()) {
+                case UNMAPPED_UNPLACED_TYPE:
+                    containerSpanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNMAPPED_SPAN);
+                    break;
+                case MULTIPLE_REFERENCE_TYPE:
+                    final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(container.header, validationStringency);
+                    for (final Map.Entry<ReferenceContext, AlignmentSpan> entry : spans.entrySet()) {
+                        containerSpanMap.merge(entry.getKey(), entry.getValue(), AlignmentSpan::add);
+                    }
+                    break;
+                default:
+                    final AlignmentSpan alignmentSpan = new AlignmentSpan(slice.alignmentStart, slice.alignmentSpan, slice.nofRecords);
+                    containerSpanMap.merge(slice.getReferenceContext(), alignmentSpan, AlignmentSpan::add);
+                    break;
+            }
+        }
+        return containerSpanMap;
+    }
+
     public List<CramCompressionRecord> getRecords(final Container container,
                                                   ArrayList<CramCompressionRecord> records,
                                                   final ValidationStringency validationStringency) {
@@ -58,46 +89,6 @@ public class ContainerParser {
         }
 
         return records;
-    }
-
-    public Map<ReferenceContext, AlignmentSpan> getReferences(final Container container, final ValidationStringency validationStringency) {
-        final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
-        for (final Slice slice : container.slices) {
-            addAllSpans(containerSpanMap, getReferences(slice, container.header, validationStringency));
-        }
-        return containerSpanMap;
-    }
-
-    private static void addSpan(final ReferenceContext refContext, final int start, final int span, final int count, final Map<ReferenceContext, AlignmentSpan> map) {
-        if (map.containsKey(refContext)) {
-            map.get(refContext).add(start, span, count);
-        } else {
-            map.put(refContext, new AlignmentSpan(start, span, count));
-        }
-    }
-
-    private static Map<ReferenceContext, AlignmentSpan> addAllSpans(final Map<ReferenceContext, AlignmentSpan> spanMap, final Map<ReferenceContext, AlignmentSpan> addition) {
-        for (final Map.Entry<ReferenceContext, AlignmentSpan> entry:addition.entrySet()) {
-            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getSpan(), entry.getValue().getCount(), spanMap);
-        }
-        return spanMap;
-    }
-
-    private Map<ReferenceContext, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
-        final Map<ReferenceContext, AlignmentSpan> spanMap = new HashMap<>();
-        final ReferenceContext sliceContext = slice.getReferenceContext();
-        switch (sliceContext.getType()) {
-            case UNMAPPED_UNPLACED_TYPE:
-                spanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNMAPPED_SPAN);
-                break;
-            case MULTIPLE_REFERENCE_TYPE:
-                final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(header, validationStringency);
-                addAllSpans(spanMap, spans);
-                break;
-            default:
-                addSpan(sliceContext, slice.alignmentStart, slice.alignmentSpan, slice.nofRecords, spanMap);
-        }
-        return spanMap;
     }
 
     private ArrayList<CramCompressionRecord> getRecords(final Slice slice,

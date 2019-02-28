@@ -63,6 +63,25 @@ public class AlignmentSpan {
     }
 
     /**
+     * Combine two AlignmentSpans.
+     * @param a the first AlignmentSpan to combine
+     * @param b the second AlignmentSpan to combine
+     * @return the new combined AlignmentSpan
+     */
+    public static AlignmentSpan add(final AlignmentSpan a, final AlignmentSpan b) {
+        final int start = Math.min(a.getStart(), b.getStart());
+
+        int span;
+        if (a.getStart() == b.getStart()) {
+            span = Math.max(a.getSpan(), b.getSpan());
+        } else {
+            span = Math.max(a.getStart() + a.getSpan(), b.getStart() + b.getSpan()) - start;
+        }
+
+        return new AlignmentSpan(start, span, a.count + b.count);
+    }
+
+    /**
      * Add a single read to the span
      *
      * @param start alignment start

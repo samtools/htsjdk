@@ -76,7 +76,7 @@ public class ContainerParserTest extends HtsjdkTest {
     public void paramTest(final List<CramCompressionRecord> records, final Set<ReferenceContext> expectedKeys) {
         final Container container = FACTORY.buildContainer(records);
 
-        final Map<ReferenceContext, AlignmentSpan> spanMap = PARSER.getReferences(container, ValidationStringency.STRICT);
+        final Map<ReferenceContext, AlignmentSpan> spanMap = PARSER.getSpans(container, ValidationStringency.STRICT);
         Assert.assertEquals(spanMap.keySet(), expectedKeys);
 
         final List<CramCompressionRecord> roundTripRecords = PARSER.getRecords(container, null, ValidationStringency.STRICT);
@@ -94,7 +94,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
        final Container container = FACTORY.buildContainer(CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT));
 
-       final Map<ReferenceContext, AlignmentSpan> spanMap = PARSER.getReferences(container, ValidationStringency.STRICT);
+       final Map<ReferenceContext, AlignmentSpan> spanMap = PARSER.getSpans(container, ValidationStringency.STRICT);
        Assert.assertEquals(spanMap, expectedSpans);
    }
 
@@ -108,7 +108,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
         // first container is single-ref
 
-        final Map<ReferenceContext, AlignmentSpan> spanMap0 = PARSER.getReferences(containers.get(0), ValidationStringency.STRICT);
+        final Map<ReferenceContext, AlignmentSpan> spanMap0 = PARSER.getSpans(containers.get(0), ValidationStringency.STRICT);
         Assert.assertNotNull(spanMap0);
         Assert.assertEquals(spanMap0.size(), 1);
 
@@ -116,7 +116,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
         // when other refs are added, subsequent containers are multiref
 
-        final Map<ReferenceContext, AlignmentSpan> spanMap1 = PARSER.getReferences(containers.get(1), ValidationStringency.STRICT);
+        final Map<ReferenceContext, AlignmentSpan> spanMap1 = PARSER.getSpans(containers.get(1), ValidationStringency.STRICT);
         Assert.assertNotNull(spanMap1);
         Assert.assertEquals(spanMap1.size(), 2);
 
@@ -125,7 +125,7 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(spanMap1.get(new ReferenceContext(1)), expectedSpans.get(1));
 
 
-        final Map<ReferenceContext, AlignmentSpan> spanMap2 = PARSER.getReferences(containers.get(2), ValidationStringency.STRICT);
+        final Map<ReferenceContext, AlignmentSpan> spanMap2 = PARSER.getSpans(containers.get(2), ValidationStringency.STRICT);
         Assert.assertNotNull(spanMap2);
         Assert.assertEquals(spanMap2.size(), 3);
 

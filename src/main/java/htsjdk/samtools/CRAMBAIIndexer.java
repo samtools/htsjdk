@@ -125,7 +125,7 @@ public class CRAMBAIIndexer {
             slice.index = sliceIndex++;
             if (slice.getReferenceContext().isMultiRef()) {
                 final ContainerParser parser = new ContainerParser(indexBuilder.bamHeader);
-                final Map<ReferenceContext, AlignmentSpan> spanMap = parser.getReferences(container, validationStringency);
+                final Map<ReferenceContext, AlignmentSpan> spanMap = parser.getSpans(container, validationStringency);
 
                 slice.containerOffset = container.offset;
                 slice.index = sliceIndex++;
