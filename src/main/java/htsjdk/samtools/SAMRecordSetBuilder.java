@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
+import htsjdk.samtools.SAMReadGroupRecord.PlatformValue;
 import htsjdk.samtools.reference.FastaReferenceWriter;
 import htsjdk.samtools.reference.FastaReferenceWriterBuilder;
 import htsjdk.samtools.util.CloseableIterator;
@@ -35,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+
 
 /**
  * Factory class for creating SAMRecords for testing purposes. Various methods can be called
@@ -612,9 +614,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         if (addReadGroup) {
             final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(READ_GROUP_ID);
             readGroupRecord.setSample(SAMPLE);
-            readGroupRecord.setPlatform("ILLUMINA");
-            final List<SAMReadGroupRecord> readGroups = new ArrayList<>();
-            readGroups.add(readGroupRecord);
+            readGroupRecord.setPlatform(PlatformValue.ILLUMINA.name());
+            final List<SAMReadGroupRecord> readGroups = Collections.singletonList(readGroupRecord);
             header.setReadGroups(readGroups);
         }
         return header;
@@ -652,29 +653,22 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     public static void writeRandomReference(final SAMFileHeader header, final Path fasta) throws IOException {
         final int MAX_WRITE_AT_A_TIME = 10_000;
         final byte[] buffer = new byte[MAX_WRITE_AT_A_TIME];
-        final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder().setAddMd5(true).setFastaFile(fasta);
+        final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder().setEmitMd5(true).setFastaFile(fasta);
 
         try (FastaReferenceWriter writer = builder.build()) {
 
             final Random random = new Random();
-            header.getSequenceDictionary()
-                    .getSequences()
-                    .forEach(seq -> {
-                        try {
-                            writer.startSequence(seq.getSequenceName());
-                            random.setSeed(Objects.hash(seq.getSequenceName(), seq.getSequenceLength()));
-                            int written = 0;
-                            while (written < seq.getSequenceLength()) {
-                                final int writeLength = Math.min(seq.getSequenceLength() - written, MAX_WRITE_AT_A_TIME);
-                                SequenceUtil.getRandomBases(random, writeLength, buffer);
-                                writer.appendBases(buffer, 0, writeLength);
-                                written += writeLength;
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    });
+            for (final SAMSequenceRecord seq : header.getSequenceDictionary().getSequences()) {
+                writer.startSequence(seq.getSequenceName());
+                random.setSeed(Objects.hash(seq.getSequenceName(), seq.getSequenceLength()));
+                int written = 0;
+                while (written < seq.getSequenceLength()) {
+                    final int writeLength = Math.min(seq.getSequenceLength() - written, MAX_WRITE_AT_A_TIME);
+                    SequenceUtil.getRandomBases(random, writeLength, buffer);
+                    writer.appendBases(buffer, 0, writeLength);
+                    written += writeLength;
+                }
+            }
         }
     }
 }
-

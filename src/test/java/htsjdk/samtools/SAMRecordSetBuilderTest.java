@@ -5,6 +5,7 @@ import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.CollectionUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
@@ -31,7 +32,7 @@ public class SAMRecordSetBuilderTest extends HtsjdkTest {
 
         samRecords.writeRandomReference(fasta);
         checkFastaFile(samRecords.getHeader(), fasta, dict);
-        TestUtil.recursiveDelete(dir);
+        IOUtil.recursiveDelete(dir);
     }
 
     @Test
@@ -59,8 +60,8 @@ public class SAMRecordSetBuilderTest extends HtsjdkTest {
             Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1, dict2));
 
         } finally {
-            TestUtil.recursiveDelete(dir1);
-            TestUtil.recursiveDelete(dir2);
+            IOUtil.recursiveDelete(dir1);
+            IOUtil.recursiveDelete(dir2);
         }
     }
 

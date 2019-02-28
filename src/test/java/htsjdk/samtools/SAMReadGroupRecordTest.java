@@ -45,7 +45,7 @@ public class SAMReadGroupRecordTest extends HtsjdkTest {
     public void testGetSAMString() {
         SAMReadGroupRecord r = new SAMReadGroupRecord("rg1");
         r.setSample("mysample");
-        r.setPlatform("ILLUMINA");
+        r.setPlatform(SAMReadGroupRecord.PlatformValue.ILLUMINA.name());
         r.setDescription("my description");
         Assert.assertEquals("@RG\tID:rg1\tSM:mysample\tPL:ILLUMINA\tDS:my description", r.getSAMString());
     }

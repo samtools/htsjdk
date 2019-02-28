@@ -26,8 +26,11 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMException;
 
 import java.io.*;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
 public class TestUtil {
 
@@ -60,43 +63,6 @@ public class TestUtil {
     @Deprecated
     public static File getTempDirecory(final String prefix, final String suffix) {
         return getTempDirectory(prefix, suffix);
-    }
-
-    /**
-     * Little test utility to help tests that create multiple levels of subdirectories
-     * clean up after themselves.
-     *
-     * @param directory The directory to be deleted (along with its subdirectories)
-     */
-    public static void recursiveDelete(final Path directory) throws IOException {
-        Files.list(directory).forEach(f->{
-            if (Files.isDirectory(f)){
-                try {
-                    recursiveDelete(f);
-                } catch (IOException e) {
-
-                }
-            }
-            try {
-                Files.delete(f);
-            } catch (IOException e) {
-
-            }
-        } );
-    }
-        /**
-         * Little test utility to help tests that create multiple levels of subdirectories
-         * clean up after themselves.
-         *
-         * @param directory The directory to be deleted (along with its subdirectories)
-         */
-    public static void recursiveDelete(final File directory) {
-        for (final File f : directory.listFiles()) {
-            if (f.isDirectory()) {
-                recursiveDelete(f);
-            }
-            f.delete();
-        }
     }
 
     /**

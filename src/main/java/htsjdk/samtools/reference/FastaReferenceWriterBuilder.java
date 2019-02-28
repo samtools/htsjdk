@@ -49,7 +49,7 @@ public class FastaReferenceWriterBuilder {
     private Path fastaFile;
     private boolean makeFaiOutput = true;
     private boolean makeDictOutput = true;
-    private boolean addMd5 = true;
+    private boolean emitMd5 = true;
     private int basesPerLine = FastaReferenceWriter.DEFAULT_BASES_PER_LINE;
     private Path indexFile;
     private Path dictFile;
@@ -222,15 +222,23 @@ public class FastaReferenceWriterBuilder {
             dictOutput = new BufferedOutputStream(Files.newOutputStream(dictFile));
         }
 
-        return new FastaReferenceWriter(basesPerLine, addMd5, fastaOutput, indexOutput, dictOutput);
+        return new FastaReferenceWriter(basesPerLine, emitMd5, fastaOutput, indexOutput, dictOutput);
     }
 
-    public boolean getAddMd5() {
-        return addMd5;
+    /**
+     * @return whether the reference builder will emit M5 tag in the header lines
+     */
+    public boolean getEmitMd5() {
+        return emitMd5;
     }
 
-    public FastaReferenceWriterBuilder setAddMd5(final boolean addMd5) {
-        this.addMd5 = addMd5;
+    /**
+     * @param emitMd5 whether the reference builder will emit the M5 tag in the header line
+     *      * (and populate it with the md5 digest of the sequence)
+     * @return this builder
+     */
+    public FastaReferenceWriterBuilder setEmitMd5(final boolean emitMd5) {
+        this.emitMd5 = emitMd5;
         return this;
     }
 }

@@ -47,11 +47,12 @@ import java.util.stream.Collectors;
 
 public class CRAMFileWriterTest extends HtsjdkTest {
 
-    final LogLevel globalLogLevel = Log.getGlobalLogLevel();
+    LogLevel globalLogLevel;
     final File SAM_TOOLS_TEST_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @BeforeClass
     public void initClass() {
+        globalLogLevel = Log.getGlobalLogLevel();
         Log.setGlobalLogLevel(LogLevel.ERROR);
     }
 
@@ -164,8 +165,9 @@ public class CRAMFileWriterTest extends HtsjdkTest {
                 Assert.assertEquals(actualRecord.getReadBases(), expectedRecord.getReadBases());
                 Assert.assertEquals(actualRecord.getBaseQualities(), expectedRecord.getBaseQualities());
 
-                Assert.assertEquals(actualRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()),
-                        actualRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()), expectedRecord.getReadName());
+                Assert.assertEquals(
+                        actualRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()),
+                        expectedRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()), expectedRecord.getReadName());
 
                 actualRecord.getAttributes().forEach(tv -> {
                     Assert.assertEquals(tv.value, expectedRecord.getAttribute(tv.tag));
@@ -247,19 +249,21 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         }
     }
 
+
+
     @Test
     public void test_roundtrip_tlen_preserved() throws IOException {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final ReferenceSource source = new ReferenceSource(new File(SAM_TOOLS_TEST_DIR, "cram_tlen.fasta"));
         final List<SAMRecord> records = new ArrayList<>();
 
-        try (SamReader reader = SamReaderFactory.make().open(new File(SAM_TOOLS_TEST_DIR, "cram_tlen_reads.sorted.sam"))) {
-            try (CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram")) {
-                for (final SAMRecord record : reader) {
-                    writer.addAlignment(record);
-                    records.add(record);
-                }
+        try (SamReader reader = SamReaderFactory.make().open(new File(SAM_TOOLS_TEST_DIR, "cram_tlen_reads.sorted.sam"));
+             CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram")) {
+            for (final SAMRecord record : reader) {
+                writer.addAlignment(record);
+                records.add(record);
             }
+
         }
 
         try (CRAMFileReader cramReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (File) null, source, ValidationStringency.STRICT)) {
