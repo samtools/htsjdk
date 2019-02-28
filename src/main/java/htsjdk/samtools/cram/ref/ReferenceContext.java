@@ -88,7 +88,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * Does this ReferenceContext refer to only unmapped-unplaced reads?
      *
      * Note: not a guarantee that the unmapped flag is set for all records
-     * @see htsjdk.samtools.cram.structure.CramCompressionRecord#isPlaced(boolean)
+     * @see htsjdk.samtools.cram.structure.CramCompressionRecord#isPlaced()
      *
      * @return true if the ReferenceContext refers only to unmapped-unplaced reads
      */
