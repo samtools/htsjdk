@@ -55,10 +55,10 @@ public class ReferenceContextTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "sentinels")
-    private static Object[][] invalidGet() {
+    private static Object[][] sentinels() {
         return new Object[][] {
-                {-2},
-                {-1}
+                {ReferenceContext.REF_ID_MULTIPLE},
+                {ReferenceContext.REF_ID_UNMAPPED}
         };
     }
 
