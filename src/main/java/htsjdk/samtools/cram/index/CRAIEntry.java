@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram;
+package htsjdk.samtools.cram.index;
 
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -11,11 +11,7 @@ import java.util.*;
  * A class representing CRAI index entry: file and alignment offsets for each slice.
  * Created by vadim on 10/08/2015.
  */
-public class CRAIEntry implements Comparable<CRAIEntry> {
-    private final int sequenceId;
-    private final int alignmentStart;
-    private final int alignmentSpan;
-
+public class CRAIEntry extends CRAIQuery implements Comparable<CRAIEntry> {
     // this Slice's Container's offset in bytes from the beginning of the stream
     // equal to Slice.containerOffset and Container.offset
     private final long containerStartByteOffset;
@@ -33,9 +29,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
                      final long containerStartByteOffset,
                      final int sliceByteOffset,
                      final int sliceByteSize) {
-        this.sequenceId = sequenceId;
-        this.alignmentStart = alignmentStart;
-        this.alignmentSpan = alignmentSpan;
+        super(sequenceId, alignmentStart, alignmentSpan);
         this.containerStartByteOffset = containerStartByteOffset;
         this.sliceByteOffset = sliceByteOffset;
         this.sliceByteSize = sliceByteSize;
@@ -47,7 +41,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * @param line string formatted as a CRAI index entry
      * @throws CRAIIndex.CRAIIndexException
      */
-    public CRAIEntry(final String line) {
+    public static CRAIEntry fromIndexLine(final String line) {
         final String[] chunks = line.split("\t");
         if (chunks.length != CRAI_INDEX_COLUMNS) {
             throw new CRAIIndex.CRAIIndexException(
@@ -55,12 +49,13 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         }
 
         try {
-            sequenceId = Integer.parseInt(chunks[0]);
-            alignmentStart = Integer.parseInt(chunks[1]);
-            alignmentSpan = Integer.parseInt(chunks[2]);
-            containerStartByteOffset = Long.parseLong(chunks[3]);
-            sliceByteOffset = Integer.parseInt(chunks[4]);
-            sliceByteSize = Integer.parseInt(chunks[5]);
+            final int sequenceId = Integer.parseInt(chunks[0]);
+            final int alignmentStart = Integer.parseInt(chunks[1]);
+            final int alignmentSpan = Integer.parseInt(chunks[2]);
+            final long containerStartByteOffset = Long.parseLong(chunks[3]);
+            final int sliceByteOffset = Integer.parseInt(chunks[4]);
+            final int sliceByteSize = Integer.parseInt(chunks[5]);
+            return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerStartByteOffset, sliceByteOffset, sliceByteSize);
         } catch (final NumberFormatException e) {
             throw new CRAIIndex.CRAIIndexException(e);
         }
@@ -70,7 +65,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * Serialize the entry to a CRAI index stream.
      * @param os stream to write to
      */
-    public void writeToStream(OutputStream os) {
+    void writeToStream(OutputStream os) {
         try {
             os.write(serializeToString().getBytes());
             os.write('\n');
@@ -107,71 +102,33 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         return (int) (containerStartByteOffset - o.containerStartByteOffset);
     }
 
-    public static Comparator<CRAIEntry> byEnd = new Comparator<CRAIEntry>() {
+    // naturalOrder() = use Comparable.compareTo()
+    public static final Comparator<CRAIEntry> BY_START = Comparator.naturalOrder();
 
-        @Override
-        public int compare(final CRAIEntry o1, final CRAIEntry o2) {
-            if (o1.sequenceId != o2.sequenceId) {
-                return o2.sequenceId - o1.sequenceId;
-            }
-            if (o1.alignmentStart + o1.alignmentSpan != o2.alignmentStart + o2.alignmentSpan) {
-                return o1.alignmentStart + o1.alignmentSpan - o2.alignmentStart - o2.alignmentSpan;
-            }
-
-            return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
+    public static final Comparator<CRAIEntry> BY_END = (final CRAIEntry o1, final CRAIEntry o2) -> {
+        if (o1.sequenceId != o2.sequenceId) {
+            return o1.sequenceId - o2.sequenceId;
         }
+        if (o1.alignmentStart + o1.alignmentSpan != o2.alignmentStart + o2.alignmentSpan) {
+            return o1.alignmentStart + o1.alignmentSpan - o2.alignmentStart - o2.alignmentSpan;
+        }
+
+        return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
     };
 
-    public static final Comparator<CRAIEntry> byStart = new Comparator<CRAIEntry>() {
-
-        @Override
-        public int compare(final CRAIEntry o1, final CRAIEntry o2) {
-            if (o1.sequenceId != o2.sequenceId) {
-                return o2.sequenceId - o1.sequenceId;
-            }
-            if (o1.alignmentStart != o2.alignmentStart) {
-                return o1.alignmentStart - o2.alignmentStart;
-            }
-
-            return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
+    public static final Comparator<CRAIEntry> UNMAPPED_LAST = (final CRAIEntry o1, final CRAIEntry o2) -> {
+        if (o1.sequenceId != o2.sequenceId) {
+            if (o1.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
+                return 1;
+            if (o2.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
+                return -1;
+            return o1.sequenceId - o2.sequenceId;
         }
+        if (o1.alignmentStart != o2.alignmentStart)
+            return o1.alignmentStart - o2.alignmentStart;
+
+        return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
     };
-
-    public static final Comparator<CRAIEntry> byStartDesc = new Comparator<CRAIEntry>() {
-
-        @Override
-        public int compare(CRAIEntry o1, CRAIEntry o2) {
-            if (o1.sequenceId != o2.sequenceId) {
-                if (o1.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
-                    return 1;
-                if (o2.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
-                    return -1;
-                return -o2.sequenceId + o1.sequenceId;
-            }
-            if (o1.alignmentStart != o2.alignmentStart)
-                return o1.alignmentStart - o2.alignmentStart;
-
-            return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
-        }
-    };
-
-    public static boolean intersect(final CRAIEntry e0, final CRAIEntry e1) {
-        if (e0.sequenceId != e1.sequenceId) {
-            return false;
-        }
-        if (e0.sequenceId < 0) {
-            return false;
-        }
-
-        final int a0 = e0.alignmentStart;
-        final int a1 = e1.alignmentStart;
-
-        final int b0 = a0 + e0.alignmentSpan;
-        final int b1 = a1 + e1.alignmentSpan;
-
-        return Math.abs(a0 + b0 - a1 - b1) < (e0.alignmentSpan + e1.alignmentSpan);
-
-    }
 
     public int getSequenceId() {
         return sequenceId;

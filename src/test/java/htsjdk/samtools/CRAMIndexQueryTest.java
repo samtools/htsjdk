@@ -72,7 +72,6 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
         tempCRAIOut.deleteOnExit();
         createLocalCRAMAndCRAI(
                 cramQueryWithCRAI,
-                cramQueryReference,
                 cramQueryWithLocalCRAI,
                 tempCRAIOut
         );
@@ -83,7 +82,6 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
         cramQueryReadsWithLocalCRAI.deleteOnExit();
         createLocalCRAMAndCRAI(
                 cramQueryReadsWithBAI,
-                cramQueryReadsReference,
                 cramQueryReadsWithLocalCRAI,
                 tempCRAIOut
         );
@@ -94,7 +92,6 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
         cramQueryTestEmptyWithLocalCRAI.deleteOnExit();
         createLocalCRAMAndCRAI(
                 cramQueryTestEmptyWithBAI,
-                cramQueryReference,
                 cramQueryTestEmptyWithLocalCRAI,
                 tempCRAIOut
         );
@@ -102,19 +99,12 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     private void createLocalCRAMAndCRAI(
             final File inputCRAM,
-            final File reference,
             final File outputCRAM,
             final File outputCRAI) throws IOException
     {
         Files.copy(inputCRAM.toPath(), outputCRAM.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-        SAMFileHeader samHeader = null;
-        try (SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(inputCRAM)) {
-            samHeader = reader.getFileHeader();
-        }
         try (FileOutputStream bos = new FileOutputStream(outputCRAI)) {
-            CRAMCRAIIndexer craiIndexer = new CRAMCRAIIndexer(bos, samHeader);
-            craiIndexer.writeIndex(new SeekableFileStream(outputCRAM), bos);
+            CRAMCRAIIndexer.writeIndex(new SeekableFileStream(outputCRAM), bos);
         }
     }
 
@@ -562,7 +552,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             final String[] expectedNames) throws IOException
     {
         doQueryTest(
-                reader -> reader.queryUnmapped(),
+                SamReader::queryUnmapped,
                 cramFileName,
                 referenceFileName,
                 expectedNames
@@ -626,7 +616,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
              final CloseableIterator<SAMRecord> it = getIterator.apply(reader)) {
             int count = 0;
             while (it.hasNext()) {
-                SAMRecord samRec = it.next();
+                final SAMRecord samRec = it.next();
                 Assert.assertTrue(count < expectedNames.length);
                 Assert.assertEquals(samRec.getReadName(), expectedNames[count]);
                 count++;
@@ -653,8 +643,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
     @Test(dataProvider="iteratorStateTests", expectedExceptions=SAMException.class, enabled=false)
     public void testIteratorState(
             final File cramFileName,
-            final File referenceFileName,
-            final int expectedCount) throws IOException
+            final File referenceFileName) throws IOException
     {
         SamReaderFactory factory = SamReaderFactory.makeDefault();
         if (referenceFileName != null) {

@@ -44,18 +44,23 @@ public class ContainerParserTest extends HtsjdkTest {
         }
     }
 
-    @DataProvider(name = "containersForRefTests")
-    private Object[][] refTestData() {
+    @DataProvider(name = "getRecordsTestCases")
+    private Object[][] getRecordsTestCases() {
         final int mappedSequenceId = 0;  // arbitrary
-        final ReferenceContext mappedRefContext = new ReferenceContext(mappedSequenceId);
-        return new Object[][] {
+
+        return new Object[][]{
                 {
                         CRAMStructureTestUtil.getSingleRefRecords(TEST_RECORD_COUNT, mappedSequenceId),
-                        Collections.singleton(mappedRefContext)
                 },
                 {
-                        CRAMStructureTestUtil.getUnmappedRecords(TEST_RECORD_COUNT),
-                        Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
+                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
+                },
+
+                // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
+                // but not both.  We treat these weird edge cases as unplaced.
+
+                {
+                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
                 },
 
                 // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
@@ -63,21 +68,16 @@ public class ContainerParserTest extends HtsjdkTest {
 
                 {
                         CRAMStructureTestUtil.getHalfUnmappedNoRefRecords(TEST_RECORD_COUNT),
-                        Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
                 {
                         CRAMStructureTestUtil.getHalfUnmappedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
-                        Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
         };
     }
 
-    @Test(dataProvider = "containersForRefTests")
-    public void paramTest(final List<CramCompressionRecord> records, final Set<ReferenceContext> expectedKeys) {
+    @Test(dataProvider = "getRecordsTestCases")
+    public void getRecordsTest(final List<CramCompressionRecord> records) {
         final Container container = FACTORY.buildContainer(records);
-
-        final Map<ReferenceContext, AlignmentSpan> spanMap = PARSER.getSpans(container, ValidationStringency.STRICT);
-        Assert.assertEquals(spanMap.keySet(), expectedKeys);
 
         final List<CramCompressionRecord> roundTripRecords = PARSER.getRecords(container, null, ValidationStringency.STRICT);
         // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
@@ -85,30 +85,34 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(roundTripRecords.size(), TEST_RECORD_COUNT);
     }
 
-   @Test
+    @Test
     public void testMultirefContainer() {
        final Map<ReferenceContext, AlignmentSpan> expectedSpans = new HashMap<>();
        for (int i = 0; i < TEST_RECORD_COUNT; i++) {
-           expectedSpans.put(new ReferenceContext(i), new AlignmentSpan(i + 1, READ_LENGTH_FOR_TEST_RECORDS, 1));
+           if (i % 2 == 0) {
+               expectedSpans.put(new ReferenceContext(i), new AlignmentSpan(i + 1, READ_LENGTH_FOR_TEST_RECORDS, 0, 1));
+           } else {
+               expectedSpans.put(new ReferenceContext(i), new AlignmentSpan(i + 1, READ_LENGTH_FOR_TEST_RECORDS, 1, 0));
+           }
        }
 
        final Container container = FACTORY.buildContainer(CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT));
 
-       final Map<ReferenceContext, AlignmentSpan> spanMap = PARSER.getSpans(container, ValidationStringency.STRICT);
+       final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(ValidationStringency.STRICT);
        Assert.assertEquals(spanMap, expectedSpans);
    }
 
     @Test
     public void testMultirefContainerWithUnmapped() {
         final List<AlignmentSpan> expectedSpans = new ArrayList<>();
-        expectedSpans.add(new AlignmentSpan(1, READ_LENGTH_FOR_TEST_RECORDS, 1));
-        expectedSpans.add(new AlignmentSpan(2, READ_LENGTH_FOR_TEST_RECORDS, 1));
+        expectedSpans.add(new AlignmentSpan(1, READ_LENGTH_FOR_TEST_RECORDS, 1, 0));
+        expectedSpans.add(new AlignmentSpan(2, READ_LENGTH_FOR_TEST_RECORDS, 1, 0));
 
         final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest();
 
         // first container is single-ref
 
-        final Map<ReferenceContext, AlignmentSpan> spanMap0 = PARSER.getSpans(containers.get(0), ValidationStringency.STRICT);
+        final Map<ReferenceContext, AlignmentSpan> spanMap0 = containers.get(0).getSpans(ValidationStringency.STRICT);
         Assert.assertNotNull(spanMap0);
         Assert.assertEquals(spanMap0.size(), 1);
 
@@ -116,7 +120,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
         // when other refs are added, subsequent containers are multiref
 
-        final Map<ReferenceContext, AlignmentSpan> spanMap1 = PARSER.getSpans(containers.get(1), ValidationStringency.STRICT);
+        final Map<ReferenceContext, AlignmentSpan> spanMap1 = containers.get(1).getSpans(ValidationStringency.STRICT);
         Assert.assertNotNull(spanMap1);
         Assert.assertEquals(spanMap1.size(), 2);
 
@@ -125,7 +129,7 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(spanMap1.get(new ReferenceContext(1)), expectedSpans.get(1));
 
 
-        final Map<ReferenceContext, AlignmentSpan> spanMap2 = PARSER.getSpans(containers.get(2), ValidationStringency.STRICT);
+        final Map<ReferenceContext, AlignmentSpan> spanMap2 = containers.get(2).getSpans(ValidationStringency.STRICT);
         Assert.assertNotNull(spanMap2);
         Assert.assertEquals(spanMap2.size(), 3);
 
@@ -135,8 +139,6 @@ public class ContainerParserTest extends HtsjdkTest {
 
         Assert.assertTrue(spanMap2.containsKey(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT));
         final AlignmentSpan unmappedSpan = spanMap2.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
-
-        // only checking count here because start and span aren't meaningful
-        Assert.assertEquals(unmappedSpan.getCount(), 1);
+        Assert.assertEquals(unmappedSpan, AlignmentSpan.UNPLACED_SPAN);
     }
 }

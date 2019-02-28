@@ -65,6 +65,10 @@ public class CompressionHeader {
     public CompressionHeader() {
     }
 
+    public boolean isCoordinateSorted() {
+        return APDelta;
+    }
+
     private byte[][][] parseDictionary(final byte[] bytes) {
         final List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();
         {

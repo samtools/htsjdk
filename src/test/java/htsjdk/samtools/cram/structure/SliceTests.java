@@ -95,7 +95,7 @@ public class SliceTests extends HtsjdkTest {
                 });
             retval.add(new Object[]
                 {
-                        CRAMStructureTestUtil.getUnmappedRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
                         coordSorted,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
@@ -160,7 +160,7 @@ public class SliceTests extends HtsjdkTest {
         buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
         index++;
-        final CramCompressionRecord unmapped = CRAMStructureTestUtil.createUnmappedRecord(index);
+        final CramCompressionRecord unmapped = CRAMStructureTestUtil.createUnmappedUnplacedRecord(index);
         records.add(unmapped);
         buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
@@ -177,7 +177,7 @@ public class SliceTests extends HtsjdkTest {
         records.add(single);
 
         index++;
-        final CramCompressionRecord unmapped = CRAMStructureTestUtil.createUnmappedRecord(index);
+        final CramCompressionRecord unmapped = CRAMStructureTestUtil.createUnmappedUnplacedRecord(index);
         unmapped.readLength = 35;
         records.add(unmapped);
 

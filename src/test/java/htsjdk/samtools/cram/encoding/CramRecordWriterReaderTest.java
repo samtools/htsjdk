@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.CramRecordTestHelper;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
