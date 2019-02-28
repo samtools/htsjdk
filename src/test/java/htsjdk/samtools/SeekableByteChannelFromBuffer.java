@@ -77,6 +77,10 @@ public class SeekableByteChannelFromBuffer implements SeekableByteChannel {
     open = false;
   }
 
+  protected ByteBuffer getBuffer(){
+    return buf;
+  }
+
   private void checkOpen() throws IOException {
     if (!open) {
       throw new ClosedChannelException();
