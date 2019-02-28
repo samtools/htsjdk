@@ -201,7 +201,7 @@ public class CRAMContainerStreamWriter {
             return true;
         }
 
-        if (refSeqIndex == ReferenceContext.REF_ID_MULTIPLE) {
+        if (refSeqIndex == ReferenceContext.MULTIPLE_REFERENCE_ID) {
             return false;
         }
 
@@ -216,7 +216,7 @@ public class CRAMContainerStreamWriter {
         if (samRecords.size() > MIN_SINGLE_REF_RECORDS) {
             return true;
         } else {
-            refSeqIndex = ReferenceContext.REF_ID_MULTIPLE;
+            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_ID;
             return false;
         }
     }
@@ -265,13 +265,13 @@ public class CRAMContainerStreamWriter {
         final byte[] referenceBases;
         String refSeqName = null;
         switch (refSeqIndex) {
-            case ReferenceContext.REF_ID_MULTIPLE:
+            case ReferenceContext.MULTIPLE_REFERENCE_ID:
                 if (preservation != null && preservation.areReferenceTracksRequired()) {
                     throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
                 }
                 referenceBases = new byte[0];
                 break;
-            case ReferenceContext.REF_ID_UNMAPPED:
+            case ReferenceContext.UNMAPPED_UNPLACED_ID:
                 referenceBases = new byte[0];
                 break;
             default:
@@ -480,14 +480,14 @@ public class CRAMContainerStreamWriter {
      * @param samRecordReferenceIndex index of the new reference sequence
      */
     private void updateReferenceContext(final int samRecordReferenceIndex) {
-        if (refSeqIndex == ReferenceContext.REF_ID_MULTIPLE) {
+        if (refSeqIndex == ReferenceContext.MULTIPLE_REFERENCE_ID) {
             return;
         }
 
         if (refSeqIndex == REF_SEQ_INDEX_NOT_INITIALIZED) {
             refSeqIndex = samRecordReferenceIndex;
         } else if (refSeqIndex != samRecordReferenceIndex) {
-            refSeqIndex = ReferenceContext.REF_ID_MULTIPLE;
+            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_ID;
     }
     }
 

@@ -433,23 +433,23 @@ public class Slice {
                 singleRefAlignmentEnd = Math.max(record.getAlignmentEnd(), singleRefAlignmentEnd);
             }
             else {
-                referenceContexts.add(ReferenceContext.UNMAPPED);
+                referenceContexts.add(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
             }
         }
 
         ReferenceContext sliceRefContext;
         switch (referenceContexts.size()) {
             case 0:
-                sliceRefContext = ReferenceContext.UNMAPPED;
+                sliceRefContext = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
                 break;
             case 1:
-                // SINGLE REF: all reads placed on the same reference
-                // or UNMAPPED_UNPLACED: all reads unplaced
+                // SINGLE_REFERENCE_TYPE context: all reads placed on the same reference
+                // or UNMAPPED_UNPLACED_CONTEXT: all reads unplaced
                 sliceRefContext = referenceContexts.iterator().next();
                 break;
             default:
                 // placed reads on multiple references and/or a combination of placed and unplaced reads
-                sliceRefContext = ReferenceContext.MULTIPLE;
+                sliceRefContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         }
 
         final Slice slice = new Slice(sliceRefContext);

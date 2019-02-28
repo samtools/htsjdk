@@ -72,14 +72,14 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
 
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         int initialAlignmentStart = initialRecords.get(0).alignmentStart;
-        final byte[] written = write(initialRecords, outputMap, header, ReferenceContext.MULTIPLE, initialAlignmentStart);
+        final byte[] written = write(initialRecords, outputMap, header, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, initialAlignmentStart);
 
         final Map<Integer, ByteArrayInputStream> inputMap = createInputMap(outputMap);
         final List<CramCompressionRecord> roundTripRecords = new ArrayList<>(initialRecords.size());
 
         int prevAlignmentStart = initialAlignmentStart;
         for (int i = 0; i < initialRecords.size(); i++) {
-            final CramCompressionRecord newRecord = read(written, inputMap, header, ReferenceContext.MULTIPLE, prevAlignmentStart);
+            final CramCompressionRecord newRecord = read(written, inputMap, header, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, prevAlignmentStart);
             prevAlignmentStart = newRecord.alignmentStart;
             roundTripRecords.add(newRecord);
         }

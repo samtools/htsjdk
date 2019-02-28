@@ -29,7 +29,7 @@ public class SliceTests extends HtsjdkTest {
 
     @Test
     public void testUnmappedValidateRef() {
-        final Slice slice = new Slice(ReferenceContext.UNMAPPED);
+        final Slice slice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
 
         Assert.assertTrue(slice.validateRefMD5(null));
         Assert.assertTrue(slice.validateRefMD5(new byte[0]));
@@ -90,13 +90,13 @@ public class SliceTests extends HtsjdkTest {
                 {
                         getMultiRefRecords(),
                         coordSorted,
-                        ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
             retval.add(new Object[]
                 {
                         getUnplacedRecords(),
                         coordSorted,
-                        ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
 
 
@@ -107,14 +107,14 @@ public class SliceTests extends HtsjdkTest {
                 {
                         getNoRefRecords(),
                         coordSorted,
-                        ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
 
             retval.add(new Object[]
                 {
                         getNoStartRecords(),
                         coordSorted,
-                        ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
         }
 
@@ -148,17 +148,17 @@ public class SliceTests extends HtsjdkTest {
 
         final CramCompressionRecord record2 = createRecord(1, 1);
         records.add(record2);
-        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
         final CramCompressionRecord record3 = createRecord(2, 2);
         records.add(record3);
-        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
 
         final CramCompressionRecord unmapped = createRecord(3, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
         unmapped.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
         unmapped.setSegmentUnmapped(true);
         records.add(unmapped);
-        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertSliceStateFromTestRecords(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
@@ -180,7 +180,7 @@ public class SliceTests extends HtsjdkTest {
 
         final Slice slice = Slice.buildSlice(records, header);
         final int expectedBaseCount = single.readLength + unmapped.readLength;
-        assertSliceState(slice, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
+        assertSliceState(slice, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
                 records.size(), expectedBaseCount);
     }
 

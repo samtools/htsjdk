@@ -51,7 +51,7 @@ public class ContainerParserTest extends HtsjdkTest {
                 },
                 {
                         ContainerFactoryTest.getUnmappedRecords(),
-                        Collections.singleton(ReferenceContext.UNMAPPED)
+                        Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
 
                 // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
@@ -59,11 +59,11 @@ public class ContainerParserTest extends HtsjdkTest {
 
                 {
                         ContainerFactoryTest.getUnmappedNoRefRecords(),
-                        Collections.singleton(ReferenceContext.UNMAPPED)
+                        Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
                 {
                         ContainerFactoryTest.getUnmappedNoStartRecords(),
-                        Collections.singleton(ReferenceContext.UNMAPPED)
+                        Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
         };
     }
@@ -139,8 +139,8 @@ public class ContainerParserTest extends HtsjdkTest {
         Assert.assertEquals(spanMap2.get(new ReferenceContext(0)), expectedSpans.get(0));
         Assert.assertEquals(spanMap2.get(new ReferenceContext(1)), expectedSpans.get(1));
 
-        Assert.assertTrue(spanMap2.containsKey(ReferenceContext.UNMAPPED));
-        final AlignmentSpan unmappedSpan = spanMap2.get(ReferenceContext.UNMAPPED);
+        Assert.assertTrue(spanMap2.containsKey(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT));
+        final AlignmentSpan unmappedSpan = spanMap2.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
 
         // only checking count here because start and span aren't meaningful
         Assert.assertEquals(unmappedSpan.getCount(), 1);

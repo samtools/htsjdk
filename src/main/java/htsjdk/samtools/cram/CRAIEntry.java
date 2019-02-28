@@ -142,9 +142,9 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         @Override
         public int compare(CRAIEntry o1, CRAIEntry o2) {
             if (o1.sequenceId != o2.sequenceId) {
-                if (o1.sequenceId == ReferenceContext.REF_ID_UNMAPPED)
+                if (o1.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
                     return 1;
-                if (o2.sequenceId == ReferenceContext.REF_ID_UNMAPPED)
+                if (o2.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
                     return -1;
                 return -o2.sequenceId + o1.sequenceId;
             }

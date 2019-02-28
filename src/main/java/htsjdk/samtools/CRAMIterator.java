@@ -157,13 +157,13 @@ public class CRAMIterator implements SAMRecordIterator {
 
         final ReferenceContext containerContext = container.getReferenceContext();
         switch (containerContext.getType()) {
-            case UNMAPPED_UNPLACED:
+            case UNMAPPED_UNPLACED_TYPE:
                 referenceBases = new byte[]{};
                 prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
                 break;
-            case MULTI_REFERENCE:
+            case MULTIPLE_REFERENCE_TYPE:
                 referenceBases = null;
-                prevSeqId = ReferenceContext.REF_ID_MULTIPLE;
+                prevSeqId = ReferenceContext.MULTIPLE_REFERENCE_ID;
                 break;
             default:
                 if (prevSeqId != containerContext.getSequenceId()) {

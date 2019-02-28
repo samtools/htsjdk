@@ -10,7 +10,7 @@ package htsjdk.samtools.cram.ref;
  *      Any positive integer (including zero): Single Reference Slice
  */
 public enum ReferenceContextType {
-    MULTI_REFERENCE,
-    UNMAPPED_UNPLACED,
-    SINGLE_REFERENCE
+    MULTIPLE_REFERENCE_TYPE,
+    UNMAPPED_UNPLACED_TYPE,
+    SINGLE_REFERENCE_TYPE
 }

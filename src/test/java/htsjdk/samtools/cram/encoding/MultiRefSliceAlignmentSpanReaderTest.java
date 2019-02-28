@@ -76,7 +76,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
 
         final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
 
-        final ReferenceContext refId = ReferenceContext.MULTIPLE;
+        final ReferenceContext refId = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         int initialAlignmentStart = initialRecords.get(0).alignmentStart;
         final byte[] written = write(initialRecords, outputMap, header, refId, initialAlignmentStart);
@@ -91,7 +91,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
             Assert.assertEquals(spans.size(), 3);
             Assert.assertEquals(spans.get(new ReferenceContext(1)), new AlignmentSpan(1, 5, 2));
             Assert.assertEquals(spans.get(new ReferenceContext(2)), new AlignmentSpan(2, 3, 1));
-            Assert.assertNotNull(spans.get(ReferenceContext.UNMAPPED));
+            Assert.assertNotNull(spans.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT));
         }
     }
 }

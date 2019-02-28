@@ -81,11 +81,11 @@ public class Container {
      * - set the Container's Alignment Start and Span to cover all slices
      *
      * A Multiple Reference Container contains only Multiple Reference Slices.
-     * - set the Container's ReferenceContext to MULTIPLE
+     * - set the Container's ReferenceContext to MULTIPLE_REFERENCE_CONTEXT
      * - unset the Container's Alignment Start and Span
      *
      * An Unmapped Container contains only Unmapped Slices.
-     * - set the Container's ReferenceContext to UNMAPPED
+     * - set the Container's ReferenceContext to UNMAPPED_UNPLACED_CONTEXT
      * - unset the Container's Alignment Start and Span
      *
      * Any other combination is invalid.

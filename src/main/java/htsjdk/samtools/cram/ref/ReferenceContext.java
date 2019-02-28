@@ -6,19 +6,19 @@ import htsjdk.samtools.cram.CRAMException;
 /**
  * Represents the current state of reference sequence processing.
  *
- * Are we handling MULTI_REFERENCE records (-2, from the CRAM spec)?
+ * Are we handling MULTIPLE_REFERENCE_TYPE records (-2, from the CRAM spec)?
  *
- * Are we handling UNMAPPED_UNPLACED records (-1, from the CRAM spec)?
+ * Are we handling UNMAPPED_UNPLACED_TYPE records (-1, from the CRAM spec)?
  *
- * Or are we handing a known SINGLE_REFERENCE sequence (0 or higher, from the CRAM spec))?
+ * Or are we handing a known SINGLE_REFERENCE_TYPE sequence (0 or higher, from the CRAM spec))?
  *
  */
 public class ReferenceContext implements Comparable<ReferenceContext> {
-    public static final int REF_ID_MULTIPLE = -2;
-    public static final int REF_ID_UNMAPPED = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX; // -1
+    public static final int MULTIPLE_REFERENCE_ID = -2;
+    public static final int UNMAPPED_UNPLACED_ID = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX; // -1
 
-    public static final ReferenceContext MULTIPLE = new ReferenceContext(REF_ID_MULTIPLE);
-    public static final ReferenceContext UNMAPPED = new ReferenceContext(REF_ID_UNMAPPED);
+    public static final ReferenceContext MULTIPLE_REFERENCE_CONTEXT = new ReferenceContext(MULTIPLE_REFERENCE_ID);
+    public static final ReferenceContext UNMAPPED_UNPLACED_CONTEXT = new ReferenceContext(UNMAPPED_UNPLACED_ID);
 
     private final ReferenceContextType type;
     private final int serializableSequenceId;
@@ -35,15 +35,15 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
         this.serializableSequenceId = serializableSequenceId;
 
         switch (serializableSequenceId) {
-            case REF_ID_MULTIPLE:
-                this.type = ReferenceContextType.MULTI_REFERENCE;
+            case MULTIPLE_REFERENCE_ID:
+                this.type = ReferenceContextType.MULTIPLE_REFERENCE_TYPE;
                 break;
-            case REF_ID_UNMAPPED:
-                this.type = ReferenceContextType.UNMAPPED_UNPLACED;
+            case UNMAPPED_UNPLACED_ID:
+                this.type = ReferenceContextType.UNMAPPED_UNPLACED_TYPE;
                 break;
             default:
                 if (serializableSequenceId >= 0) {
-                    this.type = ReferenceContextType.SINGLE_REFERENCE;
+                    this.type = ReferenceContextType.SINGLE_REFERENCE_TYPE;
                 } else {
                     throw new CRAMException("Invalid Reference Sequence ID: " + serializableSequenceId);
                 }
@@ -51,7 +51,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     }
 
     /**
-     * Get the ReferenceContext type: SINGLE_REFERENCE, UNMAPPED_UNPLACED, or MULTI_REFERENCE
+     * Get the ReferenceContext type: SINGLE_REFERENCE_TYPE, UNMAPPED_UNPLACED_TYPE, or MULTIPLE_REFERENCE_TYPE
      * @return the {@link ReferenceContextType} enum
      */
     public ReferenceContextType getType() {
@@ -75,7 +75,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * @return the sequence ID
      */
     public int getSequenceId() {
-        if (type != ReferenceContextType.SINGLE_REFERENCE) {
+        if (type != ReferenceContextType.SINGLE_REFERENCE_TYPE) {
             final String msg = "This ReferenceContext does not have a valid reference sequence ID because its type is " +
                     type.toString();
             throw new CRAMException(msg);
@@ -93,7 +93,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * @return true if the ReferenceContext refers only to unmapped-unplaced reads
      */
     public boolean isUnmappedUnplaced() {
-        return type == ReferenceContextType.UNMAPPED_UNPLACED;
+        return type == ReferenceContextType.UNMAPPED_UNPLACED_TYPE;
     }
 
     /**
@@ -104,7 +104,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * or a combination of placed and unplaced reads
      */
     public boolean isMultiRef() {
-        return type == ReferenceContextType.MULTI_REFERENCE;
+        return type == ReferenceContextType.MULTIPLE_REFERENCE_TYPE;
     }
 
     /**
@@ -112,7 +112,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * @return true if all reads referred to by this ReferenceContext are placed on a single reference
      */
     public boolean isMappedSingleRef() {
-        return type == ReferenceContextType.SINGLE_REFERENCE;
+        return type == ReferenceContextType.SINGLE_REFERENCE_TYPE;
     }
 
     @Override
@@ -141,12 +141,12 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     @Override
     public String toString() {
         switch (serializableSequenceId) {
-            case REF_ID_MULTIPLE:
-                return "MULTIPLE";
-            case REF_ID_UNMAPPED:
-                return "UNMAPPED";
+            case MULTIPLE_REFERENCE_ID:
+                return "MULTIPLE_REFERENCE_CONTEXT";
+            case UNMAPPED_UNPLACED_ID:
+                return "UNMAPPED_UNPLACED_CONTEXT";
             default:
-                return "" + serializableSequenceId;
+                return "SINGLE_REFERENCE_CONTEXT: " + serializableSequenceId;
         }
     }
 }

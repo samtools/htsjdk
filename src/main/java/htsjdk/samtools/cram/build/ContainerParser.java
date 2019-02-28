@@ -87,10 +87,10 @@ public class ContainerParser {
         final Map<ReferenceContext, AlignmentSpan> spanMap = new HashMap<>();
         final ReferenceContext sliceContext = slice.getReferenceContext();
         switch (sliceContext.getType()) {
-            case UNMAPPED_UNPLACED:
-                spanMap.put(ReferenceContext.UNMAPPED, AlignmentSpan.UNMAPPED_SPAN);
+            case UNMAPPED_UNPLACED_TYPE:
+                spanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNMAPPED_SPAN);
                 break;
-            case MULTI_REFERENCE:
+            case MULTIPLE_REFERENCE_TYPE:
                 final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(header, validationStringency);
                 addAllSpans(spanMap, spans);
                 break;

@@ -172,7 +172,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
     public void testUnmapped() {
         final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
         final Container container = factory.buildContainer(getUnmappedRecords());
-        assertContainerState(container, ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerState(container, ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
@@ -182,21 +182,21 @@ public class ContainerFactoryTest extends HtsjdkTest {
     public void testUnmappedNoReferenceId() {
         final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
         final Container container = factory.buildContainer(getUnmappedNoRefRecords());
-        assertContainerState(container, ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerState(container, ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
     public void testUnmappedNoAlignmentStart() {
         final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
         final Container container = factory.buildContainer(getUnmappedNoStartRecords());
-        assertContainerState(container, ReferenceContext.UNMAPPED, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerState(container, ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
     public void testMultiref() {
         final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
         final Container container = factory.buildContainer(getMultiRefRecords());
-        assertContainerState(container, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerState(container, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
@@ -217,12 +217,12 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
         recordCount++;  // this container has 2 records
         globalRecordCount = containers.get(0).nofRecords;   // we've seen 1 record before this container
-        assertContainerState(containers.get(1), ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
+        assertContainerState(containers.get(1), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
                 globalRecordCount, recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount);
 
         recordCount++;  // this container has 3 records
         globalRecordCount = containers.get(0).nofRecords + containers.get(1).nofRecords;    // we've seen 3 records before this container
-        assertContainerState(containers.get(2), ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
+        assertContainerState(containers.get(2), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
                 globalRecordCount, recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount);
     }
 
@@ -244,7 +244,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         }
 
         final Container container = factory.buildContainer(records);
-        assertContainerState(container, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerState(container, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
@@ -263,7 +263,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         }
 
         final Container container = factory.buildContainer(records);
-        assertContainerState(container, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerState(container, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     // show that unmapped-unplaced reads don't change the state of a multi-ref slice/container
@@ -283,7 +283,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         }
 
         final Container container = factory.buildContainer(records);
-        assertContainerState(container, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerState(container, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     @Test
@@ -301,7 +301,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
         }
 
         final Container container = factory.buildContainer(records);
-        assertContainerState(container, ReferenceContext.MULTIPLE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        assertContainerState(container, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
     }
 
     private void assertContainerState(final Container container,

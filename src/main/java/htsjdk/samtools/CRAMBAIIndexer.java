@@ -132,7 +132,7 @@ public class CRAMBAIIndexer {
                 /**
                  * Unmapped span must be processed after mapped spans:
                  */
-                AlignmentSpan unmappedSpan = spanMap.remove(ReferenceContext.UNMAPPED);
+                AlignmentSpan unmappedSpan = spanMap.remove(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
                 for (final ReferenceContext refContext : new TreeSet<>(spanMap.keySet())) {
                     final AlignmentSpan span = spanMap.get(refContext);
                     final Slice fakeSlice = new Slice(refContext);
@@ -147,7 +147,7 @@ public class CRAMBAIIndexer {
                 }
 
                 if (unmappedSpan != null) {
-                    final Slice fakeSlice = new Slice(ReferenceContext.UNMAPPED);
+                    final Slice fakeSlice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
                     fakeSlice.containerOffset = slice.containerOffset;
                     fakeSlice.offset = slice.offset;
                     fakeSlice.index = slice.index;
@@ -450,10 +450,10 @@ public class CRAMBAIIndexer {
                     final ReferenceContext containerContext = container.getReferenceContext();
                     String sequenceName;
                     switch (containerContext.getType()) {
-                        case UNMAPPED_UNPLACED:
+                        case UNMAPPED_UNPLACED_TYPE:
                             sequenceName = "?";
                             break;
-                        case MULTI_REFERENCE:
+                        case MULTIPLE_REFERENCE_TYPE:
                             sequenceName = "???";
                             break;
                         default:
