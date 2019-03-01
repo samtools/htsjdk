@@ -67,8 +67,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     }
 
     @Test(description = "Tests a writing records with null SAMFileHeaders")
-    public void writeRecordsWithNullHeader() throws Exception {
-
+    public void writeRecordsWithNullHeader() {
         final List<SAMRecord> samRecs = createRecords(50);
         for (final SAMRecord rec : samRecs) {
             rec.setHeader(null);
