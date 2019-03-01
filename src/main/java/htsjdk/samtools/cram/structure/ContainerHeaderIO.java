@@ -17,30 +17,33 @@
  */
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.io.CRC32OutputStream;
 import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.CramInt;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.LTF8;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.util.RuntimeIOException;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 class ContainerHeaderIO {
-
-    public boolean readContainerHeader(final Container container, final InputStream inputStream) {
-        return readContainerHeader(2, container, inputStream);
-    }
-
-    public boolean readContainerHeader(final int major, final Container container, final InputStream inputStream) {
+    public static Container readContainerHeader(final int major, final InputStream inputStream) {
         final byte[] peek = new byte[4];
         try {
             int character = inputStream.read();
-            if (character == -1)
-                return false;
+            if (character == -1) {
+                final int majorVersionForEOF = 2;
+                final byte[] eofMarker = major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER;
 
+                try (final ByteArrayInputStream eofBAIS = new ByteArrayInputStream(eofMarker)) {
+                    return readContainerHeader(majorVersionForEOF, eofBAIS);
+                }
+            }
             peek[0] = (byte) character;
             for (int i = 1; i < peek.length; i++) {
                 character = inputStream.read();
@@ -52,8 +55,11 @@ class ContainerHeaderIO {
             throw new RuntimeIOException(e);
         }
 
-        container.containerByteSize = CramInt.readInt32(peek);
-        container.sequenceId = ITF8.readUnsignedITF8(inputStream);
+        final int containerByteSize = CramInt.readInt32(peek);
+        final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(inputStream));
+        final Container container = new Container(refContext);
+        container.containerByteSize = containerByteSize;
+
         container.alignmentStart = ITF8.readUnsignedITF8(inputStream);
         container.alignmentSpan = ITF8.readUnsignedITF8(inputStream);
         container.nofRecords = ITF8.readUnsignedITF8(inputStream);
@@ -64,7 +70,7 @@ class ContainerHeaderIO {
         if (major >= 3)
             container.checksum = CramInt.readInt32(inputStream);
 
-        return true;
+        return container;
     }
 
     /**
@@ -74,11 +80,11 @@ class ContainerHeaderIO {
      * @param outputStream the output stream to write the container to
      * @return number of bytes written out to the output stream
      */
-    public int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {
+    public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {
         final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
 
         int length = (CramInt.writeInt32(container.containerByteSize, crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(container.sequenceId, crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(container.getReferenceContext().getSerializableId(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.alignmentStart, crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.alignmentSpan, crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.nofRecords, crc32OutputStream) + 7) / 8;

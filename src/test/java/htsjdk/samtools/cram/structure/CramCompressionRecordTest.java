@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram.structure;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;

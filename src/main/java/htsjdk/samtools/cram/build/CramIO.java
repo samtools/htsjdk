@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
@@ -257,17 +258,14 @@ public class CramIO {
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
         final Block block = Block.createRawFileHeaderBlock(blockContent);
 
-        final Container container = new Container();
+        final Container container = new Container(new ReferenceContext(0));
         container.blockCount = 1;
         container.blocks = new Block[]{block};
         container.landmarks = new int[0];
         container.slices = new Slice[0];
-        container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
-        container.alignmentStart = Slice.NO_ALIGNMENT_START;
         container.bases = 0;
         container.globalRecordCounter = 0;
         container.nofRecords = 0;
-        container.sequenceId = 0;
 
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         block.write(major, byteArrayOutputStream);

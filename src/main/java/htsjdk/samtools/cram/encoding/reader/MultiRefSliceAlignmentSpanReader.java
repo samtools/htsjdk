@@ -17,6 +17,7 @@ package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 
 import java.io.ByteArrayInputStream;
@@ -39,7 +40,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
     /**
      * Detected sequence spans
      */
-    private final Map<Integer, AlignmentSpan> spans = new HashMap<>();
+    private final Map<ReferenceContext, AlignmentSpan> spans = new HashMap<>();
 
     /**
      * Initializes a Multiple Reference Sequence ID Reader.
@@ -58,7 +59,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final ValidationStringency validationStringency,
                                             final int initialAlignmentStart,
                                             final int recordCount) {
-        super(coreInputStream, externalInputMap, header, Slice.MULTI_REFERENCE, validationStringency);
+        super(coreInputStream, externalInputMap, header, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, validationStringency);
 
         this.prevAlignmentStart = initialAlignmentStart;
 
@@ -67,7 +68,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         }
     }
 
-    public Map<Integer, AlignmentSpan> getReferenceSpans() {
+    public Map<ReferenceContext, AlignmentSpan> getReferenceSpans() {
         return Collections.unmodifiableMap(spans);
     }
 
@@ -76,10 +77,11 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
 
         prevAlignmentStart = super.read(cramRecord, prevAlignmentStart);
 
-        if (!spans.containsKey(cramRecord.sequenceId)) {
-            spans.put(cramRecord.sequenceId, new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength));
+        final ReferenceContext recordContext = new ReferenceContext(cramRecord.sequenceId);
+        if (!spans.containsKey(recordContext)) {
+            spans.put(recordContext, new AlignmentSpan(prevAlignmentStart, cramRecord.readLength));
         } else {
-            spans.get(cramRecord.sequenceId).addSingle(cramRecord.alignmentStart, cramRecord.readLength);
+            spans.get(recordContext).addSingle(prevAlignmentStart, cramRecord.readLength);
         }
     }
 }

@@ -5,10 +5,10 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -76,7 +76,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
 
         final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
 
-        final int refId = Slice.MULTI_REFERENCE;
+        final ReferenceContext refId = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         int initialAlignmentStart = initialRecords.get(0).alignmentStart;
         final byte[] written = write(initialRecords, outputMap, header, refId, initialAlignmentStart);
@@ -86,15 +86,12 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
             final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, initialAlignmentStart, initialRecords.size());
-            final Map<Integer, AlignmentSpan> spans = reader.getReferenceSpans();
+            final Map<ReferenceContext, AlignmentSpan> spans = reader.getReferenceSpans();
 
             Assert.assertEquals(spans.size(), 3);
-            Assert.assertTrue(spans.containsKey(1));
-            Assert.assertTrue(spans.containsKey(2));
-            Assert.assertTrue(spans.containsKey(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
-            Assert.assertEquals(spans.get(1), new AlignmentSpan(1, 5, 2));
-            Assert.assertEquals(spans.get(2), new AlignmentSpan(2, 3, 1));
-            Assert.assertNotNull(spans.get(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+            Assert.assertEquals(spans.get(new ReferenceContext(1)), new AlignmentSpan(1, 5, 2));
+            Assert.assertEquals(spans.get(new ReferenceContext(2)), new AlignmentSpan(2, 3, 1));
+            Assert.assertNotNull(spans.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT));
         }
     }
 }

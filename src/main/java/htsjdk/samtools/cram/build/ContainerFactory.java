@@ -39,41 +39,32 @@ public class ContainerFactory {
     }
 
     public Container buildContainer(final List<CramCompressionRecord> records) {
-        return buildContainer(records, null);
-    }
-
-    Container buildContainer(final List<CramCompressionRecord> records,
-                             final SubstitutionMatrix substitutionMatrix) {
-
         // sets header APDelta
         final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-        final CompressionHeader header = new CompressionHeaderFactory().build(records, substitutionMatrix, coordinateSorted);
+        final CompressionHeader header = new CompressionHeaderFactory().build(records, null, coordinateSorted);
 
         header.readNamesIncluded = preserveReadNames;
 
         final List<Slice> slices = new ArrayList<>();
 
-        final Container container = new Container();
-        container.header = header;
-        container.nofRecords = records.size();
-        container.globalRecordCounter = globalRecordCounter;
-        container.bases = 0;
-        container.blockCount = 0;
-
-        long lastGlobalRecordCounter = container.globalRecordCounter;
+        int baseCount = 0;
+        long lastGlobalRecordCounter = globalRecordCounter;
         for (int i = 0; i < records.size(); i += recordsPerSlice) {
             final List<CramCompressionRecord> sliceRecords = records.subList(i,
                     Math.min(records.size(), i + recordsPerSlice));
             final Slice slice = Slice.buildSlice(sliceRecords, header);
-            slice.globalRecordCounter = lastGlobalRecordCounter;
-            lastGlobalRecordCounter += slice.nofRecords;
-            container.bases += slice.bases;
+            slice.globalRecordCounter = globalRecordCounter;
+            globalRecordCounter += slice.nofRecords;
+            baseCount += slice.bases;
             slices.add(slice);
         }
 
-        container.finalizeContainerState(slices.toArray(new Slice[0]));
-
-        globalRecordCounter += records.size();
+        final Container container = Container.initializeFromSlices(slices);
+        container.header = header;
+        container.nofRecords = records.size();
+        container.globalRecordCounter = lastGlobalRecordCounter;
+        container.blockCount = 0;
+        container.bases += baseCount;
         return container;
     }
 

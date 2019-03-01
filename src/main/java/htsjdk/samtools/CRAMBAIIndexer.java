@@ -40,6 +40,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
@@ -49,7 +50,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.IOException;
@@ -123,19 +123,19 @@ public class CRAMBAIIndexer {
         for (final Slice slice : container.slices) {
             slice.containerOffset = container.offset;
             slice.index = sliceIndex++;
-            if (slice.isMultiref()) {
+            if (slice.getReferenceContext().isMultiRef()) {
                 final ContainerParser parser = new ContainerParser(indexBuilder.bamHeader);
-                final Map<Integer, AlignmentSpan> refSet = parser.getReferences(container, validationStringency);
-                final Slice fakeSlice = new Slice();
+                final Map<ReferenceContext, AlignmentSpan> spanMap = parser.getReferences(container, validationStringency);
+
                 slice.containerOffset = container.offset;
                 slice.index = sliceIndex++;
                 /**
                  * Unmapped span must be processed after mapped spans:
                  */
-                AlignmentSpan unmappedSpan = refSet.remove(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
-                for (final int refId : new TreeSet<>(refSet.keySet())) {
-                    final AlignmentSpan span = refSet.get(refId);
-                    fakeSlice.sequenceId = refId;
+                AlignmentSpan unmappedSpan = spanMap.remove(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+                for (final ReferenceContext refContext : new TreeSet<>(spanMap.keySet())) {
+                    final AlignmentSpan span = spanMap.get(refContext);
+                    final Slice fakeSlice = new Slice(refContext);
                     fakeSlice.containerOffset = slice.containerOffset;
                     fakeSlice.offset = slice.offset;
                     fakeSlice.index = slice.index;
@@ -145,16 +145,16 @@ public class CRAMBAIIndexer {
                     fakeSlice.nofRecords = span.getCount();
                     processSingleReferenceSlice(fakeSlice);
                 }
+
                 if (unmappedSpan != null) {
-                    final AlignmentSpan span = unmappedSpan;
-                    fakeSlice.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+                    final Slice fakeSlice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
                     fakeSlice.containerOffset = slice.containerOffset;
                     fakeSlice.offset = slice.offset;
                     fakeSlice.index = slice.index;
 
                     fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
                     fakeSlice.alignmentSpan = 0;
-                    fakeSlice.nofRecords = span.getCount();
+                    fakeSlice.nofRecords = unmappedSpan.getCount();
                     processSingleReferenceSlice(fakeSlice);
                 }
             } else {
@@ -164,8 +164,8 @@ public class CRAMBAIIndexer {
     }
 
     /**
-     * Record index information for a given CRAM slice that contains either unmapped reads or
-     * reads mapped to a single reference.
+     * Record index information for a given CRAM slice that contains either
+     * unmapped-unplaced reads or reads mapped to a single reference.
      * If this alignment starts a new reference, write out the old reference.
      *
      * @param slice The CRAM slice, single ref or unmapped only.
@@ -173,13 +173,16 @@ public class CRAMBAIIndexer {
      */
     public void processSingleReferenceSlice(final Slice slice) {
         try {
-            final int reference = slice.sequenceId;
-            if (reference == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+            final ReferenceContext sliceContext = slice.getReferenceContext();
+            if (sliceContext.isUnmappedUnplaced()) {
                 return;
             }
-            if (slice.sequenceId == Slice.MULTI_REFERENCE) {
+
+            if (sliceContext.isMultiRef()) {
                 throw new SAMException("Expecting a single reference slice.");
             }
+
+            final int reference = sliceContext.getSequenceId();
             if (reference != currentReference) {
                 // process any completed references
                 advanceToReference(reference);
@@ -264,13 +267,13 @@ public class CRAMBAIIndexer {
             // metadata
             indexStats.recordMetaData(slice);
 
-            final int alignmentStart = slice.alignmentStart;
-            if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+            final ReferenceContext sliceContext = slice.getReferenceContext();
+            if (! sliceContext.isMappedSingleRef()) {
                 return; // do nothing for records without coordinates, but count them
             }
 
             // various checks
-            final int reference = slice.sequenceId;
+            final int reference = sliceContext.getSequenceId();
             if (reference != currentReference) {
                 throw new SAMException("Unexpected reference " + reference +
                         " when constructing index for " + currentReference + " for record " + slice);
@@ -328,6 +331,7 @@ public class CRAMBAIIndexer {
             // process linear index
 
             // the smallest file offset that appears in the 16k window for this bin
+            final int alignmentStart = slice.alignmentStart;
             final int alignmentEnd = slice.alignmentStart + slice.alignmentSpan;
             int startWindow = LinearIndex.convertToLinearIndexOffset(alignmentStart); // the 16k window
             final int endWindow;
@@ -443,16 +447,17 @@ public class CRAMBAIIndexer {
                 indexer.processContainer(container, validationStringency);
 
                 if (null != log) {
+                    final ReferenceContext containerContext = container.getReferenceContext();
                     String sequenceName;
-                    switch (container.sequenceId) {
-                        case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
+                    switch (containerContext.getType()) {
+                        case UNMAPPED_UNPLACED_TYPE:
                             sequenceName = "?";
                             break;
-                        case Slice.MULTI_REFERENCE:
+                        case MULTIPLE_REFERENCE_TYPE:
                             sequenceName = "???";
                             break;
                         default:
-                            sequenceName = cramHeader.getSamFileHeader().getSequence(container.sequenceId).getSequenceName();
+                            sequenceName = cramHeader.getSamFileHeader().getSequence(containerContext.getSequenceId()).getSequenceName();
                             break;
                     }
                     progressLogger.record(sequenceName, container.alignmentStart);

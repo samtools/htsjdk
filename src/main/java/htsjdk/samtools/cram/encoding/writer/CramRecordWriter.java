@@ -19,7 +19,9 @@ package htsjdk.samtools.cram.encoding.writer;
 
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.Slice;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
@@ -60,7 +62,7 @@ public class CramRecordWriter {
     private final Charset charset = Charset.forName("UTF8");
 
     private final boolean captureReadNames;
-    private final int refId;
+    private final ReferenceContext refContext;
     private final SubstitutionMatrix substitutionMatrix;
     private final boolean AP_delta;
     
@@ -74,14 +76,14 @@ public class CramRecordWriter {
      * @param coreOutputStream Core data block bit stream, to be written by non-external Encodings
      * @param externalOutputMap External data block byte stream map, to be written by external Encodings
      * @param header the associated Cram Compression Header
-     * @param refId the reference sequence ID to assign to these records
+     * @param refContext the reference context to assign to these records
      */
     public CramRecordWriter(final BitOutputStream coreOutputStream,
                             final Map<Integer, ByteArrayOutputStream> externalOutputMap,
                             final CompressionHeader header,
-                            final int refId) {
+                            final ReferenceContext refContext) {
         this.captureReadNames = header.readNamesIncluded;
-        this.refId = refId;
+        this.refContext = refContext;
         this.substitutionMatrix = header.substitutionMatrix;
         this.AP_delta = header.APDelta;
 
@@ -165,7 +167,7 @@ public class CramRecordWriter {
     private void writeRecord(final CramCompressionRecord r, final int prevAlignmentStart) {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
-        if (refId == Slice.MULTI_REFERENCE) {
+        if (refContext.isMultiRef()) {
             refIdCodec.writeData(r.sequenceId);
         }
 

@@ -10,7 +10,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +36,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         return record;
     }
     @Test
-    public void test_processMultiContainer() throws IOException, IllegalAccessException {
+    public void test_processMultiContainer() {
         SAMFileHeader samFileHeader = new SAMFileHeader();
         samFileHeader.addSequence(new SAMSequenceRecord("1", 10));
         samFileHeader.addSequence(new SAMSequenceRecord("2", 10));
@@ -54,7 +53,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final Container container1 = containerFactory.buildContainer(records);
         Assert.assertNotNull(container1);
         Assert.assertEquals(container1.nofRecords, records.size());
-        Assert.assertEquals(container1.sequenceId, Slice.MULTI_REFERENCE);
+        Assert.assertTrue(container1.getReferenceContext().isMultiRef());
 
         indexer.processContainer(container1, ValidationStringency.STRICT);
 
@@ -62,10 +61,10 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         records.add(createRecord(3, 1, 3));
         records.add(createRecord(4, 2, 3));
         records.add(createRecord(5, 2, 4));
-        final Container  container2 = containerFactory.buildContainer(records);
+        final Container container2 = containerFactory.buildContainer(records);
         Assert.assertNotNull(container2);
         Assert.assertEquals(container2.nofRecords, records.size());
-        Assert.assertEquals(container2.sequenceId, Slice.MULTI_REFERENCE);
+        Assert.assertTrue(container2.getReferenceContext().isMultiRef());
 
         indexer.processContainer(container2, ValidationStringency.STRICT);
 

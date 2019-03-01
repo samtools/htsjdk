@@ -1,6 +1,6 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
@@ -142,9 +142,9 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         @Override
         public int compare(CRAIEntry o1, CRAIEntry o2) {
             if (o1.sequenceId != o2.sequenceId) {
-                if (o1.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+                if (o1.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
                     return 1;
-                if (o2.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+                if (o2.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
                     return -1;
                 return -o2.sequenceId + o1.sequenceId;
             }
