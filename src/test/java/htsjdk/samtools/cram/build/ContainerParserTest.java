@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.structure.CRAMStructureTestUtil;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.ref.ReferenceContext;
@@ -20,18 +21,20 @@ import java.util.*;
  */
 public class ContainerParserTest extends HtsjdkTest {
     private static final int TEST_RECORD_COUNT = 10;
-    private static final ContainerFactory FACTORY = new ContainerFactory(CramCompressionRecordUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
-    private static final ContainerParser PARSER = new ContainerParser(CramCompressionRecordUtil.getSAMFileHeaderForTests());
+    private static final int READ_LENGTH_FOR_TEST_RECORDS = CRAMStructureTestUtil.READ_LENGTH_FOR_TEST_RECORDS;
 
-    @DataProvider(name = "eof")
-    private Object[][] eofData() {
+    private static final ContainerFactory FACTORY = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
+    private static final ContainerParser PARSER = new ContainerParser(CRAMStructureTestUtil.getSAMFileHeaderForTests());
+
+    @DataProvider(name = "cramVersions")
+    private Object[][] cramVersions() {
         return new Object[][] {
                 {CramVersions.CRAM_v2_1},
                 {CramVersions.CRAM_v3}
         };
     }
 
-    @Test(dataProvider = "eof")
+    @Test(dataProvider = "cramVersions")
     public void testEOF(final Version version) throws IOException {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             CramIO.issueEOF(version, baos);
@@ -47,11 +50,11 @@ public class ContainerParserTest extends HtsjdkTest {
         final ReferenceContext mappedRefContext = new ReferenceContext(mappedSequenceId);
         return new Object[][] {
                 {
-                        CramCompressionRecordUtil.getSingleRefRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        CRAMStructureTestUtil.getSingleRefRecords(TEST_RECORD_COUNT, mappedSequenceId),
                         Collections.singleton(mappedRefContext)
                 },
                 {
-                        CramCompressionRecordUtil.getUnmappedRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestUtil.getUnmappedRecords(TEST_RECORD_COUNT),
                         Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
 
@@ -59,11 +62,11 @@ public class ContainerParserTest extends HtsjdkTest {
                 // but not both.  We treat these weird edge cases as unplaced.
 
                 {
-                        CramCompressionRecordUtil.getHalfUnmappedNoRefRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestUtil.getHalfUnmappedNoRefRecords(TEST_RECORD_COUNT),
                         Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
                 {
-                        CramCompressionRecordUtil.getHalfUnmappedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        CRAMStructureTestUtil.getHalfUnmappedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
                         Collections.singleton(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
         };
@@ -86,10 +89,10 @@ public class ContainerParserTest extends HtsjdkTest {
     public void testMultirefContainer() {
        final Map<ReferenceContext, AlignmentSpan> expectedSpans = new HashMap<>();
        for (int i = 0; i < TEST_RECORD_COUNT; i++) {
-           expectedSpans.put(new ReferenceContext(i), new AlignmentSpan(i + 1, CramCompressionRecordUtil.READ_LENGTH_FOR_TEST_RECORDS, 1));
+           expectedSpans.put(new ReferenceContext(i), new AlignmentSpan(i + 1, READ_LENGTH_FOR_TEST_RECORDS, 1));
        }
 
-       final Container container = FACTORY.buildContainer(CramCompressionRecordUtil.getMultiRefRecords(TEST_RECORD_COUNT));
+       final Container container = FACTORY.buildContainer(CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT));
 
        final Map<ReferenceContext, AlignmentSpan> spanMap = PARSER.getReferences(container, ValidationStringency.STRICT);
        Assert.assertEquals(spanMap, expectedSpans);
@@ -98,10 +101,10 @@ public class ContainerParserTest extends HtsjdkTest {
     @Test
     public void testMultirefContainerWithUnmapped() {
         final List<AlignmentSpan> expectedSpans = new ArrayList<>();
-        expectedSpans.add(new AlignmentSpan(1, CramCompressionRecordUtil.READ_LENGTH_FOR_TEST_RECORDS, 1));
-        expectedSpans.add(new AlignmentSpan(2, CramCompressionRecordUtil.READ_LENGTH_FOR_TEST_RECORDS, 1));
+        expectedSpans.add(new AlignmentSpan(1, READ_LENGTH_FOR_TEST_RECORDS, 1));
+        expectedSpans.add(new AlignmentSpan(2, READ_LENGTH_FOR_TEST_RECORDS, 1));
 
-        final List<Container> containers = CramCompressionRecordUtil.getMultiRefContainersForStateTest();
+        final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest();
 
         // first container is single-ref
 
