@@ -29,7 +29,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 
 import static htsjdk.samtools.util.IntervalTree.Node.HAS_OVERLAPPING_PART;
 
@@ -310,4 +315,31 @@ public class IntervalTreeTest extends HtsjdkTest {
     }
 
 
+    @DataProvider
+    public Object[][] getMergeTestCases(){
+        return new Object[][]{
+                {add, null, Arrays.asList(0, 1, 2 , 3), 6},
+                {add, null, Arrays.asList(0, 1, 2), 3},
+                {add, null, Arrays.asList(0, 1), 1},
+                {add, null, Collections.singletonList(0), 0},
+                {addButCountNullAs10, null, Arrays.asList(1, 2, 3), 6},
+                {addButCountNullAs10, 0, Arrays.asList(1, 2, null), 13},
+                {addButCountNullAs10, 0, Arrays.asList(null, null, null), 30}
+        };
+    }
+
+    private static final BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;
+    private static final BiFunction<Integer, Integer, Integer> addButCountNullAs10 = (a, b) -> (a == null ? 10 : a) + (b == null ? 10 : b);
+
+    @Test(dataProvider = "getMergeTestCases")
+    public void testMerge(  BiFunction<Integer, Integer, Integer> function, Integer sentinel, List<Integer> values, Integer expected){
+        final IntervalTree<Integer> tree = new IntervalTree<>();
+        tree.setSentinel(sentinel);
+        values.forEach(value -> {
+            tree.merge(10, 20, value, function);
+        });
+        final Iterator<IntervalTree.Node<Integer>> iterator = tree.iterator();
+        Assert.assertEquals(iterator.next().getValue(), expected);
+        Assert.assertFalse(iterator.hasNext());
+    }
 }

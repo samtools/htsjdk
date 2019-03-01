@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import java.util.*;
+import java.util.function.BiFunction;
 
 /**
  * Utility class to efficiently do in memory overlap detection between a large
@@ -80,23 +81,33 @@ public class OverlapDetector<T> {
         }
 
         final int start = interval.getStart() + this.lhsBuffer;
-        final int end   = interval.getEnd()   - this.lhsBuffer;
+        final int end = interval.getEnd() - this.lhsBuffer;
 
-        final Set<T> newValue = Collections.singleton(object);
         if (start <= end) {  // Don't put in sequences that have no overlappable bases
-            final Set<T> alreadyThere = tree.put(start, end, newValue);
-            if (alreadyThere != null) {
-                if( alreadyThere.size() == 1){
-                    Set<T> mutableSet = new HashSet<>(2);
-                    mutableSet.addAll(alreadyThere);
-                    mutableSet.add(object);
-                    tree.put(start, end, mutableSet);
-                } else {
-                    alreadyThere.add(object);
-                    tree.put(start, end, alreadyThere);
-                }
-            }
+            tree.merge(start, end,
+                                  Collections.singleton(object),
+                                  mergeSetsAccountingForSingletons());
         }
+    }
+
+    /**
+     * merge two Sets, assumes sets of size 1 are immutale
+     */
+    private static <T> BiFunction<Set<T>, Set<T>, Set<T>> mergeSetsAccountingForSingletons() {
+        return (newValue, oldValue) -> {
+            // Sets of size 1 are immutable SingletonSets so we have to make a new
+            // mutable one to add to
+            if (oldValue.size() == 1) {
+                Set<T> newMutableSet = new HashSet<>();
+                newMutableSet.addAll(oldValue);
+                newMutableSet.addAll(newValue);
+                return newMutableSet;
+                // otherwise it's already a HashSet and we can just add values to it
+            } else {
+                oldValue.addAll(newValue);
+                return oldValue;
+            }
+        };
     }
 
     /**
