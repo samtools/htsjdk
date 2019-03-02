@@ -650,7 +650,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
             SAMRecordSetBuilderTest.checkFastaFile(header, fasta, dict);
         } finally {
-            TestUtil.recursiveDelete(dir);
+            IOUtil.recursiveDelete(dir);
         }
     }
 }
