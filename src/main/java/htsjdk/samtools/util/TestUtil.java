@@ -88,4 +88,18 @@ public class TestUtil {
         in.close();
         return result;
     }
+
+    /**
+     * Little test utility to help tests that create multiple levels of subdirectories
+     * clean up after themselves.
+     *
+     * @param directory The directory to be deleted (along with its subdirectories)
+     */
+    public static void recursiveDelete(final File directory) {
+        try {
+            IOUtil.recursiveDelete(directory.toPath());
+        } catch (IOException e) {
+            // bury exception
+        }
+    }
 }
