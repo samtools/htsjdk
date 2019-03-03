@@ -400,11 +400,15 @@ public class IOUtil {
      */
     public static boolean isUrl(final String input) {
       try {
-        new URL(input);
-        return true;
+          new URL(input);
+          if ((input.contains("http://")) || (input.contains("ftp://"))) {
+              return true;
+          }
+
       } catch (MalformedURLException e) {
         return false;
       }
+      return false;
     }
 
     /**

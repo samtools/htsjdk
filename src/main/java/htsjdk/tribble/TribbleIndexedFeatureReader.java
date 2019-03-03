@@ -184,20 +184,25 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             } else {
                 //if there is no index we create it
 
+                String pathToVCFFile = this.path;
+                pathToVCFFile.replace("file://", "");
+
                 if (isUrl(this.path)) {
+               // if ((pathToVCFFile.contains("http://")) || (pathToVCFFile.contains("ftp://"))) {
                     new File("TribbleTmpDir").mkdir();
                     final File inputVCF = File.createTempFile("tmpURLFile", ".vcf", new File ("TribbleTmpDir"));
                     inputVCF.deleteOnExit();
-                    URL url = new URL(this.path);
+                    URL url = new URL(pathToVCFFile);
                     ReadableByteChannel rbc = Channels.newChannel((url.openStream()));
                     FileOutputStream out = new FileOutputStream("tempURLFile.vcf");
                     out.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
                     rbc.close();
                     out.close();
-                    this.path = "file://" + inputVCF.getAbsolutePath();
+                    pathToVCFFile = "file://" + inputVCF.getAbsolutePath();
                 }
+                //throw new TribbleException(pathToVCFFile);
 
-                final File inputVCF = new File(this.path.replace("file://", ""));
+                final File inputVCF = new File(pathToVCFFile.replace("file://", ""));
 
                 final TabixIndex tabixIndexGz = IndexFactory.createTabixIndex(inputVCF, new VCFCodec(), null);
                 tabixIndexGz.writeBasedOnFeatureFile(inputVCF);
