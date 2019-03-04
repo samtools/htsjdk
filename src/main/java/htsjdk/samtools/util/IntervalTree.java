@@ -60,8 +60,6 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         mRoot = null;
     }
 
-
-
     /**
      * Put a new interval into the tree (or update the value associated with an existing interval).
      * If the interval is novel, the special sentinel value is returned.
@@ -129,15 +127,17 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param start interval start position
      * @param end interval end position
      * @param value value to merge into the tree, must not be equal to the sentinel value
-     * @param remappingFunction a function that merges the new value with the existing value for the same start and end position
-     * @return the updated value that is now stored in the tree or sentinel
+     * @param remappingFunction a function that merges the new value with the existing value for the same start and end position,
+     *                          if the function returns the sentinel value then the mapping will be unset
+     * @return the updated value that is stored in the tree after the completion of this merge operation, this will
+     * be the sentinel value if nothing ended up being stored
      */
     public V merge(int start, int end, V value, BiFunction<? super V,  ? super V, ? extends V> remappingFunction) {
         ValidationUtils.validateArg(!Objects.equals(value, mSentinel), "Values equal to the sentinel value may not be merged");
         final V alreadyPresent = put(start, end, value);
         if (!Objects.equals(alreadyPresent, mSentinel)) {
             final V newComputedValue = remappingFunction.apply(value, alreadyPresent);
-            if(Objects.equals(newComputedValue, mSentinel)){
+            if (Objects.equals(newComputedValue, mSentinel)) {
                 remove(start, end);
             } else {
                 put(start, end, newComputedValue);

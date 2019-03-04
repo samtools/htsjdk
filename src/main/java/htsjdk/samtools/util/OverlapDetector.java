@@ -84,9 +84,7 @@ public class OverlapDetector<T> {
         final int end = interval.getEnd() - this.lhsBuffer;
 
         if (start <= end) {  // Don't put in sequences that have no overlappable bases
-            tree.merge(start, end,
-                                  Collections.singleton(object),
-                                  mergeSetsAccountingForSingletons());
+            tree.merge(start, end, Collections.singleton(object), mergeSetsAccountingForSingletons());
         }
     }
 
@@ -97,16 +95,10 @@ public class OverlapDetector<T> {
         return (newValue, oldValue) -> {
             // Sets of size 1 are immutable SingletonSets so we have to make a new
             // mutable one to add to
-            if (oldValue.size() == 1) {
-                Set<T> newMutableSet = new HashSet<>();
-                newMutableSet.addAll(oldValue);
-                newMutableSet.addAll(newValue);
-                return newMutableSet;
-                // otherwise it's already a HashSet and we can just add values to it
-            } else {
-                oldValue.addAll(newValue);
-                return oldValue;
-            }
+            final Set<T> mutableSet = oldValue.size() == 1 ? new HashSet<>() : oldValue;
+            mutableSet.addAll(oldValue);
+            mutableSet.addAll(newValue);
+            return mutableSet;
         };
     }
 
