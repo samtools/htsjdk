@@ -26,7 +26,7 @@ package htsjdk.samtools.util;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SeekableByteChannelFromBuffer;
+import htsjdk.testutil.streams.OneByteAtATimeChannel;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -124,31 +124,12 @@ public class BlockCompressedTerminatorTest extends HtsjdkTest {
     public void testReadFullyReadsBytesCorrectlyWhenPartialReadOccurs() throws IOException {
         final byte[] expected = "something to test reading from".getBytes();
         final ByteBuffer buffer = ByteBuffer.wrap(expected);
-        try(final SeekableByteChannel channel = new OneByteAtATimeChannel(buffer)){
+        try (final SeekableByteChannel channel = new OneByteAtATimeChannel(buffer)) {
             final int readBufferSize = 10;
             final ByteBuffer readBuffer = ByteBuffer.allocate(readBufferSize);
-           // Assert.assertTrue(channel.size() >= readBuffer.capacity());
+            Assert.assertTrue(channel.size() >= readBuffer.capacity());
             BlockCompressedInputStream.readFully(channel, readBuffer);
             Assert.assertEquals(readBuffer.array(), Arrays.copyOfRange(expected, 0, readBufferSize));
-        }
-    }
-
-    class OneByteAtATimeChannel extends SeekableByteChannelFromBuffer {
-        public OneByteAtATimeChannel(ByteBuffer buf) {
-            super(buf);
-        }
-
-        @Override
-        public int read(ByteBuffer dst) throws IOException {
-            final ByteBuffer buf = getBuffer();
-            if (buf.position() == buf.limit()) {
-                    // signal EOF
-                    return -1;
-            }
-            int before = dst.position();
-            final byte oneByte = buf.get();
-            dst.put(oneByte);
-            return dst.position() - before;
         }
     }
 }
