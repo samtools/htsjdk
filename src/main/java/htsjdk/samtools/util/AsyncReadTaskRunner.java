@@ -203,7 +203,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
                         eosReached = true;
                     }
                     batch.addLast(new RecordOrException(ra == null ? null : ra.a));
-                    if (ra.b == 0 || ra.b == null) {
+                    if (ra == null || ra.b == 0 || ra.b == null) {
                         // performReadAhead() keeps returning 0 to us, we'll never exit
                         break; // safety exit to ensure we are guaranteed to finish the batch
                     }
