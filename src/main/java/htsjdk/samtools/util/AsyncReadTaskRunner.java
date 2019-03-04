@@ -199,10 +199,10 @@ public abstract class AsyncReadTaskRunner<T, U> {
                 Tuple<U, Long> ra;
                 try {
                     ra = performReadAhead(mBatchBufferBudget - bufferConsumed);
-                    if (ra.a == null) {
+                    if (ra == null || ra.a == null) {
                         eosReached = true;
                     }
-                    batch.addLast(new RecordOrException(ra.a));
+                    batch.addLast(new RecordOrException(ra == null ? null : ra.a));
                     if (ra.b == 0 || ra.b == null) {
                         // performReadAhead() keeps returning 0 to us, we'll never exit
                         break; // safety exit to ensure we are guaranteed to finish the batch
