@@ -98,6 +98,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
     @Override
     protected void prepareForSeek() {
         async.disableAsyncProcessing();
+        async.flushAsyncProcessing();
         async.enableAsyncProcessing();
         super.prepareForSeek();
     }
@@ -105,6 +106,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
     @Override
     public void close() throws IOException {
         async.disableAsyncProcessing();
+        async.flushAsyncProcessing();
         super.close();
     }
 

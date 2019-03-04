@@ -7,35 +7,55 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.function.IntSupplier;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AsyncReadTaskRunnerTest extends HtsjdkTest {
+    private static final Log log = Log.getInstance(AsyncReadTaskRunnerTest.class);
     public class CountingAsyncReadTaskRunner extends AsyncReadTaskRunner<Integer, Integer> {
-        private volatile int readCalledCount;
-        private volatile int readCompleteCount;
-        private volatile int transformCalledCount;
-        private volatile int transformCompleteCount;
+        private AtomicInteger readCalledCount = new AtomicInteger();
+        private AtomicInteger readCompleteCount = new AtomicInteger();
+        private AtomicInteger transformCalledCount = new AtomicInteger();
+        private AtomicInteger transformCompleteCount = new AtomicInteger();
         private int readSleepTime = 0;
         private int transformSleepTime = 0;
         private int stopAfter = Integer.MAX_VALUE;
         private int readSleepIncrement = 0;
         private int getTransformSleepIncrement = 0;
-        private RuntimeException readException = null;
-        private RuntimeException transformException = null;
-        private int readExceptionOn = Integer.MAX_VALUE;
-        private int transformExceptionOn = Integer.MAX_VALUE;
+        private final RuntimeException readException;
+        private final RuntimeException transformException;
+        private final int readExceptionOn;
+        private final int transformExceptionOn;
         public CountingAsyncReadTaskRunner(int recordsPerBatch, int batches) {
             super(recordsPerBatch, batches);
+            readExceptionOn = Integer.MAX_VALUE;
+            transformExceptionOn = Integer.MAX_VALUE;
+            readException = null;
+            transformException = null;
+        }
+        public CountingAsyncReadTaskRunner(
+                int recordsPerBatch, int batches,
+                RuntimeException readException, RuntimeException transformException,
+                int readExceptionOn, int transformExceptionOn) {
+            super(recordsPerBatch, batches);
+            this.readException = readException;
+            this.transformException = transformException;
+            this.readExceptionOn = readExceptionOn;
+            this.transformExceptionOn = transformExceptionOn;
         }
 
         @Override
         public Integer nextRecord() throws IOException {
             Integer x = super.nextRecord();
             if (readException != null) {
-                Assert.assertNotEquals(x, readExceptionOn);
+                if (x == readExceptionOn) {
+                    Assert.fail("Read ahead exception should have been raised");
+                }
+                // Assert.assertNotEquals(x, readExceptionOn);
             }
             if (transformException != null) {
-                Assert.assertNotEquals(x, transformExceptionOn);
+                if (x == transformExceptionOn) {
+                    Assert.fail("Transform exception should have been raised");
+                }
             }
             return x;
         }
@@ -43,7 +63,8 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         @Override
         public Tuple<Integer, Long> performReadAhead(long bufferBudget) throws IOException {
             assert(bufferBudget > 0);
-            int count = sync(() -> ++readCalledCount);
+            int count = readCalledCount.incrementAndGet();
+            //log.error(String.format("performReadAhead start %d @ %d", count, System.nanoTime()));
             int sleepTime = readSleepTime + (count - 1) * readSleepIncrement;
             if (sleepTime > 0) {
                 try {
@@ -51,7 +72,9 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                 } catch (InterruptedException e) {
                 }
             }
-            sync(() -> ++readCompleteCount);
+            int complete = readCompleteCount.incrementAndGet();
+            //log.error(String.format("performReadAhead complete %d @ %d", count, System.nanoTime()));
+            Assert.assertEquals(count, complete);
             if (count == readExceptionOn) {
                 throw readException;
             }
@@ -61,7 +84,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         @Override
         public Integer transform(Integer record) {
             Assert.assertNotNull(record); // sentinel EOF should not be transformed
-            int count = sync(() -> ++transformCalledCount);
+            int count = transformCalledCount.incrementAndGet();
             int sleepTime = transformSleepTime + (count - 1) * getTransformSleepIncrement;
             if (sleepTime > 0) {
                 try {
@@ -69,7 +92,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                 } catch (InterruptedException e) {
                 }
             }
-            sync(() -> ++transformCompleteCount);
+            transformCompleteCount.incrementAndGet();
             int rec = record;
             if (rec == transformExceptionOn) {
                 throw transformException;
@@ -92,25 +115,6 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         public void setGetTransformSleepIncrement(int getTransformSleepIncrement) {
             this.getTransformSleepIncrement = getTransformSleepIncrement;
         }
-        public synchronized int sync(IntSupplier p) {
-            return p.getAsInt();
-        }
-
-        public void setReadException(RuntimeException readException) {
-            this.readException = readException;
-        }
-
-        public void setTransformException(RuntimeException transformException) {
-            this.transformException = transformException;
-        }
-
-        public void setReadExceptionOn(int readExceptionOn) {
-            this.readExceptionOn = readExceptionOn;
-        }
-
-        public void setTransformExceptionOn(int transformExceptionOn) {
-            this.transformExceptionOn = transformExceptionOn;
-        }
     }
     @Test
     public void testDisableAsyncProcessingLetsExistingTasksComplete() throws Exception {
@@ -120,19 +124,19 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         runner.nextRecord();
         Thread.sleep(1);
         // 4 records + EOF
-        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 5);
+        Assert.assertEquals(runner.readCompleteCount.get(), 5);
         // should have up to 3 transform tasks still running
         // Assert.assertEquals(runner.sync(() -> runner.transformCompleteCount), 1);
-        runner.disableAsyncProcessing();
+        runner.flushAsyncProcessing();
         // should have let the background task run to completion
         // Transform is not called on the EOF indicator
-        Assert.assertEquals(runner.sync(() -> runner.transformCompleteCount), 4);
+        Assert.assertEquals(runner.transformCompleteCount.get(), 4);
     }
     @Test
     public void testReadAheadExceptionIsPassedToCaller() throws Exception {
-        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(1, 10);
-        runner.setReadException(new RuntimeException("Test"));
-        runner.setReadExceptionOn(4);
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(1, 10,
+                new RuntimeException("Test"), null,
+                4, Integer.MAX_VALUE);
         runner.nextRecord();
         runner.nextRecord();
         runner.nextRecord();
@@ -145,9 +149,9 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
     }
     @Test
     public void testTransformExceptionIsPassedToCaller() throws Exception {
-        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(1, 10);
-        runner.setTransformException(new RuntimeException("Test"));
-        runner.setTransformExceptionOn(4);
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(1, 10,
+                null, new RuntimeException("Test"),
+                Integer.MAX_VALUE, 4);
         runner.nextRecord();
         runner.nextRecord();
         runner.nextRecord();
@@ -184,11 +188,11 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
             runner.startAsyncProcessing();
             Thread.sleep(5);
             // 2 batches of 2
-            Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 4);
+            Assert.assertEquals(runner.readCompleteCount.get(), 4);
             // Thread scheduling/timing sanity check: nothing should have finished yet
-            Assert.assertEquals(runner.sync(() -> runner.transformCompleteCount), 0);
+            Assert.assertEquals(runner.transformCompleteCount.get(), 0);
             // only the first record of each batch should have tasks scheduled
-            Assert.assertEquals(runner.sync(() -> runner.transformCalledCount), 2);
+            Assert.assertEquals(runner.transformCalledCount.get(), 2);
         } finally {
             AsyncReadTaskRunner.setNonblockingThreadpool(defaultPool);
         }
@@ -201,7 +205,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         runner.startAsyncProcessing();
         Thread.sleep(10);
         // should have only read 4 records
-        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 8);
+        Assert.assertEquals(runner.readCompleteCount.get(), 8);
     }
     @Test
     public void testReadAheadContinuesAfterBatchIsRead() throws Exception {
@@ -210,21 +214,21 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         runner.startAsyncProcessing();
         Thread.sleep(10);
         // should have only read 4 records
-        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 8);
+        Assert.assertEquals(runner.readCompleteCount.get(), 8);
         runner.nextRecord();
         Thread.sleep(1);
-        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 8);
+        Assert.assertEquals(runner.readCompleteCount.get(), 8);
         runner.nextRecord();
         // ok, now that we've readthe first batch, we should now have run the next batch
         Thread.sleep(10);
-        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 10);
+        Assert.assertEquals(runner.readCompleteCount.get(), 10);
     }
     @Test
     public void testReadExceptionIsRaisedOnSameRecordAsWhenSynchronousProcessing() throws Exception {
-        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(4, 2);
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(4, 2,
+                new RuntimeException("Read"), null,
+                3, Integer.MAX_VALUE);
         runner.startAsyncProcessing();
-        runner.readException = new RuntimeException();
-        runner.readExceptionOn = 3;
         Thread.sleep(10);
         runner.nextRecord();
         runner.nextRecord();
@@ -236,10 +240,10 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
     }
     @Test
     public void testTransformExceptionIsRaisedOnSameRecordAsWhenSynchronousProcessing() throws Exception {
-        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(4, 2);
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(4, 2,
+                null, new RuntimeException("Test"),
+                Integer.MAX_VALUE, 3);
         runner.startAsyncProcessing();
-        runner.transformException = new RuntimeException();
-        runner.transformExceptionOn = 3;
         Thread.sleep(10);
         runner.nextRecord();
         runner.nextRecord();
@@ -249,7 +253,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
             Assert.assertEquals(e, runner.transformException);
         }
     }
-    //@Test
+    @Test
     public void stressTest() {
         for (int i = 0 ; i < 1000000; i++) {
             runStressTestTask(i);
@@ -262,14 +266,11 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         boolean raiseException = seed % 2 == 0;
         int raiseExceptionOn = nRecords == 0 ? 0 : (seed >> 16) % (nRecords + 2);
         boolean exceptionOnRead = (seed >> 4) % 2 == 0;
-        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(batch, buffer);
-        if (raiseException && exceptionOnRead) {
-            runner.readException = new RuntimeException("Test");
-            runner.readExceptionOn = raiseExceptionOn + 1;
-        } else if (raiseException && !exceptionOnRead) {
-            runner.transformException = new RuntimeException("Test");
-            runner.transformExceptionOn = raiseExceptionOn + 1;
-        }
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(batch, buffer,
+                raiseException && exceptionOnRead ? new RuntimeException("Test") : null,
+                raiseException && !exceptionOnRead ? new RuntimeException("Test") : null,
+                raiseException && exceptionOnRead ? raiseExceptionOn + 1 : Integer.MAX_VALUE,
+                raiseException && !exceptionOnRead ? raiseExceptionOn + 1 : Integer.MAX_VALUE);
         int resetAfter = nRecords == 0 ? 0 : (seed >> 8) % nRecords;
         int n = -1;
         boolean expectEof = nRecords == 0;
@@ -285,12 +286,11 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                     expectEof = next == nRecords;
                 }
                 if (raiseException) {
-                    if (exceptionOnRead || raiseExceptionOn < nRecords) {
-                        Assert.assertNotEquals(i, raiseExceptionOn);
+                    if (raiseExceptionOn == i) {
+                        Assert.fail("Exception should have been raised");
                     }
                 }
                 if (next == resetAfter) {
-                    // By doing this we will lose the records that were in-flight
                     runner.disableAsyncProcessing();
                     runner.enableAsyncProcessing();
                     expectEof = true; // we might be at EOF - we won't know till we read the next record

@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Class for reading and querying BAM files.
  */
 public class BAMFileReader extends SamReader.ReaderImplementation {
-    private static final int ASYNC_BATCH_SIZE_IN_BYTES = Math.min(8 * 1024, Defaults.NON_ZERO_BUFFER_SIZE);
+    private static final int ASYNC_BATCH_SIZE_IN_BYTES = Math.min(32 * 1024, Defaults.NON_ZERO_BUFFER_SIZE);
 
     // True if reading from a File rather than an InputStream
     private boolean mIsSeekable = false;
