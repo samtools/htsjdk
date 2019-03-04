@@ -94,11 +94,13 @@ public class TestUtil {
      * clean up after themselves.
      *
      * @param directory The directory to be deleted (along with its subdirectories)
+     * @deprecated Since 3/19, prefer {@link IOUtil#recursiveDelete(Path)}
      */
+    @Deprecated
     public static void recursiveDelete(final File directory) {
         try {
             IOUtil.recursiveDelete(directory.toPath());
-        } catch (IOException e) {
+        } catch (RuntimeIOException e) {
             // bury exception
         }
     }
