@@ -27,7 +27,11 @@ package htsjdk.samtools.reference;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import htsjdk.samtools.util.*;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.GZIIndex;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.StringUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -46,7 +50,6 @@ import java.nio.file.StandardCopyOption;
 public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
     private static final File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
-    private static final File SEQUENCE_FILE_DICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.dict");
     private static final File SEQUENCE_FILE_INDEX = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.fai");
     private static final File SEQUENCE_FILE_BGZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
     private static final File SEQUENCE_FILE_GZI = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz.gzi");
@@ -361,9 +364,9 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
         Files.copy(SEQUENCE_FILE_BGZ.toPath(), moved, StandardCopyOption.REPLACE_EXISTING);
         IOUtil.deleteOnExit(moved);
         try (ReferenceSequenceFile withNoAdacentIndex = new BlockCompressedIndexedFastaSequenceFile(moved, new FastaSequenceIndex(SEQUENCE_FILE_INDEX), GZIIndex.loadIndex(SEQUENCE_FILE_GZI.toPath()));
-             ReferenceSequenceFile withFilesAdjacent = new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_BGZ.toPath())){
+             ReferenceSequenceFile withFilesAdjacent = new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_BGZ.toPath())) {
             Assert.assertEquals(withNoAdacentIndex.getSubsequenceAt("chrM", 100, 1000).getBases(),
-                withFilesAdjacent.getSubsequenceAt("chrM", 100, 1000).getBases());
+                    withFilesAdjacent.getSubsequenceAt("chrM", 100, 1000).getBases());
         }
     }
 }
