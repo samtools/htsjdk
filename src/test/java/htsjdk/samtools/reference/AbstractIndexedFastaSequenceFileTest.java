@@ -360,10 +360,10 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
         final Path moved = Files.createTempFile("moved", ".fasta.gz");
         Files.copy(SEQUENCE_FILE_BGZ.toPath(), moved, StandardCopyOption.REPLACE_EXISTING);
         IOUtil.deleteOnExit(moved);
-        try( ReferenceSequenceFile withNoAdacentIndex = new BlockCompressedIndexedFastaSequenceFile(moved, new FastaSequenceIndex(SEQUENCE_FILE_INDEX), GZIIndex.loadIndex(SEQUENCE_FILE_GZI.toPath()));
+        try (ReferenceSequenceFile withNoAdacentIndex = new BlockCompressedIndexedFastaSequenceFile(moved, new FastaSequenceIndex(SEQUENCE_FILE_INDEX), GZIIndex.loadIndex(SEQUENCE_FILE_GZI.toPath()));
              ReferenceSequenceFile withFilesAdjacent = new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_BGZ.toPath())){
             Assert.assertEquals(withNoAdacentIndex.getSubsequenceAt("chrM", 100, 1000).getBases(),
-            withFilesAdjacent.getSubsequenceAt("chrM", 100, 1000).getBases());
+                withFilesAdjacent.getSubsequenceAt("chrM", 100, 1000).getBases());
         }
     }
 }

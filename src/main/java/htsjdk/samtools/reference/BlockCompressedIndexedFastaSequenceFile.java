@@ -100,8 +100,8 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
     private static void assertIsBlockCompressed(final Path path) {
         try {
             // check if the it is a valid block-compressed file and if the .gzi index exits
-            if(!IOUtil.isBlockCompressed(path, true)){
-              throw new SAMException("Invalid block-compressed Fasta file: " + path);
+            if (!IOUtil.isBlockCompressed(path, true)) {
+                throw new SAMException("Invalid block-compressed Fasta file: " + path);
             }
         } catch (IOException e) {
             throw new SAMException("Invalid block-compressed Fasta file: " + path, e);
