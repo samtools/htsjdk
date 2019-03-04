@@ -531,6 +531,7 @@ public class IntervalList implements Iterable<Interval> {
 
             // Then read in the intervals
             final FormatUtil format = new FormatUtil();
+            String lastSeq = null;
             do {
                 if (line.trim().isEmpty()) {
                     continue; // skip over blank lines
@@ -544,7 +545,12 @@ public class IntervalList implements Iterable<Interval> {
                 }
 
                 // Then parse them out
-                final String seq = fields[SEQUENCE_POS];
+                String seq = fields[SEQUENCE_POS];
+                if (seq.equals(lastSeq)) {
+                    seq = lastSeq;
+                }
+                lastSeq = seq;
+
                 final int start = format.parseInt(fields[START_POS]);
                 final int end = format.parseInt(fields[END_POS]);
                 if (start < 1) {

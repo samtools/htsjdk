@@ -1,6 +1,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.tribble.SimpleFeature;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -237,5 +238,42 @@ public class OverlapDetectorTest extends HtsjdkTest {
         final Set<Locatable> overlaps = detector.getOverlaps(new Interval("1", 50, 200));
         Assert.assertEquals(overlaps.size(), 1);
         Assert.assertEquals(overlaps, Collections.singleton(new Interval("1",10,100)));
+    }
+
+    @Test
+    public void testMultipleIntervalsSameCoordinates(){
+        final List<Locatable> input = Arrays.asList(
+                new IntervalWithNameInEquals("1", 10, 100, false, "same coords 1"),
+                new IntervalWithNameInEquals("1",10,100, true, "same coords 2"),
+                new IntervalWithNameInEquals("1", 10, 100, true, "same coords 3"),
+                new IntervalWithNameInEquals("1", 150, 250, false, "not same coordinates")
+        );
+        final OverlapDetector<Locatable> detector = OverlapDetector.create(input);
+        final Set<Locatable> overlaps = detector.getOverlaps(new Interval("1", 50, 200));
+        Assert.assertEquals(overlaps.size(), 4);
+        Assert.assertEquals(overlaps, new HashSet<>(input));
+    }
+
+    /**
+     * small class to allow creating intervals that have the same coordinates but don't evaluate as equal to each other
+     */
+    private static class IntervalWithNameInEquals extends Interval{
+
+        public IntervalWithNameInEquals(String sequence, int start, int end, boolean negative, String name) {
+            super(sequence, start, end, negative, name);
+        }
+
+        @Override
+        public boolean equals(Object other){
+            if (super.equals(other)) {
+                return getName().equals(((Interval)other).getName());
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode(){
+            return super.hashCode() * getName().hashCode();
+        }
     }
 }
