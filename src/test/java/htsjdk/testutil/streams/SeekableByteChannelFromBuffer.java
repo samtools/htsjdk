@@ -1,18 +1,16 @@
-package htsjdk.samtools;
+package htsjdk.testutil.streams;
 
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.StandardOpenOption;
 
 /**
  * A buffer-backed SeekableByteChannel, for testing.
  */
 public class SeekableByteChannelFromBuffer implements SeekableByteChannel {
 
-  private ByteBuffer buf;
+  private final ByteBuffer buf;
   private boolean open = true;
 
   public SeekableByteChannelFromBuffer(ByteBuffer buf) {
@@ -75,6 +73,10 @@ public class SeekableByteChannelFromBuffer implements SeekableByteChannel {
   @Override
   public void close() throws IOException {
     open = false;
+  }
+
+  ByteBuffer getBuffer() {
+    return buf;
   }
 
   private void checkOpen() throws IOException {
