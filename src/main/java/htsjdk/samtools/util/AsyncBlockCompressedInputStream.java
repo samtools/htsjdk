@@ -43,7 +43,9 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
     private final ConcurrentLinkedQueue<byte[]> mFreeDecompressedBlockedBuffers = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<byte[]> mFreeCompressedBlockBuffers = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<BlockGunzipper> mFreeInflators = new ConcurrentLinkedQueue<>();
-    private final AsyncBlockCompressedInputStreamTaskRunner async = new AsyncBlockCompressedInputStreamTaskRunner(1, Defaults.NON_ZERO_BUFFER_SIZE);
+    private final AsyncBlockCompressedInputStreamTaskRunner async = new AsyncBlockCompressedInputStreamTaskRunner(
+            BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE,
+            Math.max(1, Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE));
     private final InflaterFactory inflatorFactory;
 
     public AsyncBlockCompressedInputStream(final InputStream stream) {
@@ -107,11 +109,11 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
     }
 
     private class AsyncBlockCompressedInputStreamTaskRunner extends AsyncReadTaskRunner<CompressionBlock, CompressionBlock> {
-        public AsyncBlockCompressedInputStreamTaskRunner(int batchBufferBudget, int totalBufferBudget) {
-            super(batchBufferBudget, totalBufferBudget);
+        public AsyncBlockCompressedInputStreamTaskRunner(int batchBufferSize, int batches) {
+            super(batchBufferSize, batches);
         }
         @Override
-        public Tuple<CompressionBlock, Integer> performReadAhead(int bufferBudget) throws IOException {
+        public Tuple<CompressionBlock, Long> performReadAhead(long bufferBudget) throws IOException {
             byte[] compressedBuffer = mFreeCompressedBlockBuffers.poll();
             if (compressedBuffer == null) {
                 compressedBuffer = new byte[BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE];
@@ -120,7 +122,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
             if (block != null) {
                 // since the buffer we allocate is BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE
                 // we use this as the consumed size as opposed to the actual size block.getBlockCompressedSize()
-                return new Tuple<>(block, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
+                return new Tuple<>(block, (long)BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
             }
             return null;
         }

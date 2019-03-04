@@ -790,7 +790,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             this.bamRecordCodec.setInputStream(BAMFileReader.this.mStream.getInputStream(),
                     BAMFileReader.this.mStream.getInputFileName());
             if (useAsynchronousIO) {
-                mAsync = new AsyncBamDecoder(ASYNC_BATCH_SIZE_IN_BYTES, Defaults.NON_ZERO_BUFFER_SIZE);
+                mAsync = new AsyncBamDecoder(ASYNC_BATCH_SIZE_IN_BYTES, Math.max(1, Defaults.NON_ZERO_BUFFER_SIZE / ASYNC_BATCH_SIZE_IN_BYTES));
                 mAvailableIdleCodec = new ConcurrentLinkedQueue<>();
             } else {
                 mAsync = null;
@@ -899,12 +899,12 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             }
 
             @Override
-            public Tuple<BamRecordDecodingInfo, Integer> performReadAhead(int bufferBudget) {
+            public Tuple<BamRecordDecodingInfo, Long> performReadAhead(long bufferBudget) {
                 final BamRecordDecodingInfo record = readNextRecord();
                 if (record == null) {
-                    return new Tuple<>(null, 0);
+                    return new Tuple<>(null, 0L);
                 } else {
-                    return new Tuple<>(record, record.recordLength);
+                    return new Tuple<>(record, (long)record.recordLength);
                 }
             }
 

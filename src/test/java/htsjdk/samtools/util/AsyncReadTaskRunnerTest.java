@@ -24,8 +24,8 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         private RuntimeException transformException = null;
         private int readExceptionOn = Integer.MAX_VALUE;
         private int transformExceptionOn = Integer.MAX_VALUE;
-        public CountingAsyncReadTaskRunner(int minBatchBufferBudget, int minTotalBufferBudget) {
-            super(minBatchBufferBudget, minTotalBufferBudget);
+        public CountingAsyncReadTaskRunner(int recordsPerBatch, int batches) {
+            super(recordsPerBatch, batches);
         }
 
         @Override
@@ -41,7 +41,8 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         }
 
         @Override
-        public Tuple<Integer, Integer> performReadAhead(int bufferBudget) throws IOException {
+        public Tuple<Integer, Long> performReadAhead(long bufferBudget) throws IOException {
+            assert(bufferBudget > 0);
             int count = sync(() -> ++readCalledCount);
             int sleepTime = readSleepTime + (count - 1) * readSleepIncrement;
             if (sleepTime > 0) {
@@ -54,7 +55,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
             if (count == readExceptionOn) {
                 throw readException;
             }
-            return new Tuple<>(count <= stopAfter ? count : null, 1);
+            return new Tuple<>(count <= stopAfter ? count : null, 1L);
         }
 
         @Override
@@ -177,7 +178,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
         Executor defaultPool = AsyncReadTaskRunner.getNonBlockingThreadpool();
         AsyncReadTaskRunner.setNonblockingThreadpool(Executors.newFixedThreadPool(4));
         try {
-            CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(2, 4);
+            CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(2, 2);
             runner.setStopAfter(4);
             runner.setTransformSleepTime(10);
             runner.startAsyncProcessing();
@@ -195,12 +196,58 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
 
     @Test
     public void testBufferLimitIsRespected() throws Exception {
-        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(1, 4);
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(2, 4);
         runner.setStopAfter(10);
         runner.startAsyncProcessing();
         Thread.sleep(10);
         // should have only read 4 records
-        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 4);
+        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 8);
+    }
+    @Test
+    public void testReadAheadContinuesAfterBatchIsRead() throws Exception {
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(2, 4);
+        runner.setStopAfter(10);
+        runner.startAsyncProcessing();
+        Thread.sleep(10);
+        // should have only read 4 records
+        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 8);
+        runner.nextRecord();
+        Thread.sleep(1);
+        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 8);
+        runner.nextRecord();
+        // ok, now that we've readthe first batch, we should now have run the next batch
+        Thread.sleep(10);
+        Assert.assertEquals(runner.sync(() -> runner.readCompleteCount), 10);
+    }
+    @Test
+    public void testReadExceptionIsRaisedOnSameRecordAsWhenSynchronousProcessing() throws Exception {
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(4, 2);
+        runner.startAsyncProcessing();
+        runner.readException = new RuntimeException();
+        runner.readExceptionOn = 3;
+        Thread.sleep(10);
+        runner.nextRecord();
+        runner.nextRecord();
+        try {
+            runner.nextRecord();
+        } catch (RuntimeException e) {
+            Assert.assertEquals(e, runner.readException);
+        }
+    }
+    @Test
+    public void testTransformExceptionIsRaisedOnSameRecordAsWhenSynchronousProcessing() throws Exception {
+        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(4, 2);
+        runner.startAsyncProcessing();
+        runner.transformException = new RuntimeException();
+        runner.transformExceptionOn = 3;
+        Thread.sleep(10);
+        runner.nextRecord();
+        runner.nextRecord();
+        try {
+            runner.nextRecord();
+        } catch (RuntimeException e) {
+            Assert.assertEquals(e, runner.transformException);
+        }
     }
     //@Test
     public void stressTest() {

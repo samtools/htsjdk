@@ -2,10 +2,7 @@ package htsjdk.samtools.util;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -51,33 +48,25 @@ public abstract class AsyncReadTaskRunner<T, U> {
     public static void setBlockingThreadpool(Executor blockingThreadpool) {
         AsyncReadTaskRunner.blockingThreadpool = blockingThreadpool;
     }
-    private final long mTotalBufferBudget;
+    private final Deque<CompletableFuture<Deque<U>>> scheduledReadaheads = new ArrayDeque<>();
+    private final Deque<CompletableFuture<Deque<T>>> scheduledTransforms = new ArrayDeque<>();
+    private final int mTotalBatches;
     private final int mBatchBufferBudget;
-    private final AtomicLong mAvailableBufferBudget;
-    private boolean mReadAheadEnabled = true;
-    private volatile AtomicLong mReadAheadRecordIndex = new AtomicLong();
-    private int mOutstandingBatches;
-    private long mNextRecordRecordIndex = 0;
-    private final ReadRunnable mReadTask = new ReadRunnable();
-    private final PriorityQueue<AsyncTransformRecord> mRecords = new PriorityQueue<>(Comparator.comparingLong(r -> r.recordIndex));
-    private final BlockingQueue<Collection<AsyncTransformRecord>> mUnorderedRecords = new LinkedBlockingDeque<>();
-    // used by foreground thread to indicate whether we have already reached the end of the underlying stream
-    private boolean finalRecordReturned = false;
-
+    private volatile boolean asyncEnabled = true;
+    private volatile boolean eosReached = false;
     /**
-     * @param minBatchBufferBudget minimum batch size
-     * @param minTotalBufferBudget minimum total buffer consumption
+     * @param batchBufferBudget buffer budget per batch. Each batch will use at least this much budget
+     * @param batches number of asynchronous batches
      */
-    public AsyncReadTaskRunner(int minBatchBufferBudget, int minTotalBufferBudget) {
-        if (minBatchBufferBudget <= 0) {
+    public AsyncReadTaskRunner(int batchBufferBudget, int batches) {
+        if (batchBufferBudget <= 0) {
             throw new IllegalArgumentException("Buffer size must be greater than zero");
         }
-        if (minTotalBufferBudget <= 0) {
-            throw new IllegalArgumentException("Buffer size must be greater than zero");
+        if (batches <= 0) {
+            throw new IllegalArgumentException("Batch count must be greater than zero");
         }
-        this.mBatchBufferBudget = minBatchBufferBudget;
-        this.mTotalBufferBudget = minTotalBufferBudget;
-        this.mAvailableBufferBudget = new AtomicLong(mTotalBufferBudget);
+        this.mBatchBufferBudget = batchBufferBudget;
+        this.mTotalBatches = batches;
     }
     /**
      * Stops async processing. No new async tasks will be scheduled.
@@ -86,49 +75,21 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * during processing of these tasks are swallowed.
      */
     public void disableAsyncProcessing() {
-        // Suppress interrupts while we close.
-        final boolean isInterrupted = Thread.interrupted();
-        try {
-            // wait for all the async tasks to complete
-            int outstanding;
-            synchronized (mReadTask) {
-                mReadAheadEnabled = false; // prevent any additional read ahead tasks
-                outstanding = mOutstandingBatches;
-            }
-            while (outstanding > 0) {
-                mUnorderedRecords.take();
-                synchronized (mReadTask) {
-                    assert(mOutstandingBatches > 0);
-                    outstanding = --mOutstandingBatches;
-                }
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted waiting for decompression thread", e);
-        }
-        // we have to wait for the read task to actually complete
-        // it could have processed the record, queued the transforms task,
-        // the transform task completed, but the read task not have actually finished yet
-        boolean readTaskActive;
-        int sleepTime = 0;
-        synchronized (mReadTask) {
-            readTaskActive = mReadTask.mIsActive;
-        }
-        while (readTaskActive) {
+        asyncEnabled = false;
+        while (!scheduledTransforms.isEmpty()) {
             try {
-                Thread.sleep(sleepTime++);
+                scheduledTransforms.removeFirst().get();
             } catch (InterruptedException e) {
-                break;
-            }
-            synchronized (mReadTask) {
-                readTaskActive = mReadTask.mIsActive;
+            } catch (ExecutionException e) {
             }
         }
-        assert(mUnorderedRecords.isEmpty());
-        mNextRecordRecordIndex = 0;
-        mAvailableBufferBudget.set(mTotalBufferBudget);
-        mReadAheadRecordIndex.set(0);
-        mRecords.clear();
-        if (isInterrupted) Thread.currentThread().interrupt();
+        while(!scheduledReadaheads.isEmpty()) {
+            try {
+                scheduledReadaheads.removeFirst().get();
+            } catch (InterruptedException e) {
+            } catch (ExecutionException e) {
+            }
+        }
     }
 
     /**
@@ -136,13 +97,12 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * until nextRecord() is called for the first time.
      */
     public void enableAsyncProcessing() {
-        finalRecordReturned = false;
-        synchronized (mReadTask) {
-            mReadAheadEnabled = true;
-        }
+        asyncEnabled = true;
+        eosReached = false;
     }
     public void startAsyncProcessing() {
-        mReadTask.tryScheduleNextReadAheadTask(false);
+        enableAsyncProcessing();
+        scheduleFutures();
     }
 
     /**
@@ -153,67 +113,89 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * Upon an exception being thrown, no guarantees are made about the position of the underlying stream/iterator.
      * @return next record. null indicates end of stream
      */
-    private AsyncTransformRecord lastRecord = null;
     public T nextRecord() throws IOException {
-        if (finalRecordReturned) {
-            return null;
+        if (scheduledTransforms.isEmpty()) {
+            scheduleFutures();
         }
-        AsyncTransformRecord record = mRecords.peek();
-        if (record != null && record.recordIndex == mNextRecordRecordIndex) {
-            record = mRecords.remove();
-            mNextRecordRecordIndex++;
-        } else {
-            mReadTask.tryScheduleNextReadAheadTask(false);
-            record = waitUntil(mNextRecordRecordIndex++);
-        }
-        lastRecord = record;
-        mAvailableBufferBudget.addAndGet(record.bufferBudgetUsed);
-        finalRecordReturned = record.transformedRecord == null || record.exception != null;
-        rethrowAsyncIOBackgroundThreadException(record);
-        mReadTask.tryScheduleNextReadAheadTask(false);
-        return record.transformedRecord;
-    }
-
-    private AsyncTransformRecord waitUntil(long recordIndex) {
-        assert(!finalRecordReturned); // will block indefinitely if there's no more records
-        if (!mRecords.isEmpty() && mRecords.peek().recordIndex < recordIndex) {
-            throw new IllegalArgumentException("Async waiting must match record ordering of the underlying stream/iterator");
+        if (scheduledTransforms.isEmpty()) {
+            if (eosReached) {
+                return null;
+            }
+            throw new IllegalStateException("No async processing");
         }
         try {
-            while (mRecords.isEmpty() || mRecords.peek().recordIndex != recordIndex) {
-                Collection<AsyncTransformRecord> r = mUnorderedRecords.take();
-                synchronized (mReadTask) {
-                    assert(mOutstandingBatches > 0);
-                    mOutstandingBatches--;
-                }
-                mRecords.addAll(r);
-                if (!mRecords.isEmpty() && mRecords.peek().recordIndex < recordIndex) {
-                    throw new IllegalArgumentException("Async waiting must match record ordering of the underlying stream/iterator");
-                }
+            // block until we have a result
+            Deque<T> batch = null;
+            batch = scheduledTransforms.getFirst().get();
+            if (batch.isEmpty()) {
+                throw new IllegalStateException("Aysnc processing returned zero records");
             }
+            T record = batch.removeFirst();
+            if (batch.isEmpty()) {
+                // end of batch
+                scheduledTransforms.removeFirst();
+                scheduledReadaheads.removeFirst();
+                scheduleFutures();
+            }
+            return record;
         } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted waiting for decompression thread", e);
-        }
-        return mRecords.remove();
-    }
-
-    /**
-     * Rethrows an exception encountered during decompression
-     * @throws IOException
-     */
-    private void rethrowAsyncIOBackgroundThreadException(AsyncTransformRecord record) throws IOException {
-        if (record != null && record.exception != null) {
-            mReadAheadEnabled = false;
-            if (record.exception instanceof IOException) {
-                throw (IOException) record.exception;
-            } else if (record.exception instanceof RuntimeException) {
-                throw (RuntimeException) record.exception;
+            throw new RuntimeException("Interrupted waiting for asynchronous read to complete", e);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof IOException) {
+                throw (IOException)e.getCause();
+            } else if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException)e.getCause();
             } else {
-                throw new RuntimeException(record.exception);
+                throw new RuntimeException("Exception during asynchronous read", e.getCause());
             }
         }
     }
 
+    private void scheduleFutures() {
+        if (!asyncEnabled) return;
+        if (eosReached) return;
+        int batchesToSchedule = mTotalBatches - scheduledReadaheads.size();
+        while (batchesToSchedule > 0) {
+            CompletableFuture<Deque<U>> readAheadFuture;
+            if (scheduledReadaheads.isEmpty()) {
+                readAheadFuture = CompletableFuture.supplyAsync(this::readNextBatch, blockingThreadpool);
+            } else {
+                readAheadFuture = scheduledReadaheads.getLast().thenApplyAsync((x) -> readNextBatch(), blockingThreadpool);
+            }
+            scheduledReadaheads.addLast(readAheadFuture);
+            scheduledTransforms.addLast(readAheadFuture.thenApplyAsync(this::processNextBatch, nonblockingThreadpool));
+            batchesToSchedule--;
+        }
+    }
+
+    private Deque<U> readNextBatch() {
+        long bufferConsumed = 0;
+        Deque<U> batch = new ArrayDeque<>();
+        while (bufferConsumed < mBatchBufferBudget) {
+            Tuple<U, Long> ra;
+            try {
+                ra = performReadAhead(mBatchBufferBudget - bufferConsumed);
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+            bufferConsumed += ra.b;
+            batch.addLast(ra.a);
+        }
+        return batch;
+    }
+
+    private Deque<T> processNextBatch(Deque<U> batch) {
+        Deque<T> result = new ArrayDeque<>(batch.size());
+        while (!batch.isEmpty()) {
+            U u = batch.removeFirst();
+            if (u == null) {
+                eosReached = true;
+            }
+            T t = u == null ? null : transform(u);
+            result.addLast(t);
+        }
+        return result;
+    }
     /**
      * Performs read-ahead on the underlying stream. This task is executed on the blocking
      * thread pool. Only one task executing this method per instance will be scheduled.
@@ -221,7 +203,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * of buffer budget consumed.
      * A null return value is treated as an end of stream indicator and no further read-ahead will be performed.
      */
-    public abstract Tuple<U, Integer> performReadAhead(int bufferBudget) throws IOException;
+    public abstract Tuple<U, Long> performReadAhead(long bufferBudget) throws IOException;
 
     /**
      * Transforms the read-ahead result into the output result.
@@ -236,117 +218,4 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * A null return value is treated as an end of stream indicator and no further read-ahead will be performed.
      */
     public abstract T transform(U record);
-    private class AsyncReadRecord {
-        private final long recordIndex;
-        private final int bufferBudgetUsed;
-        private final U rawRecord;
-        private final Exception exception;
-        public AsyncReadRecord(int bufferUsed, U record, Exception exception) {
-            this.recordIndex = mReadAheadRecordIndex.getAndIncrement();
-            this.bufferBudgetUsed = bufferUsed;
-            this.rawRecord = record;
-            this.exception = exception;
-        }
-    }
-    private class AsyncTransformRecord {
-        private final long recordIndex;
-        private final int bufferBudgetUsed;
-        private final T transformedRecord;
-        private final Exception exception;
-        public AsyncTransformRecord(AsyncReadRecord record, T transformedRecord, Exception exception) {
-            this.recordIndex = record.recordIndex;
-            this.bufferBudgetUsed = record.bufferBudgetUsed;
-            this.transformedRecord = transformedRecord;
-            this.exception = record.exception == null ? exception : record.exception;
-        }
-    }
-    private class TransformRunnable implements Runnable {
-        private List<AsyncReadRecord> records;
-        public TransformRunnable(List<AsyncReadRecord> records) {
-            this.records = records;
-        }
-        @Override
-        public void run() {
-            try {
-                List<AsyncTransformRecord> out = new ArrayList<>(records.size());
-                for (AsyncReadRecord r : records) {
-                    try {
-                        if (r.exception != null || r.rawRecord == null) {
-                            out.add(new AsyncTransformRecord(r, null, null));
-                            break;
-                        } else {
-                            out.add(new AsyncTransformRecord(r, transform(r.rawRecord), null));
-                        }
-                    } catch (Exception e) {
-                        out.add(new AsyncTransformRecord(r, null, e));
-                        break;
-                    }
-                }
-                mUnorderedRecords.add(out);
-            } catch (Exception e) {
-                log.error(e, "Error during asynchronous record precessing.");
-            }
-        }
-    }
-    private AsyncReadRecord nextReadAhead() {
-        try {
-            Tuple<U, Integer> result = performReadAhead((int)mAvailableBufferBudget.get());
-            if (result == null) {
-                result = new Tuple<>(null, 0);
-            }
-            return new AsyncReadRecord(result.b, result.a, null);
-        } catch (Exception e) {
-            return new AsyncReadRecord(0, null, e);
-        }
-    }
-    private class ReadRunnable implements Runnable {
-        private boolean mIsActive = false;
-        public boolean tryScheduleNextReadAheadTask(boolean calledFromReadTask) {
-            synchronized (mReadTask) {
-                if (calledFromReadTask) {
-                    mIsActive = false;
-                }
-                if (!mReadAheadEnabled) return false;
-                if (mIsActive) return false;
-                if (mAvailableBufferBudget.get() <= 0) return false;
-                mIsActive = true;
-                mOutstandingBatches++;
-            }
-            if (!calledFromReadTask) {
-                // Reuse the same task if possible
-                getBlockingThreadpool().execute(this);
-            }
-            return true;
-        }
-        @Override
-        public void run() {
-            try {
-                boolean readAgain = true;
-                while (readAgain) {
-                    List<AsyncReadRecord> batch = new ArrayList<>();
-                    try {
-                        int batchRemaining = mBatchBufferBudget;
-                        while (mReadAheadEnabled && batchRemaining > 0) {
-                            AsyncReadRecord r = nextReadAhead();
-                            batch.add(r);
-                            batchRemaining -= r.bufferBudgetUsed;
-                            mAvailableBufferBudget.addAndGet(-r.bufferBudgetUsed);
-                            if (r.exception != null || r.rawRecord == null) {
-                                // stop upon exception or EOF
-                                synchronized (mReadTask) {
-                                    mReadAheadEnabled = false;
-                                }
-                                readAgain = false;
-                            }
-                        }
-                    } finally {
-                        getNonBlockingThreadpool().execute(new TransformRunnable(batch));
-                        readAgain = tryScheduleNextReadAheadTask(true) & readAgain;
-                    }
-                }
-            } catch (Exception e) {
-                log.error(e, "Error performing asynchronous read.");
-            }
-        }
-    }
 }
