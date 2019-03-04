@@ -26,6 +26,11 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMException;
 
 import java.io.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
 public class TestUtil {
 
@@ -60,21 +65,6 @@ public class TestUtil {
         return getTempDirectory(prefix, suffix);
     }
 
-        /**
-         * Little test utility to help tests that create multiple levels of subdirectories
-         * clean up after themselves.
-         *
-         * @param directory The directory to be deleted (along with its subdirectories)
-         */
-    public static void recursiveDelete(final File directory) {
-        for (final File f : directory.listFiles()) {
-            if (f.isDirectory()) {
-                recursiveDelete(f);
-            }
-            f.delete();
-        }
-    }
-
     /**
      * Serialize and Deserialize an object
      * Useful for testing if serialization is correctly handled for a class.
@@ -97,5 +87,19 @@ public class TestUtil {
         out.close();
         in.close();
         return result;
+    }
+
+    /**
+     * Little test utility to help tests that create multiple levels of subdirectories
+     * clean up after themselves.
+     *
+     * @param directory The directory to be deleted (along with its subdirectories)
+     */
+    public static void recursiveDelete(final File directory) {
+        try {
+            IOUtil.recursiveDelete(directory.toPath());
+        } catch (IOException e) {
+            // bury exception
+        }
     }
 }

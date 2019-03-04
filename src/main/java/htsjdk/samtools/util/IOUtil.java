@@ -30,42 +30,18 @@ import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.tribble.Tribble;
 import htsjdk.samtools.util.nio.DeleteOnExitPathHook;
+import htsjdk.tribble.Tribble;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.Stack;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.Deflater;
@@ -1339,5 +1315,30 @@ public class IOUtil {
             }
         }
         return path;
+    }
+
+    /**
+     * Little test utility to help tests that create multiple levels of subdirectories
+     * clean up after themselves.
+     *
+     * @param directory The directory to be deleted (along with its subdirectories)
+     */
+    public static void recursiveDelete(final Path directory) throws IOException {
+
+        final SimpleFileVisitor<Path> simpleFileVisitor = new SimpleFileVisitor<Path>() {
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                super.visitFile(file, attrs);
+                Files.deleteIfExists(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                super.postVisitDirectory(dir, exc);
+                Files.deleteIfExists(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        };
+
+        Files.walkFileTree(directory, simpleFileVisitor);
     }
 }

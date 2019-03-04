@@ -234,7 +234,7 @@ public class ReferenceSource implements CRAMReferenceSource {
                     log.error(message);
                 }
             }
-            catch (final NoSuchAlgorithmException | IOException e) {
+            catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
