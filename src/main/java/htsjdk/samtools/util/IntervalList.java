@@ -379,13 +379,14 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * Merges a sorted collection of intervals and optionally concatenates unique names or takes the first name.
+     * Merges a collection of intervals and optionally concatenates unique names or takes the first name.
+     * Uses the contig and strand of the first interval seen without validating that the others match.
      */
     static Interval merge(final Iterable<Interval> intervals, final boolean concatenateNames) {
         final Interval first = intervals.iterator().next();
         final String chrom = first.getContig();
         int start = first.getStart();
-        int end = start;
+        int end = first.getEnd();
         final boolean neg = first.isNegativeStrand();
         final LinkedHashSet<String> names = new LinkedHashSet<>();
         final String name;
