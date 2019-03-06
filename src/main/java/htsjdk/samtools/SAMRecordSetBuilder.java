@@ -615,7 +615,10 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(READ_GROUP_ID);
             readGroupRecord.setSample(SAMPLE);
             readGroupRecord.setPlatform(PlatformValue.ILLUMINA.name());
-            final List<SAMReadGroupRecord> readGroups = Collections.singletonList(readGroupRecord);
+            //This must be a mutable list because setReadGroups doesn't perform a copy and tests expect to be able
+            //to modify it.
+            final List<SAMReadGroupRecord> readGroups = new ArrayList<>();
+            readGroups.add(readGroupRecord);
             header.setReadGroups(readGroups);
         }
         return header;
