@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.index;
+package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
@@ -73,7 +73,8 @@ public class CRAIIndexTest extends HtsjdkTest {
         final List<CRAIEntry> found = CRAIIndex.find(index, sequenceId, start, span);
         for (final CRAIEntry entry : found) {
             Assert.assertEquals(entry.getSequenceId(), sequenceId);
-            if (! entry.intersect(new CRAIQuery(sequenceId, start, span))) {
+            final int dummy = -1;
+            if (! CRAIEntry.intersect(entry, new CRAIEntry(sequenceId, start, span, dummy, dummy, dummy))) {
                 return false;
             }
         }

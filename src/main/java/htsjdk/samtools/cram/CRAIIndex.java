@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.index;
+package htsjdk.samtools.cram;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMFileHeader;
@@ -14,7 +14,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
-
 
 /**
  * CRAI index used for CRAM files.
@@ -73,7 +72,7 @@ public class CRAIIndex {
     }
 
     public static SeekableStream openCraiFileAsBaiStream(final InputStream indexStream, final SAMSequenceDictionary dictionary) {
-        final List<CRAIEntry> full = CRAMCRAIIndexer.readIndex(indexStream).entries;
+        final List<CRAIEntry> full = CRAMCRAIIndexer.readIndex(indexStream).getCRAIEntries();
         Collections.sort(full);
 
         final SAMFileHeader header = new SAMFileHeader();
@@ -93,11 +92,10 @@ public class CRAIIndex {
             // NOTE: the sliceIndex and read count fields can't be derived from the CRAM index
             // so we can only set them to zero
             // see https://github.com/samtools/htsjdk/issues/531
-
-            slice.index = 0;
             slice.mappedReadsCount = 0;
             slice.unmappedReadsCount = 0;
             slice.unplacedReadsCount = 0;
+            slice.index = 0;
 
             indexer.processAsSingleReferenceSlice(slice);
         }
@@ -108,11 +106,16 @@ public class CRAIIndex {
 
     public static List<CRAIEntry> find(final List<CRAIEntry> list, final int seqId, final int start, final int span) {
         final boolean matchEntireSequence = start < 1 || span < 1;
-        final CRAIQuery query = new CRAIQuery(seqId, start, span);
+        final CRAIEntry query = new CRAIEntry(seqId,
+                start,
+                span,
+                Long.MAX_VALUE,
+                Integer.MAX_VALUE,
+                Integer.MAX_VALUE);
 
         return list.stream()
                 .filter(e -> e.getSequenceId() == seqId)
-                .filter(e -> matchEntireSequence || e.intersect(query))
+                .filter(e -> matchEntireSequence || CRAIEntry.intersect(e, query))
                 .sorted()
                 .collect(Collectors.toList());
     }
@@ -121,7 +124,6 @@ public class CRAIIndex {
         if (list == null || list.isEmpty()) {
             return null;
         }
-
         return list.stream()
                 .sorted()
                 .findFirst()

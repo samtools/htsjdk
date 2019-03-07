@@ -1,6 +1,6 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.index.CRAIIndex;
+import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.build.CramIO;
 
 import htsjdk.samtools.util.IOUtil;

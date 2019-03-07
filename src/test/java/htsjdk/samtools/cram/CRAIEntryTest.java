@@ -1,11 +1,11 @@
-package htsjdk.samtools.cram.index;
+package htsjdk.samtools.cram;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.CramRecordTestHelper;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -108,7 +108,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     }
 
     @Test
-    public void testFromIndexLine() {
+    public void testLineConstructor() {
         int counter = 1;
         final int sequenceId = counter++;
         final int alignmentStart = counter++;
@@ -118,8 +118,56 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         final int sliceSize = counter++;
 
         final String line = String.format("%d\t%d\t%d\t%d\t%d\t%d", sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
-        final CRAIEntry entry = CRAIEntry.fromIndexLine(line);
+        final CRAIEntry entry = new CRAIEntry(line);
         assertEntryForSlice(entry, sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
+    }
+
+    @DataProvider(name = "intersectionTestCases")
+    public Object[][] intersectionTestCases() {
+        final CRAIEntry basic = craiEntryForIntersectionTests(1, 1, 10);
+        final CRAIEntry overlapBasic = craiEntryForIntersectionTests(1, 5, 10);
+        final CRAIEntry insideBasic = craiEntryForIntersectionTests(1, 3, 5);
+
+        final CRAIEntry otherSeq1 = craiEntryForIntersectionTests(2, 1, 10);
+        final CRAIEntry otherSeq2 = craiEntryForIntersectionTests(2, 2, 10);
+
+        final CRAIEntry zerospan = craiEntryForIntersectionTests(1, 1, 0);
+
+        // start and span values are invalid here: show that they are ignored
+        final CRAIEntry unmapped = craiEntryForIntersectionTests(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 1, 2);
+        final CRAIEntry multi = craiEntryForIntersectionTests(ReferenceContext.MULTIPLE_REFERENCE_ID, 1, 2);
+
+        return new Object[][]{
+                {basic, basic, true},
+                {basic, overlapBasic, true},
+                {basic, insideBasic, true},
+
+                {basic, otherSeq1, false},
+                {basic, otherSeq2, false},
+                {otherSeq1, otherSeq2, true},
+
+                {basic, zerospan, false},
+                {zerospan, zerospan, false},
+
+                // intersections with Unmapped or Multiref entries are always false, even with themselves
+
+                {basic, unmapped, false},
+                {basic, multi, false},
+                {unmapped, multi, false},
+                {unmapped, unmapped, false},
+                {multi, multi, false},
+        };
+    }
+
+    @Test(dataProvider = "intersectionTestCases")
+    public void testIntersect(final CRAIEntry a, final CRAIEntry b, final boolean expectation) {
+        Assert.assertEquals(CRAIEntry.intersect(a, b), expectation);
+        Assert.assertEquals(CRAIEntry.intersect(b, a), expectation);
+    }
+
+    private CRAIEntry craiEntryForIntersectionTests(final int sequenceId, final int alignmentStart, final int alignmentSpan) {
+        final int dummy = -1;
+        return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, dummy, dummy, dummy);
     }
 
     @Test

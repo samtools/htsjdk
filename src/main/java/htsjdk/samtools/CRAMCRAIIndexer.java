@@ -1,7 +1,7 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.index.CRAIEntry;
-import htsjdk.samtools.cram.index.CRAIIndex;
+import htsjdk.samtools.cram.CRAIEntry;
+import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.structure.*;
@@ -130,7 +130,7 @@ public class CRAMCRAIIndexer {
             scanner = new Scanner(new GZIPInputStream(is));
             while (scanner.hasNextLine()) {
                 final String line = scanner.nextLine();
-                craiIndex.addEntry(CRAIEntry.fromIndexLine(line));
+                craiIndex.addEntry(new CRAIEntry(line));
             }
         }
         catch (IOException e) {

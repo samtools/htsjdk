@@ -18,7 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.index.CRAIEntry;
+import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;

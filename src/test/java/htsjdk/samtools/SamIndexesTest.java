@@ -1,7 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.index.CRAIEntry;
+import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;

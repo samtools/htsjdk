@@ -17,7 +17,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SamReader.Type;
-import htsjdk.samtools.cram.index.CRAIIndex;
+import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;

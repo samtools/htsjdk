@@ -1,7 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.index.CRAIEntry;
+import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
