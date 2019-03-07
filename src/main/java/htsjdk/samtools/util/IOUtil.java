@@ -1318,20 +1318,21 @@ public class IOUtil {
     }
 
     /**
-     * Little test utility to help tests that create multiple levels of subdirectories
-     * clean up after themselves.
+     * Delete a directory and all files in it.
      *
      * @param directory The directory to be deleted (along with its subdirectories)
      */
-    public static void recursiveDelete(final Path directory) throws IOException {
-
+    public static void recursiveDelete(final Path directory) {
+        
         final SimpleFileVisitor<Path> simpleFileVisitor = new SimpleFileVisitor<Path>() {
+            @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 super.visitFile(file, attrs);
                 Files.deleteIfExists(file);
                 return FileVisitResult.CONTINUE;
             }
 
+            @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                 super.postVisitDirectory(dir, exc);
                 Files.deleteIfExists(dir);
@@ -1339,6 +1340,10 @@ public class IOUtil {
             }
         };
 
-        Files.walkFileTree(directory, simpleFileVisitor);
+        try {
+            Files.walkFileTree(directory, simpleFileVisitor);
+        } catch (final IOException e){
+            throw new RuntimeIOException(e);
+        }
     }
 }
