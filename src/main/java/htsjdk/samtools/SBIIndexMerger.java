@@ -31,7 +31,7 @@ import java.io.OutputStream;
 /**
  * Merges SBI files for parts of a file that have been concatenated.
  */
-public final class SBIIndexMerger {
+public final class SBIIndexMerger extends IndexMerger<SBIIndex> {
 
     private static final Log log = Log.getInstance(SBIIndexMerger.class);
 
@@ -49,6 +49,7 @@ public final class SBIIndexMerger {
      *                     an index
      */
     public SBIIndexMerger(final OutputStream out, long headerLength) {
+        super(out, headerLength);
         this.indexWriter = new SBIIndexWriter(out);
         this.offset = headerLength;
     }
@@ -57,7 +58,8 @@ public final class SBIIndexMerger {
      * Add an index for a part of the data file to the merged index. This method should be called for
      * each index for the data file parts, in order.
      */
-    public void processIndex(final SBIIndex index) {
+    @Override
+    public void processIndex(final SBIIndex index, final long partLength) {
         final long[] virtualOffsets = index.getVirtualOffsets();
         for (int i = 0; i < virtualOffsets.length - 1; i++) {
             indexWriter.writeVirtualOffset(BlockCompressedFilePointerUtil.shift(virtualOffsets[i], offset));
@@ -77,9 +79,8 @@ public final class SBIIndexMerger {
 
     /**
      * Complete the index, and close the output stream.
-     *
-     * @param dataFileLength the length of the data file in bytes
      */
+    @Override
     public void finish(final long dataFileLength) {
         final SBIIndex.Header header =
                 new SBIIndex.Header(

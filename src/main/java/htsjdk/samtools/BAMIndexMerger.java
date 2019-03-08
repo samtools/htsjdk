@@ -36,54 +36,59 @@ import java.util.List;
  * Merges BAM index files for (headerless) parts of a BAM file into a single
  * index file. The index files must have been produced using an uninitialized window (TODO).
  */
-public class BAMIndexMerger {
+public class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
 
     private static final int UNINITIALIZED_WINDOW = -1;
 
-    /**
-     * Merge BAI files for (headerless) BAM file parts.
-     *
-     * @param header      the header for the file
-     * @param partLengths the lengths, in bytes, of the headerless BAM file parts
-     * @param baiStreams  streams for the BAI files to merge
-     * @param baiOut      the output stream for the resulting merged BAI
-     */
-    public static void merge(
-            final SAMFileHeader header,
-            final List<Long> partLengths,
-            final List<SeekableStream> baiStreams,
-            final OutputStream baiOut) {
-        if (baiStreams.isEmpty()) {
-            throw new IllegalArgumentException("Cannot merge zero BAI files");
-        }
-        final SAMSequenceDictionary dict = header.getSequenceDictionary();
-        final List<AbstractBAMFileIndex> bais = new ArrayList<>();
-        for (SeekableStream baiStream : baiStreams) {
-            bais.add(new CachingBAMFileIndex(baiStream, dict));
-        }
-        final int numReferences = bais.get(0).getNumberOfReferences();
-        for (AbstractBAMFileIndex bai : bais) {
-            if (bai.getNumberOfReferences() != numReferences) {
-                throw new IllegalArgumentException(
-                        String.format("Cannot merge BAI files with different number of references, %s and %s.", numReferences, bai.getNumberOfReferences()));
+    private int numReferences;
+    private final List<List<BAMIndexContent>> content = new ArrayList<>();
+    private long noCoordinateCount;
+
+    public BAMIndexMerger(final OutputStream out, final long headerLength) {
+        super(out, headerLength);
+    }
+
+    @Override
+    public void processIndex(final AbstractBAMFileIndex index, final long partLength) {
+        this.partLengths.add(partLength);
+        if (content.isEmpty()) {
+            numReferences = index.getNumberOfReferences();
+            for (int ref = 0; ref < numReferences; ref++) {
+                content.add(new ArrayList<>());
             }
+        }
+        if (index.getNumberOfReferences() != numReferences) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot merge BAI files with different number of references, %s and %s.", numReferences, index.getNumberOfReferences()));
+        }
+        for (int ref = 0; ref < numReferences; ref++) {
+            final List<BAMIndexContent> bamIndexContentList = content.get(ref);
+            bamIndexContentList.add(index.getQueryResults(ref));
+        }
+        noCoordinateCount += index.getNoCoordinateCount();
+    }
+
+    @Override
+    public void finish(final long dataFileLength) {
+        if (content.isEmpty()) {
+            throw new IllegalArgumentException("Cannot merge zero BAI files");
         }
         final long[] offsets = partLengths.stream().mapToLong(i -> i).toArray();
         Arrays.parallelPrefix(offsets, (a, b) -> a + b); // cumulative offsets
 
         try (BinaryBAMIndexWriter writer =
-                     new BinaryBAMIndexWriter(numReferences, baiOut)) {
+                         new BinaryBAMIndexWriter(numReferences, out)) {
             for (int ref = 0; ref < numReferences; ref++) {
-                final List<BAMIndexContent> bamIndexContentList = new ArrayList<>();
-                for (AbstractBAMFileIndex bai : bais) {
-                    bamIndexContentList.add(bai.getQueryResults(ref));
-                }
-                BAMIndexContent bamIndexContent = mergeBAMIndexContent(ref, bamIndexContentList, offsets);
+                final List<BAMIndexContent> bamIndexContentList = content.get(ref);
+                final BAMIndexContent bamIndexContent = mergeBAMIndexContent(ref, bamIndexContentList, offsets);
                 writer.writeReference(bamIndexContent);
             }
-            long noCoordinateCount = bais.stream().mapToLong(AbstractBAMFileIndex::getNoCoordinateCount).sum();
             writer.writeNoCoordinateRecordCount(noCoordinateCount);
         }
+    }
+
+    public static AbstractBAMFileIndex openIndex(SeekableStream stream, SAMSequenceDictionary dictionary) {
+        return new CachingBAMFileIndex(stream, dictionary);
     }
 
     private static BAMIndexContent mergeBAMIndexContent(final int referenceSequence,
@@ -103,15 +108,21 @@ public class BAMIndexMerger {
                 mergeLinearIndexes(referenceSequence, linearIndexes, offsets));
     }
 
+    /**
+     * Merge bins for (headerless) BAM file parts.
+     * @param binLists the bins to merge
+     * @param offsets bin <i>i</i> will be shifted by offset <i>i</i>
+     * @return the merged bins
+     */
     public static BinningIndexContent.BinList mergeBins(final List<BinningIndexContent.BinList> binLists, final long[] offsets) {
         final List<Bin> mergedBins = new ArrayList<>();
         final int maxBinNumber = binLists.stream().mapToInt(bl -> bl.maxBinNumber).max().orElse(0);
         int commonNonNullBins = 0;
         for (int i = 0; i <= maxBinNumber; i++) {
-            List<Bin> nonNullBins = new ArrayList<>();
+            final List<Bin> nonNullBins = new ArrayList<>();
             for (int j = 0; j < binLists.size(); j++) {
-                BinningIndexContent.BinList binList = binLists.get(j);
-                Bin bin = binList.getBin(i);
+                final BinningIndexContent.BinList binList = binLists.get(j);
+                final Bin bin = binList.getBin(i);
                 if (bin != null) {
                     nonNullBins.add(bin.shift(offsets[j]));
                 }
@@ -211,6 +222,13 @@ public class BAMIndexMerger {
         return new BAMIndexMetaData(chunkList);
     }
 
+    /**
+     * Merge linear indexes for (headerless) BAM file parts.
+     * @param referenceSequence the reference sequence number for the linear indexes being merged
+     * @param linearIndexes the linear indexes to merge
+     * @param offsets linear index <i>i</i> will be shifted by offset <i>i</i>
+     * @return the merged linear index
+     */
     public static LinearIndex mergeLinearIndexes(final int referenceSequence, final List<LinearIndex> linearIndexes, final long[] offsets) {
         int maxIndex = -1;
         for (LinearIndex li : linearIndexes) {
