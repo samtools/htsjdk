@@ -146,6 +146,8 @@ public class GenomicIndexUtil {
         final BitSet bins = new BitSet(((1 << 3 * binDepth) - 1) / 7);
         bins.set(0);
         for (int level = 1; level < binDepth; level++) {
+            // It's possible this this conversion would overflow but the minShift / depth combination that would
+            // do so is implausible for any realistic indexing scheme.
             final int startBin = (int) (start >> binWidth) + firstBinOnLevel;
             final int endBin = (int) (end >> binWidth) + firstBinOnLevel;
             bins.set(startBin, endBin + 1);

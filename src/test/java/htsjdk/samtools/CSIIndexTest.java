@@ -32,6 +32,10 @@ public class CSIIndexTest extends HtsjdkTest {
     private static Bin bin8 = new Bin(1, 4689);
     private static Bin bin9 = new Bin(1, 135853);
     private static Bin bin10 = new Bin(1, 163);
+
+    // The CSI index is a generalization of the bai index which introduces these as parameters instead of hard coding them.
+    // These are equivalent parameter values for CSI that are baked into the bai calculations.
+    // CSI calculations with these values should match the bai calculations exactly.
     public static final int BAI_EQUIVALENT_MIN_SHIFT = 14;
     public static final int BAI_EQUIVALENT_BIN_DEPTH = 6;
 
@@ -350,7 +354,9 @@ public class CSIIndexTest extends HtsjdkTest {
                 //start, end, minShift, binDepth, expectedBins
                 {(1 << 12) * 98403 + 4094, (1 << 12) * 98404 + 1, 12, 7, Arrays.asList(0, 4, 33, 265, 2122, bin9.getBinNumber() - 1, bin9.getBinNumber(), ucsi.getParentBinNumber(bin9.getBinNumber()))},
                 {939520000, 939529000, 12, 7, Arrays.asList(0, 7, 8, 64, 65, 520, 521, 4168, 4169, 33352, 33353, 266823, 266824, 266825, 266826)},
-                //this case tests https://github.com/samtools/htsjdk/issues/1047
+                // This case tests https://github.com/samtools/htsjdk/issues/1047.
+                // This combination of minShift and binDepth result in a maxPos larger than maxInt which caused
+                // an overflow error.
                 {558419286, 558424804, 14, 7, Arrays.asList(0, 2, 17, 139, 1117, 8941, 71532)}
         };
     }
