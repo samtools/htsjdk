@@ -18,32 +18,22 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
-import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
-import htsjdk.samtools.cram.structure.EncodingID;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
 
-public class ExternalLongEncoding extends CRAMEncoding<Long> {
-    private final int externalBlockContentId;
-
-    ExternalLongEncoding(final int externalBlockContentId) {
-        super(EncodingID.EXTERNAL);
-        this.externalBlockContentId = externalBlockContentId;
+public class ExternalLongEncoding extends ExternalEncoding<Long> {
+    public ExternalLongEncoding(final int externalBlockContentId) {
+        super(externalBlockContentId);
     }
 
     public static ExternalLongEncoding fromParams(byte[] params) {
         final int contentId = ITF8.readUnsignedITF8(params);
         return new ExternalLongEncoding(contentId);
-    }
-
-    @Override
-    public byte[] toByteArray() {
-        return ITF8.writeUnsignedITF8(externalBlockContentId);
     }
 
     @Override
