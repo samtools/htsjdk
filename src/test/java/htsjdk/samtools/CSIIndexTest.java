@@ -3,15 +3,19 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.List;
 
 public class CSIIndexTest extends HtsjdkTest {
 
+    public static final String TEST_DATA_DIR = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/";
     private static DiskBasedBAMFileIndex bai;
     private static CSIIndex csi;
     private static CSIIndex mcsi;
@@ -29,17 +33,23 @@ public class CSIIndexTest extends HtsjdkTest {
     private static Bin bin9 = new Bin(1, 135853);
     private static Bin bin10 = new Bin(1, 163);
 
+    // The CSI index is a generalization of the bai index which introduces these as parameters instead of hard coding them.
+    // These are equivalent parameter values for CSI that are baked into the bai calculations.
+    // CSI calculations with these values should match the bai calculations exactly.
+    public static final int BAI_EQUIVALENT_MIN_SHIFT = 14;
+    public static final int BAI_EQUIVALENT_BIN_DEPTH = 6;
+
     @BeforeTest
     public void init() {
-        bai = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), null);
-        csi = new CSIIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), false, null);
-        mcsi = new CSIIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), true, null);
+        bai = new DiskBasedBAMFileIndex(new File(TEST_DATA_DIR, "index_test.bam.bai"), null);
+        csi = new CSIIndex(new File(TEST_DATA_DIR, "index_test.bam.csi"), false, null);
+        mcsi = new CSIIndex(new File(TEST_DATA_DIR, "index_test.bam.csi"), true, null);
         try {
-            ucsi = new CSIIndex(Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/uncompressed_index.bam.csi"), null);
+            ucsi = new CSIIndex(Paths.get(TEST_DATA_DIR, "uncompressed_index.bam.csi"), null);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        ubai = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/uncompressed_index.bam.bai"),null);
+        ubai = new DiskBasedBAMFileIndex(new File(TEST_DATA_DIR, "uncompressed_index.bam.bai"), null);
     }
 
 
@@ -48,74 +58,91 @@ public class CSIIndexTest extends HtsjdkTest {
         Assert.assertEquals(csi.getBinDepth(), 6);
         Assert.assertEquals(ucsi.getBinDepth(), 7);
     }
+
     @Test
     public static void testGetMinShift() {
         Assert.assertEquals(csi.getMinShift(), 14);
         Assert.assertEquals(ucsi.getMinShift(), 12);
     }
+
     @Test
     public static void testGetMaxBins() {
         Assert.assertEquals(csi.getMaxBins(), 37449);
         Assert.assertEquals(ucsi.getMaxBins(), 299593);
     }
+
     @Test
     public static void testGetMaxSpan() {
-        Assert.assertEquals(csi.getMaxSpan(),512*1024*1024);
-        Assert.assertEquals(ucsi.getMaxSpan(),1024*1024*1024);
+        Assert.assertEquals(csi.getMaxSpan(), 512 * 1024 * 1024);
+        Assert.assertEquals(ucsi.getMaxSpan(), 1024 * 1024 * 1024);
     }
 
-    @Test
-    public static void testGetFirstBinInLevelOK() {
-        Assert.assertEquals(csi.getFirstBinInLevelForCSI(0), 0);
-        Assert.assertEquals(csi.getFirstBinInLevelForCSI(1), 1);
-        Assert.assertEquals(csi.getFirstBinInLevelForCSI(2), 9);
-        Assert.assertEquals(csi.getFirstBinInLevelForCSI(3), 73);
-        Assert.assertEquals(csi.getFirstBinInLevelForCSI(4), 585);
-        Assert.assertEquals(csi.getFirstBinInLevelForCSI(5), 4681);
+    @DataProvider
+    public Object[][] getTestFirstBinInLevelData() {
+        return new Object[][]{
+                {csi, 0, 0},
+                {csi, 1, 1},
+                {csi, 2, 9},
+                {csi, 3, 73},
+                {csi, 4, 585},
+                {csi, 5, 4681},
 
-        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(0), 0);
-        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(1), 1);
-        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(2), 9);
-        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(3), 73);
-        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(4), 585);
-        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(5), 4681);
-        Assert.assertEquals(ucsi.getFirstBinInLevelForCSI(6), 37449);
+                {ucsi, 0, 0},
+                {ucsi, 1, 1},
+                {ucsi, 2, 9},
+                {ucsi, 3, 73},
+                {ucsi, 4, 585},
+                {ucsi, 5, 4681},
+                {ucsi, 6, 37449}
+        };
     }
 
-    @Test (expectedExceptions = SAMException.class)
+    @Test(dataProvider = "getTestFirstBinInLevelData")
+    public static void testGetFirstBinInLevelOK(CSIIndex index, int levelNumber, int expected) {
+        Assert.assertEquals(index.getFirstBinInLevelForCSI(levelNumber), expected);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
     public static void testGetFirstBinInLevelFail1() {
         csi.getFirstBinInLevelForCSI(6);
     }
 
-    @Test (expectedExceptions = SAMException.class)
+    @Test(expectedExceptions = SAMException.class)
     public static void testGetFirstBinInLevelFail2() {
         ucsi.getFirstBinInLevelForCSI(7);
     }
 
-    @Test
-    public static void testGetLevelSizeOK() {
-        Assert.assertEquals(csi.getLevelSize(0), 1);
-        Assert.assertEquals(csi.getLevelSize(1), 8);
-        Assert.assertEquals(csi.getLevelSize(2), 64);
-        Assert.assertEquals(csi.getLevelSize(3), 512);
-        Assert.assertEquals(csi.getLevelSize(4), 4096);
-        Assert.assertEquals(csi.getLevelSize(5), 32768);
+    @DataProvider
+    public Object[][] getTestLevelSizeData() {
+        return new Object[][]{
+                {csi, 0, 1},
+                {csi, 1, 8},
+                {csi, 2, 64},
+                {csi, 3, 512},
+                {csi, 4, 4096},
+                {csi, 5, 32768},
 
-        Assert.assertEquals(ucsi.getLevelSize(0), 1);
-        Assert.assertEquals(ucsi.getLevelSize(1), 8);
-        Assert.assertEquals(ucsi.getLevelSize(2), 64);
-        Assert.assertEquals(ucsi.getLevelSize(3), 512);
-        Assert.assertEquals(ucsi.getLevelSize(4), 4096);
-        Assert.assertEquals(ucsi.getLevelSize(5), 32768);
-        Assert.assertEquals(ucsi.getLevelSize(6), 262144);
+                {ucsi, 0, 1},
+                {ucsi, 1, 8},
+                {ucsi, 2, 64},
+                {ucsi, 3, 512},
+                {ucsi, 4, 4096},
+                {ucsi, 5, 32768},
+                {ucsi, 6, 262144}
+        };
     }
 
-    @Test (expectedExceptions = SAMException.class)
+    @Test(dataProvider = "getTestLevelSizeData")
+    public static void testGetLevelSizeOK(CSIIndex index, int level, int expected) {
+        Assert.assertEquals(index.getLevelSize(level), expected);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
     public static void testGetLevelSizeFail1() {
         csi.getLevelSize(6);
     }
 
-    @Test (expectedExceptions = SAMException.class)
+    @Test(expectedExceptions = SAMException.class)
     public static void testGetLevelSizeFail12() {
         csi.getLevelSize(7);
     }
@@ -130,58 +157,82 @@ public class CSIIndexTest extends HtsjdkTest {
         Assert.assertEquals(csi.getNumberOfReferences(), 45);
     }
 
-    @Test
-    public static void testGetParentBinOK() {
-        Assert.assertEquals(csi.getParentBinNumber(4681), 585);
-        Assert.assertEquals(csi.getParentBinNumber(4688), 585);
-        Assert.assertEquals(csi.getParentBinNumber(4689), 586);
-        Assert.assertEquals(csi.getParentBinNumber(585), 73);
-        Assert.assertEquals(csi.getParentBinNumber(592), 73);
-        Assert.assertEquals(csi.getParentBinNumber(593), 74);
-        Assert.assertEquals(csi.getParentBinNumber(0), 0);
+    @DataProvider
+    public Object[][] getTestParentBinData() {
+        return new Object[][]{
+                {4681, 585},
+                {4688, 585},
+                {4689, 586},
+                {585, 73},
+                {592, 73},
+                {593, 74},
+                {0, 0}
+        };
     }
 
-    @Test (expectedExceptions = SAMException.class)
+    @Test(dataProvider = "getTestParentBinData")
+    public static void testGetParentBinOK(int bin, int expected) {
+        Assert.assertEquals(csi.getParentBinNumber(bin), expected);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
     public static void testGetParentBinFail() {
         csi.getParentBinNumber(37449);
     }
 
-    @Test
-    public static void testRegionToBin() {
-        Assert.assertEquals(GenomicIndexUtil.regionToBin(12653, 1876491), GenomicIndexUtil.regionToBin(12653, 1876491, 14, 6));
-        Assert.assertEquals(GenomicIndexUtil.regionToBin(1048576, 1146880), GenomicIndexUtil.regionToBin(1048576, 1146880, 14, 6));
-        Assert.assertEquals(GenomicIndexUtil.regionToBin(536870912, 1073741824), GenomicIndexUtil.regionToBin(536870912, 1073741824, 14, 6));
+    @DataProvider
+    public Object[][] getTestRegionToBinMatchesBaiData() {
+        return new Object[][]{
+                //start, end
+                {12653, 1876491},
+                {1048576, 1146880},
+                {536870912, 1073741824},
+        };
+    }
+
+    @Test(dataProvider = "getTestRegionToBinMatchesBaiData")
+    public static void testRegionToBinMatchesBai(int start, int end) {
+        final int csiComputation = GenomicIndexUtil.regionToBin(start, end, BAI_EQUIVALENT_MIN_SHIFT, BAI_EQUIVALENT_BIN_DEPTH);
+        final int baiComputation = GenomicIndexUtil.regionToBin(start, end);
+        Assert.assertEquals(csiComputation, baiComputation);
     }
 
     @Test
     public static void testGetNoCoorCount() {
-        long noCoorBai = bai.getNoCoordinateCount().longValue();
-        long noCoorCsi = csi.getNoCoordinateCount().longValue();
+        long noCoorBai = bai.getNoCoordinateCount();
+        long noCoorCsi = csi.getNoCoordinateCount();
 
         Assert.assertEquals(noCoorBai, 279);
         Assert.assertEquals(noCoorCsi, 279);
     }
 
-    @Test
-    public static void testGetLevelForBin() {
-        Assert.assertEquals(csi.getLevelForBin(bin1), 0);
-        Assert.assertEquals(csi.getLevelForBin(bin2), 1);
-        Assert.assertEquals(csi.getLevelForBin(bin3), 0);
-        Assert.assertEquals(csi.getLevelForBin(bin4), 1);
-        Assert.assertEquals(csi.getLevelForBin(bin5), 2);
-        Assert.assertEquals(csi.getLevelForBin(bin6), 4);
-        Assert.assertEquals(csi.getLevelForBin(bin7), 3);
-        Assert.assertEquals(csi.getLevelForBin(bin8), 5);
+    @DataProvider
+    public Object[][] getDataForTestGetLevelForBin(){
+        return new Object[][]{
+                {csi, bin1, 0},
+                {csi, bin2, 1},
+                {csi, bin3, 0},
+                {csi, bin4, 1},
+                {csi, bin5, 2},
+                {csi, bin6, 4},
+                {csi, bin7, 3},
+                {csi, bin8, 5},
 
-        Assert.assertEquals(ucsi.getLevelForBin(bin1), 0);
-        Assert.assertEquals(ucsi.getLevelForBin(bin2), 1);
-        Assert.assertEquals(ucsi.getLevelForBin(bin3), 0);
-        Assert.assertEquals(ucsi.getLevelForBin(bin4), 1);
-        Assert.assertEquals(ucsi.getLevelForBin(bin5), 2);
-        Assert.assertEquals(ucsi.getLevelForBin(bin6), 4);
-        Assert.assertEquals(ucsi.getLevelForBin(bin7), 3);
-        Assert.assertEquals(ucsi.getLevelForBin(bin8), 5);
-        Assert.assertEquals(ucsi.getLevelForBin(bin9), 6);
+                {ucsi, bin1, 0},
+                {ucsi, bin2, 1},
+                {ucsi, bin3, 0},
+                {ucsi, bin4, 1},
+                {ucsi, bin5, 2},
+                {ucsi, bin6, 4},
+                {ucsi, bin7, 3},
+                {ucsi, bin8, 5},
+                {ucsi, bin9, 6}
+        };
+    }
+
+    @Test(dataProvider = "getDataForTestGetLevelForBin")
+    public static void testGetLevelForBin(CSIIndex index, Bin bin, int expected) {
+        Assert.assertEquals(index.getLevelForBin(bin), expected);
     }
 
     @Test
@@ -210,73 +261,112 @@ public class CSIIndexTest extends HtsjdkTest {
         Assert.assertEquals(ucsi.getParentBinNumber(33), 4);
     }
 
-    @Test
-    public static void testGetFirstLocusInBin() {
-        Assert.assertEquals(csi.getFirstLocusInBin(bin1), 1);
-        Assert.assertEquals(csi.getFirstLocusInBin(bin2), 1);
-        Assert.assertEquals(csi.getFirstLocusInBin(bin3), 1);
-        Assert.assertEquals(csi.getFirstLocusInBin(bin4), 1);
-        Assert.assertEquals(csi.getFirstLocusInBin(bin5), 1);
-        Assert.assertEquals(csi.getFirstLocusInBin(bin6), (1<<17) + 1);
-        Assert.assertEquals(csi.getFirstLocusInBin(bin7), (1<<20)*7 + 1);
-        Assert.assertEquals(csi.getFirstLocusInBin(bin8), (1<<14)*8 + 1);
+    @DataProvider
+    public Object[][] testDataForGetFirstLocusInBin() {
+        return new Object[][]{
+                {csi, bin1, 1},
+                {csi, bin2, 1},
+                {csi, bin3, 1},
+                {csi, bin4, 1},
+                {csi, bin5, 1},
+                {csi, bin6, (1 << 17) + 1},
+                {csi, bin7, (1 << 20) * 7 + 1},
+                {csi, bin8, (1 << 14) * 8 + 1},
 
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin1), 1);
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin2), 1);
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin3), 1);
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin4), 1);
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin5), 1);
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin6), (1<<18) + 1);
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin7), (1<<21)*7 + 1);
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin8), (1<<15)*8 + 1);
-        Assert.assertEquals(ucsi.getFirstLocusInBin(bin9), (1<<12)*98404 + 1);
+                {ucsi, bin1, 1},
+                {ucsi, bin2, 1},
+                {ucsi, bin3, 1},
+                {ucsi, bin4, 1},
+                {ucsi, bin5, 1},
+                {ucsi, bin6, (1 << 18) + 1},
+                {ucsi, bin7, (1 << 21) * 7 + 1},
+                {ucsi, bin8, (1 << 15) * 8 + 1},
+                {ucsi, bin9, (1 << 12) * 98404 + 1},
+        };
     }
 
-    @Test
-    public static void testGetLastLocusInBin() {
-        Assert.assertEquals(csi.getLastLocusInBin(bin1), 1<<29);
-        Assert.assertEquals(csi.getLastLocusInBin(bin2), 1<<26);
-        Assert.assertEquals(csi.getLastLocusInBin(bin3), 1<<29);
-        Assert.assertEquals(csi.getLastLocusInBin(bin4), 1<<26);
-        Assert.assertEquals(csi.getLastLocusInBin(bin5), 1<<23);
-        Assert.assertEquals(csi.getLastLocusInBin(bin6), (1<<17)*2);
-        Assert.assertEquals(csi.getLastLocusInBin(bin7), (1<<20)*8);
-        Assert.assertEquals(csi.getLastLocusInBin(bin8), (1<<14)*9);
-
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin1), 1<<30);
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin2), 1<<27);
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin3), 1<<30);
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin4), 1<<27);
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin5), 1<<24);
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin6), (1<<18)*2);
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin7), (1<<21)*8);
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin8), (1<<15)*9);
-        Assert.assertEquals(ucsi.getLastLocusInBin(bin9), (1<<12)*98405);
+    @Test(dataProvider = "testDataForGetFirstLocusInBin")
+    public static void testGetFirstLocusInBin(CSIIndex index, Bin bin, int expected) {
+        Assert.assertEquals(index.getFirstLocusInBin(bin), expected);
     }
 
-    @Test
-    public static void testRegionToBins() {
-        BitSet bs1 = GenomicIndexUtil.regionToBins((1<<12)*98403 + 4094, (1<<12)*98404 + 1, 12, 7 );
-        Assert.assertTrue(bs1.get(bin9.getBinNumber()-1)); //135852
-        Assert.assertTrue(bs1.get(bin9.getBinNumber())); //135853
-        Assert.assertTrue(bs1.get(ucsi.getParentBinNumber(bin9.getBinNumber()))); //16981
 
-        BitSet bs2 = GenomicIndexUtil.regionToBins(939520000, 939529000, 12, 7 );
-        Assert.assertTrue(bs2.get(0));
-        Assert.assertTrue(bs2.get(7));
-        Assert.assertTrue(bs2.get(8));
-        Assert.assertTrue(bs2.get(64));
-        Assert.assertTrue(bs2.get(65));
-        Assert.assertTrue(bs2.get(520));
-        Assert.assertTrue(bs2.get(521));
-        Assert.assertTrue(bs2.get(4168));
-        Assert.assertTrue(bs2.get(4169));
-        Assert.assertTrue(bs2.get(33352));
-        Assert.assertTrue(bs2.get(33353));
-        Assert.assertTrue(bs2.get(266823));
-        Assert.assertTrue(bs2.get(266824));
-        Assert.assertTrue(bs2.get(266825));
-        Assert.assertTrue(bs2.get(266826));
+    @DataProvider
+    public Object[][] getDataForTestGetLastLocusInBin() {
+        return new Object[][]{
+                {csi, bin1, 1 << 29},
+                {csi, bin2, 1 << 26},
+                {csi, bin3, 1 << 29},
+                {csi, bin4, 1 << 26},
+                {csi, bin5, 1 << 23},
+                {csi, bin6, (1 << 17) * 2},
+                {csi, bin7, (1 << 20) * 8},
+                {csi, bin8, (1 << 14) * 9},
+
+                {ucsi, bin1, 1 << 30},
+                {ucsi, bin2, 1 << 27},
+                {ucsi, bin3, 1 << 30},
+                {ucsi, bin4, 1 << 27},
+                {ucsi, bin5, 1 << 24},
+                {ucsi, bin6, (1 << 18) * 2},
+                {ucsi, bin7, (1 << 21) * 8},
+                {ucsi, bin8, (1 << 15) * 9},
+                {ucsi, bin9, (1 << 12) * 98405},
+        };
+    }
+
+    @Test(dataProvider = "getDataForTestGetLastLocusInBin")
+    public static void testGetLastLocusInBin(CSIIndex index, Bin bin, int expected) {
+        Assert.assertEquals(index.getLastLocusInBin(bin), expected);
+    }
+
+
+    @DataProvider
+    public Object[][] getTestRegionToBinsMatchesBaiData() {
+        return new Object[][]{
+                //start, end
+                {12653, 1876491},
+                {1048576, 1146880},
+                {536870912, 1073741824},
+                {939520000, 939529000},
+                {1, 2},
+                {1_000, 1_001},
+                {1_000, 10_001},
+                {1_000, 100_001},
+                {1_000, 1_000_001},
+                {10_000, 10_0001},
+                {1, 10_000_000},
+                {939529000, 939529001},
+                {558419286, 558424804},
+        };
+    }
+
+    @Test(dataProvider = "getTestRegionToBinsMatchesBaiData")
+    public static void testRegionToBinsMatchesBai(int start, int end) {
+        final BitSet csiComputation = GenomicIndexUtil.regionToBins(start, end, BAI_EQUIVALENT_MIN_SHIFT, BAI_EQUIVALENT_BIN_DEPTH);
+        final BitSet baiComputation = GenomicIndexUtil.regionToBins(start, end);
+        Assert.assertEquals(csiComputation, baiComputation);
+    }
+
+    @DataProvider
+    public Object[][] getTestRegionToBinsData() {
+        return new Object[][]{
+                //start, end, minShift, binDepth, expectedBins
+                {(1 << 12) * 98403 + 4094, (1 << 12) * 98404 + 1, 12, 7, Arrays.asList(0, 4, 33, 265, 2122, bin9.getBinNumber() - 1, bin9.getBinNumber(), ucsi.getParentBinNumber(bin9.getBinNumber()))},
+                {939520000, 939529000, 12, 7, Arrays.asList(0, 7, 8, 64, 65, 520, 521, 4168, 4169, 33352, 33353, 266823, 266824, 266825, 266826)},
+                // This case tests https://github.com/samtools/htsjdk/issues/1047.
+                // This combination of minShift and binDepth result in a maxPos larger than maxInt which caused
+                // an overflow error.
+                {558419286, 558424804, 14, 7, Arrays.asList(0, 2, 17, 139, 1117, 8941, 71532)}
+        };
+    }
+
+    @Test(dataProvider = "getTestRegionToBinsData")
+    public static void testRegionToBins(int start, int end, int minShift, int binDepth, List<Integer> expectedBins) {
+        BitSet bins = GenomicIndexUtil.regionToBins(start, end, minShift, binDepth);
+        final BitSet expected = new BitSet();
+        expectedBins.forEach(expected::set);
+        Assert.assertEquals(bins, expected);
     }
 
     @Test
@@ -290,5 +380,26 @@ public class CSIIndexTest extends HtsjdkTest {
 
         BAMFileSpan bfs4 = ucsi.getSpanOverlapping(bin10);
         Assert.assertEquals(bfs4.getChunks().size(), 3);
+    }
+
+    @DataProvider
+    public Object[][] getDataForTestLongReferenceQuery() {
+        return new Object[][]{
+                //counts generated using samtools view
+                //chrom , start, end, expected number of reads
+                {"chr1H", 558419286, 558424804, 131},
+                {"chr1H", 558414281, 558414323, 102},
+                {"chr1H", 558414281, 558424804, 3015}
+        };
+    }
+
+    // test for https://github.com/samtools/htsjdk/issues/1047
+    @Test(dataProvider = "getDataForTestLongReferenceQuery")
+    public void testLongReferenceQuery(String chr, int start, int end, int expectedReads) throws IOException {
+        final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault();
+        try (final SamReader read = samReaderFactory.open(new File(TEST_DATA_DIR, "long_references.bam"))) {
+            final SAMRecordIterator values = read.query(chr, start, end, false);
+            Assert.assertEquals(values.toList().size(), expectedReads);
+        }
     }
 }
