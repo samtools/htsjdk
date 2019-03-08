@@ -144,7 +144,8 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
     }
 
     /**
-     * Returns true if this interval overlaps the other interval, otherwise false.
+     * Returns true if this interval abuts the other interval, otherwise false.
+     * To be abutting the two intervals must be adjacent but not intersecting.
      */
     public boolean abuts(final Interval other) {
         return this.getContig().equals(other.getContig()) &&
@@ -166,7 +167,7 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
     }
 
     /**
-     * Counts the total number of bases a collection of intervals.
+     * Counts the total number of bases in a collection of intervals.
      */
     public static long countBases(final Collection<Interval> intervals) {
         long total = 0;
