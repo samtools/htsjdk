@@ -380,7 +380,11 @@ public class IntervalList implements Iterable<Interval> {
 
     /**
      * Merges a collection of intervals and optionally concatenates unique names or takes the first name.
-     * Uses the contig and strand of the first interval seen without validating that the others match.
+     * *
+     * @param concatenateNames if true, combine the names of all the intervals with |, otherwise use the name of the first interval.
+     * @return a single interval which spans from the minimum input start position to the maximum input end position.
+     * The resulting strandedness and contig are those of the first input with no validation.
+     *
      */
     static Interval merge(final Iterable<Interval> intervals, final boolean concatenateNames) {
         final Interval first = intervals.iterator().next();
