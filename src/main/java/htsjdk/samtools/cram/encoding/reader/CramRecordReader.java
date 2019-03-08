@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 public class CramRecordReader {
     private final DataSeriesReader<Integer> bitFlagsCodec;
-    private final DataSeriesReader<Byte> compressionBitFlagsCodec;
+    private final DataSeriesReader<Integer> compressionBitFlagsCodec;
     private final DataSeriesReader<Integer> readLengthCodec;
     private final DataSeriesReader<Integer> alignmentStartCodec;
     private final DataSeriesReader<Integer> readGroupCodec;
@@ -54,7 +54,7 @@ public class CramRecordReader {
     private final DataSeriesReader<Integer> paddingCodec;
     private final DataSeriesReader<Integer> deletionLengthCodec;
     private final DataSeriesReader<Integer> mappingScoreCodec;
-    private final DataSeriesReader<Byte> mateBitFlagCodec;
+    private final DataSeriesReader<Integer> mateBitFlagCodec;
     private final DataSeriesReader<Integer> mateReferenceIdCodec;
     private final DataSeriesReader<Integer> mateAlignmentStartCodec;
     private final DataSeriesReader<Integer> insertSizeCodec;

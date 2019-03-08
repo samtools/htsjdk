@@ -99,12 +99,12 @@ public class CramCompressionRecord {
 
     public int sliceIndex = 0;
 
-    public byte getMateFlags() {
-        return (byte) (0xFF & mateFlags);
+    public int getMateFlags() {
+        return (0xFF & mateFlags);
     }
 
-    public byte getCompressionFlags() {
-        return (byte) (0xFF & compressionFlags);
+    public int getCompressionFlags() {
+        return (0xFF & compressionFlags);
     }
 
     @SuppressWarnings("SimplifiableIfStatement")

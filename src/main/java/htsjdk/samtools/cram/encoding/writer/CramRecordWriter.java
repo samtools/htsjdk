@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class CramRecordWriter {
     private final DataSeriesWriter<Integer> bitFlagsC;
-    private final DataSeriesWriter<Byte> compBitFlagsC;
+    private final DataSeriesWriter<Integer> compBitFlagsC;
     private final DataSeriesWriter<Integer> readLengthC;
     private final DataSeriesWriter<Integer> alStartC;
     private final DataSeriesWriter<Integer> readGroupC;
@@ -51,7 +51,7 @@ public class CramRecordWriter {
     private final DataSeriesWriter<Integer> paddingCodec;
     private final DataSeriesWriter<Integer> deletionLengthCodec;
     private final DataSeriesWriter<Integer> mappingQualityScoreCodec;
-    private final DataSeriesWriter<Byte> mateBitFlagsCodec;
+    private final DataSeriesWriter<Integer> mateBitFlagsCodec;
     private final DataSeriesWriter<Integer> nextFragmentReferenceSequenceIDCodec;
     private final DataSeriesWriter<Integer> nextFragmentAlignmentStart;
     private final DataSeriesWriter<Integer> templateSize;

@@ -6,6 +6,7 @@ import org.testng.annotations.DataProvider;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class IOTestCases extends HtsjdkTest {
 
@@ -68,6 +69,22 @@ public class IOTestCases extends HtsjdkTest {
 
         return new Object[][]{
                 {byteTests},
+                {shuffled}
+        };
+    }
+
+    @DataProvider(name = "testPositiveByteLists")
+    public static Object[][] testPositiveByteValues() {
+        final List<Byte> positiveByteTests = IOTestCases.byteTests()
+                .stream()
+                .filter(b -> b >= 0)
+                .collect(Collectors.toList());
+
+        final List<Byte> shuffled = new ArrayList<>(positiveByteTests);
+        Collections.shuffle(shuffled);
+
+        return new Object[][]{
+                {positiveByteTests},
                 {shuffled}
         };
     }
@@ -136,6 +153,28 @@ public class IOTestCases extends HtsjdkTest {
 
         return new Object[][]{
                 {int32Tests},
+                {shuffled}
+        };
+    }
+
+    // for testing ITF8 and LTF8 equivalence: only true in the range 0 - (high bit = 28)
+
+    private static List<Integer> uint28Tests() {
+        final int max = 1 << 28;
+        return int32Tests()
+                .stream()
+                .filter(i -> i >= 0 && i < max)
+                .collect(Collectors.toList());
+    }
+
+    @DataProvider(name = "testUint28Lists")
+    public static Object[][] testValuesU28() {
+        final List<Integer> uint28Tests = IOTestCases.uint28Tests();
+        final List<Integer> shuffled = new ArrayList<>(uint28Tests);
+        Collections.shuffle(shuffled);
+
+        return new Object[][]{
+                {uint28Tests},
                 {shuffled}
         };
     }

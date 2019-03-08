@@ -71,6 +71,9 @@ public class ITF8Test extends HtsjdkTest {
     @DataProvider(name = "predefined")
     public static Object[][] predefinedProvider() {
         return new Object[][]{
+                // 0x7F has highest bit 7
+                // write out as-is
+                {0x7F, new byte[]{0x7F}},
                 // 0x454F46 has highest bit 23
                 // set 3 high bits + bits 25-28 (all 0) -> 0xE0
                 // write 3 bytes as-is -> 0x45, 0x4F, 0x46
