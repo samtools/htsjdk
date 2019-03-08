@@ -401,7 +401,7 @@ public class IOUtil {
     public static boolean isUrl(final String input) {
       try {
           new URL(input);
-          if ((input.contains("http://")) || (input.contains("ftp://"))) {
+          if ((input.contains("http://")) || (input.contains("ftp://")) || (input.contains("https://"))) {
               return true;
           }
 
