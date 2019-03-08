@@ -185,10 +185,8 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                 //if there is no index we create it
 
                 String pathToVCFFile = this.path;
-                pathToVCFFile.replace("file://", "");
 
                 if (isUrl(this.path)) {
-               // if ((pathToVCFFile.contains("http://")) || (pathToVCFFile.contains("ftp://"))) {
                     new File("TribbleTmpDir").mkdir();
                     final File inputVCF = File.createTempFile("tmpURLFile", ".vcf", new File ("TribbleTmpDir"));
                     inputVCF.deleteOnExit();
@@ -200,7 +198,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                     out.close();
                     pathToVCFFile = "file://" + inputVCF.getAbsolutePath();
                 }
-                //throw new TribbleException(pathToVCFFile);
 
                 final File inputVCF = new File(pathToVCFFile.replace("file://", ""));
 
