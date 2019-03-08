@@ -175,18 +175,6 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         testComparator(CRAIEntry::compareTo,
                 this::basicSequenceIdSubTest,
                 this::basicAlignmentStartSubTest,
-                this::unsortedSubTest,  // does not sort by Alignment End
-                this::basicContainerStartSubTest);
-    }
-
-    // same as base comparison type
-
-    @Test
-    public void testByStartComparator() {
-        testComparator(CRAIEntry.BY_START,
-                this::basicSequenceIdSubTest,
-                this::basicAlignmentStartSubTest,
-                this::unsortedSubTest,  // does not sort by Alignment End
                 this::basicContainerStartSubTest);
     }
 
@@ -197,25 +185,12 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         testComparator(CRAIEntry.UNMAPPED_LAST,
                 this::unmappedLastSequenceIdSubTest,
                 this::basicAlignmentStartSubTest,
-                this::unsortedSubTest,  // does not sort by Alignment End
-                this::basicContainerStartSubTest);
-    }
-
-    // sorts by alignment end, ignores alignment start
-
-    @Test
-    public void testByEndComparator () {
-        testComparator(CRAIEntry.BY_END,
-                this::basicSequenceIdSubTest,
-                this::unsortedSubTest,  // does not sort by Alignment Start
-                this::basicAlignmentEndSubTest,
                 this::basicContainerStartSubTest);
     }
 
     private void testComparator(final Comparator<CRAIEntry> comparator,
                                 final ComparatorSubTest sequenceIdTest,
                                 final ComparatorSubTest alignmentStartTest,
-                                final ComparatorSubTest alignmentEndTest,
                                 final ComparatorSubTest containerStartTest) {
 
         final List<CRAIEntry> seqIdList = new ArrayList<>();
@@ -235,18 +210,6 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         alignmentStartList.sort(comparator);
         alignmentStartTest.test(alignmentStartList);
 
-        final List<CRAIEntry> alignmentEndList = new ArrayList<>();
-        alignmentEndList.add(newEntry(1, 300, 0));
-        alignmentEndList.add(newEntry(1, 200, 50));
-        alignmentEndList.add(newEntry(1, 200, 30));
-        alignmentEndList.add(newEntry(1, 200, 0));
-        alignmentEndList.add(newEntry(1, 100, 0));
-        alignmentEndList.add(newEntry(1, 100, 20));
-        alignmentEndList.add(newEntry(1, 100, 70));
-        alignmentEndList.add(newEntry(1, 400, 0));
-        alignmentEndList.sort(comparator);
-        alignmentEndTest.test(alignmentEndList);
-
         final List<CRAIEntry> containerStartList = new ArrayList<>();
         containerStartList.add(newEntryContOffset(200));
         containerStartList.add(newEntryContOffset(100));
@@ -259,9 +222,6 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     private interface ComparatorSubTest {
         void test(final List<CRAIEntry> list);
     }
-
-    // no-op.  comparator does not sort in this way.
-    private void unsortedSubTest(final List<CRAIEntry> list) { }
 
     private void basicSequenceIdSubTest(final List<CRAIEntry> list) {
         // NO_ALIGNMENT -1 is sorted first
@@ -284,13 +244,6 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     private void basicAlignmentStartSubTest(final List<CRAIEntry> list) {
         for (int index = 0; index < list.size() - 1; index++) {
             Assert.assertTrue(list.get(index).getAlignmentStart() < list.get(index + 1).getAlignmentStart());
-        }
-    }
-
-    private void basicAlignmentEndSubTest(final List<CRAIEntry> list) {
-        for (int index = 0; index < list.size() - 1; index++) {
-            Assert.assertTrue(list.get(index).getAlignmentStart() + list.get(index).getAlignmentSpan()
-                    < list.get(index + 1).getAlignmentStart() + list.get(index + 1).getAlignmentSpan());
         }
     }
 

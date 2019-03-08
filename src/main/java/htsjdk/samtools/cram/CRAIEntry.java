@@ -107,19 +107,6 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         return (int) (containerStartByteOffset - o.containerStartByteOffset);
     }
 
-    // naturalOrder() = use Comparable.compareTo()
-    public static final Comparator<CRAIEntry> BY_START = Comparator.naturalOrder();
-
-    public static final Comparator<CRAIEntry> BY_END = (final CRAIEntry o1, final CRAIEntry o2) -> {
-        if (o1.sequenceId != o2.sequenceId) {
-            return o1.sequenceId - o2.sequenceId;
-        }
-        if (o1.alignmentStart + o1.alignmentSpan != o2.alignmentStart + o2.alignmentSpan) {
-            return o1.alignmentStart + o1.alignmentSpan - o2.alignmentStart - o2.alignmentSpan;
-        }
-        return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
-    };
-
     public static final Comparator<CRAIEntry> UNMAPPED_LAST = (final CRAIEntry o1, final CRAIEntry o2) -> {
         if (o1.sequenceId != o2.sequenceId) {
             if (o1.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
