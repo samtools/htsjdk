@@ -176,7 +176,7 @@ public class CramRecordReader {
 
             cramRecord.flags = bitFlagsCodec.readData();
             cramRecord.compressionFlags = compressionBitFlagsCodec.readData();
-            if (refContext.isMultiRef()) {
+            if (refContext.isMultipleReference()) {
                 cramRecord.sequenceId = refIdCodec.readData();
             } else {
                 // either unmapped (-1) or a valid ref

@@ -494,17 +494,6 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(cramTmpFile))));
     }
 
-    @Test(groups = {"defaultReference"})
-    public void testMakeWriterForCramExtensionNoReference() throws IOException {
-
-        final File cramTmpFile = File.createTempFile("testMakeWriterForCramExtension", "." + CRAM_TYPE.fileExtension());
-        cramTmpFile.deleteOnExit();
-        try (SAMFileWriter samFileWriter = new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, cramTmpFile, null)) {
-            fillSmallBam(samFileWriter);
-        }
-        Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(cramTmpFile))));
-    }
-
     @Test
     public void testMakeWriterForNoExtension() throws IOException {
         final File tmpFile = File.createTempFile("testMakeWriterForNoExtension", "");

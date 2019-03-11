@@ -29,6 +29,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import htsjdk.samtools.util.Log;
@@ -66,7 +67,7 @@ public class CramNormalizer {
         for (final CramCompressionRecord record : records) {
             record.index = ++readCounter;
 
-            if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+            if (ReferenceContext.isUnmappedUnplaced(record.sequenceId)) {
                 record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
                 record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
             } else {
@@ -165,7 +166,7 @@ public class CramNormalizer {
         record.setMateUnmapped(next.isSegmentUnmapped());
         record.setMateNegativeStrand(next.isNegativeStrand());
         record.mateSequenceID = next.sequenceId;
-        if (record.mateSequenceID == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+        if (ReferenceContext.isUnmappedUnplaced(record.mateSequenceID))
             record.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
     }
 

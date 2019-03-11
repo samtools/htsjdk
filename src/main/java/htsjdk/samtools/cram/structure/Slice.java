@@ -135,7 +135,7 @@ public class Slice {
     }
 
     public boolean validateRefMD5(final byte[] ref) {
-        if (referenceContext.isMultiRef()) {
+        if (referenceContext.isMultipleReference()) {
             throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
         }
 
@@ -342,7 +342,7 @@ public class Slice {
      * @return a new CRAI Index Entry derived from this Slice
      */
     public CRAIEntry getCRAIEntry() {
-        return new CRAIEntry(referenceContext.getSerializableId(), alignmentStart, alignmentSpan, containerOffset, offset, size);
+        return new CRAIEntry(referenceContext, alignmentStart, alignmentSpan, containerOffset, offset, size);
     }
 
     /**
@@ -366,11 +366,11 @@ public class Slice {
             throw new CRAMException("Cannot construct index if the CRAM is not Coordinate Sorted");
         }
 
-        if (referenceContext.isMultiRef()) {
+        if (referenceContext.isMultipleReference()) {
             final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(compressionHeader, ValidationStringency.DEFAULT_STRINGENCY);
 
             return spans.entrySet().stream()
-                    .map(e -> new CRAIEntry(e.getKey().getSerializableId(),
+                    .map(e -> new CRAIEntry(e.getKey(),
                             e.getValue().getStart(),
                             e.getValue().getSpan(),
                             containerStartByteOffset,
@@ -379,9 +379,7 @@ public class Slice {
                     .sorted()
                     .collect(Collectors.toList());
         } else {
-            // single ref or unmapped
-            final int sequenceId = referenceContext.getSerializableId();
-            return Collections.singletonList(new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerStartByteOffset, offset, size));
+            return Collections.singletonList(new CRAIEntry(referenceContext, alignmentStart, alignmentSpan, containerStartByteOffset, offset, size));
         }
     }
 

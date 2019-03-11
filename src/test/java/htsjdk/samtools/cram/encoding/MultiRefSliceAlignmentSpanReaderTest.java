@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CramRecordTestHelper;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
@@ -52,7 +51,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         initialRecords.get(2).readLength = commonRead.length();
 
         // span <unmapped>
-        initialRecords.get(3).sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+        initialRecords.get(3).sequenceId = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT.getSerializableId();
         initialRecords.get(3).alignmentStart = 7;
         initialRecords.get(3).readBases = commonRead.getBytes();
         initialRecords.get(3).readLength = commonRead.length();

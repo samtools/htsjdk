@@ -14,8 +14,8 @@ import htsjdk.samtools.cram.CRAMException;
  *
  */
 public class ReferenceContext implements Comparable<ReferenceContext> {
-    public static final int MULTIPLE_REFERENCE_ID = -2;
-    public static final int UNMAPPED_UNPLACED_ID = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX; // -1
+    private static final int MULTIPLE_REFERENCE_ID = -2;
+    private static final int UNMAPPED_UNPLACED_ID = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX; // -1
 
     public static final ReferenceContext MULTIPLE_REFERENCE_CONTEXT = new ReferenceContext(MULTIPLE_REFERENCE_ID);
     public static final ReferenceContext UNMAPPED_UNPLACED_CONTEXT = new ReferenceContext(UNMAPPED_UNPLACED_ID);
@@ -97,16 +97,35 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     }
 
     /**
+     * Does this ReferenceContext refer to only unplaced reads (whether their unmapped flags are set or not)?
+     * @return true if the ReferenceContext refers only to unplaced reads
+     */
+    public static boolean isUnmappedUnplaced(final int sequenceId) {
+        return sequenceId == UNMAPPED_UNPLACED_CONTEXT.getSerializableId();
+    }
+
+
+    /**
      * Does this ReferenceContext refer to:
      * - reads placed on multiple references
      * - or a combination of placed and unplaced reads?
      * @return true if the ReferenceContext relates to reads placed on multiple references
      * or a combination of placed and unplaced reads
      */
-    public boolean isMultiRef() {
+    public boolean isMultipleReference() {
         return type == ReferenceContextType.MULTIPLE_REFERENCE_TYPE;
     }
 
+    /**
+     * Does this ReferenceContext refer to:
+     * - reads placed on multiple references
+     * - or a combination of placed and unplaced reads?
+     * @return true if the ReferenceContext relates to reads placed on multiple references
+     * or a combination of placed and unplaced reads
+     */
+    public static boolean isMultipleReference(final int sequenceId) {
+        return sequenceId == MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
+    }
     /**
      * Does this ReferenceContext refer to reads placed on a single reference (whether their unmapped flags are set or not)?
      * @return true if all reads referred to by this ReferenceContext are placed on a single reference

@@ -25,6 +25,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -88,7 +89,7 @@ public class CramCompressionRecord {
     public int mappingQuality;
 
     public String sequenceName;
-    public int sequenceId;
+    public int sequenceId;      // how about a ReferenceContext instead.  also do a search for seqId, refId, etc
     public String readName;
 
     // insert size:
@@ -266,7 +267,7 @@ public class CramCompressionRecord {
      */
     public boolean isPlaced() {
         // placement requires a valid sequence ID and alignment start coordinate
-        boolean placed = sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+        boolean placed = ! ReferenceContext.isUnmappedUnplaced(sequenceId) &&
                 alignmentStart != SAMRecord.NO_ALIGNMENT_START;
 
         if (!placed && !isSegmentUnmapped()) {

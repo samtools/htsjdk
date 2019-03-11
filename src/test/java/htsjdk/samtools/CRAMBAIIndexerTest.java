@@ -117,10 +117,10 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final List<CramCompressionRecord> records = CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(RECORDS_PER_SLICE * 2);
 
         final Container container1 = FACTORY.buildContainer(records.subList(0, RECORDS_PER_SLICE));
-        Assert.assertTrue(container1.getReferenceContext().isMultiRef());
+        Assert.assertTrue(container1.getReferenceContext().isMultipleReference());
 
         final Container container2 = FACTORY.buildContainer(records.subList(RECORDS_PER_SLICE, RECORDS_PER_SLICE * 2));
-        Assert.assertTrue(container2.getReferenceContext().isMultiRef());
+        Assert.assertTrue(container2.getReferenceContext().isMultipleReference());
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(container1, container2));
 

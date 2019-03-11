@@ -45,7 +45,6 @@ class SliceIO {
             throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
 
         final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getUncompressedContent());
-
         final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
         final Slice slice = new Slice(refContext);
         slice.alignmentStart = ITF8.readUnsignedITF8(parseInputStream);
@@ -61,6 +60,8 @@ class SliceIO {
 
         final byte[] bytes = InputStreamUtils.readFully(parseInputStream);
 
+        slice.headerBlock = sliceHeaderBlock;
+
         if (major >= CramVersions.CRAM_v3.major) {
             slice.sliceTags = BinaryTagCodec.readTags(bytes, 0, bytes.length, ValidationStringency.DEFAULT_STRINGENCY);
 
@@ -71,7 +72,6 @@ class SliceIO {
             }
         }
 
-        slice.headerBlock = sliceHeaderBlock;
         return slice;
     }
 

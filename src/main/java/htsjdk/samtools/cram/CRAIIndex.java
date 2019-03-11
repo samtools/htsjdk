@@ -83,7 +83,8 @@ public class CRAIIndex {
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(baos, header);
 
         for (final CRAIEntry entry : full) {
-            final Slice slice = new Slice(new ReferenceContext(entry.getSequenceId()));
+            final ReferenceContext refContext = entry.getReferenceContext();
+            final Slice slice = new Slice(refContext);
             slice.containerOffset = entry.getContainerStartByteOffset();
             slice.alignmentStart = entry.getAlignmentStart();
             slice.alignmentSpan = entry.getAlignmentSpan();
@@ -104,9 +105,9 @@ public class CRAIIndex {
         return new SeekableMemoryStream(baos.toByteArray(), "CRAI to BAI converter");
     }
 
-    public static List<CRAIEntry> find(final List<CRAIEntry> list, final int seqId, final int start, final int span) {
+    public static List<CRAIEntry> find(final List<CRAIEntry> list, final ReferenceContext referenceContext, final int start, final int span) {
         final boolean matchEntireSequence = start < 1 || span < 1;
-        final CRAIEntry query = new CRAIEntry(seqId,
+        final CRAIEntry query = new CRAIEntry(referenceContext,
                 start,
                 span,
                 Long.MAX_VALUE,
@@ -114,7 +115,7 @@ public class CRAIIndex {
                 Integer.MAX_VALUE);
 
         return list.stream()
-                .filter(e -> e.getSequenceId() == seqId)
+                .filter(e -> e.getReferenceContext() == referenceContext)
                 .filter(e -> matchEntireSequence || CRAIEntry.intersect(e, query))
                 .sorted()
                 .collect(Collectors.toList());
@@ -149,7 +150,7 @@ public class CRAIIndex {
             final int mid = (low + high) >>> 1;
             final CRAIEntry midVal = list.get(mid);
 
-            if (midVal.getSequenceId() >= 0) {
+            if (midVal.getReferenceContext().isMappedSingleRef()) {
                 low = mid + 1;
             } else {
                 high = mid - 1;
@@ -158,7 +159,7 @@ public class CRAIIndex {
         if (low >= list.size()) {
             return list.size() - 1;
         }
-        for (; low >= 0 && list.get(low).getSequenceId() == -1; low--) {
+        for (; low >= 0 && list.get(low).getReferenceContext().isUnmappedUnplaced(); low--) {
         }
         return low;
     }

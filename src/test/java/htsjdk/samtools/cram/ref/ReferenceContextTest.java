@@ -8,6 +8,11 @@ import org.testng.annotations.Test;
 
 public class ReferenceContextTest extends HtsjdkTest {
 
+    // for test convenience
+
+    private static final int UNPLACED_REF_ID = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT.getSerializableId();
+    private static final int MULTI_REF_ID = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
+
     // test constructors and basic identity methods
 
     @DataProvider(name = "validRefContexts")
@@ -25,24 +30,24 @@ public class ReferenceContextTest extends HtsjdkTest {
                         true, false, false, 1
                 },
                 {
-                        new ReferenceContext(ReferenceContext.UNMAPPED_UNPLACED_ID),
+                        new ReferenceContext(UNPLACED_REF_ID),
                         ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
-                        false, true, false, ReferenceContext.UNMAPPED_UNPLACED_ID
+                        false, true, false, UNPLACED_REF_ID
                 },
                 {
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
-                        false, true, false, ReferenceContext.UNMAPPED_UNPLACED_ID
+                        false, true, false, UNPLACED_REF_ID
                 },
                 {
-                        new ReferenceContext(ReferenceContext.MULTIPLE_REFERENCE_ID),
+                        new ReferenceContext(MULTI_REF_ID),
                         ReferenceContextType.MULTIPLE_REFERENCE_TYPE,
-                        false, false, true, ReferenceContext.MULTIPLE_REFERENCE_ID
+                        false, false, true, MULTI_REF_ID
                 },
                 {
                         ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
                         ReferenceContextType.MULTIPLE_REFERENCE_TYPE,
-                        false, false, true, ReferenceContext.MULTIPLE_REFERENCE_ID
+                        false, false, true, MULTI_REF_ID
                 },
         };
     }
@@ -58,7 +63,7 @@ public class ReferenceContextTest extends HtsjdkTest {
         Assert.assertEquals(refContext.getType(), expectedType);
         Assert.assertEquals(refContext.isMappedSingleRef(), expectedSingle);
         Assert.assertEquals(refContext.isUnmappedUnplaced(), expectedUnplaced);
-        Assert.assertEquals(refContext.isMultiRef(), expectedMulti);
+        Assert.assertEquals(refContext.isMultipleReference(), expectedMulti);
         Assert.assertEquals(refContext.getSerializableId(), expectedID);
     }
 
@@ -70,8 +75,8 @@ public class ReferenceContextTest extends HtsjdkTest {
     @DataProvider(name = "sentinels")
     private static Object[][] sentinels() {
         return new Object[][] {
-                {ReferenceContext.MULTIPLE_REFERENCE_ID},
-                {ReferenceContext.UNMAPPED_UNPLACED_ID}
+                {MULTI_REF_ID},
+                {UNPLACED_REF_ID}
         };
     }
 

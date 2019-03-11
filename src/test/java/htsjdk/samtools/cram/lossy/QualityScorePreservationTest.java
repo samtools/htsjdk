@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.lossy;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;

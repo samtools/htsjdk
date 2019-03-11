@@ -2,6 +2,7 @@ package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import org.testng.Assert;
@@ -19,62 +20,62 @@ public class CRAIIndexTest extends HtsjdkTest {
 
     @Test
     public void testFind() {
-        final int sequenceId = 1;
-        final List<CRAIEntry> index = getCraiEntriesForTest(sequenceId);
+        final ReferenceContext refContextToFind = new ReferenceContext(1);
+        final List<CRAIEntry> index = getCraiEntriesForTest(refContextToFind);
 
-        Assert.assertFalse(allFoundEntriesIntersectQueryInFind(index, sequenceId, 1, 0));
+        Assert.assertFalse(allFoundEntriesIntersectQueryInFind(index, refContextToFind, 1, 0));
 
-        Assert.assertTrue(allFoundEntriesIntersectQueryInFind(index, sequenceId, 1, 1));
-        Assert.assertTrue(allFoundEntriesIntersectQueryInFind(index, sequenceId, 1, 2));
-        Assert.assertTrue(allFoundEntriesIntersectQueryInFind(index, sequenceId, 2, 1));
-        Assert.assertTrue(allFoundEntriesIntersectQueryInFind(index, sequenceId, 1, 3));
+        Assert.assertTrue(allFoundEntriesIntersectQueryInFind(index, refContextToFind, 1, 1));
+        Assert.assertTrue(allFoundEntriesIntersectQueryInFind(index, refContextToFind, 1, 2));
+        Assert.assertTrue(allFoundEntriesIntersectQueryInFind(index, refContextToFind, 2, 1));
+        Assert.assertTrue(allFoundEntriesIntersectQueryInFind(index, refContextToFind, 1, 3));
 
-        final int nonExistentSequenceId = 2;
-        Assert.assertFalse(allFoundEntriesIntersectQueryInFind(index, nonExistentSequenceId, 2, 1));
+        final ReferenceContext missingRefContext = new ReferenceContext(2);
+        Assert.assertFalse(allFoundEntriesIntersectQueryInFind(index, missingRefContext, 2, 1));
         // a query starting beyond all entries:
-        Assert.assertFalse(allFoundEntriesIntersectQueryInFind(index, sequenceId, 4, 1));
+        Assert.assertFalse(allFoundEntriesIntersectQueryInFind(index, refContextToFind, 4, 1));
     }
 
     // find treats start < 1 and span < 1 as "match all entries with this sequence ID"
 
     @Test
     public void testFindZeroStart() {
-        final int sequenceId = 1;
-        final List<CRAIEntry> index = getCraiEntriesForTest(sequenceId);
+        final ReferenceContext refContextToFind = new ReferenceContext(1);
+        final List<CRAIEntry> index = getCraiEntriesForTest(refContextToFind);
 
-        Assert.assertTrue(CRAIIndex.find(index, sequenceId, 0, 0).size() > 0);
-        Assert.assertTrue(CRAIIndex.find(index, sequenceId, 0, 1).size() > 0);
+        Assert.assertTrue(CRAIIndex.find(index, refContextToFind, 0, 0).size() > 0);
+        Assert.assertTrue(CRAIIndex.find(index, refContextToFind, 0, 1).size() > 0);
 
-        final int nonExistentSequenceId = 2;
-        Assert.assertTrue(CRAIIndex.find(index, nonExistentSequenceId, 0, 1).isEmpty());
+        final ReferenceContext missingRefContext = new ReferenceContext(2);
+        Assert.assertTrue(CRAIIndex.find(index, missingRefContext, 0, 1).isEmpty());
     }
 
     @Test
     public void testFindZeroSpan() {
-        final int sequenceId = 1;
-        final List<CRAIEntry> index = getCraiEntriesForTest(sequenceId);
+        final ReferenceContext refContextToFind = new ReferenceContext(1);
+        final List<CRAIEntry> index = getCraiEntriesForTest(refContextToFind);
 
-        Assert.assertTrue(CRAIIndex.find(index, sequenceId, 0, 0).size() > 0);
-        Assert.assertTrue(CRAIIndex.find(index, sequenceId, 1, 0).size() > 0);
+        Assert.assertTrue(CRAIIndex.find(index, refContextToFind, 0, 0).size() > 0);
+        Assert.assertTrue(CRAIIndex.find(index, refContextToFind, 1, 0).size() > 0);
 
-        final int nonExistentSequenceId = 2;
-        Assert.assertTrue(CRAIIndex.find(index, nonExistentSequenceId, 1, 0).isEmpty());
+        final ReferenceContext missingRefContext = new ReferenceContext(2);
+        Assert.assertTrue(CRAIIndex.find(index, missingRefContext, 1, 0).isEmpty());
     }
 
-    private List<CRAIEntry> getCraiEntriesForTest(final int sequenceId) {
+    private List<CRAIEntry> getCraiEntriesForTest(final ReferenceContext refContext) {
         final List<CRAIEntry> index = new ArrayList<>();
-        index.add(new CRAIEntry(sequenceId, 1, 1, 1, 1, 0));
-        index.add(new CRAIEntry(sequenceId, 2, 1, 2, 1, 0));
-        index.add(new CRAIEntry(sequenceId, 3, 1, 3, 1, 0));
+        index.add(new CRAIEntry(refContext, 1, 1, 1, 1, 0));
+        index.add(new CRAIEntry(refContext, 2, 1, 2, 1, 0));
+        index.add(new CRAIEntry(refContext, 3, 1, 3, 1, 0));
         return index;
     }
 
-    private boolean allFoundEntriesIntersectQueryInFind(final List<CRAIEntry> index, final int sequenceId, final int start, final int span) {
-        final List<CRAIEntry> found = CRAIIndex.find(index, sequenceId, start, span);
+    private boolean allFoundEntriesIntersectQueryInFind(final List<CRAIEntry> index, final ReferenceContext refContext, final int start, final int span) {
+        final List<CRAIEntry> found = CRAIIndex.find(index, refContext, start, span);
         for (final CRAIEntry entry : found) {
-            Assert.assertEquals(entry.getSequenceId(), sequenceId);
+            Assert.assertEquals(entry.getReferenceContext(), refContext);
             final int dummy = -1;
-            if (! CRAIEntry.intersect(entry, new CRAIEntry(sequenceId, start, span, dummy, dummy, dummy))) {
+            if (! CRAIEntry.intersect(entry, new CRAIEntry(refContext, start, span, dummy, dummy, dummy))) {
                 return false;
             }
         }
@@ -100,7 +101,7 @@ public class CRAIIndexTest extends HtsjdkTest {
 
     private void doCRAITest(final BiFunction<SAMSequenceDictionary, List<CRAIEntry>, SeekableStream> getBaiStreamForIndex) {
         final ArrayList<CRAIEntry> index = new ArrayList<>();
-        final CRAIEntry entry = new CRAIEntry(0, 1, 2, 5, 3, 4);
+        final CRAIEntry entry = new CRAIEntry(new ReferenceContext(0), 1, 2, 5, 3, 4);
         index.add(entry);
 
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
@@ -109,7 +110,10 @@ public class CRAIIndexTest extends HtsjdkTest {
         final SeekableStream baiStream = getBaiStreamForIndex.apply(dictionary, index);
 
         final DiskBasedBAMFileIndex bamIndex = new DiskBasedBAMFileIndex(baiStream, dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(
+                entry.getReferenceContext().getSequenceId(),
+                entry.getAlignmentStart(),
+                entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
@@ -190,35 +194,35 @@ public class CRAIIndexTest extends HtsjdkTest {
         final List<CRAIEntry> index = new ArrayList<>();
         Assert.assertNull(CRAIIndex.getLeftmost(index));
 
-        final int seqId1 = 1;
+        final ReferenceContext refContext1 = new ReferenceContext(1);
         final int start1 = 2;
         final int offset1 = 4;
-        final CRAIEntry e1 = new CRAIEntry(seqId1, start1, 3, offset1, 5, 6);
+        final CRAIEntry e1 = new CRAIEntry(refContext1, start1, 3, offset1, 5, 6);
         index.add(e1);
         // trivial case of single entry in index:
         Assert.assertEquals(CRAIIndex.getLeftmost(index), e1);
 
         final int start2 = start1 + 1;
-        final CRAIEntry e2 = new CRAIEntry(seqId1, start2, 3, offset1, 5, 6);
+        final CRAIEntry e2 = new CRAIEntry(refContext1, start2, 3, offset1, 5, 6);
         index.add(e2);
         Assert.assertEquals(CRAIIndex.getLeftmost(index), e1);
 
         // earlier start, but later sequence
         final int start3 = start1 - 1;
-        final int seqId3 = seqId1 + 1;
-        final CRAIEntry e3 = new CRAIEntry(seqId3, start3, 3, offset1, 5, 6);
+        final ReferenceContext refContext3 = new ReferenceContext(3);
+        final CRAIEntry e3 = new CRAIEntry(refContext3, start3, 3, offset1, 5, 6);
         index.add(e3);
         Assert.assertEquals(CRAIIndex.getLeftmost(index), e1);
 
         // same start, later container start offset
         final int offset4 = offset1 + 1;
-        final CRAIEntry e4 = new CRAIEntry(seqId1, start1, 3, offset4, 5, 6);
+        final CRAIEntry e4 = new CRAIEntry(refContext1, start1, 3, offset4, 5, 6);
         index.add(e4);
         Assert.assertEquals(CRAIIndex.getLeftmost(index), e1);
 
         // same start, earlier container start offset
         final int offset5 = offset1 - 1;
-        final CRAIEntry e5 = new CRAIEntry(seqId1, start1, 3, offset5, 5, 6);
+        final CRAIEntry e5 = new CRAIEntry(refContext1, start1, 3, offset5, 5, 6);
         index.add(e5);
 
         // now e5 is the leftmost/earliest
@@ -230,20 +234,24 @@ public class CRAIIndexTest extends HtsjdkTest {
         final List<CRAIEntry> index = new ArrayList<>();
         Assert.assertEquals(-1, CRAIIndex.findLastAlignedEntry(index));
 
+        final int unplacedRefId = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT.getSerializableId();
+
         // Scan all allowed combinations of 10 mapped/unmapped entries and assert the found last aligned entry:
         final int indexSize = 10;
         for (int lastAligned = 0; lastAligned < indexSize; lastAligned++) {
             index.clear();
             for (int i = 0; i < indexSize; i++) {
                 final int dummy = 1;
-                final int refSeqId = i <= lastAligned ? 0 : SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-                final CRAIEntry e = new CRAIEntry(refSeqId, i, 0, dummy, dummy, dummy);
+                final ReferenceContext refContext = i <= lastAligned ?
+                        new ReferenceContext(0) :
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
+                final CRAIEntry e = new CRAIEntry(refContext, i, 0, dummy, dummy, dummy);
                 index.add(e);
             }
             // check expectations are correct before calling findLastAlignedEntry method:
-            Assert.assertNotEquals(index.get(lastAligned).getSequenceId(), SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+            Assert.assertNotEquals(index.get(lastAligned).getReferenceContext(), ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
             if (lastAligned < index.size() - 1) {
-                Assert.assertEquals(index.get(lastAligned + 1).getSequenceId(), SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+                Assert.assertEquals(index.get(lastAligned + 1).getReferenceContext(), ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
             }
             // assert the the found value matches the expectation:
             Assert.assertEquals(CRAIIndex.findLastAlignedEntry(index), lastAligned);

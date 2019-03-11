@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
