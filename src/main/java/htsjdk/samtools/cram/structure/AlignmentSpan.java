@@ -1,17 +1,24 @@
 package htsjdk.samtools.cram.structure;
 
 /**
- * A span of reads on a single reference.
+ * A span of reads on a single reference.  Immutable.
+ *
+ * Holds alignment start and span values as well as counts of how many are mapped vs. unmapped.
  */
 public class AlignmentSpan {
     /**
-     * A constant to represent a span of unplaced reads.
+     * A constant to represent a span of unmapped-unplaced reads.
      */
     public static final AlignmentSpan UNPLACED_SPAN =
             new AlignmentSpan(Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, 0, 0);
 
+    // minimum alignment start of the reads represented by this span
+    // uses a 1-based coordinate system
     private final int start;
+    // span from minimum alignment start to maximum alignment end
+    // of the reads represented by this span (max end - min start + 1)
     private final int span;
+
     private final int mappedCount;
     private final int unmappedCount;
 

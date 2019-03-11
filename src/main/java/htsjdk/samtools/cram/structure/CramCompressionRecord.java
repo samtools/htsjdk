@@ -58,6 +58,7 @@ public class CramCompressionRecord {
 
     // sequential index of the record in a stream:
     public int index = 0;
+    // start position of this read, using a 1-based coordinate system
     public int alignmentStart;
     private int alignmentEnd = UNINITIALIZED_END;
     private int alignmentSpan = UNINITIALIZED_SPAN;

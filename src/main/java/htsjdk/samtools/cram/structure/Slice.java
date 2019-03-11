@@ -55,6 +55,9 @@ public class Slice {
     private final ReferenceContext referenceContext;
 
     // header values as defined in the specs, in addition to sequenceId from ReferenceContext
+
+    // minimum alignment start of the reads in this Slice
+    // uses a 1-based coordinate system
     public int alignmentStart = NO_ALIGNMENT_START;
     public int alignmentSpan = NO_ALIGNMENT_SPAN;
     public int nofRecords = -1;

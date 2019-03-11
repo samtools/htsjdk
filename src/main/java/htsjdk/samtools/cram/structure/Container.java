@@ -34,6 +34,9 @@ public class Container {
      * Byte size of the content excluding header.
      */
     public int containerByteSize;
+
+    // minimum alignment start of the reads in this Container
+    // uses a 1-based coordinate system
     public int alignmentStart = Slice.NO_ALIGNMENT_START;
     public int alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
     public int nofRecords = 0;
