@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
@@ -134,7 +133,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         final CRAIEntry zerospan = craiEntryForIntersectionTests(1, 1, 0);
 
         // start and span values are invalid here: show that they are ignored
-        final CRAIEntry unmapped = craiEntryForIntersectionTests(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 1, 2);
+        final CRAIEntry unmapped = craiEntryForIntersectionTests(ReferenceContext.UNMAPPED_UNPLACED_ID, 1, 2);
         final CRAIEntry multi = craiEntryForIntersectionTests(ReferenceContext.MULTIPLE_REFERENCE_ID, 1, 2);
 
         return new Object[][]{
@@ -198,7 +197,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         seqIdList.add(newEntry(200, 0, 0));
         seqIdList.add(newEntry(100, 0, 0));
         seqIdList.add(newEntry(300, 0, 0));
-        seqIdList.add(newEntry(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 0, 0));
+        seqIdList.add(newEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 0, 0));
         seqIdList.sort(comparator);
         sequenceIdTest.test(seqIdList);
 
@@ -224,8 +223,8 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     }
 
     private void basicSequenceIdSubTest(final List<CRAIEntry> list) {
-        // NO_ALIGNMENT -1 is sorted first
-        Assert.assertEquals(list.get(0).getSequenceId(), SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        // UNMAPPED -1 is sorted first
+        Assert.assertEquals(list.get(0).getSequenceId(), ReferenceContext.UNMAPPED_UNPLACED_ID);
 
         for (int index = 1; index < list.size() - 1; index++) {
             Assert.assertTrue(list.get(index).getSequenceId() < list.get(index + 1).getSequenceId());
@@ -237,8 +236,8 @@ public class CRAIEntryTest extends CramRecordTestHelper {
             Assert.assertTrue(list.get(index).getSequenceId() < list.get(index + 1).getSequenceId());
         }
 
-        // NO_ALIGNMENT -1 is sorted last
-        Assert.assertEquals(list.get(list.size() - 1).getSequenceId(), SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        // UNMAPPED -1 is sorted last
+        Assert.assertEquals(list.get(list.size() - 1).getSequenceId(), ReferenceContext.UNMAPPED_UNPLACED_ID);
     }
 
     private void basicAlignmentStartSubTest(final List<CRAIEntry> list) {
