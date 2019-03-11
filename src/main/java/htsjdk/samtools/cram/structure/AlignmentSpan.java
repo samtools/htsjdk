@@ -37,7 +37,7 @@ public class AlignmentSpan {
      * @param b the second AlignmentSpan to combine
      * @return the new combined AlignmentSpan
      */
-    public static AlignmentSpan add(final AlignmentSpan a, final AlignmentSpan b) {
+    public static AlignmentSpan combine(final AlignmentSpan a, final AlignmentSpan b) {
         final int start = Math.min(a.getStart(), b.getStart());
 
         int span;

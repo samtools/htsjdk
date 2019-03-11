@@ -37,13 +37,13 @@ public class AlignmentSpanTest extends HtsjdkTest {
                         final int expectedSpan,
                         final int expectedMapped,
                         final int expectedUnmapped) {
-        final AlignmentSpan combined = AlignmentSpan.add(span1, span2);
+        final AlignmentSpan combined = AlignmentSpan.combine(span1, span2);
         Assert.assertEquals(combined.getStart(), expectedStart);
         Assert.assertEquals(combined.getSpan(), expectedSpan);
         Assert.assertEquals(combined.getMappedCount(), expectedMapped);
         Assert.assertEquals(combined.getUnmappedCount(), expectedUnmapped);
 
-        final AlignmentSpan reverseCombined = AlignmentSpan.add(span2, span1);
+        final AlignmentSpan reverseCombined = AlignmentSpan.combine(span2, span1);
         Assert.assertEquals(reverseCombined, combined);
     }
 }

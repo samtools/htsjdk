@@ -202,12 +202,12 @@ public class Container {
                 case MULTIPLE_REFERENCE_TYPE:
                     final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(compressionHeader, validationStringency);
                     for (final Map.Entry<ReferenceContext, AlignmentSpan> entry : spans.entrySet()) {
-                        containerSpanMap.merge(entry.getKey(), entry.getValue(), AlignmentSpan::add);
+                        containerSpanMap.merge(entry.getKey(), entry.getValue(), AlignmentSpan::combine);
                     }
                     break;
                 default:
                     final AlignmentSpan alignmentSpan = new AlignmentSpan(slice.alignmentStart, slice.alignmentSpan, slice.mappedReadsCount, slice.unmappedReadsCount);
-                    containerSpanMap.merge(slice.getReferenceContext(), alignmentSpan, AlignmentSpan::add);
+                    containerSpanMap.merge(slice.getReferenceContext(), alignmentSpan, AlignmentSpan::combine);
                     break;
             }
         }

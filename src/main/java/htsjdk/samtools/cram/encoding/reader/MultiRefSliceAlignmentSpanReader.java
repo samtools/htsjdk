@@ -97,6 +97,6 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         }
 
         final ReferenceContext recordContext = new ReferenceContext(cramRecord.sequenceId);
-        spans.merge(recordContext, span, AlignmentSpan::add);
+        spans.merge(recordContext, span, AlignmentSpan::combine);
     }
 }
