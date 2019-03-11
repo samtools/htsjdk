@@ -150,7 +150,10 @@ public class Container {
      * TODO: investigate why we sometimes split multi-ref Slices
      * into different entries and sometimes do not
      *
-     * @return the list of CRAI Index entries
+     * TODO: clearly identify and enforce preconditions, e.g.
+     * a Container built from Slices which were in turn built from records
+     *
+     *  @return the list of CRAI Index entries
      */
     public List<CRAIEntry> getCRAIEntriesSplittingMultiRef() {
         if (isEOF()) {

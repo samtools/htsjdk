@@ -46,6 +46,8 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     // requirement for getCRAIEntriesSplittingMultiRef():
     // a Container built from Slices which were in turn built from records
 
+    // TODO: clearly identify and enforce preconditions
+
     @Test
     public void testGetCRAIEntriesSplittingMultiRef() {
         final int[] landmarks = new int[] { 100, 200 };
