@@ -72,9 +72,7 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
     public void writeReference(final BAMIndexContent content) {
 
         if (content == null) {
-            writeNullContent();
-            count++;
-            return;
+            throw new NullPointerException("BAMIndexContent cannot be null");
         }
 
         final int reference = content.getReferenceSequence();
