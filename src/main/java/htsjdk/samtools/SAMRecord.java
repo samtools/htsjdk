@@ -23,13 +23,8 @@
  */
 package htsjdk.samtools;
 
-
-import htsjdk.samtools.util.CoordMath;
-import htsjdk.samtools.util.Locatable;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.samtools.util.StringUtil;
-import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.*;
+import htsjdk.tribble.annotation.Strand;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -938,6 +933,20 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     public boolean getMateNegativeStrandFlag() {
         requireReadPaired();
         return getMateNegativeStrandFlagUnchecked();
+    }
+
+    /**
+     * Strand of the Read
+     */
+    public Strand getReadStrand() {
+        return getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE;
+    }
+
+    /**
+     * Strand of the Mate (assumes read is paired)
+     */
+    public Strand getMateStrand() {
+        return getMateNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE;
     }
 
     private boolean getMateNegativeStrandFlagUnchecked() {
