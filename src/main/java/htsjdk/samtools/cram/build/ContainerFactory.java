@@ -22,7 +22,6 @@ import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
 import java.util.ArrayList;
 import java.util.List;
