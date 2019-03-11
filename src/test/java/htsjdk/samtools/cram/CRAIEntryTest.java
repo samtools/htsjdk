@@ -166,87 +166,102 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, dummy, dummy, dummy);
     }
 
+    // test that index entries are sorted correctly:
+    // first by numerical order of reference sequence ID, except that the unmapped-unplaced sentinel value comes last
+    //
+    // for valid reference sequence ID (placed):
+    // - sort by alignment start
+    // - if alignment start is equal, sort by container offset
+    // - if alignment start and container offset are equal, sort by slice offset
+    //
+    // for unmapped-unplaced:
+    // - ignore (invalid) alignment start value
+    // - sort by container offset
+    // - if container offset is equal, sort by slice offset
+
+    // alignmentSpan and sliceSize are irrelevant to index sorting
+    private final int dummyValue = 1000000;
+
+    // these unmapped CRAIEntries should sort as: 4, 3, 1, 2
+    // reasoning:
+    // first-order sorting within unmapped is by container offset -> [3 and 4], 1, 2
+    // next-order sorting is by slice offset, so 4 comes first -> 4, 3, 1, 2
+
+    private final CRAIEntry unmapped1 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 3, dummyValue, 100, 100, dummyValue);
+    private final CRAIEntry unmapped2 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 2, dummyValue, 120, 200, dummyValue);
+    private final CRAIEntry unmapped3 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 4, dummyValue, 90, 100, dummyValue);
+    private final CRAIEntry unmapped4 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 5, dummyValue, 90, 50, dummyValue);
+
+    // these placed CRAIEntries should sort per sequenceId as: 4, 2, 1, 5, 3
+    // reasoning:
+    // first-order sorting within sequenceId is by alignment start -> [2 and 4], 1, [3 and 5]
+    // next-order sorting is by container offset, so 4 comes first -> 4, 2, 1, [3 and 5]
+    // final-order sorting is by slice offset, so 5 comes first -> 4, 2, 1, 5, 3
+
+    private CRAIEntry placed1ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 3, dummyValue, 100, 100, dummyValue);
+    }
+
+    private CRAIEntry placed2ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 2, dummyValue, 120, 200, dummyValue);
+    }
+
+    private CRAIEntry placed3ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 4, dummyValue, 90, 100, dummyValue);
+    }
+
+    private CRAIEntry placed4ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 2, dummyValue, 90, 50, dummyValue);
+    }
+
+    private CRAIEntry placed5ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 4, dummyValue, 90, 80, dummyValue);
+    }
+
     @Test
     public void testCompareTo() {
-        testComparator(CRAIEntry::compareTo,
-                this::basicSequenceIdSubTest,
-                this::basicAlignmentStartSubTest,
-                this::basicContainerStartSubTest);
-    }
+        final List<CRAIEntry> testEntries = new ArrayList<CRAIEntry>() {{
+            add(unmapped1);
+            add(unmapped2);
+            add(unmapped3);
+            add(unmapped4);
+            add(placed1ForId(1));
+            add(placed2ForId(1));
+            add(placed3ForId(1));
+            add(placed4ForId(1));
+            add(placed5ForId(1));
+            add(placed1ForId(0));
+            add(placed2ForId(0));
+            add(placed3ForId(0));
+            add(placed4ForId(0));
+            add(placed5ForId(0));
+        }};
 
-    // same as above, but sequence ID has unmapped sorted last
+        // ref ID 0, then ref ID 1, then unmapped
+        // within valid ref ID = 4, 2, 1, 5, 3 (see above)
+        // within unmapped = 4, 3, 1, 2 (see above)
 
-    @Test
-    public void testUnmappedLastComparator () {
-        testComparator(CRAIEntry.UNMAPPED_LAST,
-                this::unmappedLastSequenceIdSubTest,
-                this::basicAlignmentStartSubTest,
-                this::basicContainerStartSubTest);
-    }
+        final List<CRAIEntry> expected = new ArrayList<CRAIEntry>() {{
+            add(placed4ForId(0));
+            add(placed2ForId(0));
+            add(placed1ForId(0));
+            add(placed5ForId(0));
+            add(placed3ForId(0));
 
-    private void testComparator(final Comparator<CRAIEntry> comparator,
-                                final ComparatorSubTest sequenceIdTest,
-                                final ComparatorSubTest alignmentStartTest,
-                                final ComparatorSubTest containerStartTest) {
+            add(placed4ForId(1));
+            add(placed2ForId(1));
+            add(placed1ForId(1));
+            add(placed5ForId(1));
+            add(placed3ForId(1));
 
-        final List<CRAIEntry> seqIdList = new ArrayList<>();
-        seqIdList.add(newEntry(150, 0, 0));
-        seqIdList.add(newEntry(200, 0, 0));
-        seqIdList.add(newEntry(100, 0, 0));
-        seqIdList.add(newEntry(300, 0, 0));
-        seqIdList.add(newEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 0, 0));
-        seqIdList.sort(comparator);
-        sequenceIdTest.test(seqIdList);
+            add(unmapped4);
+            add(unmapped3);
+            add(unmapped1);
+            add(unmapped2);
+        }};
 
-        final List<CRAIEntry> alignmentStartList = new ArrayList<>();
-        alignmentStartList.add(newEntry(1, 300, 0));
-        alignmentStartList.add(newEntry(1, 200, 0));
-        alignmentStartList.add(newEntry(1, 100, 0));
-        alignmentStartList.add(newEntry(1, 400, 0));
-        alignmentStartList.sort(comparator);
-        alignmentStartTest.test(alignmentStartList);
-
-        final List<CRAIEntry> containerStartList = new ArrayList<>();
-        containerStartList.add(newEntryContOffset(200));
-        containerStartList.add(newEntryContOffset(100));
-        containerStartList.add(newEntryContOffset(50));
-        containerStartList.add(newEntryContOffset(300));
-        containerStartList.sort(comparator);
-        containerStartTest.test(containerStartList);
-    }
-
-    private interface ComparatorSubTest {
-        void test(final List<CRAIEntry> list);
-    }
-
-    private void basicSequenceIdSubTest(final List<CRAIEntry> list) {
-        // UNMAPPED -1 is sorted first
-        Assert.assertEquals(list.get(0).getSequenceId(), ReferenceContext.UNMAPPED_UNPLACED_ID);
-
-        for (int index = 1; index < list.size() - 1; index++) {
-            Assert.assertTrue(list.get(index).getSequenceId() < list.get(index + 1).getSequenceId());
-        }
-    }
-
-    private void unmappedLastSequenceIdSubTest(final List<CRAIEntry> list) {
-        for (int index = 0; index < list.size() - 2; index++) {
-            Assert.assertTrue(list.get(index).getSequenceId() < list.get(index + 1).getSequenceId());
-        }
-
-        // UNMAPPED -1 is sorted last
-        Assert.assertEquals(list.get(list.size() - 1).getSequenceId(), ReferenceContext.UNMAPPED_UNPLACED_ID);
-    }
-
-    private void basicAlignmentStartSubTest(final List<CRAIEntry> list) {
-        for (int index = 0; index < list.size() - 1; index++) {
-            Assert.assertTrue(list.get(index).getAlignmentStart() < list.get(index + 1).getAlignmentStart());
-        }
-    }
-
-    private void basicContainerStartSubTest(final List<CRAIEntry> list) {
-        for (int index = 0; index < list.size() - 1; index++) {
-            Assert.assertTrue(list.get(index).getContainerStartByteOffset() < list.get(index + 1).getContainerStartByteOffset());
-        }
+        Collections.sort(testEntries);
+        Assert.assertEquals(testEntries, expected);
     }
 
     private static Slice createSingleRefSlice(final int sequenceId) {
@@ -291,13 +306,5 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         Assert.assertEquals(entry.getContainerStartByteOffset(), containerOffset);
         Assert.assertEquals(entry.getSliceByteOffset(), sliceByteOffset);
         Assert.assertEquals(entry.getSliceByteSize(), sliceByteSize);
-    }
-
-    public static CRAIEntry newEntry(final int seqId, final int start, final int span) {
-        return new CRAIEntry(seqId, start, span, 0, 0, 0);
-    }
-
-    public static CRAIEntry newEntryContOffset(final int containerStartOffset) {
-        return new CRAIEntry(1, 0, 0, containerStartOffset, 0, 0);
     }
 }

@@ -235,7 +235,9 @@ public class CRAIIndexTest extends HtsjdkTest {
         for (int lastAligned = 0; lastAligned < indexSize; lastAligned++) {
             index.clear();
             for (int i = 0; i < indexSize; i++) {
-                final CRAIEntry e = CRAIEntryTest.newEntry(i <= lastAligned ? 0 : SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, i, 0);
+                final int dummy = 1;
+                final int refSeqId = i <= lastAligned ? 0 : SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+                final CRAIEntry e = new CRAIEntry(refSeqId, i, 0, dummy, dummy, dummy);
                 index.add(e);
             }
             // check expectations are correct before calling findLastAlignedEntry method:

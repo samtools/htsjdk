@@ -50,7 +50,7 @@ public class CRAIIndex {
      */
     public void writeIndex(final OutputStream os) {
         entries.stream()
-                .sorted(CRAIEntry.UNMAPPED_LAST)
+                .sorted()
                 .forEach(e -> e.writeToStream(os));
     }
 

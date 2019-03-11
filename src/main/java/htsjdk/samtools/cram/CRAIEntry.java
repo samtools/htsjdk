@@ -5,7 +5,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.*;
 
 /**
  * A class representing CRAI index entry: file and alignment offsets for each slice.
@@ -96,33 +95,42 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     @Override
     public String toString() { return serializeToString(); }
 
+    /**
+     * Sort by numerical order of reference sequence ID, except that unmapped-unplaced reads come last
+     *
+     * For valid reference sequence ID (placed reads):
+     * - sort by alignment start
+     * - if alignment start is equal, sort by container offset
+     * - if alignment start and container offset are equal, sort by slice offset
+     *
+     * For unmapped-unplaced reads:
+     * - ignore (invalid) alignment start value
+     * - sort by container offset
+     * - if container offset is equal, sort by slice offset
+     *
+     * @param other the CRAIEntry to compare against
+     * @return int representing the comparison result, suitable for ordering
+     */
     @Override
-    public int compareTo(final CRAIEntry o) {
-        if (o == null) {
-            return 1;
-        }
-        if (sequenceId != o.sequenceId) {
-            return sequenceId - o.sequenceId;
-        }
-        if (alignmentStart != o.alignmentStart) {
-            return alignmentStart - o.alignmentStart;
-        }
-
-        return (int) (containerStartByteOffset - o.containerStartByteOffset);
-    }
-
-    public static final Comparator<CRAIEntry> UNMAPPED_LAST = (final CRAIEntry o1, final CRAIEntry o2) -> {
-        if (o1.sequenceId != o2.sequenceId) {
-            if (o1.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
+    public int compareTo(final CRAIEntry other) {
+        if (sequenceId != other.sequenceId) {
+            if (sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
                 return 1;
-            if (o2.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
+            if (other.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
                 return -1;
-            return o1.sequenceId - o2.sequenceId;
+            return Integer.compare(sequenceId, other.sequenceId);
         }
-        if (o1.alignmentStart != o2.alignmentStart) {
-            return o1.alignmentStart - o2.alignmentStart;
+
+        // only sort by alignment start values for placed entries
+        if (sequenceId != ReferenceContext.UNMAPPED_UNPLACED_ID && alignmentStart != other.alignmentStart) {
+            return Integer.compare(alignmentStart, other.alignmentStart);
         }
-        return (int) (o1.containerStartByteOffset - o2.containerStartByteOffset);
+
+        if (containerStartByteOffset != other.containerStartByteOffset) {
+            return Long.compare(containerStartByteOffset, other.containerStartByteOffset);
+        }
+
+        return Long.compare(sliceByteOffset, other.sliceByteOffset);
     };
 
     public static boolean intersect(final CRAIEntry e0, final CRAIEntry e1) {
@@ -167,5 +175,31 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
 
     public int getSliceByteSize() {
         return sliceByteSize;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CRAIEntry entry = (CRAIEntry) o;
+
+        if (sequenceId != entry.sequenceId) return false;
+        if (alignmentStart != entry.alignmentStart) return false;
+        if (alignmentSpan != entry.alignmentSpan) return false;
+        if (containerStartByteOffset != entry.containerStartByteOffset) return false;
+        if (sliceByteOffset != entry.sliceByteOffset) return false;
+        return sliceByteSize == entry.sliceByteSize;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = sequenceId;
+        result = 31 * result + alignmentStart;
+        result = 31 * result + alignmentSpan;
+        result = 31 * result + (int) (containerStartByteOffset ^ (containerStartByteOffset >>> 32));
+        result = 31 * result + sliceByteOffset;
+        result = 31 * result + sliceByteSize;
+        return result;
     }
 }
