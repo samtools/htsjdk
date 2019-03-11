@@ -29,19 +29,18 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         assertEntryForSlice(entries.get(1), slice2);
     }
 
-    @Test
+    @Test(expectedExceptions = CRAMException.class)
+    public void multiRefExceptionTest() {
+        final int dummy = 1;
+        new CRAIEntry(ReferenceContext.MULTIPLE_REFERENCE_ID, dummy, dummy, dummy, dummy, dummy);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
     public void multiRefTestGetCRAIEntries() {
-        final Slice slice1 = new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT);
-        final Slice slice2 = new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT);
+        final Slice multi = new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT);
 
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2));
-        final List<CRAIEntry> entries = container.getCRAIEntries();
-
-        Assert.assertNotNull(entries);
-        Assert.assertEquals(entries.size(), 2);
-
-        assertEntryForSlice(entries.get(0), slice1);
-        assertEntryForSlice(entries.get(1), slice2);
+        final Container container = Container.initializeFromSlices(Arrays.asList(multi));
+        container.getCRAIEntries();
     }
 
     // requirement for getCRAIEntriesSplittingMultiRef():
@@ -134,7 +133,6 @@ public class CRAIEntryTest extends CramRecordTestHelper {
 
         // start and span values are invalid here: show that they are ignored
         final CRAIEntry unmapped = craiEntryForIntersectionTests(ReferenceContext.UNMAPPED_UNPLACED_ID, 1, 2);
-        final CRAIEntry multi = craiEntryForIntersectionTests(ReferenceContext.MULTIPLE_REFERENCE_ID, 1, 2);
 
         return new Object[][]{
                 {basic, basic, true},
@@ -148,13 +146,10 @@ public class CRAIEntryTest extends CramRecordTestHelper {
                 {basic, zerospan, false},
                 {zerospan, zerospan, false},
 
-                // intersections with Unmapped or Multiref entries are always false, even with themselves
+                // intersections with Unmapped entries are always false, even with themselves
 
                 {basic, unmapped, false},
-                {basic, multi, false},
-                {unmapped, multi, false},
                 {unmapped, unmapped, false},
-                {multi, multi, false},
         };
     }
 

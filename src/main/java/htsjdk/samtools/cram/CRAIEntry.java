@@ -33,6 +33,10 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
                      final long containerStartByteOffset,
                      final int sliceByteOffset,
                      final int sliceByteSize) {
+        if (sequenceId == ReferenceContext.MULTIPLE_REFERENCE_ID) {
+            throw new CRAMException("Cannot directly index a multiref slice.  Index by its constituent references instead.");
+        }
+
         this.sequenceId = sequenceId;
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;
@@ -125,7 +129,9 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         if (e0.sequenceId != e1.sequenceId) {
             return false;
         }
-        if (e0.sequenceId < 0) {
+
+        // unmapped entries never intersect, even with themselves
+        if (e0.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID) {
             return false;
         }
 
