@@ -75,6 +75,24 @@ public enum Strand {
     }
 
     /**
+     * Get a Strand instance from a boolean
+     * @param positive flag indicating if strand is positive
+     * @return appropriate Strand instance
+     */
+    static Strand of(final boolean positive) {
+        return positive ? POSITIVE : NEGATIVE;
+    }
+
+    /**
+     * Get a Strand instance from a boolean
+     * @param negative flag indicating if strand is negative
+     * @return appropriate Strand instance
+     */
+    static Strand ofNegative(final boolean negative) {
+        return of(!negative);
+    }
+
+    /**
      * provide a way to take an encoding string, and produce a Strand
      * @param encoding the encoding string
      * @return a Strand object, if an appropriate one cannot be located an IllegalArg exception
