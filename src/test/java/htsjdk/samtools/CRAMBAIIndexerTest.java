@@ -139,7 +139,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
     }
 
     @Test
-    public void test_procesUnplacedContainersAsSlices() {
+    public void test_processUnplacedContainersAsSlices() {
         unplacedContainers(this::indexContainersAsSingleRefSlices);
     }
 
@@ -148,17 +148,26 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         Assert.assertTrue(unplacedContainer.getReferenceContext().isUnmappedUnplaced());
 
         // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
-        // but not both.  We treat these weird edge cases as unplaced.
+        // but not both.  We normally treat these weird edge cases as unplaced, but for BAM indexing we only check start position
+        // in order to match BAMIndexMetadata.recordMetaData(SAMRecord)
 
-        final Container halfUnmappedNoRefContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getHalfUnmappedNoRefRecords(RECORDS_PER_SLICE));
-        Assert.assertTrue(halfUnmappedNoRefContainer.getReferenceContext().isUnmappedUnplaced());
-        final Container halfUnmappedNoStartContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getHalfUnmappedNoStartRecords(RECORDS_PER_SLICE, 0));
-        Assert.assertTrue(halfUnmappedNoStartContainer.getReferenceContext().isUnmappedUnplaced());
+        // these will be considered unplaced by CRAMBAIIndexer
+
+        final Container halfUnplacedNoStartContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(RECORDS_PER_SLICE, 0));
+        Assert.assertTrue(halfUnplacedNoStartContainer.getReferenceContext().isUnmappedUnplaced());
+
+        // these will NOT be considered unplaced by CRAMBAIIndexer
+
+        final Container halfUnplacedNoRefContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(RECORDS_PER_SLICE));
+        Assert.assertTrue(halfUnplacedNoRefContainer.getReferenceContext().isUnmappedUnplaced());
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(
-                unplacedContainer, halfUnmappedNoRefContainer, halfUnmappedNoStartContainer));
+                unplacedContainer, halfUnplacedNoStartContainer, halfUnplacedNoRefContainer));
 
-        Assert.assertEquals(index.getNoCoordinateCount().longValue(), RECORDS_PER_SLICE * 3);
+        // unplacedContainer and halfUnplacedNoStartContainer
+        final int expectedRecords = RECORDS_PER_SLICE * 2;
+
+        Assert.assertEquals(index.getNoCoordinateCount().longValue(), expectedRecords);
     }
 
     @Test(expectedExceptions = SAMException.class)

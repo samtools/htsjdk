@@ -126,12 +126,12 @@ public class ContainerTest extends HtsjdkTest {
                 // but not both.  We treat these weird edge cases as unplaced.
 
                 {
-                        CRAMStructureTestUtil.getHalfUnmappedNoRefRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         AlignmentSpan.UNPLACED_SPAN
                 },
                 {
-                        CRAMStructureTestUtil.getHalfUnmappedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         AlignmentSpan.UNPLACED_SPAN
                 },

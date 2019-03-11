@@ -106,14 +106,14 @@ public class SliceTests extends HtsjdkTest {
 
             retval.add(new Object[]
                 {
-                        CRAMStructureTestUtil.getHalfUnmappedNoRefRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
                         coordSorted,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });
 
             retval.add(new Object[]
                 {
-                        CRAMStructureTestUtil.getHalfUnmappedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
                         coordSorted,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 });

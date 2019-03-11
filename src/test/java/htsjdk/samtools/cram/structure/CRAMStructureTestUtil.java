@@ -113,7 +113,7 @@ public class CRAMStructureTestUtil {
     // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
     // but not both.  We treat these weird edge cases as unplaced.
 
-    public static List<CramCompressionRecord> getHalfUnmappedNoRefRecords(final int recordCount) {
+    public static List<CramCompressionRecord> getHalfUnplacedNoRefRecords(final int recordCount) {
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
             records.add(createUnmappedPlacedRecord(i, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, i + 1));
@@ -121,7 +121,7 @@ public class CRAMStructureTestUtil {
         return records;
     }
 
-    public static List<CramCompressionRecord> getHalfUnmappedNoStartRecords(final int recordCount, final int sequenceId) {
+    public static List<CramCompressionRecord> getHalfUnplacedNoStartRecords(final int recordCount, final int sequenceId) {
         final List<CramCompressionRecord> records = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
             records.add(createUnmappedPlacedRecord(i, sequenceId, SAMRecord.NO_ALIGNMENT_START));

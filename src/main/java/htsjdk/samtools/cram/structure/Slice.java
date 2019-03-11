@@ -484,6 +484,15 @@ public class Slice {
             }
             else {
                 referenceContexts.add(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+            }
+
+            // this check matches the logic of BAMIndexMetadata.recordMetaData(SAMRecord)
+            // we's prefer to use isPlaced() like we do elsewhere, but we'd have inconsistent results if we did
+
+            // TODO? either update isPlaced() to match this logic (i.e. don't check the reference ID)
+            // or update BAMIndexMetadata.recordMetaData(SAMRecord) to have a similar notion of placement
+
+            if (record.alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
                 unplacedReadsCount++;
             }
         }
