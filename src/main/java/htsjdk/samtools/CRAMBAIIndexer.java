@@ -185,31 +185,27 @@ public class CRAMBAIIndexer {
     public void processAsSingleReferenceSlice(final Slice slice) {
         final ReferenceContext sliceContext = slice.getReferenceContext();
         if (sliceContext.isMultiRef()) {
-            throw new SAMException("Expecting a single reference or unmapped slice." );
+            throw new SAMException("Expecting a single reference or unmapped slice.");
         }
 
-        try {
-            if (sliceContext.isMappedSingleRef()) {
-                final int reference = sliceContext.getSequenceId();
-                if (reference != currentReference) {
-                    // process any completed references
-                    advanceToReference(reference);
-                }
-
-                // check that it advanced properly
-                if (reference != currentReference) {
-                    throw new SAMException("Unexpected reference " + reference +
-                            " when constructing index for " + currentReference + " for record " + slice);
-                }
+        if (sliceContext.isMappedSingleRef()) {
+            final int reference = sliceContext.getSequenceId();
+            if (reference != currentReference) {
+                // process any completed references
+                advanceToReference(reference);
             }
 
-            indexBuilder.recordSliceIndexMetadata(slice);
-
-            if (sliceContext.isMappedSingleRef()) {
-                indexBuilder.processSingleReferenceSlice(slice);
+            // check that it advanced properly
+            if (reference != currentReference) {
+                throw new SAMException("Unexpected reference " + reference +
+                        " when constructing index for " + currentReference + " for record " + slice);
             }
-        } catch (final Exception e) {
-            throw new SAMException("Exception creating BAM index for slice " + slice, e);
+        }
+
+        indexBuilder.recordSliceIndexMetadata(slice);
+
+        if (sliceContext.isMappedSingleRef()) {
+            indexBuilder.processSingleReferenceSlice(slice);
         }
     }
 
