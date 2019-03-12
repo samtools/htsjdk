@@ -24,12 +24,11 @@ import java.util.stream.Collectors;
  * 1. External Byte, External Integer, and External Long Encodings
  * create identical output streams when values are limited to the
  * range 0 to 0x7F because the respective underlying encodings
- * (raw bytes, ITF8, and LTF8 respectively) result in byte-for-byte
- * identical outputs.
+ * (raw bytes, ITF8, and LTF8) result in byte-for-byte identical outputs.
  *
  * 2. External Integer and External Long Encodings also create identical
  * output streams when values are limited to 28 unsigned bits
- * (0 to 0x0F FF FF FF) because ITF8 ands LTF8 are equivalent over that range.
+ * (0 to 0x0F FF FF FF) because ITF8 and LTF8 are equivalent over that range.
  *
  * Demonstrate that these conditions do in fact create identical streams.
  *
@@ -43,8 +42,8 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
 
     @Test(dataProvider = "testPositiveByteLists", dataProviderClass = IOTestCases.class)
     public void byteEquivalenceTest(final List<Byte> values) {
-        codecPairTest(values, this::externalByteCodeWrite,      this::externalIntegerCodecRead);
-        codecPairTest(values, this::externalByteCodeWrite,      this::externalLongCodecRead);
+        codecPairTest(values, this::externalByteCodecWrite,      this::externalIntegerCodecRead);
+        codecPairTest(values, this::externalByteCodecWrite,      this::externalLongCodecRead);
         codecPairTest(values, this::externalIntegerCodecWrite,  this::externalByteCodecRead);
         codecPairTest(values, this::externalIntegerCodecWrite,  this::externalLongCodecRead);
         codecPairTest(values, this::externalLongCodecWrite,     this::externalByteCodecRead);
@@ -82,7 +81,7 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
         List<Long> read(final byte[] toRead, final int count);
     }
 
-    private <T extends Number> byte[] externalByteCodeWrite(List<T> values) {
+    private <T extends Number> byte[] externalByteCodecWrite(List<T> values) {
         byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             final CRAMCodec<Byte> writeCodec = new ExternalByteCodec(null, os);
