@@ -30,6 +30,7 @@ public class Container {
     private final ReferenceContext referenceContext;
 
     // container header as defined in the specs, in addition to sequenceId from ReferenceContext
+
     /**
      * Byte size of the content excluding header.
      */
@@ -44,7 +45,16 @@ public class Container {
 
     public long bases = 0;
     public int blockCount = -1;
+
+    // Slice byte boundaries within this container, after the header.  Equal to Slice.offset.
+    // e.g. if landmarks[0] = 9000 and landmarks[1] = 109000, we know:
+    // the container's header size = 9000
+    // Slice[0].offset = 9000
+    // Slice[0].size = 109000 - 9000 = 100000
+    // Slice[1].offset = 109000
+
     public int[] landmarks;
+
     public int checksum = 0;
 
     /**
@@ -59,7 +69,7 @@ public class Container {
 
     // for indexing:
     /**
-     * Container start in the stream.
+     * Container start in the stream, in bytes.
      */
     public long offset;
 
@@ -134,6 +144,44 @@ public class Container {
         }
 
         return container;
+    }
+
+    /**
+     * Assign this Container's slices, and populate those slices'
+     * indexing parameters from this Container
+     * @param slicesToPopulate the slices to populate
+     */
+    void populateSlicesAndIndexingParameters(final ArrayList<Slice> slicesToPopulate) {
+
+        slices = new Slice[slicesToPopulate.size()];
+
+        if (slicesToPopulate.isEmpty()) {
+            return;
+        }
+
+        final int lastSliceIndex = slicesToPopulate.size() - 1;
+        for (int i = 0; i < lastSliceIndex; i++) {
+            final Slice slice = slicesToPopulate.get(i);
+            slice.containerOffset = offset;
+            slice.index = i;
+            slice.offset = landmarks[i];
+            slice.size = landmarks[i + 1] - slice.offset;
+            slices[i] = slice;
+        }
+
+        final Slice lastSlice = slicesToPopulate.get(lastSliceIndex);
+        lastSlice.containerOffset = offset;
+        lastSlice.index = lastSliceIndex;
+        lastSlice.offset = landmarks[lastSliceIndex];
+
+        // calculate a "final landmark" indicating the byte offset of the end of the container
+        // equivalent to the container's total byte size
+
+        final int containerHeaderSize = landmarks[0];
+        final int containerTotalByteSize = containerHeaderSize + containerByteSize;
+        lastSlice.size = containerTotalByteSize - lastSlice.offset;
+
+        this.slices[lastSliceIndex] = lastSlice;
     }
 
     /**

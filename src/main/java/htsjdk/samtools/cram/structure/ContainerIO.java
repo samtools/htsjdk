@@ -3,9 +3,9 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
@@ -78,36 +78,16 @@ public class ContainerIO {
             throw new RuntimeIOException(e);
         }
 
-        final List<Slice> slices = new ArrayList<Slice>();
+        final ArrayList<Slice> slices = new ArrayList<>();
         for (int sliceCount = fromSlice; sliceCount < howManySlices - fromSlice; sliceCount++) {
-            final Slice slice = SliceIO.read(major, inputStream);
-            slice.index = sliceCount;
-            slices.add(slice);
+            slices.add(SliceIO.read(major, inputStream));
         }
 
-        container.slices = slices.toArray(new Slice[slices.size()]);
-
-        calculateSliceOffsetsAndSizes(container);
+        container.populateSlicesAndIndexingParameters(slices);
 
         log.debug("READ CONTAINER: " + container.toString());
 
         return container;
-    }
-
-    private static void calculateSliceOffsetsAndSizes(final Container container) {
-        if (container.slices.length == 0) return;
-        for (int i = 0; i < container.slices.length - 1; i++) {
-            final Slice slice = container.slices[i];
-            slice.offset = container.landmarks[i];
-            slice.size = container.landmarks[i + 1] - slice.offset;
-            slice.containerOffset = container.offset;
-            slice.index = i;
-        }
-        final Slice lastSlice = container.slices[container.slices.length - 1];
-        lastSlice.offset = container.landmarks[container.landmarks.length - 1];
-        lastSlice.size = container.containerByteSize - lastSlice.offset;
-        lastSlice.containerOffset = container.offset;
-        lastSlice.index = container.slices.length - 1;
     }
 
     /**
@@ -173,7 +153,6 @@ public class ContainerIO {
             container.landmarks[i] = landmarks.get(i);
 
         container.containerByteSize = byteArrayOutputStream.size();
-        calculateSliceOffsetsAndSizes(container);
 
         int length = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
         try {
