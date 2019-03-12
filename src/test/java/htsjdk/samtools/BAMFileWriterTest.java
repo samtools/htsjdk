@@ -78,10 +78,9 @@ public class BAMFileWriterTest extends HtsjdkTest {
         }
 
         final File tempMetrics = File.createTempFile("CGTagTest", ".validation_metrics");
-        try (
-                final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
-                final OutputStream outputStream = new FileOutputStream(tempMetrics);
-                final PrintWriter printWriter = new PrintWriter(outputStream)) {
+        try (final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
+             final OutputStream outputStream = new FileOutputStream(tempMetrics);
+             final PrintWriter printWriter = new PrintWriter(outputStream)) {
 
             new SamFileValidator(printWriter, 100).validateSamFileSummary(samReader, null);
         }
