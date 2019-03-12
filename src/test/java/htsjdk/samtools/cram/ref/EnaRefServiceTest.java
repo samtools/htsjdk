@@ -5,9 +5,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 
-@Test(groups="ena")
 public class EnaRefServiceTest extends HtsjdkTest {
 
     @DataProvider(name="testEnaRefServiceData")
@@ -17,7 +15,7 @@ public class EnaRefServiceTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "testEnaRefServiceData")
-    public void testEnaRefServiceData(final String md5) throws IOException, GaveUpException {
+    public void testEnaRefServiceData(final String md5) throws GaveUpException {
         Assert.assertNotNull(new EnaRefService().getSequence(md5));
     }
 }

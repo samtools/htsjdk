@@ -22,7 +22,6 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
@@ -31,9 +30,7 @@ import htsjdk.samtools.cram.structure.Slice;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ContainerParser {
     private final SAMFileHeader samFileHeader;
@@ -54,50 +51,10 @@ public class ContainerParser {
         }
 
         for (final Slice slice : container.slices) {
-            records.addAll(getRecords(slice, container.header, validationStringency));
+            records.addAll(getRecords(slice, container.compressionHeader, validationStringency));
         }
 
         return records;
-    }
-
-    public Map<ReferenceContext, AlignmentSpan> getReferences(final Container container, final ValidationStringency validationStringency) {
-        final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
-        for (final Slice slice : container.slices) {
-            addAllSpans(containerSpanMap, getReferences(slice, container.header, validationStringency));
-        }
-        return containerSpanMap;
-    }
-
-    private static void addSpan(final ReferenceContext refContext, final int start, final int span, final int count, final Map<ReferenceContext, AlignmentSpan> map) {
-        if (map.containsKey(refContext)) {
-            map.get(refContext).add(start, span, count);
-        } else {
-            map.put(refContext, new AlignmentSpan(start, span, count));
-        }
-    }
-
-    private static Map<ReferenceContext, AlignmentSpan> addAllSpans(final Map<ReferenceContext, AlignmentSpan> spanMap, final Map<ReferenceContext, AlignmentSpan> addition) {
-        for (final Map.Entry<ReferenceContext, AlignmentSpan> entry:addition.entrySet()) {
-            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getSpan(), entry.getValue().getCount(), spanMap);
-        }
-        return spanMap;
-    }
-
-    private Map<ReferenceContext, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) {
-        final Map<ReferenceContext, AlignmentSpan> spanMap = new HashMap<>();
-        final ReferenceContext sliceContext = slice.getReferenceContext();
-        switch (sliceContext.getType()) {
-            case UNMAPPED_UNPLACED_TYPE:
-                spanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNMAPPED_SPAN);
-                break;
-            case MULTIPLE_REFERENCE_TYPE:
-                final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(header, validationStringency);
-                addAllSpans(spanMap, spans);
-                break;
-            default:
-                addSpan(sliceContext, slice.alignmentStart, slice.alignmentSpan, slice.nofRecords, spanMap);
-        }
-        return spanMap;
     }
 
     private ArrayList<CramCompressionRecord> getRecords(final Slice slice,

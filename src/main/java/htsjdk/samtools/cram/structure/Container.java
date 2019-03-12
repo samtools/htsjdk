@@ -17,14 +17,13 @@
  */
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Container {
@@ -35,6 +34,9 @@ public class Container {
      * Byte size of the content excluding header.
      */
     public int containerByteSize;
+
+    // minimum alignment start of the reads in this Container
+    // uses a 1-based coordinate system
     public int alignmentStart = Slice.NO_ALIGNMENT_START;
     public int alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
     public int nofRecords = 0;
@@ -50,7 +52,7 @@ public class Container {
      */
     public Block[] blocks;
 
-    public CompressionHeader header;
+    public CompressionHeader compressionHeader;
 
     // slices found in the container:
     public Slice[] slices;
@@ -134,9 +136,37 @@ public class Container {
         return container;
     }
 
+    /**
+     * Retrieve the list of CRAI Index entries corresponding to this Container.
+     *
+     * @return the list of CRAI Index entries
+     */
     public List<CRAIEntry> getCRAIEntries() {
         return Arrays.stream(slices)
                 .map(Slice::getCRAIEntry)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieve the list of CRAI Index entries corresponding to this Container.
+     *
+     * TODO: investigate why we sometimes split multi-ref Slices
+     * into different entries and sometimes do not
+     *
+     * TODO: clearly identify and enforce preconditions, e.g.
+     * a Container built from Slices which were in turn built from records
+     *
+     *  @return the list of CRAI Index entries
+     */
+    public List<CRAIEntry> getCRAIEntriesSplittingMultiRef() {
+        if (isEOF()) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.stream(slices)
+                .map(s -> s.getCRAIEntriesSplittingMultiRef(compressionHeader, landmarks, offset))
+                .flatMap(List::stream)
+                .sorted()
                 .collect(Collectors.toList());
     }
 
@@ -158,5 +188,35 @@ public class Container {
                 && nofRecords == 0 && (slices == null || slices.length == 0);
 
         return v3 || v2;
+    }
+
+    /**
+     * Iterate through all of this container's {@link Slice}s to derive a map of reference sequence IDs
+     * to {@link AlignmentSpan}s.  Used to create BAI Indexes.
+     *
+     * @param validationStringency stringency for validating records, passed to
+     * {@link Slice#getMultiRefAlignmentSpans(CompressionHeader, ValidationStringency)}
+     * @return the map of map of reference sequence IDs to AlignmentSpans.
+     */
+    public Map<ReferenceContext, AlignmentSpan> getSpans(final ValidationStringency validationStringency) {
+        final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
+        for (final Slice slice : slices) {
+            switch (slice.getReferenceContext().getType()) {
+                case UNMAPPED_UNPLACED_TYPE:
+                    containerSpanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);
+                    break;
+                case MULTIPLE_REFERENCE_TYPE:
+                    final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(compressionHeader, validationStringency);
+                    for (final Map.Entry<ReferenceContext, AlignmentSpan> entry : spans.entrySet()) {
+                        containerSpanMap.merge(entry.getKey(), entry.getValue(), AlignmentSpan::combine);
+                    }
+                    break;
+                default:
+                    final AlignmentSpan alignmentSpan = new AlignmentSpan(slice.alignmentStart, slice.alignmentSpan, slice.mappedReadsCount, slice.unmappedReadsCount);
+                    containerSpanMap.merge(slice.getReferenceContext(), alignmentSpan, AlignmentSpan::combine);
+                    break;
+            }
+        }
+        return containerSpanMap;
     }
 }

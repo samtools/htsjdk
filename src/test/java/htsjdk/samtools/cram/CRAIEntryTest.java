@@ -1,47 +1,114 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.*;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by vadim on 25/08/2015.
  */
-public class CRAIEntryTest extends HtsjdkTest {
+public class CRAIEntryTest extends CramRecordTestHelper {
+
     @Test
-    public void testFromContainer() {
-        final Slice slice = new Slice(new ReferenceContext(1));
-        slice.alignmentStart = 2;
-        slice.alignmentSpan = 3;
-        slice.containerOffset = 4;
-        slice.offset = 5;
-        slice.size = 6;
+    public void singleRefTestGetCRAIEntries() {
+        final Slice slice1 = createSingleRefSlice(0);
+        final Slice slice2 = createSingleRefSlice(0);
 
-        final Container container = Container.initializeFromSlices(Collections.singletonList(slice));
-        container.landmarks = new int[]{7};
-
+        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2));
         final List<CRAIEntry> entries = container.getCRAIEntries();
-        Assert.assertNotNull(entries);
-        Assert.assertEquals(entries.size(), 1);
-        final CRAIEntry entry = entries.get(0);
 
-        Assert.assertEquals(entry.getSequenceId(), slice.getReferenceContext().getSequenceId());
-        Assert.assertEquals(entry.getAlignmentStart(), slice.alignmentStart);
-        Assert.assertEquals(entry.getAlignmentSpan(), slice.alignmentSpan);
-        Assert.assertEquals(entry.getContainerStartByteOffset(), slice.containerOffset);
-        Assert.assertEquals(entry.getSliceByteOffset(), slice.offset);
-        Assert.assertEquals(entry.getSliceByteSize(), slice.size);
+        Assert.assertNotNull(entries);
+        Assert.assertEquals(entries.size(), 2);
+
+        assertEntryForSlice(entries.get(0), slice1);
+        assertEntryForSlice(entries.get(1), slice2);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
+    public void multiRefExceptionTest() {
+        final int dummy = 1;
+        new CRAIEntry(ReferenceContext.MULTIPLE_REFERENCE_ID, dummy, dummy, dummy, dummy, dummy);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
+    public void multiRefTestGetCRAIEntries() {
+        final Slice multi = new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT);
+
+        final Container container = Container.initializeFromSlices(Arrays.asList(multi));
+        container.getCRAIEntries();
+    }
+
+    // requirement for getCRAIEntriesSplittingMultiRef():
+    // a Container built from Slices which were in turn built from records
+
+    // TODO: clearly identify and enforce preconditions
+
+    @Test
+    public void testGetCRAIEntriesSplittingMultiRef() {
+        final int[] landmarks = new int[] { 100, 200 };
+
+        // the indices of the above landmarks array
+        final int slice1Index = 0;
+        final int slice2Index = 1;
+
+        final int slice1AlnStartOffset = 10;
+        final int slice2AlnStartOffset = 20;
+        final int sliceAlnSpan = CRAMStructureTestUtil.READ_LENGTH_FOR_TEST_RECORDS;
+        final int sliceByteSize = 500;
+
+        final int containerOffset = 1000;
+
+        // build two multi-ref slices, spanning 5 sequences with the middle one split
+        // this will create 6 CRAI Entries
+
+        int indexStart = 0;
+        final List<CramCompressionRecord> records1 = createMultiRefRecords(indexStart, slice1AlnStartOffset, 0, 1, 2);
+        indexStart += records1.size();
+        final List<CramCompressionRecord> records2 = createMultiRefRecords(indexStart, slice2AlnStartOffset, 2, 3, 4);
+        final List<CramCompressionRecord> allRecords = new ArrayList<CramCompressionRecord>() {{
+            addAll(records1);
+            addAll(records2);
+        }};
+
+        final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(allRecords, null, true);
+        final Slice slice1 = Slice.buildSlice(records1, compressionHeader);
+        final Slice slice2 = Slice.buildSlice(records2, compressionHeader);
+
+        slice1.index = slice1Index;
+        slice1.size = sliceByteSize;
+
+        slice2.index = slice2Index;
+        slice2.size = sliceByteSize;
+
+        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2));
+        container.compressionHeader = compressionHeader;
+        container.landmarks = landmarks;
+        container.offset = containerOffset;
+
+        final List<CRAIEntry> entries = container.getCRAIEntriesSplittingMultiRef();
+        Assert.assertNotNull(entries);
+        Assert.assertEquals(entries.size(), 6);
+
+        // slice 1 has index entries for refs 0, 1, 2
+
+        assertEntryForSlice(entries.get(0), 0, slice1AlnStartOffset, sliceAlnSpan, containerOffset, landmarks[0], sliceByteSize);
+        assertEntryForSlice(entries.get(1), 1, slice1AlnStartOffset + 1, sliceAlnSpan, containerOffset, landmarks[0], sliceByteSize);
+        assertEntryForSlice(entries.get(2), 2, slice1AlnStartOffset + 2, sliceAlnSpan, containerOffset, landmarks[0], sliceByteSize);
+
+        // slice 2 has index entries for refs 2, 3, 4
+
+        assertEntryForSlice(entries.get(3), 2, slice2AlnStartOffset + 3, sliceAlnSpan, containerOffset, landmarks[1], sliceByteSize);
+        assertEntryForSlice(entries.get(4), 3, slice2AlnStartOffset + 4, sliceAlnSpan, containerOffset, landmarks[1], sliceByteSize);
+        assertEntryForSlice(entries.get(5), 4, slice2AlnStartOffset + 5, sliceAlnSpan, containerOffset, landmarks[1], sliceByteSize);
     }
 
     @Test
-    public void testFromCraiLine() {
+    public void testLineConstructor() {
         int counter = 1;
         final int sequenceId = counter++;
         final int alignmentStart = counter++;
@@ -52,117 +119,192 @@ public class CRAIEntryTest extends HtsjdkTest {
 
         final String line = String.format("%d\t%d\t%d\t%d\t%d\t%d", sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
         final CRAIEntry entry = new CRAIEntry(line);
-        Assert.assertNotNull(entry);
+        assertEntryForSlice(entry, sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
+    }
+
+    @DataProvider(name = "intersectionTestCases")
+    public Object[][] intersectionTestCases() {
+        final CRAIEntry basic = craiEntryForIntersectionTests(1, 1, 10);
+        final CRAIEntry overlapBasic = craiEntryForIntersectionTests(1, 5, 10);
+        final CRAIEntry insideBasic = craiEntryForIntersectionTests(1, 3, 5);
+
+        final CRAIEntry otherSeq1 = craiEntryForIntersectionTests(2, 1, 10);
+        final CRAIEntry otherSeq2 = craiEntryForIntersectionTests(2, 2, 10);
+
+        final CRAIEntry zerospan = craiEntryForIntersectionTests(1, 1, 0);
+
+        // start and span values are invalid here: show that they are ignored
+        final CRAIEntry unmapped = craiEntryForIntersectionTests(ReferenceContext.UNMAPPED_UNPLACED_ID, 1, 2);
+
+        return new Object[][]{
+                {basic, basic, true},
+                {basic, overlapBasic, true},
+                {basic, insideBasic, true},
+
+                {basic, otherSeq1, false},
+                {basic, otherSeq2, false},
+                {otherSeq1, otherSeq2, true},
+
+                {basic, zerospan, false},
+                {zerospan, zerospan, false},
+
+                // intersections with Unmapped entries are always false, even with themselves
+
+                {basic, unmapped, false},
+                {unmapped, unmapped, false},
+        };
+    }
+
+    @Test(dataProvider = "intersectionTestCases")
+    public void testIntersect(final CRAIEntry a, final CRAIEntry b, final boolean expectation) {
+        Assert.assertEquals(CRAIEntry.intersect(a, b), expectation);
+        Assert.assertEquals(CRAIEntry.intersect(b, a), expectation);
+    }
+
+    private CRAIEntry craiEntryForIntersectionTests(final int sequenceId, final int alignmentStart, final int alignmentSpan) {
+        final int dummy = -1;
+        return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, dummy, dummy, dummy);
+    }
+
+    // test that index entries are sorted correctly:
+    // first by numerical order of reference sequence ID, except that the unmapped-unplaced sentinel value comes last
+    //
+    // for valid reference sequence ID (placed):
+    // - sort by alignment start
+    // - if alignment start is equal, sort by container offset
+    // - if alignment start and container offset are equal, sort by slice offset
+    //
+    // for unmapped-unplaced:
+    // - ignore (invalid) alignment start value
+    // - sort by container offset
+    // - if container offset is equal, sort by slice offset
+
+    // alignmentSpan and sliceSize are irrelevant to index sorting
+    private final int dummyValue = 1000000;
+
+    // these unmapped CRAIEntries should sort as: 4, 3, 1, 2
+    // reasoning:
+    // first-order sorting within unmapped is by container offset -> [3 and 4], 1, 2
+    // next-order sorting is by slice offset, so 4 comes first -> 4, 3, 1, 2
+
+    private final CRAIEntry unmapped1 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 3, dummyValue, 100, 100, dummyValue);
+    private final CRAIEntry unmapped2 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 2, dummyValue, 120, 200, dummyValue);
+    private final CRAIEntry unmapped3 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 4, dummyValue, 90, 100, dummyValue);
+    private final CRAIEntry unmapped4 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 5, dummyValue, 90, 50, dummyValue);
+
+    // these placed CRAIEntries should sort per sequenceId as: 4, 2, 1, 5, 3
+    // reasoning:
+    // first-order sorting within sequenceId is by alignment start -> [2 and 4], 1, [3 and 5]
+    // next-order sorting is by container offset, so 4 comes first -> 4, 2, 1, [3 and 5]
+    // final-order sorting is by slice offset, so 5 comes first -> 4, 2, 1, 5, 3
+
+    private CRAIEntry placed1ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 3, dummyValue, 100, 100, dummyValue);
+    }
+
+    private CRAIEntry placed2ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 2, dummyValue, 120, 200, dummyValue);
+    }
+
+    private CRAIEntry placed3ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 4, dummyValue, 90, 100, dummyValue);
+    }
+
+    private CRAIEntry placed4ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 2, dummyValue, 90, 50, dummyValue);
+    }
+
+    private CRAIEntry placed5ForId(final int sequenceId) {
+        return new CRAIEntry(sequenceId, 4, dummyValue, 90, 80, dummyValue);
+    }
+
+    @Test
+    public void testCompareTo() {
+        final List<CRAIEntry> testEntries = new ArrayList<CRAIEntry>() {{
+            add(unmapped1);
+            add(unmapped2);
+            add(unmapped3);
+            add(unmapped4);
+            add(placed1ForId(1));
+            add(placed2ForId(1));
+            add(placed3ForId(1));
+            add(placed4ForId(1));
+            add(placed5ForId(1));
+            add(placed1ForId(0));
+            add(placed2ForId(0));
+            add(placed3ForId(0));
+            add(placed4ForId(0));
+            add(placed5ForId(0));
+        }};
+
+        // ref ID 0, then ref ID 1, then unmapped
+        // within valid ref ID = 4, 2, 1, 5, 3 (see above)
+        // within unmapped = 4, 3, 1, 2 (see above)
+
+        final List<CRAIEntry> expected = new ArrayList<CRAIEntry>() {{
+            add(placed4ForId(0));
+            add(placed2ForId(0));
+            add(placed1ForId(0));
+            add(placed5ForId(0));
+            add(placed3ForId(0));
+
+            add(placed4ForId(1));
+            add(placed2ForId(1));
+            add(placed1ForId(1));
+            add(placed5ForId(1));
+            add(placed3ForId(1));
+
+            add(unmapped4);
+            add(unmapped3);
+            add(unmapped1);
+            add(unmapped2);
+        }};
+
+        Collections.sort(testEntries);
+        Assert.assertEquals(testEntries, expected);
+    }
+
+    private static Slice createSingleRefSlice(final int sequenceId) {
+        int counter = sequenceId;
+
+        final Slice single = new Slice(new ReferenceContext(sequenceId));
+        single.alignmentStart = counter++;
+        single.alignmentSpan = counter++;
+        single.containerOffset = counter++;
+        single.offset = counter++;
+        single.size = counter++;
+        return single;
+    }
+
+    private List<CramCompressionRecord> createMultiRefRecords(final int indexStart,
+                                                              final int alignmentStartOffset,
+                                                              final Integer... refs) {
+        int index = indexStart;
+        final List<CramCompressionRecord> records = new ArrayList<>();
+        for (final int ref : refs) {
+            records.add(CRAMStructureTestUtil.createMappedRecord(index, ref, alignmentStartOffset + index));
+            index++;
+        }
+        return records;
+    }
+
+    private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
+        assertEntryForSlice(entry, slice.getReferenceContext().getSerializableId(),
+                slice.alignmentStart, slice.alignmentSpan, slice.containerOffset, slice.offset, slice.size);
+     }
+
+    private void assertEntryForSlice(final CRAIEntry entry,
+                                     final int sequenceId,
+                                     final int alignmentStart,
+                                     final int alignmentSpan,
+                                     final long containerOffset,
+                                     final int sliceByteOffset,
+                                     final int sliceByteSize) {
         Assert.assertEquals(entry.getSequenceId(), sequenceId);
         Assert.assertEquals(entry.getAlignmentStart(), alignmentStart);
         Assert.assertEquals(entry.getAlignmentSpan(), alignmentSpan);
         Assert.assertEquals(entry.getContainerStartByteOffset(), containerOffset);
-        Assert.assertEquals(entry.getSliceByteOffset(), sliceOffset);
-        Assert.assertEquals(entry.getSliceByteSize(), sliceSize);
-    }
-
-    @Test
-    public void testIntersectsZeroSpan() {
-        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 1, 1), newEntry(1, 1, 0)));
-    }
-
-    @Test
-    public void testIntersectsSame() {
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 1), newEntry(1, 1, 1)));
-    }
-
-    @Test
-    public void testIntersectsIncluded() {
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 1, 1)));
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 2, 1)));
-
-        // is symmetrical?
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 1), newEntry(1, 1, 2)));
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 2, 1), newEntry(1, 1, 2)));
-    }
-
-    @Test
-    public void testIntersectsOvertlaping() {
-        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 0, 1)));
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 0, 2)));
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 2, 1)));
-        Assert.assertFalse(CRAIEntry.intersect(newEntry(1, 1, 2), newEntry(1, 3, 1)));
-    }
-
-    @Test
-    public void testIntersectsAnotherSequence() {
-        Assert.assertTrue(CRAIEntry.intersect(newEntry(10, 1, 2), newEntry(10, 2, 1)));
-        Assert.assertFalse(CRAIEntry.intersect(newEntry(10, 1, 2), newEntry(11, 2, 1)));
-    }
-
-    @Test
-    public void testCompareTo () {
-        final List<CRAIEntry> list = new ArrayList<>(2);
-        CRAIEntry e1;
-        CRAIEntry e2;
-
-        e1 = newEntry(100, 0, 0);
-        e2 = newEntry(200, 0, 0);
-        list.add(e2);
-        list.add(e1);
-        Assert.assertTrue(list.get(1).getSequenceId() < list.get(0).getSequenceId());
-        Collections.sort(list);
-        Assert.assertTrue(list.get(0).getSequenceId() < list.get(1).getSequenceId());
-
-        list.clear();
-        e1 = newEntry(1, 100, 0);
-        e2 = newEntry(1, 200, 0);
-        list.add(e2);
-        list.add(e1);
-        Assert.assertTrue(list.get(1).getAlignmentStart() < list.get(0).getAlignmentStart());
-        Collections.sort(list);
-        Assert.assertTrue(list.get(0).getAlignmentStart() < list.get(1).getAlignmentStart());
-
-        list.clear();
-        e1 = newEntryContOffset(100);
-        e2 = newEntryContOffset(200);
-        list.add(e2);
-        list.add(e1);
-        Assert.assertTrue(list.get(1).getContainerStartByteOffset() < list.get(0).getContainerStartByteOffset());
-        Collections.sort(list);
-        Assert.assertTrue(list.get(0).getContainerStartByteOffset() < list.get(1).getContainerStartByteOffset());
-    }
-
-    public static CRAIEntry newEntry(final int seqId, final int start, final int span) {
-        return newEntry(seqId, start, span, 0, 0, 0);
-    }
-
-    public static CRAIEntry newEntry(final int sequenceId,
-                                     final int start,
-                                     final int span,
-                                     final int containerStartOffset,
-                                     final int sliceOffset,
-                                     final int sliceSize) {
-        return new CRAIEntry(sequenceId, start, span, containerStartOffset, sliceOffset, sliceSize);
-    }
-
-    public static CRAIEntry newEntrySeqStart(final int seqId, final int start) {
-        return newEntry(seqId, start, 0);
-    }
-
-    public static  CRAIEntry newEntryContOffset(final int containerStartOffset) {
-        return newEntry(1, 0, 0, containerStartOffset, 0, 0);
-    }
-
-    public static CRAIEntry updateStart(final CRAIEntry toClone, final int alignmentStart) {
-        return newEntry(toClone.getSequenceId(),
-                alignmentStart,
-                toClone.getAlignmentSpan());
-    }
-
-    public static CRAIEntry updateStartContOffset(final CRAIEntry toClone,
-                                                  final int alignmentStart,
-                                                  final int containerStartOffset) {
-        return newEntry(toClone.getSequenceId(),
-                alignmentStart,
-                toClone.getAlignmentSpan(),
-                containerStartOffset,
-                toClone.getSliceByteOffset(),
-                toClone.getSliceByteSize());
+        Assert.assertEquals(entry.getSliceByteOffset(), sliceByteOffset);
+        Assert.assertEquals(entry.getSliceByteSize(), sliceByteSize);
     }
 }

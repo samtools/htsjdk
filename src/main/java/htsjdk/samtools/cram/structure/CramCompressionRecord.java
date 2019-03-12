@@ -58,6 +58,7 @@ public class CramCompressionRecord {
 
     // sequential index of the record in a stream:
     public int index = 0;
+    // start position of this read, using a 1-based coordinate system
     public int alignmentStart;
     private int alignmentEnd = UNINITIALIZED_END;
     private int alignmentSpan = UNINITIALIZED_SPAN;
@@ -263,7 +264,7 @@ public class CramCompressionRecord {
      * @see #isSegmentUnmapped()
      * @return true if the record is placed
      */
-    boolean isPlaced() {
+    public boolean isPlaced() {
         // placement requires a valid sequence ID and alignment start coordinate
         boolean placed = sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
                 alignmentStart != SAMRecord.NO_ALIGNMENT_START;

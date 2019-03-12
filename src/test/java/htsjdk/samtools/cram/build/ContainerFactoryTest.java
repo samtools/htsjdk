@@ -6,6 +6,7 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CRAMStructureTestUtil;
 import htsjdk.samtools.cram.structure.Slice;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -17,6 +18,32 @@ import java.util.List;
 public class ContainerFactoryTest extends HtsjdkTest {
     private static final int TEST_RECORD_COUNT = 10;
     private static final int READ_LENGTH_FOR_TEST_RECORDS = CRAMStructureTestUtil.READ_LENGTH_FOR_TEST_RECORDS;
+
+    @Test
+    public void recordsPerSliceTest() {
+        final int recordsPerSlice = 100;
+        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), recordsPerSlice);
+
+        // build a container with the max records per slice
+
+        final List<CramCompressionRecord> records = CRAMStructureTestUtil.getSingleRefRecords(recordsPerSlice, 0);
+        final Container container = factory.buildContainer(records);
+
+        Assert.assertEquals(container.nofRecords, recordsPerSlice);
+        Assert.assertEquals(container.slices.length, 1);
+        Assert.assertEquals(container.slices[0].nofRecords, recordsPerSlice);
+
+        // build a container with 1 too many records to fit into a slice
+        // 2 slices: recordsPerSlice records and 1 record
+
+        records.add(CRAMStructureTestUtil.createMappedRecord(recordsPerSlice, 0, 1));
+        final Container container2 = factory.buildContainer(records);
+
+        Assert.assertEquals(container2.nofRecords, recordsPerSlice + 1);
+        Assert.assertEquals(container2.slices.length, 2);
+        Assert.assertEquals(container2.slices[0].nofRecords, recordsPerSlice);
+        Assert.assertEquals(container2.slices[1].nofRecords, 1);
+    }
 
     @DataProvider(name = "containerStateTests")
     private Object[][] containerStateTests() {
@@ -39,7 +66,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 },
                 {
-                        CRAMStructureTestUtil.getUnmappedRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 },
 
@@ -47,11 +74,11 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 // but not both.  We treat these weird edge cases as unplaced.
 
                 {
-                        CRAMStructureTestUtil.getHalfUnmappedNoRefRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 },
                 {
-                        CRAMStructureTestUtil.getHalfUnmappedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
                 },
 

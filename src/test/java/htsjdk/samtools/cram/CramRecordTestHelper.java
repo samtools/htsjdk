@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
@@ -23,11 +23,11 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
 
     // attempt at minimal initialization for tests
 
-    CompressionHeader createHeader(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
+    public CompressionHeader createHeader(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
         return new CompressionHeaderFactory().build(records, new SubstitutionMatrix(new long[256][256]), coordinateSorted);
     }
 
-    List<CramCompressionRecord> createRecords() {
+    public List<CramCompressionRecord> createRecords() {
         final List<CramCompressionRecord> list = new ArrayList<>(4);
 
         // some arbitrary values
@@ -107,7 +107,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         return sam2CramRecordFactory.createCramRecord(record);
     }
 
-    Map<Integer, ByteArrayOutputStream> createOutputMap(final CompressionHeader header) {
+    public Map<Integer, ByteArrayOutputStream> createOutputMap(final CompressionHeader header) {
         return header.encodingMap.values()
                 .stream()
                 .filter(params -> params.id == EncodingID.EXTERNAL)
@@ -116,7 +116,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
                         params -> new ByteArrayOutputStream()));
     }
 
-    Map<Integer, ByteArrayInputStream> createInputMap(final Map<Integer, ByteArrayOutputStream> outputMap) {
+    public Map<Integer, ByteArrayInputStream> createInputMap(final Map<Integer, ByteArrayOutputStream> outputMap) {
         return outputMap.entrySet()
                 .stream()
                 .collect(Collectors.toMap(

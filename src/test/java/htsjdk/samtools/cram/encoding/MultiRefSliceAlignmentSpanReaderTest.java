@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.CramRecordTestHelper;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
@@ -42,6 +43,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         initialRecords.get(1).alignmentStart = 2;
         initialRecords.get(1).readBases = commonRead.getBytes();
         initialRecords.get(1).readLength = commonRead.length();
+        initialRecords.get(1).setSegmentUnmapped(true);     // unmapped but placed
 
         // span 1:3,5
         initialRecords.get(2).sequenceId = 1;
@@ -89,9 +91,9 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
             final Map<ReferenceContext, AlignmentSpan> spans = reader.getReferenceSpans();
 
             Assert.assertEquals(spans.size(), 3);
-            Assert.assertEquals(spans.get(new ReferenceContext(1)), new AlignmentSpan(1, 5, 2));
-            Assert.assertEquals(spans.get(new ReferenceContext(2)), new AlignmentSpan(2, 3, 1));
-            Assert.assertNotNull(spans.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT));
+            Assert.assertEquals(spans.get(new ReferenceContext(1)), new AlignmentSpan(1, 5, 2, 0));
+            Assert.assertEquals(spans.get(new ReferenceContext(2)), new AlignmentSpan(2, 3, 0, 1));
+            Assert.assertEquals(spans.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT), AlignmentSpan.UNPLACED_SPAN);
         }
     }
 }

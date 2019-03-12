@@ -248,8 +248,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         it.hasNext();
         Container secondContainer = it.next();
         Assert.assertNotNull(secondContainer);
-        final Map<ReferenceContext, AlignmentSpan> references =
-                new ContainerParser(it.getCramHeader().getSamFileHeader()).getReferences(secondContainer, ValidationStringency.STRICT);
+        final Map<ReferenceContext, AlignmentSpan> references = secondContainer.getSpans(ValidationStringency.STRICT);
         it.close();
 
         final ReferenceContext referenceContext = new TreeSet<>(references.keySet()).iterator().next();

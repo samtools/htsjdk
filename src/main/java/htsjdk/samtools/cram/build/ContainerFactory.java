@@ -22,14 +22,13 @@ import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ContainerFactory {
     private final SAMFileHeader samFileHeader;
-    private int recordsPerSlice = 10000;
+    private final int recordsPerSlice; // default 10000; see CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE
     private boolean preserveReadNames = true;
     private long globalRecordCounter = 0;
 
@@ -41,9 +40,9 @@ public class ContainerFactory {
     public Container buildContainer(final List<CramCompressionRecord> records) {
         // sets header APDelta
         final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-        final CompressionHeader header = new CompressionHeaderFactory().build(records, null, coordinateSorted);
+        final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(records, null, coordinateSorted);
 
-        header.readNamesIncluded = preserveReadNames;
+        compressionHeader.readNamesIncluded = preserveReadNames;
 
         final List<Slice> slices = new ArrayList<>();
 
@@ -52,7 +51,7 @@ public class ContainerFactory {
         for (int i = 0; i < records.size(); i += recordsPerSlice) {
             final List<CramCompressionRecord> sliceRecords = records.subList(i,
                     Math.min(records.size(), i + recordsPerSlice));
-            final Slice slice = Slice.buildSlice(sliceRecords, header);
+            final Slice slice = Slice.buildSlice(sliceRecords, compressionHeader);
             slice.globalRecordCounter = globalRecordCounter;
             globalRecordCounter += slice.nofRecords;
             baseCount += slice.bases;
@@ -60,7 +59,7 @@ public class ContainerFactory {
         }
 
         final Container container = Container.initializeFromSlices(slices);
-        container.header = header;
+        container.compressionHeader = compressionHeader;
         container.nofRecords = records.size();
         container.globalRecordCounter = lastGlobalRecordCounter;
         container.blockCount = 0;

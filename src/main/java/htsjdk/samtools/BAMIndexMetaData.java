@@ -149,27 +149,23 @@ public class BAMIndexMetaData {
     /**
      * @param slice
      */
-    void recordMetaData(Slice slice) {
-
-        final int alignmentStart = slice.alignmentStart;
-        if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
-            noCoordinateRecords+=slice.nofRecords;
+    void recordMetaData(final Slice slice) {
+         if (slice.getReferenceContext().isUnmappedUnplaced()) {
+            noCoordinateRecords += slice.unplacedReadsCount;
             return;
+        }
+        else {
+            alignedRecords += slice.mappedReadsCount;
+            unAlignedRecords += slice.unmappedReadsCount;
         }
 
         final long start = slice.offset;
-        final long end = slice.offset + 0;
 
-        if (slice.alignmentSpan < 1) {
-            unAlignedRecords += slice.nofRecords;
-        } else {
-            alignedRecords += slice.nofRecords;
-        }
         if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
             this.firstOffset = start;
-        }
-        if (BlockCompressedFilePointerUtil.compare(lastOffset, end) < 1) {
-            this.lastOffset = end;
+            // not actually used, so set it to a dummy value (start)
+            // see https://github.com/samtools/htsjdk/issues/401
+            this.lastOffset = start;
         }
     }
 

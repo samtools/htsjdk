@@ -55,6 +55,9 @@ public class Slice {
     private final ReferenceContext referenceContext;
 
     // header values as defined in the specs, in addition to sequenceId from ReferenceContext
+
+    // minimum alignment start of the reads in this Slice
+    // uses a 1-based coordinate system
     public int alignmentStart = NO_ALIGNMENT_START;
     public int alignmentSpan = NO_ALIGNMENT_SPAN;
     public int nofRecords = -1;
@@ -87,6 +90,16 @@ public class Slice {
     public long bases;
 
     public SAMBinaryTagAndValue sliceTags;
+
+    // read counters per type, for BAMIndexMetaData.recordMetaData()
+    //
+    // see also AlignmentSpan and CRAMBAIIndexer.processContainer()
+    //
+    // TODO: redesign/refactor
+
+    public int mappedReadsCount = 0;
+    public int unmappedReadsCount = 0;
+    public int unplacedReadsCount = 0;
 
     /**
      * Construct this Slice by providing its {@link ReferenceContext}
@@ -326,22 +339,50 @@ public class Slice {
 
     /**
      * Generate a CRAI Index entry from this Slice
-     * @return a new CRAI Index Entry
+     * @return a new CRAI Index Entry derived from this Slice
      */
     public CRAIEntry getCRAIEntry() {
         return new CRAIEntry(referenceContext.getSerializableId(), alignmentStart, alignmentSpan, containerOffset, offset, size);
     }
+
     /**
-     * Generate a CRAI Index entry from this Slice and the container offset.
+     * Generate a CRAI Index entry from this Slice and other container parameters,
+     * splitting Multiple Reference slices into constituent reference sequence entries.
      *
-     * TODO: investigate why we sometimes need to pass in an external containerStartOffset
+     * TODO: investigate why we sometimes need to pass in an external containerStartByteOffset
      * because this Slice's containerOffset is incorrect
      *
-     * @param containerStartOffset the byte offset of this Slice's Container
-     * @return a new CRAI Index Entry
+     * TODO: investigate why we sometimes split multi-ref and sometimes do not
+     *
+     * @param compressionHeader the enclosing {@link Container}'s CompressionHeader
+     * @param landmarks the enclosing {@link Container}'s landmarks
+     * @param containerStartByteOffset the byte offset of the enclosing {@link Container}
+     * @return a list of CRAI Index Entries derived from this Slice
      */
-    public CRAIEntry getCRAIEntry(final long containerStartOffset) {
-        return new CRAIEntry(referenceContext.getSerializableId(), alignmentStart, alignmentSpan, containerStartOffset, offset, size);
+    public List<CRAIEntry> getCRAIEntriesSplittingMultiRef(final CompressionHeader compressionHeader,
+                                                           final int[] landmarks,
+                                                           final long containerStartByteOffset) {
+        if (! compressionHeader.isCoordinateSorted()) {
+            throw new CRAMException("Cannot construct index if the CRAM is not Coordinate Sorted");
+        }
+
+        if (referenceContext.isMultiRef()) {
+            final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(compressionHeader, ValidationStringency.DEFAULT_STRINGENCY);
+
+            return spans.entrySet().stream()
+                    .map(e -> new CRAIEntry(e.getKey().getSerializableId(),
+                            e.getValue().getStart(),
+                            e.getValue().getSpan(),
+                            containerStartByteOffset,
+                            landmarks[index],
+                            size))
+                    .sorted()
+                    .collect(Collectors.toList());
+        } else {
+            // single ref or unmapped
+            final int sequenceId = referenceContext.getSerializableId();
+            return Collections.singletonList(new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerStartByteOffset, offset, size));
+        }
     }
 
     /**
@@ -417,11 +458,15 @@ public class Slice {
      */
     private static Slice initializeFromRecords(final Collection<CramCompressionRecord> records) {
         final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
-        int baseCount = 0;
         final Set<ReferenceContext> referenceContexts = new HashSet<>();
         // ignore these values if we later determine this Slice is not single-ref
         int singleRefAlignmentStart = Integer.MAX_VALUE;
         int singleRefAlignmentEnd = SAMRecord.NO_ALIGNMENT_START;
+
+        int baseCount = 0;
+        int mappedReadsCount = 0;
+        int unmappedReadsCount = 0;
+        int unplacedReadsCount = 0;
 
         for (final CramCompressionRecord record : records) {
             hasher.add(record);
@@ -429,11 +474,29 @@ public class Slice {
 
             if (record.isPlaced()) {
                 referenceContexts.add(new ReferenceContext(record.sequenceId));
+
                 singleRefAlignmentStart = Math.min(record.alignmentStart, singleRefAlignmentStart);
                 singleRefAlignmentEnd = Math.max(record.getAlignmentEnd(), singleRefAlignmentEnd);
+
+                if (record.isSegmentUnmapped()) {
+                    unmappedReadsCount++;
+                }
+                else {
+                    mappedReadsCount++;
+                }
             }
             else {
                 referenceContexts.add(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+            }
+
+            // this check matches the logic of BAMIndexMetadata.recordMetaData(SAMRecord)
+            // we's prefer to use isPlaced() like we do elsewhere, but we'd have inconsistent results if we did
+
+            // TODO? either update isPlaced() to match this logic (i.e. don't check the reference ID)
+            // or update BAMIndexMetadata.recordMetaData(SAMRecord) to have a similar notion of placement
+
+            if (record.alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+                unplacedReadsCount++;
             }
         }
 
@@ -461,6 +524,9 @@ public class Slice {
         slice.sliceTags = hasher.getAsTags();
         slice.bases = baseCount;
         slice.nofRecords = records.size();
+        slice.mappedReadsCount = mappedReadsCount;
+        slice.unmappedReadsCount = unmappedReadsCount;
+        slice.unplacedReadsCount = unplacedReadsCount;
 
         return slice;
     }

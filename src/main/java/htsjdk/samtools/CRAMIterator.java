@@ -196,7 +196,7 @@ public class CRAMIterator implements SAMRecordIterator {
         }
 
         normalizer.normalize(cramRecords, referenceBases, 0,
-                container.header.substitutionMatrix);
+                container.compressionHeader.substitutionMatrix);
 
         final Cram2SamRecordFactory cramToSamRecordFactory = new Cram2SamRecordFactory(
                 cramHeader.getSamFileHeader());

@@ -21,9 +21,7 @@ import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 
 import java.io.ByteArrayInputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A reader that only keeps track of alignment spans.
@@ -32,11 +30,6 @@ import java.util.Map;
  * @author vadim
  */
 public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
-    /**
-     * Alignment start of the previous record, for delta-encoding if necessary
-     */
-    private int prevAlignmentStart;
-
     /**
      * Detected sequence spans
      */
@@ -61,10 +54,13 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final int recordCount) {
         super(coreInputStream, externalInputMap, header, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, validationStringency);
 
-        this.prevAlignmentStart = initialAlignmentStart;
+        // Alignment start of the previous record, for delta-encoding if necessary
+        int prevAlignmentStart = initialAlignmentStart;
 
         for (int i = 0; i < recordCount; i++) {
-            readCramRecord();
+            final CramCompressionRecord cramRecord = new CramCompressionRecord();
+            prevAlignmentStart = super.read(cramRecord, prevAlignmentStart);
+            processRecordSpan(cramRecord);
         }
     }
 
@@ -72,16 +68,31 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         return Collections.unmodifiableMap(spans);
     }
 
-    private void readCramRecord() {
-        final CramCompressionRecord cramRecord = new CramCompressionRecord();
+    private void processRecordSpan(final CramCompressionRecord cramRecord) {
+        // if unplaced: create or replace the current spans map entry.
+        // we don't need to combine entries for different records because
+        // we count them elsewhere and span is irrelevant
 
-        prevAlignmentStart = super.read(cramRecord, prevAlignmentStart);
+        if (! cramRecord.isPlaced()) {
+            spans.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);
+            return;
+        }
+
+        // for placed records we do need to combine the records' spans for counting and span calculation
+
+        AlignmentSpan span;
+        if (cramRecord.isSegmentUnmapped()) {
+            final int mappedCount = 0;
+            final int unmappedCount = 1;
+            span = new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength, mappedCount, unmappedCount);
+        }
+        else {
+            final int mappedCount = 1;
+            final int unmappedCount = 0;
+            span = new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength, mappedCount, unmappedCount);
+        }
 
         final ReferenceContext recordContext = new ReferenceContext(cramRecord.sequenceId);
-        if (!spans.containsKey(recordContext)) {
-            spans.put(recordContext, new AlignmentSpan(prevAlignmentStart, cramRecord.readLength));
-        } else {
-            spans.get(recordContext).addSingle(prevAlignmentStart, cramRecord.readLength);
-        }
+        spans.merge(recordContext, span, AlignmentSpan::combine);
     }
 }

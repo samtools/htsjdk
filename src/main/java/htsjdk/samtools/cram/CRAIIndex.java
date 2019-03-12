@@ -9,13 +9,11 @@ import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
-
 
 /**
  * CRAI index used for CRAM files.
@@ -28,8 +26,16 @@ public class CRAIIndex {
      * Add a single entry to the CRAI index.
      * @param entry entry to be added
      */
-    public void addEntry(CRAIEntry entry) {
+    public void addEntry(final CRAIEntry entry) {
         entries.add(entry);
+    }
+
+    /**
+     * Add multiple entries to the CRAI index.
+     * @param toAdd entries to be added
+     */
+    public void addEntries(final Collection<CRAIEntry> toAdd) {
+        entries.addAll(toAdd);
     }
 
     // This is used for testing and should be removed when there are no more
@@ -43,8 +49,9 @@ public class CRAIIndex {
      * @param os Stream to write index to
      */
     public void writeIndex(final OutputStream os) {
-        Collections.sort(entries, CRAIEntry.byStartDesc);
-        entries.stream().forEach(e -> e.writeToStream(os));
+        entries.stream()
+                .sorted()
+                .forEach(e -> e.writeToStream(os));
     }
 
     /**
@@ -52,25 +59,7 @@ public class CRAIIndex {
      * @param container the container to index
      */
     public void processContainer(final Container container) {
-        // TODO: this should be refactored and delegate to container/slice
-        if (!container.isEOF()) {
-            for (final Slice s: container.slices) {
-                if (s.getReferenceContext().isMultiRef()) {
-                    final Map<ReferenceContext, AlignmentSpan> spans = s.getMultiRefAlignmentSpans(container.header, ValidationStringency.DEFAULT_STRINGENCY);
-
-                    this.entries.addAll(spans.entrySet().stream()
-                            .map(e -> new CRAIEntry(e.getKey().getSequenceId(),
-                                    e.getValue().getStart(),
-                                    e.getValue().getSpan(),
-                                    container.offset,
-                                    container.landmarks[s.index],
-                                    s.size))
-                            .collect(Collectors.toList()));
-                 } else {
-                    entries.add(s.getCRAIEntry(container.offset));
-                }
-            }
-        }
+        addEntries(container.getCRAIEntriesSplittingMultiRef());
     }
 
     public static SeekableStream openCraiFileAsBaiStream(final File cramIndexFile, final SAMSequenceDictionary dictionary) {
@@ -87,6 +76,7 @@ public class CRAIIndex {
         Collections.sort(full);
 
         final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         header.setSequenceDictionary(dictionary);
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -99,13 +89,15 @@ public class CRAIIndex {
             slice.alignmentSpan = entry.getAlignmentSpan();
             slice.offset = entry.getSliceByteOffset();
 
-            // NOTE: the recordCount and sliceIndex fields can't be derived from the CRAM index
+            // NOTE: the sliceIndex and read count fields can't be derived from the CRAM index
             // so we can only set them to zero
             // see https://github.com/samtools/htsjdk/issues/531
-            slice.nofRecords = 0;
+            slice.mappedReadsCount = 0;
+            slice.unmappedReadsCount = 0;
+            slice.unplacedReadsCount = 0;
             slice.index = 0;
 
-            indexer.processSingleReferenceSlice(slice);
+            indexer.processAsSingleReferenceSlice(slice);
         }
         indexer.finish();
 
@@ -113,44 +105,34 @@ public class CRAIIndex {
     }
 
     public static List<CRAIEntry> find(final List<CRAIEntry> list, final int seqId, final int start, final int span) {
-        final boolean whole = start < 1 || span < 1;
+        final boolean matchEntireSequence = start < 1 || span < 1;
         final CRAIEntry query = new CRAIEntry(seqId,
-                start < 1 ? 1 : start,
-                span < 1 ? Integer.MAX_VALUE : span,
+                start,
+                span,
                 Long.MAX_VALUE,
                 Integer.MAX_VALUE,
                 Integer.MAX_VALUE);
 
-        final List<CRAIEntry> l = new ArrayList<>();
-        for (final CRAIEntry e : list) {
-            if (e.getSequenceId() != seqId) {
-                continue;
-            }
-            if (whole || CRAIEntry.intersect(e, query)) {
-                l.add(e);
-            }
-        }
-        Collections.sort(l, CRAIEntry.byStart);
-        return l;
+        return list.stream()
+                .filter(e -> e.getSequenceId() == seqId)
+                .filter(e -> matchEntireSequence || CRAIEntry.intersect(e, query))
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     public static CRAIEntry getLeftmost(final List<CRAIEntry> list) {
         if (list == null || list.isEmpty()) {
             return null;
         }
-        CRAIEntry left = list.get(0);
-
-        for (final CRAIEntry e : list) {
-            if (e.getAlignmentStart() < left.getAlignmentStart()) {
-                left = e;
-            }
-        }
-
-        return left;
+        return list.stream()
+                .sorted()
+                .findFirst()
+                .get();
     }
 
     /**
-     * Find index of the last aligned entry in the list. Assumes the index is sorted by coordinate and unmapped entries (with sequence id = -1) follow the mapped entries.
+     * Find index of the last aligned entry in the list. Assumes the index is sorted
+     * by coordinate and unmapped entries (with sequence id = -1) follow the mapped entries.
      *
      * @param list a list of CRAI entries
      * @return integer index of the last entry with sequence id not equal to -1

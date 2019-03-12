@@ -65,6 +65,16 @@ public class CompressionHeader {
     public CompressionHeader() {
     }
 
+    /**
+     * Return true if the header is for a coordinate-sorted CRAM stream.
+     * As required by the spec, we set the AP Delta flag according to that criterion,
+     * so checking that flag is equivalent.
+     * @return the value of the APDelta flag
+     */
+    boolean isCoordinateSorted() {
+        return APDelta;
+    }
+
     private byte[][][] parseDictionary(final byte[] bytes) {
         final List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();
         {
