@@ -31,11 +31,6 @@ import java.util.*;
  */
 public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
     /**
-     * Alignment start of the previous record, for delta-encoding if necessary
-     */
-    private int prevAlignmentStart;
-
-    /**
      * Detected sequence spans
      */
     private final Map<ReferenceContext, AlignmentSpan> spans = new HashMap<>();
@@ -59,7 +54,8 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final int recordCount) {
         super(coreInputStream, externalInputMap, header, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, validationStringency);
 
-        this.prevAlignmentStart = initialAlignmentStart;
+        // Alignment start of the previous record, for delta-encoding if necessary
+        int prevAlignmentStart = initialAlignmentStart;
 
         for (int i = 0; i < recordCount; i++) {
             final CramCompressionRecord cramRecord = new CramCompressionRecord();
