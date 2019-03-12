@@ -16,7 +16,7 @@ public class AlignmentSpan {
     // uses a 1-based coordinate system
     private final int start;
     // span from minimum alignment start to maximum alignment end
-    // of the reads represented by this span (max end - min start + 1)
+    // of the reads represented by this span, equal to max(end) - min(start) + 1
     private final int span;
 
     private final int mappedCount;
@@ -25,8 +25,9 @@ public class AlignmentSpan {
     /**
      * Create a new span with a multiple reads in it.
      *
-     * @param start alignment start of the span
-     * @param span  alignment span
+     * @param start minimum alignment start of the reads represented by this span, using a 1-based coordinate system
+     * @param span  span from minimum alignment start to maximum alignment end of the reads represented by this span
+     *              span = max(end) - min(start) + 1
      * @param mappedCount number of mapped reads in the span
      * @param unmappedCount number of unmapped reads in the span
      */
