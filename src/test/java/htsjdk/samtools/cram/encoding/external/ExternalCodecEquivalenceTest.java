@@ -14,6 +14,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Motivation for this test: we were incorrectly encoding a few CRAM record
+ * fields using the wrong data type.  This was surprising, since we would
+ * expect catastrophic "frame shift" type failures from this.
+ *
+ * Instead, we noticed that this conflict causes no problems under the following conditions:
+ *
+ * 1. External Byte, External Integer, and External Long Encodings
+ * create identical output streams when values are limited to the
+ * range 0 to 0x7F because the respective underlying encodings
+ * (raw bytes, ITF8, and LTF8 respectively) result in byte-for-byte
+ * identical outputs.
+ *
+ * 2. External Integer and External Long Encodings also create identical
+ * output streams when values are limited to 28 unsigned bits
+ * (0 to 0x0F FF FF FF) because ITF8 ands LTF8 are equivalent over that range.
+ *
+ * Demonstrate that these conditions do in fact create identical streams.
+ *
+ */
 public class ExternalCodecEquivalenceTest extends HtsjdkTest {
     // show that External codecs are equivalent within certain ranges
 

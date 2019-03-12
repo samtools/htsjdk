@@ -157,13 +157,21 @@ public class IOTestCases extends HtsjdkTest {
         };
     }
 
-    // for testing ITF8 and LTF8 equivalence: only true in the range 0 - (high bit = 28)
+    // Motivation for this test case: we were incorrectly encoding a few CRAM record
+    // fields using the wrong data type.  This was surprising, since we would
+    // expect catastrophic "frame shift" type failures from this.
+    //
+    // Instead, we noticed that this conflict would cause no problems in a few specific
+    // cases, including:
+    //
+    // External Integer vs. External Long, if all values are in the range (0 to 0x0F FF FF FF)
+    // because ITF8 and LTF8 are equivalent over that range.
 
     private static List<Integer> uint28Tests() {
         final int max = 1 << 28;
         return int32Tests()
                 .stream()
-                .filter(i -> i >= 0 && i < max)
+                .filter(i -> i >= 0 && i < max)  // valid range is (0 to 0x0F FF FF FF)
                 .collect(Collectors.toList());
     }
 
