@@ -42,8 +42,8 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
 
     @Test(dataProvider = "testPositiveByteLists", dataProviderClass = IOTestCases.class)
     public void byteEquivalenceTest(final List<Byte> values) {
-        codecPairTest(values, this::externalByteCodecWrite,      this::externalIntegerCodecRead);
-        codecPairTest(values, this::externalByteCodecWrite,      this::externalLongCodecRead);
+        codecPairTest(values, this::externalByteCodecWrite,     this::externalIntegerCodecRead);
+        codecPairTest(values, this::externalByteCodecWrite,     this::externalLongCodecRead);
         codecPairTest(values, this::externalIntegerCodecWrite,  this::externalByteCodecRead);
         codecPairTest(values, this::externalIntegerCodecWrite,  this::externalLongCodecRead);
         codecPairTest(values, this::externalLongCodecWrite,     this::externalByteCodecRead);
@@ -60,7 +60,7 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
         codecPairTest(values, this::externalLongCodecWrite,     this::externalIntegerCodecRead);
     }
 
-    private <T extends Number> void codecPairTest(final List<T> values, Writer<T> writer, Reader reader) {
+    private <T extends Number> void codecPairTest(final List<T> values, CodecTestWriter<T> writer, CodecTestReader reader) {
         byte[] written = writer.write(values);
         final List<Long> read = reader.read(written, values.size());
 
@@ -72,12 +72,12 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
         Assert.assertEquals(read, expected);
     }
 
-    private interface Writer<T> {
+    private interface CodecTestWriter<T> {
         byte[] write(final List<T> toWrite);
     }
 
     // byte, integer, and long can all be read as Long
-    private interface Reader {
+    private interface CodecTestReader {
         List<Long> read(final byte[] toRead, final int count);
     }
 
