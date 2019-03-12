@@ -93,7 +93,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     }
 
     protected synchronized boolean record(final String chrom, final int pos, final String rname) {
-        if (chrom.equals(lastChrom) && pos < lastPos) {
+        if (chrom != null && chrom.equals(lastChrom) && pos < lastPos) {
             countNonIncreasing++;
             if (countNonIncreasing == PRINT_READ_NAME_THRESHOLD) {
                 log("Seen many non-increasing record positions. Printing Read-names as well.");
