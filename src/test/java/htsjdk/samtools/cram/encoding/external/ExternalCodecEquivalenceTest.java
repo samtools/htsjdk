@@ -131,15 +131,15 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
     }
 
     private List<Long> externalByteCodecRead(byte[] written, final int length) {
-        return read(written, length, this::externalByteCodecReaderConstructor);
+        return read(written, length, (is -> new ExternalByteCodec(is, null)));
     }
 
     private List<Long> externalIntegerCodecRead(byte[] written, final int length) {
-        return read(written, length, this::externalIntegerCodecReaderConstructor);
+        return read(written, length, (is -> new ExternalIntegerCodec(is, null)));
     }
 
     private List<Long> externalLongCodecRead(byte[] written, final int length) {
-        return read(written, length, this::externalLongCodecReaderConstructor);
+        return read(written, length, (is -> new ExternalLongCodec(is, null)));
     }
 
     private <T extends Number> List<Long> read(byte[] written, final int length, final ReadCodecConstructor<T> readCC) {
@@ -160,17 +160,5 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
 
     private interface ReadCodecConstructor<T> {
         CRAMCodec<T> reader(final ByteArrayInputStream is);
-    }
-
-    private CRAMCodec<Byte> externalByteCodecReaderConstructor(final ByteArrayInputStream is) {
-        return new ExternalByteCodec(is, null);
-    }
-
-    private CRAMCodec<Integer> externalIntegerCodecReaderConstructor(final ByteArrayInputStream is) {
-        return new ExternalIntegerCodec(is, null);
-    }
-
-    private CRAMCodec<Long> externalLongCodecReaderConstructor(final ByteArrayInputStream is) {
-        return new ExternalLongCodec(is, null);
     }
 }
