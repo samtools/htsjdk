@@ -12,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ExternalCodecEquivalenceTest extends HtsjdkTest {
     // show that External codecs are equivalent within certain ranges
@@ -22,18 +23,12 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
 
     @Test(dataProvider = "testPositiveByteLists", dataProviderClass = IOTestCases.class)
     public void byteEquivalenceTest(final List<Byte> values) {
-        codecPairTestForByte(values, this::writeByteForByte, this::readIntegerForByte);
-        codecPairTestForByte(values, this::writeByteForByte, this::readLongForByte);
-        codecPairTestForByte(values, this::writeIntegerForByte, this::readByteForByte);
-        codecPairTestForByte(values, this::writeIntegerForByte, this::readLongForByte);
-        codecPairTestForByte(values, this::writeLongForByte, this::readByteForByte);
-        codecPairTestForByte(values, this::writeLongForByte, this::readIntegerForByte);
-    }
-
-    private void codecPairTestForByte(final List<Byte> values, ByteWriter writer, ByteReader reader) {
-        byte[] written = writer.write(values);
-        final List<Byte> read = reader.read(written, values.size());
-        Assert.assertEquals(read, values);
+        codecPairTest(values, this::externalByteCodeWrite,      this::externalIntegerCodecRead);
+        codecPairTest(values, this::externalByteCodeWrite,      this::externalLongCodecRead);
+        codecPairTest(values, this::externalIntegerCodecWrite,  this::externalByteCodecRead);
+        codecPairTest(values, this::externalIntegerCodecWrite,  this::externalLongCodecRead);
+        codecPairTest(values, this::externalLongCodecWrite,     this::externalByteCodecRead);
+        codecPairTest(values, this::externalLongCodecWrite,     this::externalIntegerCodecRead);
     }
 
     // if all values are 0 <= v <= 0x0F FF FF FF (high bit 28)
@@ -42,31 +37,38 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
 
     @Test(dataProvider = "testUint28Lists", dataProviderClass = IOTestCases.class)
     public void intEquivalenceTest(final List<Integer> values) {
-        codecPairTestForInteger(values, this::writeIntegerForInteger, this::readLongForInteger);
-        codecPairTestForInteger(values, this::writeLongForInteger, this::readIntegerForInteger);
+        codecPairTest(values, this::externalIntegerCodecWrite,  this::externalLongCodecRead);
+        codecPairTest(values, this::externalLongCodecWrite,     this::externalIntegerCodecRead);
     }
 
-    private void codecPairTestForInteger(final List<Integer> values, IntegerWriter writer, IntegerReader reader) {
+    private <T extends Number> void codecPairTest(final List<T> values, Writer<T> writer, Reader reader) {
         byte[] written = writer.write(values);
-        final List<Integer> read = reader.read(written, values.size());
-        Assert.assertEquals(read, values);
+        final List<Long> read = reader.read(written, values.size());
+
+        final List<Long> expected = values
+                .stream()
+                .map(Number::longValue)
+                .collect(Collectors.toList());
+
+        Assert.assertEquals(read, expected);
     }
 
-    private interface ByteWriter {
-        byte[] write(final List<Byte> toWrite);
+    private interface Writer<T> {
+        byte[] write(final List<T> toWrite);
     }
 
-    private interface ByteReader {
-        List<Byte> read(final byte[] toRead, final int count);
+    // byte, integer, and long can all be read as Long
+    private interface Reader {
+        List<Long> read(final byte[] toRead, final int count);
     }
 
-    private byte[] writeByteForByte(List<Byte> values) {
+    private <T extends Number> byte[] externalByteCodeWrite(List<T> values) {
         byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             final CRAMCodec<Byte> writeCodec = new ExternalByteCodec(null, os);
 
-            for (final byte value : values) {
-                writeCodec.write(value);
+            for (final T value : values) {
+                writeCodec.write(value.byteValue());
             }
             os.flush();
             written = os.toByteArray();
@@ -76,13 +78,13 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
         return written;
     }
 
-    private byte[] writeIntegerForByte(List<Byte> values) {
+    private <T extends Number> byte[] externalIntegerCodecWrite(List<T> values) {
         byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             final CRAMCodec<Integer> writeCodec = new ExternalIntegerCodec(null, os);
 
-            for (final byte value : values) {
-                writeCodec.write((int)value);
+            for (final T value : values) {
+                writeCodec.write(value.intValue());
             }
             os.flush();
             written = os.toByteArray();
@@ -93,13 +95,13 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
     }
 
 
-    private byte[] writeLongForByte(List<Byte> values) {
+    private <T extends Number> byte[] externalLongCodecWrite(List<T> values) {
         byte[] written;
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             final CRAMCodec<Long> writeCodec = new ExternalLongCodec(null, os);
 
-            for (final byte value : values) {
-                writeCodec.write((long)value);
+            for (final T value : values) {
+                writeCodec.write(value.longValue());
             }
             os.flush();
             written = os.toByteArray();
@@ -109,116 +111,47 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
         return written;
     }
 
-    private List<Byte> readByteForByte(byte[] written, final int length) {
-        final List<Byte> actual = new ArrayList<>(length);
+    private List<Long> externalByteCodecRead(byte[] written, final int length) {
+        return read(written, length, this::externalByteCodecReaderConstructor);
+    }
+
+    private List<Long> externalIntegerCodecRead(byte[] written, final int length) {
+        return read(written, length, this::externalIntegerCodecReaderConstructor);
+    }
+
+    private List<Long> externalLongCodecRead(byte[] written, final int length) {
+        return read(written, length, this::externalLongCodecReaderConstructor);
+    }
+
+    private <T extends Number> List<Long> read(byte[] written, final int length, final ReadCodecConstructor<T> readCC) {
+        List<Long> retval = new ArrayList<>();
+
         try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
-            final CRAMCodec<Byte> readCodec = new ExternalByteCodec(is, null);
-
+            final CRAMCodec<T> readCodec = readCC.reader(is);
             for (int i = 0; i < length; i++) {
-                actual.add(readCodec.read());
+                retval.add(readCodec.read().longValue());
             }
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
-        return actual;
+        return retval;
     }
 
-    private List<Byte> readIntegerForByte(byte[] written, final int length) {
-        final List<Byte> actual = new ArrayList<>(length);
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
-            final CRAMCodec<Integer> readCodec = new ExternalIntegerCodec(is, null);
+    // TODO: move these into the Codec classes?
 
-            for (int i = 0; i < length; i++) {
-                actual.add(readCodec.read().byteValue());
-            }
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-        return actual;
+    private interface ReadCodecConstructor<T> {
+        CRAMCodec<T> reader(final ByteArrayInputStream is);
     }
 
-    private List<Byte> readLongForByte(byte[] written, final int length) {
-        final List<Byte> actual = new ArrayList<>(length);
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
-            final CRAMCodec<Long> readCodec = new ExternalLongCodec(is, null);
-
-            for (int i = 0; i < length; i++) {
-                actual.add(readCodec.read().byteValue());
-            }
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-        return actual;
+    private CRAMCodec<Byte> externalByteCodecReaderConstructor(final ByteArrayInputStream is) {
+        return new ExternalByteCodec(is, null);
     }
 
-    private interface IntegerWriter {
-        byte[] write(final List<Integer> toWrite);
+    private CRAMCodec<Integer> externalIntegerCodecReaderConstructor(final ByteArrayInputStream is) {
+        return new ExternalIntegerCodec(is, null);
     }
 
-    private interface IntegerReader {
-        List<Integer> read(final byte[] toRead, final int count);
+    private CRAMCodec<Long> externalLongCodecReaderConstructor(final ByteArrayInputStream is) {
+        return new ExternalLongCodec(is, null);
     }
-
-    private byte[] writeIntegerForInteger(List<Integer> values) {
-        byte[] written;
-        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            final CRAMCodec<Integer> writeCodec = new ExternalIntegerCodec(null, os);
-
-            for (final int value : values) {
-                writeCodec.write(value);
-            }
-            os.flush();
-            written = os.toByteArray();
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-        return written;
-    }
-
-
-    private byte[] writeLongForInteger(List<Integer> values) {
-        byte[] written;
-        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            final CRAMCodec<Long> writeCodec = new ExternalLongCodec(null, os);
-
-            for (final int value : values) {
-                writeCodec.write((long)value);
-            }
-            os.flush();
-            written = os.toByteArray();
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-        return written;
-    }
-
-
-    private List<Integer> readIntegerForInteger(byte[] written, final int length) {
-        final List<Integer> actual = new ArrayList<>(length);
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
-            final CRAMCodec<Integer> readCodec = new ExternalIntegerCodec(is, null);
-
-            for (int i = 0; i < length; i++) {
-                actual.add(readCodec.read());
-            }
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-        return actual;
-    }
-
-    private List<Integer> readLongForInteger(byte[] written, final int length) {
-        final List<Integer> actual = new ArrayList<>(length);
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
-            final CRAMCodec<Long> readCodec = new ExternalLongCodec(is, null);
-
-            for (int i = 0; i < length; i++) {
-                actual.add(readCodec.read().intValue());
-            }
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-        return actual;
-    }
-
 }
