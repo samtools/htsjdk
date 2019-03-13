@@ -70,7 +70,10 @@ public class VCFFileReaderTest extends HtsjdkTest {
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.bgz", null, true, false},
 
                 // testing that v4.2 parses Source/Version fields, see issue #517
-                {TEST_DATA_DIR + "Vcf4.2WithSourceVersionInfoFields.vcf", null, false, true}
+                {TEST_DATA_DIR + "Vcf4.2WithSourceVersionInfoFields.vcf", null, false, true},
+
+                // should reject bcf v2.2 on read, see issue https://github.com/samtools/htsjdk/issues/1323
+                {TEST_DATA_DIR + "BCFVersion22Uncompressed.bcf", null, false, false}
         };
     }
 
@@ -81,8 +84,14 @@ public class VCFFileReaderTest extends HtsjdkTest {
             try (final VCFFileReader reader = new VCFFileReader(tribbleFileInJimfs, requiresIndex)) {
                 final VCFHeader header = reader.getFileHeader();
             } catch (Exception e) {
-                if (shouldSucceed) throw e;
+                if (shouldSucceed) {
+                    throw e;
+                } else {
+                    return;
+                }
             }
         }
+        // fail if a test that should have throw didn't
+        Assert.assertTrue(shouldSucceed, "Test should have failed but succeeded");
     }
 }
