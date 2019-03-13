@@ -154,8 +154,9 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
 
             if ( bcfVersion.getMajorVersion() != ALLOWED_MAJOR_VERSION )
                 error("BCF2Codec can only process BCF2 files, this file has major version " + bcfVersion.getMajorVersion());
-            if ( bcfVersion.getMinorVersion() < MIN_MINOR_VERSION )
-                error("BCF2Codec can only process BCF2 files with minor version >= " + MIN_MINOR_VERSION + " but this file has minor version " + bcfVersion.getMinorVersion());
+            // require the minor version to be an exact match and reject minor versions form the future
+            if ( bcfVersion.getMinorVersion() != MIN_MINOR_VERSION )
+                error("BCF2Codec can only process BCF2 files with minor version = " + MIN_MINOR_VERSION + " but this file has minor version " + bcfVersion.getMinorVersion());
 
             if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                 System.err.println("Parsing data stream with BCF version " + bcfVersion);
