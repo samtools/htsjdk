@@ -486,7 +486,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /** try to read a BCFVersion from an uncompressed BufferedInputStream.
      * The buffer must be large enough to contain {@link #SIZEOF_BCF_HEADER}
      * 
-     * @param bufferedinput the uncompressed input stream
+     * @param uncompressedBufferedInput the uncompressed input stream
      * @return the BCFVersion if it can be decoded, or null if not found.
      * @throws IOException
      */
