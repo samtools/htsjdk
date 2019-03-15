@@ -346,7 +346,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
       Assert.assertTrue(index.exists(), String.format("Block-compressed index not created for %s / %s", blockCompressed, index));
     }
   }
-
+  
   @Test
   public void testIndexingOnTheFlyForPath() throws IOException {
     final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
