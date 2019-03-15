@@ -28,7 +28,9 @@ import java.io.Closeable;
 /**
  * Interface allows for implementations that read lines from a String, an ASCII file, or somewhere else.
  */
-public interface LineReader extends Closeable{
+public interface LineReader extends Closeable {
+
+    int EOF_VALUE = -1;
 
     /**
      * Read a line and remove the line terminator

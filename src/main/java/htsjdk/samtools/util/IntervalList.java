@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTextHeaderCodec;
+import htsjdk.tribble.IntervalList.IntervalListCodec;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -38,8 +39,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 /**
  * Represents a list of intervals against a reference sequence that can be written to
@@ -512,11 +511,6 @@ public class IntervalList implements Iterable<Interval> {
      */
     public static IntervalList fromReader(final BufferedReader in) {
 
-        final int SEQUENCE_POS=0;
-        final int START_POS=1;
-        final int END_POS=2;
-        final int STRAND_POS=3;
-        final int NAME_POS=4;
         try {
             // Setup a reader and parse the header
             final StringBuilder builder = new StringBuilder(4096);
@@ -539,71 +533,18 @@ public class IntervalList implements Iterable<Interval> {
             final IntervalList list = new IntervalList(codec.decode(headerReader, "BufferedReader"));
             final SAMSequenceDictionary dict = list.getHeader().getSequenceDictionary();
 
-            //there might not be any lines after the header, in which case we should return an empty list
+            // There might not be any lines after the header, in which case we should return an empty list
             if (line == null) {
                 return list;
             }
 
+            final IntervalListCodec intervalListCodec = new IntervalListCodec(dict);
+
             // Then read in the intervals
-            final FormatUtil format = new FormatUtil();
-            String lastSeq = null;
             do {
-                if (line.trim().isEmpty()) {
-                    continue; // skip over blank lines
-                }
-
-                // Make sure we have the right number of fields
-                final String[] fields = line.split("\t");
-                if (fields.length != 5) {
-                    throw new SAMException("Invalid interval record contains " +
-                            fields.length + " fields: " + line);
-                }
-
-                // Then parse them out
-                String seq = fields[SEQUENCE_POS];
-                if (seq.equals(lastSeq)) {
-                    seq = lastSeq;
-                }
-                lastSeq = seq;
-
-                final int start = format.parseInt(fields[START_POS]);
-                final int end = format.parseInt(fields[END_POS]);
-                if (start < 1) {
-                    throw new IllegalArgumentException("Coordinate less than 1: start value of " + start +
-                            " is less than 1 and thus illegal");
-                }
-
-                if (start > end + 1) {
-                    throw new IllegalArgumentException("Start value of " + start +
-                            " is greater than end + 1 for end of value: " + end +
-                            ". I'm afraid I cannot let you do that.");
-                }
-
-                final boolean negative;
-                switch (fields[STRAND_POS]) {
-                    case "-":
-                        negative = true;
-                        break;
-                    case "+":
-                        negative = false;
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Invalid strand field: " + fields[STRAND_POS]);
-                }
-
-                final String name = fields[NAME_POS];
-
-                final Interval interval = new Interval(seq, start, end, negative, name);
-                final SAMSequenceRecord sequence = dict.getSequence(seq);
-                if (sequence == null) {
-                    log.warn("Ignoring interval for unknown reference: " + interval);
-                } else {
-                    final int sequenceLength = sequence.getSequenceLength();
-                    if (sequenceLength > 0 && sequenceLength < end) {
-                        throw new IllegalArgumentException("interval with end: " + end + " extends beyond end of sequence with length: " + sequenceLength);
-                    }
-
-                    list.intervals.add(interval);
+                Interval nullableInterval = intervalListCodec.decode(line);
+                if (nullableInterval != null) {
+                    list.intervals.add(nullableInterval);
                 }
             }
             while ((line = in.readLine()) != null);
