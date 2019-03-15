@@ -109,37 +109,6 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     }
 
     @Test
-    public void scanMappedReads() throws IOException {
-        SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
-        SAMRecordIterator samRecordIterator = samReader.iterator();
-        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
-        reader.setValidationStringency(ValidationStringency.SILENT);
-
-        int counter = 0;
-        while (samRecordIterator.hasNext()) {
-            SAMRecord samRecord = samRecordIterator.next();
-            if (samRecord.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) break;
-            // test only 1st and 2nd in every 100 to speed the test up:
-            if (counter++ %100 > 1) continue;
-            String s1 = samRecord.getSAMString();
-
-            CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(samRecord.getReferenceName(), samRecord.getAlignmentStart());
-            Assert.assertTrue(iterator.hasNext(), counter + ": " + s1);
-            SAMRecord cramRecord = iterator.next();
-
-            String s2 = cramRecord.getSAMString();
-
-            Assert.assertEquals(samRecord.getReferenceName(), cramRecord.getReferenceName(), s1 + s2);
-            // default 'overlap' is true, so test records intersect the query:
-            Assert.assertTrue(CoordMath.overlaps(cramRecord.getAlignmentStart(), cramRecord.getAlignmentEnd(), samRecord.getAlignmentStart(), samRecord.getAlignmentEnd()), s1 + s2);
-        }
-        samRecordIterator.close();
-        reader.close();
-
-        Assert.assertEquals(counter, nofMappedReads);
-    }
-
-    @Test
     public void testNoStringencyConstructor() throws IOException {
         final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
         final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.fa");
@@ -209,24 +178,6 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         }
         Assert.assertTrue(matchFound);
         Assert.assertTrue(counter <= CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
-    }
-
-    @Test
-    public void testQueryInterval() throws IOException {
-        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
-        QueryInterval[] query = new QueryInterval[]{new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
-        final CloseableIterator<SAMRecord> iterator = reader.query(query, false);
-        Assert.assertTrue(iterator.hasNext());
-        SAMRecord r1 = iterator.next();
-        Assert.assertEquals(r1.getReadName(), "3968040");
-
-        Assert.assertTrue(iterator.hasNext());
-        SAMRecord r2 = iterator.next();
-        Assert.assertEquals(r2.getReadName(), "140419");
-
-        Assert.assertFalse(iterator.hasNext());
-        iterator.close();
-        reader.close();
     }
 
     @Test

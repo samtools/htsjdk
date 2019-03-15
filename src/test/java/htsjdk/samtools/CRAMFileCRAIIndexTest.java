@@ -125,52 +125,6 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     }
 
     @Test
-    public void testMappedReads() throws IOException {
-
-        try (SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
-             SAMRecordIterator samRecordIterator = samReader.iterator())
-        {
-            Assert.assertEquals(samReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
-            CRAMFileReader cramReader = new CRAMFileReader(
-                    new ByteArraySeekableStream(cramBytes),
-                    new ByteArraySeekableStream(craiBytes),
-                    source,
-                    ValidationStringency.STRICT);
-
-            int counter = 0;
-            while (samRecordIterator.hasNext()) {
-                SAMRecord samRecord = samRecordIterator.next();
-                if (samRecord.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                    break;
-                }
-                if (counter++ % 100 > 1) { // test only 1st and 2nd in every 100 to speed the test up:
-                    continue;
-                }
-                String sam1 = samRecord.getSAMString();
-
-                CloseableIterator<SAMRecord> iterator = cramReader.queryAlignmentStart(
-                        samRecord.getReferenceName(),
-                        samRecord.getAlignmentStart());
-
-                Assert.assertTrue(iterator.hasNext(), counter + ": " + sam1);
-                SAMRecord cramRecord = iterator.next();
-                String sam2 = cramRecord.getSAMString();
-                Assert.assertEquals(samRecord.getReferenceName(), cramRecord.getReferenceName(), sam1 + sam2);
-
-                // default 'overlap' is true, so test records intersect the query:
-                Assert.assertTrue(CoordMath.overlaps(
-                        cramRecord.getAlignmentStart(),
-                        cramRecord.getAlignmentEnd(),
-                        samRecord.getAlignmentStart(),
-                        samRecord.getAlignmentEnd()),
-                        sam1 + sam2);
-            }
-            Assert.assertEquals(counter, nofMappedReads);
-            cramReader.close();
-        }
-    }
-
-    @Test
     public void testQueryUnmapped() throws IOException {
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
              final SAMRecordIterator unmappedSamIterator = samReader.queryUnmapped())
@@ -280,51 +234,6 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         }
         Assert.assertTrue(matchFound);
         Assert.assertTrue(counter <= CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
-    }
-
-    @Test
-    public void testQueryInterval() throws IOException {
-        CRAMFileReader reader = new CRAMFileReader(
-                new ByteArraySeekableStream(cramBytes),
-                new ByteArraySeekableStream(craiBytes),
-                source,
-                ValidationStringency.STRICT);
-        QueryInterval[] query = new QueryInterval[]{new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
-        final CloseableIterator<SAMRecord> iterator = reader.query(query, false);
-        Assert.assertTrue(iterator.hasNext());
-        SAMRecord r1 = iterator.next();
-        Assert.assertEquals(r1.getReadName(), "3968040");
-
-        Assert.assertTrue(iterator.hasNext());
-        SAMRecord r2 = iterator.next();
-        Assert.assertEquals(r2.getReadName(), "140419");
-
-        Assert.assertFalse(iterator.hasNext());
-        iterator.close();
-        reader.close();
-    }
-
-    @Test
-    public void testQueryIntervalWithFilePointers() throws IOException {
-        CRAMFileReader reader = new CRAMFileReader(
-                new ByteArraySeekableStream(cramBytes),
-                new ByteArraySeekableStream(craiBytes),
-                source,
-                ValidationStringency.STRICT);
-        QueryInterval[] query = new QueryInterval[]{new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
-        BAMFileSpan fileSpan = BAMFileReader.getFileSpan(query, reader.getIndex());
-        final CloseableIterator<SAMRecord> iterator = reader.createIndexIterator(query, false, fileSpan.toCoordinateArray());
-        Assert.assertTrue(iterator.hasNext());
-        SAMRecord r1 = iterator.next();
-        Assert.assertEquals(r1.getReadName(), "3968040");
-
-        Assert.assertTrue(iterator.hasNext());
-        SAMRecord r2 = iterator.next();
-        Assert.assertEquals(r2.getReadName(), "140419");
-
-        Assert.assertFalse(iterator.hasNext());
-        iterator.close();
-        reader.close();
     }
 
     @BeforeTest
