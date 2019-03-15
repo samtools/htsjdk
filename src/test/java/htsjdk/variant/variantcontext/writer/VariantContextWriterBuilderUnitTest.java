@@ -346,7 +346,26 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
       Assert.assertTrue(index.exists(), String.format("Block-compressed index not created for %s / %s", blockCompressed, index));
     }
   }
-  
+
+  @Test
+  public void testIndexingOnTheFlyForPathStream() throws IOException {
+    final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+            .setReferenceDictionary(dictionary)
+            .setOption(Options.INDEX_ON_THE_FLY);
+
+    try (FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+      final Path vcfPath = IOUtil.getPath("/dev/null");
+      final Path vcfIdxPath = Tribble.indexPath(vcfPath);
+      // We explicitly setOutputFileType here to mimic gatk behavior where it pretends files that have no extension
+      try (final VariantContextWriter writer = builder.setOutputPath(vcfPath).setOutputFileType(OutputType.VCF_STREAM).build()) {
+        //deliberately empty
+      }
+
+      Assert.assertFalse(Files.exists(vcfIdxPath),
+              String.format("VCF index should not have been created %s / %s", vcfPath, vcfIdxPath));
+    }
+  }
+
   @Test
   public void testIndexingOnTheFlyForPath() throws IOException {
     final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()

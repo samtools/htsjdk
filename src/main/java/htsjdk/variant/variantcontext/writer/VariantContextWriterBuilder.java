@@ -186,12 +186,10 @@ public class VariantContextWriterBuilder {
     /**
      * Set the output file type for the next <code>VariantContextWriter</code> created by this builder.
      *
-     * @param outType the type of file the <code>VariantContextWriter</code> will write to
+     * @param outType the type of file or stream the <code>VariantContextWriter</code> will write to
      * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputFileType(final OutputType outType) {
-        if (!FILE_TYPES.contains(outType))
-            throw new IllegalArgumentException("Must choose a file type, not other output types.");
 
         if (this.outPath == null || this.outStream != null)
             throw new IllegalArgumentException("Cannot set a file type if the output is not to a file.");
