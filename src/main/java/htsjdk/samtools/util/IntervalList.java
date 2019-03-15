@@ -32,13 +32,7 @@ import htsjdk.tribble.IntervalList.IntervalListCodec;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * Represents a list of intervals against a reference sequence that can be written to
@@ -542,10 +536,8 @@ public class IntervalList implements Iterable<Interval> {
 
             // Then read in the intervals
             do {
-                Interval nullableInterval = intervalListCodec.decode(line);
-                if (nullableInterval != null) {
-                    list.intervals.add(nullableInterval);
-                }
+                final Optional<Interval> maybeInterval = Optional.ofNullable(intervalListCodec.decode(line));
+                maybeInterval.ifPresent(list.intervals::add);
             }
             while ((line = in.readLine()) != null);
 
