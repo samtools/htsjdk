@@ -159,14 +159,6 @@ task sourcesJar(type: Jar) {
     archiveClassifier.set('sources')
 }
 
-/**
- * Sign non-snapshot releases with our secret key.  This should never need to be invoked directly.
- */
-signing {
-    required { isRelease && gradle.taskGraph.hasTask("publishHtsjdkPublicationToMavenRepository") }
-    sign configurations.archives
-}
-
 publishing {
     publications {
         htsjdk(MavenPublication) {
@@ -215,6 +207,17 @@ publishing {
             url = isRelease ? release : snapshot
         }
     }
+}
+
+/**
+ * Sign non-snapshot releases with our secret key.  This should never need to be invoked directly.
+ */
+signing {
+    required { isRelease && gradle.taskGraph.hasTask("publishHtsjdkPublicationToMavenRepository") }
+    sign publishing.publications.htsjdk
+}
+gradle.taskGraph.beforeTask { Task task ->
+    println "executing $task ..."
 }
 
 task install(dependsOn:publishToMavenLocal)
