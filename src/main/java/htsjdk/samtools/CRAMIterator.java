@@ -45,7 +45,7 @@ public class CRAMIterator implements SAMRecordIterator {
     private final ArrayList<SAMRecord> records;
     private final CramNormalizer normalizer;
     private byte[] referenceBases;
-    private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+    private ReferenceContext prevRefContext;
     public Container container;
     private SamReader mReader;
     long firstContainerOffset = 0;
@@ -127,7 +127,7 @@ public class CRAMIterator implements SAMRecordIterator {
         return cramHeader;
     }
 
-    void nextContainer() throws IllegalArgumentException, CRAMException {
+    private void nextContainer() throws IllegalArgumentException, CRAMException {
 
         if (containerIterator != null) {
             if (!containerIterator.hasNext()) {
@@ -159,21 +159,21 @@ public class CRAMIterator implements SAMRecordIterator {
         switch (containerContext.getType()) {
             case UNMAPPED_UNPLACED_TYPE:
                 referenceBases = new byte[]{};
-                prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+                prevRefContext = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
                 break;
             case MULTIPLE_REFERENCE_TYPE:
                 referenceBases = null;
-                prevSeqId = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
+                prevRefContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
                 break;
             default:
-                if (prevSeqId != containerContext.getSequenceId()) {
+                if (prevRefContext != containerContext) {
                     final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
                             .getSequence(containerContext.getSequenceId());
                     referenceBases = referenceSource.getReferenceBases(sequence, true);
                     if (referenceBases == null) {
                         throw new CRAMException(String.format("Contig %s not found in the reference file.", sequence.getSequenceName()));
                     }
-                    prevSeqId = containerContext.getSequenceId();
+                    prevRefContext = containerContext;
                 }
         }
 
