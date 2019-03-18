@@ -139,7 +139,6 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
     @Test public void testOverflow() throws Exception {
         final File f = File.createTempFile("BCOST.", ".gz");
         f.deleteOnExit();
-        final List<String> linesWritten = new ArrayList<>();
         System.out.println("Creating file " + f);
         final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
         Random r = new Random(15555);

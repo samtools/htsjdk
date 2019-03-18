@@ -395,7 +395,6 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         InputResource bam = new NeverFilePathInputResource(localBam.toPath());
         InputResource index = new FileInputResource(localBamIndex);
 
-        final SamInputResource resource = new SamInputResource(bam, index);
         queryInputResourcePermutation(new SamInputResource(bam, index));
     }
 

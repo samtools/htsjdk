@@ -38,9 +38,9 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
 
     @Test
     public void supportsVersionFields() {
-	final String line = "<ID=FOO,Number=1,Type=Float,Description=\"foo\",Version=3>";
-	final VCFCompoundHeaderLine headerline = new VCFInfoHeaderLine(line, VCFHeaderVersion.VCF4_2);
-	// if we don't support version fields then we should fail before we ever get here
-	Assert.assertTrue(true);
+        final String line = "<ID=FOO,Number=1,Type=Float,Description=\"foo\",Version=3>";
+        new VCFInfoHeaderLine(line, VCFHeaderVersion.VCF4_2);
+        // if we don't support version fields then we should fail before we ever get here
+        Assert.assertTrue(true);
     }
 }

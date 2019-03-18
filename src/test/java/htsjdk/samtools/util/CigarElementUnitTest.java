@@ -12,7 +12,7 @@ public class CigarElementUnitTest extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNegativeLengthCheck(){
-        final CigarElement element = new CigarElement(-1, CigarOperator.M);
+        new CigarElement(-1, CigarOperator.M);
     }
 
 
