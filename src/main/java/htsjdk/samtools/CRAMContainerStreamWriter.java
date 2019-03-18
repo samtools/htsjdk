@@ -40,16 +40,15 @@ public class CRAMContainerStreamWriter {
     protected final int recordsPerSlice = DEFAULT_RECORDS_PER_SLICE;
     private static final int DEFAULT_SLICES_PER_CONTAINER = 1;
     protected final int containerSize = recordsPerSlice * DEFAULT_SLICES_PER_CONTAINER;
-    private static final int REF_SEQ_INDEX_NOT_INITIALIZED = -3;
 
     private final SAMFileHeader samFileHeader;
     private final String cramID;
     private final OutputStream outputStream;
     private CRAMReferenceSource source;
 
-    private final List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
+    private final List<SAMRecord> samRecords = new ArrayList<>();
     private ContainerFactory containerFactory;
-    private int refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
+    private ReferenceContext refContext = null;     // or some uninit sentinel
 
     private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
 
@@ -183,8 +182,9 @@ public class CRAMContainerStreamWriter {
      * @return true if the current container should be flushed and the following records should go into a new container; false otherwise.
      */
     protected boolean shouldFlushContainer(final SAMRecord nextRecord) {
+        final ReferenceContext nextRefContext = new ReferenceContext(nextRecord.getReferenceIndex());
         if (samRecords.isEmpty()) {
-            refSeqIndex = nextRecord.getReferenceIndex();
+            refContext = nextRefContext;
             return false;
         }
 
@@ -196,17 +196,16 @@ public class CRAMContainerStreamWriter {
             return false;
         }
 
-        // make unmapped reads don't get into multiref containers:
-        if (! ReferenceContext.isUnmappedUnplaced(refSeqIndex) && ReferenceContext.isUnmappedUnplaced(nextRecord.getReferenceIndex())) {
+        // make sure unmapped reads don't get into multiref containers:
+        if (! refContext.isUnmappedUnplaced() && nextRefContext.isUnmappedUnplaced()) {
             return true;
         }
 
-        if (ReferenceContext.isMultipleReference(refSeqIndex)) {
+        if (refContext.isMultipleReference()) {
             return false;
         }
 
-        final boolean sameRef = (refSeqIndex == nextRecord.getReferenceIndex());
-        if (sameRef) {
+        if (refContext == nextRefContext) {
             return false;
         }
 
@@ -216,7 +215,7 @@ public class CRAMContainerStreamWriter {
         if (samRecords.size() > MIN_SINGLE_REF_RECORDS) {
             return true;
         } else {
-            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
+            refContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
             return false;
         }
     }
@@ -264,8 +263,7 @@ public class CRAMContainerStreamWriter {
 
         final byte[] referenceBases;
         String refSeqName = null;
-        final ReferenceContext containerContext = new ReferenceContext(refSeqIndex);
-        switch (containerContext.getType()) {
+        switch (refContext.getType()) {
             case MULTIPLE_REFERENCE_TYPE:
                 if (preservation != null && preservation.areReferenceTracksRequired()) {
                     throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
@@ -275,11 +273,13 @@ public class CRAMContainerStreamWriter {
             case UNMAPPED_UNPLACED_TYPE:
                 referenceBases = new byte[0];
                 break;
-            default:
-                final SAMSequenceRecord sequence = samFileHeader.getSequence(refSeqIndex);
+            case SINGLE_REFERENCE_TYPE:
+                final SAMSequenceRecord sequence = samFileHeader.getSequence(refContext.getSequenceId());
                 referenceBases = source.getReferenceBases(sequence, true);
                 refSeqName = sequence.getSequenceName();
                 break;
+            default:
+                throw new SAMException("Container Reference Context was not initialized." );
         }
 
         int start = SAMRecord.NO_ALIGNMENT_START;
@@ -299,7 +299,7 @@ public class CRAMContainerStreamWriter {
 
         ReferenceTracks tracks = null;
         if (preservation != null && preservation.areReferenceTracksRequired()) {
-            tracks = new ReferenceTracks(refSeqIndex, refSeqName, referenceBases);
+            tracks = new ReferenceTracks(refContext.getSerializableId(), refSeqName, referenceBases);
 
             tracks.ensureRange(start, stop - start + 1);
             updateTracks(samRecords, tracks);
@@ -316,9 +316,10 @@ public class CRAMContainerStreamWriter {
 
         int index = 0;
         for (final SAMRecord samRecord : samRecords) {
-            if (samRecord.getReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && refSeqIndex != samRecord.getReferenceIndex()) {
+            final int samRefIndex = samRecord.getReferenceIndex();
+            if ((! ReferenceContext.isUnmappedUnplaced(samRefIndex)) && samRefIndex != refContext.getSerializableId()) {
                 // this may load all ref sequences into memory:
-                sam2CramRecordFactory.setRefBases(source.getReferenceBases(samFileHeader.getSequence(samRecord.getReferenceIndex()), true));
+                sam2CramRecordFactory.setRefBases(source.getReferenceBases(samFileHeader.getSequence(samRefIndex), true));
             }
             final CramCompressionRecord cramRecord = sam2CramRecordFactory.createCramRecord(samRecord);
             cramRecord.index = ++index;
@@ -457,7 +458,7 @@ public class CRAMContainerStreamWriter {
             indexer.processContainer(container, ValidationStringency.SILENT);
         }
         samRecords.clear();
-        refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
+        refContext = null; // or some uninit sentinel
     }
 
     /**
@@ -481,15 +482,16 @@ public class CRAMContainerStreamWriter {
      * @param samRecordReferenceIndex index of the new reference sequence
      */
     private void updateReferenceContext(final int samRecordReferenceIndex) {
-        if (ReferenceContext.isMultipleReference(refSeqIndex)) {
+        if (refContext.isMultipleReference()) {
             return;
         }
 
-        if (refSeqIndex == REF_SEQ_INDEX_NOT_INITIALIZED) {
-            refSeqIndex = samRecordReferenceIndex;
-        } else if (refSeqIndex != samRecordReferenceIndex) {
-            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
-    }
+        final ReferenceContext samRecordRefContext = new ReferenceContext(samRecordReferenceIndex);
+        if (refContext == null) {
+            refContext = samRecordRefContext;
+        } else if (refContext != samRecordRefContext) {
+            refContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
+        }
     }
 
 }
