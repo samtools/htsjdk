@@ -71,13 +71,11 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
     @Override
     public void writeReference(final BAMIndexContent content) {
 
-        final int reference = content.getReferenceSequence();
-
         if (content == null) {
-            writeNullContent(reference);
-            count++;
-            return;
+            throw new NullPointerException("BAMIndexContent cannot be null");
         }
+
+        final int reference = content.getReferenceSequence();
 
         if (reference != count){
             throw new SAMException("Reference on content is " + reference + " but expecting reference " + count);
@@ -161,6 +159,11 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
                     " end: " + Long.toString(metaData.getUnalignedRecordCount(), 16));
         }
 
+    }
+
+    private void writeNullContent() {
+        pw.println("Reference <unknown> has n_bin=0");
+        pw.println("Reference <unknown> has n_intv=0");
     }
        
     private void writeNullContent(final int reference) {
