@@ -76,6 +76,15 @@ public class TestDataProviders extends HtsjdkTest {
                     throw new IllegalStateException(String.format("@BeforeSuite threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
                 }
             }
+
+            if (otherMethod.isAnnotationPresent(BeforeTest.class)) {
+                try {
+                    otherMethod.setAccessible(true);
+                    otherMethod.invoke(instance);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new IllegalStateException(String.format("@BeforeTest threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
+                }
+            }
         }
 
         try {
