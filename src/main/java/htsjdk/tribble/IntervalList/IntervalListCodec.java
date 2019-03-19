@@ -29,25 +29,25 @@ import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.Log;
-import htsjdk.tribble.AsciiSamFeatureCodec;
+import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.annotation.Strand;
+import htsjdk.tribble.readers.LineIterator;
 
 /**
  * A tribble codec for IntervalLists.
  *
- * Also contains the parseing code for the non-tribble parsing of IntervalLists
+ * Also contains the parsing code for the non-tribble parsing of IntervalLists
  */
 
-public class IntervalListCodec extends AsciiSamFeatureCodec<Interval> {
+public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
 
     static final Log log = Log.getInstance(IntervalListCodec.class);
 
-    final char[] shortArray;
     private SAMSequenceDictionary dictionary = null;
 
     public IntervalListCodec() {
         super(Interval.class);
-        shortArray = new char[1];
     }
 
     public IntervalListCodec(final SAMSequenceDictionary dict) {
@@ -69,7 +69,7 @@ public class IntervalListCodec extends AsciiSamFeatureCodec<Interval> {
         // Make sure we have the right number of fields
         final String[] fields = line.split("\t");
         if (fields.length != 5) {
-            throw new SAMException("Invalid interval record contains " +
+            throw new TribbleException("Invalid interval record contains " +
                     fields.length + " fields: " + line);
         }
 
@@ -93,21 +93,12 @@ public class IntervalListCodec extends AsciiSamFeatureCodec<Interval> {
                     ". I'm afraid I cannot let you do that.");
         }
 
-        final boolean negative;
-        switch (fields[STRAND_POS]) {
-            case "-":
-                negative = true;
-                break;
-            case "+":
-                negative = false;
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid strand field: " + fields[STRAND_POS]);
-        }
+        Strand strand = Strand.decode(fields[STRAND_POS]);
+        if (strand==Strand.NONE)  throw new IllegalArgumentException("Invalid strand field: " + fields[STRAND_POS]);
 
         final String name = fields[NAME_POS];
 
-        final Interval interval = new Interval(seq, start, end, negative, name);
+        final Interval interval = new Interval(seq, start, end, strand==Strand.NEGATIVE, name);
         final SAMSequenceRecord sequence = dict.getSequence(seq);
         if (sequence == null) {
             log.warn("Ignoring interval for unknown reference: " + interval);
@@ -138,11 +129,39 @@ public class IntervalListCodec extends AsciiSamFeatureCodec<Interval> {
         return parseIntervalString(line, dictionary);
     }
 
-    @Override
-    public Object readActualHeader(LineReader lineReader) {
-        final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
 
-        final SAMFileHeader header = headerCodec.decode(lineReader, "");
+//    @Override
+//    public Object readActualHeader(LineReader lineReader) {
+//        final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
+//
+//        final SAMFileHeader header = headerCodec.decode(lineReader, "");
+//        dictionary = header.getSequenceDictionary();
+//        return header;
+//    }
+
+    @Override
+    public Object readActualHeader(LineIterator lineIterator) {
+        final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
+        final SAMFileHeader header = headerCodec.decode(new LineReader() {
+            int lineNo = 0;
+            @Override
+            public String readLine() {
+                lineNo++;
+                return lineIterator.next();
+            }
+            @Override
+            public int getLineNumber() {
+                return lineNo;
+            }
+            @Override
+            public int peek() {
+                return lineIterator.hasNext() ?
+                        lineIterator.peek().charAt(0) :
+                        LineReader.EOF_VALUE;
+            }
+            @Override
+            public void close() { }
+        }, "IntervalListCodec");
         dictionary = header.getSequenceDictionary();
         return header;
     }
@@ -151,5 +170,6 @@ public class IntervalListCodec extends AsciiSamFeatureCodec<Interval> {
     public boolean canDecode(String s) {
         return s.endsWith(".interval_list");
     }
+
 }
 

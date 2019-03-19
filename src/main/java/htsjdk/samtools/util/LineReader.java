@@ -30,6 +30,7 @@ import java.io.Closeable;
  */
 public interface LineReader extends Closeable {
 
+    // value to return in call to peek, if eof has been reached.
     int EOF_VALUE = -1;
 
     /**
@@ -45,7 +46,7 @@ public interface LineReader extends Closeable {
 
     /**
      * Non-destructive one-character look-ahead.
-     * @return If not eof, the next character that would be read.  If eof, -1.
+     * @return If not eof, the next character that would be read.  If eof, {@value EOF_VALUE}.
      */
     int peek();
 

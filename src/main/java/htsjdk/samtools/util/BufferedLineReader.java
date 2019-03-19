@@ -74,7 +74,7 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
     /**
      * Non-destructive one-character look-ahead.
      *
-     * @return If not eof, the next character that would be read.  If eof, -1.
+     * @return If not eof, the next character that would be read.  If eof, {@value EOF_VALUE}.
      */
     @Override
     public int peek() {
