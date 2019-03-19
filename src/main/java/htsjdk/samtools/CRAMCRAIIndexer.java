@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Scanner;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -104,7 +103,7 @@ public class CRAMCRAIIndexer {
             Container container = ContainerIO.readContainer(cramVersion, cramStream);
 
             while (container != null && !container.isEOF()) {
-                container.offset = offset;
+                container.setByteOffset(offset);
                 indexer.processContainer(container);
                 offset = cramStream.position();
                 container = ContainerIO.readContainer(cramVersion, cramStream);

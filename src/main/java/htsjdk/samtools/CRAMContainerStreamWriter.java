@@ -446,7 +446,7 @@ public class CRAMContainerStreamWriter {
         for (final Slice slice : container.slices) {
             slice.setRefMD5(referenceBases);
         }
-        container.offset = offset;
+        container.setByteOffset(offset);
         offset += ContainerIO.writeContainer(cramVersion, container, outputStream);
         if (indexer != null) {
             /**

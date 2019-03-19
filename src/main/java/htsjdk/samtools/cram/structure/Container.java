@@ -67,11 +67,28 @@ public class Container {
     // slices found in the container:
     public Slice[] slices;
 
-    // for indexing:
+    // this Container's byte offset from the the start of the stream.
+    // Used for indexing.
+    private long byteOffset;
+
+    public long getByteOffset() {
+        return byteOffset;
+    }
+
     /**
-     * Container start in the stream, in bytes.
+     * Set this Container's byte offset from the the start of the stream.
+     * Also distribute this value to the Container's constituent {@link Slice}s.
+     * For indexing.
+     * @param byteOffset the byte location in the stream where this Container begins
      */
-    public long offset;
+    public void setByteOffset(final long byteOffset) {
+        this.byteOffset = byteOffset;
+        if (slices != null) {
+            for (final Slice slice : slices) {
+                slice.containerByteOffset = byteOffset;
+            }
+        }
+    }
 
     /**
      * Construct this Container by providing its {@link ReferenceContext}
@@ -105,10 +122,11 @@ public class Container {
      * TODO for general Container refactoring: make this part of construction
      *
      * @param containerSlices the constituent Slices of the Container
+     * @param compressionHeader the CRAM {@link CompressionHeader} to assign to the Container
      * @throws CRAMException for invalid Container states
      * @return the initialized Container
      */
-    public static Container initializeFromSlices(final List<Slice> containerSlices) {
+    public static Container initializeFromSlices(final List<Slice> containerSlices, final CompressionHeader compressionHeader) {
         final Set<ReferenceContext> sliceRefContexts = containerSlices.stream()
                 .map(Slice::getReferenceContext)
                 .collect(Collectors.toSet());
@@ -124,6 +142,7 @@ public class Container {
 
         final Container container = new Container(commonRefContext);
         container.slices = containerSlices.toArray(new Slice[0]);
+        container.compressionHeader = compressionHeader;
 
         if (commonRefContext.isMappedSingleRef()) {
             int start = Integer.MAX_VALUE;
@@ -162,57 +181,37 @@ public class Container {
         final int lastSliceIndex = slicesToPopulate.size() - 1;
         for (int i = 0; i < lastSliceIndex; i++) {
             final Slice slice = slicesToPopulate.get(i);
-            slice.containerOffset = offset;
             slice.index = i;
-            slice.offset = landmarks[i];
-            slice.size = landmarks[i + 1] - slice.offset;
+            slice.byteOffsetFromContainer = landmarks[i];
+            slice.byteSize = landmarks[i + 1] - slice.byteOffsetFromContainer;
             slices[i] = slice;
         }
 
         final Slice lastSlice = slicesToPopulate.get(lastSliceIndex);
-        lastSlice.containerOffset = offset;
         lastSlice.index = lastSliceIndex;
-        lastSlice.offset = landmarks[lastSliceIndex];
+        lastSlice.byteOffsetFromContainer = landmarks[lastSliceIndex];
 
         // calculate a "final landmark" indicating the byte offset of the end of the container
         // equivalent to the container's total byte size
 
         final int containerHeaderSize = landmarks[0];
         final int containerTotalByteSize = containerHeaderSize + containerByteSize;
-        lastSlice.size = containerTotalByteSize - lastSlice.offset;
+        lastSlice.byteSize = containerTotalByteSize - lastSlice.byteOffsetFromContainer;
 
         this.slices[lastSliceIndex] = lastSlice;
     }
 
     /**
-     * Retrieve the list of CRAI Index entries corresponding to this Container.
-     *
+     * Retrieve the list of CRAI Index entries corresponding to this Container
      * @return the list of CRAI Index entries
      */
     public List<CRAIEntry> getCRAIEntries() {
-        return Arrays.stream(slices)
-                .map(Slice::getCRAIEntry)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Retrieve the list of CRAI Index entries corresponding to this Container.
-     *
-     * TODO: investigate why we sometimes split multi-ref Slices
-     * into different entries and sometimes do not
-     *
-     * TODO: clearly identify and enforce preconditions, e.g.
-     * a Container built from Slices which were in turn built from records
-     *
-     *  @return the list of CRAI Index entries
-     */
-    public List<CRAIEntry> getCRAIEntriesSplittingMultiRef() {
         if (isEOF()) {
             return Collections.emptyList();
         }
 
         return Arrays.stream(slices)
-                .map(s -> s.getCRAIEntriesSplittingMultiRef(compressionHeader, landmarks, offset))
+                .map(s -> s.getCRAIEntries(compressionHeader))
                 .flatMap(List::stream)
                 .sorted()
                 .collect(Collectors.toList());

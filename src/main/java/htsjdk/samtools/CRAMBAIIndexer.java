@@ -134,14 +134,12 @@ public class CRAMBAIIndexer {
 
         int sliceIndex = 0;
         for (final Slice slice : container.slices) {
-            slice.containerOffset = container.offset;
             slice.index = sliceIndex++;
             if (slice.getReferenceContext().isMultiRef()) {
                 final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(validationStringency);
 
                 // TODO why are we updating the original slice here?
 
-                slice.containerOffset = container.offset;
                 slice.index = sliceIndex++;
 
                 /**
@@ -151,8 +149,8 @@ public class CRAMBAIIndexer {
                 for (final ReferenceContext refContext : new TreeSet<>(spanMap.keySet())) {
                     final AlignmentSpan span = spanMap.get(refContext);
                     final Slice fakeSlice = new Slice(refContext);
-                    fakeSlice.containerOffset = slice.containerOffset;
-                    fakeSlice.offset = slice.offset;
+                    fakeSlice.containerByteOffset = slice.containerByteOffset;
+                    fakeSlice.byteOffsetFromContainer = slice.byteOffsetFromContainer;
                     fakeSlice.index = slice.index;
 
                     fakeSlice.alignmentStart = span.getStart();
@@ -165,8 +163,8 @@ public class CRAMBAIIndexer {
 
                 if (unmappedSpan != null) {
                     final Slice fakeSlice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
-                    fakeSlice.containerOffset = slice.containerOffset;
-                    fakeSlice.offset = slice.offset;
+                    fakeSlice.containerByteOffset = slice.containerByteOffset;
+                    fakeSlice.byteOffsetFromContainer = slice.byteOffsetFromContainer;
                     fakeSlice.index = slice.index;
 
                     fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
@@ -273,7 +271,7 @@ public class CRAMBAIIndexer {
                     break;
                 }
 
-                container.offset = offset;
+                container.setByteOffset(offset);
 
                 indexer.processContainer(container, validationStringency);
 
@@ -368,7 +366,7 @@ public class CRAMBAIIndexer {
          * Record any index information for a given CRAM slice
          *
          * Reads these Slice fields:
-         * sequenceId, alignmentStart, alignmentSpan, containerOffset, index
+         * sequenceId, alignmentStart, alignmentSpan, containerByteOffset, index
          *
          * @param slice CRAM slice, single ref only.
          */
@@ -411,8 +409,8 @@ public class CRAMBAIIndexer {
 
             // process chunks
 
-            final long chunkStart = (slice.containerOffset << 16) | slice.index;
-            final long chunkEnd = ((slice.containerOffset << 16) | slice.index) + 1;
+            final long chunkStart = (slice.containerByteOffset << 16) | slice.index;
+            final long chunkEnd = ((slice.containerByteOffset << 16) | slice.index) + 1;
 
             final Chunk newChunk = new Chunk(chunkStart, chunkEnd);
 

@@ -189,6 +189,72 @@ public class SliceTests extends HtsjdkTest {
                 Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, records.size(), expectedBaseCount);
     }
 
+    @DataProvider(name = "uninitializedBAIParameterTestCases")
+    private Object[][] uninitializedBAIParameterTestCases() {
+
+        return new Object[][] {
+                { getNoContainerOffsetSlice() },
+                { getNoOffsetFromContainerSlice() },
+                { getNoIndexSlice() }
+        };
+    }
+
+    @DataProvider(name = "uninitializedCRAIParameterTestCases")
+    private Object[][] uninitializedCRAIParameterTestCases() {
+
+        return new Object[][] {
+                { getNoContainerOffsetSlice() },
+                { getNoOffsetFromContainerSlice() },
+                { getNoSizeSlice() }
+        };
+    }
+
+    @Test(dataProvider = "uninitializedBAIParameterTestCases", expectedExceptions = CRAMException.class)
+    public void uninitializedBAIParameterTest(final Slice s) {
+        s.baiIndexInitializationCheck();
+    }
+
+    @Test(dataProvider = "uninitializedCRAIParameterTestCases", expectedExceptions = CRAMException.class)
+    public void uninitializedCRAIParameterTest(final Slice s) {
+        s.craiIndexInitializationCheck();
+    }
+
+    private Slice getIndexInitializedSlice() {
+        final ReferenceContext refContext = new ReferenceContext(0);
+
+        final Slice slice = new Slice(refContext);
+        slice.byteOffsetFromContainer = 1;
+        slice.containerByteOffset = 1;
+        slice.byteSize = 1;
+        slice.index = 1;
+
+        return slice;
+    }
+
+    private Slice getNoContainerOffsetSlice() {
+        final Slice noContainerOffset = getIndexInitializedSlice();
+        noContainerOffset.containerByteOffset = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        return noContainerOffset;
+    }
+
+    private Slice getNoOffsetFromContainerSlice() {
+        final Slice noOffsetFromContainer = getIndexInitializedSlice();
+        noOffsetFromContainer.byteOffsetFromContainer = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        return noOffsetFromContainer;
+    }
+
+    private Slice getNoSizeSlice() {
+        final Slice noSize = getIndexInitializedSlice();
+        noSize.byteSize = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        return noSize;
+    }
+
+    private Slice getNoIndexSlice() {
+        final Slice noIndex = getIndexInitializedSlice();
+        noIndex.index = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        return noIndex;
+    }
+
     private static void buildSliceAndAssert(final List<CramCompressionRecord> records,
                                             final ReferenceContext expectedReferenceContext,
                                             final int expectedAlignmentStart,

@@ -101,7 +101,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
                 
                 final long offset = seekableStream.position();
                 final Container c = ContainerIO.readContainer(cramHeader.getVersion(), seekableStream);
-                c.offset = offset;
+                c.setByteOffset(offset);
                 return c;
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);

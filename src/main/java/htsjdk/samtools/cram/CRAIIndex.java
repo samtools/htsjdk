@@ -59,7 +59,7 @@ public class CRAIIndex {
      * @param container the container to index
      */
     public void processContainer(final Container container) {
-        addEntries(container.getCRAIEntriesSplittingMultiRef());
+        addEntries(container.getCRAIEntries());
     }
 
     public static SeekableStream openCraiFileAsBaiStream(final File cramIndexFile, final SAMSequenceDictionary dictionary) {
@@ -84,14 +84,15 @@ public class CRAIIndex {
 
         for (final CRAIEntry entry : full) {
             final Slice slice = new Slice(new ReferenceContext(entry.getSequenceId()));
-            slice.containerOffset = entry.getContainerStartByteOffset();
+            slice.containerByteOffset = entry.getContainerStartByteOffset();
             slice.alignmentStart = entry.getAlignmentStart();
             slice.alignmentSpan = entry.getAlignmentSpan();
-            slice.offset = entry.getSliceByteOffset();
+            slice.byteOffsetFromContainer = entry.getSliceByteOffset();
 
             // NOTE: the sliceIndex and read count fields can't be derived from the CRAM index
             // so we can only set them to zero
             // see https://github.com/samtools/htsjdk/issues/531
+
             slice.mappedReadsCount = 0;
             slice.unmappedReadsCount = 0;
             slice.unplacedReadsCount = 0;
@@ -106,12 +107,8 @@ public class CRAIIndex {
 
     public static List<CRAIEntry> find(final List<CRAIEntry> list, final int seqId, final int start, final int span) {
         final boolean matchEntireSequence = start < 1 || span < 1;
-        final CRAIEntry query = new CRAIEntry(seqId,
-                start,
-                span,
-                Long.MAX_VALUE,
-                Integer.MAX_VALUE,
-                Integer.MAX_VALUE);
+        final int dummyValue = 1;
+        final CRAIEntry query = new CRAIEntry(seqId, start, span, dummyValue, dummyValue, dummyValue);
 
         return list.stream()
                 .filter(e -> e.getSequenceId() == seqId)
@@ -124,6 +121,7 @@ public class CRAIIndex {
         if (list == null || list.isEmpty()) {
             return null;
         }
+
         return list.stream()
                 .sorted()
                 .findFirst()

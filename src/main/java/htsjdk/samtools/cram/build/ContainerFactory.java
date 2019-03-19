@@ -58,8 +58,7 @@ public class ContainerFactory {
             slices.add(slice);
         }
 
-        final Container container = Container.initializeFromSlices(slices);
-        container.compressionHeader = compressionHeader;
+        final Container container = Container.initializeFromSlices(slices, compressionHeader);
         container.nofRecords = records.size();
         container.globalRecordCounter = lastGlobalRecordCounter;
         container.blockCount = 0;
