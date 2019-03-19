@@ -130,15 +130,6 @@ public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
     }
 
 
-//    @Override
-//    public Object readActualHeader(LineReader lineReader) {
-//        final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
-//
-//        final SAMFileHeader header = headerCodec.decode(lineReader, "");
-//        dictionary = header.getSequenceDictionary();
-//        return header;
-//    }
-
     @Override
     public Object readActualHeader(LineIterator lineIterator) {
         final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
@@ -170,6 +161,4 @@ public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
     public boolean canDecode(String s) {
         return s.endsWith(".interval_list");
     }
-
 }
-
