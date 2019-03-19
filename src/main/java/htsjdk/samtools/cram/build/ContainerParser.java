@@ -80,10 +80,11 @@ public class ContainerParser {
             // read the new record and update the running prevAlignmentStart
             prevAlignmentStart = reader.read(record, prevAlignmentStart);
 
-            if (sliceContext.isMappedSingleRef() && record.sequenceId == sliceContext.getSequenceId()) {
+            final ReferenceContext recordContext = new ReferenceContext(record.sequenceId);
+            if (sliceContext.isMappedSingleRef() && recordContext == sliceContext) {
                 record.sequenceName = seqName;
             } else {
-                if (ReferenceContext.isUnmappedUnplaced(record.sequenceId)) {
+                if (recordContext.isUnmappedUnplaced()) {
                     record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
                 } else {
                     record.sequenceName = samFileHeader.getSequence(record.sequenceId)

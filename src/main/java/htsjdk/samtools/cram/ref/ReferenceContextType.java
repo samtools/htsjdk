@@ -12,5 +12,8 @@ package htsjdk.samtools.cram.ref;
 public enum ReferenceContextType {
     MULTIPLE_REFERENCE_TYPE,
     UNMAPPED_UNPLACED_TYPE,
-    SINGLE_REFERENCE_TYPE
+    SINGLE_REFERENCE_TYPE,
+
+    // not part of the spec, and thus not serializable
+    UNINITIALIZED
 }

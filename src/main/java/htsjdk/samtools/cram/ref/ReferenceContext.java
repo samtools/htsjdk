@@ -6,6 +6,8 @@ import htsjdk.samtools.cram.CRAMException;
 /**
  * Represents the current state of reference sequence processing.
  *
+ * Are we UNINITIALIZED (private sentinel value -3)?
+ *
  * Are we handling MULTIPLE_REFERENCE_TYPE records (-2, from the CRAM spec)?
  *
  * Are we handling UNMAPPED_UNPLACED_TYPE records (-1, from the CRAM spec)?
@@ -14,9 +16,11 @@ import htsjdk.samtools.cram.CRAMException;
  *
  */
 public class ReferenceContext implements Comparable<ReferenceContext> {
+    private static final int UNINITIALIZED_REFERENCE_ID = -3;
     private static final int MULTIPLE_REFERENCE_ID = -2;
     private static final int UNMAPPED_UNPLACED_ID = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX; // -1
 
+    public static final ReferenceContext UNINITIALIZED_CONTEXT = new ReferenceContext(UNINITIALIZED_REFERENCE_ID);
     public static final ReferenceContext MULTIPLE_REFERENCE_CONTEXT = new ReferenceContext(MULTIPLE_REFERENCE_ID);
     public static final ReferenceContext UNMAPPED_UNPLACED_CONTEXT = new ReferenceContext(UNMAPPED_UNPLACED_ID);
 
@@ -28,6 +32,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * 0 or greater for single reference
      * -1 for unmapped-unplaced
      * -2 for multiple reference
+     * -3 for uninitialized
      *
      * @param serializableSequenceId the sequence ID or sentinel value for constructing this ReferenceContext
      */
@@ -35,6 +40,9 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
         this.serializableSequenceId = serializableSequenceId;
 
         switch (serializableSequenceId) {
+            case UNINITIALIZED_REFERENCE_ID:
+                this.type = ReferenceContextType.UNINITIALIZED;
+                break;
             case MULTIPLE_REFERENCE_ID:
                 this.type = ReferenceContextType.MULTIPLE_REFERENCE_TYPE;
                 break;
@@ -51,7 +59,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     }
 
     /**
-     * Get the ReferenceContext type: SINGLE_REFERENCE_TYPE, UNMAPPED_UNPLACED_TYPE, or MULTIPLE_REFERENCE_TYPE
+     * Get the ReferenceContext type: UNINITIALIZED, SINGLE_REFERENCE_TYPE, UNMAPPED_UNPLACED_TYPE, or MULTIPLE_REFERENCE_TYPE
      * @return the {@link ReferenceContextType} enum
      */
     public ReferenceContextType getType() {
@@ -66,6 +74,10 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * @return the sequence ID
      */
     public int getSerializableId() {
+        if (type == ReferenceContextType.UNINITIALIZED) {
+            throw new CRAMException("This ReferenceContext was not initialized");
+        }
+
         return serializableSequenceId;
     }
 
@@ -82,6 +94,14 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
         }
 
         return serializableSequenceId;
+    }
+
+    /**
+     * Is this an uninitialized ReferenceContext?
+     * @return true if the ReferenceContext has not been initialized
+     */
+    public boolean isUninitialized() {
+        return type == ReferenceContextType.UNINITIALIZED;
     }
 
     /**
@@ -104,7 +124,6 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
         return sequenceId == UNMAPPED_UNPLACED_CONTEXT.getSerializableId();
     }
 
-
     /**
      * Does this ReferenceContext refer to:
      * - reads placed on multiple references
@@ -126,6 +145,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     public static boolean isMultipleReference(final int sequenceId) {
         return sequenceId == MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
     }
+
     /**
      * Does this ReferenceContext refer to reads placed on a single reference (whether their unmapped flags are set or not)?
      * @return true if all reads referred to by this ReferenceContext are placed on a single reference

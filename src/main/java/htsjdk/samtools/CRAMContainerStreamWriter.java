@@ -48,7 +48,7 @@ public class CRAMContainerStreamWriter {
 
     private final List<SAMRecord> samRecords = new ArrayList<>();
     private ContainerFactory containerFactory;
-    private ReferenceContext refContext = null;     // or some uninit sentinel
+    private ReferenceContext refContext = ReferenceContext.UNINITIALIZED_CONTEXT;
 
     private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
 
@@ -197,7 +197,7 @@ public class CRAMContainerStreamWriter {
         }
 
         // make sure unmapped reads don't get into multiref containers:
-        if (! refContext.isUnmappedUnplaced() && nextRefContext.isUnmappedUnplaced()) {
+        if ((! refContext.isUnmappedUnplaced()) && nextRefContext.isUnmappedUnplaced()) {
             return true;
         }
 
@@ -266,7 +266,7 @@ public class CRAMContainerStreamWriter {
         switch (refContext.getType()) {
             case MULTIPLE_REFERENCE_TYPE:
                 if (preservation != null && preservation.areReferenceTracksRequired()) {
-                    throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
+                    throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads." );
                 }
                 referenceBases = new byte[0];
                 break;
@@ -458,7 +458,7 @@ public class CRAMContainerStreamWriter {
             indexer.processContainer(container, ValidationStringency.SILENT);
         }
         samRecords.clear();
-        refContext = null; // or some uninit sentinel
+        refContext = ReferenceContext.UNINITIALIZED_CONTEXT;
     }
 
     /**
@@ -487,7 +487,7 @@ public class CRAMContainerStreamWriter {
         }
 
         final ReferenceContext samRecordRefContext = new ReferenceContext(samRecordReferenceIndex);
-        if (refContext == null) {
+        if (refContext.isUninitialized()) {
             refContext = samRecordRefContext;
         } else if (refContext != samRecordRefContext) {
             refContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;

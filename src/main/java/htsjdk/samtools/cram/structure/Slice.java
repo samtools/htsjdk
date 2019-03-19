@@ -201,7 +201,7 @@ public class Slice {
     public void setRefMD5(final byte[] ref) {
         alignmentBordersSanityCheck(ref);
 
-        if (! referenceContext.isMappedSingleRef() && alignmentStart < 1) {
+        if ((! referenceContext.isMappedSingleRef()) && alignmentStart < 1) {
             refMD5 = new byte[16];
             Arrays.fill(refMD5, (byte) 0);
 

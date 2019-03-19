@@ -24,6 +24,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;

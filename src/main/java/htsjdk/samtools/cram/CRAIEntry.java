@@ -122,7 +122,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         }
 
         // only sort by alignment start values for placed entries
-        if (! referenceContext.isUnmappedUnplaced() && alignmentStart != other.alignmentStart) {
+        if ((! referenceContext.isUnmappedUnplaced()) && alignmentStart != other.alignmentStart) {
             return Integer.compare(alignmentStart, other.alignmentStart);
         }
 

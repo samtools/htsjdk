@@ -39,13 +39,13 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator {
-    
+
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
     private final ArrayList<SAMRecord> records;
     private final CramNormalizer normalizer;
     private byte[] referenceBases;
-    private ReferenceContext prevRefContext;
+    private ReferenceContext prevRefContext = ReferenceContext.UNINITIALIZED_CONTEXT;
     public Container container;
     private SamReader mReader;
     long firstContainerOffset = 0;
@@ -216,7 +216,7 @@ public class CRAMIterator implements SAMRecordIterator {
                 final long chunkEnd = ((container.offset << 16) | cramRecord.sliceIndex) + 1;
                 samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
-            
+
             records.add(samRecord);
         }
         cramRecords.clear();
@@ -233,7 +233,7 @@ public class CRAMIterator implements SAMRecordIterator {
         if (!hasNext()) return false;
         int i = 0;
         for (final SAMRecord record : records) {
-            if (refIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && record.getReferenceIndex() != refIndex) continue;
+            if ((! ReferenceContext.isUnmappedUnplaced(refIndex)) && record.getReferenceIndex() != refIndex) continue;
 
             if (pos <= 0) {
                 if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {

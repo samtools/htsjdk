@@ -267,7 +267,7 @@ public class CramCompressionRecord {
      */
     public boolean isPlaced() {
         // placement requires a valid sequence ID and alignment start coordinate
-        boolean placed = ! ReferenceContext.isUnmappedUnplaced(sequenceId) &&
+        boolean placed = (! ReferenceContext.isUnmappedUnplaced(sequenceId)) &&
                 alignmentStart != SAMRecord.NO_ALIGNMENT_START;
 
         if (!placed && !isSegmentUnmapped()) {
