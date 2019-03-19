@@ -9,6 +9,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -150,4 +151,103 @@ public class ContainerTest extends HtsjdkTest {
         Assert.assertEquals(spanMap.get(expectedReferenceContext), expectedAlignmentSpan);
     }
 
+    // show that we can populate all of the slice indexing fields from the
+    // values in the container's header
+
+    // this is part of the deserialization process, and supports index creation
+
+    // single slice
+
+    @Test
+    public static void populateSlicesAndIndexingParametersOneSlice() {
+        // this container starts 100,000 bytes into the CRAM stream
+        final int containerStreamByteOffset = 100000;
+
+        // this Container consists of:
+        // a header of size 1234 bytes
+        // a Slice of size 6262 bytes
+
+        final int containerHeaderSize = 1234;
+        final int sliceSize = 6262;
+
+        final Container container = createOneSliceContainer(containerStreamByteOffset, containerHeaderSize, sliceSize);
+
+        assertSliceIndexingParams(container.slices[0], 0, containerStreamByteOffset, sliceSize, containerHeaderSize);
+    }
+
+    // two slices
+
+    @Test
+    public static void populateSlicesAndIndexingParametersTwoSlices() {
+        // this container starts 200,000 bytes into the CRAM stream
+        final int containerStreamByteOffset = 200000;
+
+        // this Container consists of:
+        // a header of size 3234 bytes
+        // a Slice of size 7890 bytes
+        // a Slice of size 5555 bytes
+
+        final int containerHeaderSize = 3234;
+        final int slice0size = 7890;
+        final int slice1size = 5555;
+
+        final Container container = createTwoSliceContainer(containerStreamByteOffset, containerHeaderSize, slice0size, slice1size);
+
+        assertSliceIndexingParams(container.slices[0], 0, containerStreamByteOffset, slice0size, containerHeaderSize);
+        assertSliceIndexingParams(container.slices[1], 1, containerStreamByteOffset, slice1size, containerHeaderSize + slice0size);
+    }
+
+    private static Container createOneSliceContainer(final int containerStreamByteOffset,
+                                                     final int containerHeaderSize,
+                                                     final int slice0size) {
+        final ReferenceContext refContext = new ReferenceContext(0);
+
+        final Container container = new Container(refContext);
+        container.offset = containerStreamByteOffset;
+        container.containerByteSize = slice0size;
+        container.landmarks = new int[]{
+                containerHeaderSize,                // beginning of slice
+        };
+
+        final ArrayList<Slice> slices = new ArrayList<Slice>() {{
+            add(new Slice(refContext));
+        }};
+        container.populateSlicesAndIndexingParameters(slices);
+        return container;
+    }
+
+    private static Container createTwoSliceContainer(final int containerStreamByteOffset,
+                                                     final int containerHeaderSize,
+                                                     final int slice0size,
+                                                     final int slice1size) {
+        final int containerDataSize = slice0size + slice1size;
+
+        final ReferenceContext refContext = new ReferenceContext(0);
+
+        final Container container = new Container(refContext);
+        container.offset = containerStreamByteOffset;
+        container.containerByteSize = containerDataSize;
+        container.landmarks = new int[]{
+                containerHeaderSize,                // beginning of slice 1
+                containerHeaderSize + slice0size    // beginning of slice 2
+        };
+
+        final ArrayList<Slice> slices = new ArrayList<Slice>() {{
+            add(new Slice(refContext));
+            add(new Slice(refContext));
+        }};
+        container.populateSlicesAndIndexingParameters(slices);
+        return container;
+    }
+
+    private static void assertSliceIndexingParams(final Slice slice,
+                                                  final int expectedIndex,
+                                                  final int expectedContainerOffset,
+                                                  final int expectedSize,
+                                                  final int expectedOffset) {
+        Assert.assertEquals(slice.index, expectedIndex);
+        Assert.assertEquals(slice.containerOffset, expectedContainerOffset);
+        Assert.assertEquals(slice.size, expectedSize);
+        Assert.assertEquals(slice.offset, expectedOffset);
+    }
 }
