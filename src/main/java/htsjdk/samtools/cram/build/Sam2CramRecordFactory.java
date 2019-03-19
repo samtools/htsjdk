@@ -22,6 +22,7 @@ import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.util.Log;
@@ -81,9 +82,11 @@ public class Sam2CramRecordFactory {
             cramRecord.mateAlignmentStart = record.getMateAlignmentStart();
             cramRecord.setMateUnmapped(record.getMateUnmappedFlag());
             cramRecord.setMateNegativeStrand(record.getMateNegativeStrandFlag());
-            cramRecord.mateSequenceID = record.getMateReferenceIndex();
-        } else cramRecord.mateSequenceID = -1;
-        cramRecord.sequenceId = record.getReferenceIndex();
+            cramRecord.mateReferenceContext = new ReferenceContext(record.getMateReferenceIndex());
+        } else {
+            cramRecord.mateReferenceContext = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
+        }
+        cramRecord.referenceContext = new ReferenceContext(record.getReferenceIndex());
         cramRecord.readName = record.getReadName();
         cramRecord.alignmentStart = record.getAlignmentStart();
 

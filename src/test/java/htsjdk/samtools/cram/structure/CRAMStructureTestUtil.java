@@ -47,7 +47,7 @@ public class CRAMStructureTestUtil {
                                                            final int alignmentStart) {
         final CramCompressionRecord record = new CramCompressionRecord();
         record.index = index;
-        record.sequenceId = sequenceId;
+        record.referenceContext = new ReferenceContext(sequenceId);
         record.alignmentStart = alignmentStart;
         record.setSegmentUnmapped(false);
 

@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -18,6 +19,7 @@ public class CramCompressionRecordTest extends HtsjdkTest {
     @Test
     public void test_getAlignmentSpanAndEnd() {
         CramCompressionRecord r = new CramCompressionRecord();
+        r.referenceContext = new ReferenceContext(0);
         int readLength = 100;
         r.alignmentStart = 5;
         r.readLength = readLength;
@@ -27,6 +29,7 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         assertSpanAndEnd(r, expectedSpan);
 
         r = new CramCompressionRecord();
+        r.referenceContext = new ReferenceContext(0);
         r.alignmentStart = 10;
         r.readLength = readLength;
         r.setSegmentUnmapped(false);
@@ -38,6 +41,7 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         assertSpanAndEnd(r, expectedSpan);
 
         r = new CramCompressionRecord();
+        r.referenceContext = new ReferenceContext(0);
         r.alignmentStart = 20;
         r.readLength = readLength;
         r.setSegmentUnmapped(false);
@@ -49,6 +53,7 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         assertSpanAndEnd(r, expectedSpan);
 
         r = new CramCompressionRecord();
+        r.referenceContext = new ReferenceContext(0);
         r.alignmentStart = 30;
         r.readLength = readLength;
         r.setSegmentUnmapped(false);
@@ -60,6 +65,7 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         assertSpanAndEnd(r, expectedSpan);
 
         r = new CramCompressionRecord();
+        r.referenceContext = new ReferenceContext(0);
         r.alignmentStart = 40;
         r.readLength = readLength;
         r.setSegmentUnmapped(false);
@@ -87,6 +93,7 @@ public class CramCompressionRecordTest extends HtsjdkTest {
         final CramCompressionRecord r = new CramCompressionRecord();
         final int alignmentStart = 5;
         final int readLength = 100;
+        r.referenceContext = new ReferenceContext(0);
         r.alignmentStart = alignmentStart;
         r.readLength = readLength;
         r.setSegmentUnmapped(false);
@@ -110,13 +117,15 @@ public class CramCompressionRecordTest extends HtsjdkTest {
     private Object[][] placedTests() {
         final List<Object[]> retval = new ArrayList<>();
 
-        final int validSeqId = 0;
-        final int[] sequenceIds = new int[]{ SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, validSeqId };
+        final ReferenceContext[] refContexts = new ReferenceContext[]{
+                ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                new ReferenceContext(0)
+        };
         final int validAlignmentStart = 1;
         final int[] starts = new int[]{ SAMRecord.NO_ALIGNMENT_START, validAlignmentStart };
         final boolean[] mappeds = new boolean[] { true, false };
 
-        for (final int sequenceId : sequenceIds) {
+        for (final ReferenceContext refContext : refContexts) {
             for (final int start : starts) {
                 for (final boolean mapped : mappeds) {
 
@@ -130,7 +139,7 @@ public class CramCompressionRecordTest extends HtsjdkTest {
                     // however: we do handle the edge case where only one of the pair is valid
                     // by marking it as unplaced.
 
-                    if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                    if (refContext.isUnmappedUnplaced()) {
                         placementExpectation = false;
                     }
 
@@ -138,7 +147,7 @@ public class CramCompressionRecordTest extends HtsjdkTest {
                         placementExpectation = false;
                     }
 
-                    retval.add(new Object[]{sequenceId, start, mapped, placementExpectation});
+                    retval.add(new Object[]{refContext, start, mapped, placementExpectation});
                 }
 
             }
@@ -148,24 +157,24 @@ public class CramCompressionRecordTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "placedTests")
-    public void test_isPlaced(final int sequenceId,
+    public void test_isPlaced(final ReferenceContext referenceContext,
                               final int alignmentStart,
                               final boolean mapped,
                               final boolean placementExpectation) {
         final CramCompressionRecord r = new CramCompressionRecord();
-        r.sequenceId = sequenceId;
+        r.referenceContext = referenceContext;
         r.alignmentStart = alignmentStart;
         r.setSegmentUnmapped(!mapped);
         Assert.assertEquals(r.isPlaced(), placementExpectation);
     }
 
     @Test(dataProvider = "placedTests")
-    public void test_placementForAlignmentSpanAndEnd(final int sequenceId,
+    public void test_placementForAlignmentSpanAndEnd(final ReferenceContext referenceContext,
                                                      final int alignmentStart,
                                                      final boolean mapped,
                                                      final boolean placementExpectation) {
         final CramCompressionRecord r = new CramCompressionRecord();
-        r.sequenceId = sequenceId;
+        r.referenceContext = referenceContext;
         r.alignmentStart = alignmentStart;
         r.setSegmentUnmapped(!mapped);
         final int readLength = 100;

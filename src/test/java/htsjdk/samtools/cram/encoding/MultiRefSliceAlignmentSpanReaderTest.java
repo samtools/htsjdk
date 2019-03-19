@@ -33,26 +33,26 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         final String commonRead = "AAA";
 
         // span 1:1,3
-        initialRecords.get(0).sequenceId = 1;
+        initialRecords.get(0).referenceContext = new ReferenceContext(1);
         initialRecords.get(0).alignmentStart = 1;
         initialRecords.get(0).readBases = commonRead.getBytes();
         initialRecords.get(0).readLength = commonRead.length();
 
         // span 2:2,4
-        initialRecords.get(1).sequenceId = 2;
+        initialRecords.get(1).referenceContext = new ReferenceContext(2);
         initialRecords.get(1).alignmentStart = 2;
         initialRecords.get(1).readBases = commonRead.getBytes();
         initialRecords.get(1).readLength = commonRead.length();
         initialRecords.get(1).setSegmentUnmapped(true);     // unmapped but placed
 
         // span 1:3,5
-        initialRecords.get(2).sequenceId = 1;
+        initialRecords.get(2).referenceContext = new ReferenceContext(1);
         initialRecords.get(2).alignmentStart = 3;
         initialRecords.get(2).readBases = commonRead.getBytes();
         initialRecords.get(2).readLength = commonRead.length();
 
         // span <unmapped>
-        initialRecords.get(3).sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+        initialRecords.get(3).referenceContext = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
         initialRecords.get(3).alignmentStart = 7;
         initialRecords.get(3).readBases = commonRead.getBytes();
         initialRecords.get(3).readLength = commonRead.length();

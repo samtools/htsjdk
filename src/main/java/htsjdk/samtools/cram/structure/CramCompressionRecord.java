@@ -24,6 +24,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
 import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.util.Log;
 
 import java.util.Arrays;
@@ -82,13 +83,13 @@ public class CramCompressionRecord {
     // pointers to the previous and next segments in the template:
     public CramCompressionRecord next, previous;
 
-    public int mateSequenceID = -1;
+    public ReferenceContext mateReferenceContext;
     public int mateAlignmentStart = 0;
 
     public int mappingQuality;
 
     public String sequenceName;
-    public int sequenceId;
+    public ReferenceContext referenceContext;   // TODO: some kind of uninitialized sentinel?
     public String readName;
 
     // insert size:
@@ -175,7 +176,7 @@ public class CramCompressionRecord {
      */
     public int getAlignmentSpan() {
         if (alignmentSpan == UNINITIALIZED_SPAN) {
-            intializeAlignmentBoundaries();
+            initializeAlignmentBoundaries();
         }
         return alignmentSpan;
     }
@@ -186,7 +187,7 @@ public class CramCompressionRecord {
      */
     public int getAlignmentEnd() {
         if (alignmentEnd == UNINITIALIZED_END) {
-            intializeAlignmentBoundaries();
+            initializeAlignmentBoundaries();
         }
         return alignmentEnd;
     }
@@ -194,7 +195,7 @@ public class CramCompressionRecord {
     // https://github.com/samtools/htsjdk/issues/1301
     // does not update alignmentSpan/alignmentEnd when the record changes
 
-    private void intializeAlignmentBoundaries() {
+    private void initializeAlignmentBoundaries() {
         if (!isPlaced()) {
             alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
             alignmentEnd = Slice.NO_ALIGNMENT_END;
@@ -266,7 +267,7 @@ public class CramCompressionRecord {
      */
     public boolean isPlaced() {
         // placement requires a valid sequence ID and alignment start coordinate
-        boolean placed = sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+        boolean placed = referenceContext.isMappedSingleRef() &&
                 alignmentStart != SAMRecord.NO_ALIGNMENT_START;
 
         if (!placed && !isSegmentUnmapped()) {

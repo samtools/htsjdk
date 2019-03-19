@@ -167,8 +167,9 @@ public class CramRecordWriter {
     private void writeRecord(final CramCompressionRecord r, final int prevAlignmentStart) {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
-        if (refContext.isMultiRef()) {
-            refIdCodec.writeData(r.sequenceId);
+        if (refContext.isMultipleReference()) {
+            // can be Unmapped Unplaced (-1) or a valid reference ID
+            refIdCodec.writeData(r.referenceContext.getSerializableId());
         }
 
         readLengthC.writeData(r.readLength);
@@ -193,7 +194,8 @@ public class CramRecordWriter {
                 readNameC.writeData(r.readName.getBytes(charset));
             }
 
-            nextFragmentReferenceSequenceIDCodec.writeData(r.mateSequenceID);
+            // can be Unmapped Unplaced (-1) or a valid reference ID
+            nextFragmentReferenceSequenceIDCodec.writeData(r.mateReferenceContext.getSerializableId());
             nextFragmentAlignmentStart.writeData(r.mateAlignmentStart);
             templateSize.writeData(r.templateSize);
         } else if (r.isHasMateDownStream()) {

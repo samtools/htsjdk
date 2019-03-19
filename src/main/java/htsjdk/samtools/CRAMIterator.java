@@ -205,7 +205,7 @@ public class CRAMIterator implements SAMRecordIterator {
             final SAMRecord samRecord = cramToSamRecordFactory.create(cramRecord);
             if (!cramRecord.isSegmentUnmapped()) {
                 final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
-                        .getSequence(cramRecord.sequenceId);
+                        .getSequence(cramRecord.referenceContext.getSequenceId());
                 referenceBases = referenceSource.getReferenceBases(sequence, true);
             }
 

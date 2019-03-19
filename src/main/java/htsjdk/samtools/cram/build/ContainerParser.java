@@ -65,7 +65,6 @@ public class ContainerParser {
         if (sliceContext.isMappedSingleRef()) {
             final SAMSequenceRecord sequence = samFileHeader.getSequence(sliceContext.getSequenceId());
             seqName = sequence.getSequenceName();
-
         }
 
         final CramRecordReader reader = slice.createCramRecordReader(header, validationStringency);
@@ -81,13 +80,13 @@ public class ContainerParser {
             // read the new record and update the running prevAlignmentStart
             prevAlignmentStart = reader.read(record, prevAlignmentStart);
 
-            if (sliceContext.isMappedSingleRef() && record.sequenceId == sliceContext.getSequenceId()) {
+            if (sliceContext.isMappedSingleRef() && record.referenceContext == sliceContext) {
                 record.sequenceName = seqName;
             } else {
-                if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                if (record.referenceContext.isUnmappedUnplaced()) {
                     record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
                 } else {
-                    record.sequenceName = samFileHeader.getSequence(record.sequenceId)
+                    record.sequenceName = samFileHeader.getSequence(record.referenceContext.getSequenceId())
                             .getSequenceName();
                 }
             }

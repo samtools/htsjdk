@@ -176,11 +176,10 @@ public class CramRecordReader {
 
             cramRecord.flags = bitFlagsCodec.readData();
             cramRecord.compressionFlags = compressionBitFlagsCodec.readData();
-            if (refContext.isMultiRef()) {
-                cramRecord.sequenceId = refIdCodec.readData();
+            if (refContext.isMultipleReference()) {
+                cramRecord.referenceContext = new ReferenceContext(refIdCodec.readData());
             } else {
-                // either unmapped (-1) or a valid ref
-                cramRecord.sequenceId = refContext.getSerializableId();
+                cramRecord.referenceContext = refContext;
             }
 
             cramRecord.readLength = readLengthCodec.readData();
@@ -203,7 +202,7 @@ public class CramRecordReader {
                     cramRecord.readName = new String(readNameCodec.readData(), charset);
                 }
 
-                cramRecord.mateSequenceID = mateReferenceIdCodec.readData();
+                cramRecord.mateReferenceContext = new ReferenceContext(mateReferenceIdCodec.readData());
                 cramRecord.mateAlignmentStart = mateAlignmentStartCodec.readData();
                 cramRecord.templateSize = insertSizeCodec.readData();
             } else if (cramRecord.isHasMateDownStream()) {

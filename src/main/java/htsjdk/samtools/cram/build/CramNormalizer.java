@@ -66,11 +66,11 @@ public class CramNormalizer {
         for (final CramCompressionRecord record : records) {
             record.index = ++readCounter;
 
-            if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+            if (record.referenceContext.isUnmappedUnplaced()) {
                 record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
                 record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
             } else {
-                record.sequenceName = header.getSequence(record.sequenceId)
+                record.sequenceName = header.getSequence(record.referenceContext.getSequenceId())
                         .getSequenceName();
             }
         }
@@ -122,7 +122,7 @@ public class CramNormalizer {
                 // ref.length=0 is a special case of seqId=-2 (multiref)
                 if ((ref == null || ref.length == 0) && referenceSource != null)
                     refBases = referenceSource.getReferenceBases(
-                            header.getSequence(record.sequenceId), true);
+                            header.getSequence(record.referenceContext.getSequenceId()), true);
             }
 
             if (record.isUnknownBases()) {
@@ -164,8 +164,8 @@ public class CramNormalizer {
         record.mateAlignmentStart = next.alignmentStart;
         record.setMateUnmapped(next.isSegmentUnmapped());
         record.setMateNegativeStrand(next.isNegativeStrand());
-        record.mateSequenceID = next.sequenceId;
-        if (record.mateSequenceID == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+        record.mateReferenceContext = next.referenceContext;
+        if (record.mateReferenceContext.isUnmappedUnplaced())
             record.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
     }
 
@@ -333,7 +333,7 @@ public class CramNormalizer {
         if (firstEnd.isSegmentUnmapped() || secondEnd.isSegmentUnmapped()) {
             return 0;
         }
-        if (firstEnd.sequenceId != secondEnd.sequenceId) {
+        if (firstEnd.referenceContext != secondEnd.referenceContext) {
             return 0;
         }
 

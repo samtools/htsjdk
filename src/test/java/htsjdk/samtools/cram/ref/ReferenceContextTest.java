@@ -58,7 +58,7 @@ public class ReferenceContextTest extends HtsjdkTest {
         Assert.assertEquals(refContext.getType(), expectedType);
         Assert.assertEquals(refContext.isMappedSingleRef(), expectedSingle);
         Assert.assertEquals(refContext.isUnmappedUnplaced(), expectedUnplaced);
-        Assert.assertEquals(refContext.isMultiRef(), expectedMulti);
+        Assert.assertEquals(refContext.isMultipleReference(), expectedMulti);
         Assert.assertEquals(refContext.getSerializableId(), expectedID);
     }
 

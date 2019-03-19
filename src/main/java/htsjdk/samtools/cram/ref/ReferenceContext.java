@@ -103,7 +103,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * @return true if the ReferenceContext relates to reads placed on multiple references
      * or a combination of placed and unplaced reads
      */
-    public boolean isMultiRef() {
+    public boolean isMultipleReference() {
         return type == ReferenceContextType.MULTIPLE_REFERENCE_TYPE;
     }
 

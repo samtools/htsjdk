@@ -85,6 +85,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
                 {"xx#large_aux"},
                 {"xx#pair"},
                 {"xx#rg"},
+
+                // TODO this one breaks due to a mismatch in mInferredInsertSize
                 {"xx#unsorted"},
         };
     }

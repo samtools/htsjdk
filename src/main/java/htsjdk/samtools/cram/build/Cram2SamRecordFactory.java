@@ -55,12 +55,12 @@ public class Cram2SamRecordFactory {
         samRecord.setReadName(cramRecord.readName);
         copyFlags(cramRecord, samRecord);
 
-        if (cramRecord.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+        if (cramRecord.referenceContext.isUnmappedUnplaced()) {
             samRecord.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
             samRecord.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
             samRecord.setReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
         } else {
-            samRecord.setReferenceIndex(cramRecord.sequenceId);
+            samRecord.setReferenceIndex(cramRecord.referenceContext.getSequenceId());
             samRecord.setAlignmentStart(cramRecord.alignmentStart);
             samRecord.setMappingQuality(cramRecord.mappingQuality);
         }
@@ -72,7 +72,8 @@ public class Cram2SamRecordFactory {
                     cramRecord.readLength));
 
         if (samRecord.getReadPairedFlag()) {
-            samRecord.setMateReferenceIndex(cramRecord.mateSequenceID);
+            // can be Unmapped Unplaced (-1) or a valid reference ID
+            samRecord.setMateReferenceIndex(cramRecord.mateReferenceContext.getSerializableId());
             samRecord
                     .setMateAlignmentStart(cramRecord.mateAlignmentStart > 0 ?
                             cramRecord.mateAlignmentStart :

@@ -38,7 +38,6 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
@@ -127,7 +126,7 @@ public class CRAMBAIIndexer {
         for (final Slice slice : container.slices) {
             slice.containerOffset = container.offset;
             slice.index = sliceIndex++;
-            if (slice.getReferenceContext().isMultiRef()) {
+            if (slice.getReferenceContext().isMultipleReference()) {
                 final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(validationStringency);
 
                 // TODO why are we updating the original slice here?
@@ -184,7 +183,7 @@ public class CRAMBAIIndexer {
      */
     public void processAsSingleReferenceSlice(final Slice slice) {
         final ReferenceContext sliceContext = slice.getReferenceContext();
-        if (sliceContext.isMultiRef()) {
+        if (sliceContext.isMultipleReference()) {
             throw new SAMException("Expecting a single reference or unmapped slice.");
         }
 

@@ -135,7 +135,7 @@ public class Slice {
     }
 
     public boolean validateRefMD5(final byte[] ref) {
-        if (referenceContext.isMultiRef()) {
+        if (referenceContext.isMultipleReference()) {
             throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
         }
 
@@ -366,7 +366,7 @@ public class Slice {
             throw new CRAMException("Cannot construct index if the CRAM is not Coordinate Sorted");
         }
 
-        if (referenceContext.isMultiRef()) {
+        if (referenceContext.isMultipleReference()) {
             final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(compressionHeader, ValidationStringency.DEFAULT_STRINGENCY);
 
             return spans.entrySet().stream()
@@ -473,7 +473,7 @@ public class Slice {
             baseCount += record.readLength;
 
             if (record.isPlaced()) {
-                referenceContexts.add(new ReferenceContext(record.sequenceId));
+                referenceContexts.add(record.referenceContext);
 
                 singleRefAlignmentStart = Math.min(record.alignmentStart, singleRefAlignmentStart);
                 singleRefAlignmentEnd = Math.max(record.getAlignmentEnd(), singleRefAlignmentEnd);
