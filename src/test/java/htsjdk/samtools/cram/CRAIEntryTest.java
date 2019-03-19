@@ -3,6 +3,7 @@ package htsjdk.samtools.cram;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -13,6 +14,8 @@ import java.util.*;
  * Created by vadim on 25/08/2015.
  */
 public class CRAIEntryTest extends CramRecordTestHelper {
+    private static final Random RANDOM = new Random(TestUtil.RANDOM_SEED);
+
     private static final CompressionHeader COMPRESSION_HEADER =
             new CompressionHeaderFactory().build(Collections.EMPTY_LIST, null, true);
 
@@ -49,10 +52,12 @@ public class CRAIEntryTest extends CramRecordTestHelper {
 
     @Test
     public void singleRefTestGetCRAIEntries() {
-        final Slice slice1 = createSlice(0);
-        final Slice slice2 = createSlice(0);
+        final ReferenceContext refContext = new ReferenceContext(0);
+        final Slice slice1 = createSliceWithArbitraryValues(refContext);
+        final Slice slice2 = createSliceWithArbitraryValues(refContext);
 
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), COMPRESSION_HEADER);
+        final long containerByteOffset = 12345;
+        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), COMPRESSION_HEADER, containerByteOffset);
         final List<CRAIEntry> entries = container.getCRAIEntries();
 
         Assert.assertNotNull(entries);
@@ -102,14 +107,12 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         slice1.index = slice1Index;
         slice1.byteSize = sliceByteSize;
         slice1.byteOffsetFromContainer = slice1ByteOffsetFromContainer;
-        slice1.containerByteOffset = containerOffset;
 
         slice2.index = slice2Index;
         slice2.byteSize = sliceByteSize;
         slice2.byteOffsetFromContainer = slice2ByteOffsetFromContainer;
-        slice2.containerByteOffset = containerOffset;
 
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), compressionHeader);
+        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), compressionHeader, containerOffset);
 
         final List<CRAIEntry> entries = container.getCRAIEntries();
         Assert.assertNotNull(entries);
@@ -285,10 +288,10 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         Assert.assertEquals(testEntries, expected);
     }
 
-    private static Slice createSlice(final int sequenceId) {
-        int counter = sequenceId;
+    private static Slice createSliceWithArbitraryValues(final ReferenceContext refContext) {
+        int counter = RANDOM.nextInt(100);
 
-        final Slice single = new Slice(new ReferenceContext(sequenceId));
+        final Slice single = new Slice(refContext);
         single.alignmentStart = counter++;
         single.alignmentSpan = counter++;
         single.containerByteOffset = counter++;

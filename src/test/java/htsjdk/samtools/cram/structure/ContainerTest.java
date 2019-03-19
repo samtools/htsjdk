@@ -67,8 +67,9 @@ public class ContainerTest extends HtsjdkTest {
                                          final ReferenceContext expectedReferenceContext,
                                          final int expectedAlignmentStart,
                                          final int expectedAlignmentSpan) {
-        final Container container = Container.initializeFromSlices(slices, COMPRESSION_HEADER);
-        CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan);
+        final long byteOffset = 536635;
+        final Container container = Container.initializeFromSlices(slices, COMPRESSION_HEADER, byteOffset);
+        CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, byteOffset);
     }
 
     @DataProvider(name = "illegalCombinationTestCases")
@@ -95,7 +96,8 @@ public class ContainerTest extends HtsjdkTest {
 
     @Test(dataProvider = "illegalCombinationTestCases", expectedExceptions = CRAMException.class)
     public static void illegalCombinationsStateTest(final Slice one, final Slice another) {
-        Container.initializeFromSlices(Arrays.asList(one, another), COMPRESSION_HEADER);
+        final long dummyByteOffset = 0;
+        Container.initializeFromSlices(Arrays.asList(one, another), COMPRESSION_HEADER, dummyByteOffset);
     }
 
     @DataProvider(name = "getSpansTestCases")
@@ -148,7 +150,8 @@ public class ContainerTest extends HtsjdkTest {
     public void getSpansTest(final List<CramCompressionRecord> records,
                              final ReferenceContext expectedReferenceContext,
                              final AlignmentSpan expectedAlignmentSpan) {
-        final Container container = FACTORY.buildContainer(records);
+        final long dummyByteOffset = 0;
+        final Container container = FACTORY.buildContainer(records, dummyByteOffset);
 
         final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(ValidationStringency.STRICT);
         Assert.assertEquals(spanMap.size(), 1);
@@ -177,7 +180,7 @@ public class ContainerTest extends HtsjdkTest {
 
         final Container container = createOneSliceContainer(containerStreamByteOffset, containerHeaderSize, sliceSize);
 
-        assertSliceIndexingParams(container.slices[0], 0, containerStreamByteOffset, sliceSize, containerHeaderSize);
+        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, sliceSize, containerHeaderSize);
     }
 
     // two slices
@@ -198,8 +201,8 @@ public class ContainerTest extends HtsjdkTest {
 
         final Container container = createTwoSliceContainer(containerStreamByteOffset, containerHeaderSize, slice0size, slice1size);
 
-        assertSliceIndexingParams(container.slices[0], 0, containerStreamByteOffset, slice0size, containerHeaderSize);
-        assertSliceIndexingParams(container.slices[1], 1, containerStreamByteOffset, slice1size, containerHeaderSize + slice0size);
+        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, slice0size, containerHeaderSize);
+        assertSliceIndexingParams(container.getSlices()[1], 1, containerStreamByteOffset, slice1size, containerHeaderSize + slice0size);
     }
 
     private static Container createOneSliceContainer(final int containerStreamByteOffset,
@@ -216,8 +219,7 @@ public class ContainerTest extends HtsjdkTest {
         final ArrayList<Slice> slices = new ArrayList<Slice>() {{
             add(new Slice(refContext));
         }};
-        container.populateSlicesAndIndexingParameters(slices);
-        container.setByteOffset(containerStreamByteOffset);
+        container.populateSlicesAndIndexingParameters(slices, containerStreamByteOffset);
         return container;
     }
 
@@ -240,8 +242,7 @@ public class ContainerTest extends HtsjdkTest {
             add(new Slice(refContext));
             add(new Slice(refContext));
         }};
-        container.populateSlicesAndIndexingParameters(slices);
-        container.setByteOffset(containerStreamByteOffset);
+        container.populateSlicesAndIndexingParameters(slices, containerStreamByteOffset);
         return container;
     }
 

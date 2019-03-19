@@ -141,7 +141,7 @@ public class CRAMStructureTestUtil {
         return retval;
     }
 
-    public static List<Container> getMultiRefContainersForStateTest() {
+    public static List<Container> getMultiRefContainersForStateTest(final long firstContainerByteOffset) {
         final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
         final List<Container> testContainers = new ArrayList<>(3);
 
@@ -149,15 +149,15 @@ public class CRAMStructureTestUtil {
 
         int index = 0;
         records.add(createMappedRecord(index, index, index + 1));
-        final Container container0 = factory.buildContainer(records);
+        final Container container0 = factory.buildContainer(records, firstContainerByteOffset);
 
         index++;
         records.add(createMappedRecord(index, index, index + 1));
-        final Container container1 = factory.buildContainer(records);
+        final Container container1 = factory.buildContainer(records, firstContainerByteOffset + 1);
 
         index++;
         records.add(createUnmappedUnplacedRecord(index));
-        final Container container2 = factory.buildContainer(records);
+        final Container container2 = factory.buildContainer(records, firstContainerByteOffset + 2);
 
         testContainers.add(container0);
         testContainers.add(container1);
@@ -194,10 +194,12 @@ public class CRAMStructureTestUtil {
     public static void assertContainerState(final Container container,
                                             final ReferenceContext expectedReferenceContext,
                                             final int expectedAlignmentStart,
-                                            final int expectedAlignmentSpan) {
+                                            final int expectedAlignmentSpan,
+                                            final long expectedByteOffset) {
         Assert.assertEquals(container.getReferenceContext(), expectedReferenceContext);
         Assert.assertEquals(container.alignmentStart, expectedAlignmentStart);
         Assert.assertEquals(container.alignmentSpan, expectedAlignmentSpan);
+        Assert.assertEquals(container.getByteOffset(), expectedByteOffset);
     }
 
     public static void assertContainerState(final Container container,
@@ -206,18 +208,19 @@ public class CRAMStructureTestUtil {
                                             final int expectedAlignmentSpan,
                                             final int expectedRecordCount,
                                             final int expectedBaseCount,
-                                            final int expectedGlobalRecordCounter) {
-        assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan);
+                                            final int expectedGlobalRecordCounter,
+                                            final long expectedByteOffset) {
+        assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, expectedByteOffset);
 
         Assert.assertEquals(container.nofRecords, expectedRecordCount);
         Assert.assertEquals(container.bases, expectedBaseCount);
         Assert.assertEquals(container.globalRecordCounter, expectedGlobalRecordCounter);
 
-        Assert.assertEquals(container.slices.length, 1);
+        Assert.assertEquals(container.getSlices().length, 1);
 
         // verify the underlying slice too
 
-        assertSliceState(container.slices[0], expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
+        assertSliceState(container.getSlices()[0], expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
                 expectedRecordCount, expectedBaseCount, expectedGlobalRecordCounter);
     }
 }

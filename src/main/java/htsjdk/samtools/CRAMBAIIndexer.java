@@ -53,7 +53,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -133,7 +132,7 @@ public class CRAMBAIIndexer {
         }
 
         int sliceIndex = 0;
-        for (final Slice slice : container.slices) {
+        for (final Slice slice : container.getSlices()) {
             slice.index = sliceIndex++;
             if (slice.getReferenceContext().isMultiRef()) {
                 final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(validationStringency);
@@ -260,40 +259,31 @@ public class CRAMBAIIndexer {
         }
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, cramHeader.getSamFileHeader());
 
-        int totalRecords = 0;
         Container container = null;
         ProgressLogger progressLogger = new ProgressLogger(log, 1, "indexed", "slices");
         do {
-            try {
-                final long offset = stream.position();
-                container = ContainerIO.readContainer(cramHeader.getVersion(), stream);
-                if (container == null || container.isEOF()) {
-                    break;
+            container = ContainerIO.readContainer(cramHeader.getVersion(), stream);
+            if (container == null || container.isEOF()) {
+                break;
+            }
+
+            indexer.processContainer(container, validationStringency);
+
+            if (null != log) {
+                String sequenceName;
+                final ReferenceContext containerContext = container.getReferenceContext();
+                switch (containerContext.getType()) {
+                    case UNMAPPED_UNPLACED_TYPE:
+                        sequenceName = "?";
+                        break;
+                    case MULTIPLE_REFERENCE_TYPE:
+                        sequenceName = "???";
+                        break;
+                    default:
+                        sequenceName = cramHeader.getSamFileHeader().getSequence(containerContext.getSequenceId()).getSequenceName();
+                        break;
                 }
-
-                container.setByteOffset(offset);
-
-                indexer.processContainer(container, validationStringency);
-
-                if (null != log) {
-                    String sequenceName;
-                    final ReferenceContext containerContext = container.getReferenceContext();
-                    switch (containerContext.getType()) {
-                        case UNMAPPED_UNPLACED_TYPE:
-                            sequenceName = "?";
-                            break;
-                        case MULTIPLE_REFERENCE_TYPE:
-                            sequenceName = "???";
-                            break;
-                        default:
-                            sequenceName = cramHeader.getSamFileHeader().getSequence(containerContext.getSequenceId()).getSequenceName();
-                            break;
-                    }
-                    progressLogger.record(sequenceName, container.alignmentStart);
-                }
-
-            } catch (final IOException e) {
-                throw new RuntimeException("Failed to read cram container", e);
+                progressLogger.record(sequenceName, container.alignmentStart);
             }
 
         } while (!container.isEOF());

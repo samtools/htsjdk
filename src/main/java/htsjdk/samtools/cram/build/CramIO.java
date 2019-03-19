@@ -24,14 +24,12 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.ref.ReferenceContext;
+import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.block.Block;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
-import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -215,7 +213,14 @@ public class CramIO {
         try {
             final CramHeader header = readFormatDefinition(inputStream);
 
-            final SAMFileHeader samFileHeader = readSAMFileHeader(header.getVersion(), inputStream, new String(header.getId()));
+            // the location of the stream pointer after the CramHeader has been read
+            final long containerByteOffset = CramIO.DEFINITION_LENGTH;
+
+            final SAMFileHeader samFileHeader = readSAMFileHeader(
+                    header.getVersion(),
+                    inputStream,
+                    new String(header.getId()),
+                    containerByteOffset);
 
             return new CramHeader(header.getVersion(), new String(header.getId()), samFileHeader);
         } catch (final IOException e) {
@@ -262,7 +267,6 @@ public class CramIO {
         container.blockCount = 1;
         container.blocks = new Block[]{block};
         container.landmarks = new int[0];
-        container.slices = new Slice[0];
         container.bases = 0;
         container.globalRecordCounter = 0;
         container.nofRecords = 0;
@@ -271,7 +275,7 @@ public class CramIO {
         block.write(major, byteArrayOutputStream);
         container.containerByteSize = byteArrayOutputStream.size();
 
-        final int containerHeaderByteSize = ContainerIO.writeContainerHeader(major, container, os);
+        final int containerHeaderByteSize = ContainerHeaderIO.writeContainerHeader(major, container, os);
         try {
             os.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
         } catch (final IOException e) {
@@ -281,8 +285,11 @@ public class CramIO {
         return containerHeaderByteSize + byteArrayOutputStream.size();
     }
 
-    private static SAMFileHeader readSAMFileHeader(final Version version, InputStream inputStream, final String id) {
-        final Container container = ContainerIO.readContainerHeader(version.major, inputStream);
+    private static SAMFileHeader readSAMFileHeader(final Version version,
+                                                   final InputStream inputStream,
+                                                   final String id,
+                                                   final long containerByteOffset) {
+        final Container container = ContainerHeaderIO.readContainerHeader(version.major, inputStream, containerByteOffset);
         final Block block;
         {
             if (version.compatibleWith(CramVersions.CRAM_v3)) {
@@ -293,36 +300,39 @@ public class CramIO {
             } else {
                 /*
                  * pending issue: container.containerByteSize inputStream 2 bytes shorter
-				 * then needed in the v21 test cram files.
-				 */
+                 * than needed in the v21 test cram files.
+                 */
                 block = Block.read(version.major, inputStream);
             }
         }
 
-        inputStream = new ByteArrayInputStream(block.getUncompressedContent());
+        byte[] bytes;
+        try (final InputStream blockStream = new ByteArrayInputStream(block.getUncompressedContent())) {
 
-        final ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        try {
+            final ByteBuffer buffer = ByteBuffer.allocate(4);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
+
             for (int i = 0; i < 4; i++)
-                buffer.put((byte) inputStream.read());
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-        buffer.flip();
-        final int size = buffer.asIntBuffer().get();
+                buffer.put((byte) blockStream.read());
 
-        final DataInputStream dataInputStream = new DataInputStream(inputStream);
-        final byte[] bytes = new byte[size];
-        try {
+            buffer.flip();
+            final int size = buffer.asIntBuffer().get();
+
+            final DataInputStream dataInputStream = new DataInputStream(blockStream);
+            bytes = new byte[size];
             dataInputStream.readFully(bytes);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
 
-        final BufferedLineReader bufferedLineReader = new BufferedLineReader(new ByteArrayInputStream(bytes));
         final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-        return codec.decode(bufferedLineReader, id);
+
+        try (final InputStream byteStream = new ByteArrayInputStream(bytes);
+             final LineReader lineReader = new BufferedLineReader(byteStream)) {
+            return codec.decode(lineReader, id);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     /**
@@ -338,7 +348,7 @@ public class CramIO {
         try (final CountingInputStream countingInputStream = new CountingInputStream(new FileInputStream(file));
              final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw")) {
             final CramHeader header = readFormatDefinition(countingInputStream);
-            final Container c = ContainerIO.readContainerHeader(header.getVersion().major, countingInputStream);
+            final Container c = ContainerHeaderIO.readContainerHeader(header.getVersion().major, countingInputStream);
             final long pos = countingInputStream.getCount();
             countingInputStream.close();
 

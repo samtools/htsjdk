@@ -65,11 +65,26 @@ public class Container {
     public CompressionHeader compressionHeader;
 
     // slices found in the container:
-    public Slice[] slices;
+    private Slice[] slices;
 
     // this Container's byte offset from the the start of the stream.
     // Used for indexing.
     private long byteOffset;
+
+    public Slice[] getSlices() {
+        return slices;
+    }
+
+    /**
+     * Assign {@link Slice}s to this Container.
+     * Also distribute the Container's byte offset to the {@link Slice}s, for indexing.
+     * @param slices the Slices belonging to this container
+     * @param byteOffset the byte location in the stream where this Container begins
+     */
+    private void setSlices(final Slice[] slices, final long byteOffset) {
+        this.slices = slices;
+        setByteOffsetInSlices(byteOffset);
+    }
 
     public long getByteOffset() {
         return byteOffset;
@@ -77,16 +92,26 @@ public class Container {
 
     /**
      * Set this Container's byte offset from the the start of the stream.
-     * Also distribute this value to the Container's constituent {@link Slice}s.
-     * For indexing.
+     * Also distribute this value to the Container's constituent {@link Slice}s, if present.
+     *
      * @param byteOffset the byte location in the stream where this Container begins
      */
-    public void setByteOffset(final long byteOffset) {
+    void setByteOffset(final long byteOffset) {
         this.byteOffset = byteOffset;
         if (slices != null) {
-            for (final Slice slice : slices) {
-                slice.containerByteOffset = byteOffset;
-            }
+            setByteOffsetInSlices(byteOffset);
+        }
+    }
+
+    /**
+     * Distribute this Container's byte offset to the Container's constituent {@link Slice}s.
+     * For indexing.
+     *
+     * @param byteOffset the byte location in the stream where this Container begins
+     */
+    private void setByteOffsetInSlices(final long byteOffset) {
+        for (final Slice slice : slices) {
+            slice.containerByteOffset = byteOffset;
         }
     }
 
@@ -123,10 +148,13 @@ public class Container {
      *
      * @param containerSlices the constituent Slices of the Container
      * @param compressionHeader the CRAM {@link CompressionHeader} to assign to the Container
+     * @param containerByteOffset the Container's byte offset from the start of the stream
      * @throws CRAMException for invalid Container states
      * @return the initialized Container
      */
-    public static Container initializeFromSlices(final List<Slice> containerSlices, final CompressionHeader compressionHeader) {
+    public static Container initializeFromSlices(final List<Slice> containerSlices,
+                                                 final CompressionHeader compressionHeader,
+                                                 final long containerByteOffset) {
         final Set<ReferenceContext> sliceRefContexts = containerSlices.stream()
                 .map(Slice::getReferenceContext)
                 .collect(Collectors.toSet());
@@ -141,7 +169,7 @@ public class Container {
         final ReferenceContext commonRefContext = sliceRefContexts.iterator().next();
 
         final Container container = new Container(commonRefContext);
-        container.slices = containerSlices.toArray(new Slice[0]);
+        container.setSlices(containerSlices.toArray(new Slice[0]), containerByteOffset);
         container.compressionHeader = compressionHeader;
 
         if (commonRefContext.isMappedSingleRef()) {
@@ -162,6 +190,7 @@ public class Container {
             container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
         }
 
+        container.setByteOffset(containerByteOffset);
         return container;
     }
 
@@ -169,10 +198,9 @@ public class Container {
      * Assign this Container's slices, and populate those slices'
      * indexing parameters from this Container
      * @param slicesToPopulate the slices to populate
+     * @param containerByteOffset the Container's byte offset from the start of the stream
      */
-    void populateSlicesAndIndexingParameters(final ArrayList<Slice> slicesToPopulate) {
-
-        slices = new Slice[slicesToPopulate.size()];
+    void populateSlicesAndIndexingParameters(final ArrayList<Slice> slicesToPopulate, final long containerByteOffset) {
 
         if (slicesToPopulate.isEmpty()) {
             return;
@@ -184,7 +212,6 @@ public class Container {
             slice.index = i;
             slice.byteOffsetFromContainer = landmarks[i];
             slice.byteSize = landmarks[i + 1] - slice.byteOffsetFromContainer;
-            slices[i] = slice;
         }
 
         final Slice lastSlice = slicesToPopulate.get(lastSliceIndex);
@@ -198,7 +225,7 @@ public class Container {
         final int containerTotalByteSize = containerHeaderSize + containerByteSize;
         lastSlice.byteSize = containerTotalByteSize - lastSlice.byteOffsetFromContainer;
 
-        this.slices[lastSliceIndex] = lastSlice;
+        setSlices(slicesToPopulate.toArray(new Slice[0]), containerByteOffset);
     }
 
     /**
@@ -210,7 +237,7 @@ public class Container {
             return Collections.emptyList();
         }
 
-        return Arrays.stream(slices)
+        return Arrays.stream(getSlices())
                 .map(s -> s.getCRAIEntries(compressionHeader))
                 .flatMap(List::stream)
                 .sorted()
@@ -222,17 +249,17 @@ public class Container {
         return String
                 .format("seqID=%s, start=%d, span=%d, records=%d, slices=%d, blocks=%d.",
                         referenceContext, alignmentStart, alignmentSpan, nofRecords,
-                        slices == null ? -1 : slices.length, blockCount);
+                        getSlices() == null ? -1 : getSlices().length, blockCount);
     }
 
     public boolean isEOF() {
         final boolean v3 = containerByteSize == 15 && referenceContext.isUnmappedUnplaced()
                 && alignmentStart == 4542278 && blockCount == 1
-                && nofRecords == 0 && (slices == null || slices.length == 0);
+                && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
 
         final boolean v2 = containerByteSize == 11 && referenceContext.isUnmappedUnplaced()
                 && alignmentStart == 4542278 && blockCount == 1
-                && nofRecords == 0 && (slices == null || slices.length == 0);
+                && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
 
         return v3 || v2;
     }
@@ -247,7 +274,7 @@ public class Container {
      */
     public Map<ReferenceContext, AlignmentSpan> getSpans(final ValidationStringency validationStringency) {
         final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
-        for (final Slice slice : slices) {
+        for (final Slice slice : getSlices()) {
             switch (slice.getReferenceContext().getType()) {
                 case UNMAPPED_UNPLACED_TYPE:
                     containerSpanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);

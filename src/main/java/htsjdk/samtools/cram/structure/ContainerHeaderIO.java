@@ -18,12 +18,9 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.io.CRC32OutputStream;
-import htsjdk.samtools.cram.io.CramIntArray;
-import htsjdk.samtools.cram.io.CramInt;
-import htsjdk.samtools.cram.io.ITF8;
-import htsjdk.samtools.cram.io.LTF8;
+import htsjdk.samtools.cram.io.*;
 import htsjdk.samtools.cram.ref.ReferenceContext;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
@@ -31,8 +28,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-class ContainerHeaderIO {
-    public static Container readContainerHeader(final int major, final InputStream inputStream) {
+public class ContainerHeaderIO {
+    /**
+     * Reads container header only from an {@link InputStream}.
+     *
+     * @param major the CRAM version to assume
+     * @param inputStream the input stream to read from
+     * @param containerByteOffset the byte offset from the start of the stream
+     * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
+     */
+    public static Container readContainerHeader(final int major,
+                                                final InputStream inputStream,
+                                                final long containerByteOffset) {
         final byte[] peek = new byte[4];
         try {
             int character = inputStream.read();
@@ -41,7 +48,7 @@ class ContainerHeaderIO {
                 final byte[] eofMarker = major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER;
 
                 try (final ByteArrayInputStream eofBAIS = new ByteArrayInputStream(eofMarker)) {
-                    return readContainerHeader(majorVersionForEOF, eofBAIS);
+                    return readContainerHeader(majorVersionForEOF, eofBAIS, containerByteOffset);
                 }
             }
             peek[0] = (byte) character;
@@ -70,7 +77,40 @@ class ContainerHeaderIO {
         if (major >= 3)
             container.checksum = CramInt.readInt32(inputStream);
 
+        container.setByteOffset(containerByteOffset);
         return container;
+    }
+
+    // convenience methods for SeekableStream and CountingInputStream
+    // TODO: merge these two classes?
+
+    /**
+     * Reads container header only from a {@link SeekableStream}.
+     *
+     * @param major the CRAM version to assume
+     * @param seekableStream the seekable input stream to read from
+     * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
+     */
+    public static Container readContainerHeader(final int major, final SeekableStream seekableStream) {
+        try {
+            final long containerByteOffset = seekableStream.position();
+            return readContainerHeader(major, seekableStream, containerByteOffset);
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /**
+     * Reads container header only from a {@link CountingInputStream}.
+     *
+     * @param major the CRAM version to assume
+     * @param countingStream the counting input stream to read from
+     * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
+     */
+    public static Container readContainerHeader(final int major, final CountingInputStream countingStream) {
+        final long containerByteOffset = countingStream.getCount();
+        return readContainerHeader(major, countingStream, containerByteOffset);
     }
 
     /**

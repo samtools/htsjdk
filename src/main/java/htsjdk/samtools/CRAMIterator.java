@@ -177,8 +177,7 @@ public class CRAMIterator implements SAMRecordIterator {
                 }
         }
 
-        for (int i = 0; i < container.slices.length; i++) {
-            final Slice slice = container.slices[i];
+        for (final Slice slice : container.getSlices()) {
             final ReferenceContext sliceContext = slice.getReferenceContext();
 
             if (! sliceContext.isMappedSingleRef())

@@ -37,7 +37,13 @@ public class ContainerFactory {
         this.recordsPerSlice = recordsPerSlice;
     }
 
-    public Container buildContainer(final List<CramCompressionRecord> records) {
+    /**
+     * Build a Container (and its constituent Slices) from {@link CramCompressionRecord}s
+     * @param records the records used to build the Container
+     * @param containerByteOffset the Container's byte offset from the start of the stream
+     * @return the container built from these records
+     */
+    public Container buildContainer(final List<CramCompressionRecord> records, final long containerByteOffset) {
         // sets header APDelta
         final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
         final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(records, null, coordinateSorted);
@@ -58,7 +64,7 @@ public class ContainerFactory {
             slices.add(slice);
         }
 
-        final Container container = Container.initializeFromSlices(slices, compressionHeader);
+        final Container container = Container.initializeFromSlices(slices, compressionHeader, containerByteOffset);
         container.nofRecords = records.size();
         container.globalRecordCounter = lastGlobalRecordCounter;
         container.blockCount = 0;

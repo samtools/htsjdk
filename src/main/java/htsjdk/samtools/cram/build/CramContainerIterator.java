@@ -17,20 +17,14 @@ public class CramContainerIterator implements Iterator<Container> {
     private CountingInputStream countingInputStream;
     private Container nextContainer;
     private boolean eof = false;
-    private long offset = 0;
 
     public CramContainerIterator(final InputStream inputStream) {
         this.countingInputStream = new CountingInputStream(inputStream);
         cramHeader = CramIO.readCramHeader(countingInputStream);
-        this.offset = countingInputStream.getCount();
     }
 
-    void readNextContainer() {
+    private void readNextContainer() {
         nextContainer = containerFromStream(cramHeader.getVersion(), countingInputStream);
-        final long containerSizeInBytes = countingInputStream.getCount() - offset;
-
-        nextContainer.setByteOffset(offset);
-        offset += containerSizeInBytes;
 
         if (nextContainer.isEOF()) {
             eof = true;
@@ -40,8 +34,11 @@ public class CramContainerIterator implements Iterator<Container> {
 
     /**
      * Consume the entirety of the next container from the stream.
-     * @param cramVersion
-     * @param countingStream
+     *
+     * @see CramContainerHeaderIterator#containerFromStream(Version, CountingInputStream)
+     *
+     * @param cramVersion the expected CRAM version of the stream
+     * @param countingStream the {@link CountingInputStream} to read from
      * @return The next Container from the stream.
      */
     protected Container containerFromStream(final Version cramVersion, final CountingInputStream countingStream) {

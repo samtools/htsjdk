@@ -74,8 +74,9 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final int expectedMapped = 1;
         final int expectedUnmappedPlaced = 2;
 
-        final Container container1 = FACTORY.buildContainer(CRAMStructureTestUtil.getSingleRefRecords(RECORDS_PER_SLICE, refId1));
-        final Container container2 = FACTORY.buildContainer(CRAMStructureTestUtil.getSingleRefRecords(RECORDS_PER_SLICE, refId2));
+        final long dummyByteOffset = 0;
+        final Container container1 = FACTORY.buildContainer(CRAMStructureTestUtil.getSingleRefRecords(RECORDS_PER_SLICE, refId1), dummyByteOffset);
+        final Container container2 = FACTORY.buildContainer(CRAMStructureTestUtil.getSingleRefRecords(RECORDS_PER_SLICE, refId2), dummyByteOffset);
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(container1, container2));
 
@@ -116,10 +117,11 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final List<CramCompressionRecord> records = CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(RECORDS_PER_SLICE * 2);
 
-        final Container container1 = FACTORY.buildContainer(records.subList(0, RECORDS_PER_SLICE));
+        final long dummyByteOffset = 0;
+        final Container container1 = FACTORY.buildContainer(records.subList(0, RECORDS_PER_SLICE), dummyByteOffset);
         Assert.assertTrue(container1.getReferenceContext().isMultiRef());
 
-        final Container container2 = FACTORY.buildContainer(records.subList(RECORDS_PER_SLICE, RECORDS_PER_SLICE * 2));
+        final Container container2 = FACTORY.buildContainer(records.subList(RECORDS_PER_SLICE, RECORDS_PER_SLICE * 2), dummyByteOffset);
         Assert.assertTrue(container2.getReferenceContext().isMultiRef());
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(container1, container2));
@@ -144,7 +146,8 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
     }
 
     public void unplacedContainers(final IndexContainers indexMethod) {
-        final Container unplacedContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getUnplacedRecords(RECORDS_PER_SLICE));
+        final long dummyByteOffset = 0;
+        final Container unplacedContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getUnplacedRecords(RECORDS_PER_SLICE), dummyByteOffset);
         Assert.assertTrue(unplacedContainer.getReferenceContext().isUnmappedUnplaced());
 
         // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
@@ -153,12 +156,16 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         // these will be considered unplaced by CRAMBAIIndexer
 
-        final Container halfUnplacedNoStartContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(RECORDS_PER_SLICE, 0));
+        final Container halfUnplacedNoStartContainer = FACTORY.buildContainer(
+                CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(RECORDS_PER_SLICE, 0),
+                dummyByteOffset);
         Assert.assertTrue(halfUnplacedNoStartContainer.getReferenceContext().isUnmappedUnplaced());
 
         // these will NOT be considered unplaced by CRAMBAIIndexer
 
-        final Container halfUnplacedNoRefContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(RECORDS_PER_SLICE));
+        final Container halfUnplacedNoRefContainer = FACTORY.buildContainer(
+                CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(RECORDS_PER_SLICE),
+                dummyByteOffset);
         Assert.assertTrue(halfUnplacedNoRefContainer.getReferenceContext().isUnmappedUnplaced());
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(
@@ -221,7 +228,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
             final CRAMBAIIndexer indexer = new CRAMBAIIndexer(indexBAOS, SAM_FILE_HEADER);
             for (final Container container : containers) {
-                indexer.processAsSingleReferenceSlice(container.slices[0]);
+                indexer.processAsSingleReferenceSlice(container.getSlices()[0]);
             }
             indexer.finish();
 

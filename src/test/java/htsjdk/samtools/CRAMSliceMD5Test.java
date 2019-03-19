@@ -3,6 +3,7 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
@@ -30,10 +31,14 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         final CramTestCase test = new CramTestCase();
 
         // read the CRAM:
-        final ByteArrayInputStream bais = new ByteArrayInputStream(test.cramData);
-        final CramHeader cramHeader = CramIO.readCramHeader(bais);
-        final Container container = ContainerIO.readContainer(cramHeader.getVersion(), bais);
-        final Slice slice = container.slices[0];
+        Container container;
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(test.cramData);
+             final CountingInputStream inputStream = new CountingInputStream(bais)) {
+            final CramHeader cramHeader = CramIO.readCramHeader(inputStream);
+            container = ContainerIO.readContainer(cramHeader.getVersion(), inputStream);
+        }
+
+        final Slice slice = container.getSlices()[0];
         Assert.assertEquals(slice.alignmentStart, 1);
         Assert.assertEquals(slice.alignmentSpan, test.referenceBases.length);
         // check the slice MD5 is the MD5 of upper-cased ref bases:

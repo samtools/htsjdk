@@ -93,27 +93,19 @@ public class CRAMCRAIIndexer {
      * @param craiStream stream for output index
      */
     public static void writeIndex(final SeekableStream cramStream, OutputStream craiStream) {
-        try {
-            final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
-            final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, cramHeader.getSamFileHeader());
-            final Version cramVersion = cramHeader.getVersion();
+        final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
+        final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, cramHeader.getSamFileHeader());
+        final Version cramVersion = cramHeader.getVersion();
 
-            // get the first container and its offset
-            long offset = cramStream.position();
-            Container container = ContainerIO.readContainer(cramVersion, cramStream);
+        // get the first container
+        Container container = ContainerIO.readContainer(cramVersion, cramStream);
 
-            while (container != null && !container.isEOF()) {
-                container.setByteOffset(offset);
-                indexer.processContainer(container);
-                offset = cramStream.position();
-                container = ContainerIO.readContainer(cramVersion, cramStream);
-            }
-
-            indexer.finish();
+        while (container != null && !container.isEOF()) {
+            indexer.processContainer(container);
+            container = ContainerIO.readContainer(cramVersion, cramStream);
         }
-        catch (IOException e) {
-            throw new RuntimeIOException("Error writing CRAI index to output stream");
-        }
+
+        indexer.finish();
     }
 
     /**
