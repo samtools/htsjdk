@@ -505,7 +505,7 @@ public class SortingCollection<T> implements Iterable<T> {
         MergingIterator() {
             this.queue = new TreeSet<>(new PeekFileRecordIteratorComparator());
             int n = 0;
-            log.info(String.format("Creating merging iterator from %d files", files.size()));
+            log.debug(String.format("Creating merging iterator from %d files", files.size()));
             int suggestedBufferSize = checkMemoryAndAdjustBuffer(files.size());
             for (final Path f : files) {
                 final FileRecordIterator it = new FileRecordIterator(f, suggestedBufferSize);
