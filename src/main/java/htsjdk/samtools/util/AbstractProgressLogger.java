@@ -25,7 +25,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private int lastPos = 0;
     private String lastReadName = null;
     private long countNonIncreasing = 0;
-    final private long PRINT_READ_NAME_THRESHOLD = 1000;
+    final static private long PRINT_READ_NAME_THRESHOLD = 1000;
 
     /**
      * Construct an AbstractProgressLogger.
@@ -161,7 +161,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     }
 
     /** Left pads a string until it is at least the given length. */
-    protected static String pad(final String in, final int length) {
+    static String pad(final String in, final int length) {
         final StringBuilder inBuilder = new StringBuilder(Math.max(length, in.length()));
         while (inBuilder.length() < length - in.length()) {
             inBuilder.append(" ");
