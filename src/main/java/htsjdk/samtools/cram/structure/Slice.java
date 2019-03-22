@@ -120,30 +120,42 @@ public class Slice {
     }
 
     public void baiIndexInitializationCheck() {
+        final StringBuilder error = new StringBuilder();
+
         if (offset == UNINITIALIZED_INDEXING_PARAMETER) {
-            throw new CRAMException("Cannot index this Slice for BAI because its offset is unknown.");
+            error.append("Cannot index this Slice for BAI because its offset is unknown.").append(System.lineSeparator());
         }
 
         if (containerOffset == UNINITIALIZED_INDEXING_PARAMETER) {
-            throw new CRAMException("Cannot index this Slice for BAI because its containerOffset is unknown.");
+            error.append("Cannot index this Slice for BAI because its containerOffset is unknown.").append(System.lineSeparator());
         }
 
         if (index == UNINITIALIZED_INDEXING_PARAMETER) {
-            throw new CRAMException("Cannot index this Slice for BAI because its index is unknown.");
+            error.append("Cannot index this Slice for BAI because its index is unknown.").append(System.lineSeparator());
+        }
+
+        if (error.length() > 0) {
+            throw new CRAMException(error.toString());
         }
     }
 
     public void craiIndexInitializationCheck() {
+        final StringBuilder error = new StringBuilder();
+
         if (offset == UNINITIALIZED_INDEXING_PARAMETER) {
-            throw new CRAMException("Cannot index this Slice for CRAI because its offset is unknown.");
+            error.append("Cannot index this Slice for CRAI because its offset is unknown.").append(System.lineSeparator());
         }
 
         if (containerOffset == UNINITIALIZED_INDEXING_PARAMETER) {
-            throw new CRAMException("Cannot index this Slice for CRAI because its containerOffset is unknown.");
+            error.append("Cannot index this Slice for CRAI because its containerOffset is unknown.").append(System.lineSeparator());
         }
 
         if (size == UNINITIALIZED_INDEXING_PARAMETER) {
-            throw new CRAMException("Cannot index this Slice for CRAI because its size is unknown.");
+            error.append("Cannot index this Slice for CRAI because its size is unknown.").append(System.lineSeparator());
+        }
+
+        if (error.length() > 0) {
+            throw new CRAMException(error.toString());
         }
     }
 
