@@ -176,5 +176,4 @@ class FastqReaderWriterTest extends UnitSpec {
     an[Exception] shouldBe thrownBy { new FastqReader(noSeqHeader).iterator().toSeq }
     an[Exception] shouldBe thrownBy { new FastqReader(noQualHeader).iterator().toSeq }
   }
-
 }
