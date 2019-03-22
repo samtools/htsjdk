@@ -38,7 +38,8 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.build.ContainerParser;
+import htsjdk.samtools.cram.CRAIEntry;
+import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
@@ -53,6 +54,7 @@ import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
@@ -61,11 +63,18 @@ import java.util.TreeSet;
 
 /**
  * Class for both constructing BAM index content and writing it out.
+ *
  * There are two usage patterns:
- * 1) Building a bam index from an existing cram file
- * 2) Building a bam index while building the cram file
- * In both cases, processAlignment is called for each cram slice and
- * finish() is called at the end.
+ * 1) Building a bam index (BAI) while building the CRAM file
+ * 2) Building a bam index (BAI) from an existing CRAI file
+ *
+ * 1) is driven by {@link CRAMContainerStreamWriter} and proceeds by calling {@link CRAMBAIIndexer#processContainer}
+ * after each {@link Container} is built, and {@link CRAMBAIIndexer#finish()} is called at the end.
+ *
+ * 2) is driven by {@link CRAIIndex#openCraiFileAsBaiStream(InputStream, SAMSequenceDictionary)}
+ * and proceeds by processing {@link CRAIEntry} elements obtained from
+ * {@link CRAMCRAIIndexer#readIndex(InputStream)}.  {@link CRAMBAIIndexer#processAsSingleReferenceSlice(Slice)}
+ * is called on each {@link CRAIEntry} and {@link CRAMBAIIndexer#finish()} is called at the end.
  */
 public class CRAMBAIIndexer {
 
@@ -78,7 +87,7 @@ public class CRAMBAIIndexer {
     private int currentReference = 0;
 
     // content is built up from the input bam file using this
-    private final BAMIndexBuilder indexBuilder;
+    private final CRAMBAIIndexBuilder indexBuilder;
 
     /**
      * Create a CRAM indexer that writes BAI to a file.
@@ -91,7 +100,7 @@ public class CRAMBAIIndexer {
             throw new SAMException("CRAM file must be coordinate-sorted for indexing.");
         }
         numReferences = fileHeader.getSequenceDictionary().size();
-        indexBuilder = new BAMIndexBuilder(fileHeader);
+        indexBuilder = new CRAMBAIIndexBuilder(fileHeader);
         outputWriter = new BinaryBAMIndexWriter(numReferences, output);
     }
 
@@ -106,7 +115,7 @@ public class CRAMBAIIndexer {
             throw new SAMException("CRAM file must be coordinate-sorted for indexing.");
         }
         numReferences = fileHeader.getSequenceDictionary().size();
-        indexBuilder = new BAMIndexBuilder(fileHeader);
+        indexBuilder = new CRAMBAIIndexBuilder(fileHeader);
         outputWriter = new BinaryBAMIndexWriter(numReferences, output);
     }
 
@@ -183,6 +192,9 @@ public class CRAMBAIIndexer {
      * @throws htsjdk.samtools.SAMException if slice refers to multiple reference sequences.
      */
     public void processAsSingleReferenceSlice(final Slice slice) {
+        // validate that this Slice is ready to be indexed
+        slice.baiIndexInitializationCheck();
+
         final ReferenceContext sliceContext = slice.getReferenceContext();
         if (sliceContext.isMultiRef()) {
             throw new SAMException("Expecting a single reference or unmapped slice.");
@@ -296,8 +308,11 @@ public class CRAMBAIIndexer {
      * One instance is used to construct an entire index.
      * processAlignment is called for each alignment until a new reference is encountered, then
      * processReference is called when all records for the reference have been processed.
+     *
+     * TODO: this was copied from {@link htsjdk.samtools.BAMIndexer.BAMIndexBuilder}
+     * so perhaps they should be merged back together
      */
-    private class BAMIndexBuilder {
+    private class CRAMBAIIndexBuilder {
 
         private final SAMFileHeader bamHeader;
 
@@ -315,7 +330,7 @@ public class CRAMBAIIndexer {
         /**
          * @param header SAMFileHeader used for reference name (in index stats) and for max bin number
          */
-        private BAMIndexBuilder(final SAMFileHeader header) {
+        private CRAMBAIIndexBuilder(final SAMFileHeader header) {
             this.bamHeader = header;
         }
 
