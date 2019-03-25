@@ -2,10 +2,7 @@ package htsjdk.samtools.reference;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
-import htsjdk.samtools.util.CollectionUtil;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.samtools.util.TestUtil;
+import htsjdk.samtools.util.*;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -195,6 +192,18 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         }
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testAddingGziIndexToNonBCFFile() throws IOException {
+        final Path testOutput = File.createTempFile("fwr-test", ".fasta").toPath();
+        final Path testOutputGZI = File.createTempFile("fwr-test", ".fasta.gzi").toPath();
+        IOUtil.deleteOnExit(testOutput);
+        Files.delete(testOutput);
+
+        try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).setGziIndexFile(testOutputGZI).build()) {
+            writer.startSequence(testOutput.toString());
+        }
+    }
+
     @Test(expectedExceptions = IllegalArgumentException.class, dataProvider = "invalidDescriptionData")
     public void testAddingInvalidDescription(final String invalidDescription) throws IOException {
         final Path testOutput = File.createTempFile("fwr-test", ".fasta").toPath();
@@ -229,18 +238,20 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
     @Test(dataProvider = "testData")
     public void testWriter(final SAMSequenceDictionary dictionary, final boolean withIndex, final boolean withDictionary,
                            final boolean withDescriptions, final int defaultBpl,
-                           final int minBpl, final int maxBpl, final int seed)
+                           final int minBpl, final int maxBpl, final int seed, final boolean gzipped)
             throws IOException, GeneralSecurityException, URISyntaxException {
         final Map<String, byte[]> bases = new LinkedHashMap<>(dictionary.getSequences().size());
         final Map<String, Integer> bpl = new LinkedHashMap<>(dictionary.getSequences().size());
         final Random rdn = new Random(seed);
         generateRandomBasesAndBpls(dictionary, minBpl, maxBpl, bases, bpl, rdn);
-        final Path fastaFile = File.createTempFile("fwr-test", ".fa").toPath();
+        final Path fastaFile = File.createTempFile("fwr-test", gzipped ? ".fa.gz" :".fa").toPath();
         IOUtil.deleteOnExit(fastaFile);
         Files.delete(fastaFile);
 
         final Path fastaIndexFile = fastaFile.resolveSibling(fastaFile.getFileName().toString() + ReferenceSequenceFileFactory.FASTA_INDEX_EXTENSION);
+        final Path gzipIndexFile = GZIIndex.resolveIndexNameForBgzipFile(fastaFile);
         final Path dictFile = fastaFile.resolveSibling(fastaFile.getFileName().toString().replaceAll("\\.fa", ".dict"));
+        IOUtil.deleteOnExit(gzipIndexFile);
         IOUtil.deleteOnExit(fastaIndexFile);
         IOUtil.deleteOnExit(dictFile);
 
@@ -253,9 +264,10 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
             writeReference(writer, withDescriptions, rdn, dictionary, bases, bpl);
         }
 
-        assertOutput(fastaFile, withIndex, withDictionary, withDescriptions, dictionary, defaultBpl, bases, bpl);
+        assertOutput(fastaFile, withIndex, withDictionary, withDescriptions, dictionary, defaultBpl, bases, bpl, gzipped);
         Assert.assertTrue(Files.deleteIfExists(fastaFile));
         Assert.assertEquals(Files.deleteIfExists(fastaIndexFile), withIndex);
+        Assert.assertEquals(Files.deleteIfExists(gzipIndexFile), gzipped);
         Assert.assertEquals(Files.deleteIfExists(dictFile), withDictionary);
     }
 
@@ -504,7 +516,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
     private void assertOutput(final Path path, final boolean mustHaveIndex, final boolean mustHaveDictionary,
                               final boolean withDescriptions, final SAMSequenceDictionary dictionary, final int defaultBpl,
-                              final Map<String, byte[]> bases, final Map<String, Integer> basesPerLine)
+                              final Map<String, byte[]> bases, final Map<String, Integer> basesPerLine, final boolean gzipped)
             throws GeneralSecurityException, IOException, URISyntaxException {
         assertFastaContent(path, withDescriptions, dictionary, defaultBpl, bases, basesPerLine);
         if (mustHaveDictionary) {
@@ -518,6 +530,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
     private void assertFastaContent(final Path path, final boolean withDescriptions, final SAMSequenceDictionary dictionary, final int defaultBpl,
                                     final Map<String, byte[]> bases, final Map<String, Integer> basesPerLine)
             throws IOException {
+        ReferenceSequenceFileFactory.getReferenceSequenceFile(path)
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(path.getFileSystem().provider().newInputStream(path)))) {
             for (final SAMSequenceRecord sequence : dictionary.getSequences()) {
                 final String description = String.format("index=%d\tlength=%d",
@@ -600,6 +613,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         final int[] testBpls = new int[]{-1, FastaReferenceWriter.DEFAULT_BASES_PER_LINE, 1, 100, 51, 63};
         final boolean[] testWithDescriptions = new boolean[]{true, false};
         final boolean[] testWithIndex = new boolean[]{true, false};
+        final boolean[] testWithGzipped = new boolean[]{true, false};
         final boolean[] testWithDictionary = new boolean[]{true, false};
         final int[] testSeeds = new int[]{31, 113, 73};
         final List<Object[]> result = new ArrayList<>();
@@ -609,7 +623,8 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
                     for (final boolean withDescriptions : testWithDescriptions) {
                         for (final int bpl : testBpls) {
                             for (final int seed : testSeeds) {
-                                result.add(new Object[]{dictionary, withIndex, withDictionary, withDescriptions, bpl, 1, (bpl < 0 ? FastaReferenceWriter.DEFAULT_BASES_PER_LINE : bpl) * 2, seed});
+                                for (final boolean gzipped : testWithGzipped)
+                                result.add(new Object[]{dictionary, withIndex, withDictionary, withDescriptions, bpl, 1, (bpl < 0 ? FastaReferenceWriter.DEFAULT_BASES_PER_LINE : bpl) * 2, seed, gzipped});
                             }
                         }
                     }

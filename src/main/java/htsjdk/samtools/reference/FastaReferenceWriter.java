@@ -122,7 +122,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
     private final CountingOutputStream fastaStream;
 
     /**
-     * Writer for the index file.
+     * Writer for the FAI index file.
      */
     private final Writer indexWriter;
 

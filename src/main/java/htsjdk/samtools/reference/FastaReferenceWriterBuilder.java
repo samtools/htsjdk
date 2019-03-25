@@ -24,6 +24,9 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.GZIIndex;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.BufferedOutputStream;
@@ -47,15 +50,23 @@ import java.nio.file.Path;
  */
 public class FastaReferenceWriterBuilder {
     private Path fastaFile;
+    private boolean gzippedFastaFile = false;
+    private boolean makeGziOutput = true;
     private boolean makeFaiOutput = true;
     private boolean makeDictOutput = true;
     private boolean emitMd5 = true;
     private int basesPerLine = FastaReferenceWriter.DEFAULT_BASES_PER_LINE;
-    private Path indexFile;
+    private Path gziIndexFile;
+    private Path faiIndexFile;
     private Path dictFile;
     private OutputStream fastaOutput;
-    private OutputStream indexOutput;
+    private OutputStream faiIndexOutput;
+    private OutputStream gziIndexOutput;
     private OutputStream dictOutput;
+
+    private static Path defaultGziFile(final boolean makeGziFile, final Path fastaFile) {
+        return makeGziFile ? GZIIndex.resolveIndexNameForBgzipFile(fastaFile) : null;
+    }
 
     private static Path defaultFaiFile(final boolean makeFaiFile, final Path fastaFile) {
         return makeFaiFile ? ReferenceSequenceFileFactory.getFastaIndexFileName(fastaFile) : null;
@@ -83,6 +94,10 @@ public class FastaReferenceWriterBuilder {
     public FastaReferenceWriterBuilder setFastaFile(final Path fastaFile) {
         this.fastaFile = fastaFile;
         this.fastaOutput = null;
+        if (IOUtil.hasGzipFileExtension(fastaFile)) {
+            this.gzippedFastaFile = true;
+            this.makeGziOutput = true;
+        }
         return this;
     }
 
@@ -112,6 +127,19 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
+     * Sets whether to automatically generate a gzi index file from the name of the fasta-file (assuming it is given
+     * a valid BCF as a file). This can only happen if both the index file and output stream are null.
+     *
+     * @param makeGziOutput a boolean flag
+     * @return this builder
+     */
+
+    public FastaReferenceWriterBuilder setMakeGziOutput(final boolean makeGziOutput) {
+        this.makeGziOutput = makeGziOutput;
+        return this;
+    }
+
+    /**
      * Sets the number of bases each line of the fasta file will have.
      * the default is {@value FastaReferenceWriter#DEFAULT_BASES_PER_LINE}
      *
@@ -127,9 +155,18 @@ public class FastaReferenceWriterBuilder {
     /**
      * Set the output index file to write to. Doesn't (currently) support compressed filenames.
      */
-    public FastaReferenceWriterBuilder setIndexFile(final Path indexFile) {
-        this.indexFile = indexFile;
-        this.indexOutput = null;
+    public FastaReferenceWriterBuilder setIndexFile(final Path faiIndexFile) {
+        this.faiIndexFile = faiIndexFile;
+        this.faiIndexOutput = null;
+        return this;
+    }
+
+    /**
+     * Set the output index file to write to. Doesn't (currently) support compressed filenames.
+     */
+    public FastaReferenceWriterBuilder setGziIndexFile(final Path gziIndexFile) {
+        this.gziIndexFile = gziIndexFile;
+        this.gziIndexOutput = null;
         return this;
     }
 
@@ -152,18 +189,31 @@ public class FastaReferenceWriterBuilder {
     public FastaReferenceWriterBuilder setFastaOutput(final OutputStream fastaOutput) {
         this.fastaOutput = fastaOutput;
         this.fastaFile = null;
+        this.makeGziOutput = false;
         return this;
     }
 
     /**
      * Set the output stream for writing the index. Doesn't support compressed streams.
      *
-     * @param indexOutput a  {@link OutputStream} for the output index.
+     * @param faiIndexOutput a  {@link OutputStream} for the output index.
      * @return this builder
      */
-    public FastaReferenceWriterBuilder setIndexOutput(final OutputStream indexOutput) {
-        this.indexOutput = indexOutput;
-        this.indexFile = null;
+    public FastaReferenceWriterBuilder setIndexOutput(final OutputStream faiIndexOutput) {
+        this.faiIndexOutput = faiIndexOutput;
+        this.faiIndexFile = null;
+        return this;
+    }
+
+    /**
+     * Set the output stream for writing the index. Doesn't support compressed streams.
+     *
+     * @param gziIndexOutput a  {@link OutputStream} for the gzi output index.
+     * @return this builder
+     */
+    public FastaReferenceWriterBuilder setGziIndexOutput(final OutputStream gziIndexOutput) {
+        this.gziIndexOutput = gziIndexOutput;
+        this.gziIndexFile = null;
         return this;
     }
 
@@ -198,31 +248,48 @@ public class FastaReferenceWriterBuilder {
             throw new IllegalArgumentException("Both fastaFile and fastaOutput were null. Please set one of them to be non-null.");
         }
         if(fastaFile != null) {
-            if (indexFile == null && indexOutput == null) {
-                indexFile = defaultFaiFile(makeFaiOutput, fastaFile);
-            } else if (indexFile != null && indexOutput != null) {
-                throw new IllegalArgumentException("Both indexFile and indexOutput were non-null. Please set one of them to be null.");
+            if (faiIndexFile == null && faiIndexOutput == null) {
+                faiIndexFile = defaultFaiFile(makeFaiOutput, fastaFile);
+            } else if (faiIndexFile != null && faiIndexOutput != null) {
+                throw new IllegalArgumentException("Both faiIndexFile and faiIndexOutput were non-null. Please set one of them to be null.");
             }
             if (dictFile == null && dictOutput == null) {
                 dictFile = defaultDictFile(makeDictOutput, fastaFile);
             } else if (dictFile != null && dictOutput != null) {
                 throw new IllegalArgumentException("Both dictFile and dictOutput were non-null. Please set one of them to be null.");
             }
+            if (gzippedFastaFile && gziIndexFile == null && gziIndexOutput == null) {
+                gziIndexFile = defaultGziFile(makeGziOutput, fastaFile);
+            } else if (gziIndexFile != null && gziIndexOutput != null) {
+                throw new IllegalArgumentException("Both dictFile and dictOutput were non-null. Please set one of them to be null.");
+            } else if (!gzippedFastaFile && (gziIndexFile != null || gziIndexOutput != null)) {
+                throw new IllegalArgumentException("Requested a gzi index but the output format fasta file was not a block compressed gzip file");
+            }
+                //TODO Except if usere requests fai && gzippedOutputStream && noGZI
+
         }
         // checkout bases-perline first, so that files are not created if failure;
         checkBasesPerLine(basesPerLine);
 
-        if (fastaFile != null) {
-            fastaOutput = new BufferedOutputStream(Files.newOutputStream(fastaFile));
+        if (gziIndexFile != null) {
+            gziIndexOutput = new BufferedOutputStream(Files.newOutputStream(gziIndexFile));
         }
-        if (indexFile != null) {
-            indexOutput = new BufferedOutputStream(Files.newOutputStream(indexFile));
+        if (fastaFile != null) {
+            if (gzippedFastaFile) {
+                fastaOutput = new BlockCompressedOutputStream(Files.newOutputStream(fastaFile), fastaFile);
+                ((BlockCompressedOutputStream) fastaOutput).addIndexer(gziIndexOutput);
+            } else {
+                fastaOutput = new BufferedOutputStream(Files.newOutputStream(fastaFile));
+            }
+        }
+        if (faiIndexFile != null) {
+            faiIndexOutput = new BufferedOutputStream(Files.newOutputStream(faiIndexFile));
         }
         if (dictFile != null) {
             dictOutput = new BufferedOutputStream(Files.newOutputStream(dictFile));
         }
 
-        return new FastaReferenceWriter(basesPerLine, emitMd5, fastaOutput, indexOutput, dictOutput);
+        return new FastaReferenceWriter(basesPerLine, emitMd5, fastaOutput, faiIndexOutput, dictOutput);
     }
 
     /**

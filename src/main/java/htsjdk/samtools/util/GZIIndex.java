@@ -24,8 +24,7 @@
 
 package htsjdk.samtools.util;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ByteChannel;
@@ -225,27 +224,27 @@ public final class GZIIndex {
      *
      * @throws IOException if an I/O error occurs.
      */
-    public void writeIndex(final Path output) throws IOException {
+    void writeIndex(final OutputStream output) throws IOException {
         if (output == null) {
             throw new IllegalArgumentException("null output path");
         }
+        BinaryCodec codec = new BinaryCodec(output);
 
         // the first entry is never written - 0, 0
         final int numberOfBlocksToWrite = entries.size();
 
-        final ByteBuffer buffer = allocateBuffer(numberOfBlocksToWrite, true);
         // put the number of entries
-        buffer.putLong(Integer.toUnsignedLong(numberOfBlocksToWrite));
+        codec.writeLong(Integer.toUnsignedLong(numberOfBlocksToWrite));
 
         // except the first, iterate over all the entries
         for (final IndexEntry entry : entries) {
             // implementation of entry ensures that the offsets are no negative
-            buffer.putLong(entry.getCompressedOffset());
-            buffer.putLong(entry.getUncompressedOffset());
+            codec.writeLong(entry.getCompressedOffset());
+            codec.writeLong(entry.getUncompressedOffset());
         }
 
         // write into the output
-        Files.write(output, buffer.array());
+        codec.close();
     }
 
     /**
@@ -360,7 +359,7 @@ public final class GZIIndex {
     /**
      * Builds a {@link GZIIndex} on the fly from a BGZIP file.
      *
-     * <p>Note that this method does not write the index on disk. Use {@link #writeIndex(Path)} on
+     * <p>Note that this method does not write the index on disk. Use {@link #writeIndex(OutputStream)} on
      * the returned object to save the index.
      *
      * @param bgzipFile the bgzip file.
@@ -389,6 +388,7 @@ public final class GZIIndex {
                     // gets the block address (compressed offset) - requires to parse with the file pointer utils
                     final long compressed = BlockCompressedFilePointerUtil.getBlockAddress(bgzipStream.getFilePointer());
                     // add a new IndexEntry
+                    //TODO unify this with the Indexer code
                     entries.add(new IndexEntry(compressed, currentOffset));
                 }
             }
@@ -413,7 +413,7 @@ public final class GZIIndex {
         }
         // build the index, write and return
         final GZIIndex index = buildIndex(bgzipFile);
-        index.writeIndex(indexFile);
+        index.writeIndex(new BufferedOutputStream(Files.newOutputStream(indexFile)));
         return index;
     }
 
@@ -430,5 +430,35 @@ public final class GZIIndex {
         size += numberOfEntries * 2 * Long.BYTES;
         // creates a byte buffer in little-endian
         return ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     *
+     */
+    public static final class GZIIndexer implements Closeable {
+        private int uncompressedFileOffset = 0;
+        private final OutputStream output;
+        private final List<IndexEntry> entries = new ArrayList<>();
+
+        public GZIIndexer(final OutputStream outputStream) {
+            output = outputStream;
+        }
+
+        public GZIIndexer(final Path outputFile) throws IOException {
+            output = Files.newOutputStream(outputFile);
+        }
+
+        // Adds a new index location given the compressed file offset and a running tally based on the uncompressed block sizes
+        public void addGzipBlock(final long compressedFileileOffset, final long uncompressedBlockSize) {
+            IndexEntry indexEntry = new IndexEntry(compressedFileileOffset, uncompressedFileOffset);
+            uncompressedFileOffset += uncompressedBlockSize;
+            entries.add(indexEntry);
+        }
+
+        @Override
+        public void close() throws IOException {
+            GZIIndex index = new GZIIndex(entries);
+            index.writeIndex(output);
+        }
     }
 }
