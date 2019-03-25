@@ -15,8 +15,8 @@ import org.testng.annotations.Test;
 import java.io.*;
 
 /**
- * Tests for CRAM BAI/CRAI index write/read which use BAMFileIndexTest/index_test.bam file as the source of the test data.
- * The tests will create BAI and CRAI indices of the CRAM file before hand.
+ * Tests for CRAM BAI/CRAI index write/read which uses BAMFileIndexTest/index_test.bam file as the source of the test data.
+ * The tests will create BAI and CRAI indices of the CRAM file beforehand.
  *
  * Partially consolidates duplicate code from {@link CRAMFileBAIIndexTest} and {@link CRAMFileCRAIIndexTest}
  */
