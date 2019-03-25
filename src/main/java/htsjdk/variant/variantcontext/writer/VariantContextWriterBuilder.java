@@ -27,7 +27,11 @@ package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.*;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Md5CalculatingOutputStream;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
@@ -104,7 +108,7 @@ public class VariantContextWriterBuilder {
     public static final EnumSet<Options> DEFAULT_OPTIONS = EnumSet.of(Options.INDEX_ON_THE_FLY);
     public static final EnumSet<Options> NO_OPTIONS = EnumSet.noneOf(Options.class);
     private static final OpenOption[] EMPTY_OPEN_OPTION_ARRAY = new OpenOption[0];
-    private final static Log log = Log.getInstance(VariantContextWriter.class);
+    private static final Log log = Log.getInstance(VariantContextWriter.class);
 
     public enum OutputType {
         UNSPECIFIED,
