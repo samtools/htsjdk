@@ -42,16 +42,16 @@ import htsjdk.tribble.readers.LineIterator;
 
 public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
 
-    static final Log log = Log.getInstance(IntervalListCodec.class);
+    private final Log log = Log.getInstance(IntervalListCodec.class);
 
-    private SAMSequenceDictionary dictionary = null;
+    private SAMSequenceDictionary dictionary;
 
     public IntervalListCodec() {
-        super(Interval.class);
+        this(null);
     }
 
     public IntervalListCodec(final SAMSequenceDictionary dict) {
-        this();
+        super(Interval.class);
         dictionary = dict;
     }
 
