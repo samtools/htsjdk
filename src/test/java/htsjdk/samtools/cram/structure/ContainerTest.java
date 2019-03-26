@@ -10,7 +10,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -212,21 +211,21 @@ public class ContainerTest extends HtsjdkTest {
         final Container nullLandmarks = new Container(refContext);
         nullLandmarks.containerByteSize = 6789;
         nullLandmarks.landmarks = null;
-        nullLandmarks.setSlices(new Slice[] { new Slice(refContext) }, 999);
+        nullLandmarks.setSlices(Collections.singletonList(new Slice(refContext)), 999);
 
         final Container tooManyLandmarks = new Container(refContext);
         tooManyLandmarks.containerByteSize = 111;
         tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
-        tooManyLandmarks.setSlices(new Slice[] { new Slice(refContext) }, 12345);
+        tooManyLandmarks.setSlices(Collections.singletonList(new Slice(refContext)), 12345);
 
         final Container tooManySlices = new Container(refContext);
         tooManySlices.containerByteSize = 675345389;
         tooManySlices.landmarks = new int[]{ 1 };
-        tooManySlices.setSlices(new Slice[] { new Slice(refContext), new Slice(refContext) }, 12345);
+        tooManySlices.setSlices(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
         final Container noByteSize = new Container(refContext);
         noByteSize.landmarks = new int[]{ 1, 2 };
-        noByteSize.setSlices(new Slice[] { new Slice(refContext), new Slice(refContext) }, 12345);
+        noByteSize.setSlices(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
         return new Object[][] {
                 { nullLandmarks },
@@ -252,10 +251,7 @@ public class ContainerTest extends HtsjdkTest {
                 containerHeaderSize,                // beginning of slice
         };
 
-        final ArrayList<Slice> slices = new ArrayList<Slice>() {{
-            add(new Slice(refContext));
-        }};
-        container.setSlices(slices.toArray(new Slice[0]), containerStreamByteOffset);
+        container.setSlices(Collections.singletonList(new Slice(refContext)), containerStreamByteOffset);
         container.distributeIndexingParametersToSlices();
         return container;
     }
@@ -275,11 +271,7 @@ public class ContainerTest extends HtsjdkTest {
                 containerHeaderSize + slice0size    // beginning of slice 2
         };
 
-        final ArrayList<Slice> slices = new ArrayList<Slice>() {{
-            add(new Slice(refContext));
-            add(new Slice(refContext));
-        }};
-        container.setSlices(slices.toArray(new Slice[0]), containerStreamByteOffset);
+        container.setSlices(Arrays.asList(new Slice(refContext), new Slice(refContext)), containerStreamByteOffset);
         container.distributeIndexingParametersToSlices();
         return container;
     }

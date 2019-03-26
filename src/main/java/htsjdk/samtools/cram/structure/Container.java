@@ -81,8 +81,8 @@ public class Container {
      * @param slices the Slices belonging to this container
      * @param byteOffset the byte location in the stream where this Container begins
      */
-    void setSlices(final Slice[] slices, final long byteOffset) {
-        this.slices = slices;
+    void setSlices(final List<Slice> slices, final long byteOffset) {
+        this.slices = slices.toArray(new Slice[0]);
         setByteOffsetInSlices(byteOffset);
     }
 
@@ -169,7 +169,7 @@ public class Container {
         final ReferenceContext commonRefContext = sliceRefContexts.iterator().next();
 
         final Container container = new Container(commonRefContext);
-        container.setSlices(containerSlices.toArray(new Slice[0]), containerByteOffset);
+        container.setSlices(containerSlices, containerByteOffset);
         container.compressionHeader = compressionHeader;
 
         if (commonRefContext.isMappedSingleRef()) {
