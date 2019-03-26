@@ -201,7 +201,7 @@ public class Container {
      *
      * @throws CRAMException when the Container is in an invalid state
      */
-    void distributeIndexingParametersToSlices() {
+    public void distributeIndexingParametersToSlices() {
         if (slices.length == 0) {
             return;
         }

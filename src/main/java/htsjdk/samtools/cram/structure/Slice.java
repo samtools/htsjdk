@@ -123,11 +123,11 @@ public class Slice {
         final StringBuilder error = new StringBuilder();
 
         if (byteOffsetFromContainer == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for BAI because its offset is unknown.").append(System.lineSeparator());
+            error.append("Cannot index this Slice for BAI because its byteOffsetFromContainer is unknown.").append(System.lineSeparator());
         }
 
         if (containerByteOffset == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for BAI because its containerOffset is unknown.").append(System.lineSeparator());
+            error.append("Cannot index this Slice for BAI because its containerByteOffset is unknown.").append(System.lineSeparator());
         }
 
         if (index == UNINITIALIZED_INDEXING_PARAMETER) {
@@ -143,15 +143,15 @@ public class Slice {
         final StringBuilder error = new StringBuilder();
 
         if (byteOffsetFromContainer == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for CRAI because its offset is unknown.").append(System.lineSeparator());
+            error.append("Cannot index this Slice for CRAI because its byteOffsetFromContainer is unknown.").append(System.lineSeparator());
         }
 
         if (containerByteOffset == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for CRAI because its containerOffset is unknown.").append(System.lineSeparator());
+            error.append("Cannot index this Slice for CRAI because its containerByteOffset is unknown.").append(System.lineSeparator());
         }
 
         if (byteSize == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for CRAI because its size is unknown.").append(System.lineSeparator());
+            error.append("Cannot index this Slice for CRAI because its byteSize is unknown.").append(System.lineSeparator());
         }
 
         if (error.length() > 0) {

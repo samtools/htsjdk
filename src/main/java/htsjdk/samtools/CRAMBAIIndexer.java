@@ -126,10 +126,12 @@ public class CRAMBAIIndexer {
      *
      * @param container container to be indexed
      */
-    public void processContainer(final Container container, final ValidationStringency validationStringency) {
+    void processContainer(final Container container, final ValidationStringency validationStringency) {
         if (container == null || container.isEOF()) {
             return;
         }
+
+        container.distributeIndexingParametersToSlices();
 
         int sliceIndex = 0;
         for (final Slice slice : container.getSlices()) {
