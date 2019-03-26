@@ -162,12 +162,12 @@ public class ContainerTest extends HtsjdkTest {
     // show that we can populate all of the slice indexing fields from the
     // values in the container's header
 
-    // this is part of the deserialization process, and supports index creation
+    // this is part of the serialization/deserialization process, and supports index creation
 
     // single slice
 
     @Test
-    public static void populateSlicesAndIndexingParametersOneSlice() {
+    public static void distributeIndexingParametersToSlicesOneSlice() {
         // this container starts 100,000 bytes into the CRAM stream
         final int containerStreamByteOffset = 100000;
 
@@ -186,7 +186,7 @@ public class ContainerTest extends HtsjdkTest {
     // two slices
 
     @Test
-    public static void populateSlicesAndIndexingParametersTwoSlices() {
+    public static void distributeIndexingParametersToSlicesTwoSlices() {
         // this container starts 200,000 bytes into the CRAM stream
         final int containerStreamByteOffset = 200000;
 
@@ -205,6 +205,42 @@ public class ContainerTest extends HtsjdkTest {
         assertSliceIndexingParams(container.getSlices()[1], 1, containerStreamByteOffset, slice1size, containerHeaderSize + slice0size);
     }
 
+    @DataProvider(name = "containerDistributeNegative")
+    private Object[][] containerDistributeNegative() {
+        final ReferenceContext refContext = new ReferenceContext(0);
+
+        final Container nullLandmarks = new Container(refContext);
+        nullLandmarks.containerByteSize = 6789;
+        nullLandmarks.landmarks = null;
+        nullLandmarks.setSlices(new Slice[] { new Slice(refContext) }, 999);
+
+        final Container tooManyLandmarks = new Container(refContext);
+        tooManyLandmarks.containerByteSize = 111;
+        tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
+        tooManyLandmarks.setSlices(new Slice[] { new Slice(refContext) }, 12345);
+
+        final Container tooManySlices = new Container(refContext);
+        tooManySlices.containerByteSize = 675345389;
+        tooManySlices.landmarks = new int[]{ 1 };
+        tooManySlices.setSlices(new Slice[] { new Slice(refContext), new Slice(refContext) }, 12345);
+
+        final Container noByteSize = new Container(refContext);
+        noByteSize.landmarks = new int[]{ 1, 2 };
+        noByteSize.setSlices(new Slice[] { new Slice(refContext), new Slice(refContext) }, 12345);
+
+        return new Object[][] {
+                { nullLandmarks },
+                { tooManyLandmarks },
+                { tooManySlices },
+                { noByteSize },
+        };
+    }
+
+    @Test(expectedExceptions = CRAMException.class, dataProvider = "containerDistributeNegative")
+    public static void distributeIndexingParametersToSlicesNegative(final Container container) {
+        container.distributeIndexingParametersToSlices();
+    }
+
     private static Container createOneSliceContainer(final int containerStreamByteOffset,
                                                      final int containerHeaderSize,
                                                      final int slice0size) {
@@ -219,7 +255,8 @@ public class ContainerTest extends HtsjdkTest {
         final ArrayList<Slice> slices = new ArrayList<Slice>() {{
             add(new Slice(refContext));
         }};
-        container.populateSlicesAndIndexingParameters(slices, containerStreamByteOffset);
+        container.setSlices(slices.toArray(new Slice[0]), containerStreamByteOffset);
+        container.distributeIndexingParametersToSlices();
         return container;
     }
 
@@ -242,7 +279,8 @@ public class ContainerTest extends HtsjdkTest {
             add(new Slice(refContext));
             add(new Slice(refContext));
         }};
-        container.populateSlicesAndIndexingParameters(slices, containerStreamByteOffset);
+        container.setSlices(slices.toArray(new Slice[0]), containerStreamByteOffset);
+        container.distributeIndexingParametersToSlices();
         return container;
     }
 

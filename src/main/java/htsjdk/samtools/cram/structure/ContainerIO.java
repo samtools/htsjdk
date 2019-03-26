@@ -105,7 +105,8 @@ public class ContainerIO {
             slices.add(SliceIO.read(major, inputStream));
         }
 
-        container.populateSlicesAndIndexingParameters(slices, containerByteOffset);
+        container.setSlices(slices.toArray(new Slice[0]), containerByteOffset);
+        container.distributeIndexingParametersToSlices();
 
         log.debug("READ CONTAINER: " + container.toString());
 
@@ -158,8 +159,10 @@ public class ContainerIO {
             container.blockCount += slice.external.size();
         }
         container.landmarks = landmarks.stream().mapToInt(Integer::intValue).toArray();
-
         container.containerByteSize = byteArrayOutputStream.size();
+
+        // Slices require the Container's landmarks and containerByteSize before indexing
+        container.distributeIndexingParametersToSlices();
 
         int length = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
         try {

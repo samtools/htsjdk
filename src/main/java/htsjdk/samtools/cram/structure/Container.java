@@ -34,7 +34,7 @@ public class Container {
     /**
      * Byte size of the content excluding header.
      */
-    public int containerByteSize;
+    public int containerByteSize = 0;
 
     // minimum alignment start of the reads in this Container
     // uses a 1-based coordinate system
@@ -81,7 +81,7 @@ public class Container {
      * @param slices the Slices belonging to this container
      * @param byteOffset the byte location in the stream where this Container begins
      */
-    private void setSlices(final Slice[] slices, final long byteOffset) {
+    void setSlices(final Slice[] slices, final long byteOffset) {
         this.slices = slices;
         setByteOffsetInSlices(byteOffset);
     }
@@ -195,26 +195,39 @@ public class Container {
     }
 
     /**
-     * Assign this Container's slices, and populate those slices'
-     * indexing parameters from this Container
-     * @param slicesToPopulate the slices to populate
-     * @param containerByteOffset the Container's byte offset from the start of the stream
+     * Populate the indexing parameters of this Container's slices
+     *
+     * Requires: valid landmarks and containerByteSize
+     *
+     * @throws CRAMException when the Container is in an invalid state
      */
-    void populateSlicesAndIndexingParameters(final ArrayList<Slice> slicesToPopulate, final long containerByteOffset) {
-
-        if (slicesToPopulate.isEmpty()) {
+    void distributeIndexingParametersToSlices() {
+        if (slices.length == 0) {
             return;
         }
 
-        final int lastSliceIndex = slicesToPopulate.size() - 1;
+        if (landmarks == null) {
+            throw new CRAMException("Cannot set Slice indexing parameters if this Container does not have landmarks");
+        }
+
+        if (landmarks.length != slices.length) {
+            final String format = "This Container's landmark and slice counts do not match: %d landmarks and %d slices";
+            throw new CRAMException(String.format(format, landmarks.length, slices.length));
+        }
+
+        if (containerByteSize == 0) {
+            throw new CRAMException("Cannot set Slice indexing parameters if this Container's byte size is unknown");
+        }
+
+        final int lastSliceIndex = slices.length - 1;
         for (int i = 0; i < lastSliceIndex; i++) {
-            final Slice slice = slicesToPopulate.get(i);
+            final Slice slice = slices[i];
             slice.index = i;
             slice.byteOffsetFromContainer = landmarks[i];
             slice.byteSize = landmarks[i + 1] - slice.byteOffsetFromContainer;
         }
 
-        final Slice lastSlice = slicesToPopulate.get(lastSliceIndex);
+        final Slice lastSlice = slices[lastSliceIndex];
         lastSlice.index = lastSliceIndex;
         lastSlice.byteOffsetFromContainer = landmarks[lastSliceIndex];
 
@@ -224,8 +237,6 @@ public class Container {
         final int containerHeaderSize = landmarks[0];
         final int containerTotalByteSize = containerHeaderSize + containerByteSize;
         lastSlice.byteSize = containerTotalByteSize - lastSlice.byteOffsetFromContainer;
-
-        setSlices(slicesToPopulate.toArray(new Slice[0]), containerByteOffset);
     }
 
     /**
