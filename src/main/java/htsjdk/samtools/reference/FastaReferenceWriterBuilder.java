@@ -265,7 +265,9 @@ public class FastaReferenceWriterBuilder {
             } else if (!gzippedFastaFile && (gziIndexFile != null || gziIndexOutput != null)) {
                 throw new IllegalArgumentException("Requested a gzi index but the output format fasta file was not a block compressed gzip file");
             }
-                //TODO Except if usere requests fai && gzippedOutputStream && noGZI
+            if (faiIndexFile != null && gzippedFastaFile && gziIndexFile == null) {
+                throw new IllegalArgumentException("Requested a fai index file for a block compressed output file. This index is unusable without a gzi index file as well");
+            }
 
         }
         // checkout bases-perline first, so that files are not created if failure;

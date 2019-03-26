@@ -250,7 +250,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
         final Path fastaIndexFile = fastaFile.resolveSibling(fastaFile.getFileName().toString() + ReferenceSequenceFileFactory.FASTA_INDEX_EXTENSION);
         final Path gzipIndexFile = GZIIndex.resolveIndexNameForBgzipFile(fastaFile);
-        final Path dictFile = fastaFile.resolveSibling(fastaFile.getFileName().toString().replaceAll("\\.fa", ".dict"));
+        final Path dictFile = fastaFile.resolveSibling(fastaFile.getFileName().toString().replaceAll("\\.fa", ".dict").replaceAll("\\.gz", ""));
         IOUtil.deleteOnExit(gzipIndexFile);
         IOUtil.deleteOnExit(fastaIndexFile);
         IOUtil.deleteOnExit(dictFile);
@@ -284,7 +284,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         );
         FastaReferenceWriter.writeSingleSequenceReference(testOutputFile.toPath(), 42,
                 true, true, "seqA", null, seqs.get("seqA"));
-        assertOutput(testOutputFile.toPath(), true, true, false, dictionary, 42, seqs, bpls);
+        assertOutput(testOutputFile.toPath(), true, true, false, dictionary, 42, seqs, bpls, false);
         Assert.assertTrue(testOutputFile.delete());
         Assert.assertTrue(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(testOutputFile).delete());
         Assert.assertTrue(ReferenceSequenceFileFactory.getFastaIndexFileName(testOutputFile.toPath()).toFile().delete());
@@ -302,7 +302,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         );
         FastaReferenceWriter.writeSingleSequenceReference(testOutputFile.toPath(),
                 true, true, "seqA", null, seqs.get("seqA"));
-        assertOutput(testOutputFile.toPath(), true, true, false, dictionary, FastaReferenceWriter.DEFAULT_BASES_PER_LINE, seqs, bpls);
+        assertOutput(testOutputFile.toPath(), true, true, false, dictionary, FastaReferenceWriter.DEFAULT_BASES_PER_LINE, seqs, bpls, false);
         Assert.assertTrue(testOutputFile.delete());
         Assert.assertTrue(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(testOutputFile).delete());
         Assert.assertTrue(ReferenceSequenceFileFactory.getFastaIndexFileName(testOutputFile.toPath()).toFile().delete());
@@ -336,7 +336,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         }
         // Can't compare files directly since discription isn't read by ReferenceSequenceFile and so it isn't written to new fasta.
         final SAMSequenceDictionary testDictionary = SAMSequenceDictionaryExtractor.extractDictionary(testDictOutputFile);
-        assertFastaContent(testOutputFile, false, testDictionary, basesPerLine, seqs, new CollectionUtil.DefaultingMap<String, Integer>(k -> -1, false));
+        assertFastaContent(testOutputFile, false, testDictionary, basesPerLine, seqs, new CollectionUtil.DefaultingMap<String, Integer>(k -> -1, false), false);
         assertFastaIndexContent(testOutputFile, testIndexOutputFile, testDictionary, seqs);
         assertFastaDictionaryContent(testDictOutputFile, testDictionary);
 
@@ -365,7 +365,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
             writer.startSequence("seq1");
             writer.appendBases(seqs.get("seq1"));
         }
-        assertFastaContent(testOutputFile, false, testDictionary, -1, seqs, bpls);
+        assertFastaContent(testOutputFile, false, testDictionary, -1, seqs, bpls, false);
         assertFastaIndexContent(testOutputFile, testIndexOutputFile, testDictionary, seqs);
         assertFastaDictionaryContent(testDictOutputFile, testDictionary);
         Assert.assertTrue(Files.deleteIfExists(testOutputFile));
@@ -395,7 +395,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
                 writer.appendBases(seqs.get("seq1"));
             }
         }
-        assertFastaContent(testOutputFile.toPath(), false, testDictionary, 50, seqs, bpls);
+        assertFastaContent(testOutputFile.toPath(), false, testDictionary, 50, seqs, bpls, false);
         assertFastaIndexContent(testOutputFile.toPath(), testIndexOutputFile.toPath(), testDictionary, seqs);
         assertFastaDictionaryContent(testDictOutputFile.toPath(), testDictionary);
         Assert.assertTrue(testOutputFile.delete());
@@ -427,7 +427,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
             writer.appendBases(seqs.get("seq1"));
         }
 
-        assertFastaContent(testOutputFile.toPath(), false, testDictionary, 50, seqs, bpls);
+        assertFastaContent(testOutputFile.toPath(), false, testDictionary, 50, seqs, bpls, false);
         Assert.assertTrue(testOutputFile.delete());
         Assert.assertFalse(testIndexOutputFile.delete());
         Assert.assertFalse(testDictOutputFile.delete());
@@ -518,20 +518,22 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
                               final boolean withDescriptions, final SAMSequenceDictionary dictionary, final int defaultBpl,
                               final Map<String, byte[]> bases, final Map<String, Integer> basesPerLine, final boolean gzipped)
             throws GeneralSecurityException, IOException, URISyntaxException {
-        assertFastaContent(path, withDescriptions, dictionary, defaultBpl, bases, basesPerLine);
+        assertFastaContent(path, withDescriptions, dictionary, defaultBpl, bases, basesPerLine, gzipped);
         if (mustHaveDictionary) {
             assertFastaDictionaryContent(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(path), dictionary);
         }
-        if (mustHaveIndex) {
+        if (mustHaveIndex && !gzipped) {
             assertFastaIndexContent(path, ReferenceSequenceFileFactory.getFastaIndexFileName(path), dictionary, bases);
         }
     }
 
     private void assertFastaContent(final Path path, final boolean withDescriptions, final SAMSequenceDictionary dictionary, final int defaultBpl,
-                                    final Map<String, byte[]> bases, final Map<String, Integer> basesPerLine)
+                                    final Map<String, byte[]> bases, final Map<String, Integer> basesPerLine, final boolean gzipped)
             throws IOException {
-        ReferenceSequenceFileFactory.getReferenceSequenceFile(path)
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(path.getFileSystem().provider().newInputStream(path)))) {
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(gzipped ?
+                new BlockCompressedInputStream(path.getFileSystem().provider().newInputStream(path)) :
+                path.getFileSystem().provider().newInputStream(path)))) {
             for (final SAMSequenceRecord sequence : dictionary.getSequences()) {
                 final String description = String.format("index=%d\tlength=%d",
                         dictionary.getSequenceIndex(sequence.getSequenceName()), sequence.getSequenceLength());
