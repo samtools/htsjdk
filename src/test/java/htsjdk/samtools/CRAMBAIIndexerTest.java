@@ -236,39 +236,39 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
     }
 
     private byte[] indexSingleRefSlice(final Slice slice) {
-        return indexAndFinish(((indexer) -> {
+        return getIndexerOutput(indexer -> {
             indexer.processAsSingleReferenceSlice(slice);
-        }));
+        });
     }
 
     private byte[] indexContainers(final Container... containers) {
-        return indexAndFinish(((indexer) -> {
+        return getIndexerOutput(indexer -> {
             for (final Container container : containers) {
                 // this sets up the Container's landmarks, required for indexing
                 // readContainer() also does this
                 ContainerIO.writeContainer(CramVersions.DEFAULT_CRAM_VERSION, container, new ByteArrayOutputStream());
                 indexer.processContainer(container, ValidationStringency.STRICT);
             }
-        }));
+        });
     }
 
     private byte[] indexContainersAsSingleRefSlices(final Container... containers) {
-        return indexAndFinish(((indexer) -> {
+        return getIndexerOutput(indexer -> {
             for (final Container container : containers) {
                 // this sets up the Container's landmarks, required for indexing
                 // readContainer() also does this
                 ContainerIO.writeContainer(CramVersions.DEFAULT_CRAM_VERSION, container, new ByteArrayOutputStream());
                 indexer.processAsSingleReferenceSlice(container.getSlices()[0]);
             }
-        }));
+        });
     }
 
-    private byte[] indexAndFinish(final Consumer<CRAMBAIIndexer> indexerConsumer) {
+    private byte[] getIndexerOutput(final Consumer<CRAMBAIIndexer> indexerFunction) {
         byte[] indexBytes;
         try (final ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream()) {
 
             final CRAMBAIIndexer indexer = new CRAMBAIIndexer(indexBAOS, SAM_FILE_HEADER);
-            indexerConsumer.accept(indexer);
+            indexerFunction.accept(indexer);
             indexer.finish();
 
             indexBytes = indexBAOS.toByteArray();
