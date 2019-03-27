@@ -211,8 +211,8 @@ public class CRAMIterator implements SAMRecordIterator {
             samRecord.setValidationStringency(validationStringency);
 
             if (mReader != null) {
-                final long chunkStart = (container.getByteOffset() << 16) | cramRecord.sliceIndex;
-                final long chunkEnd = ((container.getByteOffset() << 16) | cramRecord.sliceIndex) + 1;
+                final long chunkStart = (container.byteOffset << 16) | cramRecord.sliceIndex;
+                final long chunkEnd = ((container.byteOffset << 16) | cramRecord.sliceIndex) + 1;
                 samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
             

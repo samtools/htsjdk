@@ -77,7 +77,7 @@ public class ContainerHeaderIO {
         if (major >= 3)
             container.checksum = CramInt.readInt32(inputStream);
 
-        container.setByteOffset(containerByteOffset);
+        container.byteOffset = containerByteOffset;
         return container;
     }
 

@@ -199,7 +199,7 @@ public class CRAMStructureTestUtil {
         Assert.assertEquals(container.getReferenceContext(), expectedReferenceContext);
         Assert.assertEquals(container.alignmentStart, expectedAlignmentStart);
         Assert.assertEquals(container.alignmentSpan, expectedAlignmentSpan);
-        Assert.assertEquals(container.getByteOffset(), expectedByteOffset);
+        Assert.assertEquals(container.byteOffset, expectedByteOffset);
     }
 
     public static void assertContainerState(final Container container,

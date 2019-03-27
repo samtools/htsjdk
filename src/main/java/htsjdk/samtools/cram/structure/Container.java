@@ -69,7 +69,7 @@ public class Container {
 
     // this Container's byte offset from the the start of the stream.
     // Used for indexing.
-    private long byteOffset;
+    public long byteOffset;
 
     public Slice[] getSlices() {
         return slices;
@@ -82,37 +82,10 @@ public class Container {
      * @param byteOffset the byte location in the stream where this Container begins
      */
     void setSlices(final List<Slice> slices, final long byteOffset) {
-        this.slices = slices.toArray(new Slice[0]);
-        setByteOffsetInSlices(byteOffset);
-    }
-
-    public long getByteOffset() {
-        return byteOffset;
-    }
-
-    /**
-     * Set this Container's byte offset from the the start of the stream.
-     * Also distribute this value to the Container's constituent {@link Slice}s, if present.
-     *
-     * @param byteOffset the byte location in the stream where this Container begins
-     */
-    void setByteOffset(final long byteOffset) {
-        this.byteOffset = byteOffset;
-        if (slices != null) {
-            setByteOffsetInSlices(byteOffset);
-        }
-    }
-
-    /**
-     * Distribute this Container's byte offset to the Container's constituent {@link Slice}s.
-     * For indexing.
-     *
-     * @param byteOffset the byte location in the stream where this Container begins
-     */
-    private void setByteOffsetInSlices(final long byteOffset) {
         for (final Slice slice : slices) {
             slice.containerByteOffset = byteOffset;
         }
+        this.slices = slices.toArray(new Slice[0]);
     }
 
     /**
@@ -190,7 +163,6 @@ public class Container {
             container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
         }
 
-        container.setByteOffset(containerByteOffset);
         return container;
     }
 
