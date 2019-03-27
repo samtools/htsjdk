@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
@@ -24,7 +23,7 @@ public class CramContainerIterator implements Iterator<Container> {
     }
 
     private void readNextContainer() {
-        nextContainer = containerFromStream(cramHeader.getVersion(), countingInputStream);
+        nextContainer = containerFromStream(countingInputStream);
 
         if (nextContainer.isEOF()) {
             eof = true;
@@ -35,20 +34,26 @@ public class CramContainerIterator implements Iterator<Container> {
     /**
      * Consume the entirety of the next container from the stream.
      *
-     * @see CramContainerHeaderIterator#containerFromStream(Version, CountingInputStream)
+     * @see CramContainerIterator#containerFromStream(CountingInputStream)
      *
-     * @param cramVersion the expected CRAM version of the stream
      * @param countingStream the {@link CountingInputStream} to read from
      * @return The next Container from the stream.
      */
-    protected Container containerFromStream(final Version cramVersion, final CountingInputStream countingStream) {
+    protected Container containerFromStream(final CountingInputStream countingStream) {
         return ContainerIO.readContainer(cramHeader.getVersion(), countingStream);
     }
 
     @Override
     public boolean hasNext() {
-        if (eof) return false;
-        if (nextContainer == null) readNextContainer();
+        if (eof) {
+            return false;
+        }
+
+        if (nextContainer == null) {
+            readNextContainer();
+        }
+
+        // readNextContainer() may set eof
         return !eof;
     }
 

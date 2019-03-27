@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.Container;
@@ -26,15 +25,14 @@ public class CramContainerHeaderIterator extends CramContainerIterator {
      * Consume the entirety of the next container from the stream, but retain only the header.
      * This is intended as a performance optimization, because it does not decode block data.
      *
-     * @see CramContainerIterator#containerFromStream(Version, CountingInputStream)
+     * @see CramContainerIterator#containerFromStream(CountingInputStream)
      *
-     * @param cramVersion the expected CRAM version of the stream
      * @param countingStream the {@link CountingInputStream} to read from
      * @return The next Container's header from the stream, returned as a Container.
      */
     @Override
-    protected Container containerFromStream(final Version cramVersion, final CountingInputStream countingStream) {
-        final Container container = ContainerHeaderIO.readContainerHeader(cramVersion.major, countingStream);
+    protected Container containerFromStream(final CountingInputStream countingStream) {
+        final Container container = ContainerHeaderIO.readContainerHeader(getCramHeader().getVersion().major, countingStream);
         InputStreamUtils.skipFully(countingStream, container.containerByteSize);
         return container;
     }

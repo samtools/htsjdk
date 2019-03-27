@@ -347,8 +347,8 @@ public class CramIO {
     public static boolean replaceCramHeader(final File file, final CramHeader newHeader) {
         try (final CountingInputStream countingInputStream = new CountingInputStream(new FileInputStream(file));
              final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw")) {
-            final CramHeader header = readFormatDefinition(countingInputStream);
-            final Container c = ContainerHeaderIO.readContainerHeader(header.getVersion().major, countingInputStream);
+            final CramHeader cramHeader = readFormatDefinition(countingInputStream);
+            final Container c = ContainerHeaderIO.readContainerHeader(cramHeader.getVersion().major, countingInputStream);
             final long pos = countingInputStream.getCount();
             countingInputStream.close();
 
