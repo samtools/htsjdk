@@ -38,7 +38,13 @@ public class ContainerFactory {
     }
 
     /**
-     * Build a Container (and its constituent Slices) from {@link CramCompressionRecord}s
+     * Build a Container (and its constituent Slices) from {@link CramCompressionRecord}s.
+     * Note that this will always result in a single Container, regardless of how many Slices
+     * are created.  It is up to the caller to divide the records into multiple Containers,
+     * if that is desired.
+     *
+     * TODO: enable a setting to automate this, perhaps "recordsPerContainer"
+     *
      * @param records the records used to build the Container
      * @param containerByteOffset the Container's byte offset from the start of the stream
      * @return the container built from these records
