@@ -55,13 +55,12 @@ import java.util.Map;
 /**
  * Decode BCF2 files
  */
-public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
-    private final static int ALLOWED_MAJOR_VERSION = 2;
-    private final static int MIN_MINOR_VERSION = 1;
+public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
+    protected final static int ALLOWED_MAJOR_VERSION = 2;
+    protected final static int ALLOWED_MINOR_VERSION = 1;
 
     /** sizeof a BCF header (+ min/max version). Used when trying to detect when a streams starts with a bcf header */
     public static final int SIZEOF_BCF_HEADER =  BCFVersion.MAGIC_HEADER_START.length + 2*Byte.BYTES;
-
     
     private BCFVersion bcfVersion = null;
 
@@ -144,20 +143,36 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         return VariantContext.class;
     }
 
+    /**
+     * Validate the actual version against the supported version to determine compatibility. Subclasses can
+     * override this to provide a custom version compatibility policy, but allowing something other than the
+     * supported version is dangerous and should be done with great care.
+     *
+     * The default policy is to require an exact version match.
+     * @param supportedVersion the current BCF implementation version
+     * @param actualVersion the actual version
+     */
+    protected void validateVersionCompatibility(final BCFVersion supportedVersion, final BCFVersion actualVersion) {
+        if ( actualVersion.getMajorVersion() != ALLOWED_MAJOR_VERSION ) {
+            error("BCF2Codec can only process BCF2 files, this file has major version " + bcfVersion.getMajorVersion());
+        }
+
+        // require the minor version to be an exact match and reject minor versions form the future
+        if ( actualVersion.getMinorVersion() != ALLOWED_MINOR_VERSION ) {
+            error("BCF2Codec can only process BCF2 files with minor version = " + ALLOWED_MINOR_VERSION + " but this file has minor version " + bcfVersion.getMinorVersion());
+        }
+    }
+
     @Override
     public FeatureCodecHeader readHeader( final PositionalBufferedStream inputStream ) {
         try {
             // note that this reads the magic as well, and so does double duty
             bcfVersion = BCFVersion.readBCFVersion(inputStream);
-            if ( bcfVersion == null )
+            if ( bcfVersion == null ) {
                 error("Input stream does not contain a BCF encoded file; BCF magic header info not found");
+            }
 
-            if ( bcfVersion.getMajorVersion() != ALLOWED_MAJOR_VERSION )
-                error("BCF2Codec can only process BCF2 files, this file has major version " + bcfVersion.getMajorVersion());
-            // require the minor version to be an exact match and reject minor versions form the future
-            if ( bcfVersion.getMinorVersion() != MIN_MINOR_VERSION )
-                error("BCF2Codec can only process BCF2 files with minor version = " + MIN_MINOR_VERSION + " but this file has minor version " + bcfVersion.getMinorVersion());
-
+            validateVersionCompatibility(new BCFVersion(ALLOWED_MAJOR_VERSION, ALLOWED_MINOR_VERSION), bcfVersion);
             if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                 System.err.println("Parsing data stream with BCF version " + bcfVersion);
             }
@@ -479,7 +494,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         return gtFieldDecoders.getDecoder(field);
     }
 
-    private void error(final String message) throws RuntimeException {
+    protected void error(final String message) throws RuntimeException {
         throw new TribbleException(String.format("%s, at record %d with position %d:", message, recordNo, pos));
     }
     
