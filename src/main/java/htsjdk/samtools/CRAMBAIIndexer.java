@@ -131,8 +131,6 @@ public class CRAMBAIIndexer {
             return;
         }
 
-        container.distributeIndexingParametersToSlices();
-
         int sliceIndex = 0;
         for (final Slice slice : container.getSlices()) {
             slice.index = sliceIndex++;
