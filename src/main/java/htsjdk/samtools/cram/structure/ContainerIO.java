@@ -105,7 +105,7 @@ public class ContainerIO {
             slices.add(SliceIO.read(major, inputStream));
         }
 
-        container.setSlices(slices, containerByteOffset);
+        container.setSlicesAndByteOffset(slices, containerByteOffset);
         container.distributeIndexingParametersToSlices();
 
         log.debug("READ CONTAINER: " + container.toString());

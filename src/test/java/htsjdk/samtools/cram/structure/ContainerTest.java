@@ -211,21 +211,21 @@ public class ContainerTest extends HtsjdkTest {
         final Container nullLandmarks = new Container(refContext);
         nullLandmarks.containerByteSize = 6789;
         nullLandmarks.landmarks = null;
-        nullLandmarks.setSlices(Collections.singletonList(new Slice(refContext)), 999);
+        nullLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 999);
 
         final Container tooManyLandmarks = new Container(refContext);
         tooManyLandmarks.containerByteSize = 111;
         tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
-        tooManyLandmarks.setSlices(Collections.singletonList(new Slice(refContext)), 12345);
+        tooManyLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 12345);
 
         final Container tooManySlices = new Container(refContext);
         tooManySlices.containerByteSize = 675345389;
         tooManySlices.landmarks = new int[]{ 1 };
-        tooManySlices.setSlices(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
+        tooManySlices.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
         final Container noByteSize = new Container(refContext);
         noByteSize.landmarks = new int[]{ 1, 2 };
-        noByteSize.setSlices(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
+        noByteSize.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
         return new Object[][] {
                 { nullLandmarks },
@@ -251,7 +251,7 @@ public class ContainerTest extends HtsjdkTest {
                 containerHeaderSize,                // beginning of slice
         };
 
-        container.setSlices(Collections.singletonList(new Slice(refContext)), containerStreamByteOffset);
+        container.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), containerStreamByteOffset);
         container.distributeIndexingParametersToSlices();
         return container;
     }
@@ -271,7 +271,7 @@ public class ContainerTest extends HtsjdkTest {
                 containerHeaderSize + slice0size    // beginning of slice 2
         };
 
-        container.setSlices(Arrays.asList(new Slice(refContext), new Slice(refContext)), containerStreamByteOffset);
+        container.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), containerStreamByteOffset);
         container.distributeIndexingParametersToSlices();
         return container;
     }
