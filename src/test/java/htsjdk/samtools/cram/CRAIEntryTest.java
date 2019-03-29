@@ -19,33 +19,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     private static final CompressionHeader COMPRESSION_HEADER =
             new CompressionHeaderFactory().build(Collections.EMPTY_LIST, null, true);
 
-    @DataProvider(name = "uninitializedSliceParameterTestCases")
-    private Object[][] uninitializedSliceParameterTestCases() {
-        final ReferenceContext refContext = new ReferenceContext(0);
-
-        final Slice noContainerOffset = new Slice(refContext);
-        noContainerOffset.containerByteOffset = Slice.UNINITIALIZED_INDEXING_PARAMETER;
-        noContainerOffset.byteOffsetFromContainer = 1;
-        noContainerOffset.byteSize = 1;
-
-        final Slice noOffsetFromContainer = new Slice(refContext);
-        noOffsetFromContainer.byteOffsetFromContainer = Slice.UNINITIALIZED_INDEXING_PARAMETER;
-        noOffsetFromContainer.containerByteOffset = 1;
-        noOffsetFromContainer.byteSize = 1;
-
-        final Slice noSize = new Slice(refContext);
-        noSize.byteSize = Slice.UNINITIALIZED_INDEXING_PARAMETER;
-        noSize.containerByteOffset = 1;
-        noSize.byteOffsetFromContainer = 1;
-
-        return new Object[][] {
-                { noContainerOffset },
-                { noOffsetFromContainer },
-                { noSize }
-        };
-    }
-
-    @Test(dataProvider = "uninitializedSliceParameterTestCases", expectedExceptions = CRAMException.class)
+    @Test(dataProvider = "uninitializedCRAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
     public void uninitializedSliceParameterTest(final Slice s) {
         s.getCRAIEntries(COMPRESSION_HEADER);
     }

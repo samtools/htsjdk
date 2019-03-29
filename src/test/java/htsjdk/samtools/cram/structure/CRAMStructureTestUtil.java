@@ -7,6 +7,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -163,6 +164,62 @@ public class CRAMStructureTestUtil {
         testContainers.add(container1);
         testContainers.add(container2);
         return testContainers;
+    }
+
+    private static Slice getIndexInitializedSlice() {
+        final ReferenceContext refContext = new ReferenceContext(0);
+
+        final Slice slice = new Slice(refContext);
+        slice.byteOffsetFromContainer = 1;
+        slice.containerByteOffset = 1;
+        slice.byteSize = 1;
+        slice.index = 1;
+
+        return slice;
+    }
+
+    private static Slice getNoContainerOffsetSlice() {
+        final Slice noContainerOffset = getIndexInitializedSlice();
+        noContainerOffset.containerByteOffset = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        return noContainerOffset;
+    }
+
+    private static Slice getNoOffsetFromContainerSlice() {
+        final Slice noOffsetFromContainer = getIndexInitializedSlice();
+        noOffsetFromContainer.byteOffsetFromContainer = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        return noOffsetFromContainer;
+    }
+
+    private static Slice getNoSizeSlice() {
+        final Slice noSize = getIndexInitializedSlice();
+        noSize.byteSize = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        return noSize;
+    }
+
+    private static Slice getNoIndexSlice() {
+        final Slice noIndex = getIndexInitializedSlice();
+        noIndex.index = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        return noIndex;
+    }
+
+    @DataProvider(name = "uninitializedBAIParameterTestCases")
+    static Object[][] uninitializedBAIParameterTestCases() {
+
+        return new Object[][] {
+                { getNoContainerOffsetSlice() },
+                { getNoOffsetFromContainerSlice() },
+                { getNoIndexSlice() }
+        };
+    }
+
+    @DataProvider(name = "uninitializedCRAIParameterTestCases")
+    static Object[][] uninitializedCRAIParameterTestCases() {
+
+        return new Object[][] {
+                { getNoContainerOffsetSlice() },
+                { getNoOffsetFromContainerSlice() },
+                { getNoSizeSlice() }
+        };
     }
 
     // assert that slices and containers have values equal to what the caller expects
