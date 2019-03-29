@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -13,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class CRAMStructureTestUtil {
+public class CRAMStructureTestUtil extends HtsjdkTest {
     public static final int READ_LENGTH_FOR_TEST_RECORDS = 123;
 
     private static final SAMFileHeader header = initializeSAMFileHeaderForTests();
