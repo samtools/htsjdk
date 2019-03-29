@@ -29,7 +29,7 @@ public class ContainerIO {
      * @param containerByteOffset the byte offset from the start of the stream
      * @return a new container object read from the stream
      */
-    public static Container readContainer(final Version version,
+    private static Container readContainer(final Version version,
                                           final InputStream inputStream,
                                           final long containerByteOffset) {
         Container container = readContainerInternal(version.major, inputStream, containerByteOffset);
