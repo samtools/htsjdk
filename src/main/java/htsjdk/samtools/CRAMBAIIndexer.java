@@ -74,6 +74,10 @@ import java.util.TreeSet;
  * and proceeds by processing {@link CRAIEntry} elements obtained from
  * {@link CRAMCRAIIndexer#readIndex(InputStream)}.  {@link CRAMBAIIndexer#processAsSingleReferenceSlice(Slice)}
  * is called on each {@link CRAIEntry} and {@link CRAMBAIIndexer#finish()} is called at the end.
+ *
+ * NOTE: a third pattern of building a BAI from a CRAM file is also supported by this class,
+ * but it is unused.  This would be accomplished via {@link #createIndex(SeekableStream, File, Log, ValidationStringency)}.
+ *
  */
 public class CRAMBAIIndexer {
 
