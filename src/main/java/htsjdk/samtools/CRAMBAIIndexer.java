@@ -301,7 +301,7 @@ public class CRAMBAIIndexer {
      * processAlignment is called for each alignment until a new reference is encountered, then
      * processReference is called when all records for the reference have been processed.
      *
-     * TODO: this was copied from {@link htsjdk.samtools.BAMIndexer.BAMIndexBuilder}
+     * TODO: this was copied from BAMIndexer.BAMIndexBuilder
      * so perhaps they should be merged back together
      */
     private class CRAMBAIIndexBuilder {
