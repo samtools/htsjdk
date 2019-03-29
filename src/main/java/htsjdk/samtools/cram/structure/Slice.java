@@ -119,6 +119,10 @@ public class Slice {
         return referenceContext;
     }
 
+    /**
+     * Confirm that we have initialized the 3 BAI index parameters:
+     * byteOffsetFromContainer, containerByteOffset, and index
+     */
     public void baiIndexInitializationCheck() {
         final StringBuilder error = new StringBuilder();
 
@@ -139,7 +143,13 @@ public class Slice {
         }
     }
 
-    public void craiIndexInitializationCheck() {
+    /**
+     * Confirm that we have initialized the 3 CRAI index parameters:
+     * byteOffsetFromContainer, containerByteOffset, and byteSize
+     *
+     * NOTE: this is currently unused because we always use BAI
+     */
+    void craiIndexInitializationCheck() {
         final StringBuilder error = new StringBuilder();
 
         if (byteOffsetFromContainer == UNINITIALIZED_INDEXING_PARAMETER) {
