@@ -1,14 +1,17 @@
 package htsjdk.samtools.cram.encoding;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.CramRecordTestHelper;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -40,6 +43,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         initialRecords.get(1).alignmentStart = 2;
         initialRecords.get(1).readBases = commonRead.getBytes();
         initialRecords.get(1).readLength = commonRead.length();
+        initialRecords.get(1).setSegmentUnmapped(true);     // unmapped but placed
 
         // span 1:3,5
         initialRecords.get(2).sequenceId = 1;
@@ -47,19 +51,24 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         initialRecords.get(2).readBases = commonRead.getBytes();
         initialRecords.get(2).readLength = commonRead.length();
 
-        // span 1:7,9
-        initialRecords.get(3).sequenceId = 1;
+        // span <unmapped>
+        initialRecords.get(3).sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
         initialRecords.get(3).alignmentStart = 7;
         initialRecords.get(3).readBases = commonRead.getBytes();
         initialRecords.get(3).readLength = commonRead.length();
 
-        // span totals -> 1:1,9 and 2:2,4
+        // span totals -> 1:1,5 and 2:2,4
 
         return initialRecords;
     }
 
-    @Test
-    public void testSpans() throws IOException {
+    @DataProvider(name = "coordSortedTrueFalse")
+    private Object[][] tf() {
+        return new Object[][] { {true}, {false}};
+    }
+
+    @Test(dataProvider = "coordSortedTrueFalse")
+    public void testSpans(final boolean coordinateSorted) throws IOException {
         final List<CramCompressionRecord> initialRecords = initSpanRecords();
 
         // note for future refactoring
@@ -67,25 +76,24 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         // which is the only way to set a record's tagIdsIndex
         // which would otherwise be null
 
-        final boolean sorted = false;
-        final CompressionHeader header = createHeader(initialRecords, sorted);
+        final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
 
-        final int refId = Slice.MULTI_REFERENCE;
+        final ReferenceContext refId = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
-        final byte[] written = write(initialRecords, header, refId, outputMap);
+        int initialAlignmentStart = initialRecords.get(0).alignmentStart;
+        final byte[] written = write(initialRecords, outputMap, header, refId, initialAlignmentStart);
 
         final Map<Integer, ByteArrayInputStream> inputMap = createInputMap(outputMap);
         try (final ByteArrayInputStream is = new ByteArrayInputStream(written);
             final BitInputStream bis = new DefaultBitInputStream(is)) {
 
-            final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
-            final Map<Integer, AlignmentSpan> spans = reader.getReferenceSpans();
+            final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, initialAlignmentStart, initialRecords.size());
+            final Map<ReferenceContext, AlignmentSpan> spans = reader.getReferenceSpans();
 
-            Assert.assertEquals(spans.size(), 2);
-            Assert.assertTrue(spans.containsKey(1));
-            Assert.assertTrue(spans.containsKey(2));
-            Assert.assertEquals(spans.get(1), new AlignmentSpan(1, 9, 3));
-            Assert.assertEquals(spans.get(2), new AlignmentSpan(2, 3, 1));
+            Assert.assertEquals(spans.size(), 3);
+            Assert.assertEquals(spans.get(new ReferenceContext(1)), new AlignmentSpan(1, 5, 2, 0));
+            Assert.assertEquals(spans.get(new ReferenceContext(2)), new AlignmentSpan(2, 3, 0, 1));
+            Assert.assertEquals(spans.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT), AlignmentSpan.UNPLACED_SPAN);
         }
     }
 }

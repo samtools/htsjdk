@@ -143,7 +143,7 @@ class FastqReaderWriterTest extends UnitSpec {
       """.stripMargin.trim
 
     Range.inclusive(1, 3).foreach { n =>
-      val text   = fastq.lines.take(n).mkString("\n")
+      val text   = fastq.linesIterator.take(n).mkString("\n")
       val reader = new BufferedReader(new StringReader(text))
       an[Exception] shouldBe thrownBy { new FastqReader(null, reader).iterator().toSeq }
     }
@@ -176,5 +176,4 @@ class FastqReaderWriterTest extends UnitSpec {
     an[Exception] shouldBe thrownBy { new FastqReader(noSeqHeader).iterator().toSeq }
     an[Exception] shouldBe thrownBy { new FastqReader(noQualHeader).iterator().toSeq }
   }
-
 }

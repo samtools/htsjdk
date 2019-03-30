@@ -21,6 +21,7 @@ import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 
 public class CramRecordReader {
     private final DataSeriesReader<Integer> bitFlagsCodec;
-    private final DataSeriesReader<Byte> compressionBitFlagsCodec;
+    private final DataSeriesReader<Integer> compressionBitFlagsCodec;
     private final DataSeriesReader<Integer> readLengthCodec;
     private final DataSeriesReader<Integer> alignmentStartCodec;
     private final DataSeriesReader<Integer> readGroupCodec;
@@ -53,7 +54,7 @@ public class CramRecordReader {
     private final DataSeriesReader<Integer> paddingCodec;
     private final DataSeriesReader<Integer> deletionLengthCodec;
     private final DataSeriesReader<Integer> mappingScoreCodec;
-    private final DataSeriesReader<Byte> mateBitFlagCodec;
+    private final DataSeriesReader<Integer> mateBitFlagCodec;
     private final DataSeriesReader<Integer> mateReferenceIdCodec;
     private final DataSeriesReader<Integer> mateAlignmentStartCodec;
     private final DataSeriesReader<Integer> insertSizeCodec;
@@ -67,7 +68,7 @@ public class CramRecordReader {
 
     private final boolean captureReadNames;
     private final byte[][][] tagIdDictionary;
-    private final int refId;
+    private final ReferenceContext refContext;
     protected final ValidationStringency validationStringency;
 
     protected final boolean APDelta;
@@ -86,17 +87,17 @@ public class CramRecordReader {
      * @param coreInputStream Core data block bit stream, to be read by non-external Encodings
      * @param externalInputMap External data block byte stream map, to be read by external Encodings
      * @param header the associated Cram Compression Header
-     * @param refId the reference sequence ID to assign to these records
+     * @param refContext the reference context to assign to these records
      * @param validationStringency how strict to be when reading this CRAM record
      */
     public CramRecordReader(final BitInputStream coreInputStream,
                             final Map<Integer, ByteArrayInputStream> externalInputMap,
                             final CompressionHeader header,
-                            final int refId,
+                            final ReferenceContext refContext,
                             final ValidationStringency validationStringency) {
         this.captureReadNames = header.readNamesIncluded;
         this.tagIdDictionary = header.dictionary;
-        this.refId = refId;
+        this.refContext = refContext;
         this.validationStringency = validationStringency;
         this.APDelta = header.APDelta;
 
@@ -161,8 +162,10 @@ public class CramRecordReader {
      * Read a Cram Compression Record, using this class's Encodings
      *
      * @param cramRecord the Cram Compression Record to read into
+     * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
+     * @return the alignmentStart of the newly-read record
      */
-    public void read(final CramCompressionRecord cramRecord) {
+    public int read(final CramCompressionRecord cramRecord, final int prevAlignmentStart) {
         try {
             // int mark = testCodec.readData();
             // if (Writer.TEST_MARK != mark) {
@@ -173,15 +176,16 @@ public class CramRecordReader {
 
             cramRecord.flags = bitFlagsCodec.readData();
             cramRecord.compressionFlags = compressionBitFlagsCodec.readData();
-            if (refId == Slice.MULTI_REFERENCE) {
+            if (refContext.isMultiRef()) {
                 cramRecord.sequenceId = refIdCodec.readData();
             } else {
-                cramRecord.sequenceId = refId;
+                // either unmapped (-1) or a valid ref
+                cramRecord.sequenceId = refContext.getSerializableId();
             }
 
             cramRecord.readLength = readLengthCodec.readData();
             if (APDelta) {
-                cramRecord.alignmentDelta = alignmentStartCodec.readData();
+                cramRecord.alignmentStart = prevAlignmentStart + alignmentStartCodec.readData();
             } else {
                 cramRecord.alignmentStart = alignmentStartCodec.readData();
             }
@@ -329,5 +333,8 @@ public class CramRecordReader {
             }
             throw new RuntimeIOException(e);
         }
+
+        return cramRecord.alignmentStart;
     }
+
 }

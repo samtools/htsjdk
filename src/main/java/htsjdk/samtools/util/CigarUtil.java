@@ -88,7 +88,7 @@ public class CigarUtil {
         final CigarOperator op = c.getOperator();
         int clipAmount = clippedBases;
         if (op.consumesReadBases()){
-            if (op.consumesReferenceBases() & relativeClippedPosition > 0){
+            if (op.consumesReferenceBases() && relativeClippedPosition > 0){
                newCigar.add(new CigarElement(relativeClippedPosition, op));
             }
             if (!op.consumesReferenceBases()){

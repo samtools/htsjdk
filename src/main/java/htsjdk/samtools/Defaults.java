@@ -4,6 +4,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -45,6 +46,18 @@ public class Defaults {
 
     /** The output format of the flag field when writing SAM text.  Ignored for reading SAM text.  Default = DECIMAL */
     public static final SamFlagField SAM_FLAG_FIELD_FORMAT;
+
+    /**
+     * The extension to assume a sam file has when the actual file doesn't have an extension, useful
+     * for when outputing to /dev/stdout, for example.
+     */
+    public static final String DEFAULT_SAM_EXTENSION;
+
+    /**
+     * The extension to assume a vcf has when the actual file doesn't have an extension, useful
+     * for when outputing to /dev/stdout, for example.
+     */
+    public static final String DEFAULT_VCF_EXTENSION;
 
     /**
      * Even if BUFFER_SIZE is 0, this is guaranteed to be non-zero.  If BUFFER_SIZE is non-zero,
@@ -97,6 +110,8 @@ public class Defaults {
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
+
+    public static final String SAMJDK_PREFIX = "samjdk.";
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
         CREATE_MD5 = getBooleanProperty("create_md5", false);
@@ -104,6 +119,8 @@ public class Defaults {
         USE_ASYNC_IO_WRITE_FOR_SAMTOOLS = getBooleanProperty("use_async_io_write_samtools", false);
         USE_ASYNC_IO_WRITE_FOR_TRIBBLE = getBooleanProperty("use_async_io_write_tribble", false);
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
+        DEFAULT_SAM_EXTENSION = getStringProperty("default_sam_type", "bam");
+        DEFAULT_VCF_EXTENSION = getStringProperty("default_vcf_type", "vcf");
         BUFFER_SIZE = getIntProperty("buffer_size", 1024 * 128);
         if (BUFFER_SIZE == 0) {
             NON_ZERO_BUFFER_SIZE = 1024 * 128;
@@ -148,7 +165,7 @@ public class Defaults {
      * applications started with  -Djava.security.manager  . */
     private static String getStringProperty(final String name, final String def) {
         try {
-            return System.getProperty("samjdk." + name, def);
+            return System.getProperty(Defaults.SAMJDK_PREFIX + name, def);
         } catch (final java.security.AccessControlException error) {
             log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning default value: " + def );
             return def;
@@ -160,7 +177,7 @@ public class Defaults {
      * applications started with  -Djava.security.manager  this method returns false. */
     private static boolean hasProperty(final String name){
         try {
-            return null != System.getProperty("samjdk." + name);
+            return null != System.getProperty(Defaults.SAMJDK_PREFIX + name);
         } catch (final java.security.AccessControlException error) {
             log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning false");
             return false;
@@ -182,7 +199,14 @@ public class Defaults {
     /** Gets a File system property, prefixed with "samjdk." using the default if the property does not exist. */
     private static File getFileProperty(final String name, final String def) {
         final String value = getStringProperty(name, def);
-        // TODO: assert that it is readable
-        return (null == value) ? null : new File(value);
+        Optional<File> maybeFile = Optional.ofNullable(value).map(File::new);
+        maybeFile.ifPresent(f -> {
+            if (!f.exists()) {
+                log.warn(String.format("File property for %s has value %s. However file %s doesn't exist.", SAMJDK_PREFIX + name, value, f.getAbsolutePath()));
+            } else {
+                log.info(String.format("Found file for property %s: %s ", SAMJDK_PREFIX + name, f.getAbsolutePath()));
+            }
+        });
+        return maybeFile.orElse(null);
     }
 }

@@ -188,7 +188,7 @@ public class TextTagCodec {
         } else if (type.equals("i")) {
             final long lValue;
             try {
-                lValue = Long.valueOf(stringVal);
+                lValue = Long.parseLong(stringVal);
             } catch (NumberFormatException e) {
                 throw new SAMFormatException("Tag of type i should have signed decimal value");
             }

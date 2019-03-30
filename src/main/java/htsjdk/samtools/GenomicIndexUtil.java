@@ -70,6 +70,31 @@ public class GenomicIndexUtil {
         return 0;
     }
 
+    /**
+     * calculate the bin given an alignment in [beg,end)
+     * Described in "The Human Genome Browser at UCSC. Kent & al. doi: 10.1101/gr.229102 "
+     * @param beg 0-based start of read (inclusive)
+     * @param end 0-based end of read (exclusive)
+     * @param minShift minimum bin width (2^minShift)
+     * @param binDepth number of levels in the binning scheme (including bin 0)
+     */
+    public static int regionToBin(final int beg, int end, final int minShift, final int binDepth)
+    {
+        final int maxShift = minShift + 3*(binDepth-1);
+        int binWidth = minShift;
+
+        --end;
+
+        while (binWidth < maxShift) {
+            if (beg>>binWidth == end>>binWidth) {
+                return ((1<< (maxShift - binWidth)) - 1)/7 + (beg>>binWidth);
+            }
+            binWidth+=3;
+        }
+
+        return 0;
+    }
+
     // TODO: It is disturbing that regionToBins is 0-based, but regionToBins is 1-based.
     // TODO: It is also suspicious that regionToBins decrements endPos.  Test it!
     // TODO: However end is decremented in regionToBins so perhaps there is no conflict.
@@ -87,14 +112,49 @@ public class GenomicIndexUtil {
             return null;
         }
         int k;
-        final BitSet bitSet = new BitSet(GenomicIndexUtil.MAX_BINS);
-        bitSet.set(0);
-        for (k =    1 + (start>>26); k <=    1 + (end>>26); ++k) bitSet.set(k);
-        for (k =    9 + (start>>23); k <=    9 + (end>>23); ++k) bitSet.set(k);
-        for (k =   73 + (start>>20); k <=   73 + (end>>20); ++k) bitSet.set(k);
-        for (k =  585 + (start>>17); k <=  585 + (end>>17); ++k) bitSet.set(k);
-        for (k = 4681 + (start>>14); k <= 4681 + (end>>14); ++k) bitSet.set(k);
-        return bitSet;
+        final BitSet bins = new BitSet(GenomicIndexUtil.MAX_BINS);
+        bins.set(0);
+        for (k =    1 + (start>>26); k <=    1 + (end>>26); ++k) bins.set(k);
+        for (k =    9 + (start>>23); k <=    9 + (end>>23); ++k) bins.set(k);
+        for (k =   73 + (start>>20); k <=   73 + (end>>20); ++k) bins.set(k);
+        for (k =  585 + (start>>17); k <=  585 + (end>>17); ++k) bins.set(k);
+        for (k = 4681 + (start>>14); k <= 4681 + (end>>14); ++k) bins.set(k);
+        return bins;
+    }
+
+    /**
+     * Get candidate bins for the specified region
+     *
+     * @param startPos 1-based start of target region, inclusive.
+     * @param endPos   1-based end of target region, inclusive.
+     * @param minShift minimum bin width (2^minShift).
+     * @param binDepth number of levels in the binning scheme (including bin 0).
+     * @return bit set for each bin that may contain SAMRecords in the target region.
+     */
+    public static BitSet regionToBins(final int startPos, final int endPos, final int minShift, final int binDepth) {
+
+        final long maxPos = (1L << (minShift + 3 * (binDepth - 1))) - 1;
+        final long start = (startPos <= 0) ? 0 : ((long) startPos - 1L) & maxPos;
+        final long end = (endPos <= 0) ? maxPos : ((long) endPos - 1L) & maxPos;
+        if (start > end) {
+            return null;
+        }
+
+        int firstBinOnLevel = 1;
+        int binWidth = minShift + 3 * (binDepth - 2);
+
+        final BitSet bins = new BitSet(((1 << 3 * binDepth) - 1) / 7);
+        bins.set(0);
+        for (int level = 1; level < binDepth; level++) {
+            // It's possible this this conversion would overflow but the minShift / depth combination that would
+            // do so is implausible for any realistic indexing scheme.
+            final int startBin = (int) (start >> binWidth) + firstBinOnLevel;
+            final int endBin = (int) (end >> binWidth) + firstBinOnLevel;
+            bins.set(startBin, endBin + 1);
+            firstBinOnLevel += 1 << 3 * level;
+            binWidth -= 3;
+        }
+        return bins;
     }
 
 }

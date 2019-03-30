@@ -51,6 +51,6 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
 
         final SamReader samReader = SamReaderFactory.makeDefault().open(samFile);
         final SamLocusIterator samLocusIterator = new SamLocusIterator(samReader);
-        final SamLocusAndReferenceIterator shouldThrow = new SamLocusAndReferenceIterator(referenceSequenceFileWalker, samLocusIterator);
+        new SamLocusAndReferenceIterator(referenceSequenceFileWalker, samLocusIterator); // should throw
     }
 }

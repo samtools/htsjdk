@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,10 +17,13 @@ public class CramInt {
      *
      * @param inputStream input stream to read from
      * @return an integer value read
-     * @throws IOException as per java IO contract
      */
-    public static int readInt32(final InputStream inputStream) throws IOException {
-        return inputStream.read() | inputStream.read() << 8 | inputStream.read() << 16 | inputStream.read() << 24;
+    public static int readInt32(final InputStream inputStream) {
+        try {
+            return inputStream.read() | inputStream.read() << 8 | inputStream.read() << 16 | inputStream.read() << 24;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     /**
@@ -52,14 +57,17 @@ public class CramInt {
      * @param value value to be written out
      * @param outputStream    the output stream
      * @return the number of bits written out
-     * @throws IOException as per java IO contract
      */
     @SuppressWarnings("SameReturnValue")
-    public static int writeInt32(final int value, final OutputStream outputStream) throws IOException {
-        outputStream.write((byte) value);
-        outputStream.write((byte) (value >> 8));
-        outputStream.write((byte) (value >> 16));
-        outputStream.write((byte) (value >> 24));
+    public static int writeInt32(final int value, final OutputStream outputStream) {
+        try {
+            outputStream.write((byte) value);
+            outputStream.write((byte) (value >> 8));
+            outputStream.write((byte) (value >> 16));
+            outputStream.write((byte) (value >> 24));
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
         return 4 * 8;
     }
 

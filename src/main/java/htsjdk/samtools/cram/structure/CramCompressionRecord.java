@@ -24,10 +24,12 @@ import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
 import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
+import htsjdk.samtools.util.Log;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 public class CramCompressionRecord {
     private static final int MULTI_FRAGMENT_FLAG = 0x1;
@@ -49,12 +51,17 @@ public class CramCompressionRecord {
     private static final int HAS_MATE_DOWNSTREAM_FLAG = 0x4;
     private static final int UNKNOWN_BASES = 0x8;
 
+    private static final int UNINITIALIZED_END = -1;
+    private static final int UNINITIALIZED_SPAN = -1;
+
+    private static final Log log = Log.getInstance(CramCompressionRecord.class);
+
     // sequential index of the record in a stream:
     public int index = 0;
+    // start position of this read, using a 1-based coordinate system
     public int alignmentStart;
-    public int alignmentDelta;
-    private int alignmentEnd = -1;
-    private int alignmentSpan = -1;
+    private int alignmentEnd = UNINITIALIZED_END;
+    private int alignmentSpan = UNINITIALIZED_SPAN;
 
     public int readLength;
 
@@ -93,12 +100,12 @@ public class CramCompressionRecord {
 
     public int sliceIndex = 0;
 
-    public byte getMateFlags() {
-        return (byte) (0xFF & mateFlags);
+    public int getMateFlags() {
+        return (0xFF & mateFlags);
     }
 
-    public byte getCompressionFlags() {
-        return (byte) (0xFF & compressionFlags);
+    public int getCompressionFlags() {
+        return (0xFF & compressionFlags);
     }
 
     @SuppressWarnings("SimplifiableIfStatement")
@@ -122,7 +129,6 @@ public class CramCompressionRecord {
 
         if (!Arrays.equals(readBases, cramRecord.readBases)) return false;
         return Arrays.equals(qualityScores, cramRecord.qualityScores) && areEqual(flags, cramRecord.flags) && areEqual(readName, cramRecord.readName);
-
     }
 
     private boolean areEqual(final Object o1, final Object o2) {
@@ -134,11 +140,22 @@ public class CramCompressionRecord {
     }
 
     @Override
+    public int hashCode() {
+        int result = Objects.hash(alignmentStart, readLength, recordsToNextFragment, mappingQuality, flags, readName);
+        if (readFeatures != null && !readFeatures.isEmpty()) {
+            result = 31 * result + Objects.hash(readFeatures);
+        }
+        result = 31 * result + Arrays.hashCode(readBases);
+        result = 31 * result + Arrays.hashCode(qualityScores);
+        return result;
+    }
+
+    @Override
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder("[");
         if (readName != null) stringBuilder.append(readName).append("; ");
         stringBuilder.append("flags=").append(flags)
-                .append("; alignmentOffset=").append(alignmentDelta)
+                .append("; alignmentStart=").append(alignmentStart)
                 .append("; mateOffset=").append(recordsToNextFragment)
                 .append("; mappingQuality=").append(mappingQuality);
 
@@ -152,20 +169,41 @@ public class CramCompressionRecord {
         return stringBuilder.toString();
     }
 
+    /**
+     * Check whether alignmentSpan has been initialized, and do so if it has not
+     * @return the initialized alignmentSpan
+     */
     public int getAlignmentSpan() {
-        if (alignmentSpan < 0) calculateAlignmentBoundaries();
+        if (alignmentSpan == UNINITIALIZED_SPAN) {
+            intializeAlignmentBoundaries();
+        }
         return alignmentSpan;
     }
 
-    void calculateAlignmentBoundaries() {
-        if (isSegmentUnmapped()) {
-            alignmentSpan = 0;
-            alignmentEnd = SAMRecord.NO_ALIGNMENT_START;
-        } else if (readFeatures == null || readFeatures.isEmpty()) {
-            alignmentSpan = readLength;
-            alignmentEnd = alignmentStart + alignmentSpan - 1;
-        } else {
-            alignmentSpan = readLength;
+    /**
+     * Check whether alignmentEnd has been initialized, and do so if it has not
+     * @return the initialized alignmentEnd
+     */
+    public int getAlignmentEnd() {
+        if (alignmentEnd == UNINITIALIZED_END) {
+            intializeAlignmentBoundaries();
+        }
+        return alignmentEnd;
+    }
+
+    // https://github.com/samtools/htsjdk/issues/1301
+    // does not update alignmentSpan/alignmentEnd when the record changes
+
+    private void intializeAlignmentBoundaries() {
+        if (!isPlaced()) {
+            alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+            alignmentEnd = Slice.NO_ALIGNMENT_END;
+            return;
+        }
+
+        alignmentSpan = readLength;
+
+        if (readFeatures != null) {
             for (final ReadFeature readFeature : readFeatures) {
                 switch (readFeature.getOperator()) {
                     case InsertBase.operator:
@@ -185,13 +223,9 @@ public class CramCompressionRecord {
                         break;
                 }
             }
-            alignmentEnd = alignmentStart + alignmentSpan - 1;
         }
-    }
 
-    public int getAlignmentEnd() {
-        if (alignmentEnd < 0) calculateAlignmentBoundaries();
-        return alignmentEnd;
+        alignmentEnd = alignmentStart + alignmentSpan - 1;
     }
 
     public boolean isMultiFragment() {
@@ -202,12 +236,48 @@ public class CramCompressionRecord {
         flags = multiFragment ? flags | MULTI_FRAGMENT_FLAG : flags & ~MULTI_FRAGMENT_FLAG;
     }
 
+    /**
+     * Does this record have the mapped flag set? This is independent of placement/alignment status.
+     * Unmapped records may be stored in the same {@link Slice}s and {@link Container}s as mapped
+     * records if they are placed.
+     *
+     * @see #isPlaced()
+     * @return true if the record is unmapped
+     */
     public boolean isSegmentUnmapped() {
         return (flags & SEGMENT_UNMAPPED_FLAG) != 0;
     }
 
     public void setSegmentUnmapped(final boolean segmentUnmapped) {
         flags = segmentUnmapped ? flags | SEGMENT_UNMAPPED_FLAG : flags & ~SEGMENT_UNMAPPED_FLAG;
+    }
+
+    /**
+     * Does this record have a valid placement/alignment location?
+     *
+     * It must have a valid reference sequence ID and a valid alignment start position
+     * to be considered placed.
+     *
+     * Normally we expect to see that the unmapped flag is set for unplaced reads,
+     * so we log a WARNING here if the read is unplaced yet somehow mapped.
+     *
+     * @see #isSegmentUnmapped()
+     * @return true if the record is placed
+     */
+    public boolean isPlaced() {
+        // placement requires a valid sequence ID and alignment start coordinate
+        boolean placed = sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
+
+        if (!placed && !isSegmentUnmapped()) {
+            final String warning = String.format(
+                    "Cram Compression Record [%s] does not have the unmapped flag set, " +
+                            "but also does not have a valid placement on a reference sequence.",
+                    this.toString());
+            log.warn(warning);
+        }
+
+        return placed;
     }
 
     public boolean isFirstSegment() {
@@ -322,27 +392,5 @@ public class CramCompressionRecord {
 
     public void setSupplementary(final boolean supplementary) {
         flags = supplementary ? flags | SUPPLEMENTARY_FLAG : flags & ~SUPPLEMENTARY_FLAG;
-    }
-
-    public static class BAM_FLAGS {
-        public static final int READ_PAIRED_FLAG = 0x1;
-        public static final int PROPER_PAIR_FLAG = 0x2;
-        public static final int READ_UNMAPPED_FLAG = 0x4;
-        public static final int MATE_UNMAPPED_FLAG = 0x8;
-        public static final int READ_STRAND_FLAG = 0x10;
-        public static final int MATE_STRAND_FLAG = 0x20;
-        public static final int FIRST_OF_PAIR_FLAG = 0x40;
-        public static final int SECOND_OF_PAIR_FLAG = 0x80;
-        public static final int NOT_PRIMARY_ALIGNMENT_FLAG = 0x100;
-        public static final int READ_FAILS_VENDOR_QUALITY_CHECK_FLAG = 0x200;
-        public static final int DUPLICATE_READ_FLAG = 0x400;
-        public static final int SUPPLEMENTARY_FLAG = 0x800;
-    }
-
-    public static int getBAMFlags(final int cramFlags, final byte cramMateFlags) {
-        int value = cramFlags;
-        if ((cramMateFlags & MATE_NEG_STRAND_FLAG) != 0) value |= BAM_FLAGS.MATE_STRAND_FLAG;
-        if ((cramMateFlags & MATE_UNMAPPED_FLAG) != 0) value |= BAM_FLAGS.MATE_UNMAPPED_FLAG;
-        return value;
     }
 }

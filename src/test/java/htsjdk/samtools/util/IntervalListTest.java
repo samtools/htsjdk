@@ -238,6 +238,21 @@ public class IntervalListTest extends HtsjdkTest {
                 CollectionUtil.makeCollection(list.iterator()));
     }
 
+
+    @Test
+    public void testUnionSamePosition() {
+        final IntervalList iList= new IntervalList(fileHeader);
+
+        final List<Interval> intervals = Arrays.asList(
+                new Interval("1", 2, 100, true, "test1"),
+                new Interval("1", 2, 100, true, "test2")
+        );
+        iList.addall(intervals);
+        final List<Interval> uniqued = iList.uniqued().getIntervals();
+        Assert.assertEquals(uniqued.size(),1);
+        Assert.assertEquals(uniqued.get(0).getName(),"test1|test2");
+    }
+
     @DataProvider(name = "invertData")
     public Object[][] invertData() {
         final IntervalList invert1 = new IntervalList(fileHeader);
@@ -549,22 +564,47 @@ public class IntervalListTest extends HtsjdkTest {
         Assert.assertEquals(test.getIntervals(), CollectionUtil.makeList(new Interval(referenceName, 1, length)));
     }
 
-    @Test
-    public void testMerges() {
-        final SortedSet<Interval> intervals = new TreeSet<Interval>() {{
-            add(new Interval("1", 500, 600, false, "foo"));
-            add(new Interval("1", 550, 650, false, "bar"));
-            add(new Interval("1", 625, 699, false, "splat"));
-        }};
+    @DataProvider
+    public Object[][] getMergeTestCases() {
+        final String contig = "1";
+        final Interval foo = new Interval(contig, 500, 600, false, "foo");
+        final Interval bar = new Interval(contig, 550, 650, false, "bar");
+        final Interval splat = new Interval(contig, 625, 699, false, "splat");
+        final List<Interval> threeInOrderIntervals = Arrays.asList(foo, bar, splat);
+        final List<Interval> threeOutOfOrderIntervals = Arrays.asList(bar, foo, splat);
+        final Interval zeroLengthInterval = new Interval(contig, 626, 625);
+        final Interval interval600To601 = new Interval(contig, 600, 601);
+        final Interval interval600To625 = new Interval(contig, 600, 625);
+        final Interval normalInterval = new Interval(contig, 626, 629, true, "whee");
+        final Interval zeroInterval10To9 = new Interval(contig, 10, 9);
+        return new Object[][]{
+                {threeInOrderIntervals, true, new Interval(contig, 500, 699, false, "foo|bar|splat")},
+                {threeInOrderIntervals, false, new Interval(contig, 500, 699, false, "foo")},
+                {threeOutOfOrderIntervals, true, new Interval(contig, 500, 699, false, "bar|foo|splat")},
+                {threeOutOfOrderIntervals, false, new Interval(contig, 500, 699, false, "bar")},
+                {Collections.singletonList(normalInterval), true, normalInterval},
+                {Collections.singletonList(normalInterval), false, normalInterval},
+                {Collections.singletonList(zeroLengthInterval), true, zeroLengthInterval},
+                {Collections.singletonList(zeroLengthInterval), false, zeroLengthInterval},
+                {Arrays.asList(zeroLengthInterval, interval600To601), true, interval600To625},
+                {Arrays.asList(zeroLengthInterval, interval600To601), false, interval600To625},
+                {Arrays.asList(zeroLengthInterval, interval600To601), true, interval600To625},
+                {Arrays.asList(interval600To601, new Interval(contig, 100, 200, false, "hasName")), true, new Interval(contig, 100, 601, false, "hasName")},
+                {Arrays.asList(interval600To601, new Interval(contig, 100, 200, false, "hasName")), false, new Interval(contig, 100, 601, false, "hasName")},
+                {Arrays.asList(zeroInterval10To9, new Interval(contig, 11, 15)), false, new Interval(contig, 10, 15)},
+                {Arrays.asList(zeroInterval10To9, new Interval(contig, 10, 15)), true, new Interval(contig, 10, 15)},
+                {Arrays.asList(zeroInterval10To9, new Interval(contig, 9,15)), false, new Interval(contig, 9, 15)},
+                {Arrays.asList(zeroInterval10To9, new Interval(contig, 8, 9)), true, new Interval(contig, 8, 9)}
+        };
+    }
 
-        Interval out = IntervalList.merge(intervals, false);
-        Assert.assertEquals(out.getStart(), 500);
-        Assert.assertEquals(out.getEnd(), 699);
-
-        intervals.add(new Interval("1", 626, 629, false, "whee"));
-        out = IntervalList.merge(intervals, false);
-        Assert.assertEquals(out.getStart(), 500);
-        Assert.assertEquals(out.getEnd(), 699);
+    @Test(dataProvider = "getMergeTestCases")
+    public void testMerges(Iterable<Interval> intervals, boolean concatNames, Interval expected) {
+        final Interval merged = IntervalList.merge(intervals, concatNames);
+        Assert.assertEquals(merged.getContig(), expected.getContig());
+        Assert.assertEquals(merged.getStart(), expected.getStart());
+        Assert.assertEquals(merged.getStrand(), expected.getStrand());
+        Assert.assertEquals(merged.getName(), expected.getName());
     }
 
     @Test

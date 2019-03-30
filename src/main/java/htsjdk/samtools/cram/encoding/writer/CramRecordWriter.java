@@ -19,9 +19,10 @@ package htsjdk.samtools.cram.encoding.writer;
 
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.Slice;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class CramRecordWriter {
     private final DataSeriesWriter<Integer> bitFlagsC;
-    private final DataSeriesWriter<Byte> compBitFlagsC;
+    private final DataSeriesWriter<Integer> compBitFlagsC;
     private final DataSeriesWriter<Integer> readLengthC;
     private final DataSeriesWriter<Integer> alStartC;
     private final DataSeriesWriter<Integer> readGroupC;
@@ -50,7 +51,7 @@ public class CramRecordWriter {
     private final DataSeriesWriter<Integer> paddingCodec;
     private final DataSeriesWriter<Integer> deletionLengthCodec;
     private final DataSeriesWriter<Integer> mappingQualityScoreCodec;
-    private final DataSeriesWriter<Byte> mateBitFlagsCodec;
+    private final DataSeriesWriter<Integer> mateBitFlagsCodec;
     private final DataSeriesWriter<Integer> nextFragmentReferenceSequenceIDCodec;
     private final DataSeriesWriter<Integer> nextFragmentAlignmentStart;
     private final DataSeriesWriter<Integer> templateSize;
@@ -61,7 +62,7 @@ public class CramRecordWriter {
     private final Charset charset = Charset.forName("UTF8");
 
     private final boolean captureReadNames;
-    private final int refId;
+    private final ReferenceContext refContext;
     private final SubstitutionMatrix substitutionMatrix;
     private final boolean AP_delta;
     
@@ -75,14 +76,14 @@ public class CramRecordWriter {
      * @param coreOutputStream Core data block bit stream, to be written by non-external Encodings
      * @param externalOutputMap External data block byte stream map, to be written by external Encodings
      * @param header the associated Cram Compression Header
-     * @param refId the reference sequence ID to assign to these records
+     * @param refContext the reference context to assign to these records
      */
     public CramRecordWriter(final BitOutputStream coreOutputStream,
                             final Map<Integer, ByteArrayOutputStream> externalOutputMap,
                             final CompressionHeader header,
-                            final int refId) {
+                            final ReferenceContext refContext) {
         this.captureReadNames = header.readNamesIncluded;
-        this.refId = refId;
+        this.refContext = refContext;
         this.substitutionMatrix = header.substitutionMatrix;
         this.AP_delta = header.APDelta;
 
@@ -147,13 +148,13 @@ public class CramRecordWriter {
      * Writes a series of Cram Compression Records, using this class's Encodings
      *
      * @param records the Cram Compression Records to write
-     * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
+     * @param initialAlignmentStart the alignmentStart of the enclosing {@link Slice}, for delta calculation
      */
-    public void writeCramCompressionRecords(final List<CramCompressionRecord> records, int prevAlignmentStart) {
+    public void writeCramCompressionRecords(final List<CramCompressionRecord> records, final int initialAlignmentStart) {
+        int prevAlignmentStart = initialAlignmentStart;
         for (final CramCompressionRecord record : records) {
-            record.alignmentDelta = record.alignmentStart - prevAlignmentStart;
+            writeRecord(record, prevAlignmentStart);
             prevAlignmentStart = record.alignmentStart;
-            writeRecord(record);
         }
     }
 
@@ -161,18 +162,20 @@ public class CramRecordWriter {
      * Write a Cram Compression Record, using this class's Encodings
      *
      * @param r the Cram Compression Record to write
+     * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
      */
-    private void writeRecord(final CramCompressionRecord r) {
+    private void writeRecord(final CramCompressionRecord r, final int prevAlignmentStart) {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
-        if (refId == Slice.MULTI_REFERENCE) {
+        if (refContext.isMultiRef()) {
             refIdCodec.writeData(r.sequenceId);
         }
 
         readLengthC.writeData(r.readLength);
 
         if (AP_delta) {
-            alStartC.writeData(r.alignmentDelta);
+            final int alignmentDelta = r.alignmentStart - prevAlignmentStart;
+            alStartC.writeData(alignmentDelta);
         } else {
             alStartC.writeData(r.alignmentStart);
         }

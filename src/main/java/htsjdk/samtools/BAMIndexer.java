@@ -231,11 +231,7 @@ public class BAMIndexer {
                 }
 
                 @Override
-                public Integer getIndexingBin() {
-                    final Integer binNumber = rec.getIndexingBin();
-                    return (binNumber == null ? rec.computeIndexingBin() : binNumber);
-
-                }
+                public Integer getIndexingBin() { return rec.computeIndexingBin(); }
 
                 @Override
                 public Chunk getChunk() {

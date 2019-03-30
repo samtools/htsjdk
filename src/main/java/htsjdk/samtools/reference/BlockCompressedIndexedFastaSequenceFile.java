@@ -25,17 +25,16 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 
-import java.io.BufferedInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -52,7 +51,7 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
 
     public BlockCompressedIndexedFastaSequenceFile(final Path path)
             throws FileNotFoundException {
-        this(path,new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
+        this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
     }
 
     public BlockCompressedIndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
@@ -64,15 +63,30 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
         if (gziIndex == null) {
             throw new IllegalArgumentException("null gzi index");
         }
-        if (!canCreateBlockCompresedIndexedFastaSequence(path)) {
-            throw new SAMException("Invalid block-compressed Fasta file");
-        }
+        assertIsBlockCompressed(path);
         try {
             stream = new BlockCompressedInputStream(new SeekablePathStream(path));
             gzindex = gziIndex;
         } catch (IOException e) {
             throw new SAMException("Fasta file should be readable but is not: " + path, e);
         }
+    }
+
+    /**
+     * Initialize the given indexed fasta sequence file stream.
+     * @param source The named source of the reference file (used in error messages).
+     * @param in The input stream to read the fasta file from; should not be decompressed already.
+     * @param index The fasta index.
+     * @param dictionary The sequence dictionary, or null if there isn't one.
+     * @param gziIndex The GZI index; may not be null.
+     */
+    public BlockCompressedIndexedFastaSequenceFile(final String source, final SeekableStream in, final FastaSequenceIndex index, final SAMSequenceDictionary dictionary, final GZIIndex gziIndex) {
+        super(source, index, dictionary);
+        if (gziIndex == null) {
+            throw new IllegalArgumentException("null gzi index");
+        }
+        stream = new BlockCompressedInputStream(in);
+        gzindex = gziIndex;
     }
 
     private static GZIIndex loadFastaGziIndex(final Path path) {
@@ -83,12 +97,14 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
         }
     }
 
-    private static boolean canCreateBlockCompresedIndexedFastaSequence(final Path path) {
+    private static void assertIsBlockCompressed(final Path path) {
         try {
             // check if the it is a valid block-compressed file and if the .gzi index exits
-            return IOUtil.isBlockCompressed(path, true) && Files.exists(GZIIndex.resolveIndexNameForBgzipFile(path));
+            if (!IOUtil.isBlockCompressed(path, true)) {
+                throw new SAMException("Invalid block-compressed Fasta file: " + path);
+            }
         } catch (IOException e) {
-            return false;
+            throw new SAMException("Invalid block-compressed Fasta file: " + path, e);
         }
     }
 

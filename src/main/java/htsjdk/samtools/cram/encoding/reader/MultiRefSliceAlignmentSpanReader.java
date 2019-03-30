@@ -17,12 +17,11 @@ package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 
 import java.io.ByteArrayInputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A reader that only keeps track of alignment spans.
@@ -32,14 +31,9 @@ import java.util.Map;
  */
 public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
     /**
-     * Alignment start to start counting from
-     */
-    private int currentAlignmentStart;
-
-    /**
      * Detected sequence spans
      */
-    private final Map<Integer, AlignmentSpan> spans = new HashMap<>();
+    private final Map<ReferenceContext, AlignmentSpan> spans = new HashMap<>();
 
     /**
      * Initializes a Multiple Reference Sequence ID Reader.
@@ -58,33 +52,47 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final ValidationStringency validationStringency,
                                             final int initialAlignmentStart,
                                             final int recordCount) {
-        super(coreInputStream, externalInputMap, header, Slice.MULTI_REFERENCE, validationStringency);
+        super(coreInputStream, externalInputMap, header, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, validationStringency);
 
-        this.currentAlignmentStart = initialAlignmentStart;
+        // Alignment start of the previous record, for delta-encoding if necessary
+        int prevAlignmentStart = initialAlignmentStart;
 
         for (int i = 0; i < recordCount; i++) {
-            readCramRecord();
+            final CramCompressionRecord cramRecord = new CramCompressionRecord();
+            prevAlignmentStart = super.read(cramRecord, prevAlignmentStart);
+            processRecordSpan(cramRecord);
         }
     }
 
-    public Map<Integer, AlignmentSpan> getReferenceSpans() {
+    public Map<ReferenceContext, AlignmentSpan> getReferenceSpans() {
         return Collections.unmodifiableMap(spans);
     }
 
-    private void readCramRecord() {
-        final CramCompressionRecord cramRecord = new CramCompressionRecord();
-        super.read(cramRecord);
+    private void processRecordSpan(final CramCompressionRecord cramRecord) {
+        // if unplaced: create or replace the current spans map entry.
+        // we don't need to combine entries for different records because
+        // we count them elsewhere and span is irrelevant
 
-        if (APDelta) {
-            currentAlignmentStart += cramRecord.alignmentDelta;
-        } else {
-            currentAlignmentStart = cramRecord.alignmentStart;
+        if (! cramRecord.isPlaced()) {
+            spans.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);
+            return;
         }
 
-        if (!spans.containsKey(cramRecord.sequenceId)) {
-            spans.put(cramRecord.sequenceId, new AlignmentSpan(currentAlignmentStart, cramRecord.readLength));
-        } else {
-            spans.get(cramRecord.sequenceId).addSingle(currentAlignmentStart, cramRecord.readLength);
+        // for placed records we do need to combine the records' spans for counting and span calculation
+
+        AlignmentSpan span;
+        if (cramRecord.isSegmentUnmapped()) {
+            final int mappedCount = 0;
+            final int unmappedCount = 1;
+            span = new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength, mappedCount, unmappedCount);
         }
+        else {
+            final int mappedCount = 1;
+            final int unmappedCount = 0;
+            span = new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength, mappedCount, unmappedCount);
+        }
+
+        final ReferenceContext recordContext = new ReferenceContext(cramRecord.sequenceId);
+        spans.merge(recordContext, span, AlignmentSpan::combine);
     }
 }

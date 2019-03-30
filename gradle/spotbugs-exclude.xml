@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <!-- This class of warnings could be evaluated at some point -->
+        <!-- Dm: Reliance on default encoding -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dm-reliance-on-default-encoding-dm-default-encoding -->
+        <Bug pattern="DM_DEFAULT_ENCODING" />
+    </Match>
+    <Match>
+        <!-- SAMFileHeader#clone is public but we don't implement Cloneable (since Java's cloning mechanism is discouraged -->
+        <!-- CN: Class defines clone() but doesn’t implement Cloneable   -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#cn-class-defines-clone-but-doesn-t-implement-cloneable-cn-implements-clone-but-not-cloneable -->
+        <Class name="htsjdk.samtools.SAMFileHeader" />
+        <Bug pattern="CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE" />
+    </Match>
+    <Match>
+        <!-- MS: Field is a mutable array -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#ms-field-is-a-mutable-array-ms-mutable-array -->
+        <Class name="htsjdk.samtools.util.IOUtil" />
+        <Bug pattern="MS_MUTABLE_ARRAY" />
+    </Match>
+    <Match>
+        <!-- DM_GC: Explicit garbage collection; extremely dubious except in benchmarking code -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dm-explicit-garbage-collection-extremely-dubious-except-in-benchmarking-code-dm-gc -->
+        <Or>
+            <Class name="htsjdk.samtools.util.FileAppendStreamLRUCache$Functor" />
+            <Class name="htsjdk.samtools.util.SortingCollection" />
+            <Class name="htsjdk.samtools.util.SortingCollection$MergingIterator" />
+        </Or>
+        <Bug pattern="DM_GC" />
+    </Match>
+    <Match>
+        <!-- SC: Constructor invokes Thread.start() -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#sc-constructor-invokes-thread-start-sc-start-in-ctor -->
+        <Class name="htsjdk.samtools.util.AbstractAsyncWriter" />
+        <Bug pattern="SC_START_IN_CTOR" />
+    </Match>
+    <Match>
+        <!-- ST: Write to static field from instance method  -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#st-write-to-static-field-from-instance-method-st-write-to-static-from-instance-method -->
+        <Class name="htsjdk.tribble.util.HTTPHelper" />
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" />
+    </Match>
+    <Match>
+        <!-- Redundant null check is OK in this case, for clarity  -->
+        <!-- RCN: Redundant nullcheck of value known to be non-null  -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#rcn-redundant-nullcheck-of-value-known-to-be-non-null-rcn-redundant-nullcheck-of-nonnull-value -->
+        <Class name="htsjdk.variant.vcf.AbstractVCFCodec" />
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE" />
+    </Match>
+    <Match>
+        <!-- FE: Test for floating point equality -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#fe-test-for-floating-point-equality-fe-floating-point-equality -->
+        <Or>
+            <Class name="htsjdk.samtools.util.Histogram" />
+            <Class name="htsjdk.tribble.index.linear.LinearIndex$ChrIndex" />
+        </Or>
+        <Bug pattern="FE_FLOATING_POINT_EQUALITY" />
+    </Match>
+    <Match>
+        <!-- It's OK for test classes to create one-off Random objects -->
+        <!-- DMI: Random object created and used only once -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dmi-random-object-created-and-used-only-once-dmi-random-used-only-once -->
+        <Class name="~.*\.*Test" />
+        <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE" />
+    </Match>
+    <Match>
+        <!-- See note in BlockCompressedInputStreamTest.CountingInflater -->
+        <!-- ST: Write to static field from instance method  -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#st-write-to-static-field-from-instance-method-st-write-to-static-from-instance-method -->
+        <Class name="htsjdk.samtools.util.BlockCompressedInputStreamTest" />
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" />
+    </Match>
+
+</FindBugsFilter>

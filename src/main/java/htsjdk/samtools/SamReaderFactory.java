@@ -607,7 +607,7 @@ public abstract class SamReaderFactory {
 
         };
 
-        public static EnumSet<Option> DEFAULTS = EnumSet.noneOf(Option.class);
+        public static final EnumSet<Option> DEFAULTS = EnumSet.noneOf(Option.class);
 
         /** Applies this option to the provided reader, if applicable. */
         void applyTo(final SamReader.PrimitiveSamReaderToSamReaderAdapter reader) {

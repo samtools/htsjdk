@@ -4,6 +4,7 @@ import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
@@ -20,7 +21,7 @@ import java.util.zip.GZIPOutputStream;
  * Methods to provide CRAM external compression/decompression features.
  */
 public class ExternalCompression {
-    private static final int GZIP_COMPRESSION_LEVEL = Integer.valueOf(System.getProperty("gzip.compression.level", "5"));
+    private static final int GZIP_COMPRESSION_LEVEL = Integer.parseInt(System.getProperty("gzip.compression.level", "5"));
 
     /**
      * Compress a byte array into GZIP blob. The method obeys {@link ExternalCompression#GZIP_COMPRESSION_LEVEL} compression level.
@@ -28,15 +29,17 @@ public class ExternalCompression {
      * @param data byte array to compress
      * @return compressed blob
      */
-    public static byte[] gzip(final byte[] data) throws IOException {
+    public static byte[] gzip(final byte[] data) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        final GZIPOutputStream gos = new GZIPOutputStream(byteArrayOutputStream) {
+        try (final GZIPOutputStream gos = new GZIPOutputStream(byteArrayOutputStream) {
             {
                 def.setLevel(GZIP_COMPRESSION_LEVEL);
             }
-        };
-        IOUtil.copyStream(new ByteArrayInputStream(data), gos);
-        gos.close();
+        }) {
+            IOUtil.copyStream(new ByteArrayInputStream(data), gos);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
 
         return byteArrayOutputStream.toByteArray();
     }
@@ -46,12 +49,15 @@ public class ExternalCompression {
      *
      * @param data compressed data blob
      * @return uncompressed data
-     * @throws IOException as per java IO contract
      */
-    public static byte[] gunzip(final byte[] data) throws IOException {
-        final GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data));
-        return InputStreamUtils.readFully(gzipInputStream);
+    public static byte[] gunzip(final byte[] data) {
+        try (final GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data))) {
+            return InputStreamUtils.readFully(gzipInputStream);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
+
 
     /**
      * Compress a byte array into BZIP2 blob.
@@ -59,11 +65,13 @@ public class ExternalCompression {
      * @param data byte array to compress
      * @return compressed blob
      */
-    public static byte[] bzip2(final byte[] data) throws IOException {
+    public static byte[] bzip2(final byte[] data) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        final BZip2CompressorOutputStream bos = new BZip2CompressorOutputStream(byteArrayOutputStream);
-        IOUtil.copyStream(new ByteArrayInputStream(data), bos);
-        bos.close();
+        try (final BZip2CompressorOutputStream bos = new BZip2CompressorOutputStream(byteArrayOutputStream)) {
+            IOUtil.copyStream(new ByteArrayInputStream(data), bos);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
         return byteArrayOutputStream.toByteArray();
     }
 
@@ -72,12 +80,14 @@ public class ExternalCompression {
      *
      * @param data compressed data blob
      * @return uncompressed data
-     * @throws IOException as per java IO contract
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static byte[] unbzip2(final byte[] data) throws IOException {
-        final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
-        return InputStreamUtils.readFully(new BZip2CompressorInputStream(byteArrayInputStream));
+    public static byte[] unbzip2(final byte[] data) {
+        try (final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data)) {
+            return InputStreamUtils.readFully(new BZip2CompressorInputStream(byteArrayInputStream));
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     /**
@@ -122,11 +132,13 @@ public class ExternalCompression {
      * @param data byte array to compress
      * @return compressed blob
      */
-    public static byte[] xz(final byte[] data) throws IOException {
+    public static byte[] xz(final byte[] data) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(data.length * 2);
-        final XZCompressorOutputStream xzCompressorOutputStream = new XZCompressorOutputStream(byteArrayOutputStream);
-        xzCompressorOutputStream.write(data);
-        xzCompressorOutputStream.close();
+        try (final XZCompressorOutputStream xzCompressorOutputStream = new XZCompressorOutputStream(byteArrayOutputStream)) {
+            xzCompressorOutputStream.write(data);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
         return byteArrayOutputStream.toByteArray();
     }
 
@@ -136,11 +148,13 @@ public class ExternalCompression {
      *
      * @param data compressed data blob
      * @return uncompressed data
-     * @throws IOException as per java IO contract
      */
-    public static byte[] unxz(final byte[] data) throws IOException {
-        final XZCompressorInputStream xzCompressorInputStream = new XZCompressorInputStream(new ByteArrayInputStream(data));
-        return InputStreamUtils.readFully(xzCompressorInputStream);
+    public static byte[] unxz(final byte[] data) {
+        try (final XZCompressorInputStream xzCompressorInputStream = new XZCompressorInputStream(new ByteArrayInputStream(data))) {
+            return InputStreamUtils.readFully(xzCompressorInputStream);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
 
@@ -153,23 +167,19 @@ public class ExternalCompression {
     }
 
     public static byte[] uncompress(final BlockCompressionMethod method, final byte[] compressedContent) {
-        try {
-            switch (method) {
-                case RAW:
-                    return compressedContent;
-                case GZIP:
-                    return gunzip(compressedContent);
-                case BZIP2:
-                    return unbzip2(compressedContent);
-                case LZMA:
-                    return unxz(compressedContent);
-                case RANS:
-                    return unrans(compressedContent);
-                default:
-                    throw new RuntimeException("Unknown block compression method: " + method.name());
-            }
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
+        switch (method) {
+            case RAW:
+                return compressedContent;
+            case GZIP:
+                return gunzip(compressedContent);
+            case BZIP2:
+                return unbzip2(compressedContent);
+            case LZMA:
+                return unxz(compressedContent);
+            case RANS:
+                return unrans(compressedContent);
+            default:
+                throw new RuntimeException("Unknown block compression method: " + method.name());
         }
     }
 }

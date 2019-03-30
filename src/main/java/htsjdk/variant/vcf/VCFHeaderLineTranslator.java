@@ -27,6 +27,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,13 +49,44 @@ public class VCFHeaderLineTranslator {
     }
 
     public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder) {
-        return mapping.get(version).parseLine(valueLine,expectedTagOrder);
+        return parseLine(version, valueLine, expectedTagOrder, Collections.emptyList());
+    }
+    
+    public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder, List<String> recommendedTags) {
+        return mapping.get(version).parseLine(valueLine, expectedTagOrder, recommendedTags);
     }
 }
 
 
 interface VCFLineParser {
-    public Map<String,String> parseLine(String valueLine, List<String> expectedTagOrder);
+    /**
+     * parse a VCF line
+     * 
+     * @see #parseLine(String, List, List) VCFv4.2+ recommended tags support
+     * 
+     * @param valueLine the line
+     * @param expectedTagOrder List of expected tags
+     * @return a mapping of the tags parsed out
+     */
+    default Map<String,String> parseLine(String valueLine, List<String> expectedTagOrder) {
+        return parseLine(valueLine, expectedTagOrder, Collections.emptyList());
+    }
+
+    /**
+     * parse a VCF line
+     * 
+     * The recommended tags were introduced in VCFv4.2. 
+     * Older implementations may throw an exception when the recommendedTags field is not empty.
+     * 
+     * We use a list to represent tags as we assume there will be a very small amount of them,
+     * so using a {@code Set} is overhead.
+     * 
+     * @param valueLine the line
+     * @param expectedTagOrder List of expected tags
+     * @param recommendedTags List of tags that may or may not be present. Use an empty list instead of NULL for none.
+     * @return a mapping of the tags parsed out
+     */
+    Map<String,String> parseLine(String valueLine, List<String> expectedTagOrder, List<String> recommendedTags);
 }
 
 
@@ -62,13 +94,9 @@ interface VCFLineParser {
  * a class that handles the to and from disk for VCF 4 lines
  */
 class VCF4Parser implements VCFLineParser {
-    /**
-     * parse a VCF4 line
-     * @param valueLine the line
-     * @return a mapping of the tags parsed out
-     */
+    
     @Override
-    public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
+    public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder, List<String> recommendedTags) {
         // our return map
         Map<String, String> ret = new LinkedHashMap<String, String>();
 
@@ -132,11 +160,22 @@ class VCF4Parser implements VCFLineParser {
         // validate the tags against the expected list
         index = 0;
         if ( expectedTagOrder != null ) {
-            if ( ret.size() > expectedTagOrder.size() )
-                throw new TribbleException.InvalidHeader("unexpected tag count " + ret.size() + " in line " + valueLine);
+            if (ret.keySet().isEmpty() && !expectedTagOrder.isEmpty()) {
+                throw new TribbleException.InvalidHeader("Header with no tags is not supported when there are expected tags in line " + valueLine);
+            }
             for ( String str : ret.keySet() ) {
-                if ( !expectedTagOrder.get(index).equals(str) )
-                    throw new TribbleException.InvalidHeader("Unexpected tag " + str + " in line " + valueLine);
+                if (index < expectedTagOrder.size()) {
+                    if (!expectedTagOrder.get(index).equals(str)) {
+                        if (expectedTagOrder.contains(str)) {
+                            throw new TribbleException.InvalidHeader("Tag " + str + " in wrong order (was #" + (index+1) + ", expected #" + (expectedTagOrder.indexOf(str)+1) + ") in line " + valueLine);
+                        } else if (recommendedTags.contains(str)) {
+                            throw new TribbleException.InvalidHeader("Recommended tag " + str + " must be listed after all expected tags in line " + valueLine);
+                        }
+                        else {
+                            throw new TribbleException.InvalidHeader("Unexpected tag " + str + " in line " + valueLine);
+                        }
+                    }
+                }
                 index++;
             }
         }
@@ -147,7 +186,11 @@ class VCF4Parser implements VCFLineParser {
 class VCF3Parser implements VCFLineParser {
 
     @Override
-    public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
+    public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder, List<String> recommendedTags) {
+        if (!recommendedTags.isEmpty()) {
+            throw new TribbleException.InternalCodecException("Recommended tags are not allowed in VCFv3.x");
+        }
+        
         // our return map
         Map<String, String> ret = new LinkedHashMap<String, String>();
 

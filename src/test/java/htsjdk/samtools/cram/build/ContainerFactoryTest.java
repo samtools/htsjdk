@@ -1,135 +1,148 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
+import htsjdk.samtools.cram.structure.CRAMStructureTestUtil;
 import htsjdk.samtools.cram.structure.Slice;
-import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by vadim on 15/12/2015.
  */
 public class ContainerFactoryTest extends HtsjdkTest {
+    private static final int TEST_RECORD_COUNT = 10;
+    private static final int READ_LENGTH_FOR_TEST_RECORDS = CRAMStructureTestUtil.READ_LENGTH_FOR_TEST_RECORDS;
 
     @Test
-    public void testUnmapped() throws IOException, IllegalAccessException {
-        SAMFileHeader header = new SAMFileHeader();
+    public void recordsPerSliceTest() {
+        final int recordsPerSlice = 100;
+        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), recordsPerSlice);
 
-        int recordsPerContainer = 10;
-        ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
+        // build a container with the max records per slice
 
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < recordsPerContainer; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.setSegmentUnmapped(true);
-            record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-            record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-            record.readBases = record.qualityScores = "ACGTN".getBytes();
-            record.readName = Integer.toString(i);
-
-            records.add(record);
-        }
-
+        final List<CramCompressionRecord> records = CRAMStructureTestUtil.getSingleRefRecords(recordsPerSlice, 0);
         final Container container = factory.buildContainer(records);
-        Assert.assertNotNull(container);
-        Assert.assertEquals(container.nofRecords, records.size());
 
-        assertContainerAlignmentBoundaries(container, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        Assert.assertEquals(container.nofRecords, recordsPerSlice);
+        Assert.assertEquals(container.slices.length, 1);
+        Assert.assertEquals(container.slices[0].nofRecords, recordsPerSlice);
+
+        // build a container with 1 too many records to fit into a slice
+        // 2 slices: recordsPerSlice records and 1 record
+
+        records.add(CRAMStructureTestUtil.createMappedRecord(recordsPerSlice, 0, 1));
+        final Container container2 = factory.buildContainer(records);
+
+        Assert.assertEquals(container2.nofRecords, recordsPerSlice + 1);
+        Assert.assertEquals(container2.slices.length, 2);
+        Assert.assertEquals(container2.slices[0].nofRecords, recordsPerSlice);
+        Assert.assertEquals(container2.slices[1].nofRecords, 1);
+    }
+
+    @DataProvider(name = "containerStateTests")
+    private Object[][] containerStateTests() {
+        final int mappedSequenceId = 0;  // arbitrary
+        final ReferenceContext mappedRefContext = new ReferenceContext(mappedSequenceId);
+        final int mappedAlignmentStart = 1;
+        // record spans:
+        // [1 to READ_LENGTH_FOR_TEST_RECORDS]
+        // [2 to READ_LENGTH_FOR_TEST_RECORDS + 1]
+        // up to [TEST_RECORD_COUNT to READ_LENGTH_FOR_TEST_RECORDS + TEST_RECORD_COUNT - 1]
+        final int mappedAlignmentSpan = READ_LENGTH_FOR_TEST_RECORDS + TEST_RECORD_COUNT - 1;
+
+        return new Object[][]{
+                {
+                        CRAMStructureTestUtil.getSingleRefRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        mappedRefContext, mappedAlignmentStart, mappedAlignmentSpan
+                },
+                {
+                        CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT),
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                },
+                {
+                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                },
+
+                // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
+                // but not both.  We treat these weird edge cases as unplaced.
+
+                {
+                        CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                },
+                {
+                        CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                },
+
+                // show that unmapped-unplaced reads cause a single ref slice/container to become multiref
+
+                {
+                        CRAMStructureTestUtil.getSingleRefRecordsWithOneUnmapped(TEST_RECORD_COUNT, mappedSequenceId),
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                },
+
+                // show that unmapped-unplaced reads don't change the state of a multi-ref slice/container
+
+                {
+                        CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(TEST_RECORD_COUNT),
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                },
+        };
+    }
+
+    @Test(dataProvider = "containerStateTests")
+    public void testContainerState(final List<CramCompressionRecord> records,
+                                   final ReferenceContext expectedReferenceContext,
+                                   final int expectedAlignmentStart,
+                                   final int expectedAlignmentSpan) {
+        final Container container = buildFromNewFactory(records);
+        final int globalRecordCounter = 0; // first Container
+        final int baseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
+
+        CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext,
+                expectedAlignmentStart, expectedAlignmentSpan,
+                TEST_RECORD_COUNT, baseCount, globalRecordCounter);
     }
 
     @Test
-    public void testMapped() throws IOException, IllegalAccessException {
-        InMemoryReferenceSequenceFile refFile = new InMemoryReferenceSequenceFile();
-        String refName = "1";
-        String refString = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-        refFile.add(refName, refString.getBytes());
-        ReferenceSource source = new ReferenceSource(refFile);
-        SAMFileHeader header = new SAMFileHeader();
-        header.addSequence(new SAMSequenceRecord(refName, refString.length()));
-        int sequenceId = header.getSequenceIndex(refName);
+    public void testMultiRefWithStateTransitions() {
+        final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest();
 
-        int recordsPerContainer = 10;
-        byte[] bases = "AAAAA".getBytes();
-        int readLength = bases.length;
-        int alignmentStartOffset = 3;
-        ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
+        // first container is single-ref
 
-        List<CramCompressionRecord> records = new ArrayList<>();
-        int span = 0;
-        for (int i = 0; i < recordsPerContainer; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.setSegmentUnmapped(false);
-            record.sequenceId = sequenceId;
-            record.alignmentStart = alignmentStartOffset + i;
-            record.readBases = record.qualityScores = bases;
-            record.readName = Integer.toString(i);
-            record.readLength = readLength;
-            record.readFeatures = Collections.emptyList();
+        final ReferenceContext refContext = new ReferenceContext(0);
+        final int alignmentStart = 1;
+        final int alignmentSpan = READ_LENGTH_FOR_TEST_RECORDS;
+        int recordCount = 1;
+        int globalRecordCount = 0; // first container - no records yet
+        CRAMStructureTestUtil.assertContainerState(containers.get(0), refContext, alignmentStart, alignmentSpan,
+                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount);
 
-            records.add(record);
-            span = record.alignmentStart + readLength - alignmentStartOffset;
-        }
+        // when other refs are added, subsequent containers are multiref
 
-        final Container container = factory.buildContainer(records);
-        Assert.assertNotNull(container);
-        Assert.assertEquals(container.nofRecords, records.size());
+        recordCount++;  // this container has 2 records
+        globalRecordCount = containers.get(0).nofRecords;   // we've seen 1 record before this container
+        CRAMStructureTestUtil.assertContainerState(containers.get(1), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
+                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
+                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount);
 
-        assertContainerAlignmentBoundaries(container, sequenceId, alignmentStartOffset, span);
+        recordCount++;  // this container has 3 records
+        globalRecordCount = containers.get(0).nofRecords + containers.get(1).nofRecords;    // we've seen 3 records before this container
+        CRAMStructureTestUtil.assertContainerState(containers.get(2), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
+                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
+                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount);
     }
 
-    @Test
-    public void testMultiref() throws IOException, IllegalAccessException {
-        SAMFileHeader header = new SAMFileHeader();
-        header.addSequence(new SAMSequenceRecord("1", 100));
-        header.addSequence(new SAMSequenceRecord("2", 200));
-
-        int recordsPerContainer = 10;
-        byte[] bases = "AAAAA".getBytes();
-        int readLength = bases.length;
-        int alignmentStartOffset = 3;
-        ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
-
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < recordsPerContainer; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.setSegmentUnmapped(false);
-            record.sequenceId = i % 2;
-            record.alignmentStart = alignmentStartOffset + i;
-            record.readBases = record.qualityScores = bases;
-            record.readName = Integer.toString(i);
-            record.readLength = readLength;
-            record.readFeatures = Collections.emptyList();
-
-            records.add(record);
-        }
-
-        final Container container = factory.buildContainer(records);
-        Assert.assertNotNull(container);
-        Assert.assertEquals(container.nofRecords, records.size());
-
-        assertContainerAlignmentBoundaries(container, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
-    }
-
-
-    private void assertContainerAlignmentBoundaries(Container container, int sequenceId, int alignmentStart, int alignmentSpan) {
-        Assert.assertEquals(container.sequenceId, sequenceId);
-        Assert.assertEquals(container.alignmentStart, alignmentStart);
-        Assert.assertEquals(container.alignmentSpan, alignmentSpan);
-
-        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX || sequenceId == Slice.MULTI_REFERENCE) {
-            Assert.assertEquals(container.alignmentStart, Slice.NO_ALIGNMENT_START);
-            Assert.assertEquals(container.alignmentSpan, Slice.NO_ALIGNMENT_SPAN);
-        }
+    private Container buildFromNewFactory(final List<CramCompressionRecord> records) {
+        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
+        return factory.buildContainer(records);
     }
 }

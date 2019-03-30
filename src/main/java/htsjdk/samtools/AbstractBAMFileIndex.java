@@ -27,13 +27,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -55,34 +48,27 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
 
     private final IndexFileBuffer mIndexBuffer;
 
-    private SAMSequenceDictionary mBamDictionary = null;
-    
-    final int [] sequenceIndexes;
+    private final SAMSequenceDictionary mBamDictionary;
 
-    protected AbstractBAMFileIndex(
-        final SeekableStream stream, final SAMSequenceDictionary dictionary)
-    {
-        mBamDictionary = dictionary;
-        mIndexBuffer = new IndexStreamBuffer(stream);
+    long[] sequenceIndexes;
 
-        verifyBAMMagicNumber(stream.getSource());
-
-        sequenceIndexes = new int[readInteger() + 1];
-        Arrays.fill(sequenceIndexes, -1);
+    protected AbstractBAMFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
+        this(new IndexStreamBuffer(stream), stream.getSource(), dictionary);
     }
 
     protected AbstractBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
-        this(file, dictionary, true);
+        this(new MemoryMappedFileBuffer(file), file.getName(), dictionary);
     }
 
     protected AbstractBAMFileIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
+        this((useMemoryMapping ? new MemoryMappedFileBuffer(file) : new RandomAccessFileBuffer(file)), file.getName(), dictionary);
+    }
+
+    protected AbstractBAMFileIndex(final IndexFileBuffer indexFileBuffer, final String source, final SAMSequenceDictionary dictionary) {
+        mIndexBuffer = indexFileBuffer;
         mBamDictionary = dictionary;
-        mIndexBuffer = (useMemoryMapping ? new MemoryMappedFileBuffer(file) : new RandomAccessFileBuffer(file));
-
-        verifyBAMMagicNumber(file.getName());
-
-        sequenceIndexes = new int[readInteger() + 1];
-        Arrays.fill(sequenceIndexes, -1);
+        verifyIndexMagicNumber(source);
+        initParameters();
     }
 
     /**
@@ -101,12 +87,20 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         return GenomicIndexUtil.LEVEL_STARTS.length;
     }
 
+    private static void assertLevelIsValid (final int levelNumber) {
+        if (levelNumber >= getNumIndexLevels()) {
+            throw new SAMException("Level number (" + levelNumber + ") is greater than or equal to maximum (" + getNumIndexLevels() + ").");
+        }
+    }
+
     /**
      * Gets the first bin in the given level.
      * @param levelNumber Level number.  0-based.
      * @return The first bin in this level.
      */
     public static int getFirstBinInLevel(final int levelNumber) {
+        assertLevelIsValid(levelNumber);
+
         return GenomicIndexUtil.LEVEL_STARTS[levelNumber];
     }
 
@@ -116,10 +110,13 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * @return The size (number of possible bins) of the given level.
      */
     public int getLevelSize(final int levelNumber) {
-        if(levelNumber == getNumIndexLevels())
-            return GenomicIndexUtil.MAX_BINS+1-GenomicIndexUtil.LEVEL_STARTS[levelNumber];
-        else
-            return GenomicIndexUtil.LEVEL_STARTS[levelNumber+1]-GenomicIndexUtil.LEVEL_STARTS[levelNumber];
+        assertLevelIsValid(levelNumber);
+
+        if (levelNumber == getNumIndexLevels()-1) {
+            return GenomicIndexUtil.MAX_BINS - GenomicIndexUtil.LEVEL_STARTS[levelNumber] - 1;
+        } else {
+            return GenomicIndexUtil.LEVEL_STARTS[levelNumber + 1] - GenomicIndexUtil.LEVEL_STARTS[levelNumber];
+        }
     }
 
     /**
@@ -227,11 +224,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             final int indexBin = readInteger();
             final int nChunks = readInteger();
             if (indexBin == GenomicIndexUtil.MAX_BINS) {
-                for (int ci = 0; ci < nChunks; ci++) {
-                    final long chunkBegin = readLong();
-                    final long chunkEnd = readLong();
-                    metaDataChunks.add(new Chunk(chunkBegin, chunkEnd));
-                }
+                readChunks(nChunks, metaDataChunks);
             } else {
                 skipBytes(16 * nChunks);
             }
@@ -287,21 +280,11 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             Chunk lastChunk = null;
             if (regionBins.get(indexBin)) {
             	chunks = new ArrayList<Chunk>(nChunks);
-                for (int ci = 0; ci < nChunks; ci++) {
-                    final long chunkBegin = readLong();
-                    final long chunkEnd = readLong();
-                    lastChunk = new Chunk(chunkBegin, chunkEnd);
-                    chunks.add(lastChunk);
-                }
+                readChunks(nChunks, chunks);
             } else if (indexBin == GenomicIndexUtil.MAX_BINS) {
                 // meta data - build the bin so that the count of bins is correct;
                 // but don't attach meta chunks to the bin, or normal queries will be off
-                for (int ci = 0; ci < nChunks; ci++) {
-                    final long chunkBegin = readLong();
-                    final long chunkEnd = readLong();
-                    lastChunk = new Chunk(chunkBegin, chunkEnd);
-                    metaDataChunks.add(lastChunk);
-                }
+                readChunks(nChunks, metaDataChunks);
                 metaDataSeen = true;
                 continue; // don't create a Bin
             } else {
@@ -366,27 +349,16 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     }
 
     /**
+     * @deprecated Use {@link GenomicIndexUtil#regionToBins(int, int)} instead.
+     *
      * Get candidate bins for the specified region
      * @param startPos 1-based start of target region, inclusive.
      * @param endPos 1-based end of target region, inclusive.
      * @return bit set for each bin that may contain SAMRecords in the target region.
      */
+    @Deprecated
     protected BitSet regionToBins(final int startPos, final int endPos) {
-        final int maxPos = 0x1FFFFFFF;
-        final int start = (startPos <= 0) ? 0 : (startPos-1) & maxPos;
-        final int end = (endPos <= 0) ? maxPos : (endPos-1) & maxPos;
-        if (start > end) {
-            return null;
-        }
-        int k;
-        final BitSet bitSet = new BitSet(GenomicIndexUtil.MAX_BINS);
-        bitSet.set(0);
-        for (k =    1 + (start>>26); k <=    1 + (end>>26); ++k) bitSet.set(k);
-        for (k =    9 + (start>>23); k <=    9 + (end>>23); ++k) bitSet.set(k);
-        for (k =   73 + (start>>20); k <=   73 + (end>>20); ++k) bitSet.set(k);
-        for (k =  585 + (start>>17); k <=  585 + (end>>17); ++k) bitSet.set(k);
-        for (k = 4681 + (start>>14); k <= 4681 + (end>>14); ++k) bitSet.set(k);
-        return bitSet;
+        return GenomicIndexUtil.regionToBins(startPos, endPos);
     }
 
     /**
@@ -397,14 +369,32 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         return Chunk.optimizeChunkList(chunks, minimumOffset);
     }
 
-    private void verifyBAMMagicNumber(final String sourceName) {
+    protected void verifyIndexMagicNumber(final String sourceName) {
         // Verify the magic number.
         seek(0);
         final byte[] buffer = new byte[4];
         readBytes(buffer);
-        if (!Arrays.equals(buffer, BAMFileConstants.BAM_INDEX_MAGIC)) {
+        if (!Arrays.equals(buffer, BAMFileConstants.BAI_INDEX_MAGIC)) {
             throw new RuntimeIOException("Invalid file header in BAM index " + sourceName +
                     ": " + new String(buffer));
+        }
+    }
+
+    /**
+     * Initialization method used for simplifying the constructor
+     * hierarchy.
+     */
+    protected void initParameters() {
+        setSequenceIndexes(getNumberOfReferences());
+    }
+
+    protected void readChunks(int nChunks, List<Chunk> chunks) {
+        Chunk lastChunk;
+        for (int ci = 0; ci < nChunks; ci++) {
+            final long chunkBegin = readLong();
+            final long chunkEnd = readLong();
+            lastChunk = new Chunk(chunkBegin, chunkEnd);
+            chunks.add(lastChunk);
         }
     }
 
@@ -434,291 +424,36 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         sequenceIndexes[sequenceIndex] = position();
     }
 
-    private void readBytes(final byte[] bytes) {
+    protected final void readBytes(final byte[] bytes) {
         mIndexBuffer.readBytes(bytes);
     }
 
-    private int readInteger() {
+    protected final int readInteger() {
         return mIndexBuffer.readInteger();
     }
 
-    private long readLong() {
+    protected final long readLong() {
         return mIndexBuffer.readLong();
     }
 
-    private void skipBytes(final int count) {
+    protected final void skipBytes(final int count) {
         mIndexBuffer.skipBytes(count);
     }
 
-    private void seek(final int position) {
+    protected final void seek(final long position) {
         mIndexBuffer.seek(position);
     }
     
-    private int position(){
+    protected final long position(){
     	return mIndexBuffer.position();
     }
 
-    private abstract static class IndexFileBuffer {
-        abstract void readBytes(final byte[] bytes);
-        abstract int readInteger();
-        abstract long readLong();
-        abstract void skipBytes(final int count);
-        abstract void seek(final int position);
-        abstract int position();
-        abstract void close();
+    protected final SAMSequenceDictionary getBamDictionary() {
+        return mBamDictionary;
     }
 
-    /**
-     * Traditional implementation of BAM index file access using memory mapped files.
-     */
-    private static class MemoryMappedFileBuffer extends IndexFileBuffer {
-        private MappedByteBuffer mFileBuffer;
-
-        MemoryMappedFileBuffer(final File file) {
-            try {
-                // Open the file stream.
-                final FileInputStream fileStream = new FileInputStream(file);
-                final FileChannel fileChannel = fileStream.getChannel();
-                mFileBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0L, fileChannel.size());
-                mFileBuffer.order(ByteOrder.LITTLE_ENDIAN);
-                fileChannel.close();
-                fileStream.close();
-            } catch (final IOException exc) {
-                throw new RuntimeIOException(exc.getMessage(), exc);
-            }
-        }
-
-        @Override
-        void readBytes(final byte[] bytes) {
-            mFileBuffer.get(bytes);
-        }
-
-        @Override
-        int readInteger() {
-            return mFileBuffer.getInt();
-        }
-
-        @Override
-        long readLong() {
-            return mFileBuffer.getLong();
-        }
-
-        @Override
-        void skipBytes(final int count) {
-            mFileBuffer.position(mFileBuffer.position() + count);
-        }
-
-        @Override
-        void seek(final int position) {
-            mFileBuffer.position(position);
-        }
-        
-        @Override
-		int position() {
-			return mFileBuffer.position();
-		}
-
-        @Override
-        void close() {
-            mFileBuffer = null;
-        }
-    }
-
-    /**
-     * Alternative implementation of BAM index file access using regular I/O instead of memory mapping.
-     * 
-     * This implementation can be more scalable for certain applications that need to access large numbers of BAM files.
-     * Java provides no way to explicitly release a memory mapping.  Instead, you need to wait for the garbage collector
-     * to finalize the MappedByteBuffer.  Because of this, when accessing many BAM files or when querying many BAM files
-     * sequentially, you cannot easily control the physical memory footprint of the java process.
-     * This can limit scalability and can have bad interactions with load management software like LSF, forcing you
-     * to reserve enough physical memory for a worst case scenario.
-     * The use of regular I/O allows you to trade somewhat slower performance for a small, fixed memory footprint
-     * if that is more suitable for your application.
-     */
-    private static class RandomAccessFileBuffer extends IndexFileBuffer {
-        private static final int PAGE_SIZE = 4 * 1024;
-        private static final int PAGE_OFFSET_MASK = PAGE_SIZE-1;
-        private static final int PAGE_MASK = ~PAGE_OFFSET_MASK;
-        private static final int INVALID_PAGE = 1;
-        private final File mFile;
-        private RandomAccessFile mRandomAccessFile;
-        private final int mFileLength;
-        private int mFilePointer = 0;
-        private int mCurrentPage = INVALID_PAGE;
-        private final byte[] mBuffer = new byte[PAGE_SIZE];
-
-        RandomAccessFileBuffer(final File file) {
-            mFile = file;
-            try {
-                mRandomAccessFile = new RandomAccessFile(file, "r");
-                final long fileLength = mRandomAccessFile.length();
-                if (fileLength > Integer.MAX_VALUE) {
-                    throw new RuntimeIOException("BAM index file " + mFile + " is too large: " + fileLength);
-                }
-                mFileLength = (int) fileLength;
-            } catch (final IOException exc) {
-                throw new RuntimeIOException(exc.getMessage(), exc);
-            }
-        }
-
-        @Override
-        void readBytes(final byte[] bytes) {
-            int resultOffset = 0;
-            int resultLength = bytes.length;
-            if (mFilePointer + resultLength > mFileLength) {
-                throw new RuntimeIOException("Attempt to read past end of BAM index file (file is truncated?): " + mFile);
-            }
-            while (resultLength > 0) {
-                loadPage(mFilePointer);
-                final int pageOffset = mFilePointer & PAGE_OFFSET_MASK;
-                final int copyLength = Math.min(resultLength, PAGE_SIZE - pageOffset);
-                System.arraycopy(mBuffer, pageOffset, bytes, resultOffset, copyLength);
-                mFilePointer += copyLength;
-                resultOffset += copyLength;
-                resultLength -= copyLength;
-            }
-        }
-
-        @Override
-        int readInteger() {
-            // This takes advantage of the fact that integers in BAM index files are always 4-byte aligned.
-            loadPage(mFilePointer);
-            final int pageOffset = mFilePointer & PAGE_OFFSET_MASK;
-            mFilePointer += 4;
-            return((mBuffer[pageOffset + 0] & 0xFF) |
-                   ((mBuffer[pageOffset + 1] & 0xFF) << 8) | 
-                   ((mBuffer[pageOffset + 2] & 0xFF) << 16) |
-                   ((mBuffer[pageOffset + 3] & 0xFF) << 24));
-        }
-
-        @Override
-        long readLong() {
-            // BAM index files are always 4-byte aligned, but not necessrily 8-byte aligned.
-            // So, rather than fooling with complex page logic we simply read the long in two 4-byte chunks.
-            final long lower = readInteger();
-            final long upper = readInteger();
-            return ((upper << 32) | (lower & 0xFFFFFFFFL));
-        }
-
-        @Override
-        void skipBytes(final int count) {
-            mFilePointer += count;
-        }
-        
-        @Override
-        void seek(final int position) {
-            mFilePointer = position;
-        }
-        
-        @Override
-		int position() {
-			return mFilePointer;
-		}
-
-        @Override
-        void close() {
-            mFilePointer = 0;
-            mCurrentPage = INVALID_PAGE;
-            if (mRandomAccessFile != null) {
-                try {
-                    mRandomAccessFile.close();
-                } catch (final IOException exc) {
-                    throw new RuntimeIOException(exc.getMessage(), exc);
-                }
-                mRandomAccessFile = null;
-            }
-        }
-
-        private void loadPage(final int filePosition) {
-            final int page = filePosition & PAGE_MASK;
-            if (page == mCurrentPage) {
-                return;
-            }
-            try {
-                mRandomAccessFile.seek(page);
-                final int readLength = Math.min(mFileLength - page, PAGE_SIZE);
-                mRandomAccessFile.readFully(mBuffer, 0, readLength);
-                mCurrentPage = page;
-            } catch (final IOException exc) {
-                throw new RuntimeIOException("Exception reading BAM index file " + mFile + ": " + exc.getMessage(), exc);
-            }
-        }
-    }
-
-    static class IndexStreamBuffer extends IndexFileBuffer {
-        private final SeekableStream in;
-        private final ByteBuffer tmpBuf;
-
-        /** Continually reads from the provided {@link SeekableStream} into the buffer until the specified number of bytes are read, or
-         * until the stream is exhausted, throwing a {@link RuntimeIOException}. */
-        private static void readFully(final SeekableStream in, final byte[] buffer, final int offset, final int length) {
-            int read = 0;
-            while (read < length) {
-                final int readThisLoop;
-                try {
-                    readThisLoop = in.read(buffer, read, length - read);
-                } catch (final IOException e) {
-                    throw new RuntimeIOException(e);
-                }
-                if (readThisLoop == -1) break;
-                read += readThisLoop;
-            }
-            if (read != length) throw new RuntimeIOException("Expected to read " + length + " bytes, but expired stream after " + read + ".");
-        }
-
-        public IndexStreamBuffer(final SeekableStream s) {
-            in = s;
-            tmpBuf = ByteBuffer.allocate(8); // Enough to fit a long.
-            tmpBuf.order(ByteOrder.LITTLE_ENDIAN);
-        }
-
-        @Override
-        public void close() {
-            try { in.close(); }
-            catch (final IOException e) { throw new RuntimeIOException(e); }
-        }
-        
-        @Override
-        public void readBytes(final byte[] bytes) {
-            readFully(in, bytes, 0, bytes.length);
-        }
-        
-        @Override
-        public void seek(final int position) {
-            try { in.seek(position); }
-            catch (final IOException e) { throw new RuntimeIOException(e); }
-        }
-
-        @Override
-        public int readInteger() {
-            readFully(in, tmpBuf.array(), 0, 4);
-            return tmpBuf.getInt(0);
-        }
-        
-        @Override
-        public long readLong() {
-            readFully(in, tmpBuf.array(), 0, 8);
-            return tmpBuf.getLong(0);
-        }
-        
-        @Override
-        public void skipBytes(final int count) {
-            try {
-                for (int s = count; s > 0;) {
-                    final int skipped = (int)in.skip(s);
-                    if (skipped <= 0)
-                        throw new RuntimeIOException("Failed to skip " + s);
-                    s -= skipped;
-                }
-            } catch (final IOException e) { throw new RuntimeIOException(e); }
-        }
-        
-        @Override
-        public int position() {
-			try {
-				return (int) in.position();
-			} catch (final IOException e) { throw new RuntimeIOException(e); }
-		}
+    protected final void setSequenceIndexes (int nReferences) {
+        sequenceIndexes = new long[nReferences + 1];
+        Arrays.fill(sequenceIndexes, -1);
     }
 }

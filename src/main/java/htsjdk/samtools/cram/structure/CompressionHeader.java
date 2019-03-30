@@ -65,6 +65,16 @@ public class CompressionHeader {
     public CompressionHeader() {
     }
 
+    /**
+     * Return true if the header is for a coordinate-sorted CRAM stream.
+     * As required by the spec, we set the AP Delta flag according to that criterion,
+     * so checking that flag is equivalent.
+     * @return the value of the APDelta flag
+     */
+    boolean isCoordinateSorted() {
+        return APDelta;
+    }
+
     private byte[][][] parseDictionary(final byte[] bytes) {
         final List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();
         {
@@ -114,7 +124,7 @@ public class CompressionHeader {
         return dictionary[id];
     }
 
-    private void internalRead(final InputStream is) throws IOException {
+    private void internalRead(final InputStream is) {
         { // preservation map:
             final int byteSize = ITF8.readUnsignedITF8(is);
             final byte[] bytes = new byte[byteSize];

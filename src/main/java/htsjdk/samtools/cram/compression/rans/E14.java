@@ -43,7 +43,7 @@ class E14 {
         // Deal with the remainder
         l3 = 0xFF & in.get(in_size - 1);
         for (i3 = in_size - 2; i3 > 4 * isz4 - 2 && i3 >= 0; i3--) {
-            final int c3 = 0xFF & in.get(i3 > -1 ? i3 : 0);
+            final int c3 = 0xFF & in.get(i3);
             rans3 = Encoding.RansEncPutSymbol(rans3, ptr, syms[c3][l3]);
             l3 = c3;
         }

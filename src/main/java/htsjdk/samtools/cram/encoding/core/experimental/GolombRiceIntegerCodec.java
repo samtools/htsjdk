@@ -19,9 +19,6 @@ package htsjdk.samtools.cram.encoding.core.experimental;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.IOException;
 
 class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
     private final int m;
@@ -46,46 +43,39 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
     public final Integer read() {
 
         int unary = 0;
-        try {
-            while (coreBlockInputStream.readBit() == quotientBit) {
-                unary++;
-            }
 
-            final int remainder = coreBlockInputStream.readBits(log2m);
-
-            final int result = unary * m + remainder;
-            return result - offset;
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
+        while (coreBlockInputStream.readBit() == quotientBit) {
+            unary++;
         }
+
+        final int remainder = coreBlockInputStream.readBits(log2m);
+
+        final int result = unary * m + remainder;
+        return result - offset;
     }
 
     @Override
     public final void write(final Integer value) {
         final long newValue = value + offset;
         final long quotient = newValue >>> log2m;
-        try {
-            if (quotient > 0x7fffffffL) {
-                for (long i = 0; i < quotient; i++) {
-                    coreBlockOutputStream.write(quotientBit);
-                }
+
+        if (quotient > 0x7fffffffL) {
+            for (long i = 0; i < quotient; i++) {
+                coreBlockOutputStream.write(quotientBit);
             }
-            else if (quotient > 0) {
-                final int qi = (int) quotient;
-                for (int i = 0; i < qi; i++) {
-                    coreBlockOutputStream.write(quotientBit);
-                }
+        } else if (quotient > 0) {
+            final int qi = (int) quotient;
+            for (int i = 0; i < qi; i++) {
+                coreBlockOutputStream.write(quotientBit);
             }
-            coreBlockOutputStream.write(!quotientBit);
-            final long remainder = newValue & mask;
-            long reminderMask = 1 << (log2m - 1);
-            for (int i = log2m - 1; i >= 0; i--) {
-                final long b = remainder & reminderMask;
-                coreBlockOutputStream.write(b != 0L);
-                reminderMask >>>= 1;
-            }
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
+        }
+        coreBlockOutputStream.write(!quotientBit);
+        final long remainder = newValue & mask;
+        long reminderMask = 1 << (log2m - 1);
+        for (int i = log2m - 1; i >= 0; i--) {
+            final long b = remainder & reminderMask;
+            coreBlockOutputStream.write(b != 0L);
+            reminderMask >>>= 1;
         }
     }
 

@@ -647,12 +647,18 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
 
     /**
      * read as many bytes as dst's capacity into dst or throw if that's not possible
+     *
      * @throws EOFException if channel has fewer bytes available than dst's capacity
      */
     static void readFully(SeekableByteChannel channel, ByteBuffer dst) throws IOException {
-        final int bytesRead = channel.read(dst);
-        if (bytesRead < dst.capacity()){
-            throw new EOFException();
+        int totalBytesRead = 0;
+        final int capacity = dst.capacity();
+        while (totalBytesRead < capacity) {
+            final int bytesRead = channel.read(dst);
+            if (bytesRead == -1) {
+                throw new EOFException();
+            }
+            totalBytesRead += bytesRead;
         }
     }
 

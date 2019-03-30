@@ -28,7 +28,7 @@ import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
@@ -45,10 +45,10 @@ import java.util.Set;
  */
 public class IntervalTreeTest extends HtsjdkTest {
 
-    static IntervalTree tree;
+    private IntervalTree tree;
 
-    @BeforeClass
-    public static void setupTree() {
+    @BeforeTest
+    public void setupTree() {
         tree = new IntervalTree();
         tree.insert(new Interval(0, 3, null));
         tree.insert(new Interval(5, 8, null));

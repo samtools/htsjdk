@@ -8,12 +8,13 @@ import org.testng.annotations.Test;
 
 import htsjdk.HtsjdkTest;
 
+@Test(groups = "http")
 public class HttpUtilsTest extends HtsjdkTest {
     @DataProvider(name = "existing_urls")
     public Object[][] testExistingURLsData() {
         return new Object[][]{
             {"http://broadinstitute.github.io/picard/testdata/index_test.bam"},
-            {"http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/current.tree"}
+            {"http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/README_using_1000genomes_cram.md"}
         };
     }
 

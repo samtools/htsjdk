@@ -44,7 +44,7 @@ import java.util.function.Function;
  */
 public class ParsingUtils {
 
-    public static Map<Object, Color> colorCache = new WeakHashMap<>(100);
+    public static final Map<Object, Color> colorCache = new WeakHashMap<>(100);
 
     // HTML 4.1 color table,  + orange and magenta
     static Map<String, String> colorSymbols = new HashMap();

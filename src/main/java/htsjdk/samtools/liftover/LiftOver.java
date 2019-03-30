@@ -346,7 +346,7 @@ public class LiftOver {
                 // Matched a chain, but entirely within a gap.
                 return fromInterval.toString() + " (len " + fromInterval.length() + ")=>null using chain " + chainId;
             }
-            final String strand = toInterval.isNegativeStrand()? "-": "+";
+            final String strand = toInterval.getStrand().encode();
             return fromInterval.toString() + " (len " + fromInterval.length() + ")=>" + toInterval + "(" + strand
                     + ") using chain " + chainId + " ; pct matched " + percentLiftedOver;
         }

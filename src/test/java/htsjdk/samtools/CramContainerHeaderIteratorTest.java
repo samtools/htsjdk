@@ -39,7 +39,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Container fullContainer = fullContainers.get(i);
             Container headerOnlyContainer = headerOnlyContainers.get(i);
             Assert.assertEquals(headerOnlyContainer.containerByteSize, fullContainer.containerByteSize);
-            Assert.assertEquals(headerOnlyContainer.sequenceId, fullContainer.sequenceId);
+            Assert.assertEquals(headerOnlyContainer.getReferenceContext(), fullContainer.getReferenceContext());
             Assert.assertEquals(headerOnlyContainer.alignmentStart, fullContainer.alignmentStart);
             Assert.assertEquals(headerOnlyContainer.alignmentSpan, fullContainer.alignmentSpan);
             Assert.assertEquals(headerOnlyContainer.nofRecords, fullContainer.nofRecords);
@@ -51,7 +51,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Assert.assertEquals(headerOnlyContainer.offset, fullContainer.offset);
             // unpopulated fields
             Assert.assertNull(headerOnlyContainer.blocks);
-            Assert.assertNull(headerOnlyContainer.header);
+            Assert.assertNull(headerOnlyContainer.compressionHeader);
             Assert.assertNull(headerOnlyContainer.slices);
             // try to read a container from the offset to check it's correct
             try (SeekableFileStream seekableFileStream = new SeekableFileStream(cramFile)) {

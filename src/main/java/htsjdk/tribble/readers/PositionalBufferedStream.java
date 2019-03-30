@@ -167,7 +167,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         try {
             is.close();
         } catch (IOException ex) {
-            new TribbleException("Failed to close PositionalBufferedStream", ex);
+            throw new TribbleException("Failed to close PositionalBufferedStream", ex);
         }
     }
 
@@ -177,7 +177,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
 
     public static void main(String[] args) throws Exception {
         final File testFile = new File(args[0]);
-        final int iterations = Integer.valueOf(args[1]);
+        final int iterations = Integer.parseInt(args[1]);
         final boolean includeInputStream = Boolean.valueOf(args[2]);
         final boolean doReadFileInChunks = Boolean.valueOf(args[3]);
 

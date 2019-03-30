@@ -2,87 +2,251 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.ContainerFactory;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
+import htsjdk.samtools.cram.structure.CRAMStructureTestUtil;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
+import htsjdk.samtools.util.RuntimeIOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by vadim on 12/01/2016.
  */
 public class CRAMBAIIndexerTest extends HtsjdkTest {
+    private static final int RECORDS_PER_SLICE = 3;
+    private static final SAMFileHeader SAM_FILE_HEADER = CRAMStructureTestUtil.getSAMFileHeaderForTests();
+    private static final ContainerFactory FACTORY = new ContainerFactory(SAM_FILE_HEADER, RECORDS_PER_SLICE);
 
-    private static CramCompressionRecord createRecord(int recordIndex, int seqId, int start) {
-        byte[] bases = "AAAAA".getBytes();
-        int readLength = bases.length;
-
-        final CramCompressionRecord record = new CramCompressionRecord();
-        record.setSegmentUnmapped(false);
-        record.setMultiFragment(false);
-        record.sequenceId = seqId;
-        record.alignmentStart =start;
-        record.readBases = record.qualityScores = bases;
-        record.readName = Integer.toString(recordIndex);
-        record.readLength = readLength;
-        record.readFeatures = Collections.emptyList();
-
-        return record;
-    }
     @Test
-    public void test_processMultiContainer() throws IOException, IllegalAccessException {
-        SAMFileHeader samFileHeader = new SAMFileHeader();
-        samFileHeader.addSequence(new SAMSequenceRecord("1", 10));
-        samFileHeader.addSequence(new SAMSequenceRecord("2", 10));
-        samFileHeader.addSequence(new SAMSequenceRecord("3", 10));
-        ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream();
-        CRAMBAIIndexer indexer = new CRAMBAIIndexer(indexBAOS, samFileHeader);
-        int recordsPerContainer = 3;
-        ContainerFactory containerFactory = new ContainerFactory(samFileHeader, recordsPerContainer);
-        List<CramCompressionRecord> records = new ArrayList<>();
-        records.add(createRecord(0, 0, 1));
-        records.add(createRecord(1, 1, 2));
-        records.add(createRecord(2, 1, 3));
+    public void test_processSingleRefMappedSlice() {
+        final int refId = 0;
+        final Slice mapped = new Slice(new ReferenceContext(refId));
+        mapped.mappedReadsCount = 5;
+        mapped.unmappedReadsCount = 10;
 
-        final Container container1 = containerFactory.buildContainer(records);
-        Assert.assertNotNull(container1);
-        Assert.assertEquals(container1.nofRecords, records.size());
-        Assert.assertEquals(container1.sequenceId, Slice.MULTI_REFERENCE);
+        final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexSingleRefSlice(mapped));
 
-        indexer.processContainer(container1, ValidationStringency.STRICT);
+        // mapped and unmapped reads are counted
+        assertIndexMetadata(index, refId, mapped.mappedReadsCount, mapped.unmappedReadsCount);
 
-        records.clear();
-        records.add(createRecord(3, 1, 3));
-        records.add(createRecord(4, 2, 3));
-        records.add(createRecord(5, 2, 4));
-        final Container  container2 = containerFactory.buildContainer(records);
-        Assert.assertNotNull(container2);
-        Assert.assertEquals(container2.nofRecords, records.size());
-        Assert.assertEquals(container2.sequenceId, Slice.MULTI_REFERENCE);
-
-        indexer.processContainer(container2, ValidationStringency.STRICT);
-
-        indexer.finish();
-
-        BAMIndex index = new CachingBAMFileIndex(new SeekableMemoryStream(indexBAOS.toByteArray(), null), samFileHeader.getSequenceDictionary());
-        final BAMIndexMetaData metaData_0 = index.getMetaData(0);
-        Assert.assertNotNull(metaData_0);
-        Assert.assertEquals(metaData_0.getAlignedRecordCount(), 1);
-
-        final BAMIndexMetaData metaData_1 = index.getMetaData(1);
-        Assert.assertNotNull(metaData_1);
-        Assert.assertEquals(metaData_1.getAlignedRecordCount(), 3);
-
-        final BAMIndexMetaData metaData_2 = index.getMetaData(2);
-        Assert.assertNotNull(metaData_2);
-        Assert.assertEquals(metaData_2.getAlignedRecordCount(), 2);
+        // none are unplaced
+        Assert.assertEquals(index.getNoCoordinateCount().longValue(), 0);
     }
 
+    @Test
+    public void test_processSingleRefUnmappedSlice() {
+        final Slice unmapped = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+        unmapped.unplacedReadsCount = 20;
+
+        final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexSingleRefSlice(unmapped));
+        Assert.assertEquals(index.getNoCoordinateCount().longValue(), unmapped.unplacedReadsCount);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void test_processMultiSlice() {
+        final Slice multi = new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT);
+        indexSingleRefSlice(multi);
+    }
+
+    @Test
+    public void test_processSingleRefContainers() {
+        singleRefContainers(this::indexContainers);
+    }
+
+    @Test
+    public void test_processSingleRefContainersAsSlices() {
+        singleRefContainers(this::indexContainersAsSingleRefSlices);
+    }
+
+    private void singleRefContainers(final IndexContainers indexMethod) {
+        final int refId1 = 0;
+        final int refId2 = 1;
+
+        // for each ref, we alternate unmapped-placed with mapped
+
+        final int expectedMapped = 1;
+        final int expectedUnmappedPlaced = 2;
+
+        final Container container1 = FACTORY.buildContainer(CRAMStructureTestUtil.getSingleRefRecords(RECORDS_PER_SLICE, refId1));
+        final Container container2 = FACTORY.buildContainer(CRAMStructureTestUtil.getSingleRefRecords(RECORDS_PER_SLICE, refId2));
+
+        final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(container1, container2));
+
+        assertIndexMetadata(index, refId1, expectedMapped, expectedUnmappedPlaced);
+        assertIndexMetadata(index, refId2, expectedMapped, expectedUnmappedPlaced);
+    }
+
+    @Test
+    public void test_processMultiRefContainers() {
+        multiRefContainers(this::indexContainers);
+    }
+
+    // they're not single-ref slices
+    @Test(expectedExceptions = SAMException.class)
+    public void test_processMultiRefContainersAsSlices() {
+        multiRefContainers(this::indexContainersAsSingleRefSlices);
+    }
+
+    public void multiRefContainers(final IndexContainers indexMethod) {
+        // we alternate unmapped-placed with mapped, with the last one unplaced
+
+        final int expectedMapped0 = 0;
+        final int expectedUnmapped0 = 1;
+
+        final int expectedMapped1 = 1;
+        final int expectedUnmapped1 = 0;
+
+        final int expectedMapped2 = 0;
+        final int expectedUnmapped2 = 1;
+
+        final int expectedMapped3 = 1;
+        final int expectedUnmapped3 = 0;
+
+        final int expectedMapped4 = 0;
+        final int expectedUnmapped4 = 1;
+
+        final int expectedUnplaced = 1;
+
+        final List<CramCompressionRecord> records = CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(RECORDS_PER_SLICE * 2);
+
+        final Container container1 = FACTORY.buildContainer(records.subList(0, RECORDS_PER_SLICE));
+        Assert.assertTrue(container1.getReferenceContext().isMultiRef());
+
+        final Container container2 = FACTORY.buildContainer(records.subList(RECORDS_PER_SLICE, RECORDS_PER_SLICE * 2));
+        Assert.assertTrue(container2.getReferenceContext().isMultiRef());
+
+        final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(container1, container2));
+
+        assertIndexMetadata(index, 0, expectedMapped0, expectedUnmapped0);
+        assertIndexMetadata(index, 1, expectedMapped1, expectedUnmapped1);
+        assertIndexMetadata(index, 2, expectedMapped2, expectedUnmapped2);
+        assertIndexMetadata(index, 3, expectedMapped3, expectedUnmapped3);
+        assertIndexMetadata(index, 4, expectedMapped4, expectedUnmapped4);
+
+        Assert.assertEquals(index.getNoCoordinateCount().longValue(), expectedUnplaced);
+    }
+
+    @Test
+    public void test_processUnplacedContainers() {
+        unplacedContainers(this::indexContainers);
+    }
+
+    @Test
+    public void test_processUnplacedContainersAsSlices() {
+        unplacedContainers(this::indexContainersAsSingleRefSlices);
+    }
+
+    public void unplacedContainers(final IndexContainers indexMethod) {
+        final Container unplacedContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getUnplacedRecords(RECORDS_PER_SLICE));
+        Assert.assertTrue(unplacedContainer.getReferenceContext().isUnmappedUnplaced());
+
+        // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
+        // but not both.  We normally treat these weird edge cases as unplaced, but for BAM indexing we only check start position
+        // in order to match BAMIndexMetadata.recordMetaData(SAMRecord)
+
+        // these will be considered unplaced by CRAMBAIIndexer
+
+        final Container halfUnplacedNoStartContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(RECORDS_PER_SLICE, 0));
+        Assert.assertTrue(halfUnplacedNoStartContainer.getReferenceContext().isUnmappedUnplaced());
+
+        // these will NOT be considered unplaced by CRAMBAIIndexer
+
+        final Container halfUnplacedNoRefContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(RECORDS_PER_SLICE));
+        Assert.assertTrue(halfUnplacedNoRefContainer.getReferenceContext().isUnmappedUnplaced());
+
+        final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(
+                unplacedContainer, halfUnplacedNoStartContainer, halfUnplacedNoRefContainer));
+
+        // unplacedContainer and halfUnplacedNoStartContainer
+        final int expectedRecords = RECORDS_PER_SLICE * 2;
+
+        Assert.assertEquals(index.getNoCoordinateCount().longValue(), expectedRecords);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testRequireCoordinateSortOrder() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.queryname);
+        new CRAMBAIIndexer(new ByteArrayOutputStream(), header);
+    }
+
+    private interface IndexContainers {
+        byte[] index(final Container... containers);
+    }
+
+    private byte[] indexSingleRefSlice(final Slice slice) {
+        byte[] indexBytes;
+        try (final ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream()) {
+
+            final CRAMBAIIndexer indexer = new CRAMBAIIndexer(indexBAOS, SAM_FILE_HEADER);
+            indexer.processAsSingleReferenceSlice(slice);
+            indexer.finish();
+
+            indexBytes = indexBAOS.toByteArray();
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+        return indexBytes;
+    }
+
+    private byte[] indexContainers(final Container... containers) {
+        byte[] indexBytes;
+        try (final ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream()) {
+
+            final CRAMBAIIndexer indexer = new CRAMBAIIndexer(indexBAOS, SAM_FILE_HEADER);
+            for (final Container container : containers) {
+                indexer.processContainer(container, ValidationStringency.STRICT);
+            }
+            indexer.finish();
+
+            indexBytes = indexBAOS.toByteArray();
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+        return indexBytes;
+    }
+
+    private byte[] indexContainersAsSingleRefSlices(final Container... containers) {
+        byte[] indexBytes;
+        try (final ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream()) {
+
+            final CRAMBAIIndexer indexer = new CRAMBAIIndexer(indexBAOS, SAM_FILE_HEADER);
+            for (final Container container : containers) {
+                indexer.processAsSingleReferenceSlice(container.slices[0]);
+            }
+            indexer.finish();
+
+            indexBytes = indexBAOS.toByteArray();
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+        return indexBytes;
+    }
+
+    private void assertIndexMetadata(final AbstractBAMFileIndex index,
+                                     final int referenceSequence,
+                                     final int mappedReadsCount,
+                                     final int unmappedPlacedReadsCount) {
+        final BAMIndexMetaData meta = index.getMetaData(referenceSequence);
+        Assert.assertEquals(meta.getAlignedRecordCount(), mappedReadsCount);
+        Assert.assertEquals(meta.getUnalignedRecordCount(), unmappedPlacedReadsCount);
+    }
+
+    private AbstractBAMFileIndex getAbstractBAMFileIndex(final byte[] indexBytes) {
+        try (final SeekableMemoryStream ss = new SeekableMemoryStream(indexBytes, null)) {
+            return new CachingBAMFileIndex(ss, SAM_FILE_HEADER.getSequenceDictionary());
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
 }

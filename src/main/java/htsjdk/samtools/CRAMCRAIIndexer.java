@@ -12,6 +12,8 @@ import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Scanner;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -32,12 +34,13 @@ public class CRAMCRAIIndexer {
 
     /**
      * Create a CRAMCRAIIndexer that writes to the given output stream.
+     *
      * @param os output stream to which the index will be written
      * @param samHeader SAMFileHeader - user to verify sort order
      */
-    public CRAMCRAIIndexer(OutputStream os, SAMFileHeader samHeader) {
+    public CRAMCRAIIndexer(final OutputStream os, final SAMFileHeader samHeader) {
         if (samHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
-            throw new SAMException("CRAM file be coordinate-sorted for indexing.");
+            throw new SAMException("CRAM file must be coordinate-sorted for indexing.");
         }
         try {
             this.os = new GZIPOutputStream(new BufferedOutputStream(os));
@@ -48,16 +51,26 @@ public class CRAMCRAIIndexer {
     }
 
     /**
+     * Create a CRAMCRAIIndexer that writes to the given output stream,
+     * initialized with a Collection of {@link CRAIEntry} objects.
+     *
+     * @param os output stream to which the index will be written
+     * @param samHeader SAMFileHeader - user to verify sort order
+     * @param entries the CRAI entries to index
+     */
+    public CRAMCRAIIndexer(final OutputStream os,
+                           final SAMFileHeader samHeader,
+                           final Collection<CRAIEntry> entries) {
+        this(os, samHeader);
+        craiIndex.addEntries(entries);
+    }
+
+    /**
      * Create index entries for a single container.
      * @param container the container to index
      */
     public void processContainer(final Container container) {
         craiIndex.processContainer(container);
-    }
-
-    // TODO this is only used by test code
-    public void addEntry(CRAIEntry entry) {
-        craiIndex.addEntry(entry);
     }
 
     /**
@@ -86,7 +99,7 @@ public class CRAMCRAIIndexer {
             final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, cramHeader.getSamFileHeader());
             final Version cramVersion = cramHeader.getVersion();
 
-            // get the first container and it's offset
+            // get the first container and its offset
             long offset = cramStream.position();
             Container container = ContainerIO.readContainer(cramVersion, cramStream);
 

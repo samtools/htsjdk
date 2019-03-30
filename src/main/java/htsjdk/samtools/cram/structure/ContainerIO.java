@@ -3,15 +3,12 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,9 +24,8 @@ public class ContainerIO {
      * @param version CRAM version to expect
      * @param inputStream      the stream to read from
      * @return a new container object read from the stream
-     * @throws IOException as per java IO contract
      */
-    public static Container readContainer(final Version version, final InputStream inputStream) throws IOException {
+    public static Container readContainer(final Version version, final InputStream inputStream) {
         final Container container = readContainer(version.major, inputStream);
         if (container == null) {
             // this will cause System.exit(1):
@@ -47,9 +43,8 @@ public class ContainerIO {
      *
      * @param inputStream the stream to read from
      * @return CRAM container or null if no more data
-     * @throws IOException
      */
-    private static Container readContainer(final int major, final InputStream inputStream) throws IOException {
+    private static Container readContainer(final int major, final InputStream inputStream) {
         return readContainer(major, inputStream, 0, Integer.MAX_VALUE);
     }
 
@@ -59,64 +54,40 @@ public class ContainerIO {
      * @param major the CRAM version to assume
      * @param inputStream    the input stream to read from
      * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
-     * @throws IOException as per java IO contract
      */
-    public static Container readContainerHeader(final int major, final InputStream inputStream) throws IOException {
-        final Container container = new Container();
-        final ContainerHeaderIO containerHeaderIO = new ContainerHeaderIO();
-        if (!containerHeaderIO.readContainerHeader(major, container, inputStream)) {
-            containerHeaderIO.readContainerHeader(container, new ByteArrayInputStream((major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER)));
-            return container;
-        }
-        return container;
+    public static Container readContainerHeader(final int major, final InputStream inputStream) {
+        return ContainerHeaderIO.readContainerHeader(major, inputStream);
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static Container readContainer(final int major, final InputStream inputStream, final int fromSlice, int howManySlices) throws IOException {
+    private static Container readContainer(final int major, final InputStream inputStream, final int fromSlice, int howManySlices) {
 
         final Container container = readContainerHeader(major, inputStream);
         if (container.isEOF()) {
             return container;
         }
 
-        container.header = CompressionHeader.read(major, inputStream);
+        container.compressionHeader = CompressionHeader.read(major, inputStream);
 
         howManySlices = Math.min(container.landmarks.length, howManySlices);
 
-        if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
-            inputStream.skip(container.landmarks[fromSlice]);
-
-        final List<Slice> slices = new ArrayList<Slice>();
-        for (int sliceCount = fromSlice; sliceCount < howManySlices - fromSlice; sliceCount++) {
-            final Slice slice = new Slice();
-            SliceIO.read(major, slice, inputStream);
-            slice.index = sliceCount;
-            slices.add(slice);
+        try {
+            if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
+                inputStream.skip(container.landmarks[fromSlice]);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
 
-        container.slices = slices.toArray(new Slice[slices.size()]);
+        final ArrayList<Slice> slices = new ArrayList<>();
+        for (int sliceCount = fromSlice; sliceCount < howManySlices - fromSlice; sliceCount++) {
+            slices.add(SliceIO.read(major, inputStream));
+        }
 
-        calculateSliceOffsetsAndSizes(container);
+        container.populateSlicesAndIndexingParameters(slices);
 
         log.debug("READ CONTAINER: " + container.toString());
 
         return container;
-    }
-
-    private static void calculateSliceOffsetsAndSizes(final Container container) {
-        if (container.slices.length == 0) return;
-        for (int i = 0; i < container.slices.length - 1; i++) {
-            final Slice slice = container.slices[i];
-            slice.offset = container.landmarks[i];
-            slice.size = container.landmarks[i + 1] - slice.offset;
-            slice.containerOffset = container.offset;
-            slice.index = i;
-        }
-        final Slice lastSlice = container.slices[container.slices.length - 1];
-        lastSlice.offset = container.landmarks[container.landmarks.length - 1];
-        lastSlice.size = container.containerByteSize - lastSlice.offset;
-        lastSlice.containerOffset = container.offset;
-        lastSlice.index = container.slices.length - 1;
     }
 
     /**
@@ -126,10 +97,9 @@ public class ContainerIO {
      * @param container the container holding the header to write
      * @param outputStream        the stream to write to
      * @return the number of bytes written
-     * @throws IOException as per java IO contract
      */
-    public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) throws IOException {
-        return new ContainerHeaderIO().writeContainerHeader(major, container, outputStream);
+    public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {
+        return ContainerHeaderIO.writeContainerHeader(major, container, outputStream);
     }
 
     /**
@@ -140,29 +110,32 @@ public class ContainerIO {
      * @param container the container to write
      * @param outputStream        the stream to write to
      * @return the number of bytes written out
-     * @throws IOException as per java IO contract
      */
-    public static int writeContainer(final Version version, final Container container, final OutputStream outputStream) throws IOException {
+    public static int writeContainer(final Version version, final Container container, final OutputStream outputStream) {
         {
             if (container.blocks != null && container.blocks.length > 0) {
 
                 final Block firstBlock = container.blocks[0];
                 final boolean isFileHeaderContainer = firstBlock.getContentType() == BlockContentType.FILE_HEADER;
                 if (isFileHeaderContainer) {
-                    final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
+                    final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                     firstBlock.write(version.major, byteArrayOutputStream);
                     container.containerByteSize = byteArrayOutputStream.size();
 
-                    final int containerHeaderByteSize = new ContainerHeaderIO().writeContainerHeader(version.major, container, outputStream);
-                    outputStream.write(byteArrayOutputStream.getBuffer(), 0, byteArrayOutputStream.size());
+                    final int containerHeaderByteSize = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
+                    try {
+                        outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+                    } catch (final IOException e) {
+                        throw new RuntimeIOException(e);
+                    }
                     return containerHeaderByteSize + byteArrayOutputStream.size();
                 }
             }
         }
 
-        final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-        container.header.write(version, byteArrayOutputStream);
+        container.compressionHeader.write(version, byteArrayOutputStream);
         container.blockCount = 1;
 
         final List<Integer> landmarks = new ArrayList<>();
@@ -180,10 +153,13 @@ public class ContainerIO {
             container.landmarks[i] = landmarks.get(i);
 
         container.containerByteSize = byteArrayOutputStream.size();
-        calculateSliceOffsetsAndSizes(container);
 
-        int length = new ContainerHeaderIO().writeContainerHeader(version.major, container, outputStream);
-        outputStream.write(byteArrayOutputStream.getBuffer(), 0, byteArrayOutputStream.size());
+        int length = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
+        try {
+            outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
         length += byteArrayOutputStream.size();
 
         log.debug("CONTAINER WRITTEN: " + container.toString());

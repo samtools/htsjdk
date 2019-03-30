@@ -40,7 +40,7 @@ import java.util.LinkedList;
  * @author jrobinso
  */
 public class LinearIndexCreator  extends TribbleIndexCreator {
-    public static int DEFAULT_BIN_WIDTH = 8000;
+    public static final int DEFAULT_BIN_WIDTH = 8000;
     // the set bin width
     private int binWidth = DEFAULT_BIN_WIDTH;
 

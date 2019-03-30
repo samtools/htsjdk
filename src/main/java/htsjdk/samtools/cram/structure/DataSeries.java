@@ -36,7 +36,7 @@ public enum DataSeries {
     // Main
 
     BF_BitFlags                         (DataSeriesType.INT,        "BF",  1),
-    CF_CompressionBitFlags              (DataSeriesType.BYTE,       "CF",  2),
+    CF_CompressionBitFlags              (DataSeriesType.INT,        "CF",  2),
 
     // Positional
 
@@ -52,7 +52,7 @@ public enum DataSeries {
     // Mate Record
 
     NF_RecordsToNextFragment            (DataSeriesType.INT,        "NF",  8),
-    MF_MateBitFlags                     (DataSeriesType.BYTE,       "MF",  9),
+    MF_MateBitFlags                     (DataSeriesType.INT,        "MF",  9),
     NS_NextFragmentReferenceSequenceID  (DataSeriesType.INT,        "NS", 10),
     NP_NextFragmentAlignmentStart       (DataSeriesType.INT,        "NP", 11),
     TS_InsertSize                       (DataSeriesType.INT,        "TS", 12),

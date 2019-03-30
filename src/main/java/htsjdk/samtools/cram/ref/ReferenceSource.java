@@ -91,6 +91,7 @@ public class ReferenceSource implements CRAMReferenceSource {
      public static CRAMReferenceSource getDefaultCRAMReferenceSource() {
         if (null != Defaults.REFERENCE_FASTA) {
             if (Defaults.REFERENCE_FASTA.exists()) {
+                log.info(String.format("Default reference file %s exists, so going to use that.", Defaults.REFERENCE_FASTA.getAbsolutePath()));
                 return new ReferenceSource(Defaults.REFERENCE_FASTA);
             }
             else {
@@ -99,11 +100,12 @@ public class ReferenceSource implements CRAMReferenceSource {
             }
         }
         else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
+            log.info("USE_CRAM_REF_DOWNLOAD=true, so attmpting to download reference file as needed.");
             return new ReferenceSource((ReferenceSequenceFile)null);
         }
         else {
             throw new IllegalStateException(
-                    "A valid CRAM reference was not supplied and one cannot be acquired via the property settings reference_fasta or use_cram_ref_download");
+                    String.format("A valid CRAM reference was not supplied and one cannot be acquired via the property settings %s.reference_fasta or %s.use_cram_ref_download",Defaults.SAMJDK_PREFIX,Defaults.SAMJDK_PREFIX));
         }
     }
 
@@ -171,11 +173,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         {
             if (Defaults.USE_CRAM_REF_DOWNLOAD) { // try to fetch sequence by md5:
                 if (md5 != null) {
-                    try {
-                        bases = findBasesByMD5(md5.toLowerCase());
-                    } catch (final Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                    bases = findBasesByMD5(md5.toLowerCase());
                 }
                 if (bases != null) {
                     return addToCache(md5, bases);
@@ -214,21 +212,18 @@ public class ReferenceSource implements CRAMReferenceSource {
         return null;
     }
 
-    byte[] findBasesByMD5(final String md5) throws
-            IOException {
+    private byte[] findBasesByMD5(final String md5) {
         final String url = String.format(Defaults.EBI_REFERENCE_SERVICE_URL_MASK, md5);
 
         for (int i = 0; i < downloadTriesBeforeFailing; i++) {
-            final InputStream is = new URL(url).openStream();
-            if (is == null)
-                return null;
+            try (final InputStream is = new URL(url).openStream()) {
+                if (is == null)
+                    return null;
 
-            log.debug("Downloading reference sequence: " + url);
-            final byte[] data = InputStreamUtils.readFully(is);
-            log.debug("Downloaded " + data.length + " bytes for md5 " + md5);
-            is.close();
+                log.info("Downloading reference sequence: " + url);
+                final byte[] data = InputStreamUtils.readFully(is);
+                log.info("Downloaded " + data.length + " bytes for md5 " + md5);
 
-            try {
                 final String downloadedMD5 = SequenceUtil.calculateMD5String(data);
                 if (md5.equals(downloadedMD5)) {
                     return data;
@@ -238,11 +233,12 @@ public class ReferenceSource implements CRAMReferenceSource {
                                     md5, downloadedMD5);
                     log.error(message);
                 }
-            } catch (final NoSuchAlgorithmException e) {
+            }
+            catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        throw new RuntimeException("Giving up on downloading sequence for md5 "
+        throw new GaveUpException("Giving up on downloading sequence for md5 "
                 + md5);
     }
 

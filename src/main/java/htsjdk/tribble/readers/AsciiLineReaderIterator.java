@@ -75,7 +75,7 @@ public class AsciiLineReaderIterator implements LocationAware, LineIterator, Clo
     private class TupleIterator extends AbstractIterator<Tuple<String, Long>> implements LocationAware {
         
         public TupleIterator() {
-            hasNext(); // Initialize the iterator, which appears to be a requirement of the parent class.  TODO: Really?
+            super.hasNext(); // Initialize the iterator, which appears to be a requirement of the parent class.  TODO: Really?
         }
         
         @Override

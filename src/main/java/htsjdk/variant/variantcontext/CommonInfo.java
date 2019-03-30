@@ -312,7 +312,7 @@ public final class CommonInfo implements Serializable {
         Object x = getAttribute(key);
         if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
         if ( x instanceof Integer ) return (Integer)x;
-        return Integer.valueOf((String)x); // throws an exception if this isn't a string
+        return Integer.parseInt((String)x); // throws an exception if this isn't a string
     }
 
     public double getAttributeAsDouble(String key, double defaultValue) {

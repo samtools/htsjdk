@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,21 +20,33 @@ public class CRC32OutputStream extends FilterOutputStream {
     }
 
     @Override
-    public void write(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) throws IOException {
+    public void write(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) {
         crc32.update(b, off, length);
-        out.write(b, off, length);
+        try {
+            out.write(b, off, length);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public void write(final int b) throws IOException {
+    public void write(final int b) {
         crc32.update(b);
-        out.write(b);
+        try {
+            out.write(b);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public void write(@SuppressWarnings("NullableProblems") final byte[] b) throws IOException {
+    public void write(@SuppressWarnings("NullableProblems") final byte[] b) {
         crc32.update(b);
-        out.write(b);
+        try {
+            out.write(b);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     public long getLongCrc32() {

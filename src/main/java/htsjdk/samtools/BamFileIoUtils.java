@@ -21,10 +21,10 @@ import java.util.List;
 public class BamFileIoUtils {
     private static final Log LOG = Log.getInstance(BamFileIoUtils.class);
 
-    public static final String BAM_FILE_EXTENSION = ".bam";
+    public static final String BAM_FILE_EXTENSION = "." + SamReader.Type.BAM_TYPE.fileExtension();
 
     public static boolean isBamFile(final File file) {
-        return ((file != null) && file.getName().endsWith(BAM_FILE_EXTENSION));
+        return ((file != null) && SamReader.Type.BAM_TYPE.hasValidFileExtension(file.getName()));
     }
 
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile) {
@@ -127,7 +127,7 @@ public class BamFileIoUtils {
             if (createMd5) out = new Md5CalculatingOutputStream(out, new File(output.getAbsolutePath() + ".md5"));
             File indexFile = null;
             if (createIndex) {
-                indexFile = new File(output.getParentFile(), IOUtil.basename(output) + BAMIndex.BAMIndexSuffix);
+                indexFile = new File(output.getParentFile(), IOUtil.basename(output) + BAMIndex.BAI_INDEX_SUFFIX);
                 out = new StreamInflatingIndexingOutputStream(out, indexFile);
             }
 
@@ -162,7 +162,7 @@ public class BamFileIoUtils {
             outputStream = new Md5CalculatingOutputStream(outputStream, new File(outputFile.getAbsolutePath() + ".md5"));
         }
         if (createIndex) {
-            outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + BAMIndex.BAMIndexSuffix));
+            outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + BAMIndex.BAI_INDEX_SUFFIX));
         }
         return outputStream;
     }

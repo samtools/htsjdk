@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import java.util.*;
+import java.util.function.BiFunction;
 
 /**
  * Utility class to efficiently do in memory overlap detection between a large
@@ -80,17 +81,25 @@ public class OverlapDetector<T> {
         }
 
         final int start = interval.getStart() + this.lhsBuffer;
-        final int end   = interval.getEnd()   - this.lhsBuffer;
+        final int end = interval.getEnd() - this.lhsBuffer;
 
-        final Set<T> objects = new HashSet<>(1);
-        objects.add(object);
         if (start <= end) {  // Don't put in sequences that have no overlappable bases
-            final Set<T> alreadyThere = tree.put(start, end, objects);
-            if (alreadyThere != null) {
-                alreadyThere.add(object);
-                tree.put(start, end, alreadyThere);
-            }
+            tree.merge(start, end, Collections.singleton(object), mergeSetsAccountingForSingletons());
         }
+    }
+
+    /**
+     * merge two Sets, assumes sets of size 1 are immutale
+     */
+    private static <T> BiFunction<Set<T>, Set<T>, Set<T>> mergeSetsAccountingForSingletons() {
+        return (newValue, oldValue) -> {
+            // Sets of size 1 are immutable SingletonSets so we have to make a new
+            // mutable one to add to
+            final Set<T> mutableSet = oldValue.size() == 1 ? new HashSet<>() : oldValue;
+            mutableSet.addAll(oldValue);
+            mutableSet.addAll(newValue);
+            return mutableSet;
+        };
     }
 
     /**

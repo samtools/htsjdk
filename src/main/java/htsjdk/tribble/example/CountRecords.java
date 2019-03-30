@@ -68,7 +68,7 @@ public class CountRecords {
             printUsage();
         }
 
-        int optimizeIndex = args.length == 2 ? Integer.valueOf(args[1]) : -1;
+        int optimizeIndex = args.length == 2 ? Integer.parseInt(args[1]) : -1;
 
         // determine the codec
         FeatureCodec codec = getFeatureCodec(featureFile);

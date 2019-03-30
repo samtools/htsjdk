@@ -21,20 +21,16 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
-import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ContainerParser {
     private final SAMFileHeader samFileHeader;
@@ -44,8 +40,8 @@ public class ContainerParser {
     }
 
     public List<CramCompressionRecord> getRecords(final Container container,
-                                                  ArrayList<CramCompressionRecord> records, final ValidationStringency validationStringency) throws IllegalArgumentException,
-            IllegalAccessException {
+                                                  ArrayList<CramCompressionRecord> records,
+                                                  final ValidationStringency validationStringency) {
         if (container.isEOF()) {
             return Collections.emptyList();
         }
@@ -55,84 +51,38 @@ public class ContainerParser {
         }
 
         for (final Slice slice : container.slices) {
-            records.addAll(getRecords(slice, container.header, validationStringency));
+            records.addAll(getRecords(slice, container.compressionHeader, validationStringency));
         }
 
         return records;
     }
 
-    public Map<Integer, AlignmentSpan> getReferences(final Container container, final ValidationStringency validationStringency) throws IOException {
-        final Map<Integer, AlignmentSpan> containerSpanMap  = new HashMap<>();
-        for (final Slice slice : container.slices) {
-            addAllSpans(containerSpanMap, getReferences(slice, container.header, validationStringency));
-        }
-        return containerSpanMap;
-    }
-
-    private static void addSpan(final int seqId, final int start, final int span, final int count, final Map<Integer, AlignmentSpan> map) {
-        if (map.containsKey(seqId)) {
-            map.get(seqId).add(start, span, count);
-        } else {
-            map.put(seqId, new AlignmentSpan(start, span, count));
-        }
-    }
-
-    private static Map<Integer, AlignmentSpan> addAllSpans(final Map<Integer, AlignmentSpan> spanMap, final Map<Integer, AlignmentSpan> addition) {
-        for (final Map.Entry<Integer, AlignmentSpan> entry:addition.entrySet()) {
-            addSpan(entry.getKey(), entry.getValue().getStart(), entry.getValue().getCount(), entry.getValue().getSpan(), spanMap);
-        }
-        return spanMap;
-    }
-
-    Map<Integer, AlignmentSpan> getReferences(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) throws IOException {
-        final Map<Integer, AlignmentSpan> spanMap = new HashMap<>();
-        switch (slice.sequenceId) {
-            case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
-                spanMap.put(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, AlignmentSpan.UNMAPPED_SPAN);
-                break;
-            case Slice.MULTI_REFERENCE:
-                final Map<Integer, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(header, validationStringency);
-                addAllSpans(spanMap, spans);
-                break;
-            default:
-                addSpan(slice.sequenceId, slice.alignmentStart, slice.alignmentSpan, slice.nofRecords, spanMap);
-                break;
-        }
-        return spanMap;
-    }
-
-    ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                                final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency) throws IllegalArgumentException {
+    private ArrayList<CramCompressionRecord> getRecords(final Slice slice,
+                                                        final CompressionHeader header,
+                                                        final ValidationStringency validationStringency) {
+        final ReferenceContext sliceContext = slice.getReferenceContext();
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
-        switch (slice.sequenceId) {
-            case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
-            case -2:
-                break;
+        if (sliceContext.isMappedSingleRef()) {
+            final SAMSequenceRecord sequence = samFileHeader.getSequence(sliceContext.getSequenceId());
+            seqName = sequence.getSequenceName();
 
-            default:
-                final SAMSequenceRecord sequence = samFileHeader
-                        .getSequence(slice.sequenceId);
-                seqName = sequence.getSequenceName();
-                break;
         }
 
         final CramRecordReader reader = slice.createCramRecordReader(header, validationStringency);
 
-        if (records == null) {
-            records = new ArrayList<>(slice.nofRecords);
-        }
+        final ArrayList<CramCompressionRecord> records = new ArrayList<>(slice.nofRecords);
 
-        int prevStart = slice.alignmentStart;
+        int prevAlignmentStart = slice.alignmentStart;
         for (int i = 0; i < slice.nofRecords; i++) {
             final CramCompressionRecord record = new CramCompressionRecord();
             record.sliceIndex = slice.index;
             record.index = i;
 
-            reader.read(record);
+            // read the new record and update the running prevAlignmentStart
+            prevAlignmentStart = reader.read(record, prevAlignmentStart);
 
-            if (record.sequenceId == slice.sequenceId) {
+            if (sliceContext.isMappedSingleRef() && record.sequenceId == sliceContext.getSequenceId()) {
                 record.sequenceName = seqName;
-                record.sequenceId = slice.sequenceId;
             } else {
                 if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
                     record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
@@ -143,18 +93,8 @@ public class ContainerParser {
             }
 
             records.add(record);
-
-            if (header.APDelta) {
-                prevStart += record.alignmentDelta;
-                record.alignmentStart = prevStart;
-            }
         }
 
         return records;
-    }
-
-    List<CramCompressionRecord> getRecords(final Slice slice, final CompressionHeader header, final ValidationStringency validationStringency)
-            throws IllegalArgumentException, IllegalAccessException {
-        return getRecords(null, slice, header, validationStringency);
     }
 }

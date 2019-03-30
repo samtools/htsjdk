@@ -71,22 +71,6 @@ public final class CramHeader {
     }
 
     /**
-     * Copy the CRAM header into a new {@link CramHeader} object.
-     * @return a complete copy of the header
-     */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override
-    public CramHeader clone() {
-        final CramHeader clone = new CramHeader();
-        clone.version = version;
-        System.arraycopy(id, 0, clone.id, 0, id.length);
-        clone.samFileHeader = getSamFileHeader().clone();
-
-        return clone;
-    }
-
-
-    /**
      * Get the {@link SAMFileHeader} object associated with this CRAM file header.
      * @return the SAM file header
      */

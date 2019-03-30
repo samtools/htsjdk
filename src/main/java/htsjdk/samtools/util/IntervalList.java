@@ -29,11 +29,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTextHeaderCodec;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -192,6 +188,7 @@ public class IntervalList implements Iterable<Interval> {
         return value;
     }
 
+
     /**
      * Sorts and uniques the list of intervals held within this interval list.
      *
@@ -252,7 +249,7 @@ public class IntervalList implements Iterable<Interval> {
      * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames) {
-        return getUniqueIntervals(list, concatenateNames, false);
+        return getUniqueIntervals(list, true, concatenateNames, false);
     }
 
     //NO SIDE EFFECTS HERE!
@@ -264,6 +261,17 @@ public class IntervalList implements Iterable<Interval> {
      * @param enforceSameStrands enforce that merged intervals have the same strand, otherwise ignore.
      */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames, final boolean enforceSameStrands) {
+        return getUniqueIntervals(list, true, concatenateNames,  enforceSameStrands);
+    }
+
+        /**
+         * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
+         *
+         * @param combineAbuttingIntervals   If true, intervals that are abutting will be combined into one interval.
+         * @param concatenateNames   If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
+         * @param enforceSameStrands enforce that merged intervals have the same strand, otherwise ignore.
+         */
+    public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean combineAbuttingIntervals, final boolean concatenateNames, final boolean enforceSameStrands) {
 
         final List<Interval> intervals;
         if (list.getHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
@@ -273,14 +281,14 @@ public class IntervalList implements Iterable<Interval> {
         }
 
         final List<Interval> unique = new ArrayList<>();
-        final TreeSet<Interval> toBeMerged = new TreeSet<>();
+        final List<Interval> toBeMerged = new ArrayList<>();
         Interval current = null;
 
         for (final Interval next : intervals) {
             if (current == null) {
                 toBeMerged.add(next);
                 current = next;
-            } else if (current.intersects(next) || current.abuts(next)) {
+            } else if (current.intersects(next) || (combineAbuttingIntervals && current.abuts(next))) {
                 if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) {
                     throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
                 }
@@ -381,13 +389,19 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * Merges a sorted collection of intervals and optionally concatenates unique names or takes the first name.
+     * Merges a collection of intervals and optionally concatenates unique names or takes the first name.
+     * *
+     * @param concatenateNames if true, combine the names of all the intervals with |, otherwise use the name of the first interval.
+     * @return a single interval which spans from the minimum input start position to the maximum input end position.
+     * The resulting strandedness and contig are those of the first input with no validation.
+     *
      */
-    static Interval merge(final SortedSet<Interval> intervals, final boolean concatenateNames) {
-        final String chrom = intervals.first().getContig();
-        int start = intervals.first().getStart();
-        int end = intervals.last().getEnd();
-        final boolean neg = intervals.first().isNegativeStrand();
+    static Interval merge(final Iterable<Interval> intervals, final boolean concatenateNames) {
+        final Interval first = intervals.iterator().next();
+        final String chrom = first.getContig();
+        int start = first.getStart();
+        int end = first.getEnd();
+        final boolean neg = first.isNegativeStrand();
         final LinkedHashSet<String> names = new LinkedHashSet<>();
         final String name;
 
@@ -479,14 +493,14 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #union(java.util.Collection)}.
+     * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #concatenate(Collection)}
      */
     public static IntervalList fromFiles(final Collection<File> intervalListFiles) {
         final Collection<IntervalList> intervalLists = new ArrayList<>();
         for (final File file : intervalListFiles) {
             intervalLists.add(IntervalList.fromFile(file));
         }
-        return IntervalList.union(intervalLists);
+        return IntervalList.concatenate(intervalLists);
     }
 
     /**
@@ -532,6 +546,7 @@ public class IntervalList implements Iterable<Interval> {
 
             // Then read in the intervals
             final FormatUtil format = new FormatUtil();
+            String lastSeq = null;
             do {
                 if (line.trim().isEmpty()) {
                     continue; // skip over blank lines
@@ -545,7 +560,12 @@ public class IntervalList implements Iterable<Interval> {
                 }
 
                 // Then parse them out
-                final String seq = fields[SEQUENCE_POS];
+                String seq = fields[SEQUENCE_POS];
+                if (seq.equals(lastSeq)) {
+                    seq = lastSeq;
+                }
+                lastSeq = seq;
+
                 final int start = format.parseInt(fields[START_POS]);
                 final int end = format.parseInt(fields[END_POS]);
                 if (start < 1) {
@@ -595,42 +615,30 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
+     * Writes out the list of intervals to the supplied path.
+     *
+     * @param path a path to write to.  If exists it will be overwritten.
+     */
+    public void write(final Path path) {
+        try {
+            try (IntervalListWriter writer = new IntervalListWriter(path, this.header)) {
+                for (final Interval interval : this) {
+                    writer.write(interval);
+                }
+            }
+        }
+        catch (final IOException ioe) {
+            throw new SAMException("Error writing out interval list to file: " + path.toAbsolutePath(), ioe);
+        }
+    }
+
+    /**
      * Writes out the list of intervals to the supplied file.
      *
      * @param file a file to write to.  If exists it will be overwritten.
      */
     public void write(final File file) {
-        try (final BufferedWriter out = IOUtil.openFileForBufferedWriting(file)) {
-            final FormatUtil format = new FormatUtil();
-
-            // Write out the header
-            if (this.header != null) {
-                final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-                codec.encode(out, this.header);
-            }
-
-            // Write out the intervals
-            for (final Interval interval : this) {
-                out.write(interval.getContig());
-                out.write('\t');
-                out.write(format.format(interval.getStart()));
-                out.write('\t');
-                out.write(format.format(interval.getEnd()));
-                out.write('\t');
-                out.write(interval.isPositiveStrand() ? '+' : '-');
-                out.write('\t');
-                if (interval.getName() != null) {
-                    out.write(interval.getName());
-                } else {
-                    out.write(".");
-                }
-                out.newLine();
-            }
-
-            out.flush();
-        } catch (final IOException ioe) {
-            throw new SAMException("Error writing out interval list to file: " + file.getAbsolutePath(), ioe);
-        }
+        this.write(file.toPath());
     }
 
     /**
@@ -896,58 +904,5 @@ public class IntervalList implements Iterable<Interval> {
         int result = header.hashCode();
         result = 31 * result + intervals.hashCode();
         return result;
-    }
-}
-
-/**
- * Comparator that orders intervals based on their sequence index, by coordinate
- * then by strand and finally by name.
- */
-class IntervalCoordinateComparator implements Comparator<Interval>, Serializable {
-    private static final long serialVersionUID = 1L;
-
-    private final SAMFileHeader header;
-
-    /**
-     * Constructs a comparator using the supplied sequence header.
-     */
-    IntervalCoordinateComparator(final SAMFileHeader header) {
-        this.header = header;
-    }
-
-    @Override
-    public int compare(final Interval lhs, final Interval rhs) {
-        final int lhsIndex = this.header.getSequenceIndex(lhs.getContig());
-        final int rhsIndex = this.header.getSequenceIndex(rhs.getContig());
-        int retval = lhsIndex - rhsIndex;
-
-        if (retval == 0) {
-            retval = lhs.getStart() - rhs.getStart();
-        }
-        if (retval == 0) {
-            retval = lhs.getEnd() - rhs.getEnd();
-        }
-        if (retval == 0) {
-            if (lhs.isPositiveStrand() && rhs.isNegativeStrand()) {
-                retval = -1;
-            } else if (lhs.isNegativeStrand() && rhs.isPositiveStrand()) {
-                retval = 1;
-            }
-        }
-        if (retval == 0) {
-            if (lhs.getName() == null) {
-                if (rhs.getName() == null) {
-                    return 0;
-                } else {
-                    return -1;
-                }
-            } else if (rhs.getName() == null) {
-                return 1;
-            } else {
-                return lhs.getName().compareTo(rhs.getName());
-            }
-        }
-
-        return retval;
     }
 }

@@ -1,13 +1,17 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.annotations.DataProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 public class IOTestCases extends HtsjdkTest {
+    private static final Random RANDOM = new Random(TestUtil.RANDOM_SEED);
 
     @DataProvider(name = "littleEndianTests32")
     public static Object[][] littleEndianTests32() {
@@ -64,10 +68,26 @@ public class IOTestCases extends HtsjdkTest {
     public static Object[][] testByteValues() {
         final List<Byte> byteTests = IOTestCases.byteTests();
         final List<Byte> shuffled = new ArrayList<>(byteTests);
-        Collections.shuffle(shuffled);
+        Collections.shuffle(shuffled, RANDOM);
 
         return new Object[][]{
                 {byteTests},
+                {shuffled}
+        };
+    }
+
+    @DataProvider(name = "testPositiveByteLists")
+    public static Object[][] testPositiveByteValues() {
+        final List<Byte> positiveByteTests = IOTestCases.byteTests()
+                .stream()
+                .filter(b -> b >= 0)
+                .collect(Collectors.toList());
+
+        final List<Byte> shuffled = new ArrayList<>(positiveByteTests);
+        Collections.shuffle(shuffled, RANDOM);
+
+        return new Object[][]{
+                {positiveByteTests},
                 {shuffled}
         };
     }
@@ -76,7 +96,7 @@ public class IOTestCases extends HtsjdkTest {
     public static Object[][] testByteArrayValues() {
         final List<Byte> byteTestsList = IOTestCases.byteTests();
         final List<Byte> shuffledList = new ArrayList<>(byteTestsList);
-        Collections.shuffle(shuffledList);
+        Collections.shuffle(shuffledList, RANDOM);
 
         final byte[] byteTests = new byte[byteTestsList.size()];
         for(int i = 0; i < byteTestsList.size(); i++) {
@@ -132,10 +152,40 @@ public class IOTestCases extends HtsjdkTest {
     public static Object[][] testValues32() {
         final List<Integer> int32Tests = IOTestCases.int32Tests();
         final List<Integer> shuffled = new ArrayList<>(int32Tests);
-        Collections.shuffle(shuffled);
+        Collections.shuffle(shuffled, RANDOM);
 
         return new Object[][]{
                 {int32Tests},
+                {shuffled}
+        };
+    }
+
+    // Motivation for this test case: we were incorrectly encoding a few CRAM record
+    // fields using the wrong data type.  This was surprising, since we would
+    // expect catastrophic "frame shift" type failures from this.
+    //
+    // Instead, we noticed that this conflict would cause no problems in a few specific
+    // cases, including:
+    //
+    // External Integer vs. External Long, if all values are in the range (0 to 0x0F FF FF FF)
+    // because ITF8 and LTF8 are equivalent over that range.
+
+    private static List<Integer> uint28Tests() {
+        final int max = 1 << 28;
+        return int32Tests()
+                .stream()
+                .filter(i -> i >= 0 && i < max)  // valid range is (0 to 0x0F FF FF FF)
+                .collect(Collectors.toList());
+    }
+
+    @DataProvider(name = "testUint28Lists")
+    public static Object[][] testValuesU28() {
+        final List<Integer> uint28Tests = IOTestCases.uint28Tests();
+        final List<Integer> shuffled = new ArrayList<>(uint28Tests);
+        Collections.shuffle(shuffled, RANDOM);
+
+        return new Object[][]{
+                {uint28Tests},
                 {shuffled}
         };
     }
@@ -184,7 +234,7 @@ public class IOTestCases extends HtsjdkTest {
     public static Object[][] testValues64() {
         final List<Long> int64Tests = IOTestCases.int64Tests();
         final List<Long> shuffled = new ArrayList<>(int64Tests);
-        Collections.shuffle(shuffled);
+        Collections.shuffle(shuffled, RANDOM);
 
         return new Object[][]{
                 {int64Tests},

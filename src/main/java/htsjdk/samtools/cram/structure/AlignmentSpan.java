@@ -1,111 +1,102 @@
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.SAMRecord;
-
-import java.util.Objects;
-
 /**
- * A span of reads on a single reference.
+ * A span of reads on a single reference.  Immutable.
+ *
+ * Holds alignment start and span values as well as counts of how many are mapped vs. unmapped.
  */
 public class AlignmentSpan {
     /**
-     * A constant to represent an unmapped span.
+     * A constant to represent a span of unmapped-unplaced reads.
      */
-    public static final AlignmentSpan UNMAPPED_SPAN = new AlignmentSpan(SAMRecord.NO_ALIGNMENT_START, 0);
+    public static final AlignmentSpan UNPLACED_SPAN =
+            new AlignmentSpan(Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, 0, 0);
 
-    private int start;
-    private int span;
-    private int count;
+    // minimum alignment start of the reads represented by this span
+    // uses a 1-based coordinate system
+    private final int start;
+    // span from minimum alignment start to maximum alignment end
+    // of the reads represented by this span, equal to max(end) - min(start) + 1
+    private final int span;
 
-    /**
-     * Create a new span with a single read in it.
-     *
-     * @param start alignment start of the span
-     * @param span  alignment span
-     */
-    public AlignmentSpan(final int start, final int span) {
-        this.setStart(start);
-        this.setSpan(span);
-        this.count = 1;
-    }
+    private final int mappedCount;
+    private final int unmappedCount;
 
     /**
      * Create a new span with a multiple reads in it.
      *
-     * @param start alignment start of the span
-     * @param span  alignment span
-     * @param count number of reads in the span
+     * @param start minimum alignment start of the reads represented by this span, using a 1-based coordinate system
+     * @param span  span from minimum alignment start to maximum alignment end of the reads represented by this span
+     *              span = max(end) - min(start) + 1
+     * @param mappedCount number of mapped reads in the span
+     * @param unmappedCount number of unmapped reads in the span
      */
-    public AlignmentSpan(final int start, final int span, final int count) {
-        this.setStart(start);
-        this.setSpan(span);
-        this.count = count;
+    public AlignmentSpan(final int start, final int span, final int mappedCount, final int unmappedCount) {
+        this.start = start;
+        this.span = span;
+        this.mappedCount = mappedCount;
+        this.unmappedCount = unmappedCount;
     }
 
     /**
-     * Add multiple reads to the span.
+     * Combine two AlignmentSpans
      *
-     * @param start alignment start
-     * @param span  alignment span
-     * @param count number of reads to add
+     * @param a the first AlignmentSpan to combine
+     * @param b the second AlignmentSpan to combine
+     * @return the new combined AlignmentSpan
      */
-    public void add(final int start, final int span, final int count) {
-        if (this.getStart() > start) {
-            this.setSpan(Math.max(this.getStart() + this.getSpan(), start + span) - start);
-            this.setStart(start);
-        } else if (this.getStart() < start) {
-            this.setSpan(Math.max(this.getStart() + this.getSpan(), start + span) - this.getStart());
-        } else {
-            this.setSpan(Math.max(this.getSpan(), span));
+    public static AlignmentSpan combine(final AlignmentSpan a, final AlignmentSpan b) {
+        final int start = Math.min(a.getStart(), b.getStart());
+
+        int span;
+        if (a.getStart() == b.getStart()) {
+            span = Math.max(a.getSpan(), b.getSpan());
+        }
+        else {
+            span = Math.max(a.getStart() + a.getSpan(), b.getStart() + b.getSpan()) - start;
         }
 
-        this.count += count;
-    }
+        final int mappedCount = a.mappedCount + b.mappedCount;
+        final int unmappedCount = a.unmappedCount + b.unmappedCount;
 
-    /**
-     * Add a single read to the span
-     *
-     * @param start alignment start
-     * @param span  read span on the reference
-     */
-    public void addSingle(final int start, final int span) {
-        add(start, span, 1);
+        return new AlignmentSpan(start, span, mappedCount, unmappedCount);
     }
 
     public int getStart() {
         return start;
     }
 
-    public void setStart(final int start) {
-        this.start = start;
-    }
-
     public int getSpan() {
         return span;
     }
 
-    public void setSpan(final int span) {
-        this.span = span;
+    public int getMappedCount() {
+        return mappedCount;
     }
 
-    public int getCount() {
-        return count;
+    public int getUnmappedCount() {
+        return unmappedCount;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || this.getClass() != obj.getClass()) return false;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        final AlignmentSpan that = (AlignmentSpan)obj;
+        AlignmentSpan that = (AlignmentSpan) o;
 
-        return this.start == that.start &&
-                this.span == that.span &&
-                this.count == that.count;
+        if (start != that.start) return false;
+        if (span != that.span) return false;
+        if (mappedCount != that.mappedCount) return false;
+        return unmappedCount == that.unmappedCount;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(start, span, count);
+        int result = start;
+        result = 31 * result + span;
+        result = 31 * result + mappedCount;
+        result = 31 * result + unmappedCount;
+        return result;
     }
 }

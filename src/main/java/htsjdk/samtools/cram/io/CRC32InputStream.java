@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.CRC32;
@@ -22,41 +24,65 @@ public class CRC32InputStream extends InputStream {
     }
 
     @Override
-    public int read() throws IOException {
-        final int value = delegate.read();
-        if (value != -1)
-            crc32.update(value);
-        return value;
+    public int read() {
+        try {
+            final int value = delegate.read();
+            if (value != -1)
+                crc32.update(value);
+            return value;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public int read(@SuppressWarnings("NullableProblems") final byte[] b) throws IOException {
-        final int result = delegate.read(b);
-        if (result != -1)
-            crc32.update(b, 0, result);
-        return result;
+    public int read(@SuppressWarnings("NullableProblems") final byte[] b) {
+        try {
+            final int result = delegate.read(b);
+            if (result != -1)
+                crc32.update(b, 0, result);
+            return result;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public int read(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) throws IOException {
-        final int result = delegate.read(b, off, length);
-        crc32.update(b, off, result);
-        return result;
+    public int read(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) {
+        try {
+            final int result = delegate.read(b, off, length);
+            crc32.update(b, off, result);
+            return result;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public long skip(final long n) throws IOException {
-        return delegate.skip(n);
+    public long skip(final long n) {
+        try {
+            return delegate.skip(n);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public int available() throws IOException {
-        return delegate.available();
+    public int available() {
+        try {
+            return delegate.available();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
-    public void close() throws IOException {
-        delegate.close();
+    public void close() {
+        try {
+            delegate.close();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
@@ -65,8 +91,12 @@ public class CRC32InputStream extends InputStream {
     }
 
     @Override
-    public void reset() throws IOException {
-        delegate.reset();
+    public void reset() {
+        try {
+            delegate.reset();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override

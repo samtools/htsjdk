@@ -20,9 +20,6 @@ package htsjdk.samtools.cram.encoding.core;
 import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanIntHelper;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.IOException;
 
 /**
  * Encode Integers using the Canonical Huffman Codec.
@@ -48,20 +45,12 @@ class CanonicalHuffmanIntegerCodec extends CoreCodec<Integer> {
 
     @Override
     public Integer read() {
-        try {
-            return helper.read(coreBlockInputStream);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        return helper.read(coreBlockInputStream);
     }
 
     @Override
     public void write(final Integer value) {
-        try {
-            helper.write(coreBlockOutputStream, value);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        helper.write(coreBlockOutputStream, value);
     }
 
     @Override

@@ -23,9 +23,11 @@ import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.io.LTF8;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.*;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,14 +39,15 @@ import java.util.HashMap;
 class SliceIO {
     private static final Log log = Log.getInstance(SliceIO.class);
 
-    private static void readSliceHeader(final int major, final Slice slice, final InputStream readInputStream) throws IOException {
-        slice.headerBlock = Block.read(major, readInputStream);
-        if (slice.headerBlock.getContentType() != BlockContentType.MAPPED_SLICE)
-            throw new RuntimeException("Slice Header Block expected, found:  " + slice.headerBlock.getContentType().name());
+    private static Slice readSliceHeader(final int major, final InputStream readInputStream) {
+        final Block sliceHeaderBlock = Block.read(major, readInputStream);
+        if (sliceHeaderBlock.getContentType() != BlockContentType.MAPPED_SLICE)
+            throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
 
-        final InputStream parseInputStream = new ByteArrayInputStream(slice.headerBlock.getUncompressedContent());
+        final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getUncompressedContent());
 
-        slice.sequenceId = ITF8.readUnsignedITF8(parseInputStream);
+        final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
+        final Slice slice = new Slice(refContext);
         slice.alignmentStart = ITF8.readUnsignedITF8(parseInputStream);
         slice.alignmentSpan = ITF8.readUnsignedITF8(parseInputStream);
         slice.nofRecords = ITF8.readUnsignedITF8(parseInputStream);
@@ -67,11 +70,14 @@ class SliceIO {
                 tags = tags.getNext();
             }
         }
+
+        slice.headerBlock = sliceHeaderBlock;
+        return slice;
     }
 
-    private static byte[] createSliceHeaderBlockContent(final int major, final Slice slice) throws IOException {
+    private static byte[] createSliceHeaderBlockContent(final int major, final Slice slice) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ITF8.writeUnsignedITF8(slice.sequenceId, byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getReferenceContext().getSerializableId(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.alignmentStart, byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.alignmentSpan, byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.nofRecords, byteArrayOutputStream);
@@ -84,7 +90,11 @@ class SliceIO {
             slice.contentIDs[i++] = id;
         CramIntArray.write(slice.contentIDs, byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.embeddedRefBlockContentID, byteArrayOutputStream);
-        byteArrayOutputStream.write(slice.refMD5 == null ? new byte[16] : slice.refMD5);
+        try {
+            byteArrayOutputStream.write(slice.refMD5 == null ? new byte[16] : slice.refMD5);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
 
         if (major >= CramVersions.CRAM_v3.major) {
             if (slice.sliceTags != null) {
@@ -104,7 +114,7 @@ class SliceIO {
         return byteArrayOutputStream.toByteArray();
     }
 
-    private static void readSliceBlocks(final int major, final Slice slice, final InputStream inputStream) throws IOException {
+    private static void readSliceBlocks(final int major, final Slice slice, final InputStream inputStream) {
         slice.external = new HashMap<>();
         for (int i = 0; i < slice.nofBlocks; i++) {
             final Block block = Block.read(major, inputStream);
@@ -126,7 +136,7 @@ class SliceIO {
         }
     }
 
-    public static void write(final int major, final Slice slice, final OutputStream outputStream) throws IOException {
+    public static void write(final int major, final Slice slice, final OutputStream outputStream) {
 
         slice.nofBlocks = 1 + slice.external.size() + (slice.embeddedRefBlock == null ? 0 : 1);
 
@@ -145,8 +155,9 @@ class SliceIO {
             block.write(major, outputStream);
     }
 
-    public static void read(final int major, final Slice slice, final InputStream inputStream) throws IOException {
-        readSliceHeader(major, slice, inputStream);
+    public static Slice read(final int major, final InputStream inputStream) {
+        final Slice slice = readSliceHeader(major, inputStream);
         readSliceBlocks(major, slice, inputStream);
+        return slice;
     }
 }

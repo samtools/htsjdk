@@ -10,6 +10,7 @@ import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.testutil.streams.SeekableByteChannelFromBuffer;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import org.testng.Assert;
@@ -394,7 +395,6 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         InputResource bam = new NeverFilePathInputResource(localBam.toPath());
         InputResource index = new FileInputResource(localBamIndex);
 
-        final SamInputResource resource = new SamInputResource(bam, index);
         queryInputResourcePermutation(new SamInputResource(bam, index));
     }
 

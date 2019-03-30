@@ -73,4 +73,44 @@ public class IntervalUtil {
             prevSequenceIndex = thisSequenceIndex;
         }
     }
+
+    public static class IntervalCombiner {
+        private boolean combineAbutting = true;
+        private boolean concatenateNames = true;
+
+        public boolean isCombineAbutting() {
+            return combineAbutting;
+        }
+
+        public IntervalCombiner setCombineAbutting(final boolean combineAbutting) {
+            this.combineAbutting = combineAbutting;
+            return this;
+        }
+
+        public boolean isConcatenateNames() {
+            return concatenateNames;
+        }
+
+        public IntervalCombiner setConcatenateNames(final boolean concatenateNames) {
+            this.concatenateNames = concatenateNames;
+            return this;
+        }
+
+        public boolean isEnforceSameStrand() {
+            return enforceSameStrand;
+        }
+
+        public IntervalCombiner setEnforceSameStrand(final boolean enforceSameStrand) {
+            this.enforceSameStrand = enforceSameStrand;
+            return this;
+        }
+
+        private boolean enforceSameStrand = false;
+
+        public IntervalList combine(final IntervalList intervalList){
+            IntervalList retVal = new IntervalList(intervalList.getHeader());
+            retVal.addall(IntervalList.getUniqueIntervals(intervalList, combineAbutting, concatenateNames, enforceSameStrand));
+            return retVal;
+        }
+    }
 }

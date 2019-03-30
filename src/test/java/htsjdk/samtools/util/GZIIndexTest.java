@@ -30,6 +30,8 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -53,6 +55,14 @@ public class GZIIndexTest extends HtsjdkTest {
         // test reading of the input file
         final GZIIndex index = GZIIndex.loadIndex(indexFile.toPath());
         Assert.assertEquals(index.getNumberOfBlocks(), expectedBlocks);
+    }
+
+    @Test(dataProvider = "indexFiles")
+    public void testLoadIndexFromStream(final File indexFile, final int expectedBlocks) throws Exception {
+        try (InputStream in = new FileInputStream(indexFile)) {
+            final GZIIndex index = GZIIndex.loadIndex(indexFile.toString(), in);
+            Assert.assertEquals(index.getNumberOfBlocks(), expectedBlocks);
+        }
     }
 
     @Test(dataProvider = "indexFiles")
@@ -118,5 +128,4 @@ public class GZIIndexTest extends HtsjdkTest {
         Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(virtualOffset), expectedBlockAddress);
         Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(virtualOffset), expectedBlockOffset);
     }
-
 }

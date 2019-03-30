@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -51,7 +52,7 @@ import java.util.Set;
  * @author Tim Fennell
  */
 public class ReferenceSequenceFileFactory {
-    public static final Set<String> FASTA_EXTENSIONS = new HashSet<String>() {{
+    public static final Set<String> FASTA_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>() {{
         add(".fasta");
         add(".fasta.gz");
         add(".fa");
@@ -60,7 +61,9 @@ public class ReferenceSequenceFileFactory {
         add(".fna.gz");
         add(".txt");
         add(".txt.gz");
-    }};
+    }});
+
+    public static final String FASTA_INDEX_EXTENSION = ".fai";
 
     /**
      * Attempts to determine the type of the reference file and return an instance
@@ -255,7 +258,6 @@ public class ReferenceSequenceFileFactory {
      * @param fastaFile the reference sequence file path.
      */
     public static Path getFastaIndexFileName(Path fastaFile) {
-        return fastaFile.resolveSibling(fastaFile.getFileName() + ".fai");
+        return fastaFile.resolveSibling(fastaFile.getFileName() + FASTA_INDEX_EXTENSION);
     }
-
 }

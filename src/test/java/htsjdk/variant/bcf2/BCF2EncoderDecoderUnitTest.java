@@ -377,7 +377,6 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "BestIntTypeTests")
     public void determineBestEncoding(final List<Integer> ints, final BCF2Type expectedType) throws IOException {
-        BCF2Encoder encoder = new BCF2Encoder();
         Assert.assertEquals(BCF2Utils.determineIntegerType(ints), expectedType);
         Assert.assertEquals(BCF2Utils.determineIntegerType(toPrimitive(ints.toArray(new Integer[0]))), expectedType);
     }

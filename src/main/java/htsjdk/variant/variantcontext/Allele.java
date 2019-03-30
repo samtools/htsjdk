@@ -118,6 +118,11 @@ public class Allele implements Comparable<Allele>, Serializable {
     public static final long serialVersionUID = 1L;
 
     private static final byte[] EMPTY_ALLELE_BASES = new byte[0];
+    private static final char SINGLE_BREAKEND_INDICATOR = '.';
+    private static final char BREAKEND_EXTENDING_RIGHT = '[';
+    private static final char BREAKEND_EXTENDING_LEFT = ']';
+    private static final char SYMBOLIC_ALLELE_START = '<';
+    private static final char SYMBOLIC_ALLELE_END = '>';
 
     private boolean isRef = false;
     private boolean isNoCall = false;
@@ -294,16 +299,43 @@ public class Allele implements Comparable<Allele>, Serializable {
 
     /**
      * @param bases  bases representing an allele
-     * @return true if the bases represent a symbolic allele
+     * @return true if the bases represent a symbolic allele, including breakpoints and breakends
      */
     public static boolean wouldBeSymbolicAllele(final byte[] bases) {
     	if ( bases.length <= 1 )
             return false;
         else {
-            final String strBases = new String(bases);
-            return (bases[0] == '<' || bases[bases.length-1] == '>') || // symbolic or large insertion
-            		(bases[0] == '.' || bases[bases.length-1] == '.') || // single breakend
-                    (strBases.contains("[") || strBases.contains("]")); // mated breakend
+            return bases[0] == SYMBOLIC_ALLELE_START || bases[bases.length - 1] == SYMBOLIC_ALLELE_END ||
+                    wouldBeBreakpoint(bases) ||
+                    wouldBeSingleBreakend(bases);
+        }
+    }
+
+    /**
+     * @param bases  bases representing an allele
+     * @return true if the bases represent a symbolic allele in breakpoint notation, (ex: G]17:198982] or ]13:123456]T )
+     */
+    public static boolean wouldBeBreakpoint(final byte[] bases) {
+        if (bases.length <= 1) {
+            return false;
+        }
+        for (int i = 0; i < bases.length; i++) {
+            final byte base = bases[i];
+            if (base == BREAKEND_EXTENDING_LEFT || base == BREAKEND_EXTENDING_RIGHT) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * @param bases  bases representing an allele
+     * @return true if the bases represent a symbolic allele in single breakend notation (ex: .A or A. )
+     */
+    public static boolean wouldBeSingleBreakend(final byte[] bases) {
+        if ( bases.length <= 1 )
+            return false;
+        else {
+            return bases[0] == SINGLE_BREAKEND_INDICATOR || bases[bases.length - 1] == SINGLE_BREAKEND_INDICATOR;
         }
     }
 
@@ -408,18 +440,25 @@ public class Allele implements Comparable<Allele>, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    // Returns true if this is the NO_CALL allele
+    /** @return true if this is the NO_CALL allele */
     public boolean isNoCall()           { return isNoCall; }
     // Returns true if this is not the NO_CALL allele
     public boolean isCalled()           { return ! isNoCall(); }
 
-    // Returns true if this Allele is the reference allele
+    /** @return true if this Allele is the reference allele */
     public boolean isReference()        { return isRef; }
-    // Returns true if this Allele is not the reference allele
+
+    /** @return true if this Allele is not the reference allele */
     public boolean isNonReference()     { return ! isReference(); }
 
-    // Returns true if this Allele is symbolic (i.e. no well-defined base sequence)
+    /** @return true if this Allele is symbolic (i.e. no well-defined base sequence), this includes breakpoints and breakends */
     public boolean isSymbolic()         { return isSymbolic; }
+
+    /** @return true if this Allele is a breakpoint ( ex: G]17:198982] or ]13:123456]T ) */
+    public boolean isBreakpoint()         { return wouldBeBreakpoint(bases); }
+
+    /** @return true if this Allele is a single breakend (ex: .A or A.) */
+    public boolean isSingleBreakend()         { return wouldBeSingleBreakend(bases); }
 
     // Returns a nice string representation of this object
     public String toString() {

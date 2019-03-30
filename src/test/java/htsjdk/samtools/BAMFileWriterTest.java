@@ -78,10 +78,9 @@ public class BAMFileWriterTest extends HtsjdkTest {
         }
 
         final File tempMetrics = File.createTempFile("CGTagTest", ".validation_metrics");
-        try (
-                final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
-                final OutputStream outputStream = new FileOutputStream(tempMetrics);
-                final PrintWriter printWriter = new PrintWriter(outputStream)) {
+        try (final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
+             final OutputStream outputStream = new FileOutputStream(tempMetrics);
+             final PrintWriter printWriter = new PrintWriter(outputStream)) {
 
             new SamFileValidator(printWriter, 100).validateSamFileSummary(samReader, null);
         }
@@ -110,9 +109,6 @@ public class BAMFileWriterTest extends HtsjdkTest {
                 Assert.assertTrue(samIt1.hasNext());
                 final SAMRecord samRecord1 = samIt1.next();
                 final SAMRecord samRecord2 = samIt2.next();
-
-                // SAMRecords don't have this set, so stuff it in there
-                samRecord2.setIndexingBin(samRecord1.getIndexingBin());
 
                 // Force reference index attributes to be populated
                 samRecord1.getReferenceIndex();
@@ -342,7 +338,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
         try (final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(bamFile)) {
             reader.iterator().forEachRemaining(samRecord -> {
                 samRecord.getCigar();
-                Assert.assertNotNull(samRecord.getIndexingBin());
+                samRecord.computeIndexingBin();
             });
         }
     }

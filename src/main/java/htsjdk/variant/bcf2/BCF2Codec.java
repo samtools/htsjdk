@@ -154,8 +154,9 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
 
             if ( bcfVersion.getMajorVersion() != ALLOWED_MAJOR_VERSION )
                 error("BCF2Codec can only process BCF2 files, this file has major version " + bcfVersion.getMajorVersion());
-            if ( bcfVersion.getMinorVersion() < MIN_MINOR_VERSION )
-                error("BCF2Codec can only process BCF2 files with minor version >= " + MIN_MINOR_VERSION + " but this file has minor version " + bcfVersion.getMinorVersion());
+            // require the minor version to be an exact match and reject minor versions form the future
+            if ( bcfVersion.getMinorVersion() != MIN_MINOR_VERSION )
+                error("BCF2Codec can only process BCF2 files with minor version = " + MIN_MINOR_VERSION + " but this file has minor version " + bcfVersion.getMinorVersion());
 
             if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                 System.err.println("Parsing data stream with BCF version " + bcfVersion);
@@ -485,7 +486,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /** try to read a BCFVersion from an uncompressed BufferedInputStream.
      * The buffer must be large enough to contain {@link #SIZEOF_BCF_HEADER}
      * 
-     * @param bufferedinput the uncompressed input stream
+     * @param uncompressedBufferedInput the uncompressed input stream
      * @return the BCFVersion if it can be decoded, or null if not found.
      * @throws IOException
      */
