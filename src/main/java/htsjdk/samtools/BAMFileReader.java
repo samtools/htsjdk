@@ -801,9 +801,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      */
     private class BAMFileIterator extends AbstractBamIterator {
         private BamRecordDecodingInfo mNextRecord = null;
-        private final BAMRecordCodec bamRecordCodec;
+        private final BAMRecordCodec streamCodec;
         private final AsyncBamDecoder mAsync;
-        private final ConcurrentLinkedQueue<BAMRecordCodec> mAvailableIdleCodec;
         private long streamSamRecordIndex = 0; // Records at what position (counted in records) we are at in the file
 
         BAMFileIterator() {
@@ -814,15 +813,13 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
          * @param advance Trick to enable subclass to do more setup before advancing
          */
         BAMFileIterator(final boolean advance) {
-            this.bamRecordCodec = new BAMRecordCodec(getFileHeader(), samRecordFactory);
-            this.bamRecordCodec.setInputStream(BAMFileReader.this.mStream.getInputStream(),
+            this.streamCodec = new BAMRecordCodec(getFileHeader(), samRecordFactory);
+            this.streamCodec.setInputStream(BAMFileReader.this.mStream.getInputStream(),
                     BAMFileReader.this.mStream.getInputFileName());
             if (useAsynchronousIO) {
                 mAsync = new AsyncBamDecoder(ASYNC_BATCH_SIZE_IN_BYTES, Math.max(1, Defaults.NON_ZERO_BUFFER_SIZE / ASYNC_BATCH_SIZE_IN_BYTES));
-                mAvailableIdleCodec = new ConcurrentLinkedQueue<>();
             } else {
                 mAsync = null;
-                mAvailableIdleCodec = null;
             }
             if (advance) {
                 advance();
@@ -870,18 +867,15 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             }
         }
         private void decode(BamRecordDecodingInfo info) {
-            if (info.buffer == null) { // decode directly from the parent codec
-                info.record = bamRecordCodec.decode(info.recordLength);
+            if (info.buffer == null) { // decode directly from the stream codec
+                info.record = streamCodec.decode(info.recordLength);
                 // to avoid a buffer copy when performing synchronous reading, the codec decode
                 // is performed directly on the underlying stream. This means we don't know
                 // what the stop position is until we actually perform the decoding thus
                 // this is the earliest time we can find the stop position
                 info.stop = mCompressedInputStream.getFilePointer();
             } else { // decode from the buffer supplied
-                BAMRecordCodec codec = mAvailableIdleCodec.poll();
-                if (codec == null) {
-                    codec = bamRecordCodec.clone();
-                }
+                BAMRecordCodec codec = streamCodec.clone();
                 ByteArrayInputStream is = new ByteArrayInputStream(info.buffer);
                 if (mStream == null) {
                     codec.setInputStream(is);
@@ -889,7 +883,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                     codec.setInputStream(is, mStream.getInputFileName());
                 }
                 info.record = codec.decode(info.recordLength);
-                mAvailableIdleCodec.add(codec);
                 info.buffer = null;
             }
             if (mReader != null) {
@@ -959,7 +952,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                     return null;
                 }
                 final long startCoordinate = mCompressedInputStream.getFilePointer();
-                Integer readLength = bamRecordCodec.decodeRecordLength();
+                Integer readLength = streamCodec.decodeRecordLength();
                 if (readLength == null) {
                     // EOF returns null read length
                     return null;
