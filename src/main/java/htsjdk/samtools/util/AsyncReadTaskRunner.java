@@ -18,7 +18,6 @@ import java.util.concurrent.*;
  * is performed in transform().
  */
 public abstract class AsyncReadTaskRunner<T, U> {
-    private static final Log log = Log.getInstance(AsyncReadTaskRunner.class);
     private static Executor nonblockingThreadpool = Executors.newFixedThreadPool(Defaults.ASYNC_READ_COMPUTATIONAL_THREADS, r -> {
         Thread t = Executors.defaultThreadFactory().newThread(r);
         t.setName("htsjdk-asyncio-nonblocking");
@@ -56,7 +55,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
     private final int mTotalBatches;
     private final int mBatchBufferBudget;
     private volatile boolean asyncEnabled = true;
-    private volatile boolean interruptAsyncTasks = true;
+    private volatile boolean interruptAsyncTasks = false;
     private volatile boolean eosReached = false;
 
     /**
