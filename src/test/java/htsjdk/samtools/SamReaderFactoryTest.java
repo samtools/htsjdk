@@ -50,7 +50,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     }
 
     @Test
-    public void variousFormatReaderInflatorFactoryTest() throws IOException {
+    public void variousFormatReaderInflaterFactoryTest() throws IOException {
         final String inputFile = "compressed.bam";
         final int[] inflateCalls = {0}; //Note: using an array is a HACK to fool the compiler
         class MyInflater extends Inflater {

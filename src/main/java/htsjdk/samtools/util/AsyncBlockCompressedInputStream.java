@@ -42,11 +42,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream {
     private final ConcurrentLinkedQueue<byte[]> mFreeDecompressedBlockedBuffers = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<byte[]> mFreeCompressedBlockBuffers = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<BlockGunzipper> mFreeInflators = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<BlockGunzipper> mFreeInflaters = new ConcurrentLinkedQueue<>();
     private final AsyncBlockCompressedInputStreamTaskRunner async = new AsyncBlockCompressedInputStreamTaskRunner(
             BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE,
             Math.max(1, Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE));
-    private final InflaterFactory inflatorFactory;
+    private final InflaterFactory inflaterFactory;
 
     public AsyncBlockCompressedInputStream(final InputStream stream) {
         this(stream, BlockGunzipper.getDefaultInflaterFactory());
@@ -54,7 +54,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final InputStream stream, InflaterFactory inflaterFactory) {
         super(stream, true, inflaterFactory);
-        this.inflatorFactory = inflaterFactory;
+        this.inflaterFactory = inflaterFactory;
     }
 
     public AsyncBlockCompressedInputStream(final File file) throws IOException {
@@ -63,7 +63,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory) throws IOException {
         super(file, inflaterFactory);
-        this.inflatorFactory = inflaterFactory;
+        this.inflaterFactory = inflaterFactory;
     }
 
     public AsyncBlockCompressedInputStream(final URL url) {
@@ -72,7 +72,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final URL url, InflaterFactory inflaterFactory) {
         super(url, inflaterFactory);
-        this.inflatorFactory = inflaterFactory;
+        this.inflaterFactory = inflaterFactory;
     }
 
     public AsyncBlockCompressedInputStream(final SeekableStream strm) {
@@ -81,7 +81,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final SeekableStream strm, InflaterFactory inflaterFactory) {
         super(strm, inflaterFactory);
-        this.inflatorFactory = inflaterFactory;
+        this.inflaterFactory = inflaterFactory;
     }
 
     @Override
@@ -131,14 +131,14 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
         @Override
         public CompressionBlock transform(CompressionBlock record) {
-            BlockGunzipper inflator = mFreeInflators.poll();
-            if (inflator == null) {
-                inflator = new BlockGunzipper(inflatorFactory);
+            BlockGunzipper inflater = mFreeInflaters.poll();
+            if (inflater == null) {
+                inflater = new BlockGunzipper(inflaterFactory);
             }
             try {
-                record.decompress(mFreeDecompressedBlockedBuffers.poll(), inflator);
+                record.decompress(mFreeDecompressedBlockedBuffers.poll(), inflater, AsyncBlockCompressedInputStream.this);
             } finally {
-                mFreeInflators.add(inflator);
+                mFreeInflaters.add(inflater);
             }
             // compressed block is not needed once we have the decompressed version
             byte[] compressedBlockBuffer = record.getCompressedBlock();

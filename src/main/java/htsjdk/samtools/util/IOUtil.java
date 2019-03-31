@@ -1012,6 +1012,27 @@ public class IOUtil {
         }
     }
 
+    /**
+     * Reads from a stream until the a given number of bytes have been read.
+     * @param stream stream to read from
+     * @param buffer buffer to write to
+     * @param offset buffer offset to start writing
+     * @param length number of bytes to read
+     * @return number of bytes read
+     * @throws IOException
+     */
+    public static int readBytes(final InputStream stream, final byte[] buffer, final int offset, final int length) throws IOException {
+        int bytesRead = 0;
+        while (bytesRead < length) {
+            final int count = stream.read(buffer, offset + bytesRead, length - bytesRead);
+            if (count <= 0) {
+                break;
+            }
+            bytesRead += count;
+        }
+        return bytesRead;
+    }
+
     /** Returns all of the untrimmed lines in the provided file. */
     public static List<String> slurpLines(final File file) throws FileNotFoundException {
         return slurpLines(new FileInputStream(file));

@@ -1,5 +1,7 @@
 package htsjdk.samtools.util;
 
+import htsjdk.samtools.Defaults;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -11,13 +13,13 @@ import java.util.concurrent.*;
  * and any number of non-blocking transform tasks (transform()).
  * Synchronisation of the underlying stream/iterator is handled by ensuring that performReadAhead() is not executed
  * by more than one thread concurrently.
- * As this represents a serial bottleneck limiting palatalisation,
+ * As this represents a serial bottleneck limiting parallelization,
  * implementations should ensure that as much computation work (such as decompression or record parsing) as possible
  * is performed in transform().
  */
 public abstract class AsyncReadTaskRunner<T, U> {
     private static final Log log = Log.getInstance(AsyncReadTaskRunner.class);
-    private static Executor nonblockingThreadpool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), r -> {
+    private static Executor nonblockingThreadpool = Executors.newFixedThreadPool(Defaults.ASYNC_READ_COMPUTATIONAL_THREADS, r -> {
         Thread t = Executors.defaultThreadFactory().newThread(r);
         t.setName("htsjdk-asyncio-nonblocking");
         t.setDaemon(true);
@@ -35,11 +37,13 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * Thread pool for non-blocking computational tasks that do not perform any blocking operations.
      */
     public static Executor getNonBlockingThreadpool() { return nonblockingThreadpool; }
+
     /**
      * Thread pool for blocking IO tasks. Tasks scheduled here should do as little computational work
      * as possible.
      */
     public static Executor getBlockingThreadpool() { return blockingThreadpool; }
+
     public static void setNonblockingThreadpool(Executor nonblockingThreadpool) {
         AsyncReadTaskRunner.nonblockingThreadpool = nonblockingThreadpool;
     }
@@ -52,9 +56,12 @@ public abstract class AsyncReadTaskRunner<T, U> {
     private final int mTotalBatches;
     private final int mBatchBufferBudget;
     private volatile boolean asyncEnabled = true;
+    private volatile boolean interruptAsyncTasks = true;
     private volatile boolean eosReached = false;
+
     /**
-     * @param batchBufferBudget buffer budget per batch. Each batch will use at least this much budget
+     * @param batchBufferBudget buffer budget per batch in bytes.
+     * Records will be included batch together until the total size of the batch equals or exceeds this threshold.
      * @param batches number of asynchronous batches
      */
     public AsyncReadTaskRunner(int batchBufferBudget, int batches) {
@@ -67,13 +74,17 @@ public abstract class AsyncReadTaskRunner<T, U> {
         this.mBatchBufferBudget = batchBufferBudget;
         this.mTotalBatches = batches;
     }
+
     /**
-     * Stops async processing. No new async tasks will be scheduled.
+     * Stops async processing.
+     * No new async tasks will be scheduled.
+     * Existing async tasks are unaffected.
      */
     public void disableAsyncProcessing() {
         asyncEnabled = false;
 
     }
+
     /**
      * Stops async processing and discards the results from any
      * in-flight or completed asynchronous processing.
@@ -83,6 +94,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * during processing of these tasks are swallowed.
      */
     public void flushAsyncProcessing() {
+        interruptAsyncTasks = true;
         disableAsyncProcessing();
         while (!scheduledTransforms.isEmpty()) {
             try {
@@ -96,6 +108,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
             } catch (InterruptedException | ExecutionException | RuntimeException e) {
             }
         }
+        interruptAsyncTasks = false;
     }
 
     /**
@@ -107,12 +120,14 @@ public abstract class AsyncReadTaskRunner<T, U> {
         eosReached = false;
     }
 
+    /**
+     * Enable async processing and schedules read-ahead tasks.
+     */
     public void startAsyncProcessing() {
         enableAsyncProcessing();
         scheduleFutures();
     }
 
-    private RecordOrException<T> debug_lastRecord = null;
     /**
      * Returns the next record. Any exceptions encountered during the background
      * processing of this record are rethrown here.
@@ -139,10 +154,9 @@ public abstract class AsyncReadTaskRunner<T, U> {
             raiseAsynchronousProcessingException(e);
         }
         if (batch.isEmpty()) {
-            throw new IllegalStateException("Aysnc processing returned zero records");
+            throw new IllegalStateException("Async processing returned zero records");
         }
         RecordOrException<T> record = batch.removeFirst();
-        debug_lastRecord = record;
         if (record.exception != null) {
             asyncEnabled = false;
         }
@@ -159,7 +173,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
     }
 
     private void raiseAsynchronousProcessingException(Throwable e) throws IOException {
-        if (e instanceof InterruptedException ){
+        if (e instanceof InterruptedException){
             throw new RuntimeException("Interrupted waiting for asynchronous read to complete", e);
         } else if (e instanceof ExecutionException) {
             raiseAsynchronousProcessingException(e.getCause());
@@ -198,6 +212,9 @@ public abstract class AsyncReadTaskRunner<T, U> {
             while (bufferConsumed < mBatchBufferBudget && !eosReached) {
                 Tuple<U, Long> ra;
                 try {
+                    if (interruptAsyncTasks) {
+                        throw new InterruptedException();
+                    }
                     ra = performReadAhead(mBatchBufferBudget - bufferConsumed);
                     if (ra == null || ra.a == null) {
                         eosReached = true;
@@ -208,7 +225,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
                         break; // safety exit to ensure we are guaranteed to finish the batch
                     }
                     bufferConsumed += ra.b;
-                } catch (IOException | RuntimeException e) {
+                } catch (IOException | InterruptedException | RuntimeException e) {
                     batch.addLast(new RecordOrException(e));
                     break;
                 }
@@ -226,15 +243,19 @@ public abstract class AsyncReadTaskRunner<T, U> {
                 return result;
             }
             try {
+                if (interruptAsyncTasks) {
+                    throw new InterruptedException();
+                }
                 T t = u.record == null ? null : transform(u.record);
                 result.addLast(new RecordOrException<>(t));
-            } catch (RuntimeException e) {
+            } catch (InterruptedException | RuntimeException e) {
                 result.addLast(new RecordOrException<>(e));
                 return result;
             }
         }
         return result;
     }
+
     /**
      * Performs read-ahead on the underlying stream. This task is executed on the blocking
      * thread pool. Only one task executing this method per instance will be scheduled.
@@ -258,6 +279,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * A null return value is treated as an end of stream indicator and no further read-ahead will be performed.
      */
     public abstract T transform(U record);
+
     private static class RecordOrException<T> {
         private final T record;
         private final Exception exception;

@@ -843,6 +843,14 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             return result.record;
         }
 
+        /**
+         * Virtual file pointer position corresponding to the position of this reader.
+         * When asynchronous IO is enabled, the actual position of the underlying stream may be ahead of this position.
+         *
+         * @return virtual file pointer that can be passed to seek() to return to the current position.  This is
+         *  not an actual byte offset, so arithmetic on file pointers cannot be done to determine the distance between
+         *  the two.
+         */
         public long getLogicalFilePointer() {
             return mNextRecord == null ? mCompressedInputStream.getFilePointer() : mNextRecord.stop;
         }
@@ -901,11 +909,11 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
          * Encapsulates the data required for decoding of a BAM encoded SAMRecord.
          */
         private class BamRecordDecodingInfo {
-            private int recordLength;
-            private byte[] buffer;
-            private final long start;
-            private Long stop;
             private final long recordIndex;
+            private final int recordLength;
+            private final long start;
+            private byte[] buffer;
+            private Long stop;
             private SAMRecord record;
             public BamRecordDecodingInfo(long recordIndex, int recordLength, long start) {
                 this.recordIndex = recordIndex;
@@ -914,9 +922,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             }
 
             public BamRecordDecodingInfo(long recordIndex, int recordLength, long start, long stop, byte[] buffer) {
-                this.recordIndex = recordIndex;
-                this.recordLength = recordLength;
-                this.start = start;
+                this(recordIndex, recordLength, start);
                 this.stop = stop;
                 this.buffer = buffer;
             }
