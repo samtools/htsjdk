@@ -65,7 +65,7 @@ public class ContainerHeaderIO {
         final int containerByteSize = CramInt.readInt32(peek);
         final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(inputStream));
         final Container container = new Container(refContext);
-        container.containerByteSize = containerByteSize;
+        container.containerBlocksByteSize = containerByteSize;
 
         container.alignmentStart = ITF8.readUnsignedITF8(inputStream);
         container.alignmentSpan = ITF8.readUnsignedITF8(inputStream);
@@ -123,7 +123,7 @@ public class ContainerHeaderIO {
     public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {
         final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
 
-        int length = (CramInt.writeInt32(container.containerByteSize, crc32OutputStream) + 7) / 8;
+        int length = (CramInt.writeInt32(container.containerBlocksByteSize, crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.getReferenceContext().getSerializableId(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.alignmentStart, crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.alignmentSpan, crc32OutputStream) + 7) / 8;

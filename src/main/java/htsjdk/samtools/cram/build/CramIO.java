@@ -273,16 +273,16 @@ public class CramIO {
 
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         block.write(major, byteArrayOutputStream);
-        container.containerByteSize = byteArrayOutputStream.size();
+        container.containerBlocksByteSize = byteArrayOutputStream.size();
 
         final int containerHeaderByteSize = ContainerHeaderIO.writeContainerHeader(major, container, os);
         try {
-            os.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+            os.write(byteArrayOutputStream.toByteArray(), 0, container.containerBlocksByteSize);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
 
-        return containerHeaderByteSize + byteArrayOutputStream.size();
+        return containerHeaderByteSize + container.containerBlocksByteSize;
     }
 
     private static SAMFileHeader readSAMFileHeader(final Version version,
@@ -293,13 +293,13 @@ public class CramIO {
         final Block block;
         {
             if (version.compatibleWith(CramVersions.CRAM_v3)) {
-                final byte[] bytes = new byte[container.containerByteSize];
+                final byte[] bytes = new byte[container.containerBlocksByteSize];
                 InputStreamUtils.readFully(inputStream, bytes, 0, bytes.length);
                 block = Block.read(version.major, new ByteArrayInputStream(bytes));
                 // ignore the rest of the container
             } else {
                 /*
-                 * pending issue: container.containerByteSize inputStream 2 bytes shorter
+                 * pending issue: container.containerBlocksByteSize inputStream 2 bytes shorter
                  * than needed in the v21 test cram files.
                  */
                 block = Block.read(version.major, inputStream);
@@ -355,7 +355,7 @@ public class CramIO {
             final Block block = Block.createRawFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             block.write(newHeader.getVersion().major, byteArrayOutputStream);
-            if (byteArrayOutputStream.size() > c.containerByteSize) {
+            if (byteArrayOutputStream.size() > c.containerBlocksByteSize) {
                 log.error("Failed to replace CRAM header because the new header does not fit.");
                 return false;
             }

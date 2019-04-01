@@ -171,7 +171,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Slice slice = new Slice(refContext);
-        slice.byteOffsetFromContainer = 1;
+        slice.byteOffsetFromCompressionHeaderStart = 1;
         slice.containerByteOffset = 1;
         slice.byteSize = 1;
         slice.index = 1;
@@ -187,7 +187,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
 
     private static Slice getNoOffsetFromContainerSlice() {
         final Slice noOffsetFromContainer = getIndexInitializedSlice();
-        noOffsetFromContainer.byteOffsetFromContainer = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        noOffsetFromContainer.byteOffsetFromCompressionHeaderStart = Slice.UNINITIALIZED_INDEXING_PARAMETER;
         return noOffsetFromContainer;
     }
 

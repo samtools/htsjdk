@@ -77,19 +77,31 @@ public class Slice {
 
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
 
-    // the Slice's offset in bytes from the beginning of its Container
-    // equal to Container.landmarks[Slice.index] of its enclosing Container
-    // BAI and CRAI
-    public int byteOffsetFromContainer = UNINITIALIZED_INDEXING_PARAMETER;
-    // this Slice's Container's offset in bytes from the beginning of the stream
-    // equal to Container.byteOffset of its enclosing Container
-    // BAI and CRAI
+    /**
+     * The Slice's offset in bytes from the beginning of the Container's Compression Header
+     * (or the end of the Container Header), equal to {@link Container#landmarks}
+     *
+     * Used by BAI and CRAI indexing
+     */
+    public int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
+    /**
+     * The Slice's Container's offset in bytes from the beginning of the stream
+     * equal to {@link Container#byteOffset}
+     *
+     * Used by BAI and CRAI indexing
+     */
     public long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
-    // this Slice's size in bytes
-    // CRAI only
+    /**
+     * The Slice's size in bytes
+     *
+     * Used by CRAI indexing only
+     */
     public int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
-    // this Slice's index number within its Container
-    // BAI only
+    /**
+     * The Slice's index number within its Container
+     *
+     * Used by BAI indexing only
+     */
     public int index = UNINITIALIZED_INDEXING_PARAMETER;
 
     // to pass this to the container:
@@ -121,13 +133,13 @@ public class Slice {
 
     /**
      * Confirm that we have initialized the 3 BAI index parameters:
-     * byteOffsetFromContainer, containerByteOffset, and index
+     * byteOffsetFromCompressionHeaderStart, containerByteOffset, and index
      */
     public void baiIndexInitializationCheck() {
         final StringBuilder error = new StringBuilder();
 
-        if (byteOffsetFromContainer == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for BAI because its byteOffsetFromContainer is unknown.").append(System.lineSeparator());
+        if (byteOffsetFromCompressionHeaderStart == UNINITIALIZED_INDEXING_PARAMETER) {
+            error.append("Cannot index this Slice for BAI because its byteOffsetFromCompressionHeaderStart is unknown.").append(System.lineSeparator());
         }
 
         if (containerByteOffset == UNINITIALIZED_INDEXING_PARAMETER) {
@@ -145,15 +157,15 @@ public class Slice {
 
     /**
      * Confirm that we have initialized the 3 CRAI index parameters:
-     * byteOffsetFromContainer, containerByteOffset, and byteSize
+     * byteOffsetFromCompressionHeaderStart, containerByteOffset, and byteSize
      *
      * NOTE: this is currently unused because we always use BAI
      */
     void craiIndexInitializationCheck() {
         final StringBuilder error = new StringBuilder();
 
-        if (byteOffsetFromContainer == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for CRAI because its byteOffsetFromContainer is unknown.").append(System.lineSeparator());
+        if (byteOffsetFromCompressionHeaderStart == UNINITIALIZED_INDEXING_PARAMETER) {
+            error.append("Cannot index this Slice for CRAI because its byteOffsetFromCompressionHeaderStart is unknown.").append(System.lineSeparator());
         }
 
         if (containerByteOffset == UNINITIALIZED_INDEXING_PARAMETER) {
@@ -415,7 +427,7 @@ public class Slice {
                             e.getValue().getStart(),
                             e.getValue().getSpan(),
                             containerByteOffset,
-                            byteOffsetFromContainer,
+                            byteOffsetFromCompressionHeaderStart,
                             byteSize))
                     .sorted()
                     .collect(Collectors.toList());
@@ -427,7 +439,7 @@ public class Slice {
                     alignmentStart,
                     alignmentSpan,
                     containerByteOffset,
-                    byteOffsetFromContainer,
+                    byteOffsetFromCompressionHeaderStart,
                     byteSize));
         }
     }

@@ -80,11 +80,11 @@ public class CRAIEntryTest extends CramRecordTestHelper {
 
         slice1.index = slice1Index;
         slice1.byteSize = sliceByteSize;
-        slice1.byteOffsetFromContainer = slice1ByteOffsetFromContainer;
+        slice1.byteOffsetFromCompressionHeaderStart = slice1ByteOffsetFromContainer;
 
         slice2.index = slice2Index;
         slice2.byteSize = sliceByteSize;
-        slice2.byteOffsetFromContainer = slice2ByteOffsetFromContainer;
+        slice2.byteOffsetFromCompressionHeaderStart = slice2ByteOffsetFromContainer;
 
         final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), compressionHeader, containerOffset);
 
@@ -269,7 +269,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         single.alignmentStart = counter++;
         single.alignmentSpan = counter++;
         single.containerByteOffset = counter++;
-        single.byteOffsetFromContainer = counter++;
+        single.byteOffsetFromCompressionHeaderStart = counter++;
         single.byteSize = counter++;
         return single;
     }
@@ -288,7 +288,8 @@ public class CRAIEntryTest extends CramRecordTestHelper {
 
     private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
         assertEntryForSlice(entry, slice.getReferenceContext().getSerializableId(),
-                slice.alignmentStart, slice.alignmentSpan, slice.containerByteOffset, slice.byteOffsetFromContainer, slice.byteSize);
+                slice.alignmentStart, slice.alignmentSpan, slice.containerByteOffset,
+                slice.byteOffsetFromCompressionHeaderStart, slice.byteSize);
      }
 
     private void assertEntryForSlice(final CRAIEntry entry,

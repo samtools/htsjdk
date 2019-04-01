@@ -131,26 +131,28 @@ public class ContainerIO {
                 if (isFileHeaderContainer) {
                     final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                     firstBlock.write(version.major, byteArrayOutputStream);
-                    container.containerByteSize = byteArrayOutputStream.size();
+                    container.containerBlocksByteSize = byteArrayOutputStream.size();
 
                     final int containerHeaderByteSize = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
                     try {
-                        outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+                        outputStream.write(byteArrayOutputStream.toByteArray(), 0, container.containerBlocksByteSize);
                     } catch (final IOException e) {
                         throw new RuntimeIOException(e);
                     }
-                    return containerHeaderByteSize + byteArrayOutputStream.size();
+                    return containerHeaderByteSize + container.containerBlocksByteSize;
                 }
             }
         }
 
+        // use this BAOS for two purposes: writing out and counting bytes for landmarks/containerBlocksByteSize
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
         container.compressionHeader.write(version, byteArrayOutputStream);
         container.blockCount = 1;
 
         final List<Integer> landmarks = new ArrayList<>();
         for (final Slice slice : container.getSlices()) {
+            // landmark 0 = byte length of the compression header
+            // landmarks after 0 = byte length of the compression header plus all slices before this one
             landmarks.add(byteArrayOutputStream.size());
             SliceIO.write(version.major, slice, byteArrayOutputStream);
             container.blockCount++;
@@ -159,21 +161,21 @@ public class ContainerIO {
             container.blockCount += slice.external.size();
         }
         container.landmarks = landmarks.stream().mapToInt(Integer::intValue).toArray();
-        container.containerByteSize = byteArrayOutputStream.size();
+        // compression header plus all slices, if any (EOF Containers do not; File Header Containers are handled above)
+        container.containerBlocksByteSize = byteArrayOutputStream.size();
 
-        // Slices require the Container's landmarks and containerByteSize before indexing
+        // Slices require the Container's landmarks and containerBlocksByteSize before indexing
         container.distributeIndexingParametersToSlices();
 
-        int length = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
+        final int containerHeaderLength = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
         try {
             outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
-        length += byteArrayOutputStream.size();
 
         log.debug("CONTAINER WRITTEN: " + container.toString());
 
-        return length;
+        return containerHeaderLength + container.containerBlocksByteSize;
     }
 }

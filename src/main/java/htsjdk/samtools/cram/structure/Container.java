@@ -32,9 +32,10 @@ public class Container {
     // container header as defined in the specs, in addition to sequenceId from ReferenceContext
 
     /**
-     * Byte size of the content excluding header.
+     * The total length of all blocks in this container, of all types.
+     * @see htsjdk.samtools.cram.structure.block.BlockContentType
      */
-    public int containerByteSize = 0;
+    public int containerBlocksByteSize = 0;
 
     // minimum alignment start of the reads in this Container
     // uses a 1-based coordinate system
@@ -46,13 +47,20 @@ public class Container {
     public long bases = 0;
     public int blockCount = -1;
 
-    // Slice byte boundaries within this container, after the header.  Equal to Slice.offset.
-    // e.g. if landmarks[0] = 9000 and landmarks[1] = 109000, we know:
-    // the container's header size = 9000
-    // Slice[0].offset = 9000
-    // Slice[0].size = 109000 - 9000 = 100000
-    // Slice[1].offset = 109000
-
+    /**
+     * Slice byte boundaries as offsets within this container, counted after the
+     * compression header.  Equal to {@link Slice#byteOffsetFromCompressionHeaderStart}.
+     *
+     * As an example, suppose we have:
+     * - landmarks[0] = 9000
+     * - landmarks[1] = 109000
+     * - containerBlocksByteSize = 123456
+     *
+     * We therefore know:
+     * - the compression header size = 9000
+     * - Slice 0 has offset 9000 and size 100000 (109000 - 9000)
+     * - Slice 1 has offset 109000 and size 14456 (123456 - 109000)
+     */
     public int[] landmarks;
 
     public int checksum = 0;
@@ -170,7 +178,7 @@ public class Container {
     /**
      * Populate the indexing parameters of this Container's slices
      *
-     * Requires: valid landmarks and containerByteSize
+     * Requires: valid landmarks and containerBlocksByteSize
      *
      * @throws CRAMException when the Container is in an invalid state
      */
@@ -188,7 +196,7 @@ public class Container {
             throw new CRAMException(String.format(format, landmarks.length, slices.length));
         }
 
-        if (containerByteSize == 0) {
+        if (containerBlocksByteSize == 0) {
             throw new CRAMException("Cannot set Slice indexing parameters if this Container's byte size is unknown");
         }
 
@@ -196,20 +204,14 @@ public class Container {
         for (int i = 0; i < lastSliceIndex; i++) {
             final Slice slice = slices[i];
             slice.index = i;
-            slice.byteOffsetFromContainer = landmarks[i];
-            slice.byteSize = landmarks[i + 1] - slice.byteOffsetFromContainer;
+            slice.byteOffsetFromCompressionHeaderStart = landmarks[i];
+            slice.byteSize = landmarks[i + 1] - slice.byteOffsetFromCompressionHeaderStart;
         }
 
         final Slice lastSlice = slices[lastSliceIndex];
         lastSlice.index = lastSliceIndex;
-        lastSlice.byteOffsetFromContainer = landmarks[lastSliceIndex];
-
-        // calculate a "final landmark" indicating the byte offset of the end of the container
-        // equivalent to the container's total byte size
-
-        final int containerHeaderSize = landmarks[0];
-        final int containerTotalByteSize = containerHeaderSize + containerByteSize;
-        lastSlice.byteSize = containerTotalByteSize - lastSlice.byteOffsetFromContainer;
+        lastSlice.byteOffsetFromCompressionHeaderStart = landmarks[lastSliceIndex];
+        lastSlice.byteSize = containerBlocksByteSize - lastSlice.byteOffsetFromCompressionHeaderStart;
     }
 
     /**
@@ -237,11 +239,11 @@ public class Container {
     }
 
     public boolean isEOF() {
-        final boolean v3 = containerByteSize == 15 && referenceContext.isUnmappedUnplaced()
+        final boolean v3 = containerBlocksByteSize == 15 && referenceContext.isUnmappedUnplaced()
                 && alignmentStart == 4542278 && blockCount == 1
                 && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
 
-        final boolean v2 = containerByteSize == 11 && referenceContext.isUnmappedUnplaced()
+        final boolean v2 = containerBlocksByteSize == 11 && referenceContext.isUnmappedUnplaced()
                 && alignmentStart == 4542278 && blockCount == 1
                 && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
 
