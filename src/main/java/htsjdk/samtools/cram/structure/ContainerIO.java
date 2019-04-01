@@ -3,8 +3,10 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
+import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -19,87 +21,96 @@ public class ContainerIO {
     private static final Log log = Log.getInstance(ContainerIO.class);
 
     /**
-     * Reads a CRAM container from the input stream. Returns an EOF container when there is no more data or the EOF marker found.
+     * Reads a CRAM container from an {@link InputStream}.
+     * Returns an EOF container when there is no more data or the EOF marker found.
      *
      * @param version CRAM version to expect
-     * @param inputStream      the stream to read from
+     * @param inputStream the {@link InputStream} stream to read from
+     * @param containerByteOffset the byte offset from the start of the stream
      * @return a new container object read from the stream
      */
-    public static Container readContainer(final Version version, final InputStream inputStream) {
-        final Container container = readContainer(version.major, inputStream);
+    private static Container readContainer(final Version version,
+                                          final InputStream inputStream,
+                                          final long containerByteOffset) {
+        Container container = readContainerInternal(version.major, inputStream, containerByteOffset);
         if (container == null) {
             // this will cause System.exit(1):
             CramVersionPolicies.eofNotFound(version);
 
-            return readContainer(version.major, new ByteArrayInputStream(CramIO.ZERO_B_EOF_MARKER));
+            return readContainerInternal(version.major, new ByteArrayInputStream(CramIO.ZERO_B_EOF_MARKER), containerByteOffset);
         }
-        if (container.isEOF()) log.debug("EOF marker found, file/stream is complete.");
+
+        if (container.isEOF()) {
+            log.debug("EOF marker found, file/stream is complete.");
+        }
 
         return container;
+    }
+
+    // convenience methods for SeekableStream and CountingInputStream
+    // TODO: merge these two classes?
+
+    /**
+     * Reads a CRAM container from a Seekable input stream.
+     * Returns an EOF container when there is no more data or the EOF marker found.
+     *
+     * @param version CRAM version to expect
+     * @param seekableInputStream the {@link SeekableStream} stream to read from
+     * @return a new container object read from the stream
+     */
+    public static Container readContainer(final Version version, final SeekableStream seekableInputStream) {
+        try {
+            final long containerByteOffset = seekableInputStream.position();
+            return readContainer(version, seekableInputStream, containerByteOffset);
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /**
+     * Reads a CRAM container from a Counting input stream.
+     * Returns an EOF container when there is no more data or the EOF marker found.
+     *
+     * @param version CRAM version to expect
+     * @param countingInputStream the {@link CountingInputStream} stream to read from
+     * @return a new container object read from the stream
+     */
+    public static Container readContainer(final Version version, final CountingInputStream countingInputStream) {
+        final long containerByteOffset = countingInputStream.getCount();
+        return readContainer(version, countingInputStream, containerByteOffset);
     }
 
     /**
      * Reads next container from the stream.
      *
+     * @param major the CRAM version to assume
      * @param inputStream the stream to read from
+     * @param containerByteOffset the byte offset from the start of the stream
      * @return CRAM container or null if no more data
      */
-    private static Container readContainer(final int major, final InputStream inputStream) {
-        return readContainer(major, inputStream, 0, Integer.MAX_VALUE);
-    }
+    private static Container readContainerInternal(final int major,
+                                                   final InputStream inputStream,
+                                                   final long containerByteOffset) {
 
-    /**
-     * Reads container header only from a {@link InputStream}.
-     *
-     * @param major the CRAM version to assume
-     * @param inputStream    the input stream to read from
-     * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
-     */
-    public static Container readContainerHeader(final int major, final InputStream inputStream) {
-        return ContainerHeaderIO.readContainerHeader(major, inputStream);
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private static Container readContainer(final int major, final InputStream inputStream, final int fromSlice, int howManySlices) {
-
-        final Container container = readContainerHeader(major, inputStream);
+        final Container container = ContainerHeaderIO.readContainerHeader(major, inputStream, containerByteOffset);
         if (container.isEOF()) {
             return container;
         }
 
         container.compressionHeader = CompressionHeader.read(major, inputStream);
 
-        howManySlices = Math.min(container.landmarks.length, howManySlices);
-
-        try {
-            if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
-                inputStream.skip(container.landmarks[fromSlice]);
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-
         final ArrayList<Slice> slices = new ArrayList<>();
-        for (int sliceCount = fromSlice; sliceCount < howManySlices - fromSlice; sliceCount++) {
+        for (int sliceCounter = 0; sliceCounter < container.landmarks.length; sliceCounter++) {
             slices.add(SliceIO.read(major, inputStream));
         }
 
-        container.populateSlicesAndIndexingParameters(slices);
+        container.setSlicesAndByteOffset(slices, containerByteOffset);
+        container.distributeIndexingParametersToSlices();
 
         log.debug("READ CONTAINER: " + container.toString());
 
         return container;
-    }
-
-    /**
-     * Writes a {@link Container} header information to a {@link OutputStream}.
-     *
-     * @param major     the CRAM version to assume
-     * @param container the container holding the header to write
-     * @param outputStream        the stream to write to
-     * @return the number of bytes written
-     */
-    public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {
-        return ContainerHeaderIO.writeContainerHeader(major, container, outputStream);
     }
 
     /**
@@ -139,8 +150,7 @@ public class ContainerIO {
         container.blockCount = 1;
 
         final List<Integer> landmarks = new ArrayList<>();
-        for (int i = 0; i < container.slices.length; i++) {
-            final Slice slice = container.slices[i];
+        for (final Slice slice : container.getSlices()) {
             landmarks.add(byteArrayOutputStream.size());
             SliceIO.write(version.major, slice, byteArrayOutputStream);
             container.blockCount++;
@@ -148,11 +158,11 @@ public class ContainerIO {
             if (slice.embeddedRefBlock != null) container.blockCount++;
             container.blockCount += slice.external.size();
         }
-        container.landmarks = new int[landmarks.size()];
-        for (int i = 0; i < container.landmarks.length; i++)
-            container.landmarks[i] = landmarks.get(i);
-
+        container.landmarks = landmarks.stream().mapToInt(Integer::intValue).toArray();
         container.containerByteSize = byteArrayOutputStream.size();
+
+        // Slices require the Container's landmarks and containerByteSize before indexing
+        container.distributeIndexingParametersToSlices();
 
         int length = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
         try {

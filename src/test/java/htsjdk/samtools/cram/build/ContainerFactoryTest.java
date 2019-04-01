@@ -27,22 +27,23 @@ public class ContainerFactoryTest extends HtsjdkTest {
         // build a container with the max records per slice
 
         final List<CramCompressionRecord> records = CRAMStructureTestUtil.getSingleRefRecords(recordsPerSlice, 0);
-        final Container container = factory.buildContainer(records);
+        final long dummyByteOffset = 0;
+        final Container container = factory.buildContainer(records, dummyByteOffset);
 
         Assert.assertEquals(container.nofRecords, recordsPerSlice);
-        Assert.assertEquals(container.slices.length, 1);
-        Assert.assertEquals(container.slices[0].nofRecords, recordsPerSlice);
+        Assert.assertEquals(container.getSlices().length, 1);
+        Assert.assertEquals(container.getSlices()[0].nofRecords, recordsPerSlice);
 
         // build a container with 1 too many records to fit into a slice
         // 2 slices: recordsPerSlice records and 1 record
 
         records.add(CRAMStructureTestUtil.createMappedRecord(recordsPerSlice, 0, 1));
-        final Container container2 = factory.buildContainer(records);
+        final Container container2 = factory.buildContainer(records, dummyByteOffset);
 
         Assert.assertEquals(container2.nofRecords, recordsPerSlice + 1);
-        Assert.assertEquals(container2.slices.length, 2);
-        Assert.assertEquals(container2.slices[0].nofRecords, recordsPerSlice);
-        Assert.assertEquals(container2.slices[1].nofRecords, 1);
+        Assert.assertEquals(container2.getSlices().length, 2);
+        Assert.assertEquals(container2.getSlices()[0].nofRecords, recordsPerSlice);
+        Assert.assertEquals(container2.getSlices()[1].nofRecords, 1);
     }
 
     @DataProvider(name = "containerStateTests")
@@ -103,18 +104,21 @@ public class ContainerFactoryTest extends HtsjdkTest {
                                    final ReferenceContext expectedReferenceContext,
                                    final int expectedAlignmentStart,
                                    final int expectedAlignmentSpan) {
-        final Container container = buildFromNewFactory(records);
+        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
+        final long byteOffset = 9999;
+        final Container container = factory.buildContainer(records, byteOffset);
         final int globalRecordCounter = 0; // first Container
         final int baseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
 
         CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext,
                 expectedAlignmentStart, expectedAlignmentSpan,
-                TEST_RECORD_COUNT, baseCount, globalRecordCounter);
+                TEST_RECORD_COUNT, baseCount, globalRecordCounter, byteOffset);
     }
 
     @Test
     public void testMultiRefWithStateTransitions() {
-        final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest();
+        final long firstContainerByteOffset = 737735342;
+        final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest(firstContainerByteOffset);
 
         // first container is single-ref
 
@@ -124,25 +128,21 @@ public class ContainerFactoryTest extends HtsjdkTest {
         int recordCount = 1;
         int globalRecordCount = 0; // first container - no records yet
         CRAMStructureTestUtil.assertContainerState(containers.get(0), refContext, alignmentStart, alignmentSpan,
-                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount);
+                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount,
+                firstContainerByteOffset);
 
         // when other refs are added, subsequent containers are multiref
 
         recordCount++;  // this container has 2 records
         globalRecordCount = containers.get(0).nofRecords;   // we've seen 1 record before this container
         CRAMStructureTestUtil.assertContainerState(containers.get(1), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
-                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount);
+                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, recordCount,
+                READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 1);
 
         recordCount++;  // this container has 3 records
         globalRecordCount = containers.get(0).nofRecords + containers.get(1).nofRecords;    // we've seen 3 records before this container
         CRAMStructureTestUtil.assertContainerState(containers.get(2), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN,
-                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount);
-    }
-
-    private Container buildFromNewFactory(final List<CramCompressionRecord> records) {
-        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
-        return factory.buildContainer(records);
+                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, recordCount,
+                READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 2);
     }
 }

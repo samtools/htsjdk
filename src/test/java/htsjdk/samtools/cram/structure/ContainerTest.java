@@ -3,14 +3,15 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,9 @@ public class ContainerTest extends HtsjdkTest {
     private static final int READ_LENGTH_FOR_TEST_RECORDS = CRAMStructureTestUtil.READ_LENGTH_FOR_TEST_RECORDS;
 
     private static final ContainerFactory FACTORY = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
+
+    private static final CompressionHeader COMPRESSION_HEADER =
+            new CompressionHeaderFactory().build(Collections.EMPTY_LIST, null, true);
 
     @DataProvider(name = "containerStateTestCases")
     private Object[][] containerStateTestCases() {
@@ -62,8 +66,9 @@ public class ContainerTest extends HtsjdkTest {
                                          final ReferenceContext expectedReferenceContext,
                                          final int expectedAlignmentStart,
                                          final int expectedAlignmentSpan) {
-        final Container container = Container.initializeFromSlices(slices);
-        CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan);
+        final long byteOffset = 536635;
+        final Container container = Container.initializeFromSlices(slices, COMPRESSION_HEADER, byteOffset);
+        CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, byteOffset);
     }
 
     @DataProvider(name = "illegalCombinationTestCases")
@@ -90,7 +95,8 @@ public class ContainerTest extends HtsjdkTest {
 
     @Test(dataProvider = "illegalCombinationTestCases", expectedExceptions = CRAMException.class)
     public static void illegalCombinationsStateTest(final Slice one, final Slice another) {
-        Container.initializeFromSlices(Arrays.asList(one, another));
+        final long dummyByteOffset = 0;
+        Container.initializeFromSlices(Arrays.asList(one, another), COMPRESSION_HEADER, dummyByteOffset);
     }
 
     @DataProvider(name = "getSpansTestCases")
@@ -143,7 +149,8 @@ public class ContainerTest extends HtsjdkTest {
     public void getSpansTest(final List<CramCompressionRecord> records,
                              final ReferenceContext expectedReferenceContext,
                              final AlignmentSpan expectedAlignmentSpan) {
-        final Container container = FACTORY.buildContainer(records);
+        final long dummyByteOffset = 0;
+        final Container container = FACTORY.buildContainer(records, dummyByteOffset);
 
         final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(ValidationStringency.STRICT);
         Assert.assertEquals(spanMap.size(), 1);
@@ -154,12 +161,12 @@ public class ContainerTest extends HtsjdkTest {
     // show that we can populate all of the slice indexing fields from the
     // values in the container's header
 
-    // this is part of the deserialization process, and supports index creation
+    // this is part of the serialization/deserialization process, and supports index creation
 
     // single slice
 
     @Test
-    public static void populateSlicesAndIndexingParametersOneSlice() {
+    public static void distributeIndexingParametersToSlicesOneSlice() {
         // this container starts 100,000 bytes into the CRAM stream
         final int containerStreamByteOffset = 100000;
 
@@ -172,13 +179,13 @@ public class ContainerTest extends HtsjdkTest {
 
         final Container container = createOneSliceContainer(containerStreamByteOffset, containerHeaderSize, sliceSize);
 
-        assertSliceIndexingParams(container.slices[0], 0, containerStreamByteOffset, sliceSize, containerHeaderSize);
+        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, sliceSize, containerHeaderSize);
     }
 
     // two slices
 
     @Test
-    public static void populateSlicesAndIndexingParametersTwoSlices() {
+    public static void distributeIndexingParametersToSlicesTwoSlices() {
         // this container starts 200,000 bytes into the CRAM stream
         final int containerStreamByteOffset = 200000;
 
@@ -193,8 +200,44 @@ public class ContainerTest extends HtsjdkTest {
 
         final Container container = createTwoSliceContainer(containerStreamByteOffset, containerHeaderSize, slice0size, slice1size);
 
-        assertSliceIndexingParams(container.slices[0], 0, containerStreamByteOffset, slice0size, containerHeaderSize);
-        assertSliceIndexingParams(container.slices[1], 1, containerStreamByteOffset, slice1size, containerHeaderSize + slice0size);
+        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, slice0size, containerHeaderSize);
+        assertSliceIndexingParams(container.getSlices()[1], 1, containerStreamByteOffset, slice1size, containerHeaderSize + slice0size);
+    }
+
+    @DataProvider(name = "containerDistributeNegative")
+    private Object[][] containerDistributeNegative() {
+        final ReferenceContext refContext = new ReferenceContext(0);
+
+        final Container nullLandmarks = new Container(refContext);
+        nullLandmarks.containerByteSize = 6789;
+        nullLandmarks.landmarks = null;
+        nullLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 999);
+
+        final Container tooManyLandmarks = new Container(refContext);
+        tooManyLandmarks.containerByteSize = 111;
+        tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
+        tooManyLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 12345);
+
+        final Container tooManySlices = new Container(refContext);
+        tooManySlices.containerByteSize = 675345389;
+        tooManySlices.landmarks = new int[]{ 1 };
+        tooManySlices.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
+
+        final Container noByteSize = new Container(refContext);
+        noByteSize.landmarks = new int[]{ 1, 2 };
+        noByteSize.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
+
+        return new Object[][] {
+                { nullLandmarks },
+                { tooManyLandmarks },
+                { tooManySlices },
+                { noByteSize },
+        };
+    }
+
+    @Test(expectedExceptions = CRAMException.class, dataProvider = "containerDistributeNegative")
+    public static void distributeIndexingParametersToSlicesNegative(final Container container) {
+        container.distributeIndexingParametersToSlices();
     }
 
     private static Container createOneSliceContainer(final int containerStreamByteOffset,
@@ -203,16 +246,13 @@ public class ContainerTest extends HtsjdkTest {
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Container container = new Container(refContext);
-        container.offset = containerStreamByteOffset;
         container.containerByteSize = slice0size;
         container.landmarks = new int[]{
                 containerHeaderSize,                // beginning of slice
         };
 
-        final ArrayList<Slice> slices = new ArrayList<Slice>() {{
-            add(new Slice(refContext));
-        }};
-        container.populateSlicesAndIndexingParameters(slices);
+        container.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), containerStreamByteOffset);
+        container.distributeIndexingParametersToSlices();
         return container;
     }
 
@@ -225,18 +265,14 @@ public class ContainerTest extends HtsjdkTest {
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Container container = new Container(refContext);
-        container.offset = containerStreamByteOffset;
         container.containerByteSize = containerDataSize;
         container.landmarks = new int[]{
                 containerHeaderSize,                // beginning of slice 1
                 containerHeaderSize + slice0size    // beginning of slice 2
         };
 
-        final ArrayList<Slice> slices = new ArrayList<Slice>() {{
-            add(new Slice(refContext));
-            add(new Slice(refContext));
-        }};
-        container.populateSlicesAndIndexingParameters(slices);
+        container.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), containerStreamByteOffset);
+        container.distributeIndexingParametersToSlices();
         return container;
     }
 
@@ -246,8 +282,8 @@ public class ContainerTest extends HtsjdkTest {
                                                   final int expectedSize,
                                                   final int expectedOffset) {
         Assert.assertEquals(slice.index, expectedIndex);
-        Assert.assertEquals(slice.containerOffset, expectedContainerOffset);
-        Assert.assertEquals(slice.size, expectedSize);
-        Assert.assertEquals(slice.offset, expectedOffset);
+        Assert.assertEquals(slice.containerByteOffset, expectedContainerOffset);
+        Assert.assertEquals(slice.byteSize, expectedSize);
+        Assert.assertEquals(slice.byteOffsetFromContainer, expectedOffset);
     }
 }

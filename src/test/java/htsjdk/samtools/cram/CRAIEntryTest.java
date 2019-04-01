@@ -3,6 +3,7 @@ package htsjdk.samtools.cram;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -13,13 +14,24 @@ import java.util.*;
  * Created by vadim on 25/08/2015.
  */
 public class CRAIEntryTest extends CramRecordTestHelper {
+    private static final Random RANDOM = new Random(TestUtil.RANDOM_SEED);
+
+    private static final CompressionHeader COMPRESSION_HEADER =
+            new CompressionHeaderFactory().build(Collections.EMPTY_LIST, null, true);
+
+    @Test(dataProvider = "uninitializedCRAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
+    public void uninitializedSliceParameterTest(final Slice s) {
+        s.getCRAIEntries(COMPRESSION_HEADER);
+    }
 
     @Test
     public void singleRefTestGetCRAIEntries() {
-        final Slice slice1 = createSingleRefSlice(0);
-        final Slice slice2 = createSingleRefSlice(0);
+        final ReferenceContext refContext = new ReferenceContext(0);
+        final Slice slice1 = createSliceWithArbitraryValues(refContext);
+        final Slice slice2 = createSliceWithArbitraryValues(refContext);
 
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2));
+        final long containerByteOffset = 12345;
+        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), COMPRESSION_HEADER, containerByteOffset);
         final List<CRAIEntry> entries = container.getCRAIEntries();
 
         Assert.assertNotNull(entries);
@@ -35,31 +47,18 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         new CRAIEntry(ReferenceContext.MULTIPLE_REFERENCE_ID, dummy, dummy, dummy, dummy, dummy);
     }
 
-    @Test(expectedExceptions = CRAMException.class)
-    public void multiRefTestGetCRAIEntries() {
-        final Slice multi = new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT);
-
-        final Container container = Container.initializeFromSlices(Arrays.asList(multi));
-        container.getCRAIEntries();
-    }
-
-    // requirement for getCRAIEntriesSplittingMultiRef():
-    // a Container built from Slices which were in turn built from records
-
-    // TODO: clearly identify and enforce preconditions
-
     @Test
-    public void testGetCRAIEntriesSplittingMultiRef() {
-        final int[] landmarks = new int[] { 100, 200 };
-
-        // the indices of the above landmarks array
-        final int slice1Index = 0;
-        final int slice2Index = 1;
-
-        final int slice1AlnStartOffset = 10;
-        final int slice2AlnStartOffset = 20;
+    public void multiRefTestGetCRAIEntries() {
         final int sliceAlnSpan = CRAMStructureTestUtil.READ_LENGTH_FOR_TEST_RECORDS;
         final int sliceByteSize = 500;
+
+        final int slice1Index = 0;
+        final int slice1AlnStartOffset = 10;
+        final int slice1ByteOffsetFromContainer = 750;
+
+        final int slice2Index = 1;
+        final int slice2AlnStartOffset = 20;
+        final int slice2ByteOffsetFromContainer = slice1ByteOffsetFromContainer + sliceByteSize;
 
         final int containerOffset = 1000;
 
@@ -80,31 +79,30 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         final Slice slice2 = Slice.buildSlice(records2, compressionHeader);
 
         slice1.index = slice1Index;
-        slice1.size = sliceByteSize;
+        slice1.byteSize = sliceByteSize;
+        slice1.byteOffsetFromContainer = slice1ByteOffsetFromContainer;
 
         slice2.index = slice2Index;
-        slice2.size = sliceByteSize;
+        slice2.byteSize = sliceByteSize;
+        slice2.byteOffsetFromContainer = slice2ByteOffsetFromContainer;
 
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2));
-        container.compressionHeader = compressionHeader;
-        container.landmarks = landmarks;
-        container.offset = containerOffset;
+        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), compressionHeader, containerOffset);
 
-        final List<CRAIEntry> entries = container.getCRAIEntriesSplittingMultiRef();
+        final List<CRAIEntry> entries = container.getCRAIEntries();
         Assert.assertNotNull(entries);
         Assert.assertEquals(entries.size(), 6);
 
         // slice 1 has index entries for refs 0, 1, 2
 
-        assertEntryForSlice(entries.get(0), 0, slice1AlnStartOffset, sliceAlnSpan, containerOffset, landmarks[0], sliceByteSize);
-        assertEntryForSlice(entries.get(1), 1, slice1AlnStartOffset + 1, sliceAlnSpan, containerOffset, landmarks[0], sliceByteSize);
-        assertEntryForSlice(entries.get(2), 2, slice1AlnStartOffset + 2, sliceAlnSpan, containerOffset, landmarks[0], sliceByteSize);
+        assertEntryForSlice(entries.get(0), 0, slice1AlnStartOffset, sliceAlnSpan, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
+        assertEntryForSlice(entries.get(1), 1, slice1AlnStartOffset + 1, sliceAlnSpan, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
+        assertEntryForSlice(entries.get(2), 2, slice1AlnStartOffset + 2, sliceAlnSpan, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
 
         // slice 2 has index entries for refs 2, 3, 4
 
-        assertEntryForSlice(entries.get(3), 2, slice2AlnStartOffset + 3, sliceAlnSpan, containerOffset, landmarks[1], sliceByteSize);
-        assertEntryForSlice(entries.get(4), 3, slice2AlnStartOffset + 4, sliceAlnSpan, containerOffset, landmarks[1], sliceByteSize);
-        assertEntryForSlice(entries.get(5), 4, slice2AlnStartOffset + 5, sliceAlnSpan, containerOffset, landmarks[1], sliceByteSize);
+        assertEntryForSlice(entries.get(3), 2, slice2AlnStartOffset + 3, sliceAlnSpan, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
+        assertEntryForSlice(entries.get(4), 3, slice2AlnStartOffset + 4, sliceAlnSpan, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
+        assertEntryForSlice(entries.get(5), 4, slice2AlnStartOffset + 5, sliceAlnSpan, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
     }
 
     @Test
@@ -264,15 +262,15 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         Assert.assertEquals(testEntries, expected);
     }
 
-    private static Slice createSingleRefSlice(final int sequenceId) {
-        int counter = sequenceId;
+    private static Slice createSliceWithArbitraryValues(final ReferenceContext refContext) {
+        int counter = RANDOM.nextInt(100);
 
-        final Slice single = new Slice(new ReferenceContext(sequenceId));
+        final Slice single = new Slice(refContext);
         single.alignmentStart = counter++;
         single.alignmentSpan = counter++;
-        single.containerOffset = counter++;
-        single.offset = counter++;
-        single.size = counter++;
+        single.containerByteOffset = counter++;
+        single.byteOffsetFromContainer = counter++;
+        single.byteSize = counter++;
         return single;
     }
 
@@ -290,7 +288,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
 
     private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
         assertEntryForSlice(entry, slice.getReferenceContext().getSerializableId(),
-                slice.alignmentStart, slice.alignmentSpan, slice.containerOffset, slice.offset, slice.size);
+                slice.alignmentStart, slice.alignmentSpan, slice.containerByteOffset, slice.byteOffsetFromContainer, slice.byteSize);
      }
 
     private void assertEntryForSlice(final CRAIEntry entry,

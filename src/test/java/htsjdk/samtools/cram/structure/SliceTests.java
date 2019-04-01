@@ -189,6 +189,16 @@ public class SliceTests extends HtsjdkTest {
                 Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, records.size(), expectedBaseCount);
     }
 
+    @Test(dataProvider = "uninitializedBAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
+    public void uninitializedBAIParameterTest(final Slice s) {
+        s.baiIndexInitializationCheck();
+    }
+
+    @Test(dataProvider = "uninitializedCRAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
+    public void uninitializedCRAIParameterTest(final Slice s) {
+        s.craiIndexInitializationCheck();
+    }
+
     private static void buildSliceAndAssert(final List<CramCompressionRecord> records,
                                             final ReferenceContext expectedReferenceContext,
                                             final int expectedAlignmentStart,

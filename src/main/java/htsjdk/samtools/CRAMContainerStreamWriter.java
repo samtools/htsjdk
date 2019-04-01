@@ -442,11 +442,10 @@ public class CRAMContainerStreamWriter {
             }
         }
 
-        final Container container = containerFactory.buildContainer(cramRecords);
-        for (final Slice slice : container.slices) {
+        final Container container = containerFactory.buildContainer(cramRecords, offset);
+        for (final Slice slice : container.getSlices()) {
             slice.setRefMD5(referenceBases);
         }
-        container.offset = offset;
         offset += ContainerIO.writeContainer(cramVersion, container, outputStream);
         if (indexer != null) {
             /**

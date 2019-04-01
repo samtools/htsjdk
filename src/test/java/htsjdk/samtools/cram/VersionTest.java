@@ -10,6 +10,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CramInt;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.ContainerHeaderIO;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
@@ -74,7 +75,7 @@ public class VersionTest extends HtsjdkTest {
         // position stream at the start of the 1st container:
         cramSeekableStream.seek(containerStart);
         // read only container header:
-        ContainerIO.readContainerHeader(version.major, cramSeekableStream);
+        ContainerHeaderIO.readContainerHeader(version.major, cramSeekableStream, containerStart);
 
         // read the following 4 bytes of CRC32:
         int crcByteSize = 4;

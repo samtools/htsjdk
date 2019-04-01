@@ -159,7 +159,7 @@ public class BAMIndexMetaData {
             unAlignedRecords += slice.unmappedReadsCount;
         }
 
-        final long start = slice.offset;
+        final long start = slice.byteOffsetFromContainer;
 
         if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
             this.firstOffset = start;

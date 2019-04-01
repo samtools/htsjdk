@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.CRAMStructureTestUtil;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
@@ -36,9 +37,15 @@ public class ContainerParserTest extends HtsjdkTest {
 
     @Test(dataProvider = "cramVersions")
     public void testEOF(final Version version) throws IOException {
+        byte[] eofBytes;
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             CramIO.issueEOF(version, baos);
-            final Container container = ContainerIO.readContainer(version, new ByteArrayInputStream(baos.toByteArray()));
+            eofBytes = baos.toByteArray();
+        }
+
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(eofBytes);
+             final CountingInputStream inputStream = new CountingInputStream(bais)) {
+            final Container container = ContainerIO.readContainer(version, inputStream);
             Assert.assertTrue(container.isEOF());
             Assert.assertTrue(PARSER.getRecords(container, null, ValidationStringency.STRICT).isEmpty());
         }
@@ -77,7 +84,8 @@ public class ContainerParserTest extends HtsjdkTest {
 
     @Test(dataProvider = "getRecordsTestCases")
     public void getRecordsTest(final List<CramCompressionRecord> records) {
-        final Container container = FACTORY.buildContainer(records);
+        final long dummyByteOffset = 0;
+        final Container container = FACTORY.buildContainer(records, dummyByteOffset);
 
         final List<CramCompressionRecord> roundTripRecords = PARSER.getRecords(container, null, ValidationStringency.STRICT);
         // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
@@ -96,7 +104,8 @@ public class ContainerParserTest extends HtsjdkTest {
            }
        }
 
-       final Container container = FACTORY.buildContainer(CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT));
+       final long dummyByteOffset = 0;
+       final Container container = FACTORY.buildContainer(CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT), dummyByteOffset);
 
        final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(ValidationStringency.STRICT);
        Assert.assertEquals(spanMap, expectedSpans);
@@ -108,7 +117,8 @@ public class ContainerParserTest extends HtsjdkTest {
         expectedSpans.add(new AlignmentSpan(1, READ_LENGTH_FOR_TEST_RECORDS, 1, 0));
         expectedSpans.add(new AlignmentSpan(2, READ_LENGTH_FOR_TEST_RECORDS, 1, 0));
 
-        final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest();
+        final long firstContainerByteOffset = 999;
+        final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest(firstContainerByteOffset);
 
         // first container is single-ref
 
