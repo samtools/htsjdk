@@ -169,7 +169,7 @@ public class ContainerIO {
 
         final int containerHeaderLength = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
         try {
-            outputStream.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+            outputStream.write(byteArrayOutputStream.toByteArray(), 0, container.containerBlocksByteSize);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }

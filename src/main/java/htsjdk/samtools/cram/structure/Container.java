@@ -49,7 +49,7 @@ public class Container {
 
     /**
      * Slice byte boundaries as offsets within this container, counted after the
-     * compression header.  Equal to {@link Slice#byteOffsetFromCompressionHeaderStart}.
+     * container header.  Equal to {@link Slice#byteOffsetFromCompressionHeaderStart}.
      *
      * As an example, suppose we have:
      * - landmarks[0] = 9000
@@ -197,7 +197,7 @@ public class Container {
         }
 
         if (containerBlocksByteSize == 0) {
-            throw new CRAMException("Cannot set Slice indexing parameters if this Container's byte size is unknown");
+            throw new CRAMException("Cannot set Slice indexing parameters if the byte size of this Container's blocks is unknown");
         }
 
         final int lastSliceIndex = slices.length - 1;
