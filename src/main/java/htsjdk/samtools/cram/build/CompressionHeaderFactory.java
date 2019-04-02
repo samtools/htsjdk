@@ -253,20 +253,20 @@ public class CompressionHeaderFactory {
             }
 
             Arrays.sort(record.tags, comparator);
-            record.tagIds = new byte[record.tags.length * 3];
+            final byte[] tagIds = new byte[record.tags.length * 3];
 
             int tagIndex = 0;
             for (int i = 0; i < record.tags.length; i++) {
-                record.tagIds[i * 3] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(0);
-                record.tagIds[i * 3 + 1] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(1);
-                record.tagIds[i * 3 + 2] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(2);
+                tagIds[i * 3] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(0);
+                tagIds[i * 3 + 1] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(1);
+                tagIds[i * 3 + 2] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(2);
                 tagIndex++;
             }
 
-            MutableInt count = map.get(record.tagIds);
+            MutableInt count = map.get(tagIds);
             if (count == null) {
                 count = new MutableInt();
-                map.put(record.tagIds, count);
+                map.put(tagIds, count);
             }
             count.value++;
             record.tagIdsIndex = count;
