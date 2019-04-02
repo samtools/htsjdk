@@ -138,7 +138,7 @@ public class CRAMBAIIndexer {
         int sliceIndex = 0;
         for (final Slice slice : container.getSlices()) {
             slice.index = sliceIndex++;
-            if (slice.getReferenceContext().isMultiRef()) {
+            if (slice.getReferenceContext().isMultipleReference()) {
                 final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(validationStringency);
 
                 // TODO why are we updating the original slice here?
@@ -197,7 +197,7 @@ public class CRAMBAIIndexer {
         slice.baiIndexInitializationCheck();
 
         final ReferenceContext sliceContext = slice.getReferenceContext();
-        if (sliceContext.isMultiRef()) {
+        if (sliceContext.isMultipleReference()) {
             throw new SAMException("Expecting a single reference or unmapped slice.");
         }
 

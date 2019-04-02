@@ -197,11 +197,11 @@ public class CRAMContainerStreamWriter {
         }
 
         // make unmapped reads don't get into multiref containers:
-        if (refSeqIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && nextRecord.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+        if (! ReferenceContext.isUnmappedUnplaced(refSeqIndex) && ReferenceContext.isUnmappedUnplaced(nextRecord.getReferenceIndex())) {
             return true;
         }
 
-        if (refSeqIndex == ReferenceContext.MULTIPLE_REFERENCE_ID) {
+        if (ReferenceContext.isMultipleReference(refSeqIndex)) {
             return false;
         }
 
@@ -216,7 +216,7 @@ public class CRAMContainerStreamWriter {
         if (samRecords.size() > MIN_SINGLE_REF_RECORDS) {
             return true;
         } else {
-            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_ID;
+            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
             return false;
         }
     }
@@ -264,14 +264,15 @@ public class CRAMContainerStreamWriter {
 
         final byte[] referenceBases;
         String refSeqName = null;
-        switch (refSeqIndex) {
-            case ReferenceContext.MULTIPLE_REFERENCE_ID:
+        final ReferenceContext containerContext = new ReferenceContext(refSeqIndex);
+        switch (containerContext.getType()) {
+            case MULTIPLE_REFERENCE_TYPE:
                 if (preservation != null && preservation.areReferenceTracksRequired()) {
                     throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
                 }
                 referenceBases = new byte[0];
                 break;
-            case ReferenceContext.UNMAPPED_UNPLACED_ID:
+            case UNMAPPED_UNPLACED_TYPE:
                 referenceBases = new byte[0];
                 break;
             default:
@@ -479,14 +480,14 @@ public class CRAMContainerStreamWriter {
      * @param samRecordReferenceIndex index of the new reference sequence
      */
     private void updateReferenceContext(final int samRecordReferenceIndex) {
-        if (refSeqIndex == ReferenceContext.MULTIPLE_REFERENCE_ID) {
+        if (ReferenceContext.isMultipleReference(refSeqIndex)) {
             return;
         }
 
         if (refSeqIndex == REF_SEQ_INDEX_NOT_INITIALIZED) {
             refSeqIndex = samRecordReferenceIndex;
         } else if (refSeqIndex != samRecordReferenceIndex) {
-            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_ID;
+            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
     }
     }
 

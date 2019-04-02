@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAIEntry;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -88,7 +89,7 @@ public class SamIndexesTest extends HtsjdkTest {
 
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        final CRAIEntry entry = new CRAIEntry(0, 1, 2, 5, 3, 4);
+        final CRAIEntry entry = new CRAIEntry(new ReferenceContext(0), 1, 2, 5, 3, 4);
         final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(baos, header, Collections.singleton(entry));
         indexer.finish();
         baos.close();
@@ -102,7 +103,10 @@ public class SamIndexesTest extends HtsjdkTest {
         baos = new ByteArrayOutputStream();
         IOUtil.copyStream(baiStream, baos);
         final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(
+                entry.getReferenceContext().getSequenceId(),
+                entry.getAlignmentStart(),
+                entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
@@ -118,7 +122,7 @@ public class SamIndexesTest extends HtsjdkTest {
 
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        final CRAIEntry entry = new CRAIEntry(0, 1, 2, 5, 3, 4);
+        final CRAIEntry entry = new CRAIEntry(new ReferenceContext(0), 1, 2, 5, 3, 4);
         final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header, Collections.singleton(entry));
         indexer.finish();
         fos.close();
@@ -130,7 +134,10 @@ public class SamIndexesTest extends HtsjdkTest {
         Assert.assertNotNull(baiStream);
 
         final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(baiStream, dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(
+                entry.getReferenceContext().getSequenceId(),
+                entry.getAlignmentStart(),
+                entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
@@ -170,7 +177,7 @@ public class SamIndexesTest extends HtsjdkTest {
         final FileOutputStream fos = new FileOutputStream(file);
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        final CRAIEntry entry = new CRAIEntry(0, 1, 2, 5, 3, 4);
+        final CRAIEntry entry = new CRAIEntry(new ReferenceContext(0), 1, 2, 5, 3, 4);
         final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header, Collections.singleton(entry));
         indexer.finish();
         fos.close();
@@ -181,7 +188,10 @@ public class SamIndexesTest extends HtsjdkTest {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IOUtil.copyStream(baiStream, baos);
         final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(
+                entry.getReferenceContext().getSequenceId(),
+                entry.getAlignmentStart(),
+                entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);

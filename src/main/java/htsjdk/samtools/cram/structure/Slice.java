@@ -203,7 +203,7 @@ public class Slice {
     }
 
     public boolean validateRefMD5(final byte[] ref) {
-        if (referenceContext.isMultiRef()) {
+        if (referenceContext.isMultipleReference()) {
             throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
         }
 
@@ -419,11 +419,11 @@ public class Slice {
 
         craiIndexInitializationCheck();
 
-        if (referenceContext.isMultiRef()) {
+        if (referenceContext.isMultipleReference()) {
             final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(compressionHeader, ValidationStringency.DEFAULT_STRINGENCY);
 
             return spans.entrySet().stream()
-                    .map(e -> new CRAIEntry(e.getKey().getSerializableId(),
+                    .map(e -> new CRAIEntry(e.getKey(),
                             e.getValue().getStart(),
                             e.getValue().getSpan(),
                             containerByteOffset,
@@ -435,7 +435,7 @@ public class Slice {
             // single ref or unmapped
             final int sequenceId = referenceContext.getSerializableId();
             return Collections.singletonList(new CRAIEntry(
-                    sequenceId,
+                    referenceContext,
                     alignmentStart,
                     alignmentSpan,
                     containerByteOffset,

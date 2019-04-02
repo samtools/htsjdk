@@ -11,7 +11,7 @@ import java.io.OutputStream;
  * Created by vadim on 10/08/2015.
  */
 public class CRAIEntry implements Comparable<CRAIEntry> {
-    private final int sequenceId;
+    private final ReferenceContext referenceContext;
     private final int alignmentStart;
     private final int alignmentSpan;
 
@@ -26,17 +26,17 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     private static final int CRAI_INDEX_COLUMNS = 6;
     private static final String ENTRY_FORMAT = "%d\t%d\t%d\t%d\t%d\t%d";
 
-    public CRAIEntry(final int sequenceId,
+    public CRAIEntry(final ReferenceContext referenceContext,
                      final int alignmentStart,
                      final int alignmentSpan,
                      final long containerStartByteOffset,
                      final int sliceByteOffsetFromCompressionHeaderStart,
                      final int sliceByteSize) {
-        if (sequenceId == ReferenceContext.MULTIPLE_REFERENCE_ID) {
+        if (referenceContext.isMultipleReference()) {
             throw new CRAMException("Cannot directly index a multiref slice.  Index by its constituent references instead.");
         }
 
-        this.sequenceId = sequenceId;
+        this.referenceContext = referenceContext;
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;
         this.containerStartByteOffset = containerStartByteOffset;
@@ -58,7 +58,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         }
 
         try {
-            sequenceId = Integer.parseInt(chunks[0]);
+            referenceContext = new ReferenceContext(Integer.parseInt(chunks[0]));
             alignmentStart = Integer.parseInt(chunks[1]);
             alignmentSpan = Integer.parseInt(chunks[2]);
             containerStartByteOffset = Long.parseLong(chunks[3]);
@@ -88,7 +88,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      */
     private String serializeToString() {
         return String.format(ENTRY_FORMAT,
-                sequenceId, alignmentStart, alignmentSpan,
+                referenceContext.getSerializableId(), alignmentStart, alignmentSpan,
                 containerStartByteOffset, sliceByteOffsetFromCompressionHeaderStart, sliceByteSize);
     }
 
@@ -113,16 +113,16 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      */
     @Override
     public int compareTo(final CRAIEntry other) {
-        if (sequenceId != other.sequenceId) {
-            if (sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
+        if (referenceContext != other.referenceContext) {
+            if (referenceContext.isUnmappedUnplaced())
                 return 1;
-            if (other.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
+            if (other.referenceContext.isUnmappedUnplaced())
                 return -1;
-            return Integer.compare(sequenceId, other.sequenceId);
+            return Integer.compare(referenceContext.getSequenceId(), other.referenceContext.getSequenceId());
         }
 
         // only sort by alignment start values for placed entries
-        if (sequenceId != ReferenceContext.UNMAPPED_UNPLACED_ID && alignmentStart != other.alignmentStart) {
+        if (! referenceContext.isUnmappedUnplaced() && alignmentStart != other.alignmentStart) {
             return Integer.compare(alignmentStart, other.alignmentStart);
         }
 
@@ -134,12 +134,12 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     };
 
     public static boolean intersect(final CRAIEntry e0, final CRAIEntry e1) {
-        if (e0.sequenceId != e1.sequenceId) {
+        // unmapped entries never intersect, even with themselves
+        if (e0.referenceContext.isUnmappedUnplaced() || e1.referenceContext.isUnmappedUnplaced()) {
             return false;
         }
 
-        // unmapped entries never intersect, even with themselves
-        if (e0.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID) {
+        if (e0.referenceContext != e1.referenceContext) {
             return false;
         }
 
@@ -153,8 +153,8 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
 
     }
 
-    public int getSequenceId() {
-        return sequenceId;
+    public ReferenceContext getReferenceContext() {
+        return referenceContext;
     }
 
     public int getAlignmentStart() {
@@ -184,7 +184,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
 
         CRAIEntry entry = (CRAIEntry) o;
 
-        if (sequenceId != entry.sequenceId) return false;
+        if (referenceContext != entry.referenceContext) return false;
         if (alignmentStart != entry.alignmentStart) return false;
         if (alignmentSpan != entry.alignmentSpan) return false;
         if (containerStartByteOffset != entry.containerStartByteOffset) return false;
@@ -194,7 +194,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
 
     @Override
     public int hashCode() {
-        int result = sequenceId;
+        int result = referenceContext.hashCode();
         result = 31 * result + alignmentStart;
         result = 31 * result + alignmentSpan;
         result = 31 * result + (int) (containerStartByteOffset ^ (containerStartByteOffset >>> 32));

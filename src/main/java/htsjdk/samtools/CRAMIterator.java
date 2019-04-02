@@ -163,7 +163,7 @@ public class CRAMIterator implements SAMRecordIterator {
                 break;
             case MULTIPLE_REFERENCE_TYPE:
                 referenceBases = null;
-                prevSeqId = ReferenceContext.MULTIPLE_REFERENCE_ID;
+                prevSeqId = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT.getSerializableId();
                 break;
             default:
                 if (prevSeqId != containerContext.getSequenceId()) {

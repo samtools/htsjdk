@@ -33,6 +33,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 
@@ -55,7 +56,7 @@ public class Cram2SamRecordFactory {
         samRecord.setReadName(cramRecord.readName);
         copyFlags(cramRecord, samRecord);
 
-        if (cramRecord.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+        if (ReferenceContext.isUnmappedUnplaced(cramRecord.sequenceId)) {
             samRecord.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
             samRecord.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
             samRecord.setReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
