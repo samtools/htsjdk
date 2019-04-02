@@ -44,7 +44,7 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "createFeatureFileStrings")
+    @Test(dataProvider = "createIntervalFileStrings")
     public void testIndexedIntervalList(final File testPath, final int expectedCount) throws IOException {
         final IntervalListCodec codec = new IntervalListCodec();
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
@@ -53,7 +53,7 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
         }
     }
 
-    @Test(dataProvider = "createFeatureFileStrings", expectedExceptions = TribbleException.class)
+    @Test(dataProvider = "createIntervalFileStrings", expectedExceptions = TribbleException.class)
     public void testIndexedIntervalListWithQuery(final File testPath, final int ignored) throws IOException {
         final IntervalListCodec codec = new IntervalListCodec();
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
