@@ -147,6 +147,10 @@ public class ContainerIO {
         // use this BAOS for two purposes: writing out and counting bytes for landmarks/containerBlocksByteSize
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         container.compressionHeader.write(version, byteArrayOutputStream);
+
+        // TODO: ensure that the Container blockCount stays in sync with the
+        // Slice's blockCount in SliceIO.write()
+        // 1 Compression Header Block
         container.blockCount = 1;
 
         final List<Integer> landmarks = new ArrayList<>();
@@ -155,9 +159,13 @@ public class ContainerIO {
             // landmarks after 0 = byte length of the compression header plus all slices before this one
             landmarks.add(byteArrayOutputStream.size());
             SliceIO.write(version.major, slice, byteArrayOutputStream);
+            // 1 Slice Header Block
             container.blockCount++;
+            // 1 Core Data Block per Slice
             container.blockCount++;
+            // TODO: should we count the embedded reference block as an additional block?
             if (slice.embeddedRefBlock != null) container.blockCount++;
+            // Each Slice has a variable number of External Data Blocks
             container.blockCount += slice.external.size();
         }
         container.landmarks = landmarks.stream().mapToInt(Integer::intValue).toArray();
