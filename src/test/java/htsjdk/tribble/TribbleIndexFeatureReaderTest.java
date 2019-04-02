@@ -28,14 +28,8 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
         final VCFCodec codec = new VCFCodec();
         try (final TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader =
                 new TribbleIndexedFeatureReader<>(testPath, codec, false)) {
-            final CloseableTribbleIterator<VariantContext> localIterator = featureReader.iterator();
-            int count = 0;
-            for (final Feature feat : featureReader.iterator()) {
-                localIterator.next();
-                count++;
-            }
-            Assert.assertEquals(count, expectedCount);
+
+            Assert.assertEquals(featureReader.iterator().stream().count(),1);
         }
     }
-
 }

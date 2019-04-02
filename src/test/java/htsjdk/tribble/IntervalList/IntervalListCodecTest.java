@@ -31,6 +31,7 @@ import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
 import htsjdk.samtools.util.IntervalListTest;
 import htsjdk.tribble.*;
+import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -100,10 +101,40 @@ public class IntervalListCodecTest extends HtsjdkTest {
         }
     }
 
+
+
+
     // Once someone implement tabix interval-lists, this should fail (and they should make a test that passes...)
     @Test(expectedExceptions = TribbleException.class)
     public void testGetTabixFormat() {
         new IntervalListCodec().getTabixFormat();
+    }
+
+
+    @DataProvider()
+    public Object[][] createFeatureFileStrings() {
+        return new Object[][]{
+              {new File(TestUtils.DATA_DIR, "interval_list/shortExample.interval_list"), 4}
+        };
+    }
+
+    @Test(dataProvider = "createFeatureFileStrings")
+    public void testIndexedIntervalList(final File testPath, final int expectedCount) throws IOException {
+        final IntervalListCodec codec = new IntervalListCodec();
+        try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
+                     new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
+            Assert.assertEquals(featureReader.iterator().stream().count(),expectedCount);
+        }
+    }
+
+    @Test(dataProvider = "createFeatureFileStrings", expectedExceptions = TribbleException.class)
+    public void testIndexedIntervalListWithQuery(final File testPath, final int ignored) throws IOException {
+        final IntervalListCodec codec = new IntervalListCodec();
+        try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
+                     new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
+
+            Assert.assertEquals(featureReader.query("1",17032814,17032814).stream().count(),1);
+        }
     }
 
     @Test
