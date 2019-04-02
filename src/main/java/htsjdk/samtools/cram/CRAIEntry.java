@@ -18,9 +18,9 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     // this Slice's Container's offset in bytes from the beginning of the stream
     // equal to Slice.containerByteOffset and Container.byteOffset
     private final long containerStartByteOffset;
-    // this Slice's offset in bytes from the beginning of its Container
+    // this Slice's offset in bytes from the beginning of its Container's Compression Header
     // equal to Slice.byteOffsetFromCompressionHeaderStart and Container.landmarks[Slice.index]
-    private final int sliceByteOffset;
+    private final int sliceByteOffsetFromCompressionHeaderStart;
     private final int sliceByteSize;
 
     private static final int CRAI_INDEX_COLUMNS = 6;
@@ -30,7 +30,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
                      final int alignmentStart,
                      final int alignmentSpan,
                      final long containerStartByteOffset,
-                     final int sliceByteOffset,
+                     final int sliceByteOffsetFromCompressionHeaderStart,
                      final int sliceByteSize) {
         if (sequenceId == ReferenceContext.MULTIPLE_REFERENCE_ID) {
             throw new CRAMException("Cannot directly index a multiref slice.  Index by its constituent references instead.");
@@ -40,7 +40,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;
         this.containerStartByteOffset = containerStartByteOffset;
-        this.sliceByteOffset = sliceByteOffset;
+        this.sliceByteOffsetFromCompressionHeaderStart = sliceByteOffsetFromCompressionHeaderStart;
         this.sliceByteSize = sliceByteSize;
     }
 
@@ -62,7 +62,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
             alignmentStart = Integer.parseInt(chunks[1]);
             alignmentSpan = Integer.parseInt(chunks[2]);
             containerStartByteOffset = Long.parseLong(chunks[3]);
-            sliceByteOffset = Integer.parseInt(chunks[4]);
+            sliceByteOffsetFromCompressionHeaderStart = Integer.parseInt(chunks[4]);
             sliceByteSize = Integer.parseInt(chunks[5]);
         } catch (final NumberFormatException e) {
             throw new CRAIIndex.CRAIIndexException(e);
@@ -89,7 +89,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     private String serializeToString() {
         return String.format(ENTRY_FORMAT,
                 sequenceId, alignmentStart, alignmentSpan,
-                containerStartByteOffset, sliceByteOffset, sliceByteSize);
+                containerStartByteOffset, sliceByteOffsetFromCompressionHeaderStart, sliceByteSize);
     }
 
     @Override
@@ -130,7 +130,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
             return Long.compare(containerStartByteOffset, other.containerStartByteOffset);
         }
 
-        return Long.compare(sliceByteOffset, other.sliceByteOffset);
+        return Long.compare(sliceByteOffsetFromCompressionHeaderStart, other.sliceByteOffsetFromCompressionHeaderStart);
     };
 
     public static boolean intersect(final CRAIEntry e0, final CRAIEntry e1) {
@@ -169,8 +169,8 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         return containerStartByteOffset;
     }
 
-    public int getSliceByteOffset() {
-        return sliceByteOffset;
+    public int getSliceByteOffsetFromCompressionHeaderStart() {
+        return sliceByteOffsetFromCompressionHeaderStart;
     }
 
     public int getSliceByteSize() {
@@ -188,7 +188,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         if (alignmentStart != entry.alignmentStart) return false;
         if (alignmentSpan != entry.alignmentSpan) return false;
         if (containerStartByteOffset != entry.containerStartByteOffset) return false;
-        if (sliceByteOffset != entry.sliceByteOffset) return false;
+        if (sliceByteOffsetFromCompressionHeaderStart != entry.sliceByteOffsetFromCompressionHeaderStart) return false;
         return sliceByteSize == entry.sliceByteSize;
     }
 
@@ -198,7 +198,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         result = 31 * result + alignmentStart;
         result = 31 * result + alignmentSpan;
         result = 31 * result + (int) (containerStartByteOffset ^ (containerStartByteOffset >>> 32));
-        result = 31 * result + sliceByteOffset;
+        result = 31 * result + sliceByteOffsetFromCompressionHeaderStart;
         result = 31 * result + sliceByteSize;
         return result;
     }

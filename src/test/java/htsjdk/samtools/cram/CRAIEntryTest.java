@@ -303,7 +303,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         Assert.assertEquals(entry.getAlignmentStart(), alignmentStart);
         Assert.assertEquals(entry.getAlignmentSpan(), alignmentSpan);
         Assert.assertEquals(entry.getContainerStartByteOffset(), containerOffset);
-        Assert.assertEquals(entry.getSliceByteOffset(), sliceByteOffset);
+        Assert.assertEquals(entry.getSliceByteOffsetFromCompressionHeaderStart(), sliceByteOffset);
         Assert.assertEquals(entry.getSliceByteSize(), sliceByteSize);
     }
 }

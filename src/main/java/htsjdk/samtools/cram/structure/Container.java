@@ -33,6 +33,9 @@ public class Container {
 
     /**
      * The total length of all blocks in this container, of all types.
+     *
+     * Equal to the total length of this container, minus the Container Header.
+     *
      * @see htsjdk.samtools.cram.structure.block.BlockContentType
      */
     public int containerBlocksByteSize = 0;
@@ -48,8 +51,11 @@ public class Container {
     public int blockCount = -1;
 
     /**
-     * Slice byte boundaries as offsets within this container, counted after the
-     * container header.  Equal to {@link Slice#byteOffsetFromCompressionHeaderStart}.
+     * Slice byte boundaries as offsets within this container,
+     * counted after the container header.  The start of the compression header
+     * has offset 0.
+     *
+     * Equal to {@link Slice#byteOffsetFromCompressionHeaderStart}.
      *
      * As an example, suppose we have:
      * - landmarks[0] = 9000
