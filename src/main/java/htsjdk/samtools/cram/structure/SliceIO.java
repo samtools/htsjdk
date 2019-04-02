@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.ITF8;
@@ -45,10 +46,12 @@ class SliceIO {
             throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
 
         final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getUncompressedContent());
-        final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
-        final Slice slice = new Slice(refContext);
-        slice.alignmentStart = ITF8.readUnsignedITF8(parseInputStream);
-        slice.alignmentSpan = ITF8.readUnsignedITF8(parseInputStream);
+        final AlignmentContext alnContext = new AlignmentContext(
+                new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream)),
+                ITF8.readUnsignedITF8(parseInputStream),
+                ITF8.readUnsignedITF8(parseInputStream));
+
+        final Slice slice = new Slice(alnContext);
         slice.nofRecords = ITF8.readUnsignedITF8(parseInputStream);
         slice.globalRecordCounter = LTF8.readUnsignedLTF8(parseInputStream);
         slice.nofBlocks = ITF8.readUnsignedITF8(parseInputStream);
@@ -78,8 +81,8 @@ class SliceIO {
     private static byte[] createSliceHeaderBlockContent(final int major, final Slice slice) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ITF8.writeUnsignedITF8(slice.getReferenceContext().getSerializableId(), byteArrayOutputStream);
-        ITF8.writeUnsignedITF8(slice.alignmentStart, byteArrayOutputStream);
-        ITF8.writeUnsignedITF8(slice.alignmentSpan, byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getAlignmentContext().getAlignmentStart(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getAlignmentContext().getAlignmentSpan(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.nofRecords, byteArrayOutputStream);
         LTF8.writeUnsignedLTF8(slice.globalRecordCounter, byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.nofBlocks, byteArrayOutputStream);

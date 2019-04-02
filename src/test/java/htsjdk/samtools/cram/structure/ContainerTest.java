@@ -31,34 +31,34 @@ public class ContainerTest extends HtsjdkTest {
 
         final int slice1AlignmentStart = 10;
         final int slice1AlignmentSpan = 15;
-        final Slice mappedSlice1 = new Slice(mappedReferenceContext);
-        mappedSlice1.alignmentStart = slice1AlignmentStart;
-        mappedSlice1.alignmentSpan = slice1AlignmentSpan;
+        final AlignmentContext alignment1 = new AlignmentContext(mappedReferenceContext, slice1AlignmentStart, slice1AlignmentSpan);
+        final Slice mappedSlice1 = new Slice(alignment1);
 
         final int slice2AlignmentStart = 20;
         final int slice2AlignmentSpan = 20;
-        final Slice mappedSlice2 = new Slice(mappedReferenceContext);
-        mappedSlice2.alignmentStart = slice2AlignmentStart;
-        mappedSlice2.alignmentSpan = slice2AlignmentSpan;
-        final int expectedSpan = slice2AlignmentStart + slice2AlignmentSpan - slice1AlignmentStart;
+        final AlignmentContext alignment2 = new AlignmentContext(mappedReferenceContext, slice2AlignmentStart, slice2AlignmentSpan);
+        final Slice mappedSlice2 = new Slice(alignment2);
+
+        final int expectedCombinedSpan = slice2AlignmentStart + slice2AlignmentSpan - slice1AlignmentStart;
+        final AlignmentContext combinedAlignment = new AlignmentContext(mappedReferenceContext, slice1AlignmentStart, expectedCombinedSpan);
 
         return new Object[][] {
                 {
-                    Arrays.asList(mappedSlice1),
-                    new AlignmentContext(mappedReferenceContext, slice1AlignmentStart, slice1AlignmentSpan)
+                    Collections.singletonList(mappedSlice1),
+                    alignment1
                 },
                 {
                     Arrays.asList(mappedSlice1, mappedSlice2),
-                    new AlignmentContext(mappedReferenceContext, slice1AlignmentStart, expectedSpan)
+                    combinedAlignment
                 },
                 {
-                    Arrays.asList(new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT),
-                            new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)),
+                    Arrays.asList(new Slice(AlignmentContext.MULTIPLE_REFERENCE_CONTEXT),
+                            new Slice(AlignmentContext.MULTIPLE_REFERENCE_CONTEXT)),
                     AlignmentContext.MULTIPLE_REFERENCE_CONTEXT
                 },
                 {
-                    Arrays.asList(new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT),
-                            new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)),
+                    Arrays.asList(new Slice(AlignmentContext.UNMAPPED_UNPLACED_CONTEXT),
+                            new Slice(AlignmentContext.UNMAPPED_UNPLACED_CONTEXT)),
                     AlignmentContext.UNMAPPED_UNPLACED_CONTEXT
                 },
         };
@@ -75,22 +75,25 @@ public class ContainerTest extends HtsjdkTest {
 
     @DataProvider(name = "illegalCombinationTestCases")
     private Object[][] illegalCombinationTestCases() {
+        final AlignmentContext mappedAlignmentContext = new AlignmentContext(new ReferenceContext(0), 1, 2);
+        final AlignmentContext otherRefContext = new AlignmentContext(new ReferenceContext(1), 1, 2);
+
         return new Object[][] {
                 {
-                        new Slice(new ReferenceContext(0)),
-                        new Slice(new ReferenceContext(1))
+                        new Slice(mappedAlignmentContext),
+                        new Slice(otherRefContext)
                 },
                 {
-                        new Slice(new ReferenceContext(0)),
-                        new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
+                        new Slice(mappedAlignmentContext),
+                        new Slice(AlignmentContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
                 {
-                        new Slice(new ReferenceContext(0)),
-                        new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)
+                        new Slice(mappedAlignmentContext),
+                        new Slice(AlignmentContext.MULTIPLE_REFERENCE_CONTEXT)
                 },
                 {
-                        new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT),
-                        new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)
+                        new Slice(AlignmentContext.UNMAPPED_UNPLACED_CONTEXT),
+                        new Slice(AlignmentContext.MULTIPLE_REFERENCE_CONTEXT)
                 },
         };
     }
@@ -216,21 +219,21 @@ public class ContainerTest extends HtsjdkTest {
         final Container nullLandmarks = new Container(alnContext);
         nullLandmarks.containerBlocksByteSize = 6789;
         nullLandmarks.landmarks = null;
-        nullLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 999);
+        nullLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(alnContext)), 999);
 
         final Container tooManyLandmarks = new Container(alnContext);
         tooManyLandmarks.containerBlocksByteSize = 111;
         tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
-        tooManyLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 12345);
+        tooManyLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(alnContext)), 12345);
 
         final Container tooManySlices = new Container(alnContext);
         tooManySlices.containerBlocksByteSize = 675345389;
         tooManySlices.landmarks = new int[]{ 1 };
-        tooManySlices.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
+        tooManySlices.setSlicesAndByteOffset(Arrays.asList(new Slice(alnContext), new Slice(alnContext)), 12345);
 
         final Container noByteSize = new Container(alnContext);
         noByteSize.landmarks = new int[]{ 1, 2 };
-        noByteSize.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
+        noByteSize.setSlicesAndByteOffset(Arrays.asList(new Slice(alnContext), new Slice(alnContext)), 12345);
 
         return new Object[][] {
                 { nullLandmarks },
@@ -252,12 +255,12 @@ public class ContainerTest extends HtsjdkTest {
         final AlignmentContext alnContext = new AlignmentContext(refContext, 0, 0);
 
         final Container container = new Container(alnContext);
-        container.containerBlocksByteSize = slice0size;
+        container.containerBlocksByteSize = compressionHeaderSize + slice0size;
         container.landmarks = new int[]{
                 compressionHeaderSize,                // beginning of slice
         };
 
-        container.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), containerStreamByteOffset);
+        container.setSlicesAndByteOffset(Collections.singletonList(new Slice(alnContext)), containerStreamByteOffset);
         container.distributeIndexingParametersToSlices();
         return container;
     }
@@ -278,7 +281,7 @@ public class ContainerTest extends HtsjdkTest {
                 compressionHeaderSize + slice0size    // beginning of slice 2
         };
 
-        container.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), containerStreamByteOffset);
+        container.setSlicesAndByteOffset(Arrays.asList(new Slice(alnContext), new Slice(alnContext)), containerStreamByteOffset);
         container.distributeIndexingParametersToSlices();
         return container;
     }

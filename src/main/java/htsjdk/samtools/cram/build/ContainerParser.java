@@ -71,7 +71,7 @@ public class ContainerParser {
 
         final ArrayList<CramCompressionRecord> records = new ArrayList<>(slice.nofRecords);
 
-        int prevAlignmentStart = slice.alignmentStart;
+        int prevAlignmentStart = slice.getAlignmentContext().getAlignmentStart();
         for (int i = 0; i < slice.nofRecords; i++) {
             final CramCompressionRecord record = new CramCompressionRecord();
             record.sliceIndex = slice.index;

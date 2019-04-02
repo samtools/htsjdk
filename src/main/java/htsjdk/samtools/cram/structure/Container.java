@@ -165,8 +165,8 @@ public class Container {
             int endPlusOne = Integer.MIN_VALUE;
 
             for (final Slice slice : containerSlices) {
-                start = Math.min(start, slice.alignmentStart);
-                endPlusOne = Math.max(endPlusOne, slice.alignmentStart + slice.alignmentSpan);
+                start = Math.min(start, slice.getAlignmentContext().getAlignmentStart());
+                endPlusOne = Math.max(endPlusOne, slice.getAlignmentContext().getAlignmentStart() + slice.getAlignmentContext().getAlignmentSpan());
             }
 
             alignmentStart = start;
@@ -276,7 +276,11 @@ public class Container {
                     }
                     break;
                 default:
-                    final AlignmentSpan alignmentSpan = new AlignmentSpan(slice.alignmentStart, slice.alignmentSpan, slice.mappedReadsCount, slice.unmappedReadsCount);
+                    final AlignmentSpan alignmentSpan = new AlignmentSpan(
+                            slice.getAlignmentContext().getAlignmentStart(),
+                            slice.getAlignmentContext().getAlignmentSpan(),
+                            slice.mappedReadsCount,
+                            slice.unmappedReadsCount);
                     containerSpanMap.merge(slice.getReferenceContext(), alignmentSpan, AlignmentSpan::combine);
                     break;
             }

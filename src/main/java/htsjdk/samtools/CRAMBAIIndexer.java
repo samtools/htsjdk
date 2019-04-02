@@ -38,6 +38,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.build.CramIO;
@@ -151,13 +152,12 @@ public class CRAMBAIIndexer {
                 AlignmentSpan unmappedSpan = spanMap.remove(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
                 for (final ReferenceContext refContext : new TreeSet<>(spanMap.keySet())) {
                     final AlignmentSpan span = spanMap.get(refContext);
-                    final Slice fakeSlice = new Slice(refContext);
+                    final Slice fakeSlice = new Slice(new AlignmentContext(
+                            refContext, span.getStart(), span.getSpan()));
                     fakeSlice.containerByteOffset = slice.containerByteOffset;
                     fakeSlice.byteOffsetFromCompressionHeaderStart = slice.byteOffsetFromCompressionHeaderStart;
                     fakeSlice.index = slice.index;
 
-                    fakeSlice.alignmentStart = span.getStart();
-                    fakeSlice.alignmentSpan = span.getSpan();
                     fakeSlice.mappedReadsCount = span.getMappedCount();
                     fakeSlice.unmappedReadsCount = span.getUnmappedCount();
                     fakeSlice.unplacedReadsCount = 0;
@@ -165,13 +165,11 @@ public class CRAMBAIIndexer {
                 }
 
                 if (unmappedSpan != null) {
-                    final Slice fakeSlice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+                    final Slice fakeSlice = new Slice(AlignmentContext.UNMAPPED_UNPLACED_CONTEXT);
                     fakeSlice.containerByteOffset = slice.containerByteOffset;
                     fakeSlice.byteOffsetFromCompressionHeaderStart = slice.byteOffsetFromCompressionHeaderStart;
                     fakeSlice.index = slice.index;
 
-                    fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-                    fakeSlice.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
                     fakeSlice.mappedReadsCount = 0;
                     fakeSlice.unmappedReadsCount = 0;
                     fakeSlice.unplacedReadsCount = slice.unplacedReadsCount;
@@ -346,8 +344,8 @@ public class CRAMBAIIndexer {
 
         private int computeIndexingBin(final Slice slice) {
             // regionToBin has zero-based, half-open API
-            final int alignmentStart = slice.alignmentStart - 1;
-            int alignmentEnd = slice.alignmentStart + slice.alignmentSpan - 1;
+            final int alignmentStart = slice.getAlignmentContext().getAlignmentStart() - 1;
+            int alignmentEnd = slice.getAlignmentContext().getAlignmentStart() + slice.getAlignmentContext().getAlignmentSpan() - 1;
             if (alignmentEnd <= alignmentStart) {
                 // If alignment end cannot be determined (e.g. because this read is not really aligned),
                 // then treat this as a one base alignment for indexing purposes.
@@ -429,8 +427,8 @@ public class CRAMBAIIndexer {
             // process linear index
 
             // the smallest file offset that appears in the 16k window for this bin
-            final int alignmentStart = slice.alignmentStart;
-            final int alignmentEnd = slice.alignmentStart + slice.alignmentSpan;
+            final int alignmentStart = slice.getAlignmentContext().getAlignmentStart();
+            final int alignmentEnd = slice.getAlignmentContext().getAlignmentStart() + slice.getAlignmentContext().getAlignmentSpan();
             int startWindow = LinearIndex.convertToLinearIndexOffset(alignmentStart); // the 16k window
             final int endWindow;
 

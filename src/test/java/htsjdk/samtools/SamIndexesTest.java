@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
@@ -89,7 +90,7 @@ public class SamIndexesTest extends HtsjdkTest {
 
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        final CRAIEntry entry = new CRAIEntry(new ReferenceContext(0), 1, 2, 5, 3, 4);
+        final CRAIEntry entry = new CRAIEntry(new AlignmentContext(new ReferenceContext(0), 1, 2), 5, 3, 4);
         final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(baos, header, Collections.singleton(entry));
         indexer.finish();
         baos.close();
@@ -122,7 +123,7 @@ public class SamIndexesTest extends HtsjdkTest {
 
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        final CRAIEntry entry = new CRAIEntry(new ReferenceContext(0), 1, 2, 5, 3, 4);
+        final CRAIEntry entry = new CRAIEntry(new AlignmentContext(new ReferenceContext(0), 1, 2), 5, 3, 4);
         final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header, Collections.singleton(entry));
         indexer.finish();
         fos.close();
@@ -177,7 +178,7 @@ public class SamIndexesTest extends HtsjdkTest {
         final FileOutputStream fos = new FileOutputStream(file);
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        final CRAIEntry entry = new CRAIEntry(new ReferenceContext(0), 1, 2, 5, 3, 4);
+        final CRAIEntry entry = new CRAIEntry(new AlignmentContext(new ReferenceContext(0), 1, 2), 5, 3, 4);
         final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header, Collections.singleton(entry));
         indexer.finish();
         fos.close();

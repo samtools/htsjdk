@@ -8,6 +8,10 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class AlignmentContextTest extends HtsjdkTest {
 
     // test constructors and basic identity methods
@@ -84,5 +88,92 @@ public class AlignmentContextTest extends HtsjdkTest {
         Assert.assertEquals(alnContext.getReferenceContext().getType(), expectedRefContextType);
         Assert.assertEquals(alnContext.getAlignmentStart(), expectedStart);
         Assert.assertEquals(alnContext.getAlignmentSpan(), expectedSpan);
+    }
+
+    // test that alignment contexts are sorted correctly:
+
+    // first by numerical order of reference sequence ID, except:
+    // - unmapped-unplaced comes last
+    // - multiref throws an exception
+
+    // next by alignment start, if the reference sequence ID is valid (placed single-ref)
+
+    // alignmentSpan is irrelevant to index sorting
+
+    @Test
+    public void testCompareTo() {
+        // unmapped contexts are not sortable, so they should remain in order 1, 2, 3
+
+        final AlignmentContext unmapped1 = new AlignmentContext(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 100, 100);
+        final AlignmentContext unmapped2 = new AlignmentContext(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 80, 3000);
+        final AlignmentContext unmapped3 = new AlignmentContext(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 80, 5);
+
+        // these placed AlignmentContexts should sort per sequenceId as: 4, 2, 3, 1
+
+        final ReferenceContext refContext0 = new ReferenceContext(0);
+        final AlignmentContext placed1ForSeq0 = new AlignmentContext(refContext0, 30, 100);
+        final AlignmentContext placed2ForSeq0 = new AlignmentContext(refContext0, 25, 200);
+        final AlignmentContext placed3ForSeq0 = new AlignmentContext(refContext0, 25, 100);
+        final AlignmentContext placed4ForSeq0 = new AlignmentContext(refContext0, 10, 400);
+
+        final ReferenceContext refContext1 = new ReferenceContext(1);
+        final AlignmentContext placed1ForSeq1 = new AlignmentContext(refContext1, 30, 100);
+        final AlignmentContext placed2ForSeq1 = new AlignmentContext(refContext1, 25, 200);
+        final AlignmentContext placed3ForSeq1 = new AlignmentContext(refContext1, 25, 100);
+        final AlignmentContext placed4ForSeq1 = new AlignmentContext(refContext1, 10, 400);
+
+        final List<AlignmentContext> testList = new ArrayList<AlignmentContext>() {{
+            add(unmapped1);
+            add(unmapped2);
+            add(unmapped3);
+
+            add(placed1ForSeq1);
+            add(placed2ForSeq1);
+            add(placed3ForSeq1);
+            add(placed4ForSeq1);
+
+            add(placed1ForSeq0);
+            add(placed2ForSeq0);
+            add(placed3ForSeq0);
+            add(placed4ForSeq0);
+        }};
+
+        // ref ID 0, then ref ID 1, then unmapped
+        // within valid ref ID = 4, 2, 3, 1 (see above)
+        // within unmapped = 1, 2, 3 (no sorting)
+
+        final List<AlignmentContext> expectedList = new ArrayList<AlignmentContext>() {{
+            add(placed4ForSeq0);
+            add(placed2ForSeq0);
+            add(placed3ForSeq0);
+            add(placed1ForSeq0);
+
+            add(placed4ForSeq1);
+            add(placed2ForSeq1);
+            add(placed3ForSeq1);
+            add(placed1ForSeq1);
+
+            add(unmapped1);
+            add(unmapped2);
+            add(unmapped3);
+        }};
+
+        Collections.sort(testList);
+        Assert.assertEquals(testList, expectedList);
+    }
+
+    @DataProvider(name = "compareToExceptions")
+    private Object[][] compareToExceptions() {
+        final AlignmentContext singleRefContext = new AlignmentContext(new ReferenceContext(0), 1, 1);
+        return new Object[][] {
+                {singleRefContext, AlignmentContext.MULTIPLE_REFERENCE_CONTEXT},
+                {AlignmentContext.MULTIPLE_REFERENCE_CONTEXT, singleRefContext},
+                {AlignmentContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.MULTIPLE_REFERENCE_CONTEXT},
+        };
+    }
+
+    @Test(dataProvider = "compareToExceptions", expectedExceptions = CRAMException.class)
+    public void compareToExceptionsTest(final AlignmentContext a, final AlignmentContext b) {
+        a.compareTo(b);
     }
 }

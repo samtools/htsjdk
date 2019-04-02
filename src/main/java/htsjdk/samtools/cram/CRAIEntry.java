@@ -5,15 +5,14 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Objects;
 
 /**
  * A class representing CRAI index entry: file and alignment offsets for each slice.
  * Created by vadim on 10/08/2015.
  */
 public class CRAIEntry implements Comparable<CRAIEntry> {
-    private final ReferenceContext referenceContext;
-    private final int alignmentStart;
-    private final int alignmentSpan;
+    private final AlignmentContext alignmentContext;
 
     // this Slice's Container's offset in bytes from the beginning of the stream
     // equal to Slice.containerByteOffset and Container.byteOffset
@@ -26,19 +25,15 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     private static final int CRAI_INDEX_COLUMNS = 6;
     private static final String ENTRY_FORMAT = "%d\t%d\t%d\t%d\t%d\t%d";
 
-    public CRAIEntry(final ReferenceContext referenceContext,
-                     final int alignmentStart,
-                     final int alignmentSpan,
+    public CRAIEntry(final AlignmentContext alignmentContext,
                      final long containerStartByteOffset,
                      final int sliceByteOffsetFromCompressionHeaderStart,
                      final int sliceByteSize) {
-        if (referenceContext.isMultipleReference()) {
+        if (alignmentContext.getReferenceContext().isMultipleReference()) {
             throw new CRAMException("Cannot directly index a multiref slice.  Index by its constituent references instead.");
         }
 
-        this.referenceContext = referenceContext;
-        this.alignmentStart = alignmentStart;
-        this.alignmentSpan = alignmentSpan;
+        this.alignmentContext = alignmentContext;
         this.containerStartByteOffset = containerStartByteOffset;
         this.sliceByteOffsetFromCompressionHeaderStart = sliceByteOffsetFromCompressionHeaderStart;
         this.sliceByteSize = sliceByteSize;
@@ -58,9 +53,10 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         }
 
         try {
-            referenceContext = new ReferenceContext(Integer.parseInt(chunks[0]));
-            alignmentStart = Integer.parseInt(chunks[1]);
-            alignmentSpan = Integer.parseInt(chunks[2]);
+            alignmentContext = new AlignmentContext(
+                    new ReferenceContext(Integer.parseInt(chunks[0])),
+                    Integer.parseInt(chunks[1]),
+                    Integer.parseInt(chunks[2]));
             containerStartByteOffset = Long.parseLong(chunks[3]);
             sliceByteOffsetFromCompressionHeaderStart = Integer.parseInt(chunks[4]);
             sliceByteSize = Integer.parseInt(chunks[5]);
@@ -87,8 +83,12 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * Format the entry as a string suitable for serialization in the CRAI index
      */
     private String serializeToString() {
+        final int refSeqId = alignmentContext.getReferenceContext().getSerializableId();
+        final int alignmentStart = alignmentContext.getAlignmentStart();
+        final int alignmentSpan = alignmentContext.getAlignmentSpan();
+
         return String.format(ENTRY_FORMAT,
-                referenceContext.getSerializableId(), alignmentStart, alignmentSpan,
+                refSeqId, alignmentStart, alignmentSpan,
                 containerStartByteOffset, sliceByteOffsetFromCompressionHeaderStart, sliceByteSize);
     }
 
@@ -113,17 +113,9 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      */
     @Override
     public int compareTo(final CRAIEntry other) {
-        if (referenceContext != other.referenceContext) {
-            if (referenceContext.isUnmappedUnplaced())
-                return 1;
-            if (other.referenceContext.isUnmappedUnplaced())
-                return -1;
-            return Integer.compare(referenceContext.getSequenceId(), other.referenceContext.getSequenceId());
-        }
-
-        // only sort by alignment start values for placed entries
-        if (! referenceContext.isUnmappedUnplaced() && alignmentStart != other.alignmentStart) {
-            return Integer.compare(alignmentStart, other.alignmentStart);
+        int contextComparison = alignmentContext.compareTo(other.alignmentContext);
+        if (contextComparison != 0) {
+            return contextComparison;
         }
 
         if (containerStartByteOffset != other.containerStartByteOffset) {
@@ -134,35 +126,45 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     };
 
     public static boolean intersect(final CRAIEntry e0, final CRAIEntry e1) {
+        final AlignmentContext alignment0 = e0.alignmentContext;
+        final AlignmentContext alignment1 = e1.alignmentContext;
+
+        final ReferenceContext refContext0 = alignment0.getReferenceContext();
+        final ReferenceContext refContext1 = alignment1.getReferenceContext();
+
         // unmapped entries never intersect, even with themselves
-        if (e0.referenceContext.isUnmappedUnplaced() || e1.referenceContext.isUnmappedUnplaced()) {
+        if (refContext0.isUnmappedUnplaced() || refContext1.isUnmappedUnplaced()) {
             return false;
         }
 
-        if (e0.referenceContext != e1.referenceContext) {
+        if (refContext0 != refContext1) {
             return false;
         }
 
-        final int a0 = e0.alignmentStart;
-        final int a1 = e1.alignmentStart;
+        final int a0 = alignment0.getAlignmentStart();
+        final int a1 = alignment1.getAlignmentStart();
 
-        final int b0 = a0 + e0.alignmentSpan;
-        final int b1 = a1 + e1.alignmentSpan;
+        final int b0 = a0 + alignment0.getAlignmentSpan();
+        final int b1 = a1 + alignment1.getAlignmentSpan();
 
-        return Math.abs(a0 + b0 - a1 - b1) < (e0.alignmentSpan + e1.alignmentSpan);
+        return Math.abs(a0 + b0 - a1 - b1) < (alignment0.getAlignmentSpan() + alignment1.getAlignmentSpan());
 
+    }
+
+    public AlignmentContext getAlignmentContext() {
+        return alignmentContext;
     }
 
     public ReferenceContext getReferenceContext() {
-        return referenceContext;
+        return alignmentContext.getReferenceContext();
     }
 
     public int getAlignmentStart() {
-        return alignmentStart;
+        return alignmentContext.getAlignmentStart();
     }
 
     public int getAlignmentSpan() {
-        return alignmentSpan;
+        return alignmentContext.getAlignmentSpan();
     }
 
     public long getContainerStartByteOffset() {
@@ -178,28 +180,18 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        CRAIEntry entry = (CRAIEntry) o;
-
-        if (referenceContext != entry.referenceContext) return false;
-        if (alignmentStart != entry.alignmentStart) return false;
-        if (alignmentSpan != entry.alignmentSpan) return false;
-        if (containerStartByteOffset != entry.containerStartByteOffset) return false;
-        if (sliceByteOffsetFromCompressionHeaderStart != entry.sliceByteOffsetFromCompressionHeaderStart) return false;
-        return sliceByteSize == entry.sliceByteSize;
+    public boolean equals(final Object other) {
+        if (this == other) return true;
+        if (other == null || getClass() != other.getClass()) return false;
+        CRAIEntry otherEntry = (CRAIEntry) other;
+        return containerStartByteOffset == otherEntry.containerStartByteOffset &&
+                sliceByteOffsetFromCompressionHeaderStart == otherEntry.sliceByteOffsetFromCompressionHeaderStart &&
+                sliceByteSize == otherEntry.sliceByteSize &&
+                alignmentContext.equals(otherEntry.alignmentContext);
     }
 
     @Override
     public int hashCode() {
-        int result = referenceContext.hashCode();
-        result = 31 * result + alignmentStart;
-        result = 31 * result + alignmentSpan;
-        result = 31 * result + (int) (containerStartByteOffset ^ (containerStartByteOffset >>> 32));
-        result = 31 * result + sliceByteOffsetFromCompressionHeaderStart;
-        result = 31 * result + sliceByteSize;
-        return result;
+        return Objects.hash(alignmentContext, containerStartByteOffset, sliceByteOffsetFromCompressionHeaderStart, sliceByteSize);
     }
 }

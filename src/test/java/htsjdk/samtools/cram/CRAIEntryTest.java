@@ -44,7 +44,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     @Test(expectedExceptions = CRAMException.class)
     public void multiRefExceptionTest() {
         final int dummy = 1;
-        new CRAIEntry(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, dummy, dummy, dummy, dummy, dummy);
+        new CRAIEntry(AlignmentContext.MULTIPLE_REFERENCE_CONTEXT, dummy, dummy, dummy);
     }
 
     @Test
@@ -94,30 +94,37 @@ public class CRAIEntryTest extends CramRecordTestHelper {
 
         // slice 1 has index entries for refs 0, 1, 2
 
-        assertEntryForSlice(entries.get(0), new ReferenceContext(0), slice1AlnStartOffset, sliceAlnSpan, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
-        assertEntryForSlice(entries.get(1), new ReferenceContext(1), slice1AlnStartOffset + 1, sliceAlnSpan, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
-        assertEntryForSlice(entries.get(2), new ReferenceContext(2), slice1AlnStartOffset + 2, sliceAlnSpan, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
+        final AlignmentContext alignment0 = new AlignmentContext(new ReferenceContext(0), slice1AlnStartOffset, sliceAlnSpan);
+        final AlignmentContext alignment1 = new AlignmentContext(new ReferenceContext(1), slice1AlnStartOffset + 1, sliceAlnSpan);
+        final AlignmentContext alignment2 = new AlignmentContext(new ReferenceContext(2), slice1AlnStartOffset + 2, sliceAlnSpan);
+        assertEntryForSlice(entries.get(0), alignment0, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
+        assertEntryForSlice(entries.get(1), alignment1, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
+        assertEntryForSlice(entries.get(2), alignment2, containerOffset, slice1ByteOffsetFromContainer, sliceByteSize);
 
         // slice 2 has index entries for refs 2, 3, 4
 
-        assertEntryForSlice(entries.get(3), new ReferenceContext(2), slice2AlnStartOffset + 3, sliceAlnSpan, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
-        assertEntryForSlice(entries.get(4), new ReferenceContext(3), slice2AlnStartOffset + 4, sliceAlnSpan, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
-        assertEntryForSlice(entries.get(5), new ReferenceContext(4), slice2AlnStartOffset + 5, sliceAlnSpan, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
+        final AlignmentContext alignment3 = new AlignmentContext(new ReferenceContext(2), slice2AlnStartOffset + 3, sliceAlnSpan);
+        final AlignmentContext alignment4 = new AlignmentContext(new ReferenceContext(3), slice2AlnStartOffset + 4, sliceAlnSpan);
+        final AlignmentContext alignment5 = new AlignmentContext(new ReferenceContext(4), slice2AlnStartOffset + 5, sliceAlnSpan);
+        assertEntryForSlice(entries.get(3), alignment3, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
+        assertEntryForSlice(entries.get(4), alignment4, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
+        assertEntryForSlice(entries.get(5), alignment5, containerOffset, slice2ByteOffsetFromContainer, sliceByteSize);
     }
 
     @Test
     public void testLineConstructor() {
         int counter = 1;
-        final ReferenceContext refContext= new ReferenceContext(counter++);
+        final int refSeqId = counter++;
         final int alignmentStart = counter++;
         final int alignmentSpan = counter++;
-        final int containerOffset = Integer.MAX_VALUE + counter++;
+        final AlignmentContext alnContext = new AlignmentContext(new ReferenceContext(refSeqId), alignmentStart, alignmentSpan);
+        final long containerOffset = Integer.MAX_VALUE + counter++;
         final int sliceOffset = counter++;
         final int sliceSize = counter++;
 
-        final String line = String.format("%d\t%d\t%d\t%d\t%d\t%d", refContext.getSequenceId(), alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
+        final String line = String.format("%d\t%d\t%d\t%d\t%d\t%d", refSeqId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
         final CRAIEntry entry = new CRAIEntry(line);
-        assertEntryForSlice(entry, refContext, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
+        assertEntryForSlice(entry, alnContext, containerOffset, sliceOffset, sliceSize);
     }
 
     @DataProvider(name = "intersectionTestCases")
@@ -164,7 +171,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
 
     private CRAIEntry craiEntryForIntersectionTests(final ReferenceContext refContext, final int alignmentStart, final int alignmentSpan) {
         final int dummy = -1;
-        return new CRAIEntry(refContext, alignmentStart, alignmentSpan, dummy, dummy, dummy);
+        return new CRAIEntry(new AlignmentContext(refContext, alignmentStart, alignmentSpan), dummy, dummy, dummy);
     }
 
     // test that index entries are sorted correctly:
@@ -188,10 +195,17 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     // first-order sorting within unmapped is by container offset -> [3 and 4], 1, 2
     // next-order sorting is by slice offset, so 4 comes first -> 4, 3, 1, 2
 
-    private final CRAIEntry unmapped1 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 3, dummyValue, 100, 100, dummyValue);
-    private final CRAIEntry unmapped2 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 2, dummyValue, 120, 200, dummyValue);
-    private final CRAIEntry unmapped3 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 4, dummyValue, 90, 100, dummyValue);
-    private final CRAIEntry unmapped4 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 5, dummyValue, 90, 50, dummyValue);
+    private CRAIEntry unmappedEntryForComparisonTest(final int alignmentStart,
+                                                     final int containerStartByteOffset,
+                                                     final int sliceByteOffsetFromCompressionHeaderStart) {
+        final AlignmentContext context = new AlignmentContext(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, alignmentStart, dummyValue);
+        return new CRAIEntry(context, containerStartByteOffset, sliceByteOffsetFromCompressionHeaderStart, dummyValue);
+    }
+
+    private final CRAIEntry unmapped1 = unmappedEntryForComparisonTest(3, 100, 100);
+    private final CRAIEntry unmapped2 = unmappedEntryForComparisonTest(2, 120, 200);
+    private final CRAIEntry unmapped3 = unmappedEntryForComparisonTest(4, 90, 100);
+    private final CRAIEntry unmapped4 = unmappedEntryForComparisonTest(5, 90, 50);
 
     // these placed CRAIEntries should sort per sequenceId as: 4, 2, 1, 5, 3
     // reasoning:
@@ -200,23 +214,23 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     // final-order sorting is by slice offset, so 5 comes first -> 4, 2, 1, 5, 3
 
     private CRAIEntry placed1ForId(final ReferenceContext refContext) {
-        return new CRAIEntry(refContext, 3, dummyValue, 100, 100, dummyValue);
+        return new CRAIEntry(new AlignmentContext(refContext, 3, dummyValue), 100, 100, dummyValue);
     }
 
     private CRAIEntry placed2ForId(final ReferenceContext refContext) {
-        return new CRAIEntry(refContext, 2, dummyValue, 120, 200, dummyValue);
+        return new CRAIEntry(new AlignmentContext(refContext, 2, dummyValue), 120, 200, dummyValue);
     }
 
     private CRAIEntry placed3ForId(final ReferenceContext refContext) {
-        return new CRAIEntry(refContext, 4, dummyValue, 90, 100, dummyValue);
+        return new CRAIEntry(new AlignmentContext(refContext, 4, dummyValue), 90, 100, dummyValue);
     }
 
     private CRAIEntry placed4ForId(final ReferenceContext refContext) {
-        return new CRAIEntry(refContext, 2, dummyValue, 90, 50, dummyValue);
+        return new CRAIEntry(new AlignmentContext(refContext, 2, dummyValue), 90, 50, dummyValue);
     }
 
     private CRAIEntry placed5ForId(final ReferenceContext refContext) {
-        return new CRAIEntry(refContext, 4, dummyValue, 90, 80, dummyValue);
+        return new CRAIEntry(new AlignmentContext(refContext, 4, dummyValue), 90, 80, dummyValue);
     }
 
     @Test
@@ -271,9 +285,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     private static Slice createSliceWithArbitraryValues(final ReferenceContext refContext) {
         int counter = RANDOM.nextInt(100);
 
-        final Slice single = new Slice(refContext);
-        single.alignmentStart = counter++;
-        single.alignmentSpan = counter++;
+        final Slice single = new Slice(new AlignmentContext(refContext, counter++, counter++));
         single.containerByteOffset = counter++;
         single.byteOffsetFromCompressionHeaderStart = counter++;
         single.byteSize = counter++;
@@ -295,24 +307,18 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
         assertEntryForSlice(
                 entry,
-                slice.getReferenceContext(),
-                slice.alignmentStart,
-                slice.alignmentSpan,
+                slice.getAlignmentContext(),
                 slice.containerByteOffset,
                 slice.byteOffsetFromCompressionHeaderStart,
                 slice.byteSize);
     }
 
     private void assertEntryForSlice(final CRAIEntry entry,
-                                     final ReferenceContext refContext,
-                                     final int alignmentStart,
-                                     final int alignmentSpan,
+                                     final AlignmentContext alignmentContext,
                                      final long containerOffset,
                                      final int sliceByteOffset,
                                      final int sliceByteSize) {
-        Assert.assertEquals(entry.getReferenceContext(), refContext);
-        Assert.assertEquals(entry.getAlignmentStart(), alignmentStart);
-        Assert.assertEquals(entry.getAlignmentSpan(), alignmentSpan);
+        Assert.assertEquals(entry.getAlignmentContext(), alignmentContext);
         Assert.assertEquals(entry.getContainerStartByteOffset(), containerOffset);
         Assert.assertEquals(entry.getSliceByteOffsetFromCompressionHeaderStart(), sliceByteOffset);
         Assert.assertEquals(entry.getSliceByteSize(), sliceByteSize);

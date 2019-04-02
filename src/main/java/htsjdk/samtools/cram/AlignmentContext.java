@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.EOFConstants;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -16,7 +15,7 @@ import java.util.Objects;
  * It contains a {@link ReferenceContext}, and if that context is of type SINGLE_REFERENCE_TYPE
  * then it also contains Alignment Start and Alignment Span values.
  */
-public class AlignmentContext {
+public class AlignmentContext implements Comparable<AlignmentContext> {
     public static final int UNINITIALIZED = -1;
 
     public static final AlignmentContext MULTIPLE_REFERENCE_CONTEXT = new AlignmentContext(
@@ -79,17 +78,48 @@ public class AlignmentContext {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AlignmentContext that = (AlignmentContext) o;
+    public boolean equals(final Object other) {
+        if (this == other) return true;
+        if (other == null || getClass() != other.getClass()) return false;
+        AlignmentContext that = (AlignmentContext) other;
         return alignmentStart == that.alignmentStart &&
                 alignmentSpan == that.alignmentSpan &&
-                Objects.equals(referenceContext, that.referenceContext);
+                referenceContext.equals(that.referenceContext);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(referenceContext, alignmentStart, alignmentSpan);
+    }
+
+    /**
+     * Sort by numerical order of reference sequence ID, except that unmapped-unplaced reads come last
+     * and comparison with multi-ref alignment contexts is an error
+     *
+     * For valid reference sequence ID (placed reads), sort by alignment start
+     *
+     * @param other the other AlignmentContext to compare to
+     * @return the comparison value
+     */
+    @Override
+    public int compareTo(final AlignmentContext other) {
+        if (referenceContext.isMultipleReference() || other.referenceContext.isMultipleReference()) {
+            throw new CRAMException("Cannot compare multiple-reference AlignmentContexts.");
+        }
+
+        if (referenceContext != other.referenceContext) {
+            if (referenceContext.isUnmappedUnplaced())
+                return 1;
+            if (other.referenceContext.isUnmappedUnplaced())
+                return -1;
+            return Integer.compare(referenceContext.getSequenceId(), other.referenceContext.getSequenceId());
+        }
+
+        // only sort by alignment start values for mapped contexts
+        if (referenceContext.isMappedSingleRef()) {
+            return Integer.compare(alignmentStart, other.alignmentStart);
+        }
+
+        return 0;
     }
 }

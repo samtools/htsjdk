@@ -83,11 +83,8 @@ public class CRAIIndex {
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(baos, header);
 
         for (final CRAIEntry entry : full) {
-            final ReferenceContext refContext = entry.getReferenceContext();
-            final Slice slice = new Slice(refContext);
+            final Slice slice = new Slice(entry.getAlignmentContext());
             slice.containerByteOffset = entry.getContainerStartByteOffset();
-            slice.alignmentStart = entry.getAlignmentStart();
-            slice.alignmentSpan = entry.getAlignmentSpan();
             slice.byteOffsetFromCompressionHeaderStart = entry.getSliceByteOffsetFromCompressionHeaderStart();
 
             // NOTE: the sliceIndex and read count fields can't be derived from the CRAM index
@@ -106,19 +103,17 @@ public class CRAIIndex {
         return new SeekableMemoryStream(baos.toByteArray(), "CRAI to BAI converter");
     }
 
-    public static List<CRAIEntry> find(final List<CRAIEntry> list, final ReferenceContext referenceContext, final int start, final int span) {
-        final boolean matchEntireSequence = start < 1 || span < 1;
+    public static List<CRAIEntry> find(final List<CRAIEntry> list, final AlignmentContext alignmentContext) {
+        final boolean matchEntireSequence = alignmentContext.getAlignmentStart() < 1 || alignmentContext.getAlignmentSpan() < 1;
         final int dummyValue = 1;
         final CRAIEntry query = new CRAIEntry(
-                referenceContext,
-                start,
-                span,
+                alignmentContext,
                 dummyValue,
                 dummyValue,
                 dummyValue);
 
         return list.stream()
-                .filter(e -> e.getReferenceContext() == referenceContext)
+                .filter(e -> e.getReferenceContext().equals(alignmentContext.getReferenceContext()))
                 .filter(e -> matchEntireSequence || CRAIEntry.intersect(e, query))
                 .sorted()
                 .collect(Collectors.toList());

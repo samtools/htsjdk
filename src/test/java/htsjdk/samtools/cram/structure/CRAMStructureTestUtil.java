@@ -171,7 +171,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
     private static Slice getIndexInitializedSlice() {
         final ReferenceContext refContext = new ReferenceContext(0);
 
-        final Slice slice = new Slice(refContext);
+        final Slice slice = new Slice(new AlignmentContext(refContext, 1, 1));
         slice.byteOffsetFromCompressionHeaderStart = 1;
         slice.containerByteOffset = 1;
         slice.byteSize = 1;
@@ -227,26 +227,20 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
     // assert that slices and containers have values equal to what the caller expects
 
     public static void assertSliceState(final Slice slice,
-                                        final ReferenceContext expectedReferenceContext,
-                                        final int expectedAlignmentStart,
-                                        final int expectedAlignmentSpan,
+                                        final AlignmentContext expectedAlignmentContext,
                                         final int expectedRecordCount,
                                         final int expectedBaseCount) {
-        Assert.assertEquals(slice.getReferenceContext(), expectedReferenceContext);
-        Assert.assertEquals(slice.alignmentStart, expectedAlignmentStart);
-        Assert.assertEquals(slice.alignmentSpan, expectedAlignmentSpan);
+        Assert.assertEquals(slice.getAlignmentContext(), expectedAlignmentContext);
         Assert.assertEquals(slice.nofRecords, expectedRecordCount);
         Assert.assertEquals(slice.bases, expectedBaseCount);
     }
 
     public static void assertSliceState(final Slice slice,
-                                        final ReferenceContext expectedReferenceContext,
-                                        final int expectedAlignmentStart,
-                                        final int expectedAlignmentSpan,
+                                        final AlignmentContext expectedAlignmentContext,
                                         final int expectedRecordCount,
                                         final int expectedBaseCount,
                                         final int expectedGlobalRecordCounter) {
-        assertSliceState(slice, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, expectedRecordCount, expectedBaseCount);
+        assertSliceState(slice, expectedAlignmentContext, expectedRecordCount, expectedBaseCount);
         Assert.assertEquals(slice.globalRecordCounter, expectedGlobalRecordCounter);
     }
 
@@ -267,8 +261,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
 
         // verify the underlying slice too
 
-        assertSliceState(container.getSlices()[0], expectedAlignmentContext.getReferenceContext(),
-                expectedAlignmentContext.getAlignmentStart(), expectedAlignmentContext.getAlignmentSpan(),
+        assertSliceState(container.getSlices()[0], expectedAlignmentContext,
                 expectedRecordCount, expectedBaseCount, expectedGlobalRecordCounter);
     }
 }

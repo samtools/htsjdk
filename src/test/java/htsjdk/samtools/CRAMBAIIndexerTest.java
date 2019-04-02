@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.common.CramVersions;
@@ -28,10 +29,14 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
     @Test
     public void test_processSingleRefMappedSlice() {
         final int refId = 0;
+        final int alignmentStart = 40;
+        final int alignmentSpan = 50;
+        final AlignmentContext alnContext = new AlignmentContext(new ReferenceContext(refId), alignmentStart, alignmentSpan);
+
         final int mappedCount = 10;
         final int unmappedCount = 20;
         final int unplacedCount = 30;
-        final Slice mapped = getSlice(new ReferenceContext(refId), mappedCount, unmappedCount, unplacedCount);
+        final Slice mapped = getSlice(alnContext, mappedCount, unmappedCount, unplacedCount);
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexSingleRefSlice(mapped));
 
@@ -47,7 +52,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final int mappedCount = 10;
         final int unmappedCount = 20;
         final int unplacedCount = 30;
-        final Slice unmapped = getSlice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, mappedCount, unmappedCount, unplacedCount);
+        final Slice unmapped = getSlice(AlignmentContext.UNMAPPED_UNPLACED_CONTEXT, mappedCount, unmappedCount, unplacedCount);
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexSingleRefSlice(unmapped));
         Assert.assertEquals(index.getNoCoordinateCount().longValue(), unmapped.unplacedReadsCount);
@@ -55,23 +60,24 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
     @Test(expectedExceptions = SAMException.class)
     public void test_processMultiSlice() {
-        final Slice multi = new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT);
+        final Slice multi = new Slice(AlignmentContext.MULTIPLE_REFERENCE_CONTEXT);
         indexSingleRefSlice(multi);
     }
 
     @DataProvider(name = "missingIndexParams")
     private Object[][] missingIndexParams() {
         final ReferenceContext refContext = new ReferenceContext(0);
+        final AlignmentContext alnContext = new AlignmentContext(refContext, 1, 1);
 
-        final Slice noByteOffsetFromContainer = new Slice(refContext);
+        final Slice noByteOffsetFromContainer = new Slice(alnContext);
         noByteOffsetFromContainer.containerByteOffset = 123;
         noByteOffsetFromContainer.index = 456;
 
-        final Slice noContainerByteOffset = new Slice(refContext);
+        final Slice noContainerByteOffset = new Slice(alnContext);
         noContainerByteOffset.byteOffsetFromCompressionHeaderStart = 789;
         noContainerByteOffset.index = 456;
 
-        final Slice noIndex = new Slice(refContext);
+        final Slice noIndex = new Slice(alnContext);
         noIndex.byteOffsetFromCompressionHeaderStart = 789;
         noIndex.containerByteOffset = 123;
 
@@ -216,11 +222,11 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         new CRAMBAIIndexer(new ByteArrayOutputStream(), header);
     }
 
-    private Slice getSlice(final ReferenceContext refContext,
+    private Slice getSlice(final AlignmentContext alnContext,
                            final int mappedReadsCount,
                            final int unmappedReadsCount,
                            final int unplacedReadsCount) {
-        final Slice mapped = new Slice(refContext);
+        final Slice mapped = new Slice(alnContext);
         mapped.mappedReadsCount = mappedReadsCount;
         mapped.unmappedReadsCount = unmappedReadsCount;
         mapped.unplacedReadsCount = unplacedReadsCount;

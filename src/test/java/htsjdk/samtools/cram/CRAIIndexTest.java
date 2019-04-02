@@ -43,11 +43,11 @@ public class CRAIIndexTest extends HtsjdkTest {
         final ReferenceContext refContextToFind = new ReferenceContext(1);
         final List<CRAIEntry> index = getCraiEntriesForTest(refContextToFind);
 
-        Assert.assertTrue(CRAIIndex.find(index, refContextToFind, 0, 0).size() > 0);
-        Assert.assertTrue(CRAIIndex.find(index, refContextToFind, 0, 1).size() > 0);
+        Assert.assertTrue(CRAIIndex.find(index, new AlignmentContext(refContextToFind, 0, 0)).size() > 0);
+        Assert.assertTrue(CRAIIndex.find(index, new AlignmentContext(refContextToFind, 0, 1)).size() > 0);
 
         final ReferenceContext missingRefContext = new ReferenceContext(2);
-        Assert.assertTrue(CRAIIndex.find(index, missingRefContext, 0, 1).isEmpty());
+        Assert.assertTrue(CRAIIndex.find(index, new AlignmentContext(missingRefContext, 0, 1)).isEmpty());
     }
 
     @Test
@@ -55,27 +55,28 @@ public class CRAIIndexTest extends HtsjdkTest {
         final ReferenceContext refContextToFind = new ReferenceContext(1);
         final List<CRAIEntry> index = getCraiEntriesForTest(refContextToFind);
 
-        Assert.assertTrue(CRAIIndex.find(index, refContextToFind, 0, 0).size() > 0);
-        Assert.assertTrue(CRAIIndex.find(index, refContextToFind, 1, 0).size() > 0);
+        Assert.assertTrue(CRAIIndex.find(index, new AlignmentContext(refContextToFind, 0, 0)).size() > 0);
+        Assert.assertTrue(CRAIIndex.find(index, new AlignmentContext(refContextToFind, 1, 0)).size() > 0);
 
         final ReferenceContext missingRefContext = new ReferenceContext(2);
-        Assert.assertTrue(CRAIIndex.find(index, missingRefContext, 1, 0).isEmpty());
+        Assert.assertTrue(CRAIIndex.find(index, new AlignmentContext(missingRefContext, 1, 0)).isEmpty());
     }
 
     private List<CRAIEntry> getCraiEntriesForTest(final ReferenceContext refContext) {
         final List<CRAIEntry> index = new ArrayList<>();
-        index.add(new CRAIEntry(refContext, 1, 1, 1, 1, 0));
-        index.add(new CRAIEntry(refContext, 2, 1, 2, 1, 0));
-        index.add(new CRAIEntry(refContext, 3, 1, 3, 1, 0));
+        index.add(new CRAIEntry(new AlignmentContext(refContext, 1, 1), 1, 1, 0));
+        index.add(new CRAIEntry(new AlignmentContext(refContext, 2, 1), 2, 1, 0));
+        index.add(new CRAIEntry(new AlignmentContext(refContext, 3, 1), 3, 1, 0));
         return index;
     }
 
     private boolean allFoundEntriesIntersectQueryInFind(final List<CRAIEntry> index, final ReferenceContext refContext, final int start, final int span) {
-        final List<CRAIEntry> found = CRAIIndex.find(index, refContext, start, span);
+        final AlignmentContext alnContext = new AlignmentContext(refContext, start, span);
+        final List<CRAIEntry> found = CRAIIndex.find(index, alnContext);
         for (final CRAIEntry entry : found) {
             Assert.assertEquals(entry.getReferenceContext(), refContext);
             final int dummy = -1;
-            if (! CRAIEntry.intersect(entry, new CRAIEntry(refContext, start, span, dummy, dummy, dummy))) {
+            if (! CRAIEntry.intersect(entry, new CRAIEntry(alnContext, dummy, dummy, dummy))) {
                 return false;
             }
         }
@@ -101,7 +102,7 @@ public class CRAIIndexTest extends HtsjdkTest {
 
     private void doCRAITest(final BiFunction<SAMSequenceDictionary, List<CRAIEntry>, SeekableStream> getBaiStreamForIndex) {
         final ArrayList<CRAIEntry> index = new ArrayList<>();
-        final CRAIEntry entry = new CRAIEntry(new ReferenceContext(0), 1, 2, 5, 3, 4);
+        final CRAIEntry entry = new CRAIEntry(new AlignmentContext(new ReferenceContext(0), 1, 2), 5, 3, 4);
         index.add(entry);
 
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
@@ -197,32 +198,32 @@ public class CRAIIndexTest extends HtsjdkTest {
         final ReferenceContext refContext1 = new ReferenceContext(1);
         final int start1 = 2;
         final int offset1 = 4;
-        final CRAIEntry e1 = new CRAIEntry(refContext1, start1, 3, offset1, 5, 6);
+        final CRAIEntry e1 = new CRAIEntry(new AlignmentContext(refContext1, start1, 3), offset1, 5, 6);
         index.add(e1);
         // trivial case of single entry in index:
         Assert.assertEquals(CRAIIndex.getLeftmost(index), e1);
 
         final int start2 = start1 + 1;
-        final CRAIEntry e2 = new CRAIEntry(refContext1, start2, 3, offset1, 5, 6);
+        final CRAIEntry e2 = new CRAIEntry(new AlignmentContext(refContext1, start2, 3), offset1, 5, 6);
         index.add(e2);
         Assert.assertEquals(CRAIIndex.getLeftmost(index), e1);
 
         // earlier start, but later sequence
         final int start3 = start1 - 1;
         final ReferenceContext refContext3 = new ReferenceContext(3);
-        final CRAIEntry e3 = new CRAIEntry(refContext3, start3, 3, offset1, 5, 6);
+        final CRAIEntry e3 = new CRAIEntry(new AlignmentContext(  refContext3, start3, 3), offset1, 5, 6);
         index.add(e3);
         Assert.assertEquals(CRAIIndex.getLeftmost(index), e1);
 
         // same start, later container start offset
         final int offset4 = offset1 + 1;
-        final CRAIEntry e4 = new CRAIEntry(refContext1, start1, 3, offset4, 5, 6);
+        final CRAIEntry e4 = new CRAIEntry(new AlignmentContext(refContext1, start1, 3), offset4, 5, 6);
         index.add(e4);
         Assert.assertEquals(CRAIIndex.getLeftmost(index), e1);
 
         // same start, earlier container start offset
         final int offset5 = offset1 - 1;
-        final CRAIEntry e5 = new CRAIEntry(refContext1, start1, 3, offset5, 5, 6);
+        final CRAIEntry e5 = new CRAIEntry(new AlignmentContext(refContext1, start1, 3), offset5, 5, 6);
         index.add(e5);
 
         // now e5 is the leftmost/earliest
@@ -245,7 +246,7 @@ public class CRAIIndexTest extends HtsjdkTest {
                 final ReferenceContext refContext = i <= lastAligned ?
                         new ReferenceContext(0) :
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
-                final CRAIEntry e = new CRAIEntry(refContext, i, 0, dummy, dummy, dummy);
+                final CRAIEntry e = new CRAIEntry(new AlignmentContext(refContext, i, 0), dummy, dummy, dummy);
                 index.add(e);
             }
             // check expectations are correct before calling findLastAlignedEntry method:
