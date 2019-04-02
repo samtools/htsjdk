@@ -60,7 +60,6 @@ public class IntervalListCodecTest extends HtsjdkTest {
         final Interval interval;
 
         interval = codec.decode(decodeThis);
-
         Assert.assertTrue(interval.equalsWithStrandAndName(expectedInterval));
     }
 
@@ -101,9 +100,6 @@ public class IntervalListCodecTest extends HtsjdkTest {
         }
     }
 
-
-
-
     // Once someone implement tabix interval-lists, this should fail (and they should make a test that passes...)
     @Test(expectedExceptions = TribbleException.class)
     public void testGetTabixFormat() {
@@ -123,7 +119,7 @@ public class IntervalListCodecTest extends HtsjdkTest {
         final IntervalListCodec codec = new IntervalListCodec();
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
                      new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
-            Assert.assertEquals(featureReader.iterator().stream().count(),expectedCount);
+            Assert.assertEquals(featureReader.iterator().stream().count(), expectedCount);
         }
     }
 
@@ -133,7 +129,7 @@ public class IntervalListCodecTest extends HtsjdkTest {
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
                      new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
 
-            Assert.assertEquals(featureReader.query("1",17032814,17032814).stream().count(),1);
+            Assert.assertEquals(featureReader.query("1", 17032814, 17032814).stream().count(), 1);
         }
     }
 

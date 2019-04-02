@@ -27,9 +27,9 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
     public void testIndexedGZIPVCF(final String testPath, final int expectedCount) throws IOException {
         final VCFCodec codec = new VCFCodec();
         try (final TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader =
-                new TribbleIndexedFeatureReader<>(testPath, codec, false)) {
+                     new TribbleIndexedFeatureReader<>(testPath, codec, false)) {
 
-            Assert.assertEquals(featureReader.iterator().stream().count(),1);
+            Assert.assertEquals(featureReader.iterator().stream().count(), 1);
         }
     }
 }
