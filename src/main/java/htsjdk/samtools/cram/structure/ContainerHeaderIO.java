@@ -17,8 +17,14 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.io.*;
+import htsjdk.samtools.cram.AlignmentContext;
+import htsjdk.samtools.cram.common.EOFConstants;
+import htsjdk.samtools.cram.io.CRC32OutputStream;
+import htsjdk.samtools.cram.io.CramIntArray;
+import htsjdk.samtools.cram.io.CramInt;
+import htsjdk.samtools.cram.io.ITF8;
+import htsjdk.samtools.cram.io.LTF8;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -45,7 +51,7 @@ public class ContainerHeaderIO {
             int character = inputStream.read();
             if (character == -1) {
                 final int majorVersionForEOF = 2;
-                final byte[] eofMarker = major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER;
+                final byte[] eofMarker = major >= 3 ? EOFConstants.ZERO_F_EOF_MARKER : EOFConstants.ZERO_B_EOF_MARKER;
 
                 try (final ByteArrayInputStream eofBAIS = new ByteArrayInputStream(eofMarker)) {
                     return readContainerHeader(majorVersionForEOF, eofBAIS, containerByteOffset);
@@ -63,12 +69,14 @@ public class ContainerHeaderIO {
         }
 
         final int containerByteSize = CramInt.readInt32(peek);
-        final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(inputStream));
-        final Container container = new Container(refContext);
+        final int refId = ITF8.readUnsignedITF8(inputStream);
+        final int alignmentStart = ITF8.readUnsignedITF8(inputStream);
+        final int alignmentSpan = ITF8.readUnsignedITF8(inputStream);
+
+        final AlignmentContext alignmentContext = new AlignmentContext(new ReferenceContext(refId), alignmentStart, alignmentSpan);
+        final Container container = new Container(alignmentContext);
         container.containerBlocksByteSize = containerByteSize;
 
-        container.alignmentStart = ITF8.readUnsignedITF8(inputStream);
-        container.alignmentSpan = ITF8.readUnsignedITF8(inputStream);
         container.nofRecords = ITF8.readUnsignedITF8(inputStream);
         container.globalRecordCounter = LTF8.readUnsignedLTF8(inputStream);
         container.bases = LTF8.readUnsignedLTF8(inputStream);
@@ -125,8 +133,8 @@ public class ContainerHeaderIO {
 
         int length = (CramInt.writeInt32(container.containerBlocksByteSize, crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.getReferenceContext().getSerializableId(), crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(container.alignmentStart, crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(container.alignmentSpan, crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(container.getAlignmentContext().getAlignmentStart(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(container.getAlignmentContext().getAlignmentSpan(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(container.nofRecords, crc32OutputStream) + 7) / 8;
         length += (LTF8.writeUnsignedLTF8(container.globalRecordCounter, crc32OutputStream) + 7) / 8;
         length += (LTF8.writeUnsignedLTF8(container.bases, crc32OutputStream) + 7) / 8;

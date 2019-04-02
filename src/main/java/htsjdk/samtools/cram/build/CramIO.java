@@ -19,7 +19,9 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMTextHeaderCodec;
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.common.EOFConstants;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
@@ -52,32 +54,9 @@ import java.util.Arrays;
  */
 public class CramIO {
     public static final String CRAM_FILE_EXTENSION = ".cram";
-    /**
-     * The 'zero-B' EOF marker as per CRAM specs v2.1. This is basically a serialized empty CRAM container with sequence id set to some
-     * number to spell out 'EOF' in hex.
-     */
-    public static final byte[] ZERO_B_EOF_MARKER = bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 " +
-            "" + "01 00 01 00");
-    /**
-     * The zero-F EOF marker as per CRAM specs v3.0. This is basically a serialized empty CRAM container with sequence id set to some number
-     * to spell out 'EOF' in hex.
-     */
-    public static final byte[] ZERO_F_EOF_MARKER = bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 " +
-            "" + "06 06 01 00 01 00 01 00 ee 63 01 4b");
-
 
     private static final int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
     private static final Log log = Log.getInstance(CramIO.class);
-
-    private static byte[] bytesFromHex(final String string) {
-        final String clean = string.replaceAll("[^0-9a-fA-F]", "");
-        if (clean.length() % 2 != 0) throw new RuntimeException("Not a hex string: " + string);
-        final byte[] data = new byte[clean.length() / 2];
-        for (int i = 0; i < clean.length(); i += 2) {
-            data[i / 2] = (Integer.decode("0x" + clean.charAt(i) + clean.charAt(i + 1))).byteValue();
-        }
-        return data;
-    }
 
     /**
      * Write an end-of-file marker to the {@link OutputStream}. The specific EOF marker is chosen based on the CRAM version.
@@ -89,13 +68,13 @@ public class CramIO {
     public static long issueEOF(final Version version, final OutputStream outputStream) {
         try {
             if (version.compatibleWith(CramVersions.CRAM_v3)) {
-                outputStream.write(ZERO_F_EOF_MARKER);
-                return ZERO_F_EOF_MARKER.length;
+                outputStream.write(EOFConstants.ZERO_F_EOF_MARKER);
+                return EOFConstants.ZERO_F_EOF_MARKER.length;
             }
 
             if (version.compatibleWith(CramVersions.CRAM_v2_1)) {
-                outputStream.write(ZERO_B_EOF_MARKER);
-                return ZERO_B_EOF_MARKER.length;
+                outputStream.write(EOFConstants.ZERO_B_EOF_MARKER);
+                return EOFConstants.ZERO_B_EOF_MARKER.length;
             }
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
@@ -142,8 +121,8 @@ public class CramIO {
     @SuppressWarnings("SimplifiableIfStatement")
     private static boolean checkEOF(final Version version, final SeekableStream seekableStream) throws IOException {
 
-        if (version.compatibleWith(CramVersions.CRAM_v3)) return streamEndsWith(seekableStream, ZERO_F_EOF_MARKER);
-        if (version.compatibleWith(CramVersions.CRAM_v2_1)) return streamEndsWith(seekableStream, ZERO_B_EOF_MARKER);
+        if (version.compatibleWith(CramVersions.CRAM_v3)) return streamEndsWith(seekableStream, EOFConstants.ZERO_F_EOF_MARKER);
+        if (version.compatibleWith(CramVersions.CRAM_v2_1)) return streamEndsWith(seekableStream, EOFConstants.ZERO_B_EOF_MARKER);
 
         return false;
     }
@@ -263,7 +242,13 @@ public class CramIO {
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
         final Block block = Block.createRawFileHeaderBlock(blockContent);
 
-        final Container container = new Container(new ReferenceContext(0));
+        // TODO
+        final AlignmentContext alignmentContext = new AlignmentContext(
+                new ReferenceContext(0),
+                AlignmentContext.UNINITIALIZED,
+                AlignmentContext.UNINITIALIZED);
+
+        final Container container = new Container(alignmentContext);
         container.blockCount = 1;
         container.blocks = new Block[]{block};
         container.landmarks = new int[0];

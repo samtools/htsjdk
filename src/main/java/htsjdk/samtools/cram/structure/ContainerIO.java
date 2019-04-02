@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
+import htsjdk.samtools.cram.common.EOFConstants;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.block.Block;
@@ -37,7 +37,7 @@ public class ContainerIO {
             // this will cause System.exit(1):
             CramVersionPolicies.eofNotFound(version);
 
-            return readContainerInternal(version.major, new ByteArrayInputStream(CramIO.ZERO_B_EOF_MARKER), containerByteOffset);
+            return readContainerInternal(version.major, new ByteArrayInputStream(EOFConstants.ZERO_B_EOF_MARKER), containerByteOffset);
         }
 
         if (container.isEOF()) {

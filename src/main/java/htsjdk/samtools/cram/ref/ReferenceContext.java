@@ -6,7 +6,7 @@ import htsjdk.samtools.cram.CRAMException;
 /**
  * Represents the current state of reference sequence processing.
  *
- * Are we handling MULTIPLE_REFERENCE_TYPE records (-2, from the CRAM spec)?
+ * Are we handling records with MULTIPLE_REFERENCE_TYPE (-2, from the CRAM spec)?
  *
  * Are we handling UNMAPPED_UNPLACED_TYPE records (-1, from the CRAM spec)?
  *

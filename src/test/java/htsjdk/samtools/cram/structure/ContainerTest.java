@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.build.ContainerFactory;
@@ -43,32 +44,33 @@ public class ContainerTest extends HtsjdkTest {
 
         return new Object[][] {
                 {
-                    Arrays.asList(mappedSlice1), mappedReferenceContext, slice1AlignmentStart, slice1AlignmentSpan
+                    Arrays.asList(mappedSlice1),
+                    new AlignmentContext(mappedReferenceContext, slice1AlignmentStart, slice1AlignmentSpan)
                 },
                 {
-                    Arrays.asList(mappedSlice1, mappedSlice2), mappedReferenceContext, slice1AlignmentStart, expectedSpan
+                    Arrays.asList(mappedSlice1, mappedSlice2),
+                    new AlignmentContext(mappedReferenceContext, slice1AlignmentStart, expectedSpan)
                 },
                 {
                     Arrays.asList(new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT),
                             new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)),
-                    ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                    AlignmentContext.MULTIPLE_REFERENCE_CONTEXT
                 },
                 {
                     Arrays.asList(new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT),
                             new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)),
-                    ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                    AlignmentContext.UNMAPPED_UNPLACED_CONTEXT
                 },
         };
     }
 
     @Test(dataProvider = "containerStateTestCases")
     public void initializeFromSlicesTest(final List<Slice> slices,
-                                         final ReferenceContext expectedReferenceContext,
-                                         final int expectedAlignmentStart,
-                                         final int expectedAlignmentSpan) {
-        final long byteOffset = 536635;
+                                         final AlignmentContext expectedAlignmentContext) {
+        final long byteOffset = 536635;  //arbitrary
         final Container container = Container.initializeFromSlices(slices, COMPRESSION_HEADER, byteOffset);
-        CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, byteOffset);
+        Assert.assertEquals(container.getAlignmentContext(), expectedAlignmentContext);
+        Assert.assertEquals(container.byteOffset, byteOffset);
     }
 
     @DataProvider(name = "illegalCombinationTestCases")
@@ -209,23 +211,24 @@ public class ContainerTest extends HtsjdkTest {
     @DataProvider(name = "containerDistributeNegative")
     private Object[][] containerDistributeNegative() {
         final ReferenceContext refContext = new ReferenceContext(0);
+        final AlignmentContext alnContext = new AlignmentContext(refContext, 1, 2);
 
-        final Container nullLandmarks = new Container(refContext);
+        final Container nullLandmarks = new Container(alnContext);
         nullLandmarks.containerBlocksByteSize = 6789;
         nullLandmarks.landmarks = null;
         nullLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 999);
 
-        final Container tooManyLandmarks = new Container(refContext);
+        final Container tooManyLandmarks = new Container(alnContext);
         tooManyLandmarks.containerBlocksByteSize = 111;
         tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
         tooManyLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 12345);
 
-        final Container tooManySlices = new Container(refContext);
+        final Container tooManySlices = new Container(alnContext);
         tooManySlices.containerBlocksByteSize = 675345389;
         tooManySlices.landmarks = new int[]{ 1 };
         tooManySlices.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
-        final Container noByteSize = new Container(refContext);
+        final Container noByteSize = new Container(alnContext);
         noByteSize.landmarks = new int[]{ 1, 2 };
         noByteSize.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
@@ -246,9 +249,10 @@ public class ContainerTest extends HtsjdkTest {
                                                      final int slice0size,
                                                      final int compressionHeaderSize) {
         final ReferenceContext refContext = new ReferenceContext(0);
+        final AlignmentContext alnContext = new AlignmentContext(refContext, 0, 0);
 
-        final Container container = new Container(refContext);
-        container.containerBlocksByteSize = compressionHeaderSize + slice0size;
+        final Container container = new Container(alnContext);
+        container.containerBlocksByteSize = slice0size;
         container.landmarks = new int[]{
                 compressionHeaderSize,                // beginning of slice
         };
@@ -265,8 +269,9 @@ public class ContainerTest extends HtsjdkTest {
         final int containerDataSize = compressionHeaderSize + slice0size + slice1size;
 
         final ReferenceContext refContext = new ReferenceContext(0);
+        final AlignmentContext alnContext = new AlignmentContext(refContext, 0, 0);
 
-        final Container container = new Container(refContext);
+        final Container container = new Container(alnContext);
         container.containerBlocksByteSize = containerDataSize;
         container.landmarks = new int[]{
                 compressionHeaderSize,                // beginning of slice 1

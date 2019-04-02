@@ -5,6 +5,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import org.testng.Assert;
@@ -250,26 +251,14 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
     }
 
     public static void assertContainerState(final Container container,
-                                            final ReferenceContext expectedReferenceContext,
-                                            final int expectedAlignmentStart,
-                                            final int expectedAlignmentSpan,
-                                            final long expectedByteOffset) {
-        Assert.assertEquals(container.getReferenceContext(), expectedReferenceContext);
-        Assert.assertEquals(container.alignmentStart, expectedAlignmentStart);
-        Assert.assertEquals(container.alignmentSpan, expectedAlignmentSpan);
-        Assert.assertEquals(container.byteOffset, expectedByteOffset);
-    }
-
-    public static void assertContainerState(final Container container,
-                                            final ReferenceContext expectedReferenceContext,
-                                            final int expectedAlignmentStart,
-                                            final int expectedAlignmentSpan,
+                                            final AlignmentContext expectedAlignmentContext,
                                             final int expectedRecordCount,
                                             final int expectedBaseCount,
                                             final int expectedGlobalRecordCounter,
                                             final long expectedByteOffset) {
-        assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, expectedByteOffset);
 
+        Assert.assertEquals(container.getAlignmentContext(), expectedAlignmentContext);
+        Assert.assertEquals(container.byteOffset, expectedByteOffset);
         Assert.assertEquals(container.nofRecords, expectedRecordCount);
         Assert.assertEquals(container.bases, expectedBaseCount);
         Assert.assertEquals(container.globalRecordCounter, expectedGlobalRecordCounter);
@@ -278,7 +267,8 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
 
         // verify the underlying slice too
 
-        assertSliceState(container.getSlices()[0], expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
+        assertSliceState(container.getSlices()[0], expectedAlignmentContext.getReferenceContext(),
+                expectedAlignmentContext.getAlignmentStart(), expectedAlignmentContext.getAlignmentSpan(),
                 expectedRecordCount, expectedBaseCount, expectedGlobalRecordCounter);
     }
 }

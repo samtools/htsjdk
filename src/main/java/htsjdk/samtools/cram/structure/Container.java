@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceContext;
@@ -27,7 +28,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Container {
-    private final ReferenceContext referenceContext;
+    private final AlignmentContext alignmentContext;
 
     // container header as defined in the specs, in addition to sequenceId from ReferenceContext
 
@@ -40,10 +41,6 @@ public class Container {
      */
     public int containerBlocksByteSize = 0;
 
-    // minimum alignment start of the reads in this Container
-    // uses a 1-based coordinate system
-    public int alignmentStart = Slice.NO_ALIGNMENT_START;
-    public int alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
     public int nofRecords = 0;
     public long globalRecordCounter = 0;
 
@@ -104,15 +101,19 @@ public class Container {
     }
 
     /**
-     * Construct this Container by providing its {@link ReferenceContext}
-     * @param refContext the reference context associated with this container
+     * Construct this Container by providing its {@link AlignmentContext}
+     * @param alignmentContext the alignment context associated with this container
      */
-    public Container(final ReferenceContext refContext) {
-        this.referenceContext = refContext;
+    public Container(final AlignmentContext alignmentContext) {
+        this.alignmentContext = alignmentContext;
+    }
+
+    public AlignmentContext getAlignmentContext() {
+        return alignmentContext;
     }
 
     public ReferenceContext getReferenceContext() {
-        return referenceContext;
+        return alignmentContext.getReferenceContext();
     }
 
     /**
@@ -156,10 +157,8 @@ public class Container {
 
         final ReferenceContext commonRefContext = sliceRefContexts.iterator().next();
 
-        final Container container = new Container(commonRefContext);
-        container.setSlicesAndByteOffset(containerSlices, containerByteOffset);
-        container.compressionHeader = compressionHeader;
-
+        int alignmentStart = AlignmentContext.UNINITIALIZED;
+        int alignmentSpan = AlignmentContext.UNINITIALIZED;
         if (commonRefContext.isMappedSingleRef()) {
             int start = Integer.MAX_VALUE;
             // end is start + span - 1.  We can do slightly easier math instead.
@@ -170,13 +169,15 @@ public class Container {
                 endPlusOne = Math.max(endPlusOne, slice.alignmentStart + slice.alignmentSpan);
             }
 
-            container.alignmentStart = start;
-            container.alignmentSpan = endPlusOne - start;
+            alignmentStart = start;
+            alignmentSpan = endPlusOne - start;
         }
-        else {
-            container.alignmentStart = Slice.NO_ALIGNMENT_START;
-            container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
-        }
+
+        final AlignmentContext containerContext = new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan);
+
+        final Container container = new Container(containerContext);
+        container.setSlicesAndByteOffset(containerSlices, containerByteOffset);
+        container.compressionHeader = compressionHeader;
 
         return container;
     }
@@ -239,19 +240,16 @@ public class Container {
     @Override
     public String toString() {
         return String
-                .format("seqID=%s, start=%d, span=%d, records=%d, slices=%d, blocks=%d.",
-                        referenceContext, alignmentStart, alignmentSpan, nofRecords,
-                        getSlices() == null ? -1 : getSlices().length, blockCount);
+                .format("alignmentContext=%s, records=%d, slices=%d, blocks=%d.",
+                        alignmentContext, nofRecords, slices == null ? -1 : slices.length, blockCount);
     }
 
     public boolean isEOF() {
-        final boolean v3 = containerBlocksByteSize == 15 && referenceContext.isUnmappedUnplaced()
-                && alignmentStart == 4542278 && blockCount == 1
-                && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
+        final boolean v3 = containerBlocksByteSize == 15 && alignmentContext.equals(AlignmentContext.EOF_CONTAINER_CONTEXT)
+                && blockCount == 1 && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
 
-        final boolean v2 = containerBlocksByteSize == 11 && referenceContext.isUnmappedUnplaced()
-                && alignmentStart == 4542278 && blockCount == 1
-                && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
+        final boolean v2 = containerBlocksByteSize == 11 && alignmentContext.equals(AlignmentContext.EOF_CONTAINER_CONTEXT)
+                && blockCount == 1 && nofRecords == 0 && (getSlices() == null || getSlices().length == 0);
 
         return v3 || v2;
     }

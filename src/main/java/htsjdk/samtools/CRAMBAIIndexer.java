@@ -287,7 +287,7 @@ public class CRAMBAIIndexer {
                         sequenceName = cramHeader.getSamFileHeader().getSequence(containerContext.getSequenceId()).getSequenceName();
                         break;
                 }
-                progressLogger.record(sequenceName, container.alignmentStart);
+                progressLogger.record(sequenceName, container.getAlignmentContext().getAlignmentStart());
             }
 
         } while (!container.isEOF());

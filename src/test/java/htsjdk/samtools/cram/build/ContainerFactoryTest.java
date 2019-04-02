@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.AlignmentContext;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -60,15 +61,15 @@ public class ContainerFactoryTest extends HtsjdkTest {
         return new Object[][]{
                 {
                         CRAMStructureTestUtil.getSingleRefRecords(TEST_RECORD_COUNT, mappedSequenceId),
-                        mappedRefContext, mappedAlignmentStart, mappedAlignmentSpan
+                        new AlignmentContext(mappedRefContext, mappedAlignmentStart, mappedAlignmentSpan)
                 },
                 {
                         CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        AlignmentContext.MULTIPLE_REFERENCE_CONTEXT
                 },
                 {
                         CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        AlignmentContext.UNMAPPED_UNPLACED_CONTEXT
                 },
 
                 // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
@@ -76,42 +77,38 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
                 {
                         CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        AlignmentContext.UNMAPPED_UNPLACED_CONTEXT
                 },
                 {
                         CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        AlignmentContext.UNMAPPED_UNPLACED_CONTEXT
                 },
 
                 // show that unmapped-unplaced reads cause a single ref slice/container to become multiref
 
                 {
                         CRAMStructureTestUtil.getSingleRefRecordsWithOneUnmapped(TEST_RECORD_COUNT, mappedSequenceId),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        AlignmentContext.MULTIPLE_REFERENCE_CONTEXT
                 },
 
                 // show that unmapped-unplaced reads don't change the state of a multi-ref slice/container
 
                 {
                         CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(TEST_RECORD_COUNT),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        AlignmentContext.MULTIPLE_REFERENCE_CONTEXT
                 },
         };
     }
 
     @Test(dataProvider = "containerStateTests")
     public void testContainerState(final List<CramCompressionRecord> records,
-                                   final ReferenceContext expectedReferenceContext,
-                                   final int expectedAlignmentStart,
-                                   final int expectedAlignmentSpan) {
-        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
-        final long byteOffset = 9999;
-        final Container container = factory.buildContainer(records, byteOffset);
+                                   final AlignmentContext expectedAlignmentContext) {
+        final long byteOffset = 9999;  // arbitrary
+        final Container container = buildFromNewFactory(records, byteOffset);
         final int globalRecordCounter = 0; // first Container
         final int baseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
 
-        CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext,
-                expectedAlignmentStart, expectedAlignmentSpan,
+        CRAMStructureTestUtil.assertContainerState(container, expectedAlignmentContext,
                 TEST_RECORD_COUNT, baseCount, globalRecordCounter, byteOffset);
     }
 
@@ -123,11 +120,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
         // first container is single-ref
 
         final ReferenceContext refContext = new ReferenceContext(0);
-        final int alignmentStart = 1;
-        final int alignmentSpan = READ_LENGTH_FOR_TEST_RECORDS;
+        final AlignmentContext alignmentContext = new AlignmentContext(refContext, 1, READ_LENGTH_FOR_TEST_RECORDS);
         int recordCount = 1;
         int globalRecordCount = 0; // first container - no records yet
-        CRAMStructureTestUtil.assertContainerState(containers.get(0), refContext, alignmentStart, alignmentSpan,
+        CRAMStructureTestUtil.assertContainerState(containers.get(0), alignmentContext,
                 recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount,
                 firstContainerByteOffset);
 
@@ -135,14 +131,20 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
         recordCount++;  // this container has 2 records
         globalRecordCount = containers.get(0).nofRecords;   // we've seen 1 record before this container
-        CRAMStructureTestUtil.assertContainerState(containers.get(1), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, recordCount,
-                READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 1);
+        CRAMStructureTestUtil.assertContainerState(containers.get(1), AlignmentContext.MULTIPLE_REFERENCE_CONTEXT,
+                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount,
+                firstContainerByteOffset + 1);
 
         recordCount++;  // this container has 3 records
         globalRecordCount = containers.get(0).nofRecords + containers.get(1).nofRecords;    // we've seen 3 records before this container
-        CRAMStructureTestUtil.assertContainerState(containers.get(2), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, recordCount,
-                READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 2);
+        CRAMStructureTestUtil.assertContainerState(containers.get(2), AlignmentContext.MULTIPLE_REFERENCE_CONTEXT,
+                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount,
+                firstContainerByteOffset + 2);
+    }
+
+    private Container buildFromNewFactory(final List<CramCompressionRecord> records,
+                                          final long byteOffset) {
+        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
+        return factory.buildContainer(records, byteOffset);
     }
 }

@@ -39,9 +39,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Container fullContainer = fullContainers.get(i);
             Container headerOnlyContainer = headerOnlyContainers.get(i);
             Assert.assertEquals(headerOnlyContainer.containerBlocksByteSize, fullContainer.containerBlocksByteSize);
-            Assert.assertEquals(headerOnlyContainer.getReferenceContext(), fullContainer.getReferenceContext());
-            Assert.assertEquals(headerOnlyContainer.alignmentStart, fullContainer.alignmentStart);
-            Assert.assertEquals(headerOnlyContainer.alignmentSpan, fullContainer.alignmentSpan);
+            Assert.assertEquals(headerOnlyContainer.getAlignmentContext(), fullContainer.getAlignmentContext());
             Assert.assertEquals(headerOnlyContainer.nofRecords, fullContainer.nofRecords);
             Assert.assertEquals(headerOnlyContainer.globalRecordCounter, fullContainer.globalRecordCounter);
             Assert.assertEquals(headerOnlyContainer.bases, fullContainer.bases);
@@ -57,8 +55,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             try (SeekableFileStream seekableFileStream = new SeekableFileStream(cramFile)) {
                 seekableFileStream.seek(headerOnlyContainer.byteOffset);
                 Container container = ContainerIO.readContainer(actualHeader.getVersion(), seekableFileStream);
-                Assert.assertEquals(container.alignmentStart, fullContainer.alignmentStart);
-                Assert.assertEquals(container.alignmentSpan, fullContainer.alignmentSpan);
+                Assert.assertEquals(container.getAlignmentContext(), fullContainer.getAlignmentContext());
                 Assert.assertEquals(container.nofRecords, fullContainer.nofRecords);
                 Assert.assertEquals(container.checksum, fullContainer.checksum);
             }
