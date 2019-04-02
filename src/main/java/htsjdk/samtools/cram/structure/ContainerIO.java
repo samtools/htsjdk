@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
+import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.block.Block;
@@ -29,15 +29,15 @@ public class ContainerIO {
      * @param containerByteOffset the byte offset from the start of the stream
      * @return a new container object read from the stream
      */
-    private static Container readContainer(final Version version,
+    public static Container readContainer(final Version version,
                                           final InputStream inputStream,
                                           final long containerByteOffset) {
-        Container container = readContainerInternal(version.major, inputStream, containerByteOffset);
+        Container container = readContainerInternal(version, inputStream, containerByteOffset);
         if (container == null) {
             // this will cause System.exit(1):
             CramVersionPolicies.eofNotFound(version);
 
-            return readContainerInternal(version.major, new ByteArrayInputStream(CramIO.ZERO_B_EOF_MARKER), containerByteOffset);
+            return readContainerInternal(version, new ByteArrayInputStream(CramVersions.eofForVersion(CramVersions.CRAM_v2_1)), containerByteOffset);
         }
 
         if (container.isEOF()) {
@@ -82,27 +82,29 @@ public class ContainerIO {
     }
 
     /**
-     * Reads next container from the stream.
+     * Reads a CRAM container from the input stream. Returns an EOF container when there is no more data or the EOF marker found.
      *
-     * @param major the CRAM version to assume
+     * @param cramVersion CRAM version to expect
      * @param inputStream the stream to read from
      * @param containerByteOffset the byte offset from the start of the stream
-     * @return CRAM container or null if no more data
+     * @return CRAM container.  EOF container if no more data
      */
-    private static Container readContainerInternal(final int major,
+    private static Container readContainerInternal(final Version cramVersion,
                                                    final InputStream inputStream,
                                                    final long containerByteOffset) {
-
-        final Container container = ContainerHeaderIO.readContainerHeader(major, inputStream, containerByteOffset);
+        final Container container = ContainerHeaderIO.readContainerHeader(cramVersion, inputStream, containerByteOffset);
         if (container.isEOF()) {
             return container;
         }
 
-        container.compressionHeader = CompressionHeader.read(major, inputStream);
+        container.compressionHeader = CompressionHeader.read(cramVersion.major, inputStream);
+
+        final int howManySlices = container.landmarks.length;
 
         final ArrayList<Slice> slices = new ArrayList<>();
-        for (int sliceCounter = 0; sliceCounter < container.landmarks.length; sliceCounter++) {
-            slices.add(SliceIO.read(major, inputStream));
+        for (int sliceCount = 0; sliceCount < howManySlices; sliceCount++) {
+            final Slice slice = SliceIO.read(cramVersion.major, inputStream);
+            slices.add(slice);
         }
 
         container.setSlicesAndByteOffset(slices, containerByteOffset);

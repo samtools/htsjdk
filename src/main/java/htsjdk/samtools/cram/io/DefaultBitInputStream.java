@@ -133,5 +133,12 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
     public void reset() {
         nofBufferedBits = 0;
         byteBuffer = 0;
+
+        try {
+            super.reset();
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 }

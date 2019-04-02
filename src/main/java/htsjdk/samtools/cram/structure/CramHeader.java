@@ -19,55 +19,47 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.common.Version;
+import htsjdk.samtools.util.RuntimeIOException;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * A starting object when dealing with CRAM files. A {@link CramHeader} holds 2 things: 1. File format definition, including content id and
- * version information 2. SAM file header
+ * A starting object when dealing with CRAM files. A {@link CramHeader} holds 2 things:
+ * 1. File format definition, including content id and version information
+ * 2. SAM file header
  */
 public final class CramHeader {
     public static final byte[] MAGIC = "CRAM".getBytes();
+    public static final int MAX_ID_LENGTH = 20;     // in bytes; from CRAM spec
 
-    private Version version;
-    private final byte[] id = new byte[20];
-
-    {
-        Arrays.fill(id, (byte) 0);
-    }
-
-    private SAMFileHeader samFileHeader;
-
-    /**
-     * Create a new {@link CramHeader} empty object.
-     */
-    private CramHeader() {
-    }
+    private final Version version;
+    private final byte[] id;
+    private final SAMFileHeader samFileHeader;
 
     /**
      * Create a new {@link CramHeader} object with the specified version, id and SAM file header.
-     * The id field by default is guaranteed to be byte[20].
+     * The id field will be truncated to 20 bytes.
      *
      * @param version       the CRAM version to assume
-     * @param id            an identifier of the content associated with this header
+     * @param stringID      an identifier of the content associated with this header
      * @param samFileHeader the SAM file header
      */
-    public CramHeader(final Version version, final String id, final SAMFileHeader samFileHeader) {
+    public CramHeader(final Version version, final String stringID, final SAMFileHeader samFileHeader) {
         this.version = version;
-
-        if (id != null) System.arraycopy(id.getBytes(), 0, this.id, 0, Math.min(id.length(), this.id.length));
         this.samFileHeader = samFileHeader;
-    }
 
-    /**
-     * Set the id of the header. A typical use is for example file name to be used when streaming or a checksum of the data contained in the
-     * file.
-     *
-     * @param stringID a new id; only first 20 bytes from byte representation of java {@link String} will be used.
-     */
-    public void setID(final String stringID) {
-        System.arraycopy(stringID.getBytes(), 0, this.id, 0, Math.min(this.id.length, stringID.length()));
+        if (stringID == null) {
+            this.id = new byte[MAX_ID_LENGTH];
+        } else {
+            if (stringID.length() > MAX_ID_LENGTH) {
+                this.id = stringID.substring(0, MAX_ID_LENGTH).getBytes();
+            } else {
+                this.id = stringID.getBytes();
+            }
+        }
     }
 
     /**
@@ -78,15 +70,32 @@ public final class CramHeader {
         return samFileHeader;
     }
 
-    public byte[] getId() {
+    byte[] getId() {
         return id;
+    }
+
+    public String getIdString() {
+        return new String(getId());
+    }
+
+    /**
+     * Write the header's ID to the given {@link OutputStream},
+     * zero-padding to MAX_ID_LENGTH bytes if necessary.
+     * @param outputStream the stream to write to
+     */
+    public void writeId(final OutputStream outputStream) {
+        try {
+            outputStream.write(getId());
+            for (int i = getId().length; i < MAX_ID_LENGTH; i++)
+                outputStream.write(0);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     public Version getVersion() {
         return version;
     }
-
-    public void setVersion(final Version version) { this.version = version; }
 
     @Override
     public boolean equals(Object o) {

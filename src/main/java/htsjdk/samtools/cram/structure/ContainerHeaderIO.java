@@ -17,7 +17,8 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.*;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -32,22 +33,21 @@ public class ContainerHeaderIO {
     /**
      * Reads container header only from an {@link InputStream}.
      *
-     * @param major the CRAM version to assume
+     * @param cramVersion the CRAM version to assume
      * @param inputStream the input stream to read from
      * @param containerByteOffset the byte offset from the start of the stream
      * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
      */
-    public static Container readContainerHeader(final int major,
+    public static Container readContainerHeader(final Version cramVersion,
                                                 final InputStream inputStream,
                                                 final long containerByteOffset) {
         final byte[] peek = new byte[4];
         try {
             int character = inputStream.read();
             if (character == -1) {
-                final int majorVersionForEOF = 2;
-                final byte[] eofMarker = major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER;
-
+                final byte[] eofMarker = CramVersions.eofForVersion(cramVersion);
                 try (final ByteArrayInputStream eofBAIS = new ByteArrayInputStream(eofMarker)) {
+                    final Version majorVersionForEOF = CramVersions.CRAM_v2_1;
                     return readContainerHeader(majorVersionForEOF, eofBAIS, containerByteOffset);
                 }
             }
@@ -74,7 +74,7 @@ public class ContainerHeaderIO {
         container.bases = LTF8.readUnsignedLTF8(inputStream);
         container.blockCount = ITF8.readUnsignedITF8(inputStream);
         container.landmarks = CramIntArray.array(inputStream);
-        if (major >= 3)
+        if (cramVersion.compatibleWith(CramVersions.CRAM_v3))
             container.checksum = CramInt.readInt32(inputStream);
 
         container.byteOffset = containerByteOffset;
@@ -87,14 +87,14 @@ public class ContainerHeaderIO {
     /**
      * Reads container header only from a {@link SeekableStream}.
      *
-     * @param major the CRAM version to assume
+     * @param cramVersion the CRAM version to assume
      * @param seekableStream the seekable input stream to read from
      * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
      */
-    public static Container readContainerHeader(final int major, final SeekableStream seekableStream) {
+    public static Container readContainerHeader(final Version cramVersion, final SeekableStream seekableStream) {
         try {
             final long containerByteOffset = seekableStream.position();
-            return readContainerHeader(major, seekableStream, containerByteOffset);
+            return readContainerHeader(cramVersion, seekableStream, containerByteOffset);
         }
         catch (final IOException e) {
             throw new RuntimeIOException(e);
@@ -104,13 +104,13 @@ public class ContainerHeaderIO {
     /**
      * Reads container header only from a {@link CountingInputStream}.
      *
-     * @param major the CRAM version to assume
+     * @param cramVersion the CRAM version to assume
      * @param countingStream the counting input stream to read from
      * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
      */
-    public static Container readContainerHeader(final int major, final CountingInputStream countingStream) {
+    public static Container readContainerHeader(final Version cramVersion, final CountingInputStream countingStream) {
         final long containerByteOffset = countingStream.getCount();
-        return readContainerHeader(major, countingStream, containerByteOffset);
+        return readContainerHeader(cramVersion, countingStream, containerByteOffset);
     }
 
     /**

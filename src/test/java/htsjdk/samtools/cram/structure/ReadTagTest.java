@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
@@ -112,7 +113,7 @@ public class ReadTagTest extends HtsjdkTest {
         }
     }
 
-    //@Test(dataProvider = "parallelReadTagData")
+    @Test(dataProvider = "parallelReadTagData")
     public void testParallelReadTag(final byte tagType, final Object originalValue) {
         // refactored from ReadTag.main()
         final byte[] data = ReadTag.writeSingleValue(tagType, originalValue, false);
@@ -122,7 +123,7 @@ public class ReadTagTest extends HtsjdkTest {
         Assert.assertEquals(readValue, originalValue);
     }
 
-    //@DataProvider(name = "parallelReadTagData", parallel = true)
+    @DataProvider(name = "parallelReadTagData", parallel = true)
     public Object[][] getParallelReadTagData() {
         final int testCount = 10;
         final Object[][] testData = new Object[testCount][];

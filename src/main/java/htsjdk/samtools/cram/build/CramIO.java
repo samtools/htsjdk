@@ -52,32 +52,8 @@ import java.util.Arrays;
  */
 public class CramIO {
     public static final String CRAM_FILE_EXTENSION = ".cram";
-    /**
-     * The 'zero-B' EOF marker as per CRAM specs v2.1. This is basically a serialized empty CRAM container with sequence id set to some
-     * number to spell out 'EOF' in hex.
-     */
-    public static final byte[] ZERO_B_EOF_MARKER = bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 " +
-            "" + "01 00 01 00");
-    /**
-     * The zero-F EOF marker as per CRAM specs v3.0. This is basically a serialized empty CRAM container with sequence id set to some number
-     * to spell out 'EOF' in hex.
-     */
-    public static final byte[] ZERO_F_EOF_MARKER = bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 " +
-            "" + "06 06 01 00 01 00 01 00 ee 63 01 4b");
-
-
     private static final int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
     private static final Log log = Log.getInstance(CramIO.class);
-
-    private static byte[] bytesFromHex(final String string) {
-        final String clean = string.replaceAll("[^0-9a-fA-F]", "");
-        if (clean.length() % 2 != 0) throw new RuntimeException("Not a hex string: " + string);
-        final byte[] data = new byte[clean.length() / 2];
-        for (int i = 0; i < clean.length(); i += 2) {
-            data[i / 2] = (Integer.decode("0x" + clean.charAt(i) + clean.charAt(i + 1))).byteValue();
-        }
-        return data;
-    }
 
     /**
      * Write an end-of-file marker to the {@link OutputStream}. The specific EOF marker is chosen based on the CRAM version.
@@ -88,20 +64,12 @@ public class CramIO {
      */
     public static long issueEOF(final Version version, final OutputStream outputStream) {
         try {
-            if (version.compatibleWith(CramVersions.CRAM_v3)) {
-                outputStream.write(ZERO_F_EOF_MARKER);
-                return ZERO_F_EOF_MARKER.length;
-            }
-
-            if (version.compatibleWith(CramVersions.CRAM_v2_1)) {
-                outputStream.write(ZERO_B_EOF_MARKER);
-                return ZERO_B_EOF_MARKER.length;
-            }
+            final byte[] eof = CramVersions.eofForVersion(version);
+            outputStream.write(eof);
+            return eof.length;
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
-
-        return 0;
     }
 
     /**
@@ -139,13 +107,13 @@ public class CramIO {
      * @return true if the stream ends with a correct EOF marker, false otherwise
      * @throws IOException as per java IO contract
      */
-    @SuppressWarnings("SimplifiableIfStatement")
     private static boolean checkEOF(final Version version, final SeekableStream seekableStream) throws IOException {
-
-        if (version.compatibleWith(CramVersions.CRAM_v3)) return streamEndsWith(seekableStream, ZERO_F_EOF_MARKER);
-        if (version.compatibleWith(CramVersions.CRAM_v2_1)) return streamEndsWith(seekableStream, ZERO_B_EOF_MARKER);
-
-        return false;
+        final byte[] eof = CramVersions.eofForVersion(version);
+        if (eof.length == 0) {
+            return false;
+        } else {
+            return streamEndsWith(seekableStream, eof);
+        }
     }
 
     /**
@@ -176,9 +144,7 @@ public class CramIO {
             outputStream.write("CRAM".getBytes("US-ASCII"));
             outputStream.write(cramHeader.getVersion().major);
             outputStream.write(cramHeader.getVersion().minor);
-            outputStream.write(cramHeader.getId());
-            for (int i = cramHeader.getId().length; i < 20; i++)
-                outputStream.write(0);
+            cramHeader.writeId(outputStream);   // zero-pads to 20 bytes if necessary
 
             final long length = CramIO.writeContainerForSamFileHeader(cramHeader.getVersion().major, cramHeader.getSamFileHeader(), outputStream);
 
@@ -190,17 +156,18 @@ public class CramIO {
 
     private static CramHeader readFormatDefinition(final InputStream inputStream) throws IOException {
         for (final byte magicByte : CramHeader.MAGIC) {
-            if (magicByte != inputStream.read()) throw new RuntimeException("Unknown file format.");
+            if (magicByte != inputStream.read()) {
+                throw new RuntimeException("Unknown file format.");
+            }
         }
 
         final Version version = new Version(inputStream.read(), inputStream.read(), 0);
 
-        final CramHeader header = new CramHeader(version, null, null);
-
         final DataInputStream dataInputStream = new DataInputStream(inputStream);
-        dataInputStream.readFully(header.getId());
+        final byte[] headerBuf = new byte[CramHeader.MAX_ID_LENGTH];
+        dataInputStream.readFully(headerBuf);
 
-        return header;
+        return new CramHeader(version, new String(headerBuf), null);
     }
 
     /**
@@ -219,10 +186,10 @@ public class CramIO {
             final SAMFileHeader samFileHeader = readSAMFileHeader(
                     header.getVersion(),
                     inputStream,
-                    new String(header.getId()),
+                    header.getIdString(),
                     containerByteOffset);
 
-            return new CramHeader(header.getVersion(), new String(header.getId()), samFileHeader);
+            return new CramHeader(header.getVersion(), header.getIdString(), samFileHeader);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
@@ -289,7 +256,7 @@ public class CramIO {
                                                    final InputStream inputStream,
                                                    final String id,
                                                    final long containerByteOffset) {
-        final Container container = ContainerHeaderIO.readContainerHeader(version.major, inputStream, containerByteOffset);
+        final Container container = ContainerHeaderIO.readContainerHeader(version, inputStream, containerByteOffset);
         final Block block;
         {
             if (version.compatibleWith(CramVersions.CRAM_v3)) {
@@ -348,7 +315,7 @@ public class CramIO {
         try (final CountingInputStream countingInputStream = new CountingInputStream(new FileInputStream(file));
              final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw")) {
             final CramHeader cramHeader = readFormatDefinition(countingInputStream);
-            final Container c = ContainerHeaderIO.readContainerHeader(cramHeader.getVersion().major, countingInputStream);
+            final Container c = ContainerHeaderIO.readContainerHeader(cramHeader.getVersion(), countingInputStream);
             final long pos = countingInputStream.getCount();
             countingInputStream.close();
 

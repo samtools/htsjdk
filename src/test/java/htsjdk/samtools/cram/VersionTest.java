@@ -75,7 +75,7 @@ public class VersionTest extends HtsjdkTest {
         // position stream at the start of the 1st container:
         cramSeekableStream.seek(containerStart);
         // read only container header:
-        ContainerHeaderIO.readContainerHeader(version.major, cramSeekableStream, containerStart);
+        ContainerHeaderIO.readContainerHeader(version, cramSeekableStream);
 
         // read the following 4 bytes of CRC32:
         int crcByteSize = 4;

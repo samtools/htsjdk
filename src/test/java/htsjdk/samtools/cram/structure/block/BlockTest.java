@@ -5,14 +5,12 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.io.ITF8;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 public class BlockTest extends HtsjdkTest {
 
@@ -109,6 +107,47 @@ public class BlockTest extends HtsjdkTest {
 
         final Block rtBlock3 = roundTrip(extBlock, CramVersions.CRAM_v3);
         contentCheck(rtBlock3, uncompressedData, compressedData);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
+    public void badUncompressedLength() {
+        // arbitrary values
+        final ExternalCompressor compressor = ExternalCompressor.createGZIP();
+        final int contentID = 5;
+
+        final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();
+        final byte[] compressedData = compressor.compress(uncompressedData);
+
+        final int badLength = uncompressedData.length - 1;
+        final Block extBlock = Block.createExternalBlock(compressor.getMethod(), contentID, compressedData, badLength);
+        extBlock.getUncompressedContent();
+    }
+
+    @Test(expectedExceptions = RuntimeException.class)
+    public void badChecksum() throws IOException {
+        // arbitrary values
+        final ExternalCompressor compressor = ExternalCompressor.createGZIP();
+        final int contentID = 5;
+
+        final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();
+        final byte[] compressedData = compressor.compress(uncompressedData);
+
+        final Block extBlock = Block.createExternalBlock(compressor.getMethod(), contentID, compressedData, uncompressedData.length);
+        byte[] blockBytes;
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            extBlock.write(CramVersions.DEFAULT_CRAM_VERSION.major, os);
+            blockBytes = os.toByteArray();
+        }
+
+        // checksum is last 4 bytes
+        blockBytes[blockBytes.length - 4]++;
+        blockBytes[blockBytes.length - 3]--;
+        blockBytes[blockBytes.length - 2]++;
+        blockBytes[blockBytes.length - 1]--;
+
+        try (final ByteArrayInputStream is = new ByteArrayInputStream(blockBytes)) {
+            Block.read(CramVersions.DEFAULT_CRAM_VERSION.major, is);
+        }
     }
 
     @DataProvider(name = "nonExternalTypes")
