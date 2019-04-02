@@ -107,32 +107,6 @@ public class IntervalListCodecTest extends HtsjdkTest {
     }
 
 
-    @DataProvider()
-    public Object[][] createFeatureFileStrings() {
-        return new Object[][]{
-              {new File(TestUtils.DATA_DIR, "interval_list/shortExample.interval_list"), 4}
-        };
-    }
-
-    @Test(dataProvider = "createFeatureFileStrings")
-    public void testIndexedIntervalList(final File testPath, final int expectedCount) throws IOException {
-        final IntervalListCodec codec = new IntervalListCodec();
-        try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
-                     new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
-            Assert.assertEquals(featureReader.iterator().stream().count(), expectedCount);
-        }
-    }
-
-    @Test(dataProvider = "createFeatureFileStrings", expectedExceptions = TribbleException.class)
-    public void testIndexedIntervalListWithQuery(final File testPath, final int ignored) throws IOException {
-        final IntervalListCodec codec = new IntervalListCodec();
-        try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
-                     new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
-
-            Assert.assertEquals(featureReader.query("1", 17032814, 17032814).stream().count(), 1);
-        }
-    }
-
     @Test
     public void testCanDecode() {
         final IntervalListCodec codec = new IntervalListCodec();
