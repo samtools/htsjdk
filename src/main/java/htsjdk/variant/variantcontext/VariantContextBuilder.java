@@ -28,16 +28,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * <p>Builder class for <code>VariantContext</code>.</p>
@@ -323,12 +314,12 @@ public class VariantContextBuilder {
      * collection, so methods that want to add / remove records require the attributes to be copied to a
      */
     private void makeAttributesModifiable() {
-        if ( ! attributesCanBeModified ) {
+        if ( !attributesCanBeModified) {
             this.attributesCanBeModified = true;
             if (attributes == null) {
-            	this.attributes = new HashMap<String, Object>();
+                this.attributes = new HashMap<>();
             } else {
-            	this.attributes = new HashMap<String, Object>(attributes);
+                this.attributes = new HashMap<>(attributes);
             }
         }
     }
@@ -353,12 +344,17 @@ public class VariantContextBuilder {
      * @return this builder
      */
     public VariantContextBuilder filters(final String ... filters) {
-        filters(new LinkedHashSet<String>(Arrays.asList(filters)));
+        filters(new LinkedHashSet<>(Arrays.asList(filters)));
         return this;
     }
 
+    /** Adds the given filter to the list of filters
+     *
+     * @param filter
+     * @return
+     */
     public VariantContextBuilder filter(final String filter) {
-        if ( this.filters == null ) this.filters = new LinkedHashSet<String>(1);
+        if ( this.filters == null ) this.filters = new LinkedHashSet<>(1);
         this.filters.add(filter);
         return this;
     }

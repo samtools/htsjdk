@@ -225,7 +225,7 @@ public class VariantContext implements Feature, Serializable {
     protected CommonInfo commonInfo = null;
     public final static double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
 
-    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<String>());
+    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<>());
 
     /** The location of this VariantContext */
     final protected String contig;
@@ -1202,7 +1202,7 @@ public class VariantContext implements Feature, Serializable {
 
         // maintain a list of non-symbolic alleles expected in the REF and ALT fields of the record
         // (we exclude symbolic alleles because it's commonly expected that they don't show up in the genotypes, e.g. with GATK gVCFs)
-        final List<Allele> reportedAlleles = new ArrayList<Allele>();
+        final List<Allele> reportedAlleles = new ArrayList<>();
         for ( final Allele allele : getAlleles() ) {
             if ( !allele.isSymbolic() )
                 reportedAlleles.add(allele);
