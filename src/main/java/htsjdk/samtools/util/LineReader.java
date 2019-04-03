@@ -28,7 +28,10 @@ import java.io.Closeable;
 /**
  * Interface allows for implementations that read lines from a String, an ASCII file, or somewhere else.
  */
-public interface LineReader extends Closeable{
+public interface LineReader extends Closeable {
+
+    // value to return in call to peek, if eof has been reached.
+    int EOF_VALUE = -1;
 
     /**
      * Read a line and remove the line terminator
@@ -43,7 +46,7 @@ public interface LineReader extends Closeable{
 
     /**
      * Non-destructive one-character look-ahead.
-     * @return If not eof, the next character that would be read.  If eof, -1.
+     * @return If not eof, the next character that would be read.  If eof, {@value EOF_VALUE}.
      */
     int peek();
 

@@ -34,30 +34,14 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
-import htsjdk.variant.variantcontext.Allele;
-import htsjdk.variant.variantcontext.Genotype;
-import htsjdk.variant.variantcontext.GenotypeBuilder;
-import htsjdk.variant.variantcontext.GenotypeLikelihoods;
-import htsjdk.variant.variantcontext.LazyGenotypesContext;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.variantcontext.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 
@@ -244,19 +228,22 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     /**
-	 * Explicitly set the VCFHeader on this codec. This will overwrite the header read from the file
-	 * and the version state stored in this instance; conversely, reading the header from a file will
-	 * overwrite whatever is set here. The returned header may not be identical to the header argument
-	 * since the header lines may be "repaired" (i.e., rewritten) if doOnTheFlyModifications is set.
-	 */
-	public VCFHeader setVCFHeader(final VCFHeader header, final VCFHeaderVersion version) {
-		this.version = version;
+     * Explicitly set the VCFHeader on this codec. This will overwrite the header read from the file
+     * and the version state stored in this instance; conversely, reading the header from a file will
+     * overwrite whatever is set here. The returned header may not be identical to the header argument
+     * since the header lines may be "repaired" (i.e., rewritten) if doOnTheFlyModifications is set.
+     */
+    public VCFHeader setVCFHeader(final VCFHeader header, final VCFHeaderVersion version) {
+        this.version = version;
 
-		if (this.doOnTheFlyModifications) this.header = VCFStandardHeaderLines.repairStandardHeaderLines(header);
-		else this.header = header;
+        if (this.doOnTheFlyModifications) {
+            this.header = VCFStandardHeaderLines.repairStandardHeaderLines(header);
+        } else {
+            this.header = header;
+        }
 
-		return this.header;
-	}
+        return this.header;
+    }
 
     /**
      * the fast decode function
