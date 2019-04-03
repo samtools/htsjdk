@@ -68,11 +68,11 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         noByteOffsetFromContainer.index = 456;
 
         final Slice noContainerByteOffset = new Slice(refContext);
-        noContainerByteOffset.byteOffsetFromContainer = 789;
+        noContainerByteOffset.byteOffsetFromCompressionHeaderStart = 789;
         noContainerByteOffset.index = 456;
 
         final Slice noIndex = new Slice(refContext);
-        noIndex.byteOffsetFromContainer = 789;
+        noIndex.byteOffsetFromCompressionHeaderStart = 789;
         noIndex.containerByteOffset = 123;
 
         return new Object[][] {
@@ -225,7 +225,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         mapped.unmappedReadsCount = unmappedReadsCount;
         mapped.unplacedReadsCount = unplacedReadsCount;
         // arbitrary - need these for indexing
-        mapped.byteOffsetFromContainer = 789;
+        mapped.byteOffsetFromCompressionHeaderStart = 789;
         mapped.containerByteOffset = 123;
         mapped.index = 456;
         return mapped;

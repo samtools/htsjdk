@@ -38,7 +38,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
         for (int i = 0; i < fullContainers.size(); i++) {
             Container fullContainer = fullContainers.get(i);
             Container headerOnlyContainer = headerOnlyContainers.get(i);
-            Assert.assertEquals(headerOnlyContainer.containerByteSize, fullContainer.containerByteSize);
+            Assert.assertEquals(headerOnlyContainer.containerBlocksByteSize, fullContainer.containerBlocksByteSize);
             Assert.assertEquals(headerOnlyContainer.getReferenceContext(), fullContainer.getReferenceContext());
             Assert.assertEquals(headerOnlyContainer.alignmentStart, fullContainer.alignmentStart);
             Assert.assertEquals(headerOnlyContainer.alignmentSpan, fullContainer.alignmentSpan);

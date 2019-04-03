@@ -401,7 +401,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             newIterator = new CRAMIterator(seekableStream, referenceSource, validationStringency);
             seekableStream.seek(startOfLastLinearBin >>> 16);
             final Container container = ContainerHeaderIO.readContainerHeader(newIterator.getCramHeader().getVersion().major, seekableStream);
-            seekableStream.seek(seekableStream.position() + container.containerByteSize);
+            seekableStream.seek(seekableStream.position() + container.containerBlocksByteSize);
             iterator = newIterator;
             boolean atAlignments;
             do {

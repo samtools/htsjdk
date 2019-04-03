@@ -153,7 +153,7 @@ public class CRAMBAIIndexer {
                     final AlignmentSpan span = spanMap.get(refContext);
                     final Slice fakeSlice = new Slice(refContext);
                     fakeSlice.containerByteOffset = slice.containerByteOffset;
-                    fakeSlice.byteOffsetFromContainer = slice.byteOffsetFromContainer;
+                    fakeSlice.byteOffsetFromCompressionHeaderStart = slice.byteOffsetFromCompressionHeaderStart;
                     fakeSlice.index = slice.index;
 
                     fakeSlice.alignmentStart = span.getStart();
@@ -167,7 +167,7 @@ public class CRAMBAIIndexer {
                 if (unmappedSpan != null) {
                     final Slice fakeSlice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
                     fakeSlice.containerByteOffset = slice.containerByteOffset;
-                    fakeSlice.byteOffsetFromContainer = slice.byteOffsetFromContainer;
+                    fakeSlice.byteOffsetFromCompressionHeaderStart = slice.byteOffsetFromCompressionHeaderStart;
                     fakeSlice.index = slice.index;
 
                     fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;

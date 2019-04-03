@@ -171,15 +171,16 @@ public class ContainerTest extends HtsjdkTest {
         final int containerStreamByteOffset = 100000;
 
         // this Container consists of:
-        // a header of size 1234 bytes
+        // a header (size irrelevant)
+        // a Compression Header of size 7552 bytes
         // a Slice of size 6262 bytes
 
-        final int containerHeaderSize = 1234;
+        final int compressionHeaderSize = 7552;
         final int sliceSize = 6262;
 
-        final Container container = createOneSliceContainer(containerStreamByteOffset, containerHeaderSize, sliceSize);
+        final Container container = createOneSliceContainer(containerStreamByteOffset, sliceSize, compressionHeaderSize);
 
-        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, sliceSize, containerHeaderSize);
+        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, sliceSize, compressionHeaderSize);
     }
 
     // two slices
@@ -190,18 +191,19 @@ public class ContainerTest extends HtsjdkTest {
         final int containerStreamByteOffset = 200000;
 
         // this Container consists of:
-        // a header of size 3234 bytes
+        // a header (size irrelevant)
+        // a Compression Header of size 64343 bytes
         // a Slice of size 7890 bytes
         // a Slice of size 5555 bytes
 
-        final int containerHeaderSize = 3234;
+        final int compressionHeaderSize = 64343;
         final int slice0size = 7890;
         final int slice1size = 5555;
 
-        final Container container = createTwoSliceContainer(containerStreamByteOffset, containerHeaderSize, slice0size, slice1size);
+        final Container container = createTwoSliceContainer(containerStreamByteOffset, slice0size, slice1size, compressionHeaderSize);
 
-        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, slice0size, containerHeaderSize);
-        assertSliceIndexingParams(container.getSlices()[1], 1, containerStreamByteOffset, slice1size, containerHeaderSize + slice0size);
+        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, slice0size, compressionHeaderSize);
+        assertSliceIndexingParams(container.getSlices()[1], 1, containerStreamByteOffset, slice1size, compressionHeaderSize + slice0size);
     }
 
     @DataProvider(name = "containerDistributeNegative")
@@ -209,17 +211,17 @@ public class ContainerTest extends HtsjdkTest {
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Container nullLandmarks = new Container(refContext);
-        nullLandmarks.containerByteSize = 6789;
+        nullLandmarks.containerBlocksByteSize = 6789;
         nullLandmarks.landmarks = null;
         nullLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 999);
 
         final Container tooManyLandmarks = new Container(refContext);
-        tooManyLandmarks.containerByteSize = 111;
+        tooManyLandmarks.containerBlocksByteSize = 111;
         tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
         tooManyLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 12345);
 
         final Container tooManySlices = new Container(refContext);
-        tooManySlices.containerByteSize = 675345389;
+        tooManySlices.containerBlocksByteSize = 675345389;
         tooManySlices.landmarks = new int[]{ 1 };
         tooManySlices.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
 
@@ -241,14 +243,14 @@ public class ContainerTest extends HtsjdkTest {
     }
 
     private static Container createOneSliceContainer(final int containerStreamByteOffset,
-                                                     final int containerHeaderSize,
-                                                     final int slice0size) {
+                                                     final int slice0size,
+                                                     final int compressionHeaderSize) {
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Container container = new Container(refContext);
-        container.containerByteSize = slice0size;
+        container.containerBlocksByteSize = compressionHeaderSize + slice0size;
         container.landmarks = new int[]{
-                containerHeaderSize,                // beginning of slice
+                compressionHeaderSize,                // beginning of slice
         };
 
         container.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), containerStreamByteOffset);
@@ -257,18 +259,18 @@ public class ContainerTest extends HtsjdkTest {
     }
 
     private static Container createTwoSliceContainer(final int containerStreamByteOffset,
-                                                     final int containerHeaderSize,
                                                      final int slice0size,
-                                                     final int slice1size) {
-        final int containerDataSize = slice0size + slice1size;
+                                                     final int slice1size,
+                                                     final int compressionHeaderSize) {
+        final int containerDataSize = compressionHeaderSize + slice0size + slice1size;
 
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Container container = new Container(refContext);
-        container.containerByteSize = containerDataSize;
+        container.containerBlocksByteSize = containerDataSize;
         container.landmarks = new int[]{
-                containerHeaderSize,                // beginning of slice 1
-                containerHeaderSize + slice0size    // beginning of slice 2
+                compressionHeaderSize,                // beginning of slice 1
+                compressionHeaderSize + slice0size    // beginning of slice 2
         };
 
         container.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), containerStreamByteOffset);
@@ -284,6 +286,6 @@ public class ContainerTest extends HtsjdkTest {
         Assert.assertEquals(slice.index, expectedIndex);
         Assert.assertEquals(slice.containerByteOffset, expectedContainerOffset);
         Assert.assertEquals(slice.byteSize, expectedSize);
-        Assert.assertEquals(slice.byteOffsetFromContainer, expectedOffset);
+        Assert.assertEquals(slice.byteOffsetFromCompressionHeaderStart, expectedOffset);
     }
 }
