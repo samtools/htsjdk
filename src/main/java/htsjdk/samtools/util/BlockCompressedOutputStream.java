@@ -260,7 +260,10 @@ public class BlockCompressedOutputStream
     }
 
     /**
-     * TODO comments here coming to a commit near you
+     * Adds a GZIIndexer to the block compressed output stream to be written to the specified output stream. See
+     * {@link GZIIndex} for details on the index. Note that the stream will be written to disk entirely when close()
+     * is called.
+     * @throws RuntimeException if attempting to add an indexer when this stream has already accepted input.
      */
     public void addIndexer(final OutputStream outputStream) {
         if (mBlockAddress != 0) {
@@ -412,13 +415,7 @@ public class BlockCompressedOutputStream
         }
 
         // Clear out from uncompressedBuffer the data that was written
-//        if (bytesToCompress == numUncompressedBytes) {
-            numUncompressedBytes = 0;
-//        } else {
-//            System.arraycopy(uncompressedBuffer, bytesToCompress, uncompressedBuffer, 0,
-//                    numUncompressedBytes - bytesToCompress);
-//            numUncompressedBytes -= bytesToCompress;
-//        }
+        numUncompressedBytes = 0;
         mBlockAddress += totalBlockSize;
         return totalBlockSize;
     }

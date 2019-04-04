@@ -193,14 +193,24 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testAddingGziIndexToNonBCFFile() throws IOException {
+    public void testAddingGziIndexToNonBlockCompressedFile() throws IOException {
         final Path testOutput = File.createTempFile("fwr-test", ".fasta").toPath();
         final Path testOutputGZI = File.createTempFile("fwr-test", ".fasta.gzi").toPath();
+        IOUtil.deleteOnExit(testOutputGZI);
         IOUtil.deleteOnExit(testOutput);
         Files.delete(testOutput);
 
         try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).setGziIndexFile(testOutputGZI).build()) {
-            writer.startSequence(testOutput.toString());
+        }
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testAddingFaiIndexButNoGziIndex() throws IOException {
+        final Path testOutput = File.createTempFile("fwr-test", ".fasta.gz").toPath();
+        IOUtil.deleteOnExit(testOutput);
+        Files.delete(testOutput);
+
+        try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(true).setMakeDictOutput(false).setMakeGziOutput(false).build()) {
         }
     }
 

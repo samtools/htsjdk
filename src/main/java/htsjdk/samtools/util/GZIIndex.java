@@ -220,6 +220,8 @@ public final class GZIIndex {
     /**
      * Writes this index into the requested path.
      *
+     * NOTE: This method will close out the provided output stream when it finishes writing the index
+     *
      * @param output the output file.
      *
      * @throws IOException if an I/O error occurs.
@@ -243,7 +245,7 @@ public final class GZIIndex {
             codec.writeLong(entry.getUncompressedOffset());
         }
 
-        // write into the output
+        // Close the codec to ensure the output is written
         codec.close();
     }
 
@@ -388,7 +390,6 @@ public final class GZIIndex {
                     // gets the block address (compressed offset) - requires to parse with the file pointer utils
                     final long compressed = BlockCompressedFilePointerUtil.getBlockAddress(bgzipStream.getFilePointer());
                     // add a new IndexEntry
-                    //TODO unify this with the Indexer code
                     entries.add(new IndexEntry(compressed, currentOffset));
                 }
             }
@@ -449,8 +450,8 @@ public final class GZIIndex {
         }
 
         // Adds a new index location given the compressed file offset and a running tally based on the uncompressed block sizes
-        public void addGzipBlock(final long compressedFileileOffset, final long uncompressedBlockSize) {
-            IndexEntry indexEntry = new IndexEntry(compressedFileileOffset, uncompressedFileOffset);
+        public void addGzipBlock(final long compressedFileOffset, final long uncompressedBlockSize) {
+            IndexEntry indexEntry = new IndexEntry(compressedFileOffset, uncompressedFileOffset);
             uncompressedFileOffset += uncompressedBlockSize;
             entries.add(indexEntry);
         }
@@ -458,7 +459,7 @@ public final class GZIIndex {
         @Override
         public void close() throws IOException {
             GZIIndex index = new GZIIndex(entries);
-            index.writeIndex(output);
+            index.writeIndex(output); //NOTE this relies on writeIndex closing the output stream for it
         }
     }
 }
