@@ -179,7 +179,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         };
     }
 
-    @Test(dataProvider = "illegalFilterStrings",expectedExceptions = IllegalArgumentException.class)
+    @Test(dataProvider = "illegalFilterStrings",expectedExceptions = IllegalStateException.class)
     public void testFilterCannotUseBadFilters(final String filter) {
         final Set<String> filters = new HashSet<>();
         filters.add(filter);

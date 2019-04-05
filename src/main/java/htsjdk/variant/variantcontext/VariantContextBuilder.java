@@ -70,6 +70,7 @@ public class VariantContextBuilder {
     private Set<String> filters = null;
     private Map<String, Object> attributes = null;
     private boolean attributesCanBeModified = false;
+    private boolean filtersCanBeModified = false;
 
     /** enum of what must be validated */
     final private EnumSet<VariantContext.Validation> toValidate = EnumSet.noneOf(VariantContext.Validation.class);
@@ -158,12 +159,10 @@ public class VariantContextBuilder {
      * @param parent  Cannot be null
      */
     public VariantContextBuilder(final VariantContext parent) {
-        if ( parent == null ) throw new IllegalArgumentException("BUG: VariantContextBuilder parent argument cannot be null in VariantContextBuilder");
+        if( parent == null ) throw new IllegalArgumentException("BUG: VariantContextBuilder parent argument cannot be null in VariantContextBuilder");
         this.alleles = parent.getAlleles();
-        this.attributes = parent.getAttributes();
-        this.attributesCanBeModified = false;
         this.contig = parent.getContig();
-        this.filters = parent.getFiltersMaybeNull();
+
         this.genotypes = parent.getGenotypes();
         this.ID = parent.getID();
         this.log10PError = parent.getLog10PError();
@@ -171,12 +170,19 @@ public class VariantContextBuilder {
         this.start = parent.getStart();
         this.stop = parent.getEnd();
         this.fullyDecoded = parent.isFullyDecoded();
+
+        this.attributes(parent.getAttributes());
+        this.filters(parent.getFilters());
+
     }
 
     public VariantContextBuilder(final VariantContextBuilder parent) {
         if ( parent == null ) throw new IllegalArgumentException("BUG: VariantContext parent argument cannot be null in VariantContextBuilder");
-        this.alleles = parent.alleles;
+
         this.attributesCanBeModified = false;
+        this.filtersCanBeModified = false;
+
+        this.alleles = parent.alleles;
         this.contig = parent.contig;
         this.genotypes = parent.genotypes;
         this.ID = parent.ID;
@@ -325,6 +331,20 @@ public class VariantContextBuilder {
     }
 
     /**
+     * Makes the filters modifiable.
+     */
+    private void makeFiltersModifiable() {
+        if ( !filtersCanBeModified) {
+            this.filtersCanBeModified = true;
+            if (filters == null) {
+                this.filters= new HashSet<>();
+            } else {
+                this.filters = new HashSet<>(filters);
+            }
+        }
+    }
+
+    /**
      * This builder's filters are set to this value
      *
      * filters can be <code>null</code> -&gt; meaning there are no filters
@@ -333,9 +353,30 @@ public class VariantContextBuilder {
      * @return this builder
      */
     public VariantContextBuilder filters(final Set<String> filters) {
-        this.filters = filters;
+        makeFiltersModifiable();
+        if(filters==null) {
+            unfiltered();
+        } else {
+            final HashSet<String> newFilters = new HashSet<>(filters.size());
+            newFilters.addAll(filters);
+            filtersAsIs(newFilters);
+        }
         return this;
     }
+
+    /**
+     * This builder's filters are set to this value
+     *
+     * filters can be <code>null</code> -&gt; meaning there are no filters
+     *
+     * @param filters Set of strings to set as the filters for this builder
+     * @return this builder
+     */
+    private void filtersAsIs(final Set<String> filters) {
+        this.filters = filters;
+        toValidate.add(VariantContext.Validation.FILTERS);
+    }
+
 
     /**
      * {@link #filters}
@@ -344,7 +385,7 @@ public class VariantContextBuilder {
      * @return this builder
      */
     public VariantContextBuilder filters(final String ... filters) {
-        filters(new LinkedHashSet<>(Arrays.asList(filters)));
+        filtersAsIs(new LinkedHashSet<>(Arrays.asList(filters)));
         return this;
     }
 
@@ -354,7 +395,10 @@ public class VariantContextBuilder {
      * @return
      */
     public VariantContextBuilder filter(final String filter) {
-        if ( this.filters == null ) this.filters = new LinkedHashSet<>(1);
+        makeFiltersModifiable();
+        if ( this.filters == null ) {
+            filtersAsIs(new LinkedHashSet<>(1));
+        }
         this.filters.add(filter);
         return this;
     }
@@ -570,7 +614,10 @@ public class VariantContextBuilder {
     }
 
     public VariantContext make(final boolean leaveModifyableAsIs) {
-        if(!leaveModifyableAsIs) attributesCanBeModified = false;
+        if(!leaveModifyableAsIs){
+            attributesCanBeModified = false;
+            filtersCanBeModified = false;
+        }
 
         return new VariantContext(source, ID, contig, start, stop, alleles,
                 genotypes, log10PError, filters, attributes,

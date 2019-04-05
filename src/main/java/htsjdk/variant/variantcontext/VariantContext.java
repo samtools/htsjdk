@@ -37,6 +37,7 @@ import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -312,7 +313,8 @@ public class VariantContext implements Feature, Serializable {
 
     public enum Validation {
         ALLELES,
-        GENOTYPES
+        GENOTYPES,
+        FILTERS
     }
 
     private final static EnumSet<Validation> NO_VALIDATION = EnumSet.noneOf(Validation.class);
@@ -1296,12 +1298,14 @@ public class VariantContext implements Feature, Serializable {
             switch (val) {
                 case ALLELES: validateAlleles(); break;
                 case GENOTYPES: validateGenotypes(); break;
+                case FILTERS: validateFilters(); break;
                 default: throw new IllegalArgumentException("Unexpected validation mode " + val);
             }
         }
 
         return true;
     }
+
 
     /**
      * Check that getEnd() == END from the info field, if it's present
@@ -1365,6 +1369,21 @@ public class VariantContext implements Feature, Serializable {
             }
         }
     }
+
+    //no controls and white-spaces characters, no semicolon.
+    static final public Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
+    private void validateFilters() {
+        final Set<String> filters = this.getFilters();
+        if (filters == null) return;
+
+        for (String filter : filters) {
+            if (!VALID_FILTER.matcher(filter).matches()){
+                throw new IllegalStateException("Filter '" + filter +
+                        "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER.toString());
+            }
+        }
+    }
+
 
     // ---------------------------------------------------------------------------------------------------------
     //
