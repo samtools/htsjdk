@@ -425,6 +425,8 @@ public class VariantContextBuilder {
     /**
      * Tells this builder that the resulting <code>VariantContext</code> should use this genotype's <code>GenotypeContext</code>.
      *
+     * Note that this method will call the immutable method on the provided genotypes object
+     * to ensure that the user will not modify it further.
      * Note that genotypes can be <code>null</code> -&gt; meaning there are no genotypes
      *
      * @param genotypes GenotypeContext to use in this builder
@@ -433,6 +435,7 @@ public class VariantContextBuilder {
     public VariantContextBuilder genotypes(final GenotypesContext genotypes) {
         this.genotypes = genotypes;
         if ( genotypes != null )
+            genotypes.immutable();
             toValidate.add(VariantContext.Validation.GENOTYPES);
         return this;
     }

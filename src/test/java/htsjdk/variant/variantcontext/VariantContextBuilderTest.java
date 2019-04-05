@@ -214,14 +214,21 @@ public class VariantContextBuilderTest extends VariantBaseTest {
 
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
 
-        final GenotypesContext gc = GenotypesContext.create(GenotypeBuilder.create("sample1", Arrays.asList(Tref, C)));
+        final Genotype sample1 = GenotypeBuilder.create("sample1", Arrays.asList(Tref, C));
+        final Genotype sample2 = GenotypeBuilder.create("sample2", Arrays.asList(Tref, G));
+
+        GenotypesContext gc = GenotypesContext.create(sample1);
         builder.genotypes(gc);
+        try {
+            gc.add(sample2);
+        } catch (IllegalAccessError e) {
+            // nice work...
+            gc = GenotypesContext.create(sample2);
+        }
 
-        gc.add(GenotypeBuilder.create("sample2", Arrays.asList(Tref, G)));
-
-        final VariantContext vc2 = builderScheme.getOtherBuilder(builder, null).genotypes(gc).make();
         final VariantContext vc1 = builder.make();
+        final VariantContext vc2 = builderScheme.getOtherBuilder(builder, null).genotypes(gc).make();
 
-        Assert.assertNotEquals(vc2.getGenotypes(), vc1.getGenotypes(), "The two genotype lists should be different");
+        Assert.assertNotEquals(vc2.getGenotypes(), vc1.getGenotypes(), "The two genotype lists should be different. only saw " + vc1.getGenotypes().toString());
     }
 }
