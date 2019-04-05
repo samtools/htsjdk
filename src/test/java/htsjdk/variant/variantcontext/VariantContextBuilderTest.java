@@ -157,6 +157,40 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         Assert.assertNotEquals(vc2.getFilters(), vc1.getFilters(), "The two lists of filters should be different");
     }
 
+    @Test
+    public void testFilterCanUseUnmodifyableSet() {
+        final Set<String> filters = new HashSet<>();
+        filters.add("TEST");
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filters(Collections.unmodifiableSet(filters));
+        builder.filter("CanIHazAFilter?");
+        final VariantContext vc1 = builder.make();
+
+        Assert.assertEquals(vc1.getFilters().size(),2);
+    }
+
+    @DataProvider
+    public static Object[][] illegalFilterStrings() {
+        return new Object[][]{
+                {"Tab\t"},
+                {"newLine\n"},
+                {"space "},
+                {"semicolon;"},
+                {"carriage return\r"}
+        };
+    }
+
+    @Test(dataProvider = "illegalFilterStrings",expectedExceptions = IllegalArgumentException.class)
+    public void testFilterCannotUseBadFilters(final String filter) {
+        final Set<String> filters = new HashSet<>();
+        filters.add(filter);
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filters(Collections.unmodifiableSet(filters));
+        final VariantContext vc1 = builder.make();
+
+        //shouldn't have gotten here
+        Assert.fail("a bad filter should have not been permitted: '" + filter + "'");
+    }
+
+
     @Test(dataProvider = "BuilderSchemes")
     public void testAllelesUnaffectedByClonedVariants(final VCBuilderScheme builderScheme) {
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filter("TEST");
