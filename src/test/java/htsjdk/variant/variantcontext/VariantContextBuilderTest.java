@@ -51,7 +51,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
     }
 
     enum VCBuilderScheme {
-        NEW_ON_BUILDER{
+        NEW_ON_BUILDER {
             @Override
             VariantContextBuilder getOtherBuilder(final VariantContextBuilder builder, final VariantContext vc) {
                 return new VariantContextBuilder(builder);
@@ -74,8 +74,8 @@ public class VariantContextBuilderTest extends VariantBaseTest {
     }
 
     @DataProvider
-    public Object[][] BuilderSchemes(){
-        return new Object[][] {
+    public Object[][] BuilderSchemes() {
+        return new Object[][]{
                 {VCBuilderScheme.NEW_ON_BUILDER},
                 {VCBuilderScheme.NEW_ON_VC},
                 {VCBuilderScheme.SAME}};
@@ -86,12 +86,11 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
 
         final VariantContext result1 = root1.attribute("AC", 1).make();
-        final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1,result1)
+        final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1, result1)
                 .source(snpSource).chr(snpChr).start(snpLocStart).stop(snpLocStop).alleles(Arrays.asList(Aref, C));
 
         //this is a red-herring and should not change anything.
         final VariantContext ignored = root1.attribute("AC", 2).make();
-
         final VariantContext result2 = root2.attribute("AC", 1).make();
 
         Assert.assertEquals(result1.getAttribute("AC"), result2.getAttribute("AC"));
@@ -102,7 +101,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
 
         final VariantContext result1 = root1.attribute("AC", 1).make();
-        final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1,result1)
+        final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1, result1)
                 .source(snpSource).chr(snpChr).start(snpLocStart).stop(snpLocStop).alleles(Arrays.asList(Aref, C));
 
         final VariantContext result2 = root2.attribute("AC", 2).make();
@@ -118,33 +117,31 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         attributes.put("AC", 1);
 
         final VariantContext result1 = root1.attributes(attributes).make();
-        final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1,result1)
+        final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1, result1)
                 .source(snpSource).chr(snpChr).start(snpLocStart).stop(snpLocStop).alleles(Arrays.asList(Aref, C));
 
         attributes.put("AC", 2);
 
-        final VariantContext result2 = root2.make();
+        final VariantContext result2 = root2.attributes(attributes).make();
 
-        Assert.assertNotEquals(result1.getAttribute("AC"), result2.getAttribute("AC"));
+        Assert.assertNotEquals(result1.getAttribute("AC"), result2.getAttribute("AC"), "AC attributes should be different, found: " + result2.getAttribute("AC").toString());
     }
 
     @Test(dataProvider = "BuilderSchemes")
     public void testFilterUnaffectedByClonedVariants(final VCBuilderScheme builderScheme) {
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filter("TEST");
         final VariantContext vc1 = builder.make();
-        final VariantContext vc2 = builderScheme.getOtherBuilder(builder,vc1).filter("TEST2").make();
+        final VariantContext vc2 = builderScheme.getOtherBuilder(builder, vc1).filter("TEST2").make();
         Assert.assertNotEquals(vc2.getFilters(), vc1.getFilters(), "The two lists of filters should be different");
     }
-
 
     @Test(dataProvider = "BuilderSchemes")
     public void testFiltersUnaffectedByClonedVariants(final VCBuilderScheme builderScheme) {
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filter("TEST");
         final VariantContext vc1 = builder.make();
-        final VariantContext vc2 = builderScheme.getOtherBuilder(builder,vc1).filters("TEST2").make();
+        final VariantContext vc2 = builderScheme.getOtherBuilder(builder, vc1).filters("TEST2").make();
         Assert.assertNotEquals(vc2.getFilters(), vc1.getFilters(), "The two lists of filters should be different");
     }
-
 
     @Test(dataProvider = "BuilderSchemes")
     public void testFilterExternalSetUnaffectedByClonedVariantsBuilders(final VCBuilderScheme builderScheme) {
@@ -156,7 +153,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         filters.clear();
         filters.add("TEST2");
 
-        final VariantContext vc2 = builderScheme.getOtherBuilder(builder,vc1).filters(filters).make();
+        final VariantContext vc2 = builderScheme.getOtherBuilder(builder, vc1).filters(filters).make();
         Assert.assertNotEquals(vc2.getFilters(), vc1.getFilters(), "The two lists of filters should be different");
     }
 
@@ -165,20 +162,28 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filter("TEST");
         final VariantContext ignored = builder.make();
         final VariantContext vc2 = builderScheme.getOtherBuilder(builder, ignored).alleles(Collections.singleton(Aref)).make();
+
         final VariantContext vc1 = builder.make();
 
-        Assert.assertNotEquals(vc2.getAlleles(), vc1.getAlleles(), "The two lists of alleles should be different");
+        if (builderScheme == VCBuilderScheme.SAME) {
+            Assert.assertEquals(vc2.getAlleles(), vc1.getAlleles(), "The two lists of alleles should be the same");
+        } else {
+            Assert.assertNotEquals(vc2.getAlleles(), vc1.getAlleles(), "The two lists of alleles should be different");
+        }
     }
-
 
     @Test(dataProvider = "BuilderSchemes")
     public void testGenotypesUnaffectedByClonedVariants(final VCBuilderScheme builderScheme) {
+        if (builderScheme == VCBuilderScheme.NEW_ON_VC) {
+            return;
+        }
+
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
 
-        final GenotypesContext gc = GenotypesContext.create(GenotypeBuilder.create("sample1",Arrays.asList(Tref,C)));
+        final GenotypesContext gc = GenotypesContext.create(GenotypeBuilder.create("sample1", Arrays.asList(Tref, C)));
         builder.genotypes(gc);
 
-        gc.add(GenotypeBuilder.create("sample2",Arrays.asList(Tref,G)));
+        gc.add(GenotypeBuilder.create("sample2", Arrays.asList(Tref, G)));
 
         final VariantContext vc2 = builderScheme.getOtherBuilder(builder, null).genotypes(gc).make();
         final VariantContext vc1 = builder.make();
