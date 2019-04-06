@@ -172,8 +172,11 @@ public class VariantContextBuilder {
         this.fullyDecoded = parent.isFullyDecoded();
 
         this.attributes(parent.getAttributes());
-        this.filters(parent.getFilters());
-
+        if (parent.isFiltered()) {
+            this.filters(parent.getFilters());
+        } else {
+            this.unfiltered();
+        }
     }
 
     public VariantContextBuilder(final VariantContextBuilder parent) {
@@ -354,7 +357,7 @@ public class VariantContextBuilder {
      */
     public VariantContextBuilder filters(final Set<String> filters) {
         makeFiltersModifiable();
-        if(filters==null) {
+        if (filters==null) {
             unfiltered();
         } else {
             final HashSet<String> newFilters = new HashSet<>(filters.size());
