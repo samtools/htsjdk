@@ -172,7 +172,7 @@ public class VariantContextBuilder {
         this.fullyDecoded = parent.isFullyDecoded();
 
         this.attributes(parent.getAttributes());
-        if (parent.isFiltered()) {
+        if (parent.filtersWereApplied()) {
             this.filters(parent.getFilters());
         } else {
             this.unfiltered();
@@ -340,7 +340,7 @@ public class VariantContextBuilder {
         if ( !filtersCanBeModified) {
             this.filtersCanBeModified = true;
             if (filters == null) {
-                this.filters= new HashSet<>();
+                this.filters = new HashSet<>();
             } else {
                 this.filters = new HashSet<>(filters);
             }
@@ -357,12 +357,12 @@ public class VariantContextBuilder {
      */
     public VariantContextBuilder filters(final Set<String> filters) {
         makeFiltersModifiable();
-        if (filters==null) {
+        if (filters == null) {
             unfiltered();
         } else {
-            final HashSet<String> newFilters = new HashSet<>(filters.size());
-            newFilters.addAll(filters);
-            filtersAsIs(newFilters);
+            this.filters.clear();
+            this.filters.addAll(filters);
+            toValidate.add(VariantContext.Validation.FILTERS);
         }
         return this;
     }
@@ -412,7 +412,8 @@ public class VariantContextBuilder {
      * @return this builder
      */
     public VariantContextBuilder passFilters() {
-        return filters(VariantContext.PASSES_FILTERS);
+        filtersAsIs(VariantContext.PASSES_FILTERS);
+        return this;
     }
 
     /**
