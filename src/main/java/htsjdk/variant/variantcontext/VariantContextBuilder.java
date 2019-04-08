@@ -28,7 +28,17 @@ package htsjdk.variant.variantcontext;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>Builder class for <code>VariantContext</code>.</p>
@@ -159,7 +169,9 @@ public class VariantContextBuilder {
      * @param parent  Cannot be null
      */
     public VariantContextBuilder(final VariantContext parent) {
-        if( parent == null ) throw new IllegalArgumentException("BUG: VariantContextBuilder parent argument cannot be null in VariantContextBuilder");
+        if (parent == null) {
+            throw new IllegalArgumentException("BUG: VariantContextBuilder parent argument cannot be null in VariantContextBuilder");
+        }
         this.alleles = parent.getAlleles();
         this.contig = parent.getContig();
 
@@ -323,12 +335,13 @@ public class VariantContextBuilder {
      * collection, so methods that want to add / remove records require the attributes to be copied to a
      */
     private void makeAttributesModifiable() {
-        if ( !attributesCanBeModified) {
+        if (!attributesCanBeModified) {
             this.attributesCanBeModified = true;
-            if (attributes == null) {
-                this.attributes = new HashMap<>();
-            } else {
-                this.attributes = new HashMap<>(attributes);
+
+            final Map<String, Object> tempAttributes = attributes;
+            this.attributes = new HashMap<>();
+            if (tempAttributes != null) {
+                this.attributes = new HashMap<>(tempAttributes);
             }
         }
     }
@@ -337,12 +350,12 @@ public class VariantContextBuilder {
      * Makes the filters modifiable.
      */
     private void makeFiltersModifiable() {
-        if ( !filtersCanBeModified) {
+        if (!filtersCanBeModified) {
             this.filtersCanBeModified = true;
-            if (filters == null) {
-                this.filters = new HashSet<>();
-            } else {
-                this.filters = new HashSet<>(filters);
+            Set<String> tempFilters = filters;
+            this.filters = new HashSet<>();
+            if (tempFilters != null) {
+                this.filters.addAll(tempFilters);
             }
         }
     }
@@ -353,13 +366,15 @@ public class VariantContextBuilder {
      * filters can be <code>null</code> -&gt; meaning there are no filters
      *
      * @param filters Set of strings to set as the filters for this builder
+     *                This set will be copied so that external set can be
+     *                safely changed.
      * @return this builder
      */
     public VariantContextBuilder filters(final Set<String> filters) {
-        makeFiltersModifiable();
         if (filters == null) {
             unfiltered();
         } else {
+            makeFiltersModifiable();
             this.filters.clear();
             this.filters.addAll(filters);
             toValidate.add(VariantContext.Validation.FILTERS);
@@ -399,9 +414,7 @@ public class VariantContextBuilder {
      */
     public VariantContextBuilder filter(final String filter) {
         makeFiltersModifiable();
-        if ( this.filters == null ) {
-            filtersAsIs(new LinkedHashSet<>(1));
-        }
+
         this.filters.add(filter);
         return this;
     }

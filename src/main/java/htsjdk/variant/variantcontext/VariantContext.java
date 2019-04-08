@@ -29,11 +29,7 @@ import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
-import htsjdk.variant.vcf.VCFCompoundHeaderLine;
-import htsjdk.variant.vcf.VCFConstants;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLineCount;
-import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -226,7 +222,7 @@ public class VariantContext implements Feature, Serializable {
     protected CommonInfo commonInfo = null;
     public final static double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
 
-    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<>());
+    public final static Set<String> PASSES_FILTERS = Collections.emptySet();
 
     /** The location of this VariantContext */
     final protected String contig;
@@ -1371,19 +1367,20 @@ public class VariantContext implements Feature, Serializable {
     }
 
     //no controls and white-spaces characters, no semicolon.
-    static final public Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
+    public static final Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
     private void validateFilters() {
         final Set<String> filters = this.getFilters();
-        if (filters == null) return;
+        if (filters == null) {
+            return;
+        }
 
         for (String filter : filters) {
-            if (!VALID_FILTER.matcher(filter).matches()){
+            if (!VALID_FILTER.matcher(filter).matches()) {
                 throw new IllegalStateException("Filter '" + filter +
-                        "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER.toString());
+                        "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
             }
         }
     }
-
 
     // ---------------------------------------------------------------------------------------------------------
     //
