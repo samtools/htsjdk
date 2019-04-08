@@ -26,7 +26,7 @@ import java.util.zip.GZIPOutputStream;
  * <li>read an existing index from an input stream</li>
  * </ul><p>
  */
-public class CRAMCRAIIndexer {
+public class CRAMCRAIIndexer extends AbstractCRAMIndexer {
 
     final private CRAIIndex craiIndex = new CRAIIndex();
     final private GZIPOutputStream os;
@@ -70,6 +70,10 @@ public class CRAMCRAIIndexer {
      */
     public void processContainer(final Container container) {
         craiIndex.processContainer(container);
+    }
+
+    void processContainer(final Container container, final ValidationStringency validationStringency) {
+        processContainer(container);
     }
 
     /**

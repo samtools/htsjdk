@@ -79,7 +79,7 @@ import java.util.TreeSet;
  * but it is unused.  This would be accomplished via {@link #createIndex(SeekableStream, File, Log, ValidationStringency)}.
  *
  */
-public class CRAMBAIIndexer {
+public class CRAMBAIIndexer extends AbstractCRAMIndexer {
 
     // The number of references (chromosomes) in the BAM file
     private final int numReferences;
