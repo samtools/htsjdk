@@ -30,6 +30,7 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.tribble.annotation.Strand;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
@@ -1264,5 +1266,27 @@ public final class SAMUtils {
      */
     public static boolean isReferenceSequenceIncompatibleWithBAI(final SAMSequenceRecord sequence) {
         return sequence.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
+    }
+
+    public static String calculateOATagValue(SAMRecord record){
+        if (record.getReferenceName().contains(",")) {
+            throw new SAMException(String.format("Reference name for record %s contains a comma character.", record.getReadName()));
+        }
+        final String oaValue;
+        if (record.getReadUnmappedFlag()) {
+            oaValue = String.format("*,0,%s,*,%s,",
+                    record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
+                    record.getMappingQuality());
+        } else {
+            oaValue = String.format("%s,%s,%s,%s,%s,%s",
+                    record.getReferenceName(),
+                    record.getAlignmentStart(),
+                    record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
+                    record.getCigarString(),
+                    record.getMappingQuality(),
+                    Optional.ofNullable(record.getAttribute(SAMTag.NM.name())).orElse(""));
+        }
+        return oaValue;
+
     }
 }

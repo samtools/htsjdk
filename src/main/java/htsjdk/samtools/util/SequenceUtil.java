@@ -25,6 +25,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqConstants;
+import htsjdk.tribble.annotation.Strand;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.File;
@@ -34,6 +35,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
