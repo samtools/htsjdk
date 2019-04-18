@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools.util;
 
-
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
@@ -33,15 +32,48 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.nio.DeleteOnExitPathHook;
 import htsjdk.tribble.Tribble;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.file.*;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.Deflater;
@@ -1058,7 +1090,7 @@ public class IOUtil {
      */
     public static List<File> unrollFiles(final Collection<File> inputs, final String... extensions) {
         Collection<Path> paths = unrollPaths(filesToPaths(inputs), extensions);
-        return paths.stream().map(p->p.toFile()).collect(Collectors.toList());
+        return paths.stream().map(Path::toFile).collect(Collectors.toList());
     }
 
     /**
@@ -1086,8 +1118,6 @@ public class IOUtil {
 
             // If the file didn't match a given extension, treat it as a list of files
             if (!matched) {
-                IOUtil.assertFileIsReadable(p);
-
                 try {
                     Files.lines(p)
                             .map(String::trim)
@@ -1107,7 +1137,7 @@ public class IOUtil {
                     throw new IllegalArgumentException("had trouble reading from " + p.toUri().toString());
                 }
             }
-    }
+        }
 
         // Preserve input order (since we're using a stack above) for things that care
         Collections.reverse(output);
