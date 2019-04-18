@@ -23,17 +23,23 @@
  */
 package htsjdk.samtools;
 
-
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
-import htsjdk.samtools.util.BinaryCodec;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -1800,13 +1806,21 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     public List<SAMValidationError> validateCigar(final long recordNumber) {
         List<SAMValidationError> ret = null;
 
-        if (null != getHeader() && getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
+        if (null != getHeader() && getValidationStringency() != ValidationStringency.SILENT) {
             try {
                 //make sure that the cashed version is good
                 //wrapped in a try to catch an un-parsable string
+                this.getCigar();
+            } catch (final IllegalArgumentException e) {
+                return Collections.singletonList(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR, e.getMessage(), getReadName(), recordNumber));
+            }
+
+            if (!this.getReadUnmappedFlag()) {
                 return SAMUtils.validateCigar(this, getCigar(), getReferenceIndex(), getAlignmentBlocks(), recordNumber, "Read CIGAR");
-            } catch( final IllegalArgumentException e){
-                return Collections.singletonList(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,e.getMessage(),getReadName(),recordNumber));
+            } else {
+                final List<SAMValidationError> cigarValidation = new ArrayList<>();
+                cigarValidation.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR, "Unmapped read with non-empty cigar found", getReadName(), recordNumber));
+                return cigarValidation;
             }
         }
         return ret;

@@ -757,6 +757,18 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
     }
 
+    @Test
+    public void testValidateUnmappedReadWithNonEmptyCigar(){
+        SAMRecord rec = createTestRecordHelper();
+        rec.setReadUnmappedFlag(true);
+        rec.setValidationStringency(ValidationStringency.STRICT);
+        // Validate record
+        List<SAMValidationError> err = rec.validateCigar(-1);
+
+        Assert.assertNotNull(err);
+        Assert.assertEquals(err.size(), 1);
+        Assert.assertEquals(err.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+    }
 
     @Test
     public void testValidateNonsenseCigar(){
