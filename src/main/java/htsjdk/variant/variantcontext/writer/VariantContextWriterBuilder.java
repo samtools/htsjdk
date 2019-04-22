@@ -453,7 +453,7 @@ public class VariantContextWriterBuilder {
 
         switch (typeToBuild) {
             case UNSPECIFIED:
-                throw new IllegalArgumentException("Must specify file or stream output type.");
+                throw new IllegalArgumentException("Output format type is not set, or could not be inferred from the output path. If a path was used, does it have a valid VCF extension?");
             case VCF:
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
                     throw new IllegalArgumentException("A reference dictionary is required for creating Tribble indices on the fly");
