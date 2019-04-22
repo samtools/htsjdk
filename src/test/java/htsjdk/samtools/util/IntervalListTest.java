@@ -25,7 +25,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -36,7 +35,12 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Tests the IntervalList class
@@ -44,7 +48,7 @@ import java.util.*;
 public class IntervalListTest extends HtsjdkTest {
 
     final SAMFileHeader fileHeader;
-    final IntervalList list1, list2, list3;
+    final IntervalList list1, list2, list3, empty;
     static final public Path TEST_DIR = new File("src/test/resources/htsjdk/samtools/intervallist").toPath();
 
     public IntervalListTest() {
@@ -54,6 +58,8 @@ public class IntervalListTest extends HtsjdkTest {
         list1 = new IntervalList(fileHeader);
         list2 = new IntervalList(fileHeader);
         list3 = new IntervalList(fileHeader);
+        empty = new IntervalList(fileHeader);
+
 
         list1.add(new Interval("1", 1, 100));     //de-facto: 1:1-200 1:202-300     2:100-150 2:200-300
         list1.add(new Interval("1", 101, 200));
@@ -463,16 +469,16 @@ public class IntervalListTest extends HtsjdkTest {
                 CollectionUtil.makeCollection(list.iterator()));
     }
 
-    @Test(expectedExceptions = SAMException.class)
+    @Test
     public void testOverlapsEmptyFirstList() {
-        IntervalList.overlaps(Collections.emptyList(), Collections.singletonList(list1));
+        Assert.assertEquals(
+                IntervalList.overlaps(empty, list1), empty);
     }
 
     @Test
     public void testOverlapsEmptySecondList() {
         Assert.assertEquals(
-                CollectionUtil.makeCollection(IntervalList.overlaps(Collections.singletonList(list1), Collections.emptyList()).iterator()),
-                Collections.emptyList());
+                IntervalList.overlaps(list1, empty), empty);
     }
 
     @DataProvider(name = "VCFCompData")
@@ -490,7 +496,6 @@ public class IntervalListTest extends HtsjdkTest {
 
     @Test(dataProvider = "VCFCompData")
     public void testFromVCF(final Path vcf, final Path compInterval, final boolean invertVCF) {
-
 
         final IntervalList compList = IntervalList.fromPath(compInterval);
         final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.toIntervalList(vcf)) : VCFFileReader.toIntervalList(vcf);
@@ -657,15 +662,15 @@ public class IntervalListTest extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void changeHeader() {
-        SAMFileHeader clonedHeader = fileHeader.clone();
+        final SAMFileHeader clonedHeader = fileHeader.clone();
         clonedHeader.addSequence(new SAMSequenceRecord("4", 1000));
-        IntervalList usingClone1 = new IntervalList(clonedHeader);
+        final IntervalList usingClone1 = new IntervalList(clonedHeader);
         usingClone1.add(new Interval("4", 1, 100));
-        IntervalList usingClone2 = new IntervalList(clonedHeader);
+        final IntervalList usingClone2 = new IntervalList(clonedHeader);
         usingClone2.add(new Interval("4", 10, 20));
 
 
-        IntervalList expected = new IntervalList(clonedHeader);
+        final IntervalList expected = new IntervalList(clonedHeader);
         expected.add(new Interval("4", 1, 9));
         expected.add(new Interval("4", 21, 100));
 
@@ -675,8 +680,6 @@ public class IntervalListTest extends HtsjdkTest {
         //now interval lists are in "illegal state" since they contain contigs that are not in the header.
         //this next step should fail
         IntervalList.subtract(usingClone1, usingClone2);
-
-        Assert.assertTrue(false);
 
     }
 

@@ -29,10 +29,19 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.tribble.IntervalList.IntervalListCodec;
+import htsjdk.utils.ValidationUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Represents a list of intervals against a reference sequence that can be written to
@@ -97,9 +106,9 @@ public class IntervalList implements Iterable<Interval> {
      * Adds an interval to the list of intervals.
      */
     public void add(final Interval interval) {
-        if (header.getSequence(interval.getContig()) == null) {
-            throw new IllegalArgumentException(String.format("Cannot add interval %s, contig not in header", interval.toString()));
-        }
+        ValidationUtils.validateArg(header.getSequence(interval.getContig()) != null,
+                () -> String.format("Cannot add interval %s, contig not in header", interval.toString()));
+
         this.intervals.add(interval);
     }
 
@@ -181,7 +190,6 @@ public class IntervalList implements Iterable<Interval> {
         return value;
     }
 
-
     /**
      * Sorts and uniques the list of intervals held within this interval list.
      *
@@ -254,16 +262,16 @@ public class IntervalList implements Iterable<Interval> {
      * @param enforceSameStrands enforce that merged intervals have the same strand, otherwise ignore.
      */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames, final boolean enforceSameStrands) {
-        return getUniqueIntervals(list, true, concatenateNames,  enforceSameStrands);
+        return getUniqueIntervals(list, true, concatenateNames, enforceSameStrands);
     }
 
-        /**
-         * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
-         *
-         * @param combineAbuttingIntervals   If true, intervals that are abutting will be combined into one interval.
-         * @param concatenateNames   If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
-         * @param enforceSameStrands enforce that merged intervals have the same strand, otherwise ignore.
-         */
+    /**
+     * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
+     *
+     * @param combineAbuttingIntervals If true, intervals that are abutting will be combined into one interval.
+     * @param concatenateNames         If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
+     * @param enforceSameStrands       enforce that merged intervals have the same strand, otherwise ignore.
+     */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean combineAbuttingIntervals, final boolean concatenateNames, final boolean enforceSameStrands) {
 
         final List<Interval> intervals;
@@ -384,10 +392,10 @@ public class IntervalList implements Iterable<Interval> {
     /**
      * Merges a collection of intervals and optionally concatenates unique names or takes the first name.
      * *
+     *
      * @param concatenateNames if true, combine the names of all the intervals with |, otherwise use the name of the first interval.
      * @return a single interval which spans from the minimum input start position to the maximum input end position.
      * The resulting strandedness and contig are those of the first input with no validation.
-     *
      */
     static Interval merge(final Iterable<Interval> intervals, final boolean concatenateNames) {
         final Interval first = intervals.iterator().next();
@@ -559,8 +567,7 @@ public class IntervalList implements Iterable<Interval> {
                     writer.write(interval);
                 }
             }
-        }
-        catch (final IOException ioe) {
+        } catch (final IOException ioe) {
             throw new SAMException("Error writing out interval list to file: " + path.toAbsolutePath(), ioe);
         }
     }
@@ -584,27 +591,21 @@ public class IntervalList implements Iterable<Interval> {
 
     public static IntervalList intersection(final IntervalList list1, final IntervalList list2) {
 
-        final IntervalList result;
         // Ensure that all the sequence dictionaries agree and merge the lists
-        SequenceUtil.assertSequenceDictionariesEqual(list1.getHeader().getSequenceDictionary(),
+        SequenceUtil.assertSequenceDictionariesEqual(
+                list1.getHeader().getSequenceDictionary(),
                 list2.getHeader().getSequenceDictionary());
 
-        result = new IntervalList(list1.getHeader().clone());
+        final IntervalList result = new IntervalList(list1.getHeader().clone());
 
-        final OverlapDetector<Interval> detector = new OverlapDetector<>(0, 0);
-
-        detector.addAll(list1.getIntervals(), list1.getIntervals());
+        final OverlapDetector<Interval> detector = OverlapDetector.create(list1.getIntervals());
 
         for (final Interval i : list2.getIntervals()) {
-            final Collection<Interval> as = detector.getOverlaps(i);
-            for (final Interval j : as) {
-                final Interval tmp = i.intersect(j);
-
-                result.add(tmp);
-            }
+            detector.getOverlaps(i).stream()
+                    .map(i::intersect)
+                    .forEach(result::add);
         }
         return result.uniqued();
-
     }
 
     /**
@@ -615,16 +616,34 @@ public class IntervalList implements Iterable<Interval> {
      */
 
     public static IntervalList intersection(final Collection<IntervalList> lists) {
+        return lists.stream()
+                .reduce(IntervalList::intersection)
+                .orElse(null);
+    }
 
-        IntervalList intersection = null;
-        for (final IntervalList list : lists) {
-            if (intersection == null) {
-                intersection = list;
-            } else {
-                intersection = intersection(intersection, list);
-            }
-        }
-        return intersection;
+    /**
+     * A utility function for merging a two IntervalLists, checks for equal dictionaries.
+     * Merging does not look for overlapping intervals nor uniquify
+     *
+     * @param list1 the first list
+     * @param list2 the second list
+     * @return the union of all the IntervalLists in lists.
+     */
+    public static IntervalList concatenate(final IntervalList list1, final IntervalList list2) {
+
+        // Ensure that all the sequence dictionaries agree and merge the lists
+        final SAMFileHeader header = list1.getHeader().clone();
+        header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+
+        final IntervalList merged = new IntervalList(header);
+        merged.addall(list1.getIntervals());
+
+        SequenceUtil.assertSequenceDictionariesEqual(merged.getHeader().getSequenceDictionary(),
+                list2.getHeader().getSequenceDictionary());
+
+        merged.addall(list2.intervals);
+
+        return merged;
     }
 
     /**
@@ -635,24 +654,9 @@ public class IntervalList implements Iterable<Interval> {
      * @return the union of all the IntervalLists in lists.
      */
     public static IntervalList concatenate(final Collection<IntervalList> lists) {
-        if (lists.isEmpty()) {
-            throw new SAMException("Cannot concatenate an empty list of IntervalLists.");
-        }
-
-        // Ensure that all the sequence dictionaries agree and merge the lists
-        final SAMFileHeader header = lists.iterator().next().getHeader().clone();
-        header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
-
-        final IntervalList merged = new IntervalList(header);
-
-        for (final IntervalList in : lists) {
-            SequenceUtil.assertSequenceDictionariesEqual(merged.getHeader().getSequenceDictionary(),
-                    in.getHeader().getSequenceDictionary());
-
-            merged.addall(in.intervals);
-        }
-
-        return merged;
+        return lists.stream()
+                .reduce(IntervalList::concatenate)
+                .orElseThrow(() -> new SAMException("Cannot concatenate an empty list of IntervalLists."));
     }
 
     /**
@@ -685,7 +689,10 @@ public class IntervalList implements Iterable<Interval> {
 
         //add all the intervals (uniqued and therefore also sorted) to a ListMap from sequenceIndex to a list of Intervals
         for (final Interval i : list.uniqued().getIntervals()) {
-            map.add(list.getHeader().getSequenceIndex(i.getContig()), i);
+            final int sequenceIndex = list.getHeader().getSequenceIndex(i.getContig());
+            ValidationUtils.validateArg(sequenceIndex >= 0,
+                    () -> String.format("Cannot add interval %s, contig not in header", i.toString()));
+            map.add(sequenceIndex, i);
         }
 
         // a counter to supply newly-created intervals with a name
@@ -711,8 +718,8 @@ public class IntervalList implements Iterable<Interval> {
                 }
             }
             if (sequenceLength > lastCoveredPosition) {
-            // finally, if there's space between the last interval and the next
-            // one, add an interval. This also covers the case that there are no intervals in the ListMap for a contig.
+                // finally, if there's space between the last interval and the next
+                // one, add an interval. This also covers the case that there are no intervals in the ListMap for a contig.
                 inverse.add(new Interval(sequenceName, lastCoveredPosition + 1, sequenceLength, false, "interval-" + (++intervals)));
             }
         }
@@ -724,27 +731,26 @@ public class IntervalList implements Iterable<Interval> {
      * A utility function for subtracting a collection of IntervalLists from another. Resulting loci are those that are in the first collection
      * but not the second.
      *
+     * @param lhs the IntervalList from which to subtract intervals
+     * @param rhs the IntervalList to subtract
+     * @return an IntervalList comprising all loci that are in the first IntervalList but not the second  lhs-rhs=answer.
+     */
+    public static IntervalList subtract(final IntervalList lhs, final IntervalList rhs) {
+        return intersection(lhs, invert(rhs));
+    }
+
+    /**
+     * A utility function for subtracting a collection of IntervalLists from another. Resulting loci are those that are in the first collection
+     * but not the second.
+     *
      * @param lhs the collection of IntervalList from which to subtract intervals
      * @param rhs the collection of intervals to subtract
      * @return an IntervalList comprising all loci that are in the first collection but not the second  lhs-rhs=answer.
      */
     public static IntervalList subtract(final Collection<IntervalList> lhs, final Collection<IntervalList> rhs) {
-        return intersection(
+        return subtract(
                 union(lhs),
-                invert(union(rhs)));
-    }
-
-    /**
-     * A utility function for subtracting a single IntervalList from another. Resulting loci are those that are in the first List
-     * but not the second.
-     *
-     * @param lhs the IntervalList from which to subtract intervals
-     * @param rhs the IntervalList to subtract
-     * @return an IntervalList comprising all loci that are in first IntervalList but not the second. lhs-rhs=answer
-     */
-    public static IntervalList subtract(final IntervalList lhs, final IntervalList rhs) {
-        return subtract(Collections.singletonList(lhs),
-                Collections.singletonList(rhs));
+                union(rhs));
     }
 
     /**
@@ -755,9 +761,20 @@ public class IntervalList implements Iterable<Interval> {
      * @return the difference between the two intervals, i.e. the loci that are only in one IntervalList but not both
      */
     public static IntervalList difference(final Collection<IntervalList> lists1, final Collection<IntervalList> lists2) {
+        return difference(union(lists1), union(lists2));
+    }
+
+    /**
+     * A utility function for finding the difference between two IntervalLists.
+     *
+     * @param list1 the first collection of IntervalLists
+     * @param list2 the second collection of IntervalLists
+     * @return the difference between the two intervals, i.e. the loci that are only in one IntervalList but not both
+     */
+    public static IntervalList difference(final IntervalList list1, final IntervalList list2) {
         return union(
-                subtract(lists1, lists2),
-                subtract(lists2, lists1));
+                subtract(list1, list2),
+                subtract(list2, list1));
     }
 
     /**
@@ -770,7 +787,31 @@ public class IntervalList implements Iterable<Interval> {
      * any interval in the second.
      */
     public static IntervalList overlaps(final IntervalList lhs, final IntervalList rhs) {
-        return overlaps(Collections.singletonList(lhs), Collections.singletonList(rhs));
+
+        final SAMFileHeader header = lhs.getHeader().clone();
+        header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+
+        // Create an overlap detector on rhs
+        final IntervalList overlapIntervals = new IntervalList(header);
+        SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
+                rhs.getHeader().getSequenceDictionary());
+        overlapIntervals.addall(rhs.getIntervals());
+
+        final OverlapDetector<Integer> detector = new OverlapDetector<>(0, 0);
+        final int dummy = -1; // NB: since we don't actually use the returned objects, we can use a dummy value
+        for (final Interval interval : overlapIntervals.sorted().uniqued()) {
+            detector.addLhs(dummy, interval);
+        }
+
+        // Go through each input interval in lhs and see if overlaps any interval in rhs
+        final IntervalList merged = new IntervalList(header);
+        for (final Interval interval : lhs.getIntervals()) {
+            if (detector.overlapsAny(interval)) {
+                merged.add(interval);
+            }
+        }
+
+        return merged;
     }
 
     /**
@@ -786,36 +827,7 @@ public class IntervalList implements Iterable<Interval> {
         if (lists1.isEmpty()) {
             throw new SAMException("Cannot call overlaps with the first collection having empty list of IntervalLists.");
         }
-
-        final SAMFileHeader header = lists1.iterator().next().getHeader().clone();
-        header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
-
-        // Create an overlap detector on list2
-        final IntervalList overlapIntervals = new IntervalList(header);
-        for (final IntervalList list : lists2) {
-            SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
-                    list.getHeader().getSequenceDictionary());
-            overlapIntervals.addall(list.getIntervals());
-        }
-        final OverlapDetector<Integer> detector = new OverlapDetector<>(0, 0);
-        final int dummy = -1; // NB: since we don't actually use the returned objects, we can use a dummy value
-        for (final Interval interval : overlapIntervals.sorted().uniqued()) {
-            detector.addLhs(dummy, interval);
-        }
-
-        // Go through each input interval in in lists1 and see if overlaps any interval in lists2
-        final IntervalList merged = new IntervalList(header);
-        for (final IntervalList list : lists1) {
-            SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
-                    list.getHeader().getSequenceDictionary());
-            for (final Interval interval : list.getIntervals()) {
-                if (detector.overlapsAny(interval)) {
-                    merged.add(interval);
-                }
-            }
-        }
-
-        return merged;
+        return overlaps(concatenate(lists1), union(lists2));
     }
 
     @Override
