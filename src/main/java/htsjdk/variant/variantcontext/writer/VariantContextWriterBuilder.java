@@ -459,9 +459,6 @@ public class VariantContextWriterBuilder {
                      "Output format type is not set, or could not be inferred from the output path. "
                      + "If a path was used, does it have a valid VCF extension, such as "
                      + String.join(", ", VCF_EXTENSIONS_LIST)
-                     + "? "
-                     + "Output path attempted: "
-                     + outPath.toString()
                 );
             case VCF:
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
