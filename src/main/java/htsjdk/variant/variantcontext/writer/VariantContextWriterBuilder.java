@@ -44,6 +44,8 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.EnumSet;
 
+import static htsjdk.samtools.util.IOUtil.VCF_EXTENSIONS_LIST;
+
 /*
  * Created with IntelliJ IDEA.
  * User: thibault
@@ -453,7 +455,12 @@ public class VariantContextWriterBuilder {
 
         switch (typeToBuild) {
             case UNSPECIFIED:
-                throw new IllegalArgumentException("Must specify file or stream output type.");
+                throw new IllegalArgumentException(
+                     "Output format type is not set, or could not be inferred from the output path. "
+                     + "If a path was used, does it have a valid VCF extension ("
+                     + String.join(", ", VCF_EXTENSIONS_LIST)
+                     + ")?"
+                );
             case VCF:
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
                     throw new IllegalArgumentException("A reference dictionary is required for creating Tribble indices on the fly");
