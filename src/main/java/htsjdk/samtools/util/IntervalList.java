@@ -633,30 +633,52 @@ public class IntervalList implements Iterable<Interval> {
 
         // Ensure that all the sequence dictionaries agree and merge the lists
         final SAMFileHeader header = list1.getHeader().clone();
-        header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
 
         final IntervalList merged = new IntervalList(header);
-        merged.addall(list1.getIntervals());
 
-        SequenceUtil.assertSequenceDictionariesEqual(merged.getHeader().getSequenceDictionary(),
-                list2.getHeader().getSequenceDictionary());
-
-        merged.addall(list2.intervals);
+        addToFirst(merged, list1);
+        addToFirst(merged, list2);
 
         return merged;
     }
 
+
     /**
-     * A utility function for merging a list of IntervalLists, checks for equal dictionaries.
-     * Merging does not look for overlapping intervals nor uniquify
+     * A utility function for concatenating the intervals from one list to another, checks for equal dictionaries.
+     * Does not look for overlapping intervals nor uniquify.
+     *
+     *
+     * @param list1 the first list
+     * @param list2 the second list
+     * @return the modified list1
+     */
+    public static IntervalList addToFirst(final IntervalList list1, final IntervalList list2) {
+
+        SequenceUtil.assertSequenceDictionariesEqual(list1.getHeader().getSequenceDictionary(),
+                list2.getHeader().getSequenceDictionary());
+        list1.header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+        list1.addall(list2.intervals);
+        return list1;
+    }
+    
+
+    /**
+     * A utility function for concatenating a list of IntervalLists, checks for equal dictionaries.
+     * Concatenating does not look for overlapping intervals nor uniquify the intervals.
      *
      * @param lists a list of IntervalList
      * @return the union of all the IntervalLists in lists.
      */
     public static IntervalList concatenate(final Collection<IntervalList> lists) {
+
+        final SAMFileHeader header = lists.stream()
+                .findFirst()
+                .map(IntervalList::getHeader)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Cannot combine empty collection of IntervalLists"));
+
         return lists.stream()
-                .reduce(IntervalList::concatenate)
-                .orElseThrow(() -> new SAMException("Cannot concatenate an empty list of IntervalLists."));
+                .reduce(new IntervalList(header), IntervalList::addToFirst, IntervalList::concatenate);
     }
 
     /**
@@ -690,7 +712,7 @@ public class IntervalList implements Iterable<Interval> {
         //add all the intervals (uniqued and therefore also sorted) to a ListMap from sequenceIndex to a list of Intervals
         for (final Interval i : list.uniqued().getIntervals()) {
             final int sequenceIndex = list.getHeader().getSequenceIndex(i.getContig());
-            ValidationUtils.validateArg(sequenceIndex >= 0,
+            ValidationUtils.nonNull(sequenceIndex,
                     () -> String.format("Cannot add interval %s, contig not in header", i.toString()));
             map.add(sequenceIndex, i);
         }
@@ -728,7 +750,7 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * A utility function for subtracting a collection of IntervalLists from another. Resulting loci are those that are in the first collection
+     * A utility function for subtracting one IntervalLists from another. Resulting loci are those that are in the first
      * but not the second.
      *
      * @param lhs the IntervalList from which to subtract intervals
@@ -789,12 +811,13 @@ public class IntervalList implements Iterable<Interval> {
     public static IntervalList overlaps(final IntervalList lhs, final IntervalList rhs) {
 
         final SAMFileHeader header = lhs.getHeader().clone();
+        SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
+                rhs.getHeader().getSequenceDictionary());
+
         header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
 
         // Create an overlap detector on rhs
         final IntervalList overlapIntervals = new IntervalList(header);
-        SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
-                rhs.getHeader().getSequenceDictionary());
         overlapIntervals.addall(rhs.getIntervals());
 
         final OverlapDetector<Integer> detector = new OverlapDetector<>(0, 0);

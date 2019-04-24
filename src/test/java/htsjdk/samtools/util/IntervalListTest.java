@@ -431,7 +431,9 @@ public class IntervalListTest extends HtsjdkTest {
                 new Object[]{list2, list1, two_overlaps_one},
                 new Object[]{list3, list2, three_overlaps_two},
                 new Object[]{list3, list1, three_overlaps_one},
-                new Object[]{list1, list3, one_overlaps_three}
+                new Object[]{list1, list3, one_overlaps_three},
+                new Object[]{empty, list1, empty},
+                new Object[]{list1, empty, empty},
         };
     }
 
@@ -467,18 +469,6 @@ public class IntervalListTest extends HtsjdkTest {
         Assert.assertEquals(
                 CollectionUtil.makeCollection(IntervalList.overlaps(Collections.singletonList(fromLists), Collections.singletonList(whatLists)).iterator()),
                 CollectionUtil.makeCollection(list.iterator()));
-    }
-
-    @Test
-    public void testOverlapsEmptyFirstList() {
-        Assert.assertEquals(
-                IntervalList.overlaps(empty, list1), empty);
-    }
-
-    @Test
-    public void testOverlapsEmptySecondList() {
-        Assert.assertEquals(
-                IntervalList.overlaps(list1, empty), empty);
     }
 
     @DataProvider(name = "VCFCompData")
