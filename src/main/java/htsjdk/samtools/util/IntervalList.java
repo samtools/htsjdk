@@ -631,36 +631,30 @@ public class IntervalList implements Iterable<Interval> {
      */
     public static IntervalList concatenate(final IntervalList list1, final IntervalList list2) {
 
-        // Ensure that all the sequence dictionaries agree and merge the lists
         final SAMFileHeader header = list1.getHeader().clone();
 
-        final IntervalList merged = new IntervalList(header);
-
-        addToFirst(merged, list1);
-        addToFirst(merged, list2);
-
-        return merged;
+        // Ensure that all the sequence dictionaries agree and merge the lists
+        return new IntervalList(header).addOther(list1).addOther(list2);
     }
 
 
     /**
-     * A utility function for concatenating the intervals from one list to another, checks for equal dictionaries.
+     * A method for  concatenating the intervals from one list to this one, checks for equal dictionaries.
      * Does not look for overlapping intervals nor uniquify.
      *
-     *
-     * @param list1 the first list
-     * @param list2 the second list
-     * @return the modified list1
+     * @param other the other list
+     * @return the modified this
      */
-    public static IntervalList addToFirst(final IntervalList list1, final IntervalList list2) {
+    public IntervalList addOther(final IntervalList other) {
 
-        SequenceUtil.assertSequenceDictionariesEqual(list1.getHeader().getSequenceDictionary(),
-                list2.getHeader().getSequenceDictionary());
-        list1.header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
-        list1.addall(list2.intervals);
-        return list1;
+        SequenceUtil.assertSequenceDictionariesEqual(
+                this.getHeader().getSequenceDictionary(),
+                other.getHeader().getSequenceDictionary());
+        this.header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+        this.addall(other.intervals);
+        return this;
     }
-    
+
 
     /**
      * A utility function for concatenating a list of IntervalLists, checks for equal dictionaries.
@@ -678,7 +672,7 @@ public class IntervalList implements Iterable<Interval> {
                         () -> new IllegalArgumentException("Cannot combine empty collection of IntervalLists"));
 
         return lists.stream()
-                .reduce(new IntervalList(header), IntervalList::addToFirst, IntervalList::concatenate);
+                .reduce(new IntervalList(header), IntervalList::addOther, IntervalList::concatenate);
     }
 
     /**
