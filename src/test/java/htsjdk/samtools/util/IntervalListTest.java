@@ -669,8 +669,7 @@ public class IntervalListTest extends HtsjdkTest {
 
         //now interval lists are in "illegal state" since they contain contigs that are not in the header.
         //this next step should fail
-        IntervalList.subtract(usingClone1, usingClone2);
-
+        IntervalList.union(usingClone1, usingClone2);
     }
 
     @Test public void uniqueIntervalsWithoutNames() {
