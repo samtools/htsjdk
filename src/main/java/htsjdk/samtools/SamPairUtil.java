@@ -437,9 +437,9 @@ public class SamPairUtil {
             // No need to advance if we have records remaining
             if (!records.isEmpty()) return;
 
-            /**
-             * Get all records with the same name, and then identify the canonical first and second end to which we
-             * want to set mate info.
+            /*
+              Get all records with the same name, and then identify the canonical first and second end to which we
+              want to set mate info.
              */
             SAMRecord firstPrimaryRecord = null, secondPrimaryRecord = null;
             final SAMRecord first = super.peek(); // peek so we consider it in the following loop
@@ -451,12 +451,12 @@ public class SamPairUtil {
                     if (!record.isSecondaryOrSupplementary()) {
                         if (record.getFirstOfPairFlag()) {
                             if (null != firstPrimaryRecord) {
-                                throw new SAMException("Found two records that are paired, not supplementary, and first of the pair");
+                                throw new SAMException("Found two records that are paired, not supplementary, and first of the pair: " + record.getReadName());
                             }
                             firstPrimaryRecord = record;
                         } else if (record.getSecondOfPairFlag()) {
                             if (null != secondPrimaryRecord) {
-                                throw new SAMException("Found two records that are paired, not supplementary, and second of the pair");
+                                throw new SAMException("Found two records that are paired, not supplementary, and second of the pair: " + record.getReadName());
                             }
                             secondPrimaryRecord = record;
                         }
