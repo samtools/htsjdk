@@ -355,7 +355,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      *
      * @return a string representing the genotypes, or null if the type is unavailable.
      */
-    public String getGenotypeString(boolean ignoreRefState) {
+    public String getGenotypeString(final boolean ignoreRefState) {
         if ( getPloidy() == 0 )
             return "NA";
 
@@ -367,7 +367,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
           return ParsingUtils.join(separator, getAlleleStrings());
         }
         // 3. So that everything is deterministic with regards to integration tests, we sort Alleles (when the genotype isn't phased, of course)
-        List<Allele> alleles = isPhased() ? getAlleles() : ParsingUtils.sortList(getAlleles());
+        final List<Allele> alleles = isPhased() ? getAlleles() : ParsingUtils.sortList(getAlleles(), VariantContext.ALLELE_COMPARATOR);
         return ParsingUtils.join(separator, alleles);
     }
 

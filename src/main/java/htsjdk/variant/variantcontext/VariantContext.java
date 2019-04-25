@@ -225,7 +225,22 @@ public class VariantContext implements Feature, Serializable {
     protected CommonInfo commonInfo = null;
     public final static double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
 
-    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<String>());
+
+    public static Comparator<Allele> ALLELE_COMPARATOR = new Comparator<Allele>() {
+
+        @Override
+        public int compare(final Allele a, final Allele b) {
+            if ( a.isReference() && !b.isReference() )
+                return -1;
+            else if ( !a.isReference() && b.isReference() )
+                return 1;
+            else
+                return a.getBaseString().compareTo(b.getBaseString()); // todo -- potential performance issue
+        }
+    };
+
+    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<>());
+
 
     /** The location of this VariantContext */
     final protected String contig;
@@ -285,7 +300,8 @@ public class VariantContext implements Feature, Serializable {
         if ( sawPL ) keys.add(VCFConstants.GENOTYPE_PL_KEY);
         if ( sawGenotypeFilter ) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
 
-        List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
+        List<String> sortedList = new ArrayList<>(keys);
+        Collections.sort(sortedList);
 
         // make sure the GT is first
         if (sawGoodGT) {
@@ -794,8 +810,13 @@ public class VariantContext implements Feature, Serializable {
     /**
      * @return The allele sharing the same bases as this byte[], or null if no such allele is present.
      */
-    public Allele getAllele(byte[] allele) {
-        return Allele.getMatchingAllele(getAlleles(), allele);
+    public Allele getAllele(byte[] bases) {
+        for (final Allele allele : getAlleles()) {
+            if (allele.equalBases(bases)) {
+                return allele;
+            }
+        }
+        return null;
     }
 
     /**
@@ -1451,33 +1472,39 @@ public class VariantContext implements Feature, Serializable {
     }
 
     public String toStringDecodeGenotypes() {
+        final List<Allele> alleles = this.getAlleles();
+        Collections.sort(alleles, ALLELE_COMPARATOR);
         return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
-                ParsingUtils.sortList(this.getAlleles()),
+                alleles,
                 ParsingUtils.sortedString(this.getAttributes()),
                 this.getGenotypes(),
                 String.join(",", commonInfo.getFilters()));
     }
 
     private String toStringUnparsedGenotypes() {
+        final List<Allele> alleles = this.getAlleles();
+        Collections.sort(alleles, ALLELE_COMPARATOR);
         return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
-                ParsingUtils.sortList(this.getAlleles()),
+                alleles,
                 ParsingUtils.sortedString(this.getAttributes()),
                 ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData(),
                 String.join(",", commonInfo.getFilters()));
     }
 
     public String toStringWithoutGenotypes() {
+        final List<Allele> alleles = this.getAlleles();
+        Collections.sort(alleles, ALLELE_COMPARATOR);
         return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
-                ParsingUtils.sortList(this.getAlleles()),
+                alleles,
                 ParsingUtils.sortedString(this.getAttributes()),
                 String.join(",", commonInfo.getFilters()));
     }

@@ -151,6 +151,7 @@ public class VCFStandardHeaderLines {
     // VCF header line constants
     //
     static {
+
         // FORMAT lines
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_KEY,           1,                            VCFHeaderLineType.String,  "Genotype"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_QUALITY_KEY,   1,                            VCFHeaderLineType.Integer, "Genotype Quality"));

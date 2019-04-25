@@ -308,12 +308,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         try {
             pos = Integer.parseInt(parts[1]);
         } catch (NumberFormatException e) {
-            generateException(parts[1] + " is not a valid start position in the VCF format");
+            throwTribbleException(parts[1] + " is not a valid start position in the VCF format");
         }
         builder.start(pos);
 
         if ( parts[2].isEmpty() )
-            generateException("The VCF specification requires a valid ID field");
+            throwTribbleException("The VCF specification requires a valid ID field");
         else if ( parts[2].equals(VCFConstants.EMPTY_ID_FIELD) )
             builder.noID();
         else
@@ -335,7 +335,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             try {
                 builder.stop(Integer.parseInt(attrs.get(VCFConstants.END_KEY).toString()));
             } catch (Exception e) {
-                generateException("the END value in the INFO field is not valid");
+                throwTribbleException("the END value in the INFO field is not valid");
             }
         } else {
             builder.stop(pos + ref.length() - 1);
@@ -362,7 +362,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         try {
             vc = builder.make();
         } catch (Exception e) {
-            generateException(e.getMessage());
+            throwTribbleException(e.getMessage());
         }
 
         return vc;
@@ -410,11 +410,11 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         Map<String, Object> attributes = new HashMap<String, Object>();
 
         if ( infoField.isEmpty() )
-            generateException("The VCF specification requires a valid (non-zero length) info field");
+            throwTribbleException("The VCF specification requires a valid (non-zero length) info field");
 
         if ( !infoField.equals(VCFConstants.EMPTY_INFO_FIELD) ) {
             if ( infoField.indexOf('\t') != -1 || infoField.indexOf(' ') != -1 )
-                generateException("The VCF specification does not allow for whitespace in the INFO field. Offending field value was \"" + infoField + "\"");
+                throwTribbleException("The VCF specification does not allow for whitespace in the INFO field. Offending field value was \"" + infoField + "\"");
 
             List<String> infoFields = ParsingUtils.split(infoField, VCFConstants.INFO_FIELD_SEPARATOR_CHAR);
             for (int i = 0; i < infoFields.size(); i++) {
@@ -536,11 +536,16 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param lineNo  the line number for this record
      * @return a list of alleles, and a pair of the shortest and longest sequence
      */
-    protected static List<Allele> parseAlleles(String ref, String alts, int lineNo) {
-        List<Allele> alleles = new ArrayList<Allele>(2); // we are almost always biallelic
+    protected static List<Allele> parseAlleles(final String ref, final String alts, final int lineNo) {
+        final List<Allele> alleles = new ArrayList<Allele>(2); // we are almost always biallelic
         // ref
-        checkAllele(ref, true, lineNo);
-        Allele refAllele = Allele.create(ref, true);
+        preCheckAlleleEncoding(ref, true, lineNo);
+        final Allele refAllele;
+        try {
+            refAllele = Allele.create(ref, true);
+        } catch (final AlleleEncodingException ex) {
+            throw tribbleException(ex.getMessage(), lineNo);
+        }
         alleles.add(refAllele);
 
         if ( alts.indexOf(',') == -1 ) // only 1 alternatives, don't call string split
@@ -558,29 +563,17 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param isRef are we the reference allele?
      * @param lineNo  the line number for this record
      */
-    private static void checkAllele(String allele, boolean isRef, int lineNo) {
-        if ( allele == null || allele.isEmpty() )
-            generateException(generateExceptionTextForBadAlleleBases(""), lineNo);
+    private static void preCheckAlleleEncoding(final String allele, final boolean isRef, final int lineNo) {
+        if (allele == null || allele.isEmpty())
+            throwTribbleException(generateExceptionTextForBadAlleleBases(""), lineNo);
 
-        if ( GeneralUtils.DEBUG_MODE_ENABLED && MAX_ALLELE_SIZE_BEFORE_WARNING != -1 && allele.length() > MAX_ALLELE_SIZE_BEFORE_WARNING ) {
+        if (GeneralUtils.DEBUG_MODE_ENABLED && MAX_ALLELE_SIZE_BEFORE_WARNING != -1 && allele.length() > MAX_ALLELE_SIZE_BEFORE_WARNING) {
             System.err.println(String.format("Allele detected with length %d exceeding max size %d at approximately line %d, likely resulting in degraded VCF processing performance", allele.length(), MAX_ALLELE_SIZE_BEFORE_WARNING, lineNo));
-        }
-
-        if (Allele.wouldBeSymbolicAllele(allele.getBytes())) {
-            if ( isRef ) {
-                generateException("Symbolic alleles not allowed as reference allele: " + allele, lineNo);
-            }
-        } else {
-            // check for VCF3 insertions or deletions
-            if ( (allele.charAt(0) == VCFConstants.DELETION_ALLELE_v3) || (allele.charAt(0) == VCFConstants.INSERTION_ALLELE_v3) )
-                generateException("Insertions/Deletions are not supported when reading 3.x VCF's. Please" +
-                        " convert your file to VCF4 using VCFTools, available at http://vcftools.sourceforge.net/index.html", lineNo);
-
-            if (!Allele.acceptableAlleleBases(allele, isRef))
-                generateException(generateExceptionTextForBadAlleleBases(allele), lineNo);
-
-            if ( isRef && allele.equals(VCFConstants.EMPTY_ALLELE) )
-                generateException("The reference allele cannot be missing", lineNo);
+        } else if ((allele.charAt(0) == VCFConstants.DELETION_ALLELE_v3) || (allele.charAt(0) == VCFConstants.INSERTION_ALLELE_v3)) {
+            throwTribbleException("Insertions/Deletions are not supported when reading 3.x VCF's. Please" +
+                    " convert your file to VCF4 using VCFTools, available at http://vcftools.sourceforge.net/index.html", lineNo);
+        } else if (isRef && allele.equals(VCFConstants.EMPTY_ALLELE) ) {
+            throwTribbleException("The reference allele cannot be missing", lineNo);
         }
     }
 
@@ -605,11 +598,14 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param lineNo  the line number for this record
      */
     private static void parseSingleAltAllele(List<Allele> alleles, String alt, int lineNo) {
-        checkAllele(alt, false, lineNo);
-
-        Allele allele = Allele.create(alt, false);
-        if ( ! allele.isNoCall() )
-            alleles.add(allele);
+        preCheckAlleleEncoding(alt, false, lineNo);
+        try {
+            Allele allele = Allele.create(alt, false);
+            if (!allele.isNoCall())
+                alleles.add(allele);
+        } catch (final AlleleEncodingException ex) {
+            throw tribbleException(ex.getMessage(), lineNo);
+        }
     }
 
     public static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
@@ -658,7 +654,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         int nParts = ParsingUtils.split(str, genotypeParts, VCFConstants.FIELD_SEPARATOR_CHAR);
         if ( nParts != genotypeParts.length )
-            generateException("there are " + (nParts-1) + " genotypes while the header requires that " + (genotypeParts.length-1) + " genotypes be present for all records at " + chr + ":" + pos, lineNo);
+            throwTribbleException("there are " + (nParts-1) + " genotypes while the header requires that " + (genotypeParts.length-1) + " genotypes be present for all records at " + chr + ":" + pos, lineNo);
 
         ArrayList<Genotype> genotypes = new ArrayList<Genotype>(nParts);
 
@@ -681,7 +677,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
             // check to see if the value list is longer than the key list, which is a problem
             if (genotypeKeys.size() < genotypeValues.size())
-                generateException("There are too many keys for the sample " + sampleName + ", keys = " + parts[8] + ", values = " + parts[genotypeOffset]);
+                throwTribbleException("There are too many keys for the sample " + sampleName + ", keys = " + parts[8] + ", values = " + parts[genotypeOffset]);
 
             int genotypeAlleleLocation = -1;
             if (!genotypeKeys.isEmpty()) {
@@ -728,9 +724,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
             // check to make sure we found a genotype field if our version is less than 4.1 file
             if ( ! version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_1) && genotypeAlleleLocation == -1 )
-                generateException("Unable to find the GT field for the record; the GT field is required before VCF4.1");
+                throwTribbleException("Unable to find the GT field for the record; the GT field is required before VCF4.1");
             if ( genotypeAlleleLocation > 0 )
-                generateException("Saw GT field at position " + genotypeAlleleLocation + ", but it must be at the first position for genotypes when present");
+                throwTribbleException("Saw GT field at position " + genotypeAlleleLocation + ", but it must be at the first position for genotypes when present");
 
             final List<Allele> GTalleles = (genotypeAlleleLocation == -1 ? new ArrayList<Allele>(0) : parseGenotypeAlleles(genotypeValues.get(genotypeAlleleLocation), alleles, alleleMap));
             gb.alleles(GTalleles);
@@ -780,12 +776,16 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         this.remappedSampleName = remappedSampleName;
     }
 
-    protected void generateException(String message) {
+    protected void throwTribbleException(String message) {
         throw new TribbleException(String.format("The provided VCF file is malformed at approximately line number %d: %s", lineNo, message));
     }
 
-    protected static void generateException(String message, int lineNo) {
+    protected static void throwTribbleException(String message, int lineNo) {
         throw new TribbleException(String.format("The provided VCF file is malformed at approximately line number %d: %s", lineNo, message));
+    }
+
+    protected static TribbleException tribbleException(String message, int lineNo) {
+        return new TribbleException(String.format("The provided VCF file is malformed at approximately line number %d: %s", lineNo, message));
     }
 
     @Override

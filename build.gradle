@@ -31,6 +31,7 @@ jacocoTestReport {
 }
 
 dependencies {
+    compile "org.apache.commons:commons-lang3:3.9"
     compile "org.apache.commons:commons-jexl:2.1.1"
     compile "commons-logging:commons-logging:1.1.1"
     compile "org.xerial.snappy:snappy-java:1.1.4"

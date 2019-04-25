@@ -130,11 +130,30 @@ public class ParsingUtils {
      * @param list
      * @param <T>
      * @return
+     * @deprecated consider using {@link List#sort}
      */
     public static <T extends Comparable> List<T> sortList(Collection<T> list) {
         ArrayList<T> ret = new ArrayList<>();
         ret.addAll(list);
         Collections.sort(ret);
+        return ret;
+    }
+
+    /**
+     * Returns the input list into a new list with a different order.
+     * <p>
+     *     The input list is not modified.
+     * </p>
+     * @param list the list to copy and sort.
+     * @param comparator the comparator to use to sort elements.
+     * @param <T> the list element type.
+     * @return never {@code null}.
+     * @throws NullPointerException if {@code list} or comparator is {@code null}.
+     */
+    public static <T> List<T> sortList(final Collection<? extends T> list, final Comparator<? super T> comparator) {
+        Objects.requireNonNull(comparator); // let's fail early.
+        final List<T> ret = new ArrayList<>(list);
+        ret.sort(comparator);
         return ret;
     }
 

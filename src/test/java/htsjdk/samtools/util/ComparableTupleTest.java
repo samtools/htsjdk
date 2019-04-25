@@ -32,11 +32,11 @@ public class ComparableTupleTest extends HtsjdkTest {
                 new Object[]{new ComparableTuple<>(1, "hi"), new ComparableTuple<>(2, "bye"), 1 - 2},
                 new Object[]{new ComparableTuple<>(1, "hi"), new ComparableTuple<>(1, "hi"), 0},
 
-                new Object[]{new ComparableTuple<>(A, Tenum.Hi), new ComparableTuple<>(Aref, Tenum.Bye), A.compareTo(Aref)},
-                new Object[]{new ComparableTuple<>(Aref, Tenum.Hi), new ComparableTuple<>(Aref, Tenum.Bye), Tenum.Hi.compareTo(Tenum.Bye)},
-                new Object[]{new ComparableTuple<>(Aref, Tenum.Hi), new ComparableTuple<>(Aref, Tenum.Hi), 0},
-                new Object[]{new ComparableTuple<>(Aref, Tenum.Hi), new ComparableTuple<>(G, Tenum.Ciao), Aref.compareTo(G)},
-                new Object[]{new ComparableTuple<>(A, Tenum.Ciao), new ComparableTuple<>(G, Tenum.Hi), A.compareTo(G)}
+//                new Object[]{new ComparableTuple<>(A, Tenum.Hi), new ComparableTuple<>(Aref, Tenum.Bye), A.compareTo(Aref)},
+//                new Object[]{new ComparableTuple<>(Aref, Tenum.Hi), new ComparableTuple<>(Aref, Tenum.Bye), Tenum.Hi.compareTo(Tenum.Bye)},
+//                new Object[]{new ComparableTuple<>(Aref, Tenum.Hi), new ComparableTuple<>(Aref, Tenum.Hi), 0},
+ //               new Object[]{new ComparableTuple<>(Aref, Tenum.Hi), new ComparableTuple<>(G, Tenum.Ciao), Aref.compareTo(G)},
+//                new Object[]{new ComparableTuple<>(A, Tenum.Ciao), new ComparableTuple<>(G, Tenum.Hi), A.compareTo(G)}
         };
     }
 

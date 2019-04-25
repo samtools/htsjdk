@@ -26,6 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqConstants;
 import htsjdk.utils.ValidationUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -34,6 +35,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -128,6 +130,113 @@ public class SequenceUtil {
             return false;
         }
         return (bases[lhs] == bases[rhs]);
+    }
+
+    /**
+     * Compares two bases.
+     * <p>It returns 0 if both bases represent the same nucleotide or combination of if ambiguous.</p>
+     * <p>Otherwise
+     * it returns -1 or 1 depending on what bases each represents. More concretely if 'A', 'C', 'G' and 'T' are equivalent to 1, 2, 4, 8 then
+     * the sortable unsigned value associated to a valid IUPAC code is the one corresponding to the sum of each basic
+     * nucleotide value above across al the nucleotides the code represents.
+     * </p>
+     * <p>
+     *     codes with a lower value precede values with larger value.
+     * </p>
+     * @param lhs the "left" base to compare.
+     * @param rhs the "right" base to compare.
+     * @return
+     */
+    public static int compareBases(final byte lhs, final byte rhs) {
+        if (lhs < 0 || lhs >= BASES_ARRAY_LENGTH) {
+            throw new UnsupportedOperationException("bad base code: " + rhs);
+        } else if (rhs < 0 || rhs >= BASES_ARRAY_LENGTH) {
+            throw new UnsupportedOperationException("bad base code: " + rhs);
+        } else {
+            return Byte.compare(bases[lhs], bases[rhs]);
+        }
+    }
+
+    /**
+     * Compares two base sequences.
+     * Case are ignored so that "AaTtcCGg" == "AAttCcgG".
+     * <p>
+     *     presence of non-base values would result returning false, even if the valid bases are
+     *     the same.
+     * </p>
+     *
+     * @param lhs first base sequence to compare.
+     * @param rhs second base sequence to compare.
+     * @return
+     */
+    public static boolean equals(final byte[] lhs, final byte[] rhs) {
+        if (lhs.length != rhs.length) {
+            return false;
+        } else {
+            for (int i = 0; i < lhs.length; i++) {
+                final byte l = lhs[i];
+                if (l < 0 || l >= BASES_ARRAY_LENGTH) {
+                    return false;
+                }
+                final byte r = rhs[i];
+                if (r < 0 || r >= BASES_ARRAY_LENGTH) {
+                    return false;
+                } else if  (bases[r] != bases[l]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Calculates a hash-code making sure that it would return the same value for sequences
+     * that only differ in case. Also differences in non-valid IUPAC codes are also ignored.
+     * <p>
+     *     The result of this method is consistent with {@link #equals(byte[], byte[])} so that:
+     *     <p><code>
+     *         equals(X, Y) --> hashCode(X) == hashCode(Y)
+     *     </code></p>
+     * </p>
+     *
+     * @param b the target base array.
+     * @throws NullPointerException if {@code b} is {@code null}.
+     *
+     * @return any possible integer value.
+     */
+    public static int hashCode(final byte[] b) {
+        if (b.length == 0) {
+            return 0;
+        } else {
+            int accumulator = bases[b[0]];
+            for (int i = 1; i < b.length; i++) {
+                final byte base = b[i];
+                if (base < 0 || base >= BASES_ARRAY_LENGTH) {
+                    accumulator = accumulator * 31;
+                } else {
+                    accumulator = accumulator * 31 + bases[b[i]];
+                }
+            }
+            return accumulator;
+        }
+    }
+
+    /**
+     * Calculates a hash-code making sure that it would return the same value for bases that
+     * only differ in case.
+     * <p>
+     *     The result of this method is consistent with {@link #equals(byte[], byte[])} so that:
+     *     <p><code>
+     *         equals(X, Y) --> hashCode(X) == hashCode(Y)
+     *     </code></p>
+     * </p>
+     *
+     * @param base the target base.
+     *
+     * @return any possible integer value.
+     */
+    public static int hashCode(final byte base) {
+        return base < 0 || base >= BASES_ARRAY_LENGTH ? 0 : bases[base];
     }
 
     /**
@@ -1117,4 +1226,5 @@ public class SequenceUtil {
             bases[i] = VALID_BASES_UPPER[random.nextInt(VALID_BASES_UPPER.length)];
         }
     }
+
 }
