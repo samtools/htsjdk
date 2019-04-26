@@ -59,7 +59,7 @@ public class CRAMContainerStreamWriter {
     private Set<String> captureTags = new TreeSet<>();
     private Set<String> ignoreTags = new TreeSet<>();
 
-    private AbstractCRAMIndexer indexer;
+    private CRAMIndexer indexer;
     private long offset;
 
     /**
@@ -96,7 +96,7 @@ public class CRAMContainerStreamWriter {
             final CRAMReferenceSource source,
             final SAMFileHeader samFileHeader,
             final String cramId,
-            final AbstractCRAMIndexer indexer) {
+            final CRAMIndexer indexer) {
         this.outputStream = outputStream;
         this.source = source;
         this.samFileHeader = samFileHeader;
