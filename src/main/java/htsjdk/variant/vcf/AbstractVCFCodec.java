@@ -33,8 +33,10 @@ import htsjdk.tribble.NameAwareCodec;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.*;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -44,7 +46,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
-
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
     public final static int MAX_ALLELE_SIZE_BEFORE_WARNING = (int)Math.pow(2, 20);
 
@@ -53,6 +54,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     // we have to store the list of strings that make up the header until they're needed
     protected VCFHeader header = null;
     protected VCFHeaderVersion version = null;
+    protected VCFTextTransformer vcfTextTransformer = getTextTransformerForVCFVersion(VCFHeaderVersion.VCF4_2);
 
     // a mapping of the allele
     protected Map<String, List<Allele>> alleleMap = new HashMap<String, List<Allele>>(3);
@@ -132,6 +134,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     protected VCFHeader parseHeaderFromLines( final List<String> headerStrings, final VCFHeaderVersion version ) {
         this.version = version;
+        vcfTextTransformer = getTextTransformerForVCFVersion(version);
 
         Set<VCFHeaderLine> metaData = new LinkedHashSet<VCFHeaderLine>();
         Set<String> sampleNames = new LinkedHashSet<String>();
@@ -196,8 +199,13 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     final VCFContigHeaderLine contig = new VCFContigHeaderLine(str.substring(9), version, VCFConstants.CONTIG_HEADER_START.substring(2), contigCounter++);
                     metaData.add(contig);
                 } else if ( str.startsWith(VCFConstants.ALT_HEADER_START) ) {
-                    final VCFSimpleHeaderLine alt = new VCFSimpleHeaderLine(str.substring(6), version, VCFConstants.ALT_HEADER_START.substring(2), Arrays.asList("ID", "Description"), Collections.emptyList());
-                    metaData.add(alt);
+                    metaData.add(getAltHeaderLine(str.substring(VCFConstants.ALT_HEADER_OFFSET), version));
+                } else if ( str.startsWith(VCFConstants.PEDIGREE_HEADER_START) ) {
+                    metaData.add(getPedigreeHeaderLine(str.substring(VCFConstants.PEDIGREE_HEADER_OFFSET), version));
+                } else if ( str.startsWith(VCFConstants.META_HEADER_START) ) {
+                    metaData.add(getMetaHeaderLine(str.substring(VCFConstants.META_HEADER_OFFSET), version));
+                } else if ( str.startsWith(VCFConstants.SAMPLE_HEADER_START) ) {
+                    metaData.add(getSampleHeaderLine(str.substring(VCFConstants.SAMPLE_HEADER_OFFSET), version));
                 } else {
                     int equals = str.indexOf('=');
                     if ( equals != -1 )
@@ -206,9 +214,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             }
         }
 
-        this.header = new VCFHeader(metaData, sampleNames);
-        if ( doOnTheFlyModifications )
-            this.header = VCFStandardHeaderLines.repairStandardHeaderLines(this.header);
+        setVCFHeader(new VCFHeader(version, metaData, sampleNames), version);
         return this.header;
     }
 
@@ -230,19 +236,74 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     /**
      * Explicitly set the VCFHeader on this codec. This will overwrite the header read from the file
      * and the version state stored in this instance; conversely, reading the header from a file will
-     * overwrite whatever is set here. The returned header may not be identical to the header argument
-     * since the header lines may be "repaired" (i.e., rewritten) if doOnTheFlyModifications is set.
+     * overwrite whatever is set here.
+     *
+     * @param newHeader
+     * @param newVersion
+     * @return the actual header for this codec. The returned header may not be identical to the header
+     * argument since the header lines may be "repaired" (i.e., rewritten) if doOnTheFlyModifications is set.
+     * @throws TribbleException if the requested header version is not compatible with the existing version
      */
-    public VCFHeader setVCFHeader(final VCFHeader header, final VCFHeaderVersion version) {
-        this.version = version;
-
+    public VCFHeader setVCFHeader(final VCFHeader newHeader, final VCFHeaderVersion newVersion) {
+        validateHeaderVersionTransition(newHeader, newVersion);
         if (this.doOnTheFlyModifications) {
-            this.header = VCFStandardHeaderLines.repairStandardHeaderLines(header);
+            final VCFHeader repairedHeader = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
+            // validate the new header after repair to ensure the resulting header version is
+            // still compatible with the current version
+            validateHeaderVersionTransition(repairedHeader, newVersion);
+            this.header = repairedHeader;
         } else {
-            this.header = header;
+            this.header = newHeader;
         }
 
+        this.version = newVersion;
+        this.vcfTextTransformer = getTextTransformerForVCFVersion(newVersion);
+
         return this.header;
+    }
+
+    /**
+     * Create and return a VCFAltHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##ALT="
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFAltHeaderLine object
+     */
+    public VCFAltHeaderLine getAltHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFAltHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFPedigreeHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##PEDIGREE="
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFPedigreeHeaderLine object
+     */
+    public VCFPedigreeHeaderLine getPedigreeHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFPedigreeHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFMetaHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##META="
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFMetaHeaderLine object
+     */
+    public VCFMetaHeaderLine getMetaHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFMetaHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFSampleHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##SAMPLE="
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFSampleHeaderLine object
+     */
+    public VCFSampleHeaderLine getSampleHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFSampleHeaderLine(headerLineString, sourceVersion);
     }
 
     /**
@@ -262,6 +323,40 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     @Override
     public VariantContext decode(String line) {
         return decodeLine(line, true);
+    }
+
+    /**
+     * Throw if new a version/header are not compatible with the existing version/header. Generally, any version
+     * before v4.2 can be up-converted to v4.2, but not to v4.3. Once a header is established as v4.3, it cannot
+     * can not be up or down converted, and it must remain at v4.3.
+     * @param newHeader
+     * @param newVersion
+     * @throws TribbleException if the header conversion is not valid
+     */
+    private void validateHeaderVersionTransition(final VCFHeader newHeader, final VCFHeaderVersion newVersion) {
+        ValidationUtils.nonNull(newHeader);
+        ValidationUtils.nonNull(newVersion);
+
+        VCFHeader.validateVersionTransition(version, newVersion);
+
+        // If this codec currently has no header (this happens when the header is being established for
+        // the first time during file parsing), establish an initial header and version, and bypass
+        // validation.
+        if (header != null && newHeader.getVCFHeaderVersion() != null) {
+            VCFHeader.validateVersionTransition(header.getVCFHeaderVersion(), newHeader.getVCFHeaderVersion());
+        }
+    }
+
+    /**
+     * For v4.3 up, attribute values can contain embedded percent-encoded characters which must be decoded
+     * on read. Return a version-aware text transformer that can decode encoded text.
+     * @param targetVersion the version for which a transformer is bing requested
+     * @return a {@link VCFTextTransformer} suitable for the targetVersion
+     */
+    private static VCFTextTransformer getTextTransformerForVCFVersion(final VCFHeaderVersion targetVersion) {
+        return targetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) ?
+                new VCFTextTransformer() :
+                new VCFPassThruTextTransformer();
     }
 
     private VariantContext decodeLine(final String line, final boolean includeGenotypes) {
@@ -429,14 +524,14 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     // split on the INFO field separator
                     List<String> infoValueSplit = ParsingUtils.split(valueString, VCFConstants.INFO_FIELD_ARRAY_SEPARATOR_CHAR);
                     if ( infoValueSplit.size() == 1 ) {
-                        value = infoValueSplit.get(0);
+                        value = vcfTextTransformer.transformEncodedText(infoValueSplit.get(0));
                         final VCFInfoHeaderLine headerLine = header.getInfoHeaderLine(key);
                         if ( headerLine != null && headerLine.getType() == VCFHeaderLineType.Flag && value.equals("0") ) {
                             // deal with the case where a flag field has =0, such as DB=0, by skipping the add
                             continue;
                         }
                     } else {
-                        value = infoValueSplit;
+                        value = vcfTextTransformer.transformEncodedText(infoValueSplit);
                     }
                 } else {
                     key = infoFields.get(i);
@@ -675,6 +770,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         boolean PlIsSet = false;
         for (int genotypeOffset = 1; genotypeOffset < nParts; genotypeOffset++) {
             List<String> genotypeValues = ParsingUtils.split(genotypeParts[genotypeOffset], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
+            genotypeValues = vcfTextTransformer.transformEncodedText(genotypeValues);
 
             final String sampleName = sampleNameIterator.next();
             final GenotypeBuilder gb = new GenotypeBuilder(sampleName);

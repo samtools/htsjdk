@@ -29,6 +29,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContextComparator;
 
@@ -61,6 +62,13 @@ public class VCFHeader implements Serializable {
     public enum HEADER_FIELDS {
         CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO
     }
+
+    /**
+     * The VCF version for this header; once a header version is established, it can only be
+     * changed subject to version transition rules defined by
+     * {@link #validateVersionTransition(VCFHeaderVersion, VCFHeaderVersion)}
+     */
+    private VCFHeaderVersion vcfHeaderVersion;
 
     // the associated meta data
     private final Set<VCFHeaderLine> mMetaData = new LinkedHashSet<VCFHeaderLine>();
@@ -126,13 +134,26 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * create a VCF header, given a list of meta data and auxillary tags
+     * create a VCF header, given a list of meta data and auxiliary tags
      *
      * @param metaData            the meta data associated with this header
      * @param genotypeSampleNames the sample names
      */
     public VCFHeader(final Set<VCFHeaderLine> metaData, final Set<String> genotypeSampleNames) {
         this(metaData, new ArrayList<String>(genotypeSampleNames));
+    }
+
+    /**
+     * create a VCF header, given a target version, a list of meta data and auxiliary tags
+     *
+     * @param vcfHeaderVersion    the vcf header version for this header, can not be null
+     * @param metaData            the meta data associated with this header
+     * @param genotypeSampleNames the sample names
+     */
+    public VCFHeader(final VCFHeaderVersion vcfHeaderVersion, final Set<VCFHeaderLine> metaData, final Set<String> genotypeSampleNames) {
+        this(metaData, new ArrayList(genotypeSampleNames));
+        ValidationUtils.nonNull(vcfHeaderVersion);
+        setVCFHeaderVersion(vcfHeaderVersion);
     }
 
     public VCFHeader(final Set<VCFHeaderLine> metaData, final List<String> genotypeSampleNames) {
@@ -144,6 +165,52 @@ public class VCFHeader implements Serializable {
         mGenotypeSampleNames.addAll(genotypeSampleNames);
         samplesWereAlreadySorted = ParsingUtils.isSorted(genotypeSampleNames);
         buildVCFReaderMaps(genotypeSampleNames);
+    }
+
+    /**
+     * Establish the header version for this header. If the header version has already been established
+     * for this header, the new version will be subject to version transition vaidation.
+     * @param vcfHeaderVersion
+     * @throws TribbleException if the requested header version is not compatible with the existing version
+     */
+    public void setVCFHeaderVersion(final VCFHeaderVersion vcfHeaderVersion) {
+        validateVersionTransition(this.vcfHeaderVersion, vcfHeaderVersion);
+        this.vcfHeaderVersion = vcfHeaderVersion;
+    }
+
+    /**
+     * Throw if {@code fromVersion} is not compatible with a {@code toVersion}. Generally, any version before
+     * version 4.2 can be up-converted to version 4.2, but not to version 4.3. Once a header is established as
+     * version 4.3, it cannot be up or down converted, and it must remain at version 4.3.
+     * @param fromVersion version
+     * @param toVersion
+     * @throws TribbleException if {@code fromVersion} is not compatible with {@code toVersion}
+     */
+    public static void validateVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        ValidationUtils.nonNull(toVersion);
+
+        final String errorMessageFormatString = "VCF cannot be automatically promoted from %s to %s";
+
+        // fromVersion can be null, in which case anything goes (any transition from null is legal)
+        if (fromVersion != null) {
+            if (toVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+                if (!fromVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+                    // we're trying to go from pre-v43 to v43+
+                    throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
+                }
+
+            } else if (fromVersion.equals(VCFHeaderVersion.VCF4_3)) {
+                // we're trying to go from v43 to pre-v43
+                throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
+            }
+        }
+    }
+
+    /**
+     * @return the VCFHeaderVersion for this header. Can be null.
+     */
+    public VCFHeaderVersion getVCFHeaderVersion() {
+        return vcfHeaderVersion;
     }
 
     /**
@@ -397,9 +464,14 @@ public class VCFHeader implements Serializable {
         return makeGetMetaDataSet(new TreeSet<VCFHeaderLine>(mMetaData));
     }
 
-    private static Set<VCFHeaderLine> makeGetMetaDataSet(final Set<VCFHeaderLine> headerLinesInSomeOrder) {
+    private Set<VCFHeaderLine> makeGetMetaDataSet(final Set<VCFHeaderLine> headerLinesInSomeOrder) {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>();
-        lines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
+        if (vcfHeaderVersion != null && vcfHeaderVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            // always propagate version 4.3+ to prevent these header lines from magically being back-versioned to < 4.3
+            lines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_3.getFormatString(), VCFHeaderVersion.VCF4_3.getVersionString()));
+        } else {
+            lines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
+        }
         lines.addAll(headerLinesInSomeOrder);
         return Collections.unmodifiableSet(lines);
     }

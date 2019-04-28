@@ -35,7 +35,8 @@ public enum VCFHeaderVersion {
     VCF3_3("VCFv3.3","fileformat"),
     VCF4_0("VCFv4.0","fileformat"),
     VCF4_1("VCFv4.1","fileformat"),
-    VCF4_2("VCFv4.2","fileformat");
+    VCF4_2("VCFv4.2","fileformat"),
+    VCF4_3("VCFv4.3","fileformat");
 
     private final String versionString;
     private final String formatString;
@@ -114,10 +115,12 @@ public enum VCFHeaderVersion {
      */
     public boolean isAtLeastAsRecentAs(final VCFHeaderVersion target) {
         switch (target) {
+            case VCF4_3:
+                return this == VCF4_3;
             case VCF4_2:
-                return this == VCF4_2;
+                return this == VCF4_2 || this == VCF4_3;
             case VCF4_1:
-                return this == VCF4_1 || this == VCF4_2;
+                return this == VCF4_1 || this == VCF4_2 || this == VCF4_3;
             case VCF4_0:
                 return this != VCF3_2 && this != VCF3_3;
             case VCF3_3:

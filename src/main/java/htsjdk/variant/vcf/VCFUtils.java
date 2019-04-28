@@ -37,6 +37,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class VCFUtils {
 
@@ -45,11 +46,13 @@ public class VCFUtils {
         // This will cause problems for VCFHeader.getSequenceDictionary and anything else that implicitly relies on the line ordering.
         final LinkedHashMap<String, VCFHeaderLine> map = new LinkedHashMap<>(); // from KEY.NAME -> line
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
+        final Set<VCFHeaderVersion> headerVersions = new HashSet<>(2);
 
         // todo -- needs to remove all version headers from sources and add its own VCF version line
         for (final VCFHeader source : headers) {
             for (final VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
 
+                enforceHeaderVersionMergePolicy(headerVersions, source.getVCFHeaderVersion());
                 String key = line.getKey();
                 if (line instanceof VCFIDHeaderLine)
                     key = key + "-" + ((VCFIDHeaderLine) line).getID();
@@ -101,8 +104,27 @@ public class VCFUtils {
                 }
             }
         }
+
         // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
         return new LinkedHashSet<>(map.values());
+    }
+
+    // Reject attempts to merge a VCFv4.3 header with any other version
+    private static void enforceHeaderVersionMergePolicy(
+            final Set<VCFHeaderVersion> headerVersions,
+            final VCFHeaderVersion candidateVersion) {
+        if (candidateVersion != null) {
+            headerVersions.add(candidateVersion);
+            if (headerVersions.size() > 1 && headerVersions.contains(VCFHeaderVersion.VCF4_3)) {
+                throw new IllegalArgumentException(
+                        String.format("Attempt to merge version %s header with incompatible header version %s",
+                                VCFHeaderVersion.VCF4_3.getVersionString(),
+                                headerVersions.stream()
+                                        .filter(hv -> !hv.equals(VCFHeaderVersion.VCF4_3))
+                                        .map(VCFHeaderVersion::getVersionString)
+                                        .collect(Collectors.joining(" "))));
+            }
+        }
     }
 
     /**
