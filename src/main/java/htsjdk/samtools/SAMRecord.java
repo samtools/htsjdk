@@ -2044,35 +2044,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             ret.addAll(errors);
             if (firstOnly) return ret;
         }
-        // TODO(mccowan): Is this asking "is this the primary alignment"?
-        if (this.getReadLength() == 0 && !this.isSecondaryAlignment()) {
-            final Object fz = getAttribute(SAMTag.FZ.getBinaryTag());
-            if (fz == null) {
-                final String cq = (String)getAttribute(SAMTag.CQ.getBinaryTag());
-                final String cs = (String)getAttribute(SAMTag.CS.getBinaryTag());
-                if (cq == null || cq.isEmpty() || cs == null || cs.isEmpty()) {
-                    if (ret == null) ret = new ArrayList<>();
-                    ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,
-                            "Zero-length read without FZ, CS or CQ tag", getReadName()));
-                    if (firstOnly) return ret;
-                } else if (!getReadUnmappedFlag()) {
-                    boolean hasIndel = false;
-                    for (final CigarElement cigarElement : getCigar().getCigarElements()) {
-                        if (cigarElement.getOperator() == CigarOperator.DELETION ||
-                                cigarElement.getOperator() == CigarOperator.INSERTION) {
-                            hasIndel = true;
-                            break;
-                        }
-                    }
-                    if (!hasIndel) {
-                        if (ret == null) ret = new ArrayList<>();
-                        ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,
-                                "Colorspace read with zero-length bases but no indel", getReadName()));
-                        if (firstOnly) return ret;
-                    }
-                }
-            }
-        }
+  
         if (this.getReadLength() != getBaseQualities().length &&  !Arrays.equals(getBaseQualities(), NULL_QUALS)) {
             if (ret == null) ret = new ArrayList<>();
             ret.add(new SAMValidationError(SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_QUALS_LENGTH,
