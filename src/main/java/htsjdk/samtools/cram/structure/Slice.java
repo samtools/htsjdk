@@ -227,7 +227,7 @@ public class Slice {
                     referenceContext, alignmentStart, alignmentStart +
                     alignmentSpan - 1, excerpt));
             return false;
-         }
+        }
 
         return true;
     }

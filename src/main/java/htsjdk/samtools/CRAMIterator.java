@@ -76,7 +76,6 @@ public class CRAMIterator implements SAMRecordIterator {
     public CRAMIterator(final InputStream inputStream,
                         final CRAMReferenceSource referenceSource,
                         final ValidationStringency validationStringency) {
-
         if (null == referenceSource) {
             throw new CRAMException("A reference source is required for CRAM files"); //no_ref
         }
