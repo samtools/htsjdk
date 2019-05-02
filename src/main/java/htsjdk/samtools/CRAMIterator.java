@@ -39,7 +39,7 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator {
-    
+
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
     private final ArrayList<SAMRecord> records;
@@ -76,8 +76,9 @@ public class CRAMIterator implements SAMRecordIterator {
     public CRAMIterator(final InputStream inputStream,
                         final CRAMReferenceSource referenceSource,
                         final ValidationStringency validationStringency) {
+
         if (null == referenceSource) {
-            throw new CRAMException("A reference source is required for CRAM files");
+            throw new CRAMException("A reference source is required for CRAM files"); //no_ref
         }
 
         this.countingInputStream = new CountingInputStream(inputStream);
@@ -99,7 +100,7 @@ public class CRAMIterator implements SAMRecordIterator {
                         final long[] coordinates,
                         final ValidationStringency validationStringency) {
         if (null == referenceSource) {
-            throw new CRAMException("A reference source is required for CRAM files");
+            throw new CRAMException("A reference source is required for CRAM files"); //no_ref
         }
 
         this.countingInputStream = new CountingInputStream(seekableStream);
@@ -183,14 +184,16 @@ public class CRAMIterator implements SAMRecordIterator {
             if (! sliceContext.isMappedSingleRef())
                 continue;
 
-            if (!slice.validateRefMD5(referenceBases)) {
-                final String msg = String.format(
+            if (container.compressionHeader.referenceRequired) {
+                if (!slice.validateRefMD5(referenceBases)) {
+                    final String msg = String.format(
                         "Reference sequence MD5 mismatch for slice: sequence id %d, start %d, span %d, expected MD5 %s",
                         sliceContext.getSequenceId(),
                         slice.alignmentStart,
                         slice.alignmentSpan,
                         String.format("%032x", new BigInteger(1, slice.refMD5)));
-                throw new CRAMException(msg);
+                    throw new CRAMException(msg);
+                }
             }
         }
 
@@ -215,7 +218,7 @@ public class CRAMIterator implements SAMRecordIterator {
                 final long chunkEnd = ((container.byteOffset << 16) | cramRecord.sliceIndex) + 1;
                 samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
-            
+
             records.add(samRecord);
         }
         cramRecords.clear();

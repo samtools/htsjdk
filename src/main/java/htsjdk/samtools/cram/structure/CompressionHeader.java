@@ -50,7 +50,7 @@ public class CompressionHeader {
 
     public boolean readNamesIncluded;
     public boolean APDelta = true;
-    private boolean referenceRequired = true;
+    public boolean referenceRequired = true;
 
     public Map<DataSeries, EncodingParams> encodingMap;
     public Map<Integer, EncodingParams> tMap;

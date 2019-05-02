@@ -201,7 +201,6 @@ public class Slice {
                     referenceContext, alignmentStart, alignmentSpan, globalRecordCounter));
         }
     }
-
     public boolean validateRefMD5(final byte[] ref) {
         if (referenceContext.isMultiRef()) {
             throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
@@ -228,7 +227,7 @@ public class Slice {
                     referenceContext, alignmentStart, alignmentStart +
                     alignmentSpan - 1, excerpt));
             return false;
-        }
+         }
 
         return true;
     }
@@ -502,7 +501,7 @@ public class Slice {
      *
      * Single Reference: all records have valid placements/alignments on the same reference sequence
      * - records can be unmapped-but-placed
-     * - reference can be external or embedded
+     * - reference can be external or embedded // no_ref
      *
      * Multiple Reference: records may be placed or not, and may have differing reference sequences
      * - reference must not be embedded (not checked here)
