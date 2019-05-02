@@ -11,7 +11,7 @@ public class BCF2VersionTest extends VariantBaseTest {
     public Object[][] bcfVersionEqualsHashData() {
         return new Object[][]{
                 {
-                        new BCFVersion(BCF2Codec.ALLOWED_MAJOR_VERSION, BCF2Codec.ALLOWED_MINOR_VERSION),
+                        BCF2Codec.ALLOWED_BCF_VERSION,
                         new BCFVersion(BCF2Codec.ALLOWED_MAJOR_VERSION, BCF2Codec.ALLOWED_MINOR_VERSION),
                         true
                 },
@@ -21,17 +21,17 @@ public class BCF2VersionTest extends VariantBaseTest {
                         true
                 },
                 {
-                        new BCFVersion(BCF2Codec.ALLOWED_MAJOR_VERSION, BCF2Codec.ALLOWED_MINOR_VERSION),
+                        BCF2Codec.ALLOWED_BCF_VERSION,
                         new BCFVersion(0, 0),
                         false
                 },
                 {
-                        new BCFVersion(BCF2Codec.ALLOWED_MAJOR_VERSION, BCF2Codec.ALLOWED_MINOR_VERSION),
+                        BCF2Codec.ALLOWED_BCF_VERSION,
                         new BCFVersion(0, BCF2Codec.ALLOWED_MAJOR_VERSION),
                         false
                 },
                 {
-                        new BCFVersion(BCF2Codec.ALLOWED_MAJOR_VERSION, BCF2Codec.ALLOWED_MINOR_VERSION),
+                        BCF2Codec.ALLOWED_BCF_VERSION,
                         new BCFVersion(0, BCF2Codec.ALLOWED_MAJOR_VERSION),
                         false
                 },

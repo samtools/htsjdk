@@ -58,6 +58,7 @@ import java.util.Map;
 public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     protected final static int ALLOWED_MAJOR_VERSION = 2;
     protected final static int ALLOWED_MINOR_VERSION = 1;
+    public static final BCFVersion ALLOWED_BCF_VERSION = new BCFVersion(ALLOWED_MAJOR_VERSION, ALLOWED_MINOR_VERSION);
 
     /** sizeof a BCF header (+ min/max version). Used when trying to detect when a streams starts with a bcf header */
     public static final int SIZEOF_BCF_HEADER =  BCFVersion.MAGIC_HEADER_START.length + 2*Byte.BYTES;
@@ -144,13 +145,16 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     }
 
     /**
-     * Validate the actual version against the supported version to determine compatibility. Subclasses can
-     * override this to provide a custom version compatibility policy, but allowing something other than the
+     * Validate the actual version against the supported version to determine compatibility. Throws a
+     * TribbleException if the actualVersion is not compatible with the supportedVersion. Subclasses can override
+     * this to provide a custom version compatibility policy, but allowing something other than the
      * supported version is dangerous and should be done with great care.
      *
      * The default policy is to require an exact version match.
      * @param supportedVersion the current BCF implementation version
      * @param actualVersion the actual version
+     * @thows TribbleException if the version policy determines that {@code actualVersion} is not compatible
+     * with {@code supportedVersion}
      */
     protected void validateVersionCompatibility(final BCFVersion supportedVersion, final BCFVersion actualVersion) {
         if ( actualVersion.getMajorVersion() != ALLOWED_MAJOR_VERSION ) {
@@ -172,7 +176,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
                 error("Input stream does not contain a BCF encoded file; BCF magic header info not found");
             }
 
-            validateVersionCompatibility(new BCFVersion(ALLOWED_MAJOR_VERSION, ALLOWED_MINOR_VERSION), bcfVersion);
+            validateVersionCompatibility(BCF2Codec.ALLOWED_BCF_VERSION, bcfVersion);
             if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                 System.err.println("Parsing data stream with BCF version " + bcfVersion);
             }

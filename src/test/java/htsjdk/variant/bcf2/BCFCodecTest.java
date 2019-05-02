@@ -1,8 +1,10 @@
 package htsjdk.variant.bcf2;
 
+import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.vcf.VCFHeader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -28,9 +30,7 @@ public class BCFCodecTest extends VariantBaseTest {
         final BCF2Codec bcfCodec = new BCF2Codec() {
             @Override
             protected void validateVersionCompatibility(final BCFVersion supportedVersion, final BCFVersion actualVersion) {
-                // assert the precondition for this test to be valid
-                Assert.assertNotEquals(supportedVersion, actualVersion);
-                Assert.assertTrue(actualVersion.majorVersion == BCF2Codec.ALLOWED_MAJOR_VERSION && actualVersion.minorVersion != BCF2Codec.ALLOWED_MINOR_VERSION);
+                return;
             }
         };
 
@@ -38,10 +38,10 @@ public class BCFCodecTest extends VariantBaseTest {
         // provide a codec that implements a more tolerant custom policy that accepts
         try (final FileInputStream fis = new FileInputStream(new File(TEST_DATA_DIR, "BCFVersion22Uncompressed.bcf"));
              final PositionalBufferedStream pbs = new PositionalBufferedStream(fis)) {
-            bcfCodec.readHeader(pbs);
+            final FeatureCodecHeader featureCodecHeader = (FeatureCodecHeader)  bcfCodec.readHeader(pbs);
+            final VCFHeader vcfHeader = (VCFHeader) featureCodecHeader.getHeaderValue();
+            Assert.assertNotEquals(vcfHeader.getMetaDataInInputOrder().size(), 0);
         }
     }
-
-
 }
 
