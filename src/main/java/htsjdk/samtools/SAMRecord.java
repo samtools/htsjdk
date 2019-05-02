@@ -2300,7 +2300,7 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
                     ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_REFERENCE_INDEX, buildMessage("Reference sequence not found in sequence dictionary.", isMate), getReadName()));
                     if (firstOnly) return ret;
                 } else {
-                    if (alignmentStart > sequence.getSequenceLength()) {
+                    if (alignmentStart > sequence.getSequenceLength() && !sequence.isCircular()) {
                         if (ret == null) ret = new ArrayList<>();
                         ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_ALIGNMENT_START, buildMessage("Alignment start (" + alignmentStart + ") must be <= reference sequence length (" +
                                 sequence.getSequenceLength() + ") on reference " + sequence.getSequenceName(), isMate), getReadName()));

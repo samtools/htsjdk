@@ -150,29 +150,32 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_UNPAIRED_MATE_REFERENCE.getHistogramString()).getValue(), 1.0);
     }
 
-    @Test
-    public void testPairedRecords() throws IOException {
+    @Test(dataProvider = "Topologies")
+    public void testPairedRecords(final SAMSequenceRecord.Topology topology) throws IOException {
         final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder();
 
-        for (int i = 0; i < 5; i++) {
+        final SAMSequenceDictionary dict = samBuilder.getHeader().getSequenceDictionary();
+        for (int i = 0; i < 6; i++) {
             samBuilder.addPair(String.valueOf(i), i, i, i + 100);
+            dict.getSequence(i).setTopology(topology);
         }
         final Iterator<SAMRecord> records = samBuilder.iterator();
         records.next().setMateReferenceName("*");
-        records.next().setMateAlignmentStart(Integer.MAX_VALUE);
+        records.next().setMateAlignmentStart(Integer.MAX_VALUE); // mate start off the end
         records.next().setMateAlignmentStart(records.next().getAlignmentStart() + 1);
         records.next().setMateNegativeStrandFlag(!records.next().getReadNegativeStrandFlag());
         records.next().setMateReferenceIndex(records.next().getReferenceIndex() + 1);
         records.next().setMateUnmappedFlag(!records.next().getReadUnmappedFlag());
-
+        final int start = dict.getSequence(records.next().getContig()).getSequenceLength() + 1;
+        records.next().setAlignmentStart(start); // rec start off the end
 
         final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
 
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_ALIGNMENT_START.getHistogramString()).getValue(), 3.0);
+        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_ALIGNMENT_START.getHistogramString()).getValue(), (topology == SAMSequenceRecord.Topology.circular) ? 2.0 : 4.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED.getHistogramString()).getValue(), 1.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_NEG_STRAND.getHistogramString()).getValue(), 1.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_UNMAPPED.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_MATE_ALIGNMENT_START.getHistogramString()).getValue(), 2.0);
+        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_MATE_ALIGNMENT_START.getHistogramString()).getValue(), 3.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_MATE_REF_INDEX.getHistogramString()).getValue(), 2.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_UNALIGNED_MATE_START.getHistogramString()).getValue(), 1.0);
     }
@@ -409,16 +412,31 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(value, 1.0);
     }
 
-    @Test
-    public void testCigarOffEndOfReferenceValidation() throws Exception {
+    @DataProvider(name="Topologies")
+    public Object[][] Topologies() {
+        return new Object[][]{
+                {null},
+                {SAMSequenceRecord.Topology.linear},
+                {SAMSequenceRecord.Topology.circular},
+        };
+    }
+
+    @Test(dataProvider = "Topologies")
+    public void testCigarOffEndOfReferenceValidation(final SAMSequenceRecord.Topology topology) throws Exception {
         final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder();
+        samBuilder.getHeader().getSequenceDictionary().getSequence(0).setTopology(topology); // set the topology
         samBuilder.addFrag(String.valueOf(0), 0, 1, false);
         final int contigLength = samBuilder.getHeader().getSequence(0).getSequenceLength();
         // Should hang off the end.
         samBuilder.addFrag(String.valueOf(1), 0, contigLength - 1, false);
         final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertNotNull(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()));
-        Assert.assertEquals(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()).getValue(), 1.0);
+        if (topology == SAMSequenceRecord.Topology.circular) {
+            Assert.assertNull(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()));
+        }
+        else {
+            Assert.assertNotNull(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()));
+            Assert.assertEquals(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()).getValue(), 1.0);
+        }
     }
     
     @Test
