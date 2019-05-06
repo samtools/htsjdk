@@ -74,9 +74,7 @@ public class IntervalList implements Iterable<Interval> {
      * Constructs a new interval list using the supplied header information.
      */
     public IntervalList(final SAMFileHeader header) {
-        if (header == null) {
-            throw new IllegalArgumentException("SAMFileHeader must be supplied.");
-        }
+        ValidationUtils.nonNull(header, "SAMFileHeader");
         this.header = header;
     }
 
@@ -106,7 +104,7 @@ public class IntervalList implements Iterable<Interval> {
      * Adds an interval to the list of intervals.
      */
     public void add(final Interval interval) {
-        ValidationUtils.validateArg(header.getSequence(interval.getContig()) != null,
+        ValidationUtils.nonNull(header.getSequence(interval.getContig()),
                 () -> String.format("Cannot add interval %s, contig not in header", interval.toString()));
 
         this.intervals.add(interval);
@@ -131,7 +129,7 @@ public class IntervalList implements Iterable<Interval> {
      */
     @Deprecated
     public void sort() {
-        Collections.sort(this.intervals, new IntervalCoordinateComparator(this.header));
+        this.intervals.sort(new IntervalCoordinateComparator(this.header));
         this.header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
     }
 
@@ -706,7 +704,7 @@ public class IntervalList implements Iterable<Interval> {
         //add all the intervals (uniqued and therefore also sorted) to a ListMap from sequenceIndex to a list of Intervals
         for (final Interval i : list.uniqued().getIntervals()) {
             final int sequenceIndex = list.getHeader().getSequenceIndex(i.getContig());
-            ValidationUtils.nonNull(sequenceIndex,
+            ValidationUtils.validateArg(sequenceIndex != SAMSequenceRecord.UNAVAILABLE_SEQUENCE_INDEX,
                     () -> String.format("Cannot add interval %s, contig not in header", i.toString()));
             map.add(sequenceIndex, i);
         }
