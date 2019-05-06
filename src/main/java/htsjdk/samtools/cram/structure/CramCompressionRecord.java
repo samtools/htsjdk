@@ -95,7 +95,6 @@ public class CramCompressionRecord {
     public int templateSize;
 
     public ReadTag[] tags;
-    public byte[] tagIds;
     public MutableInt tagIdsIndex;
 
     public int sliceIndex = 0;
