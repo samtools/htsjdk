@@ -31,12 +31,12 @@ import htsjdk.tribble.TribbleException;
  * information that identifies each header version
  */
 public enum VCFHeaderVersion {
-    VCF3_2("VCRv3.2","format"),
-    VCF3_3("VCFv3.3","fileformat"),
-    VCF4_0("VCFv4.0","fileformat"),
-    VCF4_1("VCFv4.1","fileformat"),
-    VCF4_2("VCFv4.2","fileformat"),
-    VCF4_3("VCFv4.3","fileformat");
+    VCF3_2("VCRv3.2", "format"),
+    VCF3_3("VCFv3.3", "fileformat"),
+    VCF4_0("VCFv4.0", "fileformat"),
+    VCF4_1("VCFv4.1", "fileformat"),
+    VCF4_2("VCFv4.2", "fileformat"),
+    VCF4_3("VCFv4.3", "fileformat");
 
     private final String versionString;
     private final String formatString;

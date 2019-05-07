@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  * needs to be done.
  */
 public class VCFTextTransformer {
-    final static private String ENCODING_SENTNEL_STRING = "%";
+    final static private String ENCODING_SENTINEL_STRING = "%";
     final static private char ENCODING_SENTNEL_CHAR = '%';
     final static private int ENCODING_BASE_RADIX = 16;
 
@@ -46,7 +46,7 @@ public class VCFTextTransformer {
      * @throws TribbleException if the the encoding is uninterpretable
      */
     protected static String decodePercentEncodedChars(final String rawText) {
-        if (rawText.contains(ENCODING_SENTNEL_STRING)) {
+        if (rawText.contains(ENCODING_SENTINEL_STRING)) {
             StringBuilder builder = new StringBuilder(rawText.length());
             for (int i = 0; i < rawText.length(); i++) {
                 final char c = rawText.charAt(i);
@@ -54,12 +54,12 @@ public class VCFTextTransformer {
                     try {
                         final char[] trans = Character.toChars(Integer.parseInt(rawText.substring(i + 1, i + 3), ENCODING_BASE_RADIX));
                         if (trans.length != 1) {
-                            throw new TribbleException(String.format("escape sequence `%c` corresponds to an invalid encoding in '%s'", c, rawText));
+                            throw new TribbleException(String.format("escape sequence '%c' corresponds to an invalid encoding in '%s'", c, rawText));
                         }
                         builder.append(trans[0]);
                         i += 2;
                     } catch (IllegalArgumentException | StringIndexOutOfBoundsException e) {
-                        throw new TribbleException(String.format("'%c' is not a valid percent encoded character in `%s`", c, rawText), e);
+                        throw new TribbleException(String.format("'%c' is not a valid percent encoded character in '%s'", c, rawText), e);
                     }
                 } else {
                     builder.append(c);

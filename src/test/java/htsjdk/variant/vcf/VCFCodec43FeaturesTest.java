@@ -25,29 +25,29 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
+/*
  **************************************************************************************************
  * IMPORTANT NOTE: this class contains string constants that contain embedded non-ASCII characters
  * used for testing VCF UTF-8 support. Edit with care.
  **************************************************************************************************
  */
 public class VCFCodec43FeaturesTest extends VariantBaseTest {
-    private static final String TEST_PATH = "src/test/resources/htsjdk/variant/vcf43/";
-    private static final String TEST_43_FILE = "all43Features.vcf";
-    private static final String TEST_43_GZ_FILE = "all43FeaturesCompressed.vcf.gz";
+    private static final Path TEST_PATH = Paths.get("src/test/resources/htsjdk/variant/vcf43/");
+    private static final Path TEST_43_FILE = TEST_PATH.resolve("all43Features.vcf");
+    private static final Path TEST_43_GZ_FILE = TEST_PATH.resolve("all43FeaturesCompressed.vcf.gz");
     // NOTE: these test file contain UTF8-encoded characters, and must be edited using a
     // UTF8-encoding aware text editor
-    private static final String TEST_43_UTF8_FILE = "all43Features.utf8.vcf";
-    private static final String TEST_43_UTF8_GZ_FILE = "all43FeaturesCompressed.utf8.vcf.gz";
+    private static final Path TEST_43_UTF8_FILE = TEST_PATH.resolve("all43Features.utf8.vcf");
+    private static final Path TEST_43_UTF8_GZ_FILE = TEST_PATH.resolve("all43FeaturesCompressed.utf8.vcf.gz");
 
     @DataProvider(name="all43Files")
     private Object[][] allVCF43Files() {
         return new Object[][] {
                 // a .vcf, .vcf.gz, .vcf with UTF8 chars, and .vcf.gz with UTF8 chars
-                { Paths.get(TEST_PATH + TEST_43_FILE) },
-                { Paths.get(TEST_PATH + TEST_43_UTF8_FILE) },
-                { Paths.get(TEST_PATH + TEST_43_GZ_FILE) },
-                { Paths.get(TEST_PATH + TEST_43_UTF8_GZ_FILE) }
+                { TEST_43_FILE },
+                { TEST_43_UTF8_FILE },
+                { TEST_43_GZ_FILE },
+                { TEST_43_UTF8_GZ_FILE }
         };
     }
 
@@ -150,8 +150,8 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     @DataProvider(name="all43IndexableFiles")
     private Object[][] allVCF43IndexableFiles() {
         return new Object[][] {
-                { Paths.get(TEST_PATH + TEST_43_GZ_FILE) },
-                { Paths.get(TEST_PATH + TEST_43_UTF8_GZ_FILE) }
+                { TEST_43_GZ_FILE },
+                { TEST_43_UTF8_GZ_FILE }
         };
     }
 
@@ -190,9 +190,8 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test
     public void testVCF43ReadUTF8Attributes() {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(
-                Paths.get(TEST_PATH + TEST_43_UTF8_FILE));
-        final List<VCFHeaderLine> headerLines = getIDHeaderLinesWithKey(entireVCF.a,"COMMENT");
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
+        final List<VCFHeaderLine> headerLines = getIDHeaderLinesWithKey(entireVCF.a, "COMMENT");
 
         //##COMMENT=<This file has 6 embedded UTF8 chars - one right here (ä), and 3 in the second vc's set attribute value.>
         Assert.assertEquals(headerLines.get(0).getValue(),
@@ -201,8 +200,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test
     public void testVCF43AltLineWithUTF8Chars() {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(
-                Paths.get(TEST_PATH + TEST_43_UTF8_FILE));
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
         final List<VCFHeaderLine> headerLines = getIDHeaderLinesWithKey(entireVCF.a,"ALT");
 
         //##ALT=<ID=DUP,Description="Duplication", ExtraAltField="äääa">
@@ -218,8 +216,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test
     public void testVCF43PercentEncodingWithUTF8() {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(
-            Paths.get(TEST_PATH + TEST_43_UTF8_FILE));
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
 
         //2	327	.	T	C	666.18	GATK_STANDARD;HARD_TO_VALIDATE
         // AB=0.74;AC=3;AF=0.50;AN=6;DB=0;DP=936;Dels=0.00;HRun=3;MQ=34.66;MQ0=728;QD=0.71;SB=-268.74;set=ääa
