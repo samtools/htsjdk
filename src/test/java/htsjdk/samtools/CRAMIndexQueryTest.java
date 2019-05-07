@@ -632,8 +632,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             final File referenceFileName,
             final String queryContig,
             final int alignmentStart,
-            final int expectedReadCount) throws IOException
-    {
+            final int expectedReadCount) throws IOException {
         SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.LENIENT);
         if (referenceFileName != null) {
             factory = factory.referenceSequence(referenceFileName);
@@ -673,6 +672,9 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
         final int alignmentStart,
         final String expectedReadName) throws IOException
     {
+        // the test file ("mitoAlignmentStartTest.cram") used here, which was provided by a user who reported
+        // a queryMate bug, contains reads that have a mateReferenceName == "*", but with mateAlignmentStart != 0;
+        // so we have to use ValidationStringency.LENIENT to suppress validation from throwing when it sees these..
         SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.LENIENT);
         if (referenceFileName != null) {
             factory = factory.referenceSequence(referenceFileName);

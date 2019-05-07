@@ -494,19 +494,21 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return BAMFileSpan.merge(spanArray).toCoordinateArray();
     }
 
+    /**
+     * This class is intended to be a base class for various CRAM filtering iterators. Subclasses must
+     * ensure that {@link CRAMIntervalIteratorBase#initializeIterator} is called once after the subclass'
+     * construction is complete, preferably at the end of the subclass' constructor, but before any
+     * attempt is made to use the iterator.
+     */
     private abstract class CRAMIntervalIteratorBase extends BAMQueryMultipleIntervalsIteratorFilter
             implements CloseableIterator<SAMRecord> {
 
         // the granularity of this iterator is the container, so the records returned
         // by it must still be filtered to find those matching the filter criteria
         private CRAMIterator unfilteredIterator;
-        SAMRecord nextRec = null;
+        private SAMRecord nextRec = null;
 
         public CRAMIntervalIteratorBase(final QueryInterval[] queries, final boolean contained) {
-            this(queries, contained, coordinatesFromQueryIntervals(getIndex(), queries));
-        }
-
-        public CRAMIntervalIteratorBase(final QueryInterval[] queries, final boolean contained, final long[] coordinates) {
             super(queries, contained);
         }
 
@@ -565,7 +567,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                     case CONTINUE_ITERATION:
                         continue;
                     case STOP_ITERATION:
-                        nextRec = null;
                         return result;
                     default:
                         throw new SAMException("Unexpected return from compareToFilter");
@@ -587,7 +588,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         }
 
         public CRAMIntervalIterator(final QueryInterval[] queries, final boolean contained, final long[] coordinates) {
-            super(queries, contained, coordinates);
+            super(queries, contained);
             initializeIterator(coordinates);
         }
     }
