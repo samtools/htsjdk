@@ -10,6 +10,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.List;
 
 public class AbstractVCFCodecTest extends VariantBaseTest {
@@ -65,5 +66,19 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
             variant = reader.iterator().next();
         }
         Assert.assertEquals(variant.getGenotype(0).getPL(), new int[]{45, 0, 50});
+    }
+
+    @Test
+    public void testLowerCaseQualNan() {
+        try (final VCFFileReader reader = new VCFFileReader(
+                new File("src/test/resources/htsjdk/variant/test_withNanQual.vcf"), false)) {
+            Iterator<VariantContext> iterator = reader.iterator();
+            final VariantContext baseVariant = iterator.next(); // First row uses Java-style NaN
+            iterator.forEachRemaining(v -> {
+                // Following rows use lower-case nan
+                Assert.assertEquals(baseVariant.getPhredScaledQual(), v.getPhredScaledQual());
+                Assert.assertEquals(baseVariant.getGenotype(0).getGQ(), v.getGenotype(0).getGQ());
+            });
+        }
     }
 }
