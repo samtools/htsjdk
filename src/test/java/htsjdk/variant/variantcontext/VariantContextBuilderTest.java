@@ -55,6 +55,36 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         }
     }
 
+
+    @Test()
+    public void testBuilkAttributeResettingWorks() {
+        final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
+        final VariantContext result1 = root1
+                .attribute("AC", 1)
+                .attribute("AN", 2)
+                .make();
+
+        final VariantContextBuilder root2 = new VariantContextBuilder(result1);
+
+        //this is a red-herring and should not change anything.
+        final VariantContext ignored = root1.attribute("AC", 2).make();
+
+        final VariantContext result2 = root2.make();
+
+        Assert.assertEquals(result1.getAttribute("AC"), result2.getAttribute("AC"));
+        Assert.assertEquals(result1.getAttribute("AN"), result2.getAttribute("AN"));
+
+        final HashMap<String, Object> map = new HashMap<>();
+        map.put("AC", 2);
+        map.put("AN", 4);
+        root2.attributes(map);
+
+        final VariantContext result3 = root2.make();
+
+        Assert.assertEquals(result3.getAttribute("AC"), 2);
+        Assert.assertEquals(result3.getAttribute("AN"), 4);
+    }
+
     enum VCBuilderScheme {
         NEW_ON_BUILDER {
             @Override
@@ -130,14 +160,6 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         final VariantContext result2 = root2.attributes(attributes).make();
 
         Assert.assertNotEquals(result1.getAttribute("AC"), result2.getAttribute("AC"), "AC attributes should be different, found: " + result2.getAttribute("AC").toString());
-    }
-
-    @Test(dataProvider = "BuilderSchemes")
-    public void testFilterUnaffectedByClonedVariants(final VCBuilderScheme builderScheme) {
-        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filter("TEST");
-        final VariantContext vc1 = builder.make();
-        final VariantContext vc2 = builderScheme.getOtherBuilder(builder, vc1).filter("TEST2").make();
-        Assert.assertNotEquals(vc2.getFilters(), vc1.getFilters(), "The two lists of filters should be different");
     }
 
     @Test(dataProvider = "BuilderSchemes")
