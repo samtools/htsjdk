@@ -170,12 +170,9 @@ public class Interval implements Comparable<Interval>, Cloneable, Feature {
      * Counts the total number of bases a collection of intervals.
      */
     public static long countBases(final Collection<Interval> intervals) {
-        long total = 0;
-        for (final Interval i : intervals) {
-            total += i.length();
-        }
-
-        return total;
+        return intervals.stream()
+                .mapToInt(Interval::length)
+                .sum();
     }
 
     /**
