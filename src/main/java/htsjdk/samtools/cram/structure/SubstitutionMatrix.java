@@ -20,38 +20,86 @@ package htsjdk.samtools.cram.structure;
 import java.util.Arrays;
 import java.util.Comparator;
 
+/**
+ * Substitution matrix, used to represent base substitutions for reference-based CRAM
+ * compression.
+ *
+ * The matrix is stored internally in two forms; the packed/encoded form used for serialization,
+ * and an expanded in-memory form used for fast bi-directional interconversion between bases and
+ * substitution codes during read and write.
+ *
+ * This implementation substitutes both upper and lower case versions of a give base with the
+ * same (upper case) substitute base.
+ */
 public class SubstitutionMatrix {
-    public static final byte[] BASES = new byte[]{'A', 'C', 'G', 'T', 'N'};
-    private static final byte[] BASES_LC = new byte[]{'a', 'c', 'g', 't', 'n'};
-    private static final byte[] ORDER;
+    // List of bases subject to substitution. The upper and lower case arrays must have the bases
+    // in the same order so that the index for a given base is the same for upper and lower case
+    public static final byte[] SUBSTITUTION_BASES_UPPER = new byte[]{'A', 'C', 'G', 'T', 'N'};
+    private static final byte[] SUBSTITUTION_BASES_LOWER = new byte[]{'a', 'c', 'g', 't', 'n'};
+    private static int BASES_SIZE = SUBSTITUTION_BASES_UPPER.length;
 
+    // Since bases are represented as bytes, there are theoretically 256 possible symbols in the
+    // symbol space, though in reality we only care about 10 of these (5 upper and 5 lower case
+    // reference bases).
+    private static int SYMBOL_SPACE_SIZE = 256;
+
+    // number of possible substitution codes per base
+    private static int CODES_PER_BASE = BASES_SIZE - 1;
+
+    // The order in which substitution codes are encoded in the serialized matrix, as prescribed
+    // by the CRAM spec:
+    private static final byte[] CODE_ORDER;
     static {
-        ORDER = new byte[255];
-        Arrays.fill(ORDER, (byte) -1);
-        ORDER['A'] = 0;
-        ORDER['C'] = 1;
-        ORDER['G'] = 2;
-        ORDER['T'] = 3;
-        ORDER['N'] = 4;
+        CODE_ORDER = new byte[SYMBOL_SPACE_SIZE];
+        Arrays.fill(CODE_ORDER, (byte) -1);
+        CODE_ORDER['A'] = 0;
+        CODE_ORDER['C'] = 1;
+        CODE_ORDER['G'] = 2;
+        CODE_ORDER['T'] = 3;
+        CODE_ORDER['N'] = 4;
     }
 
-    private byte[] bytes = new byte[5];
-    private final byte[][] codes = new byte[255][255];
-    private final byte[][] bases = new byte[255][255];
+    // The substitution "matrix" in serialized form, encoded in a 5 byte vector, one byte for
+    // each base in the set of possible substitution bases { A, C, G, T and N }, in that order.
+    // Each byte in turn represents a packed bit vector of substitution codes (values 0-3, encoded
+    // in 2 bits each), one for each possible substitution of that base with another base from the
+    // same set, in the same order. The allows the most frequent substitution codes(s) to have the
+    // shortest prefix(es) when represented as ITF8 in the context of serialized read features.
+    private byte[] encodedMatrixBytes = new byte[BASES_SIZE];
 
+    // The expanded in-memory matrix of substitution codes. In order to enable quick inter-conversion
+    // between bases and substitution codes, we use a full square but sparse matrix that covers
+    // the entire symbol space in order to allow them to be directly indexed by (refBase, readBase)
+    // pairs. Note that this array can be indexed using upper or lower case bases.
+    private final byte[][] codeByBase = new byte[SYMBOL_SPACE_SIZE][SYMBOL_SPACE_SIZE];
+
+    // The expanded in-memory matrix of substitute bases, indexed by (refBase, code) pairs, used when
+    // reading cram records. Note that this array can be indexed using upper or lower case bases.
+    private final byte[][] baseByCode = new byte[SYMBOL_SPACE_SIZE][SYMBOL_SPACE_SIZE];
+
+    /**
+     * Create a SubstitutionMatrix given a set of base substitution frequencies
+     * @param frequencies array of base substitution frequencies
+     */
     public SubstitutionMatrix(final long[][] frequencies) {
-        for (final byte base : BASES) {
-            bytes[ORDER[base]] = rank(base, frequencies[base]);
+        // get the substitution code vector for each base
+        for (final byte base : SUBSTITUTION_BASES_UPPER) {
+            // substitutionCodeVector has a side effect of updating codeByBase
+            encodedMatrixBytes[CODE_ORDER[base]] = substitutionCodeVector(base, frequencies[base]);
         }
-        for (final byte[] base : bases) Arrays.fill(base, (byte) 'N');
 
-        for (int i = 0; i < BASES.length; i++) {
-            final byte r = BASES[i];
-            for (final byte b : BASES) {
-                if (r == b)
+        for (final byte[] base : baseByCode) {
+            Arrays.fill(base, (byte) 'N');
+        }
+        for (int i = 0; i < SUBSTITUTION_BASES_UPPER.length; i++) {
+            final byte r = SUBSTITUTION_BASES_UPPER[i];
+            for (final byte b : SUBSTITUTION_BASES_UPPER) {
+                if (r == b) {
                     continue;
-                bases[r][codes[r][b]] = b;
-                bases[BASES_LC[i]][codes[r][b]] = b;
+                }
+                baseByCode[r][codeByBase[r][b]] = b;
+                // propagate the same code for lower case bases
+                baseByCode[SUBSTITUTION_BASES_LOWER[i]][codeByBase[r][b]] = b;
             }
         }
     }
@@ -59,121 +107,164 @@ public class SubstitutionMatrix {
     @Override
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder();
-        for (final byte r : "ACGTN".getBytes()) {
+        for (final byte r : SUBSTITUTION_BASES_UPPER) {
             stringBuilder.append((char) r);
             stringBuilder.append(':');
-            for (int i = 0; i < 4; i++) {
-                stringBuilder.append((char) bases[r][i]);
+            for (int i = 0; i < CODES_PER_BASE; i++) {
+                stringBuilder.append((char) baseByCode[r][i]);
             }
             stringBuilder.append('\t');
         }
         return stringBuilder.toString();
     }
 
+    /**
+     * Create a SubstitutionMatrix from a serialized byte array
+     * @param matrix serialized substitution matrix from a CRAM stream
+     */
     public SubstitutionMatrix(final byte[] matrix) {
-        this.bytes = matrix;
+        this.encodedMatrixBytes = matrix;
+        for (final byte[] base : baseByCode) {
+            Arrays.fill(base, (byte) 'N');
+        }
 
-        for (final byte[] base : bases) Arrays.fill(base, (byte) 'N');
+        // unpack the substitution code vectors and populate the base substitutions lookup
+        // matrix using the unpacked substitution codes
+        baseByCode['A'][(encodedMatrixBytes[0] >> 6) & 3] = 'C';
+        baseByCode['A'][(encodedMatrixBytes[0] >> 4) & 3] = 'G';
+        baseByCode['A'][(encodedMatrixBytes[0] >> 2) & 3] = 'T';
+        baseByCode['A'][(encodedMatrixBytes[0]) & 3] = 'N';
+        // propagate to lower case 'a'
+        System.arraycopy(baseByCode['A'], 0, baseByCode['a'], 0, 4);
 
-        bases['A'][(bytes[0] >> 6) & 3] = 'C';
-        bases['A'][(bytes[0] >> 4) & 3] = 'G';
-        bases['A'][(bytes[0] >> 2) & 3] = 'T';
-        bases['A'][(bytes[0]) & 3] = 'N';
-        System.arraycopy(bases['A'], 0, bases['a'], 0, 4);
+        baseByCode['C'][(encodedMatrixBytes[1] >> 6) & 3] = 'A';
+        baseByCode['C'][(encodedMatrixBytes[1] >> 4) & 3] = 'G';
+        baseByCode['C'][(encodedMatrixBytes[1] >> 2) & 3] = 'T';
+        baseByCode['C'][(encodedMatrixBytes[1]) & 3] = 'N';
+        // propagate to lower case 'c'
+        System.arraycopy(baseByCode['C'], 0, baseByCode['c'], 0, 4);
 
-        bases['C'][(bytes[1] >> 6) & 3] = 'A';
-        bases['C'][(bytes[1] >> 4) & 3] = 'G';
-        bases['C'][(bytes[1] >> 2) & 3] = 'T';
-        bases['C'][(bytes[1]) & 3] = 'N';
-        System.arraycopy(bases['C'], 0, bases['c'], 0, 4);
+        baseByCode['G'][(encodedMatrixBytes[2] >> 6) & 3] = 'A';
+        baseByCode['G'][(encodedMatrixBytes[2] >> 4) & 3] = 'C';
+        baseByCode['G'][(encodedMatrixBytes[2] >> 2) & 3] = 'T';
+        baseByCode['G'][(encodedMatrixBytes[2]) & 3] = 'N';
+        // propagate to lower case 'g'
+        System.arraycopy(baseByCode['G'], 0, baseByCode['g'], 0, 4);
 
-        bases['G'][(bytes[2] >> 6) & 3] = 'A';
-        bases['G'][(bytes[2] >> 4) & 3] = 'C';
-        bases['G'][(bytes[2] >> 2) & 3] = 'T';
-        bases['G'][(bytes[2]) & 3] = 'N';
-        System.arraycopy(bases['G'], 0, bases['g'], 0, 4);
+        baseByCode['T'][(encodedMatrixBytes[3] >> 6) & 3] = 'A';
+        baseByCode['T'][(encodedMatrixBytes[3] >> 4) & 3] = 'C';
+        baseByCode['T'][(encodedMatrixBytes[3] >> 2) & 3] = 'G';
+        baseByCode['T'][(encodedMatrixBytes[3]) & 3] = 'N';
+        // propagate to lower case 't'
+        System.arraycopy(baseByCode['T'], 0, baseByCode['t'], 0, 4);
 
-        bases['T'][(bytes[3] >> 6) & 3] = 'A';
-        bases['T'][(bytes[3] >> 4) & 3] = 'C';
-        bases['T'][(bytes[3] >> 2) & 3] = 'G';
-        bases['T'][(bytes[3]) & 3] = 'N';
-        System.arraycopy(bases['T'], 0, bases['t'], 0, 4);
+        baseByCode['N'][(encodedMatrixBytes[4] >> 6) & 3] = 'A';
+        baseByCode['N'][(encodedMatrixBytes[4] >> 4) & 3] = 'C';
+        baseByCode['N'][(encodedMatrixBytes[4] >> 2) & 3] = 'G';
+        baseByCode['N'][(encodedMatrixBytes[4]) & 3] = 'T';
 
-        bases['N'][(bytes[4] >> 6) & 3] = 'A';
-        bases['N'][(bytes[4] >> 4) & 3] = 'C';
-        bases['N'][(bytes[4] >> 2) & 3] = 'G';
-        bases['N'][(bytes[4]) & 3] = 'T';
-
-        for (final byte refBase : BASES) {
-            for (byte code = 0; code < 4; code++)
-                codes[refBase][bases[refBase][code]] = code;
+        for (final byte refBase : SUBSTITUTION_BASES_UPPER) {
+            for (byte code = 0; code < CODES_PER_BASE; code++) {
+                codeByBase[refBase][baseByCode[refBase][code]] = code;
+            }
         }
     }
 
+    /**
+     * Return this substitution matrix as a byte array in a form suitable for serialization.
+     * @return
+     */
     public byte[] getEncodedMatrix() {
-        return bytes;
+        return encodedMatrixBytes;
     }
 
-    private static class SubCode {
+    private static class SubstitutionFrequency {
         final byte base;
         long freq;
         byte rank;
 
-        public SubCode(final byte base, final long freq) {
+        public SubstitutionFrequency(final byte base, final long freq) {
             this.base = base;
             this.freq = freq;
         }
-
     }
 
-    private static final Comparator<SubCode> comparator = new Comparator<SubstitutionMatrix.SubCode>() {
+    private static final Comparator<SubstitutionFrequency> comparator = new Comparator<SubstitutionFrequency>() {
 
         @Override
-        public int compare(final SubCode o1, final SubCode o2) {
-            if (o1.freq != o2.freq)
+        public int compare(final SubstitutionFrequency o1, final SubstitutionFrequency o2) {
+            // primary sort by frequency
+            if (o1.freq != o2.freq) {
                 return (int) (o2.freq - o1.freq);
-            return ORDER[o1.base] - ORDER[o2.base];
+            }
+            // same frequency; compare based on spec tie-breaking rule (use base order prescribed by the spec)
+            return CODE_ORDER[o1.base] - CODE_ORDER[o2.base];
         }
     };
 
-    private byte rank(final byte refBase, final long[] frequencies) {
-        // in alphabetical order:
-        final SubCode[] subCodes = new SubCode[4];
-        {
-            int i = 0;
-            for (final byte base : BASES) {
-                if (refBase == base)
-                    continue;
-                subCodes[i++] = new SubCode(base, frequencies[base]);
+    // For the given base, return a packed substitution vector containing the possible
+    // substitution codes given the set of substitution frequencies for that base.
+    //
+    // NOTE: this has a side effect in that is also populates the codeByBase matrix for this base.
+    private byte substitutionCodeVector(final byte refBase, final long[] frequencies) {
+        // there are 5 possible bases, so there are 4 possible substitutions for each base
+        final SubstitutionFrequency[] subCodes = new SubstitutionFrequency[CODES_PER_BASE];
+        int i = 0;
+        for (final byte base : SUBSTITUTION_BASES_UPPER) {
+            if (refBase == base) {
+                continue;
             }
+            subCodes[i++] = new SubstitutionFrequency(base, frequencies[base]);
         }
 
+        // sort the codes for this base based on substitution frequency
         Arrays.sort(subCodes, comparator);
 
-        for (byte i = 0; i < subCodes.length; i++)
-            subCodes[i].rank = i;
-
-        for (final SubCode subCode1 : subCodes) subCode1.freq = 0;
-
-        Arrays.sort(subCodes, comparator);
-
-        byte rank = 0;
-        for (final SubCode subCode : subCodes) {
-            rank <<= 2;
-            rank |= subCode.rank;
+        // set each SubstitutionFrequency to it's relative rank now that we know it, and reset the frequencies
+        // so we can then re-sort, without frequency bias, back to the original (and prescribed)
+        // order in which we want to emit the codes
+        for (byte j = 0; j < subCodes.length; j++) {
+            subCodes[j].rank = j;
         }
 
-        for (final SubCode s : subCodes)
-            codes[refBase][s.base] = s.rank;
+        for (final SubstitutionFrequency subCode1 : subCodes) {
+            subCode1.freq = 0;
+        }
 
-        return rank;
+        // re-sort back to the fixed order prescribed by the spec so we can store the substitution
+        // codes in the matrix in the prescribed order
+        Arrays.sort(subCodes, comparator);
+
+        byte codeVector = 0;
+        for (final SubstitutionFrequency subCode : subCodes) {
+            codeVector <<= 2;
+            codeVector |= subCode.rank;
+        }
+
+        for (final SubstitutionFrequency s : subCodes) {
+            codeByBase[refBase][s.base] = s.rank;
+        }
+
+        return codeVector;
     }
 
+    /**
+     * Given a reference base and a read base, find the corresponding substitution code
+     * @param refBase reference base being substituted
+     * @param readBase read base to substitute for the reference base
+     * @return code to be used for this refBase/readBase pair
+     */
     public byte code(final byte refBase, final byte readBase) {
-        return codes[refBase][readBase];
+        return codeByBase[refBase][readBase];
     }
 
+    /**
+     * Given a reference base and a substitution code, return the corresponding substitution base.
+     * @param refBase reference base being substituted
+     * @param code substitution code
+     * @return base to be substituted for this (refBase, code) pair
+     */
     public byte base(final byte refBase, final byte code) {
-        return bases[refBase][code];
+        return baseByCode[refBase][code];
     }
 }
