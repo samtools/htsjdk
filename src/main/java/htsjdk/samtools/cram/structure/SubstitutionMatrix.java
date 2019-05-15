@@ -34,17 +34,18 @@ import java.util.Comparator;
 public class SubstitutionMatrix {
     // List of bases subject to substitution. The upper and lower case arrays must have the bases
     // in the same order so that the index for a given base is the same for upper and lower case
-    public static final byte[] SUBSTITUTION_BASES_UPPER = new byte[]{'A', 'C', 'G', 'T', 'N'};
+    static final byte[] SUBSTITUTION_BASES_UPPER = new byte[]{'A', 'C', 'G', 'T', 'N'};
+
     private static final byte[] SUBSTITUTION_BASES_LOWER = new byte[]{'a', 'c', 'g', 't', 'n'};
-    private static int BASES_SIZE = SUBSTITUTION_BASES_UPPER.length;
+    private static final int BASES_SIZE = SUBSTITUTION_BASES_UPPER.length;
 
     // Since bases are represented as bytes, there are theoretically 256 possible symbols in the
     // symbol space, though in reality we only care about 10 of these (5 upper and 5 lower case
     // reference bases).
-    private static int SYMBOL_SPACE_SIZE = 256;
+    private static final int SYMBOL_SPACE_SIZE = 256;
 
     // number of possible substitution codes per base
-    private static int CODES_PER_BASE = BASES_SIZE - 1;
+    private static final int CODES_PER_BASE = BASES_SIZE - 1;
 
     // The order in which substitution codes are encoded in the serialized matrix, as prescribed
     // by the CRAM spec:
