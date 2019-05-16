@@ -63,17 +63,13 @@ public class CompressionHeaderFactory {
      *
      * @param records
      *            the data to be compressed
-     * @param substitutionMatrix
-     *            a matrix of base substitution frequencies, can be null, in
-     *            which case it is re-calculated.
      * @param coordinateSorted
      *            if true the records are assumed to be sorted by alignment
      *            position
      * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} object
      *         describing the encoding chosen for the data
      */
-    public CompressionHeader build(final List<CramCompressionRecord> records, SubstitutionMatrix substitutionMatrix,
-                                   final boolean coordinateSorted) {
+    public CompressionHeader build(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
 
         final CompressionHeaderBuilder builder = new CompressionHeaderBuilder(coordinateSorted);
 
@@ -112,10 +108,8 @@ public class CompressionHeaderFactory {
 
         buildTagEncodings(records, builder);
 
-        if (substitutionMatrix == null) {
-            substitutionMatrix = new SubstitutionMatrix(buildFrequencies(records));
-            updateSubstitutionCodes(records, substitutionMatrix);
-        }
+        final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(buildFrequencies(records));
+        updateSubstitutionCodes(records, substitutionMatrix);
         builder.setSubstitutionMatrix(substitutionMatrix);
         return builder.getHeader();
     }

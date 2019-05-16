@@ -21,7 +21,7 @@ import java.util.List;
 public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void testAllEncodingsPresent() {
-        final CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), new SubstitutionMatrix(new long[256][256]), true);
+        final CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), true);
         for (final DataSeries key : DataSeries.values()) {
             switch (key) {
                 // skip test marks and unused series:
@@ -41,11 +41,11 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void testAP_delta() {
         boolean sorted = true;
-        CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), new SubstitutionMatrix(new long[256][256]), sorted);
+        CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
         Assert.assertEquals(header.APDelta, sorted);
 
         sorted = false;
-        header = new CompressionHeaderFactory().build(new ArrayList<>(), new SubstitutionMatrix(new long[256][256]), sorted);
+        header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
         Assert.assertEquals(header.APDelta, sorted);
     }
 
