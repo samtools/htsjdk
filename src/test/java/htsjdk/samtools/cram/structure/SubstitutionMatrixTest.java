@@ -22,11 +22,11 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
     @BeforeGroups(groups = "freqs2matrix")
     public void b() {
         freqs = new long[255][255];
-        for (int r = 0; r < SubstitutionMatrix.BASES.length; r++) {
-            for (int b = 0; b < SubstitutionMatrix.BASES.length; b++) {
+        for (int r = 0; r < SubstitutionMatrix.SUBSTITUTION_BASES_UPPER.length; r++) {
+            for (int b = 0; b < SubstitutionMatrix.SUBSTITUTION_BASES_UPPER.length; b++) {
                 if (r == b)
                     continue;
-                freqs[SubstitutionMatrix.BASES[r]][SubstitutionMatrix.BASES[b]] = b;
+                freqs[SubstitutionMatrix.SUBSTITUTION_BASES_UPPER[r]][SubstitutionMatrix.SUBSTITUTION_BASES_UPPER[b]] = b;
             }
         }
         m = new SubstitutionMatrix(freqs);
