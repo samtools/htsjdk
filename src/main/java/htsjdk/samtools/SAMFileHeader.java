@@ -101,7 +101,6 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     private final Map<String, SAMProgramRecord> mProgramRecordMap = new HashMap<>();
     private SAMSequenceDictionary mSequenceDictionary = new SAMSequenceDictionary();
     final private List<String> mComments = new ArrayList<>();
-    private String textHeader;
     private final List<SAMValidationError> mValidationErrors = new ArrayList<>();
 
     public SAMFileHeader() {
@@ -322,24 +321,11 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         super.setAttribute(key, tempVal);
     }
 
-    /**
-     * If this SAMHeader was read from a file, this property contains the header
-     * as it appeared in the file, otherwise it is null.  Note that this is not a toString()
-     * operation.  Changes to the SAMFileHeader object after reading from the file are not reflected in this value.
-     *
-     * In addition this value is only set if one of the following is true:
-     *   - The size of the header is < 1,048,576 characters (1MB ascii, 2MB unicode)
-     *   - There are either validation or parsing errors associated with the header
-     *
-     * Invalid header lines may appear in value but are not stored in the SAMFileHeader object.
-     */
-    public String getTextHeader() {
-        return textHeader;
-    }
+    /** @deprecated since May 1st 2019 - text version of header is no longer stored. */
+    @Deprecated public String getTextHeader() {  return null; }
 
-    public void setTextHeader(final String textHeader) {
-        this.textHeader = textHeader;
-    }
+    /** @deprecated since May 1st 2019 - text version of header is no longer stored. */
+    @Deprecated public void setTextHeader(final String textHeader) { }
 
     public List<String> getComments() {
         return Collections.unmodifiableList(mComments);

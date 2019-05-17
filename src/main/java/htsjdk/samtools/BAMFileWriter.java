@@ -187,16 +187,12 @@ public class BAMFileWriter extends SAMFileWriterImpl {
     }
 
     /**
-     * Writes a header to a BAM file. Might need to regenerate the String version of the header, if one already has both the
-     * samFileHeader and the String, use the version of this method which takes both.
+     * Writes a header to a BAM file.
      */
     protected static void writeHeader(final BinaryCodec outputBinaryCodec, final SAMFileHeader samFileHeader) {
-        // Do not use SAMFileHeader.getTextHeader() as it is not updated when changes to the underlying object are made
-        final String headerString;
         final Writer stringWriter = new StringWriter();
         new SAMTextHeaderCodec().encode(stringWriter, samFileHeader, true);
-        headerString = stringWriter.toString();
-
+        final String headerString = stringWriter.toString();
         writeHeader(outputBinaryCodec, samFileHeader, headerString);
     }
 
