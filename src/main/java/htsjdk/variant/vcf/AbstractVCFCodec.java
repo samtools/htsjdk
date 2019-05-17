@@ -36,7 +36,6 @@ import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.*;
-import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -54,7 +53,11 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     // we have to store the list of strings that make up the header until they're needed
     protected VCFHeader header = null;
     protected VCFHeaderVersion version = null;
-    protected VCFTextTransformer vcfTextTransformer = getTextTransformerForVCFVersion(VCFHeaderVersion.VCF4_2);
+
+    private final static VCFTextTransformer percentEncodingTextTransformer = new VCFPercentEncodedTextTransformer();
+    private final static VCFTextTransformer passThruTextTransformer = new VCFPassThruTextTransformer();
+    //by default, we use the passThruTextTransformer (assume pre v4.3)
+    private VCFTextTransformer vcfTextTransformer = passThruTextTransformer;
 
     // a mapping of the allele
     protected Map<String, List<Allele>> alleleMap = new HashMap<String, List<Allele>>(3);
@@ -134,7 +137,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     protected VCFHeader parseHeaderFromLines( final List<String> headerStrings, final VCFHeaderVersion version ) {
         this.version = version;
-        vcfTextTransformer = getTextTransformerForVCFVersion(version);
 
         Set<VCFHeaderLine> metaData = new LinkedHashSet<VCFHeaderLine>();
         Set<String> sampleNames = new LinkedHashSet<String>();
@@ -353,10 +355,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param targetVersion the version for which a transformer is bing requested
      * @return a {@link VCFTextTransformer} suitable for the targetVersion
      */
-    private static VCFTextTransformer getTextTransformerForVCFVersion(final VCFHeaderVersion targetVersion) {
-        return targetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) ?
-                new VCFTextTransformer() :
-                new VCFPassThruTextTransformer();
+    private VCFTextTransformer getTextTransformerForVCFVersion(final VCFHeaderVersion targetVersion) {
+        return targetVersion != null && targetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) ?
+                percentEncodingTextTransformer :
+                passThruTextTransformer;
     }
 
     private VariantContext decodeLine(final String line, final boolean includeGenotypes) {
@@ -524,14 +526,14 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     // split on the INFO field separator
                     List<String> infoValueSplit = ParsingUtils.split(valueString, VCFConstants.INFO_FIELD_ARRAY_SEPARATOR_CHAR);
                     if ( infoValueSplit.size() == 1 ) {
-                        value = vcfTextTransformer.transformEncodedText(infoValueSplit.get(0));
+                        value = vcfTextTransformer.decodeText(infoValueSplit.get(0));
                         final VCFInfoHeaderLine headerLine = header.getInfoHeaderLine(key);
                         if ( headerLine != null && headerLine.getType() == VCFHeaderLineType.Flag && value.equals("0") ) {
                             // deal with the case where a flag field has =0, such as DB=0, by skipping the add
                             continue;
                         }
                     } else {
-                        value = vcfTextTransformer.transformEncodedText(infoValueSplit);
+                        value = vcfTextTransformer.decodeText(infoValueSplit);
                     }
                 } else {
                     key = infoFields.get(i);
@@ -770,7 +772,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         boolean PlIsSet = false;
         for (int genotypeOffset = 1; genotypeOffset < nParts; genotypeOffset++) {
             List<String> genotypeValues = ParsingUtils.split(genotypeParts[genotypeOffset], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
-            genotypeValues = vcfTextTransformer.transformEncodedText(genotypeValues);
+            genotypeValues = vcfTextTransformer.decodeText(genotypeValues);
 
             final String sampleName = sampleNameIterator.next();
             final GenotypeBuilder gb = new GenotypeBuilder(sampleName);

@@ -29,14 +29,14 @@ public class VCFTextTransformerTest extends HtsjdkTest {
 
     @Test(dataProvider="validPercentEncodings")
     public void testDecodeValidEncodings(final String rawText, final String decodedText) {
-        final VCFTextTransformer vcfTextTransformer = new VCFTextTransformer();
-        Assert.assertEquals(vcfTextTransformer.transformEncodedText(rawText), decodedText);
+        final VCFTextTransformer vcfTextTransformer = new VCFPercentEncodedTextTransformer();
+        Assert.assertEquals(vcfTextTransformer.decodeText(rawText), decodedText);
     }
 
     @Test(dataProvider = "validPercentEncodings")
     public void testPassThruValidEncodings(final String rawText, final String unused) {
         final VCFPassThruTextTransformer vcfPassThruTransformer = new VCFPassThruTextTransformer();
-        Assert.assertEquals(vcfPassThruTransformer.transformEncodedText(rawText), rawText);
+        Assert.assertEquals(vcfPassThruTransformer.decodeText(rawText), rawText);
     }
 
     @DataProvider(name="invalidPercentEncodings")
@@ -60,8 +60,8 @@ public class VCFTextTransformerTest extends HtsjdkTest {
 
     @Test(dataProvider="invalidPercentEncodings", expectedExceptions = TribbleException.class)
     public void testDecodeInvalidEncodings(final String rawText) {
-        final VCFTextTransformer vcfTextTransformer = new VCFTextTransformer();
-        vcfTextTransformer.transformEncodedText(rawText);
+        final VCFTextTransformer vcfTextTransformer = new VCFPercentEncodedTextTransformer();
+        vcfTextTransformer.decodeText(rawText);
     }
 
 }

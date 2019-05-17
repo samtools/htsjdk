@@ -10,7 +10,6 @@ import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextTestUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -53,7 +52,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test(dataProvider="all43Files")
     public void testReadAllVCF43Features(final Path testFile) {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(testFile);
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
         Assert.assertEquals(entireVCF.a.getMetaDataInInputOrder().size(), 70);
         Assert.assertEquals(entireVCF.b.size(), 25);
@@ -119,7 +118,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test(dataProvider="all43Files")
     public void testVCF43PercentEncoding(final Path testFile) {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(testFile);
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
         // 1       327     .       T       <*>     666.18  GATK_STANDARD;HARD_TO_VALIDATE
         // AB=0.74;AC=3;AF=0.50;AN=6;DB=0;DP=936;Dels=0.00;HRun=3;MQ=34.66;MQ0=728;QD=0.71;SB=-268.74;set=fil%3AteredInBoth
@@ -132,7 +131,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test(dataProvider="all43Files")
     public void testSymbolicAlternateAllele(final Path testFile) {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(testFile);
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
         // 1       327     .       T       <*>     666.18  GATK_STANDARD;HARD_TO_VALIDATE
         // AB=0.74;AC=3;AF=0.50;AN=6;DB=0;DP=936;Dels=0.00;HRun=3;MQ=34.66;MQ0=728;QD=0.71;SB=-268.74;set=fil%3AteredInBoth
@@ -190,17 +189,17 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test
     public void testVCF43ReadUTF8Attributes() {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
         final List<VCFHeaderLine> headerLines = getIDHeaderLinesWithKey(entireVCF.a, "COMMENT");
 
-        //##COMMENT=<This file has 6 embedded UTF8 chars - one right here (ä), and 3 in the second vc's set attribute value.>
+        //##COMMENT=<This file has 6 embedded UTF8 chars - 1 right here (ä), 3 in the second ALT line, and 2 in the second vc's set attribute value.>
         Assert.assertEquals(headerLines.get(0).getValue(),
                 "This file has 6 embedded UTF8 chars - 1 right here (ä), 3 in the second ALT line, and 2 in the second vc's set attribute value.");
     }
 
     @Test
     public void testVCF43AltLineWithUTF8Chars() {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
         final List<VCFHeaderLine> headerLines = getIDHeaderLinesWithKey(entireVCF.a,"ALT");
 
         //##ALT=<ID=DUP,Description="Duplication", ExtraAltField="äääa">
@@ -216,7 +215,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test
     public void testVCF43PercentEncodingWithUTF8() {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(TEST_43_UTF8_FILE);
 
         //2	327	.	T	C	666.18	GATK_STANDARD;HARD_TO_VALIDATE
         // AB=0.74;AC=3;AF=0.50;AN=6;DB=0;DP=936;Dels=0.00;HRun=3;MQ=34.66;MQ0=728;QD=0.71;SB=-268.74;set=ääa
@@ -236,7 +235,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
             final String ID,
             Function<VCFHeaderLine, T> headerLineCastTransformer)
     {
-        final Tuple<VCFHeader, List<VariantContext>> entireVCF = VariantContextTestUtils.readEntireVCFIntoMemory(testVCFFile);
+        final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testVCFFile);
         final List<VCFHeaderLine> headerLines = getIDHeaderLinesWithKey(entireVCF.a, key);
         return headerLines
                 .stream()

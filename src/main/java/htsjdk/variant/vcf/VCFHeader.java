@@ -169,7 +169,7 @@ public class VCFHeader implements Serializable {
 
     /**
      * Establish the header version for this header. If the header version has already been established
-     * for this header, the new version will be subject to version transition vaidation.
+     * for this header, the new version will be subject to version transition validation.
      * @param vcfHeaderVersion
      * @throws TribbleException if the requested header version is not compatible with the existing version
      */
@@ -182,8 +182,8 @@ public class VCFHeader implements Serializable {
      * Throw if {@code fromVersion} is not compatible with a {@code toVersion}. Generally, any version before
      * version 4.2 can be up-converted to version 4.2, but not to version 4.3. Once a header is established as
      * version 4.3, it cannot be up or down converted, and it must remain at version 4.3.
-     * @param fromVersion version
-     * @param toVersion
+     * @param fromVersion current version. May be null, in which case {@code toVersion} can be any version
+     * @param toVersion new version. Cannot be null.
      * @throws TribbleException if {@code fromVersion} is not compatible with {@code toVersion}
      */
     public static void validateVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
@@ -195,12 +195,12 @@ public class VCFHeader implements Serializable {
         if (fromVersion != null) {
             if (toVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
                 if (!fromVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-                    // we're trying to go from pre-v43 to v43+
+                    // we're trying to go from pre-v4.3 to v4.3+
                     throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
                 }
 
             } else if (fromVersion.equals(VCFHeaderVersion.VCF4_3)) {
-                // we're trying to go from v43 to pre-v43
+                // we're trying to go from v4.3 to pre-v4.3
                 throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
             }
         }

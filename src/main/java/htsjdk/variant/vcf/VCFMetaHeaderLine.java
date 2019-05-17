@@ -7,7 +7,7 @@ public class VCFMetaHeaderLine extends VCFSimpleHeaderLine {
     private static final long serialVersionUID = 1L;
 
     public VCFMetaHeaderLine(final String line, final VCFHeaderVersion version) {
-        super(VCFConstants.META_HEADER_KEY, new VCF4Parser().parseLine(line, null));
+        super(VCFConstants.META_HEADER_KEY, VCFHeaderLineTranslator.parseLine(version, line, null));
     }
 
 }
