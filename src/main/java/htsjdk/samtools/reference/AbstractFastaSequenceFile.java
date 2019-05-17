@@ -78,17 +78,14 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     /** Attempts to find and load the sequence dictionary if present. */
     protected SAMSequenceDictionary findAndLoadSequenceDictionary(final Path fasta) {
         final Path dictPath = findSequenceDictionary(path);
-        if (dictPath == null) {
-            return null;
+        if (dictPath == null) return null;
+
+        IOUtil.assertFileIsReadable(dictPath);
+        try (InputStream dictionaryIn = IOUtil.openFileForReading(dictPath)) {
+            return ReferenceSequenceFileFactory.loadDictionary(dictionaryIn);
         }
-        else {
-            IOUtil.assertFileIsReadable(dictPath);
-            try (InputStream dictionaryIn = IOUtil.openFileForReading(dictPath)) {
-                return ReferenceSequenceFileFactory.loadDictionary(dictionaryIn);
-            }
-            catch (Exception e) {
-                throw new SAMException("Could not open sequence dictionary file: " + dictPath, e);
-            }
+        catch (Exception e) {
+            throw new SAMException("Could not open sequence dictionary file: " + dictPath, e);
         }
     }
 
