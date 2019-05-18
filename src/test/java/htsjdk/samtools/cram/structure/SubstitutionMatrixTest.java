@@ -21,17 +21,16 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
 
     @BeforeGroups(groups = "freqs2matrix")
     public void b() {
-        freqs = new long[255][255];
-        for (int r = 0; r < SubstitutionMatrix.SUBSTITUTION_BASES_UPPER.length; r++) {
-            for (int b = 0; b < SubstitutionMatrix.SUBSTITUTION_BASES_UPPER.length; b++) {
-                if (r == b)
-                    continue;
-                freqs[SubstitutionMatrix.SUBSTITUTION_BASES_UPPER[r]][SubstitutionMatrix.SUBSTITUTION_BASES_UPPER[b]] = b;
+        freqs = new long[SubstitutionMatrix.SYMBOL_SPACE_SIZE][SubstitutionMatrix.SYMBOL_SPACE_SIZE];
+        for (final SubstitutionBase r : SubstitutionBase.values()) {
+            for (final SubstitutionBase b : SubstitutionBase.values()) {
+                if (r != b) {
+                    freqs[r.getBase()][b.getBase()] = b.ordinal();
+                }
             }
         }
         m = new SubstitutionMatrix(freqs);
     }
-
 
     @Test(dataProvider = "matrix2code", groups = "matrix2code")
     public void testMatrix2code(char refBase, char base, int code) {
