@@ -94,20 +94,6 @@ import java.util.Comparator;
         }
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder stringBuilder = new StringBuilder();
-        for (final SubstitutionBase r : SubstitutionBase.values()) {
-            stringBuilder.append((char) r.getBase());
-            stringBuilder.append(':');
-            for (int i = 0; i < CODES_PER_BASE; i++) {
-                stringBuilder.append((char) baseByCode[r.getBase()][i]);
-            }
-            stringBuilder.append('\t');
-        }
-        return stringBuilder.toString();
-    }
-
     /**
      * Create a SubstitutionMatrix from a serialized byte array
      * @param matrix serialized substitution matrix from a CRAM stream
@@ -159,11 +145,53 @@ import java.util.Comparator;
     }
 
     /**
+     * Given a reference base and a read base, find the corresponding substitution code
+     * @param refBase reference base being substituted
+     * @param readBase read base to substitute for the reference base
+     * @return code to be used for this refBase/readBase pair
+     */
+    public byte code(final byte refBase, final byte readBase) {
+        if (Character.isLowerCase((char) refBase)) {
+            log.warn(String.format("CRAM: Attempt to substitute a lower case reference base '%c'", (char) refBase));
+        }
+        return codeByBase[refBase][readBase];
+    }
+
+    /**
+     * Given a reference base and a substitution code, return the corresponding substitution base.
+     * @param refBase reference base being substituted
+     * @param code substitution code
+     * @return base to be substituted for this (refBase, code) pair
+     */
+    public byte base(final byte refBase, final byte code) {
+        final byte base = baseByCode[refBase][code];
+        if (base == NO_BASE) {
+            // attempt to retrieve a code for a reference base that isn't in the substitution matrix
+            throw new IllegalArgumentException(String.format("CRAM: Attempt to retrieve a substitution base for '%c'", (char) refBase));
+        }
+        return base;
+    }
+
+    /**
      * Return this substitution matrix as a byte array in a form suitable for serialization.
      * @return
      */
     public byte[] getEncodedMatrix() {
         return encodedMatrixBytes;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder stringBuilder = new StringBuilder();
+        for (final SubstitutionBase r : SubstitutionBase.values()) {
+            stringBuilder.append((char) r.getBase());
+            stringBuilder.append(':');
+            for (int i = 0; i < CODES_PER_BASE; i++) {
+                stringBuilder.append((char) baseByCode[r.getBase()][i]);
+            }
+            stringBuilder.append('\t');
+        }
+        return stringBuilder.toString();
     }
 
     // Initialize the baseByCode array to a sentinel value
@@ -240,31 +268,4 @@ import java.util.Comparator;
         return codeVector;
     }
 
-    /**
-     * Given a reference base and a read base, find the corresponding substitution code
-     * @param refBase reference base being substituted
-     * @param readBase read base to substitute for the reference base
-     * @return code to be used for this refBase/readBase pair
-     */
-    public byte code(final byte refBase, final byte readBase) {
-        if (Character.isLowerCase((char) refBase)) {
-            log.warn(String.format("CRAM: Attempt to substitute a lower case reference base '%c'", (char) refBase));
-        }
-        return codeByBase[refBase][readBase];
-    }
-
-    /**
-     * Given a reference base and a substitution code, return the corresponding substitution base.
-     * @param refBase reference base being substituted
-     * @param code substitution code
-     * @return base to be substituted for this (refBase, code) pair
-     */
-    public byte base(final byte refBase, final byte code) {
-        final byte base = baseByCode[refBase][code];
-        if (base == NO_BASE) {
-            // attempt to retrieve a code for a reference base that isn't in the substitution matrix
-            throw new IllegalArgumentException(String.format("CRAM: Attempt to retrieve a substitution base for '%c'", (char) refBase));
-        }
-        return base;
-    }
 }
