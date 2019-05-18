@@ -13,6 +13,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -62,36 +63,6 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
 
         final byte[] dataForTag = factory.getDataForTag(records, tagID);
         Assert.assertEquals(dataForTag, data);
-    }
-
-    @Test
-    public void test_buildFrequencies() {
-        final CramCompressionRecord record = new CramCompressionRecord();
-        final Substitution s = new Substitution();
-        s.setPosition(1);
-        final byte refBase = 'A';
-        final byte readBase = 'C';
-
-        s.setBase(readBase);
-        s.setReferenceBase(refBase);
-        s.setCode((byte) 1);
-        record.readFeatures = new ArrayList<>();
-        record.readFeatures.add(s);
-        record.readLength = 2;
-
-        final List<CramCompressionRecord> records = new ArrayList<>();
-        records.add(record);
-
-        final long[][] frequencies = CompressionHeaderFactory.buildFrequencies(records);
-        for (int i = 0; i < frequencies.length; i++) {
-            for (int j = 0; j < frequencies[i].length; j++) {
-                if (i != refBase && j != readBase) {
-                    Assert.assertEquals(frequencies[i][j], 0);
-                }
-            }
-
-        }
-        Assert.assertEquals(frequencies[refBase][readBase], 1);
     }
 
     @Test
@@ -157,23 +128,14 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void test_updateSubstitutionCodes() {
         final CramCompressionRecord record = new CramCompressionRecord();
-        final Substitution s = new Substitution();
-        s.setPosition(1);
+
         final byte refBase = 'A';
         final byte readBase = 'C';
+        final Substitution s = new Substitution(1, readBase, refBase);
+        record.addReadFeature(s);
 
-        s.setBase(readBase);
-        s.setReferenceBase(refBase);
-        record.readFeatures = new ArrayList<>();
-        record.readFeatures.add(s);
-        record.readLength = 2;
-
-        final List<CramCompressionRecord> records = new ArrayList<>();
-        records.add(record);
-
-        final long[][] frequencies = new long[256][256];
-        frequencies[refBase][readBase] = 1;
-        SubstitutionMatrix matrix = new SubstitutionMatrix(frequencies);
+        final List<CramCompressionRecord> records = Collections.singletonList(record);
+        final SubstitutionMatrix matrix = new SubstitutionMatrix(records);
 
         Assert.assertTrue(s.getCode() == -1);
         CompressionHeaderFactory.updateSubstitutionCodes(records, matrix);
