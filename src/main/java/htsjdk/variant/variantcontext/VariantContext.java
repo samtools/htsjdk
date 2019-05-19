@@ -1686,10 +1686,6 @@ public class VariantContext implements Feature, Serializable {
      *     And code consuming the returned {@code start} should be prepared for such out-of-the-ordinary values.
      * </p>
      *
-     * The given example is in section 5.4.5 (see example event illustrated in Figure 6 and VCF records below the figure).
-     * Another possible scenario is when a telomere on the p-arm of a chromosome is deleted.
-     * In these cases, .
-     *
      * @return 1-based inclusive start position of the Variant
      */
     @Override
