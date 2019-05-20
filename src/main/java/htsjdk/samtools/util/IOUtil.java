@@ -1128,13 +1128,13 @@ public class IOUtil {
                                             innerPath = getPath(s);
                                             stack.push(innerPath);
                                         } catch (IOException e) {
-                                            throw new IllegalArgumentException("cannot convert " + s + " to a Path.");
+                                            throw new IllegalArgumentException("cannot convert " + s + " to a Path.", e);
                                         }
                                     }
                             );
 
                 } catch (IOException e) {
-                    throw new IllegalArgumentException("had trouble reading from " + p.toUri().toString());
+                    throw new IllegalArgumentException("had trouble reading from " + p.toUri().toString(), e);
                 }
             }
         }
