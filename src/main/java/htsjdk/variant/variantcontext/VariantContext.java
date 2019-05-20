@@ -1663,8 +1663,11 @@ public class VariantContext implements Feature, Serializable {
     }
 
     /**
-     * Returns 1-based inclusive start position of the variant, 0 or greater.
-     * See below for explanation on "0".
+     * Returns 1-based inclusive start position of the variant.
+     *
+     * <p>
+     *     INDEL events usually start on the first unaltered reference base before the INDEL.
+     * </p>
      *
      * <p>
      *     <strong>Warning:</strong>
@@ -1675,18 +1678,14 @@ public class VariantContext implements Feature, Serializable {
      * </p>
      *
      * <p>
-     *     INDEL events usually start on the first unaltered reference base before the INDEL.
-     * </p>
-     *
-     * <p>
+     *     <strong>Warning:</strong>
      *     Note also that the VCF spec allows 0 and N + 1 for POS field for telomeric event,
      *     where N is the length of the chromosome.
      *     The "0" value returned should be interpreted as telomere, and does not violate the above "1-based" comment.
-     *     It's the responsibility of code generating such variants to make sure {@code start} is populated correctly.
-     *     And code consuming the returned {@code start} should be prepared for such out-of-the-ordinary values.
+     *     Code consuming the returned {@code start} should be prepared for such out-of-the-ordinary values.
      * </p>
      *
-     * @return 1-based inclusive start position of the Variant
+     * @return 0 or greater.
      */
     @Override
     public int getStart() {
