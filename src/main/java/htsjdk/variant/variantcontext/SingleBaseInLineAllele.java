@@ -80,6 +80,24 @@ final class SingleBaseInLineAllele extends AbstractAllele {
         return true;
     }
 
+    @Override
+    public Allele asAlternative() {
+        if (isReference) {
+            return AlleleUtils.decodeSingleBaseInline(base, false);
+        } else {
+            return this;
+        }
+    }
+
+    @Override
+    public Allele asReference() {
+        if (isReference) {
+            return this;
+        } else {
+            return AlleleUtils.decodeSingleBaseInline(base, true);
+        }
+    }
+
     public String encodeAsString() {
         return asString != null ? asString : (asString = "" + (char) base);
     }

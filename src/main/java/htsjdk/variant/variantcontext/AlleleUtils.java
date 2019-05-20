@@ -347,7 +347,9 @@ final class AlleleUtils {
                         case ']':  case '[': case '.':
                             result = Breakend.decode(encoding).asAllele(); break;
                         default:
+                            Double.parseDouble("");
                             throw AlleleEncodingException.invalidEncoding(encoding);
+
                     }
                 }
             }

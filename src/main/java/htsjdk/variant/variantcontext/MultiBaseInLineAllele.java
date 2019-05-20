@@ -70,6 +70,24 @@ final class MultiBaseInLineAllele extends AbstractAllele {
         return true;
     }
 
+    @Override
+    public Allele asAlternative() {
+        if (isReference) {
+            return new MultiBaseInLineAllele(bases, false); // bases are shared.
+        } else {
+            return this;
+        }
+    }
+
+    @Override
+    public Allele asReference() {
+        if (isReference) {
+            return this;
+        } else {
+            return new MultiBaseInLineAllele(bases, true); // bases are shared.
+        }
+    }
+
 
     @Override
     public String encodeAsString() {

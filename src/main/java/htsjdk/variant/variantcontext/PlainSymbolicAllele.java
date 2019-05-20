@@ -75,6 +75,14 @@ final class PlainSymbolicAllele extends AbstractAllele {
     public boolean isSymbolic() { return true; }
 
     @Override
+    public boolean isCalled() { return true; }
+
+    @Override
+    public Allele asAlternative() {
+        return this;
+    }
+
+    @Override
     public int hashCode() {
         return id.hashCode();
     }

@@ -1,5 +1,7 @@
 package htsjdk.variant.variantcontext;
 
+import htsjdk.samtools.util.SequenceUtil;
+
 /**
  * Indicates an error in the encoding for an {@link Allele}, that is typically
  * result of a bad-formed data-file (e.g. VCF)
@@ -18,7 +20,11 @@ public class AlleleEncodingException extends RuntimeException {
     }
 
     public static AlleleEncodingException invalidEncoding(final byte base) {
-        throw new AlleleEncodingException(String.format("invalid allele encoding: '%s'", (char) base));
+        if (SequenceUtil.isValidIUPAC(base)) {
+            throw new AlleleEncodingException("only a,t,c,g and n are valid IUPAC code in alleles: '" + (char) base + "'");
+        } else {
+            throw new AlleleEncodingException(String.format("invalid allele encoding: '%s'", (char) base));
+        }
     }
 
     public static AlleleEncodingException invalidEncoding(final byte[] encoding) {

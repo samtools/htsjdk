@@ -37,6 +37,9 @@ final class BreakendAllele extends AbstractAllele {
     }
 
     @Override
+    public boolean isCalled() { return true; }
+
+    @Override
     public boolean isAlternative() { return true; }
 
     @Override
@@ -60,6 +63,11 @@ final class BreakendAllele extends AbstractAllele {
     @Override
     public Breakend asBreakend() {
         return breakend;
+    }
+
+    @Override
+    public Allele asAlternative() {
+        return this;
     }
 
     @Override

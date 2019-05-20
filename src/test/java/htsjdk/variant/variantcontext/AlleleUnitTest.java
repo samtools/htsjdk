@@ -35,6 +35,13 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 //    public Allele(byte[] bases, boolean isRef) {
 //    public Allele(boolean isRef) {
 //    public Allele(String bases, boolean isRef) {
@@ -98,7 +105,7 @@ public class AlleleUnitTest extends VariantBaseTest {
 
     @Test
     public void testCreatingSpanningDeletionAlleles() {
-        Assert.assertFalse(SpandDel.isAlternative()); // a Span-del is a lack of a copy due to a overlapping deletion. so is neither reference or alt as far as the containging variant-context is concerned.
+        Assert.assertTrue(SpandDel.isAlternative()); // a Span-del is a lack of a copy due to a overlapping deletion. so is neither reference or alt as far as the containging variant-context is concerned.
         Assert.assertFalse(SpandDel.isReference());
         Assert.assertTrue(SpandDel.encodeAsString().equals(Allele.SPAN_DEL_STRING));
         Assert.assertEquals(SpandDel.numberOfBases(), 0); // actual bases is 0.
@@ -328,7 +335,8 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertEquals(Allele.wouldBeSingleBreakend(baseString.getBytes()), isBreakend);
     }
 
-    public void checkConstraints(final Allele a) {
+    @Test(dataProvider = "allAlleles")
+    public void testConstraints(final Allele a) {
         if (a.isReference()) {
             Assert.assertTrue(a.isInline()); // only inline alleles can be reference.
         }
@@ -344,21 +352,120 @@ public class AlleleUnitTest extends VariantBaseTest {
         if (a.isSymbolic()) typeCount++;
         if (a.isNoCall()) typeCount++;
         if (a.isSpanDeletion()) typeCount++;
-        if (a.isUnspecifiedAlternative()) typeCount++;
         Assert.assertEquals(typeCount, 1);
+
+        if (!a.isNoCall()) {
+            Assert.assertTrue(a.isCalled());
+        } else {
+            Assert.assertFalse(a.isCalled());
+        }
 
         if (a.getSymbolicID() != null) {
             Assert.assertTrue(a.isSymbolic());
         }
         if (a.isBreakend()) {
+            Assert.assertFalse(a.isUnspecifiedAlternative());
             Assert.assertTrue(a.isSymbolic());
             Assert.assertNull(a.getSymbolicID());
             Assert.assertTrue(a.isSingleBreakend() ^ a.isPairedBreakend());
+            Assert.assertNotNull(a.asBreakend());
+        }
+        if (a.isSingleBreakend()) {
+            Assert.assertTrue(a.isBreakend());
+            Assert.assertFalse(a.hasContigID());
+            Assert.assertNull(a.getContigID());
+        }
+        if (a.isPairedBreakend()) {
+            Assert.assertTrue(a.isBreakend());
+            Assert.assertTrue(a.hasContigID());
+            Assert.assertNotNull(a.getContigID());
         }
         if (a.isContigInsertion()) {
             Assert.assertTrue(a.isSymbolic());
             Assert.assertNull(a.getSymbolicID());
+            Assert.assertTrue(a.hasContigID());
+            Assert.assertNotNull(a.getContigID());
         }
+    }
 
+    @Test(dataProvider = "allAlleles")
+    public void testAsAlternative(final Allele a) {
+        if (a.isNoCall()) {
+            try {
+                a.asAlternative();
+                Assert.fail("asAlternative must fail on a no-call allele");
+            } catch (final UnsupportedOperationException ex) {
+                // good.
+            }
+        } else if (a.isAlternative()) {
+            Assert.assertSame(a, a.asAlternative());
+        } else {
+            final Allele ref = a;
+            final Allele alt = a.asAlternative();
+            Assert.assertNotEquals(ref, alt);
+            Assert.assertTrue(alt.equals(ref, true));
+            Assert.assertTrue(ref.equals(alt, true));
+            Assert.assertEquals(ref.copyBases(), alt.copyBases());
+
+        }
+    }
+
+    @Test(dataProvider = "allAlleles")
+    public void testAsReference(final Allele a) {
+        if (a.isInline()) {
+            final Allele ref = a.asReference();
+            if (a.isReference()) {
+                Assert.assertSame(a, ref);
+            } else {
+                Assert.assertNotEquals(a, ref);
+                Assert.assertTrue(a.equals(ref, true));
+                Assert.assertTrue(ref.equals(a, true));
+                Assert.assertFalse(a.equals(ref, false));
+                Assert.assertFalse(ref.equals(a, false));
+                Assert.assertEquals(a.copyBases(), ref.copyBases());
+                Assert.assertTrue(a.equalBases(ref));
+                Assert.assertTrue(ref.equalBases(a));
+            }
+        } else {
+            try {
+                a.asReference();
+                Assert.fail("asAlternative must fail on a no-call allele");
+            } catch (final UnsupportedOperationException ex) {
+                // good.
+            }
+        }
+    }
+
+
+    @DataProvider(name = "allAlleles")
+    public Object[][] allAlleles() {
+        final List<Allele> alleles = new ArrayList<>();
+        // Add all the static Allele constants in Allele class:
+        alleles.addAll(Arrays.stream(Allele.class.getFields())
+                .filter(field -> field.getType().isAssignableFrom(Allele.class))
+                .filter(field -> Modifier.isStatic(field.getModifiers()))
+                .map (field -> {
+                    try {
+                        return (Allele) field.get(null);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toList()));
+        // Some alternatives:
+        alleles.addAll(Stream.of(
+                "A[12:12122314[", ".AA", "C.", ".T", "CG.", ".[1:1[", "[chr1:675819[T", "]chr1:124121]A",
+                "<MY_SYMBOLIC>", "<DUP:DEDUP>", "<DUP/DUP>","<:DDD>","G<asm101>",
+                "N", "A", "C", "ATAT", "CATA", "NAT", "ANA")
+                .map(Allele::create)
+                .collect(Collectors.toList()));
+        // Some reference inlines:
+        alleles.addAll(Stream.of(
+                "N", "A", "C", "ATAT", "CATA", "NAT", "ANA")
+                .map(str -> Allele.create(str, true))
+                .collect(Collectors.toList()));
+
+        final List<Object[]> result =  alleles.stream().map(a -> new Object[] {a}).collect(Collectors.toList());
+        return result.toArray(new Object[0][]);
     }
 }

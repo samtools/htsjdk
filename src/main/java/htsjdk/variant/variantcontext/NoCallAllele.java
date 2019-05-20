@@ -13,6 +13,16 @@ final class NoCallAllele extends AbstractAllele {
     }
 
     @Override
+    public Allele asAlternative() {
+        throw new UnsupportedOperationException("a no-call cannot be alternative (nor reference)");
+    }
+
+    @Override
+    public Allele asReference() {
+        throw new UnsupportedOperationException("a no-call cannot be reference (nor alternative)");
+    }
+
+    @Override
     public String encodeAsString() {
         return Allele.NO_CALL_STRING;
     }

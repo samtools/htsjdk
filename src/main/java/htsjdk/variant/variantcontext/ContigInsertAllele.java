@@ -32,6 +32,11 @@ final class ContigInsertAllele extends AbstractAllele {
     }
 
     @Override
+    public Allele asAlternative() {
+        return this;
+    }
+
+    @Override
     public String encodeAsString() {
         if (encodingAsString == null) {
             final StringBuilder builder = new StringBuilder(bases.length + assemblyContig.length() + 2);

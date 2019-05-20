@@ -10,12 +10,12 @@ abstract class AbstractAllele implements Allele {
 
     @Override
     public Allele asAlternative() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("cannot be alternative: " + this);
     }
 
     @Override
     public Allele asReference() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("cannot be reference: " + this);
     }
 
     @Override
@@ -34,12 +34,12 @@ abstract class AbstractAllele implements Allele {
     }
 
     @Override
-    public byte baseAt(int index) {
+    public byte baseAt(final int index) {
         throw new IndexOutOfBoundsException();
     }
 
     @Override
-    public Allele extend(byte[] tail) {
+    public Allele extend(final byte[] tail) {
         throw new UnsupportedOperationException();
     }
 

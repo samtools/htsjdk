@@ -29,6 +29,11 @@ final class UnspecifiedAlternativeAllele extends AbstractAllele {
     }
 
     @Override
+    public boolean isCalled() {
+        return true;
+    }
+
+    @Override
     public boolean isAlternative() { return true; }
 
     @Override
@@ -49,6 +54,11 @@ final class UnspecifiedAlternativeAllele extends AbstractAllele {
     @Override
     public boolean isUnspecifiedAlternative() {
         return true;
+    }
+
+    @Override
+    public Allele asAlternative() {
+        return this;
     }
 
     @Override

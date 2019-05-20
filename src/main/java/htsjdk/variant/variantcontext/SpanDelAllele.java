@@ -9,6 +9,12 @@ final class SpanDelAllele extends AbstractAllele {
     private SpanDelAllele() {
     }
 
+
+    @Override
+    public Allele asAlternative() {
+        return this;
+    }
+
     @Override
     public String encodeAsString() {
         return Allele.SPAN_DEL_STRING;
@@ -21,6 +27,11 @@ final class SpanDelAllele extends AbstractAllele {
 
     @Override
     public boolean isAlternative() {
+        return true;
+    }
+
+    @Override
+    public boolean isCalled() {
         return true;
     }
 

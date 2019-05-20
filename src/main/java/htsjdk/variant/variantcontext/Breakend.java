@@ -547,6 +547,12 @@ public abstract class Breakend implements Serializable, BaseSequence {
             return this == other || (other instanceof MultiBasePairedBreakend && equals((MultiBasePairedBreakend) other));
         }
 
+        @Override
+        public int hashCode() {
+            return (((((SequenceUtil.hashCode(bases) * 31) + type.hashCode()) * 31)
+                    + mateContig.hashCode()) * 31 + matePosition * 31);
+        }
+
         private boolean equals(final MultiBasePairedBreakend other) {
             return other == this || (other.type == type && SequenceUtil.equals(other.bases, bases) && mateContigIsInAssembly == other.mateContigIsInAssembly && mateContig.equals(other.mateContig) && matePosition == other.matePosition);
         }
@@ -571,6 +577,23 @@ public abstract class Breakend implements Serializable, BaseSequence {
         @Override
         public byte baseAt(int index) {
             throw new IndexOutOfBoundsException();
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            return other == null || (other instanceof BeforeContigInsertBreakend && equals((BeforeContigInsertBreakend) other));
+        }
+
+        @Override
+        public int hashCode() {
+            return (( (mateContig.hashCode() * 31) + matePosition ) * 31 + Boolean.hashCode(mateContigIsInAssembly)) * 31;
+        }
+
+        private boolean equals(final BeforeContigInsertBreakend other) {
+            return other.type == type &&
+                    other.mateContig.equals(this.mateContig) &&
+                    other.matePosition == this.matePosition &&
+                    other.mateContigIsInAssembly == this.mateContigIsInAssembly;
         }
     }
 

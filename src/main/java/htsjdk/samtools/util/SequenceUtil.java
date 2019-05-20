@@ -383,6 +383,19 @@ public class SequenceUtil {
         }
     }
 
+    public static boolean isValidIUPAC(final byte base) {
+        return base >= 0 && base <= BASES_ARRAY_LENGTH && bases[base] != 0;
+    }
+
+    public static boolean areValidIUPACs(final byte[] bases) {
+        for (final byte base : bases) {
+            if (!isValidIUPAC(base)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static class SequenceListsDifferException extends SAMException {
         public SequenceListsDifferException() {
         }
