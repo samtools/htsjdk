@@ -37,6 +37,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class VCFUtils {
 
@@ -226,6 +227,17 @@ public class VCFUtils {
         }
 
         return output;
+    }
+
+    /**
+     * Parses a String as a Double, being tolerant for lower-case NaN (nan).
+     */
+    public static double parseDoubleAccordingToVcfSpec(final String str) {
+        try {
+            return Double.valueOf(str);
+        } catch (NumberFormatException e) {
+            return Double.valueOf(str.replaceAll("[nN][aA][nN]", "NaN"));
+        }
     }
 
     private static String getReferenceAssembly(final String refPath) {

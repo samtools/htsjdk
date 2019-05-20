@@ -42,7 +42,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 
@@ -520,7 +519,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if ( qualString.equals(VCFConstants.MISSING_VALUE_v4))
             return VariantContext.NO_LOG10_PERROR;
 
-        Double val = decodeDouble(qualString);
+        Double val = VCFUtils.parseDoubleAccordingToVcfSpec(qualString);
 
         // check to see if they encoded the missing qual score in VCF 3 style, with either the -1 or -1.0.  check for val < 0 to save some CPU cycles
         if ((val < 0) && (Math.abs(val - VCFConstants.MISSING_QUALITY_v3_DOUBLE) < VCFConstants.VCF_ENCODING_EPSILON))
@@ -707,7 +706,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                             if ( genotypeValues.get(i).equals(VCFConstants.MISSING_GENOTYPE_QUALITY_v3) )
                                 gb.noGQ();
                             else
-                                gb.GQ((int)Math.round(decodeDouble(genotypeValues.get(i))));
+                                gb.GQ((int)Math.round(VCFUtils.parseDoubleAccordingToVcfSpec(genotypeValues.get(i))));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
                             gb.AD(decodeInts(genotypeValues.get(i)));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {
@@ -759,17 +758,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             return null;
         }
         return values;
-    }
-
-    /**
-     * Parses a String as a Double, being tolerant for lower-case NaN (nan).
-     */
-    private static final Double decodeDouble(final String string) {
-        if (Pattern.matches("[+-]?nan", string)) {
-            return Double.NaN;
-        } else {
-            return Double.valueOf(string);
-        }
     }
 
     /**

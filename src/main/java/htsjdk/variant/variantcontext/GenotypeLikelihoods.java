@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -267,7 +268,7 @@ public class GenotypeLikelihoods {
             String[] strings = GLString.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
             for ( int i = 0; i < strings.length; i++ ) {
-                likelihoodsAsVector[i] = Double.parseDouble(strings[i]);
+                likelihoodsAsVector[i] = VCFUtils.parseDoubleAccordingToVcfSpec(strings[i]);
             }
             return likelihoodsAsVector;
         }

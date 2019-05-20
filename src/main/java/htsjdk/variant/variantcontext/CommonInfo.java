@@ -296,7 +296,7 @@ public final class CommonInfo implements Serializable {
             } else if (x instanceof Number) {
                 return ((Number) x).doubleValue();
             } else {
-                return Double.valueOf((String)x); // throws an exception if this isn't a string
+                return Double.parseDouble((String)x); // throws an exception if this isn't a string
             }
         });
     }
@@ -320,7 +320,7 @@ public final class CommonInfo implements Serializable {
         if ( x == null ) return defaultValue;
         if ( x instanceof Double ) return (Double)x;
         if ( x instanceof Integer ) return (Integer)x;
-        return Double.valueOf((String)x); // throws an exception if this isn't a string
+        return Double.parseDouble((String)x); // throws an exception if this isn't a string
     }
 
     public boolean getAttributeAsBoolean(String key, boolean defaultValue) {

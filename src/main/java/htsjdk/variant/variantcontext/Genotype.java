@@ -526,7 +526,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         Object x = getExtendedAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof Double ) return (Double)x;
-        return Double.valueOf((String)x); // throws an exception if this isn't a string
+        return Double.parseDouble((String)x); // throws an exception if this isn't a string
     }
 
     /**

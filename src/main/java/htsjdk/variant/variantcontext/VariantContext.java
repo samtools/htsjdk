@@ -1629,7 +1629,7 @@ public class VariantContext implements Feature, Serializable {
                         return b;
                     case String:    return string;
                     case Integer:   return Integer.valueOf(string);
-                    case Float:     return Double.valueOf(string);
+                    case Float:     return Double.parseDouble(string);
                     default: throw new TribbleException("Unexpected type for field" + field);
                 }
             }
