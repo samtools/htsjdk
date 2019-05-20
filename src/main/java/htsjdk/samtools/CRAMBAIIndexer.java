@@ -79,7 +79,7 @@ import java.util.TreeSet;
  * but it is unused.  This would be accomplished via {@link #createIndex(SeekableStream, File, Log, ValidationStringency)}.
  *
  */
-public class CRAMBAIIndexer {
+public class CRAMBAIIndexer implements CRAMIndexer {
 
     // The number of references (chromosomes) in the BAM file
     private final int numReferences;
@@ -130,7 +130,8 @@ public class CRAMBAIIndexer {
      *
      * @param container container to be indexed
      */
-    void processContainer(final Container container, final ValidationStringency validationStringency) {
+    @Override
+    public void processContainer(final Container container, final ValidationStringency validationStringency) {
         if (container == null || container.isEOF()) {
             return;
         }
@@ -226,6 +227,7 @@ public class CRAMBAIIndexer {
      * After all the slices have been processed, finish is called.
      * Writes any final information and closes the output file.
      */
+    @Override
     public void finish() {
         // process any remaining references
         advanceToReference(numReferences);

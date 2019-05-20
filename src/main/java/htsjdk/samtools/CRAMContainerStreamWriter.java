@@ -59,7 +59,7 @@ public class CRAMContainerStreamWriter {
     private Set<String> captureTags = new TreeSet<>();
     private Set<String> ignoreTags = new TreeSet<>();
 
-    private CRAMBAIIndexer indexer;
+    private CRAMIndexer indexer;
     private long offset;
 
     /**
@@ -78,14 +78,31 @@ public class CRAMContainerStreamWriter {
             final CRAMReferenceSource source,
             final SAMFileHeader samFileHeader,
             final String cramId) {
+        this(outputStream, source, samFileHeader, cramId, indexStream == null ? null : new CRAMBAIIndexer(indexStream, samFileHeader));
+    }
+
+    /**
+     * Create a CRAMContainerStreamWriter for writing SAM records into a series of CRAM
+     * containers on output stream, with an optional index.
+     *
+     * @param outputStream where to write the CRAM stream.
+     * @param source reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param cramId used for display in error message display
+     * @param indexer CRAM indexer. Can be null if no index is required.
+     */
+    public CRAMContainerStreamWriter(
+            final OutputStream outputStream,
+            final CRAMReferenceSource source,
+            final SAMFileHeader samFileHeader,
+            final String cramId,
+            final CRAMIndexer indexer) {
         this.outputStream = outputStream;
+        this.source = source;
         this.samFileHeader = samFileHeader;
         this.cramID = cramId;
-        this.source = source;
+        this.indexer = indexer;
         containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice);
-        if (indexStream != null) {
-            indexer = new CRAMBAIIndexer(indexStream, samFileHeader);
-        }
     }
 
     /**
