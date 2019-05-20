@@ -267,7 +267,11 @@ public class GenotypeLikelihoods {
             String[] strings = GLString.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
             for ( int i = 0; i < strings.length; i++ ) {
-                likelihoodsAsVector[i] = Double.parseDouble(strings[i]);
+                if ( strings[i].equals(VCFConstants.MISSING_VALUE_v4) ) {
+                  return null; // one or more entries are missing
+                } else {
+                  likelihoodsAsVector[i] = Double.parseDouble(strings[i]);
+                }
             }
             return likelihoodsAsVector;
         }
