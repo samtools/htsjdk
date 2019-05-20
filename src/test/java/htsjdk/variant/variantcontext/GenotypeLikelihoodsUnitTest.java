@@ -85,7 +85,8 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     @Test
     public void testFromString3() {
         String missingWithPloidy2AltAllele1 = ".,.,.";
-        Assert.assertNull(GenotypeLikelihoods.fromGLField(missingWithPloidy2AltAllele1));
+        GenotypeLikelihoods gl = GenotypeLikelihoods.fromGLField(missingWithPloidy2AltAllele1);
+        Assert.assertNull(gl.getAsPLs());
     }
 
     @Test (expectedExceptions = TribbleException.class)
