@@ -263,7 +263,7 @@ public class BlockCompressedOutputStream
      * Adds a GZIIndexer to the block compressed output stream to be written to the specified output stream. See
      * {@link GZIIndex} for details on the index. Note that the stream will be written to disk entirely when close()
      * is called.
-     * @throws RuntimeException if attempting to add an indexer when this stream has already accepted input.
+     * @throws RuntimeException this method is called after output has already been written to the stream.
      */
     public void addIndexer(final OutputStream outputStream) {
         if (mBlockAddress != 0) {

@@ -226,7 +226,7 @@ public final class GZIIndex {
      *
      * @throws IOException if an I/O error occurs.
      */
-    void writeIndex(final OutputStream output) throws IOException {
+    public void writeIndex(final OutputStream output) throws IOException {
         if (output == null) {
             throw new IllegalArgumentException("null output path");
         }
@@ -434,10 +434,13 @@ public final class GZIIndex {
     }
 
     /**
+     * Helper class for constructing the GZIindex.
      *
+     * In order to construct a GZI index addGzipBlock() should be called every time a new Gzip Block is written out and
+     * the entire index will be written out when close() is called.
      */
     public static final class GZIIndexer implements Closeable {
-        private int uncompressedFileOffset = 0;
+        private int uncompressedFileOffset;
         private final OutputStream output;
         private final List<IndexEntry> entries = new ArrayList<>();
 

@@ -50,7 +50,7 @@ import java.nio.file.Path;
  */
 public class FastaReferenceWriterBuilder {
     private Path fastaFile;
-    private boolean gzippedFastaFile = false;
+    private boolean gzippedFastaFile;
     private boolean makeGziOutput = true;
     private boolean makeFaiOutput = true;
     private boolean makeDictOutput = true;
@@ -121,20 +121,19 @@ public class FastaReferenceWriterBuilder {
      * @param makeDictOutput a boolean flag
      * @return this builder
      */
-
     public FastaReferenceWriterBuilder setMakeDictOutput(final boolean makeDictOutput) {
         this.makeDictOutput = makeDictOutput;
         return this;
     }
 
     /**
-     * Sets whether to automatically generate a gzi index file from the name of the fasta-file (assuming it is given
-     * a valid bgzipped as a file). This can only happen if both the index file and output stream have not been provided.
+     * Sets whether to automatically generate a gzi index file using an index file name derived from the name of
+     * the fasta-file (assuming the fasta file is a valid bgzipped file). This can only happen if neither an index file
+     * nor an index output stream are provided.
      *
      * @param makeGziOutput a boolean flag
      * @return this builder
      */
-
     public FastaReferenceWriterBuilder setMakeGziOutput(final boolean makeGziOutput) {
         this.makeGziOutput = makeGziOutput;
         return this;
@@ -182,9 +181,10 @@ public class FastaReferenceWriterBuilder {
 
     /**
      * Set the output stream for writing the reference. Doesn't support compressed streams.
-     *
+     * <p>
      * NOTE: If you would like to output a BlockCompressed fasta file it is recommended you use {@link #setFastaFile(Path)}
      *       as that codepath will handle generation of a gzi index automatically.
+     * </p>
      *
      * @param fastaOutput a {@link OutputStream} for the output fasta file.
      * @return this builder
@@ -199,9 +199,9 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output stream for writing the index. Doesn't support compressed streams.
+     * Set the output stream for writing the index.
      *
-     * @param faiIndexOutput a  {@link OutputStream} for the output index.
+     * @param faiIndexOutput a  {@link OutputStream} for the output index. Doesn't support compressed streams.
      * @return this builder
      */
     public FastaReferenceWriterBuilder setIndexOutput(final OutputStream faiIndexOutput) {
@@ -211,9 +211,9 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output stream for writing the index. Doesn't support compressed streams.
+     * Set the output stream for writing the index.
      *
-     * @param gziIndexOutput a  {@link OutputStream} for the gzi output index.
+     * @param gziIndexOutput a  {@link OutputStream} for the gzi output index. Doesn't support compressed streams.
      * @return this builder
      */
     public FastaReferenceWriterBuilder setGziIndexOutput(final OutputStream gziIndexOutput) {
@@ -223,9 +223,9 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output stream for writing the dictionary. Doesn't support compressed streams.
+     * Set the output stream for writing the dictionary.
      *
-     * @param dictOutput a {@link OutputStream} for the output dictionary.
+     * @param dictOutput a {@link OutputStream} for the output dictionary. Doesn't support compressed streams.
      * @return this builder
      */
     public FastaReferenceWriterBuilder setDictOutput(final OutputStream dictOutput) {
