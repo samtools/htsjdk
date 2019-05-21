@@ -30,6 +30,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Lazy;
 
 import java.io.File;
 import java.io.InputStream;
@@ -43,7 +44,7 @@ import java.nio.file.Path;
 abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     private final Path path;
     private final String source;
-    protected SAMSequenceDictionary sequenceDictionary;
+    private final Lazy<SAMSequenceDictionary> dictionary;
 
     /**
      * Finds and loads the sequence file dictionary.
@@ -60,7 +61,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     AbstractFastaSequenceFile(final Path path) {
         this.path = path;
         this.source = path == null ? "unknown" : path.toAbsolutePath().toString();
-        this.sequenceDictionary = findAndLoadSequenceDictionary(path);
+        this.dictionary = new Lazy<>(() -> findAndLoadSequenceDictionary(path));
     }
 
     /**
@@ -72,7 +73,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     AbstractFastaSequenceFile(final Path path, final String source, final SAMSequenceDictionary sequenceDictionary) {
         this.path = path;
         this.source = source;
-        this.sequenceDictionary = sequenceDictionary;
+        this.dictionary = new Lazy<>(() -> sequenceDictionary);
     }
 
     /** Attempts to find and load the sequence dictionary if present. */
@@ -125,7 +126,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
      */
     @Override
     public SAMSequenceDictionary getSequenceDictionary() {
-        return this.sequenceDictionary;
+        return this.dictionary.get();
     }
 
     /** Returns the full path to the reference file. */
