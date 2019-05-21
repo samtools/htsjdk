@@ -2044,6 +2044,45 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             ret.addAll(errors);
             if (firstOnly) return ret;
         }
+
+        /*
+        The SAM specification allows both empty bases and qualities.  However, for data generated with color space
+        information (ex. SOLiD sequencing) or flow signal information (ex. Ion Torrent sequencing), we have enforced
+        that certain auxiliary tags are present: CS and CQ for color space data, and FZ for flow signal data.  See section
+        1.6 ("Technology-specific data") in the SAM specification (dated Jan 30 2019).  We have relaxed this constraint
+        to follow the SAM specification and a requested need to represent data in such a spec-compliant way.  For more
+        information, see:
+          1. https://github.com/samtools/htsjdk/issues/1174
+          2. https://github.com/samtools/htsjdk/pull/1360
+        if (this.getReadLength() == 0 && !this.isSecondaryAlignment()) {
+            final Object fz = getAttribute(SAMTag.FZ.getBinaryTag());
+            if (fz == null) {
+                final String cq = (String)getAttribute(SAMTag.CQ.getBinaryTag());
+                final String cs = (String)getAttribute(SAMTag.CS.getBinaryTag());
+                if (cq == null || cq.isEmpty() || cs == null || cs.isEmpty()) {
+                    if (ret == null) ret = new ArrayList<>();
+                    ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,
+                            "Zero-length read without FZ, CS or CQ tag", getReadName()));
+                    if (firstOnly) return ret;
+                } else if (!getReadUnmappedFlag()) {
+                    boolean hasIndel = false;
+                    for (final CigarElement cigarElement : getCigar().getCigarElements()) {
+                        if (cigarElement.getOperator() == CigarOperator.DELETION ||
+                                cigarElement.getOperator() == CigarOperator.INSERTION) {
+                            hasIndel = true;
+                            break;
+                        }
+                    }
+                    if (!hasIndel) {
+                        if (ret == null) ret = new ArrayList<>();
+                        ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,
+                                "Colorspace read with zero-length bases but no indel", getReadName()));
+                        if (firstOnly) return ret;
+                    }
+                }
+            }
+        }
+        */
   
         if (this.getReadLength() != getBaseQualities().length &&  !Arrays.equals(getBaseQualities(), NULL_QUALS)) {
             if (ret == null) ret = new ArrayList<>();
