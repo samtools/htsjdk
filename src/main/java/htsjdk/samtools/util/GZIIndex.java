@@ -220,8 +220,6 @@ public final class GZIIndex {
     /**
      * Writes this index into the requested path.
      *
-     * NOTE: This method will close out the provided output stream when it finishes writing the index
-     *
      * @param output the output path.
      *
      * @throws IOException if an I/O error occurs.
