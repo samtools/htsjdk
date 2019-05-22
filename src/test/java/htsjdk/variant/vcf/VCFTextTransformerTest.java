@@ -24,6 +24,20 @@ public class VCFTextTransformerTest extends HtsjdkTest {
                 { "abc%3A", "abc:"},
                 { "%3Aabc", ":abc"},
                 { "%3Aabc%3A", ":abc:"},
+
+                // valid text containing % encodings that are not valid, and are passed through in raw form (no decoding)
+                { "%3", "%3"},
+                { "%d", "%d"},
+                { "%a", "%a"},
+                { "abcdefg%", "abcdefg%"},
+                { "%3Aabcdefg%", ":abcdefg%"},
+                { "abcdefg%0", "abcdefg%0"},
+                { "abcdefg%1", "abcdefg%1"},
+                { "abcdefg%a", "abcdefg%a"},
+                { "abcdefg%d", "abcdefg%d"},
+                { "abcdefg%g", "abcdefg%g"},
+                { "abcdefg%gg", "abcdefg%gg"},
+                { "abcdefg%-1", "abcdefg%-1"},
         };
     }
 
@@ -37,31 +51,6 @@ public class VCFTextTransformerTest extends HtsjdkTest {
     public void testPassThruValidEncodings(final String rawText, final String unused) {
         final VCFPassThruTextTransformer vcfPassThruTransformer = new VCFPassThruTextTransformer();
         Assert.assertEquals(vcfPassThruTransformer.decodeText(rawText), rawText);
-    }
-
-    @DataProvider(name="invalidPercentEncodings")
-    public Object[][] invalidPercentEncodings() {
-        return new Object[][] {
-                { "%3"},
-                { "%d"},
-                { "%a"},
-                { "abcdefg%"},
-                { "%3Aabcdefg%"},
-                { "abcdefg%0"},
-                { "abcdefg%1"},
-                { "abcdefg%a"},
-                { "abcdefg%d"},
-                { "abcdefg%g"},
-                { "abcdefg%z"},
-                { "abcdefg%gg"},
-                { "abcdefg%-1"},
-        };
-    }
-
-    @Test(dataProvider="invalidPercentEncodings", expectedExceptions = TribbleException.class)
-    public void testDecodeInvalidEncodings(final String rawText) {
-        final VCFTextTransformer vcfTextTransformer = new VCFPercentEncodedTextTransformer();
-        vcfTextTransformer.decodeText(rawText);
     }
 
 }

@@ -51,7 +51,7 @@ public class VCFPercentEncodedTextTransformer implements VCFTextTransformer {
             StringBuilder builder = new StringBuilder(rawText.length());
             for (int i = 0; i < rawText.length(); i++) {
                 final char c = rawText.charAt(i);
-                if (c == ENCODING_SENTNEL_CHAR) {
+                if (c == ENCODING_SENTNEL_CHAR && ((i + 2) < rawText.length())) {
                     try {
                         final char[] trans = Character.toChars(Integer.parseInt(rawText.substring(i + 1, i + 3), ENCODING_BASE_RADIX));
                         if (trans.length != 1) {
@@ -59,8 +59,8 @@ public class VCFPercentEncodedTextTransformer implements VCFTextTransformer {
                         }
                         builder.append(trans[0]);
                         i += 2;
-                    } catch (IllegalArgumentException | StringIndexOutOfBoundsException e) {
-                        throw new TribbleException(String.format("'%c' is not a valid percent encoded character in '%s'", c, rawText), e);
+                    } catch (IllegalArgumentException e) {
+                        builder.append(c);
                     }
                 } else {
                     builder.append(c);
