@@ -222,6 +222,19 @@ public final class GZIIndex {
      *
      * NOTE: This method will close out the provided output stream when it finishes writing the index
      *
+     * @param output the output path.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
+    public void writeIndex(final Path output) throws IOException {
+        writeIndex(Files.newOutputStream(output));
+    }
+
+    /**
+     * Writes this index into the requested path.
+     *
+     * NOTE: This method will close out the provided output stream when it finishes writing the index
+     *
      * @param output the output file.
      *
      * @throws IOException if an I/O error occurs.
