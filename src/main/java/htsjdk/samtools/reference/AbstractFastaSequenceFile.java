@@ -30,6 +30,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Lazy;
 
 import java.io.File;
 import java.io.InputStream;
@@ -43,7 +44,7 @@ import java.nio.file.Path;
 abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     private final Path path;
     private final String source;
-    protected SAMSequenceDictionary sequenceDictionary;
+    private final Lazy<SAMSequenceDictionary> dictionary;
 
     /**
      * Finds and loads the sequence file dictionary.
@@ -60,17 +61,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     AbstractFastaSequenceFile(final Path path) {
         this.path = path;
         this.source = path == null ? "unknown" : path.toAbsolutePath().toString();
-        final Path dictionary = findSequenceDictionary(path);
-
-        if (dictionary != null) {
-            IOUtil.assertFileIsReadable(dictionary);
-            try (InputStream dictionaryIn = Files.newInputStream(dictionary)) {
-                this.sequenceDictionary = ReferenceSequenceFileFactory.loadDictionary(dictionaryIn);
-            }
-            catch (Exception e) {
-                throw new SAMException("Could not open sequence dictionary file: " + dictionary, e);
-            }
-        }
+        this.dictionary = new Lazy<>(() -> findAndLoadSequenceDictionary(path));
     }
 
     /**
@@ -82,32 +73,47 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     AbstractFastaSequenceFile(final Path path, final String source, final SAMSequenceDictionary sequenceDictionary) {
         this.path = path;
         this.source = source;
-        this.sequenceDictionary = sequenceDictionary;
+        this.dictionary = new Lazy<>(() -> sequenceDictionary);
     }
 
-    protected static File findSequenceDictionary(final File file) {
-        final Path dictionary = findSequenceDictionary(IOUtil.toPath(file));
-        if (dictionary == null) {
-            return null;
+    /** Attempts to find and load the sequence dictionary if present. */
+    protected SAMSequenceDictionary findAndLoadSequenceDictionary(final Path fasta) {
+        final Path dictPath = findSequenceDictionary(path);
+        if (dictPath == null) return null;
+
+        IOUtil.assertFileIsReadable(dictPath);
+        try (InputStream dictionaryIn = IOUtil.openFileForReading(dictPath)) {
+            return ReferenceSequenceFileFactory.loadDictionary(dictionaryIn);
         }
-        return dictionary.toFile();
+        catch (Exception e) {
+            throw new SAMException("Could not open sequence dictionary file: " + dictPath, e);
+        }
     }
 
-    protected static Path findSequenceDictionary(final Path path) {
-        if (path == null) {
+    /** @deprecated use findSequenceDictionary(Path) instead. */
+    @Deprecated protected static File findSequenceDictionary(final File file) {
+        final Path dict = findSequenceDictionary(file.toPath());
+        return dict == null ? null : dict.toFile();
+    }
+
+    /** Attempts to locate the sequence dictionary file adjacent to the reference fasta file. */
+    protected static Path findSequenceDictionary(final Path fastaPath) {
+        if (fastaPath == null) {
             return null;
         }
         // Try and locate the dictionary with the default method
-        final Path dictionary = ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(path); path.toAbsolutePath();
+        final Path dictionary = ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(fastaPath);
         if (Files.exists(dictionary)) {
             return dictionary;
         }
         // try without removing the file extension
-        final Path dictionaryExt = path.resolveSibling(path.getFileName().toString() + IOUtil.DICT_FILE_EXTENSION);
+        final Path dictionaryExt = fastaPath.resolveSibling(fastaPath.getFileName().toString() + IOUtil.DICT_FILE_EXTENSION);
         if (Files.exists(dictionaryExt)) {
             return dictionaryExt;
         }
-        else return null;
+        else {
+            return null;
+        }
     }
 
     /** Returns the path to the reference file. */
@@ -126,7 +132,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
      */
     @Override
     public SAMSequenceDictionary getSequenceDictionary() {
-        return this.sequenceDictionary;
+        return this.dictionary.get();
     }
 
     /** Returns the full path to the reference file. */
