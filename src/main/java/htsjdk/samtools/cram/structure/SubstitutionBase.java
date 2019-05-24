@@ -5,21 +5,16 @@ package htsjdk.samtools.cram.structure;
  * in which they're serialized in the SubstitutionMatrix.
  */
 enum SubstitutionBase {
-    A('A'),
-    C('C'),
-    G('G'),
-    T('T'),
-    N('N');
+    A,
+    C,
+    G,
+    T,
+    N;
 
     // The base this substitution represents
     private final byte base;
 
-    /**
-     * @param base the character represneting the base for this substitution
-     */
-    SubstitutionBase(final char base) {
-        this.base = (byte) base;
-    }
+    SubstitutionBase() { this.base = (byte) name().charAt(0); }
 
     /**
      * The base this substitution represents

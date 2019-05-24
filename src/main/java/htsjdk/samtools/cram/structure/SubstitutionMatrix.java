@@ -41,14 +41,17 @@ import java.util.List;
  public class SubstitutionMatrix {
     private static final Log log = Log.getInstance(Substitution.class);
 
-    private static final byte NO_BASE = 0;
+    // substitution bases, in the order in which they're stored in the substitution matrix
+    private static List<SubstitutionBase> BASES = Arrays.asList(SubstitutionBase.values());
 
-    private static final int BASES_SIZE = SubstitutionBase.values().length;
+    private static final int BASES_SIZE = BASES.size();
+
+    private static final byte NO_BASE = 0;
 
     // Since bases are represented as bytes, there are theoretically 256 possible symbols in the
     // symbol space, though in reality we only care about 10 of these (5 upper and 5 lower case
-    // reference bases).
-    static final int SYMBOL_SPACE_SIZE = 256;
+    // reference bases), drawn from positive values.
+    static final int SYMBOL_SPACE_SIZE = 128;
 
     // number of possible substitution codes per base
     private static final int CODES_PER_BASE = BASES_SIZE - 1;
@@ -78,16 +81,14 @@ import java.util.List;
      * @param records array of CramCompressionRecord with Substitutions
      */
     public SubstitutionMatrix(final List<CramCompressionRecord> records) {
-        initializeBaseByCode();
-
         final long[][] frequencies = buildFrequencies(records);
-        for (final SubstitutionBase b : SubstitutionBase.values()) {
+        for (final SubstitutionBase b : BASES) {
             // substitutionCodeVector has a side effect of updating codeByBase
             encodedMatrixBytes[b.ordinal()] = substitutionCodeVector(b.getBase(), frequencies[b.getBase()]);
         }
 
-        for (final SubstitutionBase r : SubstitutionBase.values()) {
-            for (final SubstitutionBase b : SubstitutionBase.values()) {
+        for (final SubstitutionBase r : BASES) {
+            for (final SubstitutionBase b : BASES) {
                 if (r != b) {
                     baseByCode[r.getBase()][codeByBase[r.getBase()][b.getBase()]] = b.getBase();
                     // propagate the same code to lower case reference bases
@@ -103,7 +104,6 @@ import java.util.List;
      */
     public SubstitutionMatrix(final byte[] matrix) {
         this.encodedMatrixBytes = matrix;
-        initializeBaseByCode();
 
         // unpack the substitution code vectors and populate the base substitutions lookup
         // matrix using the unpacked substitution codes
@@ -140,7 +140,7 @@ import java.util.List;
         baseByCode['N'][(encodedMatrixBytes[4] >> 2) & 3] = 'G';
         baseByCode['N'][(encodedMatrixBytes[4]) & 3] = 'T';
 
-        for (final SubstitutionBase refBase : SubstitutionBase.values()) {
+        for (final SubstitutionBase refBase : BASES) {
             for (byte code = 0; code < CODES_PER_BASE; code++) {
                 codeByBase[refBase.getBase()][baseByCode[refBase.getBase()][code]] = code;
             }
@@ -154,8 +154,13 @@ import java.util.List;
      * @return code to be used for this refBase/readBase pair
      */
     public byte code(final byte refBase, final byte readBase) {
-        if (Character.isLowerCase((char) refBase)) {
-            log.warn(String.format("CRAM: Attempt to generate a substitution code for a lower case reference base '%c'", (char) refBase));
+        if (refBase <= 0 || Character.isLowerCase((char) refBase)) {
+            throw new IllegalArgumentException(
+                    String.format("CRAM: Attempt to generate a substitution code for invalid or lower case reference base '%c'", (char) refBase));
+        }
+        if (readBase <= 0) {
+            throw new IllegalArgumentException(
+                    String.format("CRAM: Attempt to generate a substitution code for an invalid read base value '%c'", (char) readBase));
         }
         return codeByBase[refBase][readBase];
     }
@@ -167,10 +172,14 @@ import java.util.List;
      * @return base to be substituted for this (refBase, code) pair
      */
     public byte base(final byte refBase, final byte code) {
+        if (refBase <= 0) {
+            throw new IllegalArgumentException(
+                    String.format("CRAM: Attempt to generate a substitution code for invalid reference base '%c'", (char) refBase));
+        }
         final byte base = baseByCode[refBase][code];
         if (base == NO_BASE) {
             // attempt to retrieve a code for a reference base that isn't in the substitution matrix
-            throw new IllegalArgumentException(String.format("CRAM: Attempt to retrieve a substitution base for '%c'", (char) refBase));
+            throw new IllegalArgumentException(String.format("CRAM: Attempt to retrieve a substitution base for invalid base '%c'", (char) refBase));
         }
         return base;
     }
@@ -185,8 +194,9 @@ import java.util.List;
 
     @Override
     public String toString() {
-        final StringBuilder stringBuilder = new StringBuilder();
-        for (final SubstitutionBase r : SubstitutionBase.values()) {
+        final int DISPLAY_SIZE = BASES_SIZE * (CODES_PER_BASE + 3) * 2;
+        final StringBuilder stringBuilder = new StringBuilder(DISPLAY_SIZE);
+        for (final SubstitutionBase r : BASES) {
             stringBuilder.append((char) r.getBase());
             stringBuilder.append(':');
             for (int i = 0; i < CODES_PER_BASE; i++) {
@@ -195,22 +205,16 @@ import java.util.List;
             stringBuilder.append('\t');
         }
         // lower case substitutions
-        for (final SubstitutionBase r : SubstitutionBase.values()) {
-            stringBuilder.append(Character.toLowerCase((char)r.getBase()));
+        for (final SubstitutionBase r : BASES) {
+            char lowerCaseBase = Character.toLowerCase((char)r.getBase());
+            stringBuilder.append(lowerCaseBase);
             stringBuilder.append(':');
             for (int i = 0; i < CODES_PER_BASE; i++) {
-                stringBuilder.append((char) baseByCode[Character.toLowerCase((char)r.getBase())][i]);
+                stringBuilder.append((char) baseByCode[lowerCaseBase][i]);
             }
             stringBuilder.append('\t');
         }
         return stringBuilder.toString();
-    }
-
-    // Initialize the baseByCode array to a sentinel value
-    private void initializeBaseByCode() {
-        for (final byte[] base : baseByCode) {
-            Arrays.fill(base, NO_BASE);
-        }
     }
 
     // populate a matrix of substitution frequencies from a list of CramCompressionRecords with Substitution features
@@ -223,6 +227,10 @@ import java.util.List;
                         final Substitution substitution = ((Substitution) readFeature);
                         final byte refBase = substitution.getReferenceBase();
                         final byte base = substitution.getBase();
+                        if (refBase <= 0 || base <= 0) {
+                            throw new IllegalArgumentException(
+                                    String.format("CRAM: Attempt to generate a substitution code for invalid reference base '%c'", (char) refBase));
+                        }
                         frequencies[refBase][base]++;
                     }
                 }
@@ -260,7 +268,7 @@ import java.util.List;
         // there are 5 possible bases, so there are 4 possible substitutions for each base
         final SubstitutionFrequency[] subCodes = new SubstitutionFrequency[CODES_PER_BASE];
         int i = 0;
-        for (final SubstitutionBase base : SubstitutionBase.values()) {
+        for (final SubstitutionBase base : BASES) {
             if (refBase == base.getBase()) {
                 continue;
             }
