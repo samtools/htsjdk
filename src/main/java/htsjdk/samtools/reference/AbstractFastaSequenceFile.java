@@ -90,6 +90,12 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         }
     }
 
+    /** @deprecated use findSequenceDictionary(Path) instead. */
+    @Deprecated protected static File findSequenceDictionary(final File file) {
+        final Path dict = findSequenceDictionary(file.toPath());
+        return dict == null ? null : dict.toFile();
+    }
+
     /** Attempts to locate the sequence dictionary file adjacent to the reference fasta file. */
     protected static Path findSequenceDictionary(final Path fastaPath) {
         if (fastaPath == null) {
