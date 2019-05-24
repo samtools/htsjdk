@@ -719,7 +719,7 @@ public class IOUtil {
     /**
      * check if the file name ends with .gz, .gzip, or .bfq
      */
-    private static boolean hasGzipFileExtension(Path path) {
+    public static boolean hasGzipFileExtension(Path path) {
         final List<String> gzippedEndings = Arrays.asList(".gz", ".gzip", ".bfq");
         final String fileName = path.getFileName().toString();
         return gzippedEndings.stream().anyMatch(fileName::endsWith);
