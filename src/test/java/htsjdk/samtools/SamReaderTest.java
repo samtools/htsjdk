@@ -156,6 +156,7 @@ public class SamReaderTest extends HtsjdkTest {
         final Object[][] scenarios = new Object[][]{
                 {"cram_with_bai_index.cram", "hg19mini.fasta"},
                 {"cram_with_crai_index.cram", "hg19mini.fasta"},
+                {"cram_with_no_ref_based_compression.cram", "GRCh38mini.fa"},
         };
         return scenarios;
     }
