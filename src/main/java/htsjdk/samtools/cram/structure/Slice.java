@@ -501,7 +501,7 @@ public class Slice {
      *
      * Single Reference: all records have valid placements/alignments on the same reference sequence
      * - records can be unmapped-but-placed
-     * - reference can be external or embedded // no_ref
+     * - reference can be external or embedded
      *
      * Multiple Reference: records may be placed or not, and may have differing reference sequences
      * - reference must not be embedded (not checked here)
