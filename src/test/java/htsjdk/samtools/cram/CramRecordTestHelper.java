@@ -107,15 +107,6 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         return sam2CramRecordFactory.createCramRecord(record);
     }
 
-    public Map<Integer, ByteArrayOutputStream> createOutputMap(final CompressionHeader header) {
-        return header.encodingMap.values()
-                .stream()
-                .filter(params -> params.id == EncodingID.EXTERNAL)
-                .collect(Collectors.toMap(
-                        params -> ITF8.readUnsignedITF8(params.params),
-                        params -> new ByteArrayOutputStream()));
-    }
-
     public Map<Integer, ByteArrayInputStream> createInputMap(final Map<Integer, ByteArrayOutputStream> outputMap) {
         return outputMap.entrySet()
                 .stream()

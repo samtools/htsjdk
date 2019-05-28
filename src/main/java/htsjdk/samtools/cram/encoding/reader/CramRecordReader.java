@@ -73,7 +73,7 @@ public class CramRecordReader {
 
     protected final boolean APDelta;
 
-    private final Map<DataSeries, EncodingParams> encodingMap;
+    private final CompressionHeader compressionHeader;
     private final BitInputStream coreBlockInputStream;
     private final Map<Integer, ByteArrayInputStream> externalBlockInputMap;
 
@@ -101,7 +101,7 @@ public class CramRecordReader {
         this.validationStringency = validationStringency;
         this.APDelta = header.APDelta;
 
-        this.encodingMap = header.encodingMap;
+        this.compressionHeader = header;
         this.coreBlockInputStream = coreInputStream;
         this.externalBlockInputMap = externalInputMap;
 
@@ -135,7 +135,11 @@ public class CramRecordReader {
         scoresCodec =                   createDataReader(DataSeries.QQ_scores);
 
         // special case: re-encodes QS as a byte array
-        qualityScoreArrayCodec = new DataSeriesReader<>(DataSeriesType.BYTE_ARRAY, header.encodingMap.get(DataSeries.QS_QualityScore), coreInputStream, externalInputMap);
+        qualityScoreArrayCodec = new DataSeriesReader<>(
+                DataSeriesType.BYTE_ARRAY,
+                compressionHeader.getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
+                coreInputStream,
+                externalInputMap);
 
         tagValueCodecs = header.tMap.entrySet()
                 .stream()
@@ -151,8 +155,9 @@ public class CramRecordReader {
      * @return a Data Reader for the given Data Series, or null if it's not in the encoding map
      */
     private <T> DataSeriesReader<T> createDataReader(DataSeries dataSeries) {
-        if (encodingMap.containsKey(dataSeries)) {
-            return new DataSeriesReader<>(dataSeries.getType(), encodingMap.get(dataSeries), coreBlockInputStream, externalBlockInputMap);
+        final EncodingParams encodingParams = compressionHeader.getEncodingParamsForDataSeries(dataSeries);
+        if (encodingParams != null) {
+            return new DataSeriesReader<>(dataSeries.getType(), encodingParams, coreBlockInputStream, externalBlockInputMap);
         } else {
             return null;
         }

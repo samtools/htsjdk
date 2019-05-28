@@ -65,8 +65,8 @@ public class CramRecordWriter {
     private final ReferenceContext refContext;
     private final SubstitutionMatrix substitutionMatrix;
     private final boolean AP_delta;
-    
-    private final Map<DataSeries, EncodingParams> encodingMap;
+
+    final CompressionHeader compressionHeader;
     private final BitOutputStream coreBlockOutputStream;
     private final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap;
 
@@ -87,7 +87,7 @@ public class CramRecordWriter {
         this.substitutionMatrix = header.substitutionMatrix;
         this.AP_delta = header.APDelta;
 
-        this.encodingMap = header.encodingMap;
+        this.compressionHeader = header;
         this.coreBlockOutputStream = coreOutputStream;
         this.externalBlockOutputMap = externalOutputMap;
 
@@ -119,7 +119,10 @@ public class CramRecordWriter {
         refSkipCodec =                          createDataWriter(DataSeries.RS_RefSkip);
 
         // special case: re-encodes QS as a byte array
-        qualityScoreArrayCodec = new DataSeriesWriter<>(DataSeriesType.BYTE_ARRAY, header.encodingMap.get(DataSeries.QS_QualityScore), coreOutputStream, externalOutputMap);
+        qualityScoreArrayCodec = new DataSeriesWriter<>(
+                DataSeriesType.BYTE_ARRAY,
+                header.getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
+                coreOutputStream, externalOutputMap);
 
         tagValueCodecs = header.tMap.entrySet()
                 .stream()
@@ -136,8 +139,10 @@ public class CramRecordWriter {
      * @return a Data Writer for the given Data Series, or null if it's not in the encoding map
      */
     private <T> DataSeriesWriter<T> createDataWriter(final DataSeries dataSeries) {
-        if (encodingMap.containsKey(dataSeries)) {
-            return new DataSeriesWriter<>(dataSeries.getType(), encodingMap.get(dataSeries), coreBlockOutputStream, externalBlockOutputMap);
+        final EncodingParams encodingParams = compressionHeader.getEncodingParamsForDataSeries(dataSeries);
+        // TODO: there is similar code (though for reader not writer) repeated in  CramRecordReader
+        if (encodingParams != null) {
+            return new DataSeriesWriter<>(dataSeries.getType(), encodingParams, coreBlockOutputStream, externalBlockOutputMap);
         }
         else {
             return null;
