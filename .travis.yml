@@ -42,6 +42,6 @@ after_success:
     echo "JAVA_HOME='$JAVA_HOME'";
     if [ "$TRAVIS_BRANCH" == "master" ]; then
         if [[ $JAVA_HOME = *java-8-openjdk* ]]; then
-            ./gradlew publish
-        fi
-    fi
+            ./gradlew publish;
+        fi;
+    fi;
