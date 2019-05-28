@@ -71,7 +71,7 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
 
         final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
 
-        final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
+        final Map<Integer, ByteArrayOutputStream> outputMap = header.getNonExternalEncodingParams();
         int initialAlignmentStart = initialRecords.get(0).alignmentStart;
         final byte[] written = write(initialRecords, outputMap, header, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, initialAlignmentStart);
 

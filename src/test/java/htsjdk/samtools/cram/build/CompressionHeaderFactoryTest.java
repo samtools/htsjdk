@@ -3,12 +3,7 @@ package htsjdk.samtools.cram.build;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
-import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.DataSeries;
-import htsjdk.samtools.cram.structure.ReadTag;
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.cram.structure.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -22,7 +17,7 @@ import java.util.List;
 public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void testAllEncodingsPresent() {
-        final CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), true);
+        final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap();
         for (final DataSeries key : DataSeries.values()) {
             switch (key) {
                 // skip test marks and unused series:
@@ -30,12 +25,11 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
                 case TM_TestMark:
                 case BB_bases:
                 case QQ_scores:
-                    Assert.assertFalse(header.encodingMap.containsKey(key), "Unexpected encoding key found: " + key.name());
+                    Assert.assertNull(encodingMap.getEncodingParamsForDataSeries(key), "Unexpected encoding key found: " + key.name());
                     continue;
             }
-            Assert.assertTrue(header.encodingMap.containsKey(key), "Encoding key not found: " + key.name());
-            Assert.assertNotNull(header.encodingMap.get(key));
-            Assert.assertFalse(header.encodingMap.get(key).id == EncodingID.NULL);
+            Assert.assertNotNull(encodingMap.getEncodingParamsForDataSeries(key), "Encoding key not found: " + key.name());
+            Assert.assertFalse(encodingMap.getEncodingParamsForDataSeries(key).id == EncodingID.NULL);
         }
     }
 

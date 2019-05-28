@@ -32,12 +32,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CompressionHeader {
     private static final String RN_readNamesIncluded = "RN";
@@ -52,28 +48,64 @@ public class CompressionHeader {
     public boolean APDelta = true;
     private boolean referenceRequired = true;
 
-    public Map<DataSeries, EncodingParams> encodingMap;
+    private CompressionHeaderEncodingMap encodingMap;
+
     public Map<Integer, EncodingParams> tMap;
-    public final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<Integer, ExternalCompressor>();
-
     public SubstitutionMatrix substitutionMatrix;
-
-    public List<Integer> externalIds;
-
     public byte[][][] dictionary;
 
     public CompressionHeader() {
+        encodingMap = new CompressionHeaderEncodingMap();
+        tMap = new TreeMap<>();
+    }
+
+    public void setIsCoordinateSorted(final boolean coordinateSorted) {
+        APDelta = coordinateSorted;
     }
 
     /**
-     * Return true if the header is for a coordinate-sorted CRAM stream.
-     * As required by the spec, we set the AP Delta flag according to that criterion,
-     * so checking that flag is equivalent.
-     * @return the value of the APDelta flag
-     */
+    * Return true if the header is for a coordinate-sorted CRAM stream.
+    * As required by the spec, we set the AP Delta flag according to that criterion,
+    * so checking that flag is equivalent.
+    * @return the value of the APDelta flag
+    */
+    //TODO: remove this ??
     boolean isCoordinateSorted() {
         return APDelta;
     }
+
+    public  void setTagIdDictionary(final byte[][][] dictionary) {
+        this.dictionary = dictionary;
+    }
+
+    public void setSubstitutionMatrix(final SubstitutionMatrix substitutionMatrix) {
+        this.substitutionMatrix = substitutionMatrix;
+    }
+
+    //TODO: remove this and delegate here ?
+    public EncodingParams getEncodingParamsForDataSeries(final DataSeries dataSeries) {
+        return encodingMap.getEncodingParamsForDataSeries(dataSeries);
+    }
+
+    // TODO: remove these and delegate here ?
+    public Map<Integer, ExternalCompressor> getExternalCompresssors() { return encodingMap.getExternalCompresssors(); }
+    public Map<Integer, ByteArrayOutputStream> getExternalBlockMap() {
+        final Map<Integer, ByteArrayOutputStream> externalBlockMap = new HashMap<>();
+        for (final int id : encodingMap.getExternalIDs()) {
+            externalBlockMap.put(id, new ByteArrayOutputStream());
+        }
+        return externalBlockMap;
+    }
+
+    public Map<Integer, ByteArrayOutputStream> getNonExternalEncodingParams() {
+        return encodingMap.getAllEncodingParams()
+                .stream()
+                .filter(params -> params.id == EncodingID.EXTERNAL)
+                .collect(Collectors.toMap(
+                        params -> ITF8.readUnsignedITF8(params.params),
+                        params -> new ByteArrayOutputStream()));
+    }
+
 
     private byte[][][] parseDictionary(final byte[] bytes) {
         final List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();
@@ -156,31 +188,7 @@ public class CompressionHeader {
             }
         }
 
-        { // encoding map:
-            final int byteSize = ITF8.readUnsignedITF8(is);
-            final byte[] bytes = new byte[byteSize];
-            InputStreamUtils.readFully(is, bytes, 0, bytes.length);
-            final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-
-            final int mapSize = ITF8.readUnsignedITF8(buffer);
-            encodingMap = new TreeMap<>();
-
-            for (int i = 0; i < mapSize; i++) {
-                final String dataSeriesAbbreviation = new String(new byte[]{buffer.get(), buffer.get()});
-                final DataSeries dataSeries = DataSeries.byCanonicalName(dataSeriesAbbreviation);
-
-                final EncodingID id = EncodingID.values()[buffer.get()];
-                final int paramLen = ITF8.readUnsignedITF8(buffer);
-                final byte[] paramBytes = new byte[paramLen];
-                buffer.get(paramBytes);
-
-                encodingMap.put(dataSeries, new EncodingParams(id, paramBytes));
-
-                log.debug(String.format("FOUND ENCODING: %s, %s, %s.",
-                        dataSeries.name(), id.name(),
-                        Arrays.toString(Arrays.copyOf(paramBytes, 20))));
-            }
-        }
+        encodingMap = new CompressionHeaderEncodingMap(is);
 
         { // tag encoding map:
             final int byteSize = ITF8.readUnsignedITF8(is);
@@ -254,35 +262,7 @@ public class CompressionHeader {
             outputStream.write(mapBytes);
         }
 
-        { // encoding map:
-            int size = 0;
-            for (final DataSeries dataSeries : encodingMap.keySet()) {
-                if (encodingMap.get(dataSeries).id != EncodingID.NULL)
-                    size++;
-            }
-
-            final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
-            ITF8.writeUnsignedITF8(size, mapBuffer);
-            for (final DataSeries dataSeries : encodingMap.keySet()) {
-                if (encodingMap.get(dataSeries).id == EncodingID.NULL)
-                    continue;
-
-                final String dataSeriesAbbreviation = dataSeries.getCanonicalName();
-                mapBuffer.put((byte) dataSeriesAbbreviation.charAt(0));
-                mapBuffer.put((byte) dataSeriesAbbreviation.charAt(1));
-
-                final EncodingParams params = encodingMap.get(dataSeries);
-                mapBuffer.put((byte) (0xFF & params.id.getId()));
-                ITF8.writeUnsignedITF8(params.params.length, mapBuffer);
-                mapBuffer.put(params.params);
-            }
-            mapBuffer.flip();
-            final byte[] mapBytes = new byte[mapBuffer.limit()];
-            mapBuffer.get(mapBytes);
-
-            ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
-            outputStream.write(mapBytes);
-        }
+        encodingMap.write(outputStream);
 
         { // tag encoding map:
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
@@ -325,5 +305,11 @@ public class CompressionHeader {
             throw new RuntimeIOException(e);
         }
     }
+
+    public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingParams params) {
+        encodingMap.addTagEncoding(tagId, compressor, params);
+        tMap.put(tagId, params);
+    }
+
 
 }

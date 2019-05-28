@@ -457,10 +457,7 @@ public class Slice {
                                    final CompressionHeader header) {
         final Slice slice = initializeFromRecords(records);
 
-        final Map<Integer, ByteArrayOutputStream> externalBlockMap = new HashMap<>();
-        for (final int id : header.externalIds) {
-            externalBlockMap.put(id, new ByteArrayOutputStream());
-        }
+        final Map<Integer, ByteArrayOutputStream> externalBlockMap = header.getExternalBlockMap();
 
         try (final ByteArrayOutputStream bitBAOS = new ByteArrayOutputStream();
              final DefaultBitOutputStream bitOutputStream = new DefaultBitOutputStream(bitBAOS)) {
@@ -482,7 +479,7 @@ public class Slice {
                 throw new CRAMException("Valid Content ID required.  Given: " + contentId);
             }
 
-            final ExternalCompressor compressor = header.externalCompressors.get(contentId);
+            final ExternalCompressor compressor = header.getExternalCompresssors().get(contentId);
             final byte[] rawContent = externalBlockMap.get(contentId).toByteArray();
             final Block externalBlock = Block.createExternalBlock(compressor.getMethod(), contentId,
                     compressor.compress(rawContent), rawContent.length);

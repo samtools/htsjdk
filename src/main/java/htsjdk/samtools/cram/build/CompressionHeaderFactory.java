@@ -35,7 +35,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -58,6 +57,8 @@ public class CompressionHeaderFactory {
     private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
 
+    final CompressionHeader compressionHeader = new CompressionHeader();
+
     /**
      * Decides on compression methods to use for the given records.
      *
@@ -71,47 +72,15 @@ public class CompressionHeaderFactory {
      */
     public CompressionHeader build(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
 
-        final CompressionHeaderBuilder builder = new CompressionHeaderBuilder(coordinateSorted);
+        compressionHeader.setIsCoordinateSorted(coordinateSorted);
+        compressionHeader.setTagIdDictionary(buildTagIdDictionary(records));
 
-        builder.addExternalRansOrderZeroEncoding(DataSeries.AP_AlignmentPositionOffset);
-        builder.addExternalRansOrderOneEncoding(DataSeries.BA_Base);
-        // BB is not used
-        builder.addExternalRansOrderOneEncoding(DataSeries.BF_BitFlags);
-        builder.addExternalGzipEncoding(DataSeries.BS_BaseSubstitutionCode);
-        builder.addExternalRansOrderOneEncoding(DataSeries.CF_CompressionBitFlags);
-        builder.addExternalGzipEncoding(DataSeries.DL_DeletionLength);
-        builder.addExternalGzipEncoding(DataSeries.FC_FeatureCode);
-        builder.addExternalGzipEncoding(DataSeries.FN_NumberOfReadFeatures);
-        builder.addExternalGzipEncoding(DataSeries.FP_FeaturePosition);
-        builder.addExternalGzipEncoding(DataSeries.HC_HardClip);
-        builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.IN_Insertion);
-        builder.addExternalGzipEncoding(DataSeries.MF_MateBitFlags);
-        builder.addExternalGzipEncoding(DataSeries.MQ_MappingQualityScore);
-        builder.addExternalGzipEncoding(DataSeries.NF_RecordsToNextFragment);
-        builder.addExternalGzipEncoding(DataSeries.NP_NextFragmentAlignmentStart);
-        builder.addExternalRansOrderOneEncoding(DataSeries.NS_NextFragmentReferenceSequenceID);
-        builder.addExternalGzipEncoding(DataSeries.PD_padding);
-        // QQ is not used
-        builder.addExternalRansOrderOneEncoding(DataSeries.QS_QualityScore);
-        builder.addExternalRansOrderOneEncoding(DataSeries.RG_ReadGroup);
-        builder.addExternalRansOrderZeroEncoding(DataSeries.RI_RefId);
-        builder.addExternalRansOrderOneEncoding(DataSeries.RL_ReadLength);
-        builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.RN_ReadName);
-        builder.addExternalGzipEncoding(DataSeries.RS_RefSkip);
-        builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.SC_SoftClip);
-        builder.addExternalGzipEncoding(DataSeries.TC_TagCount);
-        builder.addExternalGzipEncoding(DataSeries.TL_TagIdList);
-        builder.addExternalGzipEncoding(DataSeries.TN_TagNameAndType);
-        builder.addExternalRansOrderOneEncoding(DataSeries.TS_InsertSize);
-
-        builder.setTagIdDictionary(buildTagIdDictionary(records));
-
-        buildTagEncodings(records, builder);
+        buildTagEncodings(records, compressionHeader);
 
         final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(records);
         updateSubstitutionCodes(records, substitutionMatrix);
-        builder.setSubstitutionMatrix(substitutionMatrix);
-        return builder.getHeader();
+        compressionHeader.setSubstitutionMatrix(substitutionMatrix);
+        return compressionHeader;
     }
 
     /**
@@ -120,10 +89,10 @@ public class CompressionHeaderFactory {
      *
      * @param records
      *            CRAM records holding the tags to be encoded
-     * @param builder
-     *            compression header builder to register encodings
+     * @param compressionHeader
+     *            compression header to register encodings
      */
-    private void buildTagEncodings(final List<CramCompressionRecord> records, final CompressionHeaderBuilder builder) {
+    private void buildTagEncodings(final List<CramCompressionRecord> records, final CompressionHeader compressionHeader) {
         final Set<Integer> tagIdSet = new HashSet<>();
 
         for (final CramCompressionRecord record : records) {
@@ -138,10 +107,10 @@ public class CompressionHeaderFactory {
 
         for (final int tagId : tagIdSet) {
             if (bestEncodings.containsKey(tagId)) {
-                builder.addTagEncoding(tagId, bestEncodings.get(tagId));
+                compressionHeader.addTagEncoding(tagId, bestEncodings.get(tagId).compressor, bestEncodings.get(tagId).params);
             } else {
                 final EncodingDetails e = buildEncodingForTag(records, tagId);
-                builder.addTagEncoding(tagId, e);
+                compressionHeader.addTagEncoding(tagId, e.compressor, e.params);
                 bestEncodings.put(tagId, e);
             }
         }
@@ -441,74 +410,6 @@ public class CompressionHeaderFactory {
                 return details;
             default:
                 throw new IllegalArgumentException("Unknown tag type: " + (char) type);
-        }
-    }
-
-    /**
-     * A helper class to build
-     * {@link htsjdk.samtools.cram.structure.CompressionHeader} object.
-     */
-    private static class CompressionHeaderBuilder {
-        private final CompressionHeader header;
-
-        CompressionHeaderBuilder(final boolean coordinateSorted) {
-            header = new CompressionHeader();
-            header.externalIds = new ArrayList<>();
-            header.tMap = new TreeMap<>();
-
-            header.encodingMap = new TreeMap<>();
-            header.APDelta = coordinateSorted;
-        }
-
-        CompressionHeader getHeader() {
-            return header;
-        }
-
-        private void addExternalEncoding(final DataSeries dataSeries,
-                                         final EncodingParams params,
-                                         final ExternalCompressor compressor) {
-            header.externalIds.add(dataSeries.getExternalBlockContentId());
-            header.externalCompressors.put(dataSeries.getExternalBlockContentId(), compressor);
-            header.encodingMap.put(dataSeries, params);
-        }
-
-        private void addExternalByteArrayStopTabGzipEncoding(final DataSeries dataSeries) {
-            addExternalEncoding(dataSeries,
-                    new ByteArrayStopEncoding((byte) '\t', dataSeries.getExternalBlockContentId()).toParam(),
-                    ExternalCompressor.createGZIP());
-        }
-
-        private void addExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
-            // we need a concrete type; the choice of Byte is arbitrary.
-            // params are equal for all External Encoding value types
-            final EncodingParams params = new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam();
-            addExternalEncoding(dataSeries, params, compressor);
-        }
-
-        private void addExternalGzipEncoding(final DataSeries dataSeries) {
-            addExternalEncoding(dataSeries, ExternalCompressor.createGZIP());
-        }
-
-        private void addExternalRansOrderOneEncoding(final DataSeries dataSeries) {
-            addExternalEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ONE));
-        }
-
-        private void addExternalRansOrderZeroEncoding(final DataSeries dataSeries) {
-            addExternalEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
-        }
-
-        void addTagEncoding(final int tagId, final EncodingDetails encodingDetails) {
-            header.externalIds.add(tagId);
-            header.externalCompressors.put(tagId, encodingDetails.compressor);
-            header.tMap.put(tagId, encodingDetails.params);
-        }
-
-        void setTagIdDictionary(final byte[][][] dictionary) {
-            header.dictionary = dictionary;
-        }
-
-        void setSubstitutionMatrix(final SubstitutionMatrix substitutionMatrix) {
-            header.substitutionMatrix = substitutionMatrix;
         }
     }
 
