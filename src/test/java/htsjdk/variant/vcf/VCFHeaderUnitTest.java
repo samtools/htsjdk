@@ -351,6 +351,51 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(numHeaderLinesBefore, numHeaderLinesAfter);
     }
 
+    @DataProvider(name="validHeaderVersionTransitions")
+    public Object[][] validHeaderVersionTransitions() {
+        // v4.3 can never transition, all other version transitions are allowed
+        return new Object[][] {
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_0},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_3}
+        };
+    }
+
+    @DataProvider(name="invalidHeaderVersionTransitions")
+    public Object[][] invalidHeaderVersionTransitions() {
+        // v4.3 can never transition with, all other version transitions are allowed
+        return new Object[][] {
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_0},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_3},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_3},
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_3},
+        };
+    }
+
+    @Test(dataProvider="validHeaderVersionTransitions")
+    public void testValidHeaderVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        doHeaderTransition(fromVersion, toVersion);
+    }
+
+    @Test(dataProvider="invalidHeaderVersionTransitions", expectedExceptions = TribbleException.class)
+    public void testInvalidHeaderVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        doHeaderTransition(fromVersion, toVersion);
+    }
+
+    private void doHeaderTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        final VCFHeader vcfHeader =
+                fromVersion == null ?
+                        new VCFHeader() :
+                        new VCFHeader(fromVersion, Collections.EMPTY_SET, Collections.EMPTY_SET);
+        vcfHeader.setVCFHeaderVersion(toVersion);
+    }
+
     @Test
     public void testVCFHeaderSerialization() throws Exception {
         final VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
