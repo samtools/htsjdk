@@ -114,6 +114,7 @@ public class BlockCompressedOutputStream
     private final CRC32 crc32 = new CRC32();
     private Path file = null;
     private long mBlockAddress = 0;
+    private GZIIndex.GZIIndexer indexer;
 
 
     // Really a local variable, but allocate once to reduce GC burden.
@@ -259,6 +260,19 @@ public class BlockCompressedOutputStream
     }
 
     /**
+     * Adds a GZIIndexer to the block compressed output stream to be written to the specified output stream. See
+     * {@link GZIIndex} for details on the index. Note that the stream will be written to disk entirely when close()
+     * is called.
+     * @throws RuntimeException this method is called after output has already been written to the stream.
+     */
+    public void addIndexer(final OutputStream outputStream) {
+        if (mBlockAddress != 0) {
+            throw new RuntimeException("Cannot add gzi indexer if this BlockCompressedOutput stream has already written Gzipped blocks");
+        }
+        indexer = new GZIIndex.GZIIndexer(outputStream);
+    }
+
+    /**
      * Writes b.length bytes from the specified byte array to this output stream. The general contract for write(b)
      * is that it should have exactly the same effect as the call write(b, 0, b.length).
      * @param bytes the data
@@ -322,6 +336,9 @@ public class BlockCompressedOutputStream
         // }
         codec.writeBytes(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK);
         codec.close();
+        if (indexer != null) {
+            indexer.close();
+        }
         // Can't re-open something that is not a regular file, e.g. a named pipe or an output stream
         if (this.file == null || !Files.isRegularFile(this.file)) return;
         if (BlockCompressedInputStream.checkTermination(this.file) !=
@@ -392,14 +409,13 @@ public class BlockCompressedOutputStream
         final int totalBlockSize = writeGzipBlock(compressedSize, bytesToCompress, crc32.getValue());
         assert(bytesToCompress <= numUncompressedBytes);
 
-        // Clear out from uncompressedBuffer the data that was written
-        if (bytesToCompress == numUncompressedBytes) {
-            numUncompressedBytes = 0;
-        } else {
-            System.arraycopy(uncompressedBuffer, bytesToCompress, uncompressedBuffer, 0,
-                    numUncompressedBytes - bytesToCompress);
-            numUncompressedBytes -= bytesToCompress;
+        // Call out to the indexer if it exists
+        if (indexer != null) {
+            indexer.addGzipBlock(mBlockAddress, numUncompressedBytes);
         }
+
+        // Clear out from uncompressedBuffer the data that was written
+        numUncompressedBytes = 0;
         mBlockAddress += totalBlockSize;
         return totalBlockSize;
     }

@@ -37,15 +37,17 @@ import java.util.Map;
  * A class for translating between vcf header versions
  */
 public class VCFHeaderLineTranslator {
-    private static Map<VCFHeaderVersion,VCFLineParser> mapping;
+    private static final Map<VCFHeaderVersion,VCFLineParser> mapping;
 
     static {
-        mapping = new HashMap<VCFHeaderVersion,VCFLineParser>();
-        mapping.put(VCFHeaderVersion.VCF4_0,new VCF4Parser());
-        mapping.put(VCFHeaderVersion.VCF4_1,new VCF4Parser());
-        mapping.put(VCFHeaderVersion.VCF4_2,new VCF4Parser());
-        mapping.put(VCFHeaderVersion.VCF3_3,new VCF3Parser());
-        mapping.put(VCFHeaderVersion.VCF3_2,new VCF3Parser());
+        final Map<VCFHeaderVersion,VCFLineParser> map = new HashMap<>();
+        map.put(VCFHeaderVersion.VCF4_0, new VCF4Parser());
+        map.put(VCFHeaderVersion.VCF4_1, new VCF4Parser());
+        map.put(VCFHeaderVersion.VCF4_2, new VCF4Parser());
+        map.put(VCFHeaderVersion.VCF4_3, new VCF4Parser());
+        map.put(VCFHeaderVersion.VCF3_3, new VCF3Parser());
+        map.put(VCFHeaderVersion.VCF3_2, new VCF3Parser());
+        mapping = Collections.unmodifiableMap(map);
     }
 
     public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder) {

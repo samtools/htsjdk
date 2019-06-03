@@ -95,9 +95,8 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
         }
 
         // Read the sequence
-        final int knownLength = (this.sequenceDictionary == null) ? -1 : this.sequenceDictionary.getSequence(this.sequenceIndex).getSequenceLength();
+        final int knownLength = (getSequenceDictionary() == null) ? -1 : getSequenceDictionary().getSequence(this.sequenceIndex).getSequenceLength();
         final byte[] bases = readSequence(knownLength);
-
         return new ReferenceSequence(name, this.sequenceIndex, bases);
     }
 
