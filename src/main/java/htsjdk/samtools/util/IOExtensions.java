@@ -30,8 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Miscellaneous stateless static IO-oriented methods.
- *  Also used for utility methods that wrap or aggregate functionality in Java IO.
+ * Contains file extension constants for read, alignment, and variant files
  */
 public class IOExtensions {
 
