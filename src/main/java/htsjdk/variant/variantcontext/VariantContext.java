@@ -29,10 +29,23 @@ import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
-import htsjdk.variant.vcf.*;
+import htsjdk.variant.vcf.VCFCompoundHeaderLine;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -257,6 +270,8 @@ public class VariantContext implements Feature, Serializable {
 * Determine which genotype fields are in use in the genotypes in VC
 * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
 */
+
+
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
         final Set<String> keys = new HashSet<>();
 
@@ -307,10 +322,88 @@ public class VariantContext implements Feature, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
+    //no controls and white-spaces characters, no semicolon.
+    public static final Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
+
     public enum Validation {
-        ALLELES,
-        GENOTYPES,
-        FILTERS
+        ALLELES() {
+            void validate(VariantContext variantContext) {
+                validateAlleles(variantContext);
+            }
+        },
+        GENOTYPES() {
+            void validate(VariantContext variantContext) {
+                validateGenotypes(variantContext);
+            }
+        },
+        FILTERS {
+            void validate(VariantContext variantContext) {
+                validateFilters(variantContext);
+            }
+        };
+
+        abstract void validate(VariantContext variantContext);
+
+
+        static private void validateAlleles(final VariantContext vc) {
+
+            boolean alreadySeenRef = false;
+
+            for (final Allele allele : vc.alleles) {
+                // make sure there's only one reference allele
+                if (allele.isReference()) {
+                    if (alreadySeenRef) {
+                        throw new IllegalArgumentException("BUG: Received two reference tagged alleles in VariantContext " + vc.alleles + " vc=" + vc);
+                    }
+                    alreadySeenRef = true;
+                }
+
+                if (allele.isNoCall()) {
+                    throw new IllegalArgumentException("BUG: Cannot add a no call allele to a variant context " + vc.alleles + " vc=" + vc);
+                }
+            }
+
+            // make sure there's one reference allele
+            if (!alreadySeenRef) {
+                throw new IllegalArgumentException("No reference allele found in VariantContext");
+            }
+        }
+
+        static private void validateGenotypes(final VariantContext variantContext) {
+
+            final ArrayList<Genotype> genotypes = variantContext.genotypes.getGenotypes();
+
+            if (genotypes == null) {
+                throw new IllegalStateException("Genotypes is null");
+            }
+
+            for (int i = 0; i < genotypes.size(); i++) {
+                final Genotype genotype = genotypes.get(i);
+                if (genotype.isAvailable()) {
+                    final List<Allele> alleles = genotype.getAlleles();
+                    for (int j = 0, size = alleles.size(); j < size; j++) {
+                        final Allele gAllele = alleles.get(j);
+                        if (!variantContext.hasAllele(gAllele) && gAllele.isCalled()) {
+                            throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
+                        }
+                    }
+                }
+            }
+        }
+
+        static private void validateFilters(final VariantContext variantContext) {
+            final Set<String> filters = variantContext.getFilters();
+            if (filters == null) {
+                return;
+            }
+
+            for (String filter : filters) {
+                if (!VALID_FILTER.matcher(filter).matches()) {
+                    throw new IllegalStateException("Filter '" + filter +
+                            "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
+                }
+            }
+        }
     }
 
     private final static EnumSet<Validation> NO_VALIDATION = EnumSet.noneOf(Validation.class);
@@ -1290,14 +1383,7 @@ public class VariantContext implements Feature, Serializable {
 
     private boolean validate(final EnumSet<Validation> validationToPerform) {
         validateStop();
-        for (final Validation val : validationToPerform ) {
-            switch (val) {
-                case ALLELES: validateAlleles(); break;
-                case GENOTYPES: validateGenotypes(); break;
-                case FILTERS: validateFilters(); break;
-                default: throw new IllegalArgumentException("Unexpected validation mode " + val);
-            }
-        }
+        validationToPerform.forEach(v->v.validate(this));
 
         return true;
     }
@@ -1325,59 +1411,6 @@ public class VariantContext implements Feature, Serializable {
             final long length = (stop - start) + 1;
             if ( ! hasSymbolicAlleles() && length != getReference().length() ) {
                 throw new IllegalStateException("BUG: GenomeLoc " + contig + ":" + start + "-" + stop + " has a size == " + length + " but the variation reference allele has length " + getReference().length() + " this = " + this);
-            }
-        }
-    }
-
-    private void validateAlleles() {
-
-        boolean alreadySeenRef = false;
-
-        for ( final Allele allele : alleles ) {
-            // make sure there's only one reference allele
-            if ( allele.isReference() ) {
-                if ( alreadySeenRef ) throw new IllegalArgumentException("BUG: Received two reference tagged alleles in VariantContext " + alleles + " this=" + this);
-                alreadySeenRef = true;
-            }
-
-            if ( allele.isNoCall() ) {
-                throw new IllegalArgumentException("BUG: Cannot add a no call allele to a variant context " + alleles + " this=" + this);
-            }
-        }
-
-        // make sure there's one reference allele
-        if ( ! alreadySeenRef )
-            throw new IllegalArgumentException("No reference allele found in VariantContext");
-    }
-
-    private void validateGenotypes() {
-        if ( this.genotypes == null ) throw new IllegalStateException("Genotypes is null");
-
-        for ( int i = 0; i < genotypes.size(); i++ ) {
-            Genotype genotype = genotypes.get(i);
-            if ( genotype.isAvailable() ) {
-                final List<Allele> alleles = genotype.getAlleles();
-                for ( int j = 0, size = alleles.size(); j < size; j++ ) {
-                    final Allele gAllele = alleles.get(j);
-                    if ( ! hasAllele(gAllele) && gAllele.isCalled() )
-                        throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
-                }
-            }
-        }
-    }
-
-    //no controls and white-spaces characters, no semicolon.
-    public static final Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
-    private void validateFilters() {
-        final Set<String> filters = this.getFilters();
-        if (filters == null) {
-            return;
-        }
-
-        for (String filter : filters) {
-            if (!VALID_FILTER.matcher(filter).matches()) {
-                throw new IllegalStateException("Filter '" + filter +
-                        "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
             }
         }
     }

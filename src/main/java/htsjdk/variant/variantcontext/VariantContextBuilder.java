@@ -339,9 +339,10 @@ public class VariantContextBuilder {
             this.attributesCanBeModified = true;
 
             final Map<String, Object> tempAttributes = attributes;
-            this.attributes = new HashMap<>();
             if (tempAttributes != null) {
                 this.attributes = new HashMap<>(tempAttributes);
+            } else {
+                this.attributes = new HashMap<>();
             }
         }
     }
@@ -352,7 +353,7 @@ public class VariantContextBuilder {
     private void makeFiltersModifiable() {
         if (!filtersCanBeModified) {
             this.filtersCanBeModified = true;
-            Set<String> tempFilters = filters;
+            final Set<String> tempFilters = filters;
             this.filters = new HashSet<>();
             if (tempFilters != null) {
                 this.filters.addAll(tempFilters);
@@ -374,10 +375,8 @@ public class VariantContextBuilder {
         if (filters == null) {
             unfiltered();
         } else {
-            makeFiltersModifiable();
-            this.filters.clear();
-            this.filters.addAll(filters);
-            toValidate.add(VariantContext.Validation.FILTERS);
+            this.filtersCanBeModified = true;
+            filtersAsIs(new HashSet<>(filters));
         }
         return this;
     }
@@ -451,9 +450,10 @@ public class VariantContextBuilder {
      */
     public VariantContextBuilder genotypes(final GenotypesContext genotypes) {
         this.genotypes = genotypes;
-        if ( genotypes != null )
+        if (genotypes != null) {
             genotypes.immutable();
             toValidate.add(VariantContext.Validation.GENOTYPES);
+        }
         return this;
     }
 
@@ -634,7 +634,7 @@ public class VariantContextBuilder {
     }
 
     public VariantContext make(final boolean leaveModifyableAsIs) {
-        if(!leaveModifyableAsIs){
+        if (!leaveModifyableAsIs) {
             attributesCanBeModified = false;
             filtersCanBeModified = false;
         }
