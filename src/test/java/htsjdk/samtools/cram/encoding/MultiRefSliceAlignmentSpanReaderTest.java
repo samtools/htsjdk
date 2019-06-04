@@ -3,20 +3,11 @@ package htsjdk.samtools.cram.encoding;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CramRecordTestHelper;
-import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.AlignmentSpan;
-import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
+import htsjdk.samtools.cram.structure.*;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -62,13 +53,8 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         return initialRecords;
     }
 
-    @DataProvider(name = "coordSortedTrueFalse")
-    private Object[][] tf() {
-        return new Object[][] { {true}, {false}};
-    }
-
-    @Test(dataProvider = "coordSortedTrueFalse")
-    public void testSpans(final boolean coordinateSorted) throws IOException {
+    @Test
+    public void testSpansCoordinateSorted() {
         final List<CramCompressionRecord> initialRecords = initSpanRecords();
 
         // note for future refactoring
@@ -76,24 +62,27 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         // which is the only way to set a record's tagIdsIndex
         // which would otherwise be null
 
-        final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
+        // NOTE: multiref alignment spans are ony used for CRAI indexing, and only make sense when records are
+        // coordinate sorted, so we only test with coordinateSorted = true;
+        final CompressionHeader header = createHeader(initialRecords, true);
+        final Slice slice = Slice.buildSlice(initialRecords, header);
+        final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(header, ValidationStringency.DEFAULT_STRINGENCY);
 
-        final ReferenceContext refId = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
-        final Map<Integer, ByteArrayOutputStream> outputMap = header.getNonExternalEncodingParams();
-        int initialAlignmentStart = initialRecords.get(0).alignmentStart;
-        final byte[] written = write(initialRecords, outputMap, header, refId, initialAlignmentStart);
+        Assert.assertEquals(spans.size(), 3);
+        Assert.assertEquals(spans.get(new ReferenceContext(1)), new AlignmentSpan(1, 5, 2, 0));
+        Assert.assertEquals(spans.get(new ReferenceContext(2)), new AlignmentSpan(2, 3, 0, 1));
+        Assert.assertEquals(spans.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT), AlignmentSpan.UNPLACED_SPAN);
+    }
 
-        final Map<Integer, ByteArrayInputStream> inputMap = createInputMap(outputMap);
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(written);
-            final BitInputStream bis = new DefaultBitInputStream(is)) {
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testSpansNonCoordinateSorted() {
+        final List<CramCompressionRecord> initialRecords = initSpanRecords();
 
-            final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, initialAlignmentStart, initialRecords.size());
-            final Map<ReferenceContext, AlignmentSpan> spans = reader.getReferenceSpans();
+        // NOTE: multiref alignment spans are ony used for CRAI indexing, and only make sense when records are
+        // coordinate sorted, so test that we reject coordinateSorted = true;
+        final CompressionHeader header = createHeader(initialRecords, false);
+        final Slice slice = Slice.buildSlice(initialRecords, header);
 
-            Assert.assertEquals(spans.size(), 3);
-            Assert.assertEquals(spans.get(new ReferenceContext(1)), new AlignmentSpan(1, 5, 2, 0));
-            Assert.assertEquals(spans.get(new ReferenceContext(2)), new AlignmentSpan(2, 3, 0, 1));
-            Assert.assertEquals(spans.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT), AlignmentSpan.UNPLACED_SPAN);
-        }
+        slice.getMultiRefAlignmentSpans(header, ValidationStringency.DEFAULT_STRINGENCY);
     }
 }

@@ -4,8 +4,6 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersionPolicies;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CountingInputStream;
-import htsjdk.samtools.cram.structure.block.Block;
-import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -102,7 +100,7 @@ public class ContainerIO {
 
         final ArrayList<Slice> slices = new ArrayList<>();
         for (int sliceCounter = 0; sliceCounter < container.landmarks.length; sliceCounter++) {
-            slices.add(SliceIO.read(major, inputStream));
+            slices.add(SliceIO.read(major, container.compressionHeader,inputStream));
         }
 
         container.setSlicesAndByteOffset(slices, containerByteOffset);
@@ -144,7 +142,7 @@ public class ContainerIO {
             // TODO: should we count the embedded reference block as an additional block?
             if (slice.embeddedRefBlock != null) container.blockCount++;
             // Each Slice has a variable number of External Data Blocks
-            container.blockCount += slice.external.size();
+            container.blockCount += slice.getSliceBlocks().getNumberOfExternalBlocks();
         }
         container.landmarks = landmarks.stream().mapToInt(Integer::intValue).toArray();
         // compression header plus all slices, if any (EOF Containers do not; File Header Containers are handled above)

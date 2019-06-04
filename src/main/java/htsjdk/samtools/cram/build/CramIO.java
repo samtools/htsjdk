@@ -248,6 +248,7 @@ public class CramIO {
 
     private static long writeContainerForSamFileHeader(final int major, final SAMFileHeader samFileHeader, final OutputStream os) {
         final byte[] data = toByteArray(samFileHeader);
+        // The spec recommends "reserving" 50% more space than is required by the header.
         final int length = Math.max(1024, data.length + data.length / 2);
         final byte[] blockContent = new byte[length];
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));

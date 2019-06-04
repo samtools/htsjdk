@@ -18,12 +18,9 @@
 package htsjdk.samtools.cram.encoding.writer;
 
 import htsjdk.samtools.cram.encoding.readfeatures.*;
-import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.Slice;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -61,74 +58,65 @@ public class CramRecordWriter {
 
     private final Charset charset = Charset.forName("UTF8");
 
-    private final boolean captureReadNames;
-    private final ReferenceContext refContext;
-    private final SubstitutionMatrix substitutionMatrix;
-    private final boolean AP_delta;
-
-    final CompressionHeader compressionHeader;
-    private final BitOutputStream coreBlockOutputStream;
-    private final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap;
+    private final Slice slice;
+    private final SliceBlocksWriter sliceBlocksWriter;
 
     /**
      * Initializes a Cram Record Writer
      *
-     * @param coreOutputStream Core data block bit stream, to be written by non-external Encodings
-     * @param externalOutputMap External data block byte stream map, to be written by external Encodings
-     * @param header the associated Cram Compression Header
-     * @param refContext the reference context to assign to these records
+     * @param slice the target slice to which the records will be written
      */
-    public CramRecordWriter(final BitOutputStream coreOutputStream,
-                            final Map<Integer, ByteArrayOutputStream> externalOutputMap,
-                            final CompressionHeader header,
-                            final ReferenceContext refContext) {
-        this.captureReadNames = header.readNamesIncluded;
-        this.refContext = refContext;
-        this.substitutionMatrix = header.substitutionMatrix;
-        this.AP_delta = header.APDelta;
+    //TODO: this doesn't really need compression header since ti can be gotten from Slice
+    public CramRecordWriter(final Slice slice)
+    {
+        sliceBlocksWriter = new SliceBlocksWriter(slice.getCompressionHeader(), slice.getSliceBlocks());
+        this.slice = slice;
 
-        this.compressionHeader = header;
-        this.coreBlockOutputStream = coreOutputStream;
-        this.externalBlockOutputMap = externalOutputMap;
-
-        bitFlagsC =                             createDataWriter(DataSeries.BF_BitFlags);
-        compBitFlagsC =                         createDataWriter(DataSeries.CF_CompressionBitFlags);
-        readLengthC =                           createDataWriter(DataSeries.RL_ReadLength);
-        alStartC =                              createDataWriter(DataSeries.AP_AlignmentPositionOffset);
-        readGroupC =                            createDataWriter(DataSeries.RG_ReadGroup);
-        readNameC =                             createDataWriter(DataSeries.RN_ReadName);
-        distanceC =                             createDataWriter(DataSeries.NF_RecordsToNextFragment);
-        numberOfReadFeaturesCodec =             createDataWriter(DataSeries.FN_NumberOfReadFeatures);
-        featurePositionCodec =                  createDataWriter(DataSeries.FP_FeaturePosition);
-        featuresCodeCodec =                     createDataWriter(DataSeries.FC_FeatureCode);
-        baseCodec =                             createDataWriter(DataSeries.BA_Base);
-        qualityScoreCodec =                     createDataWriter(DataSeries.QS_QualityScore);
-        baseSubstitutionCodeCodec =             createDataWriter(DataSeries.BS_BaseSubstitutionCode);
-        insertionCodec =                        createDataWriter(DataSeries.IN_Insertion);
-        softClipCodec =                         createDataWriter(DataSeries.SC_SoftClip);
-        hardClipCodec =                         createDataWriter(DataSeries.HC_HardClip);
-        paddingCodec =                          createDataWriter(DataSeries.PD_padding);
-        deletionLengthCodec =                   createDataWriter(DataSeries.DL_DeletionLength);
-        mappingQualityScoreCodec =              createDataWriter(DataSeries.MQ_MappingQualityScore);
-        mateBitFlagsCodec =                     createDataWriter(DataSeries.MF_MateBitFlags);
-        nextFragmentReferenceSequenceIDCodec =  createDataWriter(DataSeries.NS_NextFragmentReferenceSequenceID);
-        nextFragmentAlignmentStart =            createDataWriter(DataSeries.NP_NextFragmentAlignmentStart);
-        templateSize =                          createDataWriter(DataSeries.TS_InsertSize);
-        tagIdListCodec =                        createDataWriter(DataSeries.TL_TagIdList);
-        refIdCodec =                            createDataWriter(DataSeries.RI_RefId);
-        refSkipCodec =                          createDataWriter(DataSeries.RS_RefSkip);
+        bitFlagsC =                 createDataWriter(DataSeries.BF_BitFlags);
+        compBitFlagsC =             createDataWriter(DataSeries.CF_CompressionBitFlags);
+        readLengthC =               createDataWriter(DataSeries.RL_ReadLength);
+        alStartC =                  createDataWriter(DataSeries.AP_AlignmentPositionOffset);
+        readGroupC =                createDataWriter(DataSeries.RG_ReadGroup);
+        readNameC =                 createDataWriter(DataSeries.RN_ReadName);
+        distanceC =                 createDataWriter(DataSeries.NF_RecordsToNextFragment);
+        numberOfReadFeaturesCodec = createDataWriter(DataSeries.FN_NumberOfReadFeatures);
+        featurePositionCodec =      createDataWriter(DataSeries.FP_FeaturePosition);
+        featuresCodeCodec =         createDataWriter(DataSeries.FC_FeatureCode);
+        baseCodec =                 createDataWriter(DataSeries.BA_Base);
+        qualityScoreCodec =         createDataWriter(DataSeries.QS_QualityScore);
+        baseSubstitutionCodeCodec = createDataWriter(DataSeries.BS_BaseSubstitutionCode);
+        insertionCodec =            createDataWriter(DataSeries.IN_Insertion);
+        softClipCodec =             createDataWriter(DataSeries.SC_SoftClip);
+        hardClipCodec =             createDataWriter(DataSeries.HC_HardClip);
+        paddingCodec =              createDataWriter(DataSeries.PD_padding);
+        deletionLengthCodec =       createDataWriter(DataSeries.DL_DeletionLength);
+        mappingQualityScoreCodec =  createDataWriter(DataSeries.MQ_MappingQualityScore);
+        mateBitFlagsCodec =         createDataWriter(DataSeries.MF_MateBitFlags);
+        nextFragmentReferenceSequenceIDCodec = createDataWriter(DataSeries.NS_NextFragmentReferenceSequenceID);
+        nextFragmentAlignmentStart = createDataWriter(DataSeries.NP_NextFragmentAlignmentStart);
+        templateSize =              createDataWriter(DataSeries.TS_InsertSize);
+        tagIdListCodec =            createDataWriter(DataSeries.TL_TagIdList);
+        refIdCodec =                createDataWriter(DataSeries.RI_RefId);
+        refSkipCodec =              createDataWriter(DataSeries.RS_RefSkip);
 
         // special case: re-encodes QS as a byte array
+        // This appears to split the QS_QualityScore series into a second  codec that uses BYTE_ARRAY so that arrays of
+        // scores are written to an EXTERNAL block ?
+        // We can't call compressionHeader.createDataWriter here because it uses the default encoding params for
+        // the QS_QualityScore data series, which is BYTE, not BYTE_ARRAY
         qualityScoreArrayCodec = new DataSeriesWriter<>(
                 DataSeriesType.BYTE_ARRAY,
-                header.getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
-                coreOutputStream, externalOutputMap);
+                slice.getCompressionHeader().getEncodingMap().getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
+                sliceBlocksWriter);
 
-        tagValueCodecs = header.tMap.entrySet()
+        tagValueCodecs = slice.getCompressionHeader().tMap.entrySet()
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        mapEntry -> new DataSeriesWriter<>(DataSeriesType.BYTE_ARRAY, mapEntry.getValue(), coreOutputStream, externalOutputMap)));
+                        mapEntry -> new DataSeriesWriter<>(
+                                DataSeriesType.BYTE_ARRAY,
+                                mapEntry.getValue(),
+                                sliceBlocksWriter)));
     }
 
     /**
@@ -139,10 +127,12 @@ public class CramRecordWriter {
      * @return a Data Writer for the given Data Series, or null if it's not in the encoding map
      */
     private <T> DataSeriesWriter<T> createDataWriter(final DataSeries dataSeries) {
-        final EncodingParams encodingParams = compressionHeader.getEncodingParamsForDataSeries(dataSeries);
-        // TODO: there is similar code (though for reader not writer) repeated in  CramRecordReader
+        final EncodingParams encodingParams = slice.getCompressionHeader().getEncodingMap().getEncodingParamsForDataSeries(dataSeries);
         if (encodingParams != null) {
-            return new DataSeriesWriter<>(dataSeries.getType(), encodingParams, coreBlockOutputStream, externalBlockOutputMap);
+            return new DataSeriesWriter<>(
+                    dataSeries.getType(),
+                    encodingParams,
+                    sliceBlocksWriter);
         }
         else {
             return null;
@@ -158,9 +148,10 @@ public class CramRecordWriter {
     public void writeCramCompressionRecords(final List<CramCompressionRecord> records, final int initialAlignmentStart) {
         int prevAlignmentStart = initialAlignmentStart;
         for (final CramCompressionRecord record : records) {
-            writeRecord(record, prevAlignmentStart);
+            writeRecordsToStreams(record, prevAlignmentStart);
             prevAlignmentStart = record.alignmentStart;
         }
+        sliceBlocksWriter.saveStreamsToBlocks();
     }
 
     /**
@@ -169,16 +160,16 @@ public class CramRecordWriter {
      * @param r the Cram Compression Record to write
      * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
      */
-    private void writeRecord(final CramCompressionRecord r, final int prevAlignmentStart) {
+    private void writeRecordsToStreams(final CramCompressionRecord r, final int prevAlignmentStart) {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
-        if (refContext.isMultiRef()) {
+        if (slice.getReferenceContext().isMultiRef()) {
             refIdCodec.writeData(r.sequenceId);
         }
 
         readLengthC.writeData(r.readLength);
 
-        if (AP_delta) {
+        if (slice.getCompressionHeader().APDelta) {
             final int alignmentDelta = r.alignmentStart - prevAlignmentStart;
             alStartC.writeData(alignmentDelta);
         } else {
@@ -187,14 +178,14 @@ public class CramRecordWriter {
 
         readGroupC.writeData(r.readGroupID);
 
-        if (captureReadNames) {
+        if (slice.getCompressionHeader().readNamesIncluded) {
             readNameC.writeData(r.readName.getBytes(charset));
         }
 
         // mate record:
         if (r.isDetached()) {
             mateBitFlagsCodec.writeData(r.getMateFlags());
-            if (!captureReadNames) {
+            if (!slice.getCompressionHeader().readNamesIncluded) {
                 readNameC.writeData(r.readName.getBytes(charset));
             }
 
@@ -233,7 +224,7 @@ public class CramRecordWriter {
                     case Substitution.operator:
                         final Substitution sv = (Substitution) f;
                         if (sv.getCode() < 0)
-                            baseSubstitutionCodeCodec.writeData(substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
+                            baseSubstitutionCodeCodec.writeData(slice.getCompressionHeader().substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
                         else
                             baseSubstitutionCodeCodec.writeData(sv.getCode());
                         // baseSubstitutionCodec.writeData((byte) sv.getBaseChange().getChange());

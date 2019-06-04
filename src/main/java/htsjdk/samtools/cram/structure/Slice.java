@@ -20,24 +20,16 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.digest.ContentDigests;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.DefaultBitInputStream;
-import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.*;
@@ -54,6 +46,8 @@ public class Slice {
 
     private final ReferenceContext referenceContext;
 
+    private CompressionHeader compressionHeader;
+
     // header values as defined in the specs, in addition to sequenceId from ReferenceContext
 
     // minimum alignment start of the reads in this Slice
@@ -69,12 +63,11 @@ public class Slice {
 
     // content associated with ids:
     public Block headerBlock;
-    public Block coreBlock;
     public Block embeddedRefBlock;
-    public Map<Integer, Block> external;
+    // TODO: add embeddedRefBlock ?
+    private SliceBlocks sliceBlocks = new SliceBlocks();
 
     // for indexing purposes
-
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
 
     /**
@@ -121,11 +114,33 @@ public class Slice {
 
     /**
      * Construct this Slice by providing its {@link ReferenceContext}
+     * @param compressionHeader the compression header for the enclosing container
      * @param refContext the reference context associated with this slice
      */
+    public Slice(final CompressionHeader compressionHeader, final ReferenceContext refContext) {
+        this.compressionHeader = compressionHeader;
+        this.referenceContext = refContext;
+    }
+
+    /**
+     * Construct this Slice by providing its {@link ReferenceContext}
+     * @param refContext the reference context associated with this slice
+     */
+    // TODO: remove this or set the comp header; this is only used in calls sites where the
+    // comp header is irrelevant (ie. indexing) ?
     public Slice(final ReferenceContext refContext) {
         this.referenceContext = refContext;
     }
+
+    public CompressionHeader getCompressionHeader() {
+        if (compressionHeader == null) {
+            // temporary guard until the Slice(refContext) constructor is expunged
+            throw new IllegalStateException("null compression header");
+        }
+        return compressionHeader;
+    }
+
+    public SliceBlocks getSliceBlocks() { return sliceBlocks; }
 
     public ReferenceContext getReferenceContext() {
         return referenceContext;
@@ -331,6 +346,7 @@ public class Slice {
         setAttribute(SAMTag.makeBinaryTag(tag), value);
     }
 
+    //TODO this is unused
     public void setUnsignedArrayAttribute(final String tag, final Object value) {
         if (!value.getClass().isArray()) {
             throw new IllegalArgumentException("Non-array passed to setUnsignedArrayAttribute for tag " + tag);
@@ -360,33 +376,6 @@ public class Slice {
         }
     }
 
-    private BitInputStream getCoreBlockInputStream() {
-        return new DefaultBitInputStream(new ByteArrayInputStream(coreBlock.getUncompressedContent()));
-    }
-
-    private Map<Integer, ByteArrayInputStream> getExternalBlockInputMap() {
-        return external.entrySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> new ByteArrayInputStream(e.getValue().getUncompressedContent())));
-    }
-
-    /**
-     * Initialize a Cram Record Reader from a Slice
-     *
-     * @param header the associated Cram Compression Header
-     * @param validationStringency how strict to be when reading this CRAM record
-     */
-    public CramRecordReader createCramRecordReader(final CompressionHeader header,
-                                                   final ValidationStringency validationStringency) {
-        return new CramRecordReader(getCoreBlockInputStream(),
-                getExternalBlockInputMap(),
-                header,
-                referenceContext,
-                validationStringency);
-    }
-
     /**
      * Uses a Multiple Reference Slice Alignment Reader to determine the Reference Spans of a Slice.
      * The intended use is for CRAI indexing.
@@ -396,9 +385,11 @@ public class Slice {
      */
     public Map<ReferenceContext, AlignmentSpan> getMultiRefAlignmentSpans(final CompressionHeader header,
                                                                           final ValidationStringency validationStringency) {
-        final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(getCoreBlockInputStream(),
-                getExternalBlockInputMap(),
-                header,
+        if (!header.isCoordinateSorted()) {
+            throw new IllegalStateException("Can't get multiref alignment spans for non-coordinate sorted inputs");
+        }
+        final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(
+                this,
                 validationStringency,
                 alignmentStart,
                 nofRecords);
@@ -450,43 +441,15 @@ public class Slice {
      * containers and slices.
      *
      * @param records input CRAM Compression Records
-     * @param header the enclosing {@link Container}'s Compression Header
+     * @param compressionHeader the enclosing {@link Container}'s Compression Header
      * @return a Slice corresponding to the given records
      */
+    //TODO: this really only needs Slice(which has compression header) and records
     public static Slice buildSlice(final List<CramCompressionRecord> records,
-                                   final CompressionHeader header) {
-        final Slice slice = initializeFromRecords(records);
-
-        final Map<Integer, ByteArrayOutputStream> externalBlockMap = header.getExternalBlockMap();
-
-        try (final ByteArrayOutputStream bitBAOS = new ByteArrayOutputStream();
-             final DefaultBitOutputStream bitOutputStream = new DefaultBitOutputStream(bitBAOS)) {
-
-            final CramRecordWriter writer = new CramRecordWriter(bitOutputStream, externalBlockMap, header, slice.referenceContext);
-            writer.writeCramCompressionRecords(records, slice.alignmentStart);
-
-            bitOutputStream.close();
-            slice.coreBlock = Block.createRawCoreDataBlock(bitBAOS.toByteArray());
-        }
-        catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-
-        slice.external = new HashMap<>();
-        for (final Integer contentId : externalBlockMap.keySet()) {
-            // remove after https://github.com/samtools/htsjdk/issues/1232
-            if (contentId == Block.NO_CONTENT_ID) {
-                throw new CRAMException("Valid Content ID required.  Given: " + contentId);
-            }
-
-            final ExternalCompressor compressor = header.getExternalCompresssors().get(contentId);
-            final byte[] rawContent = externalBlockMap.get(contentId).toByteArray();
-            final Block externalBlock = Block.createExternalBlock(compressor.getMethod(), contentId,
-                    compressor.compress(rawContent), rawContent.length);
-
-            slice.external.put(contentId, externalBlock);
-        }
-
+                                   final CompressionHeader compressionHeader) {
+        final Slice slice = initializeFromRecords(records, compressionHeader);
+        final CramRecordWriter writer = new CramRecordWriter(slice);
+        writer.writeCramCompressionRecords(records, slice.alignmentStart);
         return slice;
     }
 
@@ -512,7 +475,10 @@ public class Slice {
      * @param records the input records
      * @return the initialized Slice
      */
-    private static Slice initializeFromRecords(final Collection<CramCompressionRecord> records) {
+    private static Slice initializeFromRecords(
+            final Collection<CramCompressionRecord> records,
+            final CompressionHeader compressionHeader)
+    {
         final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
         final Set<ReferenceContext> referenceContexts = new HashSet<>();
         // ignore these values if we later determine this Slice is not single-ref
@@ -568,7 +534,7 @@ public class Slice {
                 sliceRefContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         }
 
-        final Slice slice = new Slice(sliceRefContext);
+        final Slice slice = new Slice(compressionHeader, sliceRefContext);
         if (sliceRefContext.isMappedSingleRef()) {
             slice.alignmentStart = singleRefAlignmentStart;
             slice.alignmentSpan = singleRefAlignmentEnd - singleRefAlignmentStart + 1;
@@ -582,5 +548,45 @@ public class Slice {
         slice.unplacedReadsCount = unplacedReadsCount;
 
         return slice;
+    }
+
+    public ArrayList<CramCompressionRecord> getRecords(
+            final SAMFileHeader samFileHeader,
+            final ValidationStringency validationStringency) {
+        final ReferenceContext sliceContext = getReferenceContext();
+        String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
+        if (sliceContext.isMappedSingleRef()) {
+            final SAMSequenceRecord sequence = samFileHeader.getSequence(sliceContext.getSequenceId());
+            seqName = sequence.getSequenceName();
+        }
+
+        final CramRecordReader reader = new CramRecordReader(this, validationStringency);
+
+        final ArrayList<CramCompressionRecord> records = new ArrayList<>(nofRecords);
+
+        int prevAlignmentStart = alignmentStart;
+        for (int i = 0; i < nofRecords; i++) {
+            final CramCompressionRecord record = new CramCompressionRecord();
+            record.sliceIndex = index;
+            record.index = i;
+
+            // read the new record and update the running prevAlignmentStart
+            prevAlignmentStart = reader.read(record, prevAlignmentStart);
+
+            if (sliceContext.isMappedSingleRef() && record.sequenceId == sliceContext.getSequenceId()) {
+                record.sequenceName = seqName;
+            } else {
+                if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                    record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
+                } else {
+                    record.sequenceName = samFileHeader.getSequence(record.sequenceId)
+                            .getSequenceName();
+                }
+            }
+
+            records.add(record);
+        }
+
+        return records;
     }
 }

@@ -34,12 +34,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
 
 class SliceIO {
     private static final Log log = Log.getInstance(SliceIO.class);
 
-    private static Slice readSliceHeader(final int major, final InputStream readInputStream) {
+    private static Slice readSliceHeader(final int major, final CompressionHeader compressionHeader, final InputStream readInputStream) {
         final Block sliceHeaderBlock = Block.read(major, readInputStream);
         if (sliceHeaderBlock.getContentType() != BlockContentType.MAPPED_SLICE)
             throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
@@ -47,7 +46,7 @@ class SliceIO {
         final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getUncompressedContent());
 
         final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
-        final Slice slice = new Slice(refContext);
+        final Slice slice = new Slice(compressionHeader, refContext);
         slice.alignmentStart = ITF8.readUnsignedITF8(parseInputStream);
         slice.alignmentSpan = ITF8.readUnsignedITF8(parseInputStream);
         slice.nofRecords = ITF8.readUnsignedITF8(parseInputStream);
@@ -84,10 +83,11 @@ class SliceIO {
         LTF8.writeUnsignedLTF8(slice.globalRecordCounter, byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.nofBlocks, byteArrayOutputStream);
 
-        slice.contentIDs = new int[slice.external.size()];
+        slice.contentIDs = new int[slice.getSliceBlocks().getNumberOfExternalBlocks()];
         int i = 0;
-        for (final int id : slice.external.keySet())
+        for (final int id : slice.getSliceBlocks().getExternalContentIDs()) {
             slice.contentIDs[i++] = id;
+        }
         CramIntArray.write(slice.contentIDs, byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.embeddedRefBlockContentID, byteArrayOutputStream);
         try {
@@ -114,20 +114,20 @@ class SliceIO {
         return byteArrayOutputStream.toByteArray();
     }
 
-    private static void readSliceBlocks(final int major, final Slice slice, final InputStream inputStream) {
-        slice.external = new HashMap<>();
+    private static void readSliceBlocks(final int major, final CompressionHeader compressionHeader, final Slice slice, final InputStream inputStream) {
         for (int i = 0; i < slice.nofBlocks; i++) {
             final Block block = Block.read(major, inputStream);
 
             switch (block.getContentType()) {
                 case CORE:
-                    slice.coreBlock = block;
+                    slice.getSliceBlocks().setCoreBlock(block);
                     break;
                 case EXTERNAL:
                     if (slice.embeddedRefBlockContentID == block.getContentId()) {
+                        // TODO: embeddedRefBlock seems redundant since it also kept by ID in externa blocks
                         slice.embeddedRefBlock = block;
                     }
-                    slice.external.put(block.getContentId(), block);
+                    slice.getSliceBlocks().addExternalBlock(block.getContentId(), block);
                     break;
 
                 default:
@@ -144,26 +144,22 @@ class SliceIO {
         // Each Slice has a variable number of External Data Blocks
         // TODO: should we count the embedded reference block as an additional block?
         
-        slice.nofBlocks = 1 + slice.external.size() + (slice.embeddedRefBlock == null ? 0 : 1);
-
-        {
-            slice.contentIDs = new int[slice.external.size()];
-            final int i = 0;
-            for (final int id : slice.external.keySet())
-                slice.contentIDs[i] = id;
+        slice.nofBlocks = 1 + slice.getSliceBlocks().getNumberOfExternalBlocks() + (slice.embeddedRefBlock == null ? 0 : 1);
+        slice.contentIDs = new int[slice.getSliceBlocks().getNumberOfExternalBlocks()];
+        final int i = 0;
+        for (final int id : slice.getSliceBlocks().getExternalContentIDs()) {
+            slice.contentIDs[i] = id;
         }
 
         slice.headerBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, slice));
         slice.headerBlock.write(major, outputStream);
 
-        slice.coreBlock.write(major, outputStream);
-        for (final Block block : slice.external.values())
-            block.write(major, outputStream);
+        slice.getSliceBlocks().write(major, outputStream);
     }
 
-    public static Slice read(final int major, final InputStream inputStream) {
-        final Slice slice = readSliceHeader(major, inputStream);
-        readSliceBlocks(major, slice, inputStream);
+    public static Slice read(final int major, final CompressionHeader compressionHeader, final InputStream inputStream) {
+        final Slice slice = readSliceHeader(major, compressionHeader, inputStream);
+        readSliceBlocks(major, compressionHeader, slice, inputStream);
         return slice;
     }
 }
