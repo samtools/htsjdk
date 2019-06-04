@@ -39,21 +39,19 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
      * Initializes a Multiple Reference Sequence ID Reader.
      * The intended use is for CRAI indexing.
      *
-     * @param coreInputStream       Core data block bit stream, to be read by non-external Encodings
-     * @param externalInputMap      External data block byte stream map, to be read by external Encodings
-     * @param header                the associated Cram Compression Header
      * @param validationStringency  how strict to be when reading this CRAM record
      * @param initialAlignmentStart the alignmentStart used for initial calculation of spans
      * @param recordCount           the number of CRAM records to read
      */
-    public MultiRefSliceAlignmentSpanReader(final BitInputStream coreInputStream,
-                                            final Map<Integer, ByteArrayInputStream> externalInputMap,
-                                            final CompressionHeader header,
+    public MultiRefSliceAlignmentSpanReader(final Slice slice,
                                             final ValidationStringency validationStringency,
                                             final int initialAlignmentStart,
                                             final int recordCount) {
-        super(coreInputStream, externalInputMap, header, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, validationStringency);
+        super(slice, validationStringency);
 
+        if (!slice.getReferenceContext().isMultiRef()) {
+            throw new IllegalStateException("can only create multiref span reader for multiref context slice");
+        }
         // Alignment start of the previous record, for delta-encoding if necessary
         int prevAlignmentStart = initialAlignmentStart;
 

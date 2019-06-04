@@ -59,6 +59,8 @@ public class CompressionHeader {
         tMap = new TreeMap<>();
     }
 
+    public CompressionHeaderEncodingMap getEncodingMap() { return encodingMap; }
+
     public void setIsCoordinateSorted(final boolean coordinateSorted) {
         APDelta = coordinateSorted;
     }
@@ -81,31 +83,6 @@ public class CompressionHeader {
     public void setSubstitutionMatrix(final SubstitutionMatrix substitutionMatrix) {
         this.substitutionMatrix = substitutionMatrix;
     }
-
-    //TODO: remove this and delegate here ?
-    public EncodingParams getEncodingParamsForDataSeries(final DataSeries dataSeries) {
-        return encodingMap.getEncodingParamsForDataSeries(dataSeries);
-    }
-
-    // TODO: remove these and delegate here ?
-    public Map<Integer, ExternalCompressor> getExternalCompresssors() { return encodingMap.getExternalCompresssors(); }
-    public Map<Integer, ByteArrayOutputStream> getExternalBlockMap() {
-        final Map<Integer, ByteArrayOutputStream> externalBlockMap = new HashMap<>();
-        for (final int id : encodingMap.getExternalIDs()) {
-            externalBlockMap.put(id, new ByteArrayOutputStream());
-        }
-        return externalBlockMap;
-    }
-
-    public Map<Integer, ByteArrayOutputStream> getNonExternalEncodingParams() {
-        return encodingMap.getAllEncodingParams()
-                .stream()
-                .filter(params -> params.id == EncodingID.EXTERNAL)
-                .collect(Collectors.toMap(
-                        params -> ITF8.readUnsignedITF8(params.params),
-                        params -> new ByteArrayOutputStream()));
-    }
-
 
     private byte[][][] parseDictionary(final byte[] bytes) {
         final List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();

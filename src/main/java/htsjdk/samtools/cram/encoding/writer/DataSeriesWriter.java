@@ -24,6 +24,7 @@ import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.encoding.reader.DataSeriesReader;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.structure.EncodingParams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriter;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
@@ -45,17 +46,15 @@ public class DataSeriesWriter<T> {
      *
      * @param valueType type of the data to write
      * @param params encoding-specific parameters
-     * @param bitOutputStream Core data block bit stream, to be written by non-external Encodings
-     * @param outputMap External data block byte stream map, to be written by external Encodings
+     * @param sliceBlocksWriter SliceBlocksWriter
      */
     public DataSeriesWriter(final DataSeriesType valueType,
                             final EncodingParams params,
-                            final BitOutputStream bitOutputStream,
-                            final Map<Integer, ByteArrayOutputStream> outputMap) {
+                            final SliceBlocksWriter sliceBlocksWriter) {
 
         final CRAMEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
-        this.codec = encoding.buildWriteCodec(bitOutputStream, outputMap);
+        this.codec = encoding.buildWriteCodec(sliceBlocksWriter.getCoreOutputStream(), sliceBlocksWriter.getOutputStreamMap());
     }
 
     /**

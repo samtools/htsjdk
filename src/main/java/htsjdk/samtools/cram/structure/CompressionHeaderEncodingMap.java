@@ -7,9 +7,7 @@ import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -85,8 +83,14 @@ public class CompressionHeaderEncodingMap {
 
     // TODO: remove these and delegate here ?
     public Map<Integer, ExternalCompressor> getExternalCompresssors() { return externalCompressors; }
-    public List<Integer> getExternalIDs() { return externalIds; }
-    public Collection<EncodingParams> getAllEncodingParams() { return encodingMap.values(); }
+
+    public Map<Integer, ByteArrayOutputStream> createSliceOutputStreamMap() {
+        final Map<Integer, ByteArrayOutputStream> externalStreamMap = new HashMap<>();
+        for (final int id : externalIds) {
+            externalStreamMap.put(id, new ByteArrayOutputStream());
+        }
+        return externalStreamMap;
+    }
 
     public void write(final OutputStream outputStream) throws IOException {
         // encoding map:

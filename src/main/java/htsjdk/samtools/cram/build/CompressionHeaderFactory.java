@@ -27,7 +27,6 @@ import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.DataSeries;
 import htsjdk.samtools.cram.structure.EncodingParams;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
@@ -77,9 +76,11 @@ public class CompressionHeaderFactory {
 
         buildTagEncodings(records, compressionHeader);
 
+        // TODO: these next three lines should move into CompressionHeader
         final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(records);
         updateSubstitutionCodes(records, substitutionMatrix);
         compressionHeader.setSubstitutionMatrix(substitutionMatrix);
+
         return compressionHeader;
     }
 

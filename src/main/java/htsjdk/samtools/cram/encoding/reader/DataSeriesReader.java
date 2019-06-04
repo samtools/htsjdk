@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.structure.EncodingParams;
+import htsjdk.samtools.cram.structure.SliceBlocksReader;
 
 import java.io.ByteArrayInputStream;
 import java.util.Map;
@@ -40,17 +41,15 @@ public class DataSeriesReader<T> {
      *
      * @param valueType type of the data to read
      * @param params encoding-specific parameters
-     * @param bitInputStream Core data block bit stream, to be read by non-external Encodings
-     * @param inputMap External data block byte stream map, to be read by external Encodings
+     * @param sliceBlocksReader sliceBlocksReader
      */
     public DataSeriesReader(final DataSeriesType valueType,
                             final EncodingParams params,
-                            final BitInputStream bitInputStream,
-                            final Map<Integer, ByteArrayInputStream> inputMap) {
+                            SliceBlocksReader sliceBlocksReader) {
 
         final CRAMEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
-        this.codec = encoding.buildReadCodec(bitInputStream, inputMap);
+        this.codec = encoding.buildReadCodec(sliceBlocksReader.getCoreBlockInputStream(), sliceBlocksReader.getInputStreamMap());
     }
 
     /**

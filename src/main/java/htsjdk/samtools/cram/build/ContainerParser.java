@@ -18,12 +18,7 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
-import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
@@ -51,48 +46,7 @@ public class ContainerParser {
         }
 
         for (final Slice slice : container.getSlices()) {
-            records.addAll(getRecords(slice, container.compressionHeader, validationStringency));
-        }
-
-        return records;
-    }
-
-    private ArrayList<CramCompressionRecord> getRecords(final Slice slice,
-                                                        final CompressionHeader header,
-                                                        final ValidationStringency validationStringency) {
-        final ReferenceContext sliceContext = slice.getReferenceContext();
-        String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
-        if (sliceContext.isMappedSingleRef()) {
-            final SAMSequenceRecord sequence = samFileHeader.getSequence(sliceContext.getSequenceId());
-            seqName = sequence.getSequenceName();
-
-        }
-
-        final CramRecordReader reader = slice.createCramRecordReader(header, validationStringency);
-
-        final ArrayList<CramCompressionRecord> records = new ArrayList<>(slice.nofRecords);
-
-        int prevAlignmentStart = slice.alignmentStart;
-        for (int i = 0; i < slice.nofRecords; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.sliceIndex = slice.index;
-            record.index = i;
-
-            // read the new record and update the running prevAlignmentStart
-            prevAlignmentStart = reader.read(record, prevAlignmentStart);
-
-            if (sliceContext.isMappedSingleRef() && record.sequenceId == sliceContext.getSequenceId()) {
-                record.sequenceName = seqName;
-            } else {
-                if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                    record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
-                } else {
-                    record.sequenceName = samFileHeader.getSequence(record.sequenceId)
-                            .getSequenceName();
-                }
-            }
-
-            records.add(record);
+            records.addAll(slice.getRecords(samFileHeader, validationStringency));
         }
 
         return records;

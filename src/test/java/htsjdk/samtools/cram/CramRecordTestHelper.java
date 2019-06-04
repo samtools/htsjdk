@@ -6,18 +6,10 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
 import htsjdk.samtools.cram.common.CramVersions;
-import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
-import htsjdk.samtools.cram.io.*;
-import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public abstract class CramRecordTestHelper extends HtsjdkTest {
 
@@ -99,35 +91,11 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         return list;
     }
 
-    CramCompressionRecord createRecord() {
+    private CramCompressionRecord createRecord() {
         final SAMFileHeader fileHeader = new SAMFileHeader();
         final SAMRecord record = new SAMRecord(fileHeader);
 
         final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(null, fileHeader, CramVersions.CRAM_v3);
         return sam2CramRecordFactory.createCramRecord(record);
     }
-
-    public Map<Integer, ByteArrayInputStream> createInputMap(final Map<Integer, ByteArrayOutputStream> outputMap) {
-        return outputMap.entrySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> new ByteArrayInputStream(e.getValue().toByteArray())));
-    }
-
-    public byte[] write(final List<CramCompressionRecord> records,
-                        final Map<Integer, ByteArrayOutputStream> outputMap,
-                        final CompressionHeader header,
-                        final ReferenceContext refContext,
-                        final int initialAlignmentStart) throws IOException {
-        try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
-             final BitOutputStream bos = new DefaultBitOutputStream(os)) {
-
-            final CramRecordWriter writer = new CramRecordWriter(bos, outputMap, header, refContext);
-            writer.writeCramCompressionRecords(records, initialAlignmentStart);
-
-            return os.toByteArray();
-        }
-    }
-
 }
