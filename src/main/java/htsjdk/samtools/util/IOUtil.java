@@ -94,30 +94,69 @@ public class IOUtil {
     public static final long TWO_GBS = 2 * ONE_GB;
     public static final long FIVE_GBS = 5 * ONE_GB;
 
-    public static final String VCF_FILE_EXTENSION = ".vcf";
-    public static final String VCF_INDEX_EXTENSION = Tribble.STANDARD_INDEX_EXTENSION;
-
-    public static final String BCF_FILE_EXTENSION = ".bcf";
-    public static final String COMPRESSED_VCF_FILE_EXTENSION = ".vcf.gz";
-    public static final String COMPRESSED_VCF_INDEX_EXTENSION = ".tbi";
+    /**
+     * @deprecated Use {@link IOExtensions#VCF_FILE_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String VCF_FILE_EXTENSION = IOExtensions.VCF_FILE_EXTENSION;
+    /**
+     * @deprecated Use {@link IOExtensions#VCF_INDEX_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String VCF_INDEX_EXTENSION = IOExtensions.VCF_INDEX_EXTENSION;
+    /**
+     * @deprecated Use {@link IOExtensions#BCF_FILE_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String BCF_FILE_EXTENSION = IOExtensions.BCF_FILE_EXTENSION;
+    /**
+     * @deprecated Use {@link IOExtensions#COMPRESSED_VCF_FILE_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String COMPRESSED_VCF_FILE_EXTENSION = IOExtensions.COMPRESSED_VCF_FILE_EXTENSION;
+    /**
+     * @deprecated Use {@link IOExtensions#COMPRESSED_VCF_INDEX_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String COMPRESSED_VCF_INDEX_EXTENSION = IOExtensions.COMPRESSED_VCF_INDEX_EXTENSION;
 
     /** Possible extensions for VCF files and related formats. */
-    public static final List<String> VCF_EXTENSIONS_LIST = Collections.unmodifiableList(Arrays.asList(VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION));
+    /**
+     * @deprecated Use {@link IOExtensions#VCF_EXTENSIONS_LIST} instead.
+     */
+    @Deprecated
+    public static final List<String> VCF_EXTENSIONS_LIST = IOExtensions.VCF_EXTENSIONS_LIST;
 
     /**
      * Possible extensions for VCF files and related formats.
-     * @deprecated Use {@link #VCF_EXTENSIONS_LIST} instead.
+     * @deprecated Use {@link IOExtensions#VCF_EXTENSIONS_LIST} instead.
      */
     @Deprecated
     public static final String[] VCF_EXTENSIONS = VCF_EXTENSIONS_LIST.toArray(new String[0]);
 
-    public static final String INTERVAL_LIST_FILE_EXTENSION = IntervalList.INTERVAL_LIST_FILE_EXTENSION;
+    /**
+     * @deprecated Use {@link IOExtensions#INTERVAL_LIST_FILE_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String INTERVAL_LIST_FILE_EXTENSION = IOExtensions.INTERVAL_LIST_FILE_EXTENSION;
 
-    public static final String SAM_FILE_EXTENSION = ".sam";
+    /**
+     * @deprecated Use {@link IOExtensions#SAM_FILE_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String SAM_FILE_EXTENSION = IOExtensions.SAM_FILE_EXTENSION;
 
-    public static final String DICT_FILE_EXTENSION = ".dict";
+    /**
+     * @deprecated Use {@link IOExtensions#DICT_FILE_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String DICT_FILE_EXTENSION = IOExtensions.DICT_FILE_EXTENSION;
 
-    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
+    /**
+     * @deprecated Use {@link IOExtensions#BLOCK_COMPRESSED_EXTENSIONS} instead.
+     */
+    @Deprecated
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = IOExtensions.BLOCK_COMPRESSED_EXTENSIONS;
 
     /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
     public static final int GZIP_HEADER_READ_LENGTH = 8000;

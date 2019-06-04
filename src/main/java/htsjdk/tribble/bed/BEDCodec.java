@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.bed;
 
+import htsjdk.samtools.util.IOExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.AsciiFeatureCodec;
@@ -43,7 +44,11 @@ import java.util.regex.Pattern;
 public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
 
     /** Default extension for BED files. */
-    public static final String BED_EXTENSION = ".bed";
+    /**
+     * @deprecated Use {@link IOExtensions#BED_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String BED_EXTENSION = IOExtensions.BED_EXTENSION;
 
     private static final Pattern SPLIT_PATTERN = Pattern.compile("\\t|( +)");
     private final int startOffsetValue;

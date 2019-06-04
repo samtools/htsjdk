@@ -5,6 +5,7 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
@@ -21,7 +22,11 @@ import java.util.List;
 public class BamFileIoUtils {
     private static final Log LOG = Log.getInstance(BamFileIoUtils.class);
 
-    public static final String BAM_FILE_EXTENSION = "." + SamReader.Type.BAM_TYPE.fileExtension();
+    /**
+     * @deprecated Use {@link IOExtensions#BAM_FILE_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String BAM_FILE_EXTENSION = IOExtensions.BAM_FILE_EXTENSION;
 
     public static boolean isBamFile(final File file) {
         return ((file != null) && SamReader.Type.BAM_TYPE.hasValidFileExtension(file.getName()));

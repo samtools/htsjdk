@@ -32,6 +32,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.IOExtensions;
 import htsjdk.samtools.util.IOUtil;
 
 import java.io.BufferedInputStream;
@@ -52,18 +53,18 @@ import java.util.Set;
  * @author Tim Fennell
  */
 public class ReferenceSequenceFileFactory {
-    public static final Set<String> FASTA_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>() {{
-        add(".fasta");
-        add(".fasta.gz");
-        add(".fa");
-        add(".fa.gz");
-        add(".fna");
-        add(".fna.gz");
-        add(".txt");
-        add(".txt.gz");
-    }});
 
-    public static final String FASTA_INDEX_EXTENSION = ".fai";
+    /**
+     * @deprecated Use {@link IOExtensions#FASTA_EXTENSIONS} instead.
+     */
+    @Deprecated
+    public static final Set<String> FASTA_EXTENSIONS = IOExtensions.FASTA_EXTENSIONS;
+
+    /**
+     * @deprecated Use {@link IOExtensions#FASTA_INDEX_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String FASTA_INDEX_EXTENSION = IOExtensions.FASTA_INDEX_EXTENSION;
 
     /**
      * Attempts to determine the type of the reference file and return an instance

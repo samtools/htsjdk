@@ -54,7 +54,11 @@ import java.util.List;
 public final class GZIIndex {
 
     /** Default extension for the files storing a {@link GZIIndex}. */
-    public static final String DEFAULT_EXTENSION = ".gzi";
+    /**
+     * @deprecated Use {@link IOExtensions#GZI_DEFAULT_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String DEFAULT_EXTENSION = IOExtensions.GZI_DEFAULT_EXTENSION;
 
     /**
      * Index entry mapping the block-offset (compressed offset) to the uncompressed offset where the

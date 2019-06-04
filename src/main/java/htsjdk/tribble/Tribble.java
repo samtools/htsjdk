@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.IOExtensions;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 
@@ -35,7 +36,11 @@ import java.nio.file.Path;
 public class Tribble {
     private Tribble() { } // can't be instantiated
 
-    public final static String STANDARD_INDEX_EXTENSION = ".idx";
+    /**
+     * @deprecated Use {@link IOExtensions#TRIBBLE_STANDARD_INDEX_EXTENSION} instead.
+     */
+    @Deprecated
+    public final static String STANDARD_INDEX_EXTENSION = IOExtensions.TRIBBLE_STANDARD_INDEX_EXTENSION;
 
     /**
      * Return the name of the index file for the provided {@code filename}

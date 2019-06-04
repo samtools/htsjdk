@@ -29,6 +29,7 @@ import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.IOExtensions;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -51,7 +52,12 @@ import java.util.Arrays;
  * A collection of methods to open and close CRAM files.
  */
 public class CramIO {
-    public static final String CRAM_FILE_EXTENSION = ".cram";
+
+    /**
+     * @deprecated Use {@link IOExtensions#CRAM_FILE_EXTENSION} instead.
+     */
+    @Deprecated
+    public static final String CRAM_FILE_EXTENSION = IOExtensions.CRAM_FILE_EXTENSION;
     /**
      * The 'zero-B' EOF marker as per CRAM specs v2.1. This is basically a serialized empty CRAM container with sequence id set to some
      * number to spell out 'EOF' in hex.
