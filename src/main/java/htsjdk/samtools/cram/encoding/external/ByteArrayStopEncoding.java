@@ -19,18 +19,17 @@ package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Map;
 
-public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
+public final class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
     private final byte stopByte;
     private final int externalId;
     private final ByteBuffer buf;
@@ -42,8 +41,13 @@ public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
         this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES + 1);
     }
 
-    public static ByteArrayStopEncoding fromParams(final byte[] data) {
-        final ByteBuffer buf = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return ByteArrayStopEncoding with parameters populated from serializedParams
+     */
+    public static ByteArrayStopEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buf = ByteBuffer.wrap(serializedParams);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         final byte stopByte = buf.get();
         final int externalId = ITF8.readUnsignedITF8(buf);
@@ -51,7 +55,7 @@ public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         buf.clear();
 
         buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -66,13 +70,14 @@ public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
     }
 
     @Override
-    public CRAMCodec<byte[]> buildCodec(final BitInputStream coreBlockInputStream,
-                                        final BitOutputStream coreBlockOutputStream,
-                                        final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                        final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        final ByteArrayInputStream is = externalBlockInputMap == null ? null : externalBlockInputMap.get(externalId);
-        final ByteArrayOutputStream os = externalBlockOutputMap == null ? null : externalBlockOutputMap.get(externalId);
+    public CRAMCodec<byte[]> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        final ByteArrayInputStream is = sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getExternalInputStream(externalId);
+        final ByteArrayOutputStream os = sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getExternalOutputStream(externalId);
         return new ByteArrayStopCodec(is, os, stopByte);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Content ID: %d StopByte: %d", externalId, stopByte);
+    }
 }

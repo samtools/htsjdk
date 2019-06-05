@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream;
  *
  * @param <T> data series type to be read or written
  */
-public abstract class ExternalCodec<T> implements CRAMCodec<T> {
+abstract class ExternalCodec<T> implements CRAMCodec<T> {
     protected final ByteArrayInputStream inputStream;
     protected final ByteArrayOutputStream outputStream;
 

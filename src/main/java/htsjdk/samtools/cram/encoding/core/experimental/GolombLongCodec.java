@@ -21,8 +21,8 @@ import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 
 class GolombLongCodec extends ExperimentalCodec<Long> {
+    private final boolean QUOTIENT_BIT = true;
     private final int m;
-    private final boolean quotientBit = true;
     private final long offset;
 
     public GolombLongCodec(final BitInputStream coreBlockInputStream,
@@ -43,7 +43,7 @@ class GolombLongCodec extends ExperimentalCodec<Long> {
     public final Long read() {
         long quotient = 0L;
 
-        while (coreBlockInputStream.readBit() == quotientBit) {
+        while (coreBlockInputStream.readBit() == QUOTIENT_BIT) {
             quotient++;
         }
 
@@ -65,8 +65,8 @@ class GolombLongCodec extends ExperimentalCodec<Long> {
         final long reminder = newValue % m;
         final long ceiling = (long) (Math.log(m) / Math.log(2) + 1);
 
-        coreBlockOutputStream.write(quotientBit, quotient);
-        coreBlockOutputStream.write(!quotientBit);
+        coreBlockOutputStream.write(QUOTIENT_BIT, quotient);
+        coreBlockOutputStream.write(!QUOTIENT_BIT);
 
         if (reminder < Math.pow(2, ceiling) - m) {
             coreBlockOutputStream.write(reminder, (int) ceiling - 1);
@@ -79,5 +79,10 @@ class GolombLongCodec extends ExperimentalCodec<Long> {
     @Override
     public Long read(final int length) {
         throw new RuntimeException("Multi-value read method not defined.");
+    }
+
+    @Override
+    public String toString() {
+        return String.format("offset: %d m: %d", offset, m);
     }
 }

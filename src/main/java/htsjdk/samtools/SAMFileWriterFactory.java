@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -524,9 +525,7 @@ public class SAMFileWriterFactory implements Cloneable {
      */
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final OutputStream stream, final Path referenceFasta) {
         // create the CRAMFileWriter directly without propagating factory settings
-        final CRAMFileWriter writer = new CRAMFileWriter(stream, new ReferenceSource(referenceFasta), header, null);
-        setCRAMWriterDefaults(writer);
-        return writer;
+        return new CRAMFileWriter(stream, new ReferenceSource(referenceFasta), header, null);
     }
 
     /**
@@ -684,8 +683,8 @@ public class SAMFileWriterFactory implements Cloneable {
 
     // Set the default CRAM writer preservation parameters
     private void setCRAMWriterDefaults(final CRAMFileWriter writer) {
-        writer.setPreserveReadNames(true);
-        writer.setCaptureAllTags(true);
+        //TODO: set encoding params
+        //writer.setEncodingParams(new CRAMEncodingStrategy());
     }
 
     @Override

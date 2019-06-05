@@ -26,6 +26,7 @@ package htsjdk.variant.utils;
 
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.*;
@@ -79,7 +80,8 @@ public class SAMSequenceDictionaryExtractor {
                 IOUtil.assertFileIsReadable(cramPath);
                 try (final InputStream in = Files.newInputStream(cramPath)) {
                     final CramHeader cramHeader = CramIO.readCramHeader(in);
-                    final Optional<SAMFileHeader> samHeader = Optional.ofNullable(cramHeader.getSamFileHeader());
+                    final Optional<SAMFileHeader> samHeader = Optional.ofNullable(
+                            Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), in, cramPath.toString()));
                     if (samHeader.isPresent()) {
                         return samHeader.get().getSequenceDictionary();
                     }

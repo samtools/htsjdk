@@ -19,17 +19,14 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
-public class GammaIntegerEncoding extends CRAMEncoding<Integer> {
+public final class GammaIntegerEncoding extends CRAMEncoding<Integer> {
     private final int offset;
 
     GammaIntegerEncoding(final int offset) {
@@ -37,13 +34,18 @@ public class GammaIntegerEncoding extends CRAMEncoding<Integer> {
         this.offset = offset;
     }
 
-    public static GammaIntegerEncoding fromParams(final byte[] data) {
-        final int offset = ITF8.readUnsignedITF8(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return GammaIntegerEncoding with parameters populated from serializedParams
+     */
+    public static GammaIntegerEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final int offset = ITF8.readUnsignedITF8(serializedParams);
         return new GammaIntegerEncoding(offset);
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES);
         ITF8.writeUnsignedITF8(offset, buffer);
         buffer.flip();
@@ -53,11 +55,15 @@ public class GammaIntegerEncoding extends CRAMEncoding<Integer> {
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final BitInputStream coreBlockInputStream,
-                                         final BitOutputStream coreBlockOutputStream,
-                                         final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                         final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        return new GammaIntegerCodec(coreBlockInputStream, coreBlockOutputStream, offset);
+    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        return new GammaIntegerCodec(
+                sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
+                sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
+                offset);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Offset: %d", offset);
+    }
 }

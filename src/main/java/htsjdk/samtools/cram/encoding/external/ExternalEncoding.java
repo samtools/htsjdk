@@ -7,13 +7,18 @@ import htsjdk.samtools.cram.structure.EncodingID;
 public abstract class ExternalEncoding<T> extends CRAMEncoding<T> {
     protected final int externalBlockContentId;
 
-    ExternalEncoding(final int externalBlockContentId) {
+    protected ExternalEncoding(final int externalBlockContentId) {
         super(EncodingID.EXTERNAL);
         this.externalBlockContentId = externalBlockContentId;
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         return ITF8.writeUnsignedITF8(externalBlockContentId);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Content ID: %d", externalBlockContentId);
     }
 }

@@ -23,7 +23,7 @@ import java.io.ByteArrayInputStream;
 /**
  * Encode Bytes using an External Data Block
  */
-public class ExternalByteCodec extends ExternalCodec<Byte> {
+final class ExternalByteCodec extends ExternalCodec<Byte> {
 
     /**
      * Construct an External Codec for Bytes

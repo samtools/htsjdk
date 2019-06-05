@@ -7,7 +7,6 @@ import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
@@ -35,15 +34,17 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(test.cramData);
              final CountingInputStream inputStream = new CountingInputStream(bais)) {
             final CramHeader cramHeader = CramIO.readCramHeader(inputStream);
-            container = ContainerIO.readContainer(cramHeader.getVersion(), inputStream);
+            Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), bais, null);
+            final long containerByteOffset = inputStream.getCount();
+            container = new Container(cramHeader.getCRAMVersion(), inputStream, containerByteOffset);
         }
 
-        final Slice slice = container.getSlices()[0];
-        Assert.assertEquals(slice.alignmentStart, 1);
-        Assert.assertEquals(slice.alignmentSpan, test.referenceBases.length);
+        final Slice slice = container.getSlices().get(0);
+        Assert.assertEquals(slice.getAlignmentContext().getAlignmentStart(), 1);
+        Assert.assertEquals(slice.getAlignmentContext().getAlignmentSpan(), test.referenceBases.length);
         // check the slice MD5 is the MD5 of upper-cased ref bases:
         final byte[] ucRefMD5 = SequenceUtil.calculateMD5(test.refBasesFromUCSource, 0, test.refBasesFromUCSource.length);
-        Assert.assertEquals(slice.refMD5, ucRefMD5);
+        Assert.assertEquals(slice.getReferenceMD5(), ucRefMD5);
 
         // check the CRAM file reads:
         final CRAMFileReader reader = new CRAMFileReader(new ByteArrayInputStream(test.cramData), (File) null, test.referenceSourceUpperCased, ValidationStringency.STRICT);

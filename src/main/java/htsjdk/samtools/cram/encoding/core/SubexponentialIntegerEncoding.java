@@ -19,17 +19,14 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
-public class SubexponentialIntegerEncoding extends CRAMEncoding<Integer> {
+public final class SubexponentialIntegerEncoding extends CRAMEncoding<Integer> {
     private final int offset;
     private final int k;
 
@@ -44,15 +41,20 @@ public class SubexponentialIntegerEncoding extends CRAMEncoding<Integer> {
         this.k = k;
     }
 
-    public static SubexponentialIntegerEncoding fromParams(final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return SubexponentialIntegerEncoding with parameters populated from serializedParams
+     */
+    public static SubexponentialIntegerEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buffer = ByteBuffer.wrap(serializedParams);
         final int offset = ITF8.readUnsignedITF8(buffer);
         final int k = ITF8.readUnsignedITF8(buffer);
         return new SubexponentialIntegerEncoding(offset, k);
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES * 2);
 
         ITF8.writeUnsignedITF8(offset, buffer);
@@ -65,11 +67,16 @@ public class SubexponentialIntegerEncoding extends CRAMEncoding<Integer> {
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final BitInputStream coreBlockInputStream,
-                                         final BitOutputStream coreBlockOutputStream,
-                                         final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                         final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        return new SubexponentialIntegerCodec(coreBlockInputStream, coreBlockOutputStream, offset, k);
+    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        return new SubexponentialIntegerCodec(
+                sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
+                sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
+                offset,
+                k);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Offset: %d k: %d", offset, k);
+    }
 }

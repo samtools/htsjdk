@@ -84,4 +84,9 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
         throw new RuntimeException("Not implemented.");
     }
 
+    @Override
+    public String toString() {
+        return String.format("m: %d log2m: %d mask: %l quotientBit %b offset %d", m, log2m, mask, quotientBit, offset);
+    }
+
 }

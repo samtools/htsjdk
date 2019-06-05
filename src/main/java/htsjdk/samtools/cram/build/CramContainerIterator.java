@@ -1,25 +1,29 @@
 package htsjdk.samtools.cram.build;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.util.Iterator;
 
 /**
  * An iterator of CRAM containers read from an {@link java.io.InputStream}.
  */
-public class CramContainerIterator implements Iterator<Container> {
+public class CramContainerIterator implements Iterator<Container>, Closeable {
     private CramHeader cramHeader;
-    private CountingInputStream countingInputStream;
+    private final SAMFileHeader samFileHeader;
+    private final CountingInputStream countingInputStream;
+
     private Container nextContainer;
     private boolean eof = false;
 
     public CramContainerIterator(final InputStream inputStream) {
         this.countingInputStream = new CountingInputStream(inputStream);
         cramHeader = CramIO.readCramHeader(countingInputStream);
+        samFileHeader = Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), countingInputStream, null);
     }
 
     private void readNextContainer() {
@@ -40,7 +44,8 @@ public class CramContainerIterator implements Iterator<Container> {
      * @return The next Container from the stream.
      */
     protected Container containerFromStream(final CountingInputStream countingStream) {
-        return ContainerIO.readContainer(cramHeader.getVersion(), countingStream);
+        final long containerByteOffset = countingStream.getCount();
+        return new Container(cramHeader.getCRAMVersion(), countingStream, containerByteOffset);
     }
 
     @Override
@@ -73,13 +78,14 @@ public class CramContainerIterator implements Iterator<Container> {
         return cramHeader;
     }
 
+    public SAMFileHeader getSamFileHeader() {
+        return samFileHeader;
+    }
+
+    @Override
     public void close() {
         nextContainer = null;
         cramHeader = null;
-        //noinspection EmptyCatchBlock
-        try {
-            countingInputStream.close();
-        } catch (final Exception e) {
-        }
+        countingInputStream.close();
     }
 }

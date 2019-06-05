@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
  * Use the <a href="http://www.ittc.ku.edu/~jsv/Papers/HoV94.progressive_FELICS.pdf">Subexponential Codec</a>
  * to encode Integers.
  */
-class SubexponentialIntegerCodec extends CoreCodec<Integer> {
+final class SubexponentialIntegerCodec extends CoreCodec<Integer> {
     final private int offset;
     final private int k;
 

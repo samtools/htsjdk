@@ -17,7 +17,7 @@
  */
 package htsjdk.samtools.cram.build;
 
-final public class Utils {
+public final class Utils {
 
     private Utils() {};
 

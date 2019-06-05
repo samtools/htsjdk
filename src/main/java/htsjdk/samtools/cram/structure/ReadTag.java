@@ -28,9 +28,9 @@ import java.util.Objects;
 
 /**
  * CRAM counterpart of {@link htsjdk.samtools.SAMTag}.
- * TODO: consider merging/dropping this class in favour of SAMTag or a SAMTag implementation.
  */
 public class ReadTag implements Comparable<ReadTag> {
+    // NOTE: consider merging/dropping this class in favour of SAMTag or a SAMTag implementation.
     private static final long MAX_INT = Integer.MAX_VALUE;
     private static final long MAX_UINT = MAX_INT * 2 + 1;
     private static final long MAX_SHORT = Short.MAX_VALUE;
@@ -42,7 +42,7 @@ public class ReadTag implements Comparable<ReadTag> {
     private String key;
     private String keyAndType;
     public String keyType3Bytes;
-    public int keyType3BytesAsInt;
+    public int keyType3BytesAsInt; // this is used as the content id for this tag series
     private char type;
     private Object value;
     private short code;
@@ -83,6 +83,7 @@ public class ReadTag implements Comparable<ReadTag> {
         code = SAMTag.makeBinaryTag(this.key);
     }
 
+    // two bytes are tag name and one byte is type
     public static int name3BytesToInt(final byte[] name) {
         int value = 0xFF & name[0];
         value <<= 8;
@@ -103,6 +104,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
+    // two bytes are tag name and one byte is type
     public static String intToNameType3Bytes(final int value) {
         final byte b3 = (byte) (0xFF & value);
         final byte b2 = (byte) (0xFF & (value >> 8));
@@ -111,6 +113,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return new String(new byte[]{b1, b2, b3});
     }
 
+    //TODO: consolidate this with the method above, and add some tests
     public static String intToNameType4Bytes(final int value) {
         final byte b3 = (byte) (0xFF & value);
         final byte b2 = (byte) (0xFF & (value >> 8));
@@ -142,7 +145,7 @@ public class ReadTag implements Comparable<ReadTag> {
     }
 
     @Override
-    public int compareTo(@SuppressWarnings("NullableProblems") final ReadTag o) {
+    public int compareTo(final ReadTag o) {
         return key.compareTo(o.key);
     }
 
@@ -252,7 +255,6 @@ public class ReadTag implements Comparable<ReadTag> {
 
     public static byte[] writeSingleValue(final byte tagType, final Object value,
                                           final boolean isUnsignedArray) {
-
         final ByteBuffer buffer = bufferLocal.get();
         buffer.clear();
         switch (tagType) {

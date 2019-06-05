@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerHeaderIO;
+import htsjdk.samtools.cram.structure.ContainerHeader;
 
 import java.io.InputStream;
 
@@ -15,7 +15,7 @@ import java.io.InputStream;
  * This class is useful when you are not interested in the contents of containers, for example when indexing container
  * start positions.
  */
-public class CramContainerHeaderIterator extends CramContainerIterator {
+public final class CramContainerHeaderIterator extends CramContainerIterator {
 
     public CramContainerHeaderIterator(final InputStream inputStream) {
       super(inputStream);
@@ -32,9 +32,10 @@ public class CramContainerHeaderIterator extends CramContainerIterator {
      */
     @Override
     protected Container containerFromStream(final CountingInputStream countingStream) {
-        final Container container = ContainerHeaderIO.readContainerHeader(getCramHeader().getVersion().major, countingStream);
-        InputStreamUtils.skipFully(countingStream, container.containerBlocksByteSize);
-        return container;
+        final long byteOffset = countingStream.getCount();
+        final ContainerHeader containerHeader = new ContainerHeader(getCramHeader().getCRAMVersion(), countingStream);
+        InputStreamUtils.skipFully(countingStream, containerHeader.getContainerBlocksByteSize());
+        return new Container(containerHeader, byteOffset);
     }
 
 }

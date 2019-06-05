@@ -18,6 +18,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     // this Slice's Container's offset in bytes from the beginning of the stream
     // equal to Slice.containerByteOffset and Container.byteOffset
     private final long containerStartByteOffset;
+
     // this Slice's offset in bytes from the beginning of its Container's Compression Header
     // equal to Slice.byteOffsetFromCompressionHeaderStart and Container.landmarks[Slice.index]
     private final int sliceByteOffsetFromCompressionHeaderStart;
@@ -48,12 +49,11 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * Create a CRAI Entry from a serialized CRAI index line.
      *
      * @param line string formatted as a CRAI index entry
-     * @throws CRAIIndex.CRAIIndexException
      */
     public CRAIEntry(final String line) {
         final String[] chunks = line.split("\t");
         if (chunks.length != CRAI_INDEX_COLUMNS) {
-            throw new CRAIIndex.CRAIIndexException(
+            throw new CRAMException(
                     "Malformed CRAI index entry: expecting " + CRAI_INDEX_COLUMNS + " columns but got " + chunks.length);
         }
 
@@ -65,7 +65,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
             sliceByteOffsetFromCompressionHeaderStart = Integer.parseInt(chunks[4]);
             sliceByteSize = Integer.parseInt(chunks[5]);
         } catch (final NumberFormatException e) {
-            throw new CRAIIndex.CRAIIndexException(e);
+            throw new CRAMException(e);
         }
     }
 

@@ -26,8 +26,6 @@ public interface ReadFeature {
      */
     int getPosition();
 
-    void setPosition(int position);
-
     /**
      * Read features are distinguished by operator, similar to cigar operator.
      * @return type of the read feature

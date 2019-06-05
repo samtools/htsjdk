@@ -10,7 +10,7 @@ import java.io.IOException;
  * Encode byte arrays by specifying a stop byte to separate the arrays.
  * This cannot be a byte that appears in the data.
  */
-public class ByteArrayStopCodec extends ExternalCodec<byte[]> {
+final class ByteArrayStopCodec extends ExternalCodec<byte[]> {
     private final int stop;
 
     /**

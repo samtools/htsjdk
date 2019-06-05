@@ -43,6 +43,7 @@ import java.util.function.Function;
  * whatever index format (.bai or .crai converted to .bai) is available for the
  * target file.
  */
+
 public class CRAMIndexQueryTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
@@ -426,7 +427,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             final QueryInterval[] intervals,
             final String[] expectedNames) throws IOException
     {
-        QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
+        final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
         Assert.assertTrue(optimizedIntervals.length > 1);
 
         doQueryTest(
@@ -464,7 +465,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             final QueryInterval[] intervals,
             final String[] expectedNames) throws IOException
     {
-        QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
+        final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
         doQueryTest(
                 reader -> reader.queryContained(optimizedIntervals),
                 cramFileName,
@@ -561,7 +562,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             final QueryInterval[] intervals,
             final String[] expectedNames) throws IOException
     {
-        QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
+        final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
         Assert.assertTrue(optimizedIntervals.length > 1);
         doQueryTest(
                 reader -> reader.queryContained(optimizedIntervals),

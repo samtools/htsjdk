@@ -35,7 +35,6 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +75,6 @@ public class ReferenceSource implements CRAMReferenceSource {
      *
      * @return CRAMReferenceSource if one can be acquired. Guaranteed to not be null if none
      * of the listed exceptions is thrown.
-     * @throws IllegalStateException if no default reference source can be acquired
      * @throws IllegalArgumentException if the reference_fasta environment variable refers to a
      * a file that doesn't exist
      *<p>
@@ -100,17 +98,12 @@ public class ReferenceSource implements CRAMReferenceSource {
             }
         }
         else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
-            log.info("USE_CRAM_REF_DOWNLOAD=true, so attmpting to download reference file as needed.");
+            log.info("USE_CRAM_REF_DOWNLOAD=true, so attempting to download reference file as needed.");
             return new ReferenceSource((ReferenceSequenceFile)null);
         }
         else {
-            throw new IllegalStateException(
-                    String.format("A valid CRAM reference was not supplied and one cannot be acquired via the property settings %s.reference_fasta or %s.use_cram_ref_download",Defaults.SAMJDK_PREFIX,Defaults.SAMJDK_PREFIX));
+            return new CRAMLazyReferenceSource();
         }
-    }
-
-    public void clearCache() {
-        cacheW.clear();
     }
 
     private byte[] findInCache(final String name) {
@@ -185,7 +178,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         return null;
     }
 
-    byte[] findBasesByName(final String name, final boolean tryVariants) {
+    private byte[] findBasesByName(final String name, final boolean tryVariants) {
         if (rsFile == null || !rsFile.isIndexed())
             return null;
 
@@ -245,7 +238,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     private static final Pattern chrPattern = Pattern.compile("chr.*",
             Pattern.CASE_INSENSITIVE);
 
-    List<String> getVariants(final String name) {
+    private List<String> getVariants(final String name) {
         final List<String> variants = new ArrayList<>();
 
         if (name.equals("M"))

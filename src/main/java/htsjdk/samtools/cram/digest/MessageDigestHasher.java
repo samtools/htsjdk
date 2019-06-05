@@ -2,7 +2,7 @@ package htsjdk.samtools.cram.digest;
 
 import java.security.MessageDigest;
 
-class MessageDigestHasher extends AbstractSerialDigest<byte[]> {
+final class MessageDigestHasher extends AbstractSerialDigest<byte[]> {
     private final MessageDigest messageDigest;
 
     MessageDigestHasher(final MessageDigest messageDigest, final Combine<byte[]> combine,

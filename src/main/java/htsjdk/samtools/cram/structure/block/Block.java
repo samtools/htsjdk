@@ -18,15 +18,18 @@
 package htsjdk.samtools.cram.structure.block;
 
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
-import htsjdk.samtools.cram.compression.ExternalCompression;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
 import htsjdk.samtools.cram.io.*;
+import htsjdk.samtools.cram.structure.CompressorCache;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 
 /**
  * Class representing CRAM block concept and some methods to operate with block content. CRAM block is used to hold some (usually
@@ -57,7 +60,9 @@ public class Block {
     private final int contentId;
 
     /**
-     * The content stored in this block, in compressed form (if applicable)
+     * The content stored in this block, in compressed form (if applicable). For blocks with
+     * BlockCompressionMethod.RAW, this is the raw content, which is the same in compressed
+     * and uncompressed form.
      */
     private final byte[] compressedContent;
 
@@ -86,10 +91,12 @@ public class Block {
         this.compressedContent = compressedContent;
         this.uncompressedLength = uncompressedLength;
 
-        // causes test failures.  https://github.com/samtools/htsjdk/issues/1232
-//        if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
-//            throw new CRAMException("Valid Content ID required for external blocks.");
-//        }
+        // There are quite a few htsjdk and GATk test files around that contain external blocks that violate this
+        // (that is they have contentID==0). So we may have to leave this out, and only validate that we don't violate
+        // this on write. See https://github.com/samtools/htsjdk/issues/1232
+        //if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
+        //    throw new CRAMException("Valid Content ID required for external blocks.");
+        //}
 
         if (contentType != BlockContentType.EXTERNAL && contentId != Block.NO_CONTENT_ID) {
             throw new CRAMException("Cannot set a Content ID for non-external blocks.");
@@ -113,13 +120,17 @@ public class Block {
 
     /**
      * Create a new file header block with the given uncompressed content.
-     * The block will have RAW (no) compression and FILE_HEADER content type.
+     * The block will have GZIP compression and FILE_HEADER content type.
      *
      * @param rawContent the uncompressed content of the block
      * @return a new {@link Block} object
      */
-    public static Block createRawFileHeaderBlock(final byte[] rawContent) {
-        return createRawNonExternalBlock(BlockContentType.FILE_HEADER, rawContent);
+    public static Block createGZIPFileHeaderBlock(final byte[] rawContent) {
+        return new Block(
+                BlockCompressionMethod.GZIP,
+                BlockContentType.FILE_HEADER, NO_CONTENT_ID,
+                (new GZIPExternalCompressor()).compress(rawContent),
+                rawContent.length);
     }
 
     /**
@@ -168,6 +179,7 @@ public class Block {
                                             final int contentId,
                                             final byte[] compressedContent,
                                             final int uncompressedLength) {
+        ValidationUtils.validateArg(contentId >= 0, "Invalid external block content id");
         return new Block(compressionMethod, BlockContentType.EXTERNAL,
                 contentId, compressedContent, uncompressedLength);
     }
@@ -194,15 +206,34 @@ public class Block {
     }
 
     /**
+     * Return the raw (uncompressed) content from a block. The block must have {@code BlockCompressionMethod}
+     * {@link BlockCompressionMethod#RAW}.
+     *
+     * @return The raw, uncompressed block content.
+     * @throws IllegalArgumentException if the block is not {@link BlockCompressionMethod#RAW}.
+     */
+    public final byte[] getRawContent() {
+        ValidationUtils.validateArg(getCompressionMethod() == BlockCompressionMethod.RAW,
+                "getRawContent should only be called on blocks with RAW compression method");
+        return compressedContent;
+    }
+
+    /**
      * Uncompress the stored block content (if not RAW) and return the uncompressed content.
      *
      * @return The uncompressed block content.
      * @throws CRAMException The uncompressed length did not match what was expected.
+     * @param compressorCache
      */
-    public final byte[] getUncompressedContent() {
-        final byte[] uncompressedContent = ExternalCompression.uncompress(compressionMethod, compressedContent);
+    public final byte[] getUncompressedContent(final CompressorCache compressorCache) {
+        // when uncompressing, no compressor-specific args are required since any variant of the compressor will do
+        final ExternalCompressor compressor = compressorCache.getCompressorForMethod(compressionMethod, ExternalCompressor.NO_COMPRESSION_ARG);
+        final byte[] uncompressedContent = compressor.uncompress(compressedContent);
         if (uncompressedContent.length != uncompressedLength) {
-            throw new CRAMException(String.format("Block uncompressed length did not match expected length: %04x vs %04x", uncompressedLength, uncompressedContent.length));
+            throw new CRAMException(String.format(
+                    "Block uncompressed length did not match expected length: %04x vs %04x",
+                    uncompressedLength,
+                    uncompressedContent.length));
         }
         return uncompressedContent;
     }
@@ -231,12 +262,12 @@ public class Block {
     /**
      * Deserialize the Block from the {@link InputStream}. The reading is parameterized by the major CRAM version number.
      *
-     * @param major CRAM version major number
+     * @param cramVersion CRAM version
      * @param inputStream    input stream to read the block from
      * @return a subtype of {@link Block} object with fields and content from the input stream
      */
-    public static Block read(final int major, InputStream inputStream) {
-        final boolean v3OrHigher = major >= CramVersions.CRAM_v3.major;
+    public static Block read(final CRAMVersion cramVersion, InputStream inputStream) {
+        final boolean v3OrHigher = cramVersion.getMajor() >= CramVersions.CRAM_v3.getMajor();
         if (v3OrHigher) {
             inputStream = new CRC32InputStream(inputStream);
         }
@@ -254,7 +285,7 @@ public class Block {
                 final int actualChecksum = ((CRC32InputStream) inputStream).getCRC32();
                 final int checksum = CramInt.readInt32(inputStream);
                 if (checksum != actualChecksum) {
-                    throw new RuntimeException(String.format("Block CRC32 mismatch: %04x vs %04x", checksum, actualChecksum));
+                    throw new RuntimeException(String.format("Block CRC32 mismatch, actual: %04x expected: %04x", checksum, actualChecksum));
                 }
             }
 
@@ -269,12 +300,12 @@ public class Block {
      * Write the block out to the the specified {@link OutputStream}.
      * The method is parameterized with the CRAM major version number.
      *
-     * @param major CRAM version major number
+     * @param cramVersion CRAM version major number
      * @param outputStream output stream to write to
      */
-    public final void write(final int major, final OutputStream outputStream) {
+    public final void write(final CRAMVersion cramVersion, final OutputStream outputStream) {
         try {
-            if (major >= CramVersions.CRAM_v3.major) {
+            if (cramVersion.getMajor() >= CramVersions.CRAM_v3.getMajor()) {
                 final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
                 doWrite(crc32OutputStream);
                 outputStream.write(crc32OutputStream.getCrc32_LittleEndian());
@@ -300,14 +331,12 @@ public class Block {
 
     @Override
     public String toString() {
-        final byte[] uncompressed = getUncompressedContent();
-        final byte[] compressed = getCompressedContent();
-
-        final String raw = Arrays.toString(Arrays.copyOf(uncompressed, Math.min(5, uncompressed.length)));
-        final String comp = Arrays.toString(Arrays.copyOf(compressed, Math.min(5, compressed.length)));
-
-        return String.format("compression method=%s, content type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s, comp=%s.",
-                getCompressionMethod().name(), getContentType().name(), getContentId(),
-                getUncompressedContentSize(), getCompressedContentSize(), raw, comp);
+        return String.format("method=%s, type=%s, id=%d, raw size=%d, compressed size=%d",
+                getCompressionMethod().name(),
+                getContentType().name(),
+                getContentId(),
+                getUncompressedContentSize(),
+                getCompressedContentSize());
     }
+
 }

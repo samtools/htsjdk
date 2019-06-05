@@ -17,6 +17,8 @@
  */
 package htsjdk.samtools.cram.encoding.readfeatures;
 
+import htsjdk.samtools.cram.structure.CRAMCompressionRecord;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -47,17 +49,8 @@ public class ReadBase implements Serializable, ReadFeature {
         return position;
     }
 
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
-    }
-
     public byte getQualityScore() {
         return qualityScore;
-    }
-
-    public void setQualityScore(final byte qualityScore) {
-        this.qualityScore = qualityScore;
     }
 
     @Override
@@ -65,7 +58,7 @@ public class ReadBase implements Serializable, ReadFeature {
         return new StringBuilder(getClass().getSimpleName() + "[")
                 .append("position=").append(position)
                 .append("; base=").appendCodePoint(base)
-                .append("; score=").appendCodePoint(qualityScore)
+                .append("; score=").appendCodePoint(qualityScore == CRAMCompressionRecord.MISSING_QUALITY_SCORE ? 0 : qualityScore)
                 .append("] ").toString();
     }
 

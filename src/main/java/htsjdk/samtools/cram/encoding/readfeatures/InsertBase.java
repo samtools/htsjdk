@@ -29,14 +29,10 @@ public class InsertBase implements Serializable, ReadFeature {
     private byte base;
     public static final byte operator = 'i';
 
-    public InsertBase() {
-    }
-
     public InsertBase(final int position, final byte base) {
         this.position = position;
         this.base = base;
     }
-
 
     @Override
     public byte getOperator() {
@@ -48,23 +44,14 @@ public class InsertBase implements Serializable, ReadFeature {
         return position;
     }
 
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
+    public byte getBase() {
+        return base;
     }
 
     @Override
     public String toString() {
         return new StringBuilder().append((char) operator).append('@')
                 .append(position).append('\\').appendCodePoint(base).toString();
-    }
-
-    public byte getBase() {
-        return base;
-    }
-
-    public void setBase(final byte base) {
-        this.base = base;
     }
 
     @Override

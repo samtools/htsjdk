@@ -25,10 +25,10 @@ public class SubexponentialIntegerEncodingTest extends HtsjdkTest {
     public void paramsTest(final int offset, final int k, final byte[] expected) {
 
         final SubexponentialIntegerEncoding constructed = new SubexponentialIntegerEncoding(offset, k);
-        Assert.assertEquals(constructed.toByteArray(), expected);
+        Assert.assertEquals(constructed.toSerializedEncodingParams(), expected);
 
-        final SubexponentialIntegerEncoding fromParams = SubexponentialIntegerEncoding.fromParams(expected);
-        Assert.assertEquals(fromParams.toByteArray(), expected);
+        final SubexponentialIntegerEncoding params = SubexponentialIntegerEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(params.toSerializedEncodingParams(), expected);
     }
 
     // sanity check for k.  Must be >= 0
@@ -36,5 +36,12 @@ public class SubexponentialIntegerEncodingTest extends HtsjdkTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void negativeK() {
         new SubexponentialIntegerEncoding(0, -1);
+    }
+
+    @Test
+    public void testToString() {
+        final SubexponentialIntegerEncoding encoding = new SubexponentialIntegerEncoding(1, 3);
+        Assert.assertTrue(encoding.toString().contains("1"));
+        Assert.assertTrue(encoding.toString().contains("3"));
     }
 }

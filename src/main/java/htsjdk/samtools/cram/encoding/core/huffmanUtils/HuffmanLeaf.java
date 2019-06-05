@@ -17,12 +17,28 @@
  */
 package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
-class HuffmanLeaf<T> extends HuffmanTree<T> {
-    // user object, attached to the leaf:
-    public final T value;
+import java.util.Map;
 
-    public HuffmanLeaf(final int freq, final T val) {
-        super(freq);
-        value = val;
+/**
+ * A leaf node in a {@code HuffmanTree}.
+ * @param <T> type of the symbols in the alphabet being huffman-encoded
+ */
+final class HuffmanLeaf<T> extends HuffmanTree<T> {
+    public final T symbol;
+
+    /**
+     * A symbol in the alphabet being encoded, and the corresponding frequency in the input stream.
+     * @param symbol
+     * @param frequency
+     */
+    public HuffmanLeaf(final T symbol, final int frequency ) {
+        super(frequency);
+        this.symbol = symbol;
     }
+
+    @Override
+    public void getCodeWords(int codeWord, int codeWordLength, final Map<T, HuffmanBitCode<T>> symbolsToCodes) {
+        symbolsToCodes.put(symbol, new HuffmanBitCode(symbol, codeWord, codeWordLength));
+    }
+
 }

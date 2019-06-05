@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.encoding;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.encoding.core.BetaIntegerEncoding;
 import htsjdk.samtools.cram.encoding.external.ExternalByteArrayEncoding;
+import htsjdk.samtools.cram.encoding.external.ExternalIntegerEncoding;
 import htsjdk.samtools.cram.structure.EncodingID;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -59,9 +60,18 @@ public class ByteArrayLenEncodingTest extends HtsjdkTest {
         final CRAMEncoding<Integer> constructedLength = new BetaIntegerEncoding(offset, bitsPerValue);
         final CRAMEncoding<byte[]> constructedValues = new ExternalByteArrayEncoding(externalBlockContentId);
         final ByteArrayLenEncoding constructed = new ByteArrayLenEncoding(constructedLength, constructedValues);
-        Assert.assertEquals(constructed.toByteArray(), expected);
+        Assert.assertEquals(constructed.toSerializedEncodingParams(), expected);
 
-        final ByteArrayLenEncoding fromParams = ByteArrayLenEncoding.fromParams(expected);
-        Assert.assertEquals(fromParams.toByteArray(), expected);
+        final ByteArrayLenEncoding params = ByteArrayLenEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(params.toSerializedEncodingParams(), expected);
+    }
+
+    @Test
+    public void testToString() {
+        final ByteArrayLenEncoding encoding = new ByteArrayLenEncoding(
+                new ExternalIntegerEncoding(27),
+                new ExternalByteArrayEncoding(29));
+        Assert.assertTrue(encoding.toString().contains("27"));
+        Assert.assertTrue(encoding.toString().contains("29"));
     }
 }

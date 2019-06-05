@@ -1,7 +1,12 @@
 package htsjdk.samtools.cram.encoding;
 
 /**
- * Encode byte arrays by specifying encodings for array lengths and contents
+ * Encode byte arrays by specifying encodings for array lengths and contents.
+ *
+ * NOTE: this codec is a hybrid codec in that it splits it's data between the core block
+ * (where it stores the byte array length), and an external block (where it stores the actual
+ * bytes). This has implications for data access, since some of it's data is interleaved with
+ * other data in the core block.
  */
 class ByteArrayLenCodec implements CRAMCodec<byte[]> {
     private final CRAMCodec<Integer> lenCodec;

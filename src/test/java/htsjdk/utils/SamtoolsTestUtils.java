@@ -13,7 +13,7 @@ import java.nio.file.Paths;
  */
 public class SamtoolsTestUtils {
     private static final String SAMTOOLS_BINARY_ENV_VARIABLE = "HTSJDK_SAMTOOLS_BIN";
-    public final static String expectedSamtoolsVersion = "1.10";
+    public final static String expectedSamtoolsVersion = "1.9";
 
     /**
      * @return true if samtools is available, otherwise false

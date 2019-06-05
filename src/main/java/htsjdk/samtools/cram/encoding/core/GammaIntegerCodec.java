@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
  * Encode Integers using Elias Gamma Encoding.
  * http://en.wikipedia.org/wiki/Elias_gamma_coding
  */
-class GammaIntegerCodec extends CoreCodec<Integer> {
+final class GammaIntegerCodec extends CoreCodec<Integer> {
     private final int offset;
 
     /**

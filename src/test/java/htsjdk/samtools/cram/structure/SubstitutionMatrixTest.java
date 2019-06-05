@@ -7,6 +7,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class SubstitutionMatrixTest extends HtsjdkTest {
@@ -99,18 +100,18 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
 
     @Test
     public void testMultipleReferenceBaseubstitution () {
-        final List<CramCompressionRecord> cramRecords = new ArrayList<>();
-        cramRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.A, SubstitutionBase.T, 10));
-        cramRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.A, SubstitutionBase.G, 20));
-        cramRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.G, SubstitutionBase.C, 10));
-        cramRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.G, SubstitutionBase.N, 20));
+        final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>();
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.A, SubstitutionBase.T, 10));
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.A, SubstitutionBase.G, 20));
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.G, SubstitutionBase.C, 10));
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.G, SubstitutionBase.N, 20));
 
         // for 'A' -> 10, 00, 01, 11 = 0x87
         // for 'G' -> 10, 01, 11, 00 = 0x9C
 
         final byte[] expectedMatrixBytes = new byte[]{ (byte) 0x87, defaultCode, (byte) 0x9C, defaultCode, defaultCode};
 
-        final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(cramRecords);
+        final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(cramCompressionRecords);
         Assert.assertEquals(substitutionMatrix.getEncodedMatrix(), expectedMatrixBytes);
 
         // make sure highest substitution frequencies yield the shortest code (0)
@@ -166,29 +167,29 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
             final int nG,
             final int nT,
             final int nN) {
-        final List<CramCompressionRecord> cramRecords = new ArrayList<>(nA + nC + nG + nT + nN);
-        cramRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.A, nA));
-        cramRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.C, nC));
-        cramRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.G, nG));
-        cramRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.T, nT));
-        cramRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.N, nN));
+        final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>(nA + nC + nG + nT + nN);
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.A, nA));
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.C, nC));
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.G, nG));
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.T, nT));
+        cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.N, nN));
 
-        return new SubstitutionMatrix(cramRecords);
+        return new SubstitutionMatrix(cramCompressionRecords);
     }
 
     // create a set of CRAM records of size nSubs that each have the given refBase->readBase Substitution read feature
-    private List<CramCompressionRecord> getCramRecordsWithSubstitutions(
+    private List<CRAMCompressionRecord> getCramRecordsWithSubstitutions(
             final SubstitutionBase refBase,
             final SubstitutionBase readBase,
             final int nSubs) {
-        final List<CramCompressionRecord> cramRecords = new ArrayList<>(nSubs);
+        final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>(nSubs);
         for (int i = 0; i < nSubs; i++) {
-            final CramCompressionRecord rec = new CramCompressionRecord();
-            final Substitution sub = new Substitution(i, readBase.getBase(), refBase.getBase());
-            rec.addReadFeature(sub);
-            cramRecords.add(rec);
+            final CRAMCompressionRecord rec = CRAMRecordTestHelper.getCRAMRecordWithReadFeatures(
+                    "aname", 10, 1, 2, 0,3, new byte[]{'a', 'c', 'g', 't'},
+                    1, Collections.singletonList(new Substitution(i, readBase.getBase(), refBase.getBase())));
+            cramCompressionRecords.add(rec);
         }
-        return cramRecords;
+        return cramCompressionRecords;
     }
 
 }

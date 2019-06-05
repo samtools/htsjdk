@@ -22,27 +22,27 @@ public class ExternalEncodingTest extends HtsjdkTest {
     public void paramsTest(final int externalBlockContentId, final byte[] expected) {
 
         final ExternalByteEncoding constructedB = new ExternalByteEncoding(externalBlockContentId);
-        Assert.assertEquals(constructedB.toByteArray(), expected);
+        Assert.assertEquals(constructedB.toSerializedEncodingParams(), expected);
 
-        final ExternalByteEncoding fromParamsB = ExternalByteEncoding.fromParams(expected);
-        Assert.assertEquals(fromParamsB.toByteArray(), expected);
+        final ExternalByteEncoding paramsB = ExternalByteEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(paramsB.toSerializedEncodingParams(), expected);
 
         final ExternalByteArrayEncoding constructedBA = new ExternalByteArrayEncoding(externalBlockContentId);
-        Assert.assertEquals(constructedBA.toByteArray(), expected);
+        Assert.assertEquals(constructedBA.toSerializedEncodingParams(), expected);
 
-        final ExternalByteArrayEncoding fromParamsBA = ExternalByteArrayEncoding.fromParams(expected);
-        Assert.assertEquals(fromParamsBA.toByteArray(), expected);
+        final ExternalByteArrayEncoding paramsBA = ExternalByteArrayEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(paramsBA.toSerializedEncodingParams(), expected);
 
         final ExternalIntegerEncoding constructedI = new ExternalIntegerEncoding(externalBlockContentId);
-        Assert.assertEquals(constructedI.toByteArray(), expected);
+        Assert.assertEquals(constructedI.toSerializedEncodingParams(), expected);
 
-        final ExternalIntegerEncoding fromParamsI = ExternalIntegerEncoding.fromParams(expected);
-        Assert.assertEquals(fromParamsI.toByteArray(), expected);
+        final ExternalIntegerEncoding paramsI = ExternalIntegerEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(paramsI.toSerializedEncodingParams(), expected);
 
         final ExternalLongEncoding constructedL = new ExternalLongEncoding(externalBlockContentId);
-        Assert.assertEquals(constructedL.toByteArray(), expected);
+        Assert.assertEquals(constructedL.toSerializedEncodingParams(), expected);
 
-        final ExternalLongEncoding fromParamsL = ExternalLongEncoding.fromParams(expected);
-        Assert.assertEquals(fromParamsL.toByteArray(), expected);
+        final ExternalLongEncoding paramsL = ExternalLongEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(paramsL.toSerializedEncodingParams(), expected);
     }
 }

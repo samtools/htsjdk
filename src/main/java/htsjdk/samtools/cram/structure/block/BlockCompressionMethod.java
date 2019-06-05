@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The block compression methods specified by Section 8 of the CRAM spec
+ * The block compression methods specified by Section 8 of the CRAM spec.
  */
 public enum BlockCompressionMethod {
     RAW(0),

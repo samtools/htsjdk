@@ -1,32 +1,29 @@
 package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.samtools.cram.compression.rans.Encoding.RansEncSymbol;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-@SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
-class Frequencies {
+// T = total of true counts
+// F = scaled integer frequencies
+// M = sum(fs)
 
-    static void readStats_o0(final ByteBuffer cp, final Decoding.AriDecoder decoder, final Decoding.RansDecSymbol[] syms) {
+final class Frequencies {
+
+    static void readStatsOrder0(final ByteBuffer cp, final ArithmeticDecoder decoder, final RANSDecodingSymbol[] decodingSymbols) {
         // Pre-compute reverse lookup of frequency.
         int rle = 0;
         int x = 0;
         int j = cp.get() & 0xFF;
         do {
-            if (decoder.fc[j] == null)
-                decoder.fc[j] = new Decoding.FC();
             if ((decoder.fc[j].F = (cp.get() & 0xFF)) >= 128) {
                 decoder.fc[j].F &= ~128;
                 decoder.fc[j].F = ((decoder.fc[j].F & 127) << 8) | (cp.get() & 0xFF);
             }
             decoder.fc[j].C = x;
 
-            Decoding.RansDecSymbolInit(syms[j], decoder.fc[j].C, decoder.fc[j].F);
+            decodingSymbols[j].set(decoder.fc[j].C, decoder.fc[j].F);
 
 			/* Build reverse lookup table */
-            if (decoder.R == null)
-                decoder.R = new byte[Constants.TOTFREQ];
             Arrays.fill(decoder.R, x, x + decoder.fc[j].F, (byte) j);
 
             x += decoder.fc[j].F;
@@ -45,38 +42,30 @@ class Frequencies {
         assert (x < Constants.TOTFREQ);
     }
 
-    static void readStats_o1(final ByteBuffer cp, final Decoding.AriDecoder[] D,
-                             final Decoding.RansDecSymbol[][] syms) {
+    static void readStatsOrder1(final ByteBuffer cp, final ArithmeticDecoder[] D, final RANSDecodingSymbol[][] decodingSymbols) {
         int rle_i = 0;
         int i = 0xFF & cp.get();
         do {
             int rle_j = 0;
             int x = 0;
             int j = 0xFF & cp.get();
-            if (D[i] == null)
-                D[i] = new Decoding.AriDecoder();
             do {
-                if (D[i].fc[j] == null)
-                    D[i].fc[j] = new Decoding.FC();
                 if ((D[i].fc[j].F = (0xFF & cp.get())) >= 128) {
                     D[i].fc[j].F &= ~128;
-                    D[i].fc[j].F = ((D[i].fc[j].F & 127) << 8)
-                            | (0xFF & cp.get());
+                    D[i].fc[j].F = ((D[i].fc[j].F & 127) << 8) | (0xFF & cp.get());
                 }
                 D[i].fc[j].C = x;
 
-                if (D[i].fc[j].F == 0)
+                if (D[i].fc[j].F == 0) {
                     D[i].fc[j].F = Constants.TOTFREQ;
+                }
 
-                if (syms[i][j] == null)
-                    syms[i][j] = new Decoding.RansDecSymbol();
-
-                Decoding.RansDecSymbolInit(syms[i][j], D[i].fc[j].C,
-                        D[i].fc[j].F);
+                decodingSymbols[i][j].set(
+                        D[i].fc[j].C,
+                        D[i].fc[j].F
+                );
 
 				/* Build reverse lookup table */
-                if (D[i].R == null)
-                    D[i].R = new byte[Constants.TOTFREQ];
                 Arrays.fill(D[i].R, x, x + D[i].fc[j].F, (byte) j);
 
                 x += D[i].fc[j].F;
@@ -105,21 +94,22 @@ class Frequencies {
         } while (i != 0);
     }
 
-    static int[] calcFrequencies_o0(final ByteBuffer in) {
-        final int in_size = in.remaining();
+    static int[] calcFrequenciesOrder0(final ByteBuffer inBuffer) {
+        final int inSize = inBuffer.remaining();
 
         // Compute statistics
-        final int[] F = new int[256];
+        final int[] F = new int[RANS.NUMBER_OF_SYMBOLS];
         int T = 0;
-        for (int i = 0; i < in_size; i++) {
-            F[0xFF & in.get()]++;
+        for (int i = 0; i < inSize; i++) {
+            F[0xFF & inBuffer.get()]++;
             T++;
         }
         final long tr = ((long) Constants.TOTFREQ << 31) / T + (1 << 30) / T;
 
         // Normalise so T[i] == TOTFREQ
-        int m = 0, M = 0;
-        for (int j = 0; j < 256; j++) {
+        int m = 0;
+        int M = 0;  // frequency denominator ?
+        for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
             if (m < F[j]) {
                 m = F[j];
                 M = j;
@@ -127,29 +117,32 @@ class Frequencies {
         }
 
         int fsum = 0;
-        for (int j = 0; j < 256; j++) {
-            if (F[j] == 0)
+        for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
+            if (F[j] == 0) {
                 continue;
-            if ((F[j] = (int) ((F[j] * tr) >> 31)) == 0)
+            }
+            if ((F[j] = (int) ((F[j] * tr) >> 31)) == 0) {
                 F[j] = 1;
+            }
             fsum += F[j];
         }
 
         fsum++;
-        if (fsum < Constants.TOTFREQ)
+        if (fsum < Constants.TOTFREQ) {
             F[M] += Constants.TOTFREQ - fsum;
-        else
+        } else {
             F[M] -= fsum - Constants.TOTFREQ;
+        }
 
         assert (F[M] > 0);
         return F;
     }
 
-    static int[][] calcFrequencies_o1(final ByteBuffer in) {
+    static int[][] calcFrequenciesOrder1(final ByteBuffer in) {
         final int in_size = in.remaining();
 
-        final int[][] F = new int[256][256];
-        final int[] T = new int[256];
+        final int[][] F = new int[RANS.NUMBER_OF_SYMBOLS][RANS.NUMBER_OF_SYMBOLS];
+        final int[] T = new int[RANS.NUMBER_OF_SYMBOLS];
         int c;
 
         int last_i = 0;
@@ -163,13 +156,14 @@ class Frequencies {
         F[0][0xFF & in.get(3 * (in_size >> 2))]++;
         T[0] += 3;
 
-        for (int i = 0; i < 256; i++) {
-            if (T[i] == 0)
+        for (int i = 0; i < RANS.NUMBER_OF_SYMBOLS; i++) {
+            if (T[i] == 0) {
                 continue;
+            }
 
             final double p = ((double) Constants.TOTFREQ) / T[i];
             int t2 = 0, m = 0, M = 0;
-            for (int j = 0; j < 256; j++) {
+            for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
                 if (F[i][j] == 0)
                     continue;
 
@@ -184,38 +178,35 @@ class Frequencies {
             }
 
             t2++;
-            if (t2 < Constants.TOTFREQ)
+            if (t2 < Constants.TOTFREQ) {
                 F[i][M] += Constants.TOTFREQ - t2;
-            else
+            } else {
                 F[i][M] -= t2 - Constants.TOTFREQ;
+            }
         }
 
         return F;
     }
 
-    static RansEncSymbol[] buildSyms_o0(final int[] F) {
-        final int[] C = new int[256];
-        final RansEncSymbol[] syms = new RansEncSymbol[256];
-        for (int i = 0; i < syms.length; i++)
-            syms[i] = new RansEncSymbol();
+    static RANSEncodingSymbol[] buildSymsOrder0(final int[] F, final RANSEncodingSymbol[] syms) {
+        final int[] C = new int[RANS.NUMBER_OF_SYMBOLS];
 
         int T = 0;
-        for (int j = 0; j < 256; j++) {
+        for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
             C[j] = T;
             T += F[j];
             if (F[j] != 0) {
-                Encoding.RansEncSymbolInit(syms[j], C[j], F[j],
-                        Constants.TF_SHIFT);
+                syms[j].set(C[j], F[j], Constants.TF_SHIFT);
             }
         }
         return syms;
     }
 
-    static int writeFrequencies_o0(final ByteBuffer cp, final int[] F) {
+    static int writeFrequenciesOrder0(final ByteBuffer cp, final int[] F) {
         final int start = cp.position();
 
         int rle = 0;
-        for (int j = 0; j < 256; j++) {
+        for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
             if (F[j] != 0) {
                 // j
                 if (rle != 0) {
@@ -244,19 +235,13 @@ class Frequencies {
         return cp.position() - start;
     }
 
-    static RansEncSymbol[][] buildSyms_o1(final int[][] F) {
-        final RansEncSymbol[][] syms = new RansEncSymbol[256][256];
-        for (int i = 0; i < syms.length; i++)
-            for (int j = 0; j < syms[i].length; j++)
-                syms[i][j] = new RansEncSymbol();
-
-        for (int i = 0; i < 256; i++) {
+    static RANSEncodingSymbol[][] buildSymsOrder1(final int[][] F, final RANSEncodingSymbol[][] syms) {
+        for (int i = 0; i < RANS.NUMBER_OF_SYMBOLS; i++) {
             final int[] F_i_ = F[i];
             int x = 0;
-            for (int j = 0; j < 256; j++) {
+            for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
                 if (F_i_[j] != 0) {
-                    Encoding.RansEncSymbolInit(syms[i][j], x, F_i_[j],
-                            Constants.TF_SHIFT);
+                    syms[i][j].set(x, F_i_[j], Constants.TF_SHIFT);
                     x += F_i_[j];
                 }
             }
@@ -265,18 +250,21 @@ class Frequencies {
         return syms;
     }
 
-    static int writeFrequencies_o1(final ByteBuffer cp, final int[][] F) {
+    static int writeFrequenciesOrder1(final ByteBuffer cp, final int[][] F) {
         final int start = cp.position();
-        final int[] T = new int[256];
+        final int[] T = new int[RANS.NUMBER_OF_SYMBOLS];
 
-        for (int i = 0; i < 256; i++)
-            for (int j = 0; j < 256; j++)
+        for (int i = 0; i < RANS.NUMBER_OF_SYMBOLS; i++) {
+            for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
                 T[i] += F[i][j];
+            }
+        }
 
         int rle_i = 0;
-        for (int i = 0; i < 256; i++) {
-            if (T[i] == 0)
+        for (int i = 0; i < RANS.NUMBER_OF_SYMBOLS; i++) {
+            if (T[i] == 0) {
                 continue;
+            }
 
             // Store frequency table
             // i
@@ -296,7 +284,7 @@ class Frequencies {
 
             final int[] F_i_ = F[i];
             int rle_j = 0;
-            for (int j = 0; j < 256; j++) {
+            for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
                 if (F_i_[j] != 0) {
 
                     // j

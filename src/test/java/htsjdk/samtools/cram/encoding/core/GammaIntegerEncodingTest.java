@@ -25,9 +25,15 @@ public class GammaIntegerEncodingTest extends HtsjdkTest {
     public void paramsTest(final int offset, final byte[] expected) {
 
         final GammaIntegerEncoding constructed = new GammaIntegerEncoding(offset);
-        Assert.assertEquals(constructed.toByteArray(), expected);
+        Assert.assertEquals(constructed.toSerializedEncodingParams(), expected);
 
-        final GammaIntegerEncoding fromParams = GammaIntegerEncoding.fromParams(expected);
-        Assert.assertEquals(fromParams.toByteArray(), expected);
+        final GammaIntegerEncoding params = GammaIntegerEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(params.toSerializedEncodingParams(), expected);
+    }
+
+    @Test
+    public void testToString() {
+        final GammaIntegerEncoding encoding = new GammaIntegerEncoding(3);
+        Assert.assertTrue(encoding.toString().contains("3"));
     }
 }

@@ -5,7 +5,7 @@ read_A	0	iupac	1	86	30M	*	0	0	AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA	*******************
 read_B	0	iupac	1	86	30M	*	0	0	BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB	******************************
 read_C	0	iupac	1	86	30M	*	0	0	CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC	******************************
 read_D	0	iupac	1	86	30M	*	0	0	DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD	******************************
-read_E	4	iupac	1	86	30M	*	0	0	EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE	******************************
+read_E	0	iupac	1	86	30M	*	0	0	EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE	******************************
 read_F	0	iupac	1	86	30M	*	0	0	FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF	******************************
 read_G	0	iupac	1	86	30M	*	0	0	GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG	******************************
 read_H	0	iupac	1	86	30M	*	0	0	HHHHHHHHHHHHHHHHHHHHHHHHHHHHHH	******************************

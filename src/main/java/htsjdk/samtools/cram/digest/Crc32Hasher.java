@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.digest;
 import java.nio.ByteOrder;
 import java.util.zip.CRC32;
 
-class Crc32Hasher extends AbstractSerialDigest<Integer> {
+final class Crc32Hasher extends AbstractSerialDigest<Integer> {
     private final CRC32 crc32 = new CRC32();
     private final ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
 

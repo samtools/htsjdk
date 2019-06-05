@@ -19,54 +19,67 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
+import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanParams;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
-    private final byte[] values;
-    private final int[] bitLengths;
-    private final ByteBuffer buf;
+/**
+ * CRAMEncoding class for Huffman byte values.
+ */
+public final class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
+    private final HuffmanParams<Byte> huffmanParams;
 
-    private CanonicalHuffmanByteEncoding(final byte[] values, final int[] bitLengths) {
+    public CanonicalHuffmanByteEncoding(final byte[] symbols, final int[] bitLengths) {
         super(EncodingID.HUFFMAN);
-        this.values = values;
-        this.bitLengths = bitLengths;
-        this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
+        final List<Byte> symbolList = new ArrayList<>(symbols.length);
+        for (final byte b : symbols) {
+            symbolList.add(b);
+        }
+        huffmanParams = new HuffmanParams(
+                symbolList,
+                Arrays.stream(bitLengths).boxed().collect(Collectors.toList()));
     }
 
-    public static CanonicalHuffmanByteEncoding fromParams(final byte[] data) {
-        final ByteBuffer buf = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return CanonicalHuffmanByteEncoding with parameters populated from serializedParams
+     */
+    public static CanonicalHuffmanByteEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buf = ByteBuffer.wrap(serializedParams);
 
-        final int valueSize = ITF8.readUnsignedITF8(buf);
-        final byte[] values = new byte[valueSize];
-        buf.get(values);
+        final int symbolListSize = ITF8.readUnsignedITF8(buf);
+        final byte[] symbols = new byte[symbolListSize];
+        buf.get(symbols);
 
-        final int lengthSize = ITF8.readUnsignedITF8(buf);
-        final int[] bitLengths = new int[lengthSize];
-        for (int i = 0; i < lengthSize; i++) {
-            bitLengths[i] = ITF8.readUnsignedITF8(buf);
+        final int codeWordLengthsSize = ITF8.readUnsignedITF8(buf);
+        final int[] codeWordLengths = new int[codeWordLengthsSize];
+        for (int i = 0; i < codeWordLengthsSize; i++) {
+            codeWordLengths[i] = ITF8.readUnsignedITF8(buf);
         }
 
-        return new CanonicalHuffmanByteEncoding(values, bitLengths);
+        return new CanonicalHuffmanByteEncoding(symbols, codeWordLengths);
     }
 
     @Override
-    public byte[] toByteArray() {
-        buf.clear();
-        ITF8.writeUnsignedITF8(values.length, buf);
-        for (final byte value : values) {
+    public byte[] toSerializedEncodingParams() {
+        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES *
+                (huffmanParams.getSymbols().size() + huffmanParams.getCodeWordLengths().size()));
+        ITF8.writeUnsignedITF8(huffmanParams.getSymbols().size(), buf);
+        for (final byte value : huffmanParams.getSymbols()) {
             buf.put(value);
         }
 
-        ITF8.writeUnsignedITF8(bitLengths.length, buf);
-        for (final int value : bitLengths) {
+        ITF8.writeUnsignedITF8(huffmanParams.getCodeWordLengths().size(), buf);
+        for (final int value : huffmanParams.getCodeWordLengths()) {
             ITF8.writeUnsignedITF8(value, buf);
         }
 
@@ -78,10 +91,15 @@ public class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
     }
 
     @Override
-    public CRAMCodec<Byte> buildCodec(final BitInputStream coreBlockInputStream,
-                                      final BitOutputStream coreBlockOutputStream,
-                                      final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                      final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        return new CanonicalHuffmanByteCodec(coreBlockInputStream, coreBlockOutputStream, values, bitLengths);
+    public CRAMCodec<Byte> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        return new CanonicalHuffmanByteCodec(
+                sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
+                sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
+                huffmanParams);
+    }
+
+    @Override
+    public String toString() {
+        return huffmanParams.toString();
     }
 }

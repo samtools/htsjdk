@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * Encode Byte Arrays using an External Data Block
  */
-public class ExternalByteArrayCodec extends ExternalCodec<byte[]> {
+public final class ExternalByteArrayCodec extends ExternalCodec<byte[]> {
     /**
      * Construct an External Codec for Byte Arrays
      *
