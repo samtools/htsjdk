@@ -71,11 +71,6 @@ public class Container {
 
     public int checksum = 0;
 
-    /**
-     * Container data
-     */
-    public Block[] blocks;
-
     public CompressionHeader compressionHeader;
 
     // slices found in the container:

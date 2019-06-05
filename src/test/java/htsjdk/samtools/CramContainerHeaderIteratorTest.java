@@ -50,7 +50,6 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Assert.assertEquals(headerOnlyContainer.checksum, fullContainer.checksum);
             Assert.assertEquals(headerOnlyContainer.byteOffset, fullContainer.byteOffset);
             // unpopulated fields
-            Assert.assertNull(headerOnlyContainer.blocks);
             Assert.assertNull(headerOnlyContainer.compressionHeader);
             Assert.assertNull(headerOnlyContainer.getSlices());
             // try to read a container from the offset to check it's correct

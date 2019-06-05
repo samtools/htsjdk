@@ -110,21 +110,6 @@ public class CramIO {
         return 0;
     }
 
-    /**
-     * Write a CRAM File header and a SAM Header to an output stream.
-     *
-     * @param cramVersion
-     * @param outStream
-     * @param samFileHeader
-     * @param cramID
-     * @return the offset in the stream after writing the headers
-     */
-
-    public static long writeHeader(final Version cramVersion, final OutputStream outStream, final SAMFileHeader samFileHeader, String cramID) {
-        final CramHeader cramHeader = new CramHeader(cramVersion, cramID, samFileHeader);
-        return CramIO.writeCramHeader(cramHeader, outStream);
-    }
-
     private static boolean streamEndsWith(final SeekableStream seekableStream, final byte[] marker) throws IOException {
         final byte[] tail = new byte[marker.length];
 
@@ -177,7 +162,6 @@ public class CramIO {
      * @return the number of bytes written out
      */
     public static long writeCramHeader(final CramHeader cramHeader, final OutputStream outputStream) {
-//        if (cramHeader.getVersion().major < 3) throw new RuntimeException("Deprecated CRAM version: " + cramHeader.getVersion().major);
         try {
             outputStream.write("CRAM".getBytes("US-ASCII"));
             outputStream.write(cramHeader.getVersion().major);
@@ -271,11 +255,7 @@ public class CramIO {
 
         final Container container = new Container(new ReferenceContext(0));
         container.blockCount = 1;
-        container.blocks = new Block[]{block};
         container.landmarks = new int[0];
-        container.bases = 0;
-        container.globalRecordCounter = 0;
-        container.nofRecords = 0;
 
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         block.write(major, byteArrayOutputStream);

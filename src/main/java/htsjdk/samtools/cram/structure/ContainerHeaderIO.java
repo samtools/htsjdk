@@ -114,10 +114,10 @@ public class ContainerHeaderIO {
     }
 
     /**
-     * Write CRAM {@link Container} out into the given {@link OutputStream}.
+     * Write CRAM {@link Container} (header only) out into the given {@link OutputStream}.
      * @param major CRAM major version
-     * @param container container to be written
-     * @param outputStream the output stream to write the container to
+     * @param container container containing the container header to be written
+     * @param outputStream the output stream to write the container header to
      * @return number of bytes written out to the output stream
      */
     public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {

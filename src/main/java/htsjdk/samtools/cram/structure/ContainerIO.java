@@ -114,36 +114,14 @@ public class ContainerIO {
     }
 
     /**
-     * Writes a complete {@link Container} with it's header to a {@link OutputStream}. The method is aware of file header containers and is
-     * suitable for general purpose use: basically any container is allowed.
+     * Writes a complete {@link Container} with it's header to a {@link OutputStream}.
      *
      * @param version   the CRAM version to assume
      * @param container the container to write
-     * @param outputStream        the stream to write to
+     * @param outputStream  the stream to write to
      * @return the number of bytes written out
      */
     public static int writeContainer(final Version version, final Container container, final OutputStream outputStream) {
-        {
-            if (container.blocks != null && container.blocks.length > 0) {
-
-                final Block firstBlock = container.blocks[0];
-                final boolean isFileHeaderContainer = firstBlock.getContentType() == BlockContentType.FILE_HEADER;
-                if (isFileHeaderContainer) {
-                    final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    firstBlock.write(version.major, byteArrayOutputStream);
-                    container.containerBlocksByteSize = byteArrayOutputStream.size();
-
-                    final int containerHeaderByteSize = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
-                    try {
-                        outputStream.write(byteArrayOutputStream.toByteArray(), 0, container.containerBlocksByteSize);
-                    } catch (final IOException e) {
-                        throw new RuntimeIOException(e);
-                    }
-                    return containerHeaderByteSize + container.containerBlocksByteSize;
-                }
-            }
-        }
-
         // use this BAOS for two purposes: writing out and counting bytes for landmarks/containerBlocksByteSize
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         container.compressionHeader.write(version, byteArrayOutputStream);
@@ -172,7 +150,7 @@ public class ContainerIO {
         // compression header plus all slices, if any (EOF Containers do not; File Header Containers are handled above)
         container.containerBlocksByteSize = byteArrayOutputStream.size();
 
-        // Slices require the Container's landmarks and containerBlocksByteSize before indexing
+        // Slices require the Container's landmarks and containerBlocksByteSize in case we're indexing
         container.distributeIndexingParametersToSlices();
 
         final int containerHeaderLength = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
