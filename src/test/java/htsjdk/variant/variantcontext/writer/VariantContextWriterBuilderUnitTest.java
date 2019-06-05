@@ -348,25 +348,6 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void testIndexingOnTheFlyForPathStream() throws IOException {
-        final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
-                .setReferenceDictionary(dictionary)
-                .setOption(Options.INDEX_ON_THE_FLY);
-
-        try (FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
-            final Path vcfPath = IOUtil.getPath("/dev/null");
-            final Path vcfIdxPath = Tribble.indexPath(vcfPath);
-            // We explicitly setOutputFileType here to mimic gatk behavior where it decides files that have no extension are VCF outputs, gatk would detect stream outputs.
-            try (final VariantContextWriter writer = builder.setOutputPath(vcfPath).setOutputFileType(OutputType.VCF_STREAM).build()) {
-                //deliberately empty
-            }
-
-            Assert.assertFalse(Files.exists(vcfIdxPath),
-                    String.format("VCF index should not have been created %s / %s", vcfPath, vcfIdxPath));
-        }
-    }
-
-    @Test
     public void testIndexingOnTheFlyForPath() throws IOException {
         final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
                 .setReferenceDictionary(dictionary)
@@ -460,23 +441,6 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 .setReferenceDictionary(dictionary)
                 .setOutputStream(new ByteArrayOutputStream())
                 .setOutputFileType(VariantContextWriterBuilder.OutputType.VCF)
-                .build();
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testUnsupportedIndexOnTheFlyForStreaming() {
-        new VariantContextWriterBuilder()
-                .setReferenceDictionary(dictionary)
-                .setOutputStream(new ByteArrayOutputStream())
-                .setOption(Options.INDEX_ON_THE_FLY)
-                .build();
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testUnsupportedDefaultIndexOnTheFlyForStreaming() {
-        new VariantContextWriterBuilder()
-                .setReferenceDictionary(dictionary)
-                .setOutputStream(new ByteArrayOutputStream())
                 .build();
     }
 
