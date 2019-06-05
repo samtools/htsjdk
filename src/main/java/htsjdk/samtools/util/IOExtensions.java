@@ -32,19 +32,20 @@ import java.util.Set;
 /**
  * Contains file extension constants for read, alignment, and variant files
  */
-public class IOExtensions {
+public final class IOExtensions {
 
     /** extensions for read files and related formats. */
-    public static final Set<String> FASTA_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>() {{
-        add(".fasta");
-        add(".fasta.gz");
-        add(".fa");
-        add(".fa.gz");
-        add(".fna");
-        add(".fna.gz");
-        add(".txt");
-        add(".txt.gz");
-    }});
+    public static final Set<String> FASTA_EXTENSIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        ".fasta",
+        ".fasta.gz",
+        ".fa",
+        ".fa.gz",
+        ".fna",
+        ".fna.gz",
+        ".txt",
+        ".txt.gz"
+    )));
+        
     public static final String FASTA_INDEX_EXTENSION = ".fai";
 
     /** extensions for alignment files SAM, BAM, CRAM. */
@@ -54,7 +55,7 @@ public class IOExtensions {
     
     public static final String BED_EXTENSION = ".bed";
     public static final String TABIX_STANDARD_INDEX_EXTENSION = ".tbi";
-    public final static String TRIBBLE_STANDARD_INDEX_EXTENSION = ".idx";
+    public static final String TRIBBLE_STANDARD_INDEX_EXTENSION = ".idx";
 
     /** extensions for VCF files and related formats. */
     public static final String VCF_FILE_EXTENSION = ".vcf";
