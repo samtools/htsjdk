@@ -12,10 +12,7 @@ import htsjdk.samtools.cram.lossy.QualityScorePreservation;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceTracks;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
@@ -126,7 +123,8 @@ public class CRAMContainerStreamWriter {
      */
     public void writeHeader(final SAMFileHeader header) {
         // TODO: header must be written exactly once per writer life cycle.
-        offset = CramIO.writeHeader(cramVersion, outputStream, header, cramID);
+        final CramHeader cramHeader = new CramHeader(cramVersion, cramID, samFileHeader);
+        offset = CramIO.writeCramHeader(cramHeader, outputStream);
     }
 
     /**
