@@ -190,7 +190,7 @@ public class VariantContextWriterBuilder {
     /**
      * Set the output file type for the next <code>VariantContextWriter</code> created by this builder.
      *
-     * @param outType the type of file or stream the <code>VariantContextWriter</code> will write to
+     * @param outType the type of file the <code>VariantContextWriter</code> will write to
      * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputFileType(final OutputType outType) {
