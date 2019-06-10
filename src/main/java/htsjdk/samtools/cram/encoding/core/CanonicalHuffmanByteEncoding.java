@@ -23,6 +23,8 @@ import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.SliceBlocksReader;
+import htsjdk.samtools.cram.structure.SliceBlocksWriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -78,10 +80,11 @@ public class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
     }
 
     @Override
-    public CRAMCodec<Byte> buildCodec(final BitInputStream coreBlockInputStream,
-                                      final BitOutputStream coreBlockOutputStream,
-                                      final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                      final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        return new CanonicalHuffmanByteCodec(coreBlockInputStream, coreBlockOutputStream, values, bitLengths);
+    public CRAMCodec<Byte> buildCodec(final SliceBlocksReader sliceBlocksReader, final SliceBlocksWriter sliceBlocksWriter) {
+        return new CanonicalHuffmanByteCodec(
+                sliceBlocksReader == null ? null : sliceBlocksReader.getCoreBlockInputStream(),
+                sliceBlocksWriter == null ? null : sliceBlocksWriter.getCoreOutputStream(),
+                values,
+                bitLengths);
     }
 }

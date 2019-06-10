@@ -18,13 +18,12 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
+import htsjdk.samtools.cram.structure.SliceBlocksReader;
+import htsjdk.samtools.cram.structure.SliceBlocksWriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.Map;
 
 public class ExternalLongEncoding extends ExternalEncoding<Long> {
     public ExternalLongEncoding(final int externalBlockContentId) {
@@ -37,12 +36,9 @@ public class ExternalLongEncoding extends ExternalEncoding<Long> {
     }
 
     @Override
-    public CRAMCodec<Long> buildCodec(final BitInputStream coreBlockInputStream,
-                                      final BitOutputStream coreBlockOutputStream,
-                                      final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                      final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        final ByteArrayInputStream inputStream = externalBlockInputMap == null ? null : externalBlockInputMap.get(externalBlockContentId);
-        final ByteArrayOutputStream outputStream = externalBlockOutputMap == null ? null : externalBlockOutputMap.get(externalBlockContentId);
-        return new ExternalLongCodec(inputStream, outputStream);
+    public CRAMCodec<Long> buildCodec(final SliceBlocksReader sliceBlocksReader, final SliceBlocksWriter sliceBlocksWriter) {
+        final ByteArrayInputStream is = sliceBlocksReader == null ? null : sliceBlocksReader.getExternalInputStream(externalBlockContentId);
+        final ByteArrayOutputStream os = sliceBlocksWriter == null ? null : sliceBlocksWriter.getExternalOutputStream(externalBlockContentId);
+        return new ExternalLongCodec(is, os);
     }
 }

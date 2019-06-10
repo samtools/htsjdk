@@ -21,6 +21,8 @@ import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
+import htsjdk.samtools.cram.structure.SliceBlocksReader;
+import htsjdk.samtools.cram.structure.SliceBlocksWriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -61,36 +63,29 @@ public abstract class CRAMEncoding<T> {
     /**
      * Instantiate the codec represented by this encoding by supplying it with the appropriate streams
      *
-     * @param coreBlockInputStream the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will read from
-     * @param coreBlockOutputStream the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will write to
-     * @param externalBlockInputMap the external block byte stream a {@link htsjdk.samtools.cram.encoding.external.ExternalCodec} will read from
-     * @param externalBlockOutputMap the external block byte stream a {@link htsjdk.samtools.cram.encoding.external.ExternalCodec} will write to
+     * @param sliceBlocksReader the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will read from
+     * @param sliceBlocksWriter the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will write to
      * @return a newly instantiated codec
      */
-    public abstract CRAMCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
-                                            final BitOutputStream coreBlockOutputStream,
-                                            final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                            final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap);
+    public abstract CRAMCodec<T> buildCodec(final SliceBlocksReader sliceBlocksReader, final SliceBlocksWriter sliceBlocksWriter);
 
     /**
      * Convenience initializer method for read codecs
      *
-     * @param coreBlockInputStream the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will read from
-     * @param externalBlockInputMap the external block byte stream a {@link htsjdk.samtools.cram.encoding.external.ExternalCodec} will read from
+     * @param sliceBlocksReader the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will read from
      * @return
      */
-    public CRAMCodec<T> buildReadCodec(final BitInputStream coreBlockInputStream, final Map<Integer, ByteArrayInputStream> externalBlockInputMap) {
-        return buildCodec(coreBlockInputStream, null, externalBlockInputMap, null);
+    public CRAMCodec<T> buildReadCodec(final SliceBlocksReader sliceBlocksReader) {
+        return buildCodec(sliceBlocksReader, null);
     }
 
     /**
      * Convenience initializer method for write codecs
      *
-     * @param coreBlockOutputStream the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will write to
-     * @param externalBlockOutputMap the external block byte stream a {@link htsjdk.samtools.cram.encoding.external.ExternalCodec} will write to
+     * @param sliceBlocksWriter the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will write to
      * @return
      */
-    public CRAMCodec<T> buildWriteCodec(final BitOutputStream coreBlockOutputStream, final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        return buildCodec(null, coreBlockOutputStream, null, externalBlockOutputMap);
+    public CRAMCodec<T> buildWriteCodec(final SliceBlocksWriter sliceBlocksWriter) {
+        return buildCodec(null, sliceBlocksWriter);
     }
 }
