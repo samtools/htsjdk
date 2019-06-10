@@ -31,8 +31,11 @@ public class SliceBlocksReader {
         }
     }
 
-    // TOTO: this should turn into a method that looks up a stream from an ID, to be used by the Data SeriesReader/Writer
+    // TODO: this should turn into a method that looks up a stream from an ID, to be used by the Data SeriesReader/Writer
     public Map<Integer, ByteArrayInputStream> getInputStreamMap() { return idToStream; }
+
+    // TODO: this should turn into a method that looks up a stream from an ID, to be used by the Data SeriesReader/Writer
+    public ByteArrayInputStream getExternalInputStream(final Integer contentID) { return idToStream.get(contentID); }
 
     public BitInputStream getCoreBlockInputStream() {
         return coreBlockInputStream;

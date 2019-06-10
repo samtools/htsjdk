@@ -61,6 +61,9 @@ public class SliceBlocksWriter {
 
     public Map<Integer, ByteArrayOutputStream> getOutputStreamMap() { return idToStream; }
 
+    // TODO: this should turn into a method that looks up a stream from an ID, to be used by the Data SeriesReader/Writer
+    public ByteArrayOutputStream getExternalOutputStream(final Integer contentID) { return idToStream.get(contentID); }
+
     private void close() {
         try {
             getCoreOutputStream().close();

@@ -22,6 +22,8 @@ import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.SliceBlocksReader;
+import htsjdk.samtools.cram.structure.SliceBlocksWriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -57,10 +59,11 @@ public class GolombLongEncoding extends ExperimentalEncoding<Long> {
     }
 
     @Override
-    public CRAMCodec<Long> buildCodec(final BitInputStream coreBlockInputStream,
-                                      final BitOutputStream coreBlockOutputStream,
-                                      final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                      final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        return new GolombLongCodec(coreBlockInputStream, coreBlockOutputStream, offset, m);
+    public CRAMCodec<Long> buildCodec(final SliceBlocksReader sliceBlocksReader, final SliceBlocksWriter sliceBlocksWriter) {
+        return new GolombLongCodec(
+                sliceBlocksReader == null ? null : sliceBlocksReader.getCoreBlockInputStream(),
+                sliceBlocksWriter == null ? null : sliceBlocksWriter.getCoreOutputStream(),
+                offset,
+                m);
     }
 }

@@ -49,7 +49,7 @@ public class DataSeriesReader<T> {
 
         final CRAMEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
-        this.codec = encoding.buildReadCodec(sliceBlocksReader.getCoreBlockInputStream(), sliceBlocksReader.getInputStreamMap());
+        this.codec = encoding.buildReadCodec(sliceBlocksReader);
     }
 
     /**

@@ -54,7 +54,7 @@ public class DataSeriesWriter<T> {
 
         final CRAMEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
-        this.codec = encoding.buildWriteCodec(sliceBlocksWriter.getCoreOutputStream(), sliceBlocksWriter.getOutputStreamMap());
+        this.codec = encoding.buildWriteCodec(sliceBlocksWriter);
     }
 
     /**
