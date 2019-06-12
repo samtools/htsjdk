@@ -1629,7 +1629,12 @@ public class VariantContext implements Feature, Serializable {
                         return b;
                     case String:    return string;
                     case Integer:   return Integer.valueOf(string);
-                    case Float:     return Double.valueOf(string);
+                    case Float:     if (string.compareToIgnoreCase("NaN") == 0) {
+                        // handle, e.g. "nan"
+                        return Double.NaN;
+                    } else {
+                        return Double.valueOf(string);
+                    }
                     default: throw new TribbleException("Unexpected type for field" + field);
                 }
             }
