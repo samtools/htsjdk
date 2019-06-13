@@ -79,7 +79,7 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     public void testFromString2() {
         GenotypeLikelihoods gl = GenotypeLikelihoods.fromGLField(vGLString);
         assertDoubleArraysAreEqual(gl.getAsVector(), v);
-        Assert.assertEquals(gl.getAsVector(), vPLString);
+        Assert.assertEquals(gl.getAsString(), vPLString);
     }
 
     @Test
