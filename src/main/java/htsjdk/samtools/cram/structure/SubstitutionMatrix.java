@@ -229,7 +229,7 @@ import java.util.List;
                         final byte base = substitution.getBase();
                         if (refBase <= 0 || base <= 0) {
                             throw new IllegalArgumentException(
-                                    String.format("CRAM: Attempt to generate a substitution code for invalid reference base '%c'", (char) refBase));
+                                    String.format("CRAM: Attempt to generate a substitution code for invalid reference base with value '%d'", refBase));
                         }
                         frequencies[refBase][base]++;
                     }
@@ -250,7 +250,7 @@ import java.util.List;
         }
     }
 
-    private static final Comparator<SubstitutionFrequency> comparator =
+    private static final Comparator<SubstitutionFrequency> COMPARATOR =
             (o1, o2) -> {
                 // primary sort by frequency
                 if (o1.freq != o2.freq) {
@@ -276,7 +276,7 @@ import java.util.List;
         }
 
         // sort the codes for this base based on substitution frequency
-        Arrays.sort(subCodes, comparator);
+        Arrays.sort(subCodes, COMPARATOR);
 
         // set each SubstitutionFrequency to it's relative rank now that we know it, and reset the frequencies
         // so we can then re-sort, without frequency bias, back to the original (and prescribed)
@@ -291,7 +291,7 @@ import java.util.List;
 
         // re-sort back to the fixed order prescribed by the spec so we can store the substitution
         // codes in the matrix in the prescribed order
-        Arrays.sort(subCodes, comparator);
+        Arrays.sort(subCodes, COMPARATOR);
 
         byte codeVector = 0;
         for (final SubstitutionFrequency subCode : subCodes) {
