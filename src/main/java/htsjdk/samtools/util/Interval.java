@@ -171,7 +171,7 @@ public class Interval implements Comparable<Interval>, Cloneable, Feature {
      */
     public static long countBases(final Collection<Interval> intervals) {
         return intervals.stream()
-                .mapToInt(Interval::length)
+                .mapToLong(Interval::length)
                 .sum();
     }
 
