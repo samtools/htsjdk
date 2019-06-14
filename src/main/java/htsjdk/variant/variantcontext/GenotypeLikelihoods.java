@@ -268,15 +268,15 @@ public class GenotypeLikelihoods {
             double[] likelihoodsAsVector = new double[strings.length];
             int missing = 0;
             for ( int i = 0; i < strings.length; i++ ) {
-                if ( strings[i].equals(VCFConstants.MISSING_VALUE_v4) ) {
-                  missing ++;
+                if (strings[i].equals(VCFConstants.MISSING_VALUE_v4)) {
+                  missing++;
                 } else {
                   likelihoodsAsVector[i] = Double.parseDouble(strings[i]);
                 }
             }
-            if ( missing == 0 ) {
+            if (missing == 0) {
               return likelihoodsAsVector;
-            } else if ( likelihoodsAsVector.length == missing ) {
+            } else if (likelihoodsAsVector.length == missing) {
               return null; // array of missing values 
             } else {
               throw new TribbleException("partial missing values for GL field");
