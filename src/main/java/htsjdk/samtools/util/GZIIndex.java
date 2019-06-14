@@ -55,10 +55,10 @@ public final class GZIIndex {
 
     /** Default extension for the files storing a {@link GZIIndex}. */
     /**
-     * @deprecated Use {@link IOExtensions#GZI_DEFAULT_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#GZI} instead.
      */
     @Deprecated
-    public static final String DEFAULT_EXTENSION = IOExtensions.GZI_DEFAULT_EXTENSION;
+    public static final String DEFAULT_EXTENSION = FileExtensions.GZI;
 
     /**
      * Index entry mapping the block-offset (compressed offset) to the uncompressed offset where the
@@ -435,7 +435,7 @@ public final class GZIIndex {
 
     /** Gets the default index path for the bgzip file. */
     public static Path resolveIndexNameForBgzipFile(final Path bgzipFile) {
-        return bgzipFile.resolveSibling(bgzipFile.getFileName().toString() + DEFAULT_EXTENSION);
+        return bgzipFile.resolveSibling(bgzipFile.getFileName().toString() + FileExtensions.GZI);
     }
 
     // helper method for allocate a buffer for read/write

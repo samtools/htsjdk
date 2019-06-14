@@ -18,6 +18,7 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.ParsingUtils;
@@ -61,9 +62,9 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
 
     private static ComponentMethods methods = new ComponentMethods();
 
-    /** @deprecated use {@link IOUtil#BLOCK_COMPRESSED_EXTENSIONS} instead. */
+    /** @deprecated since June 2019 use {@link FileExtensions#BLOCK_COMPRESSED} instead. */
     @Deprecated
-    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = IOUtil.BLOCK_COMPRESSED_EXTENSIONS;
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = FileExtensions.BLOCK_COMPRESSED;
 
     /**
      * Calls {@link #getFeatureReader(String, FeatureCodec, boolean)} with {@code requireIndex} = true
@@ -224,7 +225,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
 
     public static boolean isTabix(String resourcePath, String indexPath) throws IOException {
         if(indexPath == null){
-            indexPath = ParsingUtils.appendToPath(resourcePath, TabixUtils.STANDARD_INDEX_EXTENSION);
+            indexPath = ParsingUtils.appendToPath(resourcePath, FileExtensions.TABIX_INDEX);
         }
         return IOUtil.hasBlockCompressedExtension(resourcePath) && ParsingUtils.resourceExists(indexPath);
     }

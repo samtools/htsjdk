@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
@@ -109,9 +110,9 @@ public class BAMFileWriter extends SAMFileWriterImpl {
 
     private BAMIndexer createBamIndex(final String pathURI) {
         try {
-            final String indexFileBase = pathURI.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION) ?
+            final String indexFileBase = pathURI.endsWith(FileExtensions.BAM) ?
                     pathURI.substring(0, pathURI.lastIndexOf('.')) : pathURI;
-            final Path indexPath = IOUtil.getPath(indexFileBase + BAMIndex.BAI_INDEX_SUFFIX);
+            final Path indexPath = IOUtil.getPath(indexFileBase + FileExtensions.BAM_INDEX);
             if (Files.exists(indexPath)) {
                 if (!Files.isWritable(indexPath)) {
                     throw new SAMException("Not creating BAM index since unable to write index file " + indexPath.toUri());

@@ -30,9 +30,8 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
-import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.Tribble;
-import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.OutputType;
 import htsjdk.variant.vcf.VCFHeader;
@@ -74,13 +73,13 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     @BeforeSuite
     public void before() throws IOException {
         dictionary = createArtificialSequenceDictionary();
-        vcf = File.createTempFile(TEST_BASENAME, IOUtil.VCF_FILE_EXTENSION);
+        vcf = File.createTempFile(TEST_BASENAME, FileExtensions.VCF);
         vcf.deleteOnExit();
         vcfIdx = Tribble.indexFile(vcf);
         vcfIdx.deleteOnExit();
         vcfMD5 = new File(vcf.getAbsolutePath() + ".md5");
         vcfMD5.deleteOnExit();
-        bcf = File.createTempFile(TEST_BASENAME, IOUtil.BCF_FILE_EXTENSION);
+        bcf = File.createTempFile(TEST_BASENAME, FileExtensions.BCF);
         bcf.deleteOnExit();
         bcfIdx = Tribble.indexFile(bcf);
         bcfIdx.deleteOnExit();
@@ -89,12 +88,12 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
 
         blockCompressedVCFs = new ArrayList<File>();
         blockCompressedIndices = new ArrayList<File>();
-        for (final String extension : IOUtil.BLOCK_COMPRESSED_EXTENSIONS) {
-            final File blockCompressed = File.createTempFile(TEST_BASENAME, IOUtil.VCF_FILE_EXTENSION + extension);
+        for (final String extension : FileExtensions.BLOCK_COMPRESSED) {
+            final File blockCompressed = File.createTempFile(TEST_BASENAME, FileExtensions.VCF + extension);
             blockCompressed.deleteOnExit();
             blockCompressedVCFs.add(blockCompressed);
 
-            final File index = new File(blockCompressed.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION);
+            final File index = new File(blockCompressed.getAbsolutePath() + FileExtensions.TABIX_INDEX);
             index.deleteOnExit();
             blockCompressedIndices.add(index);
         }
@@ -113,7 +112,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         Assert.assertTrue(writer instanceof VCFWriter, "testSetOutputFile VCF File");
         Assert.assertFalse(((VCFWriter)writer).getOutputStream() instanceof BlockCompressedOutputStream, "testSetOutputFile VCF File was compressed");
 
-        for (final String extension : IOUtil.BLOCK_COMPRESSED_EXTENSIONS) {
+        for (final String extension : FileExtensions.BLOCK_COMPRESSED) {
             final File file = File.createTempFile(TEST_BASENAME + ".setoutput", extension);
             file.deleteOnExit();
             final String filename = file.getAbsolutePath();

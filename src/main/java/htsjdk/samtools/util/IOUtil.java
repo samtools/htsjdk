@@ -95,68 +95,68 @@ public class IOUtil {
     public static final long FIVE_GBS = 5 * ONE_GB;
 
     /**
-     * @deprecated Use {@link IOExtensions#VCF_FILE_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF} instead.
      */
     @Deprecated
-    public static final String VCF_FILE_EXTENSION = IOExtensions.VCF_FILE_EXTENSION;
+    public static final String VCF_FILE_EXTENSION = FileExtensions.VCF;
     /**
-     * @deprecated Use {@link IOExtensions#VCF_INDEX_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF_INDEX} instead.
      */
     @Deprecated
-    public static final String VCF_INDEX_EXTENSION = IOExtensions.VCF_INDEX_EXTENSION;
+    public static final String VCF_INDEX_EXTENSION = FileExtensions.VCF_INDEX;
     /**
-     * @deprecated Use {@link IOExtensions#BCF_FILE_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#BCF} instead.
      */
     @Deprecated
-    public static final String BCF_FILE_EXTENSION = IOExtensions.BCF_FILE_EXTENSION;
+    public static final String BCF_FILE_EXTENSION = FileExtensions.BCF;
     /**
-     * @deprecated Use {@link IOExtensions#COMPRESSED_VCF_FILE_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#COMPRESSED_VCF} instead.
      */
     @Deprecated
-    public static final String COMPRESSED_VCF_FILE_EXTENSION = IOExtensions.COMPRESSED_VCF_FILE_EXTENSION;
+    public static final String COMPRESSED_VCF_FILE_EXTENSION = FileExtensions.COMPRESSED_VCF;
     /**
-     * @deprecated Use {@link IOExtensions#COMPRESSED_VCF_INDEX_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#COMPRESSED_VCF_INDEX} instead.
      */
     @Deprecated
-    public static final String COMPRESSED_VCF_INDEX_EXTENSION = IOExtensions.COMPRESSED_VCF_INDEX_EXTENSION;
+    public static final String COMPRESSED_VCF_INDEX_EXTENSION = FileExtensions.COMPRESSED_VCF_INDEX;
 
     /** Possible extensions for VCF files and related formats. */
     /**
-     * @deprecated Use {@link IOExtensions#VCF_EXTENSIONS_LIST} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF_LIST} instead.
      */
     @Deprecated
-    public static final List<String> VCF_EXTENSIONS_LIST = IOExtensions.VCF_EXTENSIONS_LIST;
+    public static final List<String> VCF_EXTENSIONS_LIST = FileExtensions.VCF_LIST;
 
     /**
      * Possible extensions for VCF files and related formats.
-     * @deprecated Use {@link IOExtensions#VCF_EXTENSIONS_LIST} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF_ARRAY} instead.
      */
     @Deprecated
-    public static final String[] VCF_EXTENSIONS = VCF_EXTENSIONS_LIST.toArray(new String[0]);
+    public static final String[] VCF_EXTENSIONS = FileExtensions.VCF_ARRAY;
 
     /**
-     * @deprecated Use {@link IOExtensions#INTERVAL_LIST_FILE_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#INTERVAL_LIST} instead.
      */
     @Deprecated
-    public static final String INTERVAL_LIST_FILE_EXTENSION = IOExtensions.INTERVAL_LIST_FILE_EXTENSION;
+    public static final String INTERVAL_LIST_FILE_EXTENSION = FileExtensions.INTERVAL_LIST;
 
     /**
-     * @deprecated Use {@link IOExtensions#SAM_FILE_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#SAM} instead.
      */
     @Deprecated
-    public static final String SAM_FILE_EXTENSION = IOExtensions.SAM_FILE_EXTENSION;
+    public static final String SAM_FILE_EXTENSION = FileExtensions.SAM;
 
     /**
-     * @deprecated Use {@link IOExtensions#DICT_FILE_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#DICT} instead.
      */
     @Deprecated
-    public static final String DICT_FILE_EXTENSION = IOExtensions.DICT_FILE_EXTENSION;
+    public static final String DICT_FILE_EXTENSION = FileExtensions.DICT;
 
     /**
-     * @deprecated Use {@link IOExtensions#BLOCK_COMPRESSED_EXTENSIONS} instead.
+     * @deprecated Use since June 2019 {@link FileExtensions#BLOCK_COMPRESSED} instead.
      */
     @Deprecated
-    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = IOExtensions.BLOCK_COMPRESSED_EXTENSIONS;
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = FileExtensions.BLOCK_COMPRESSED;
 
     /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
     public static final int GZIP_HEADER_READ_LENGTH = 8000;
@@ -1316,7 +1316,7 @@ public class IOUtil {
     /**
      * Checks if the provided path is block-compressed (including extension).
      *
-     * <p>Note that block-compressed file extensions {@link #BLOCK_COMPRESSED_EXTENSIONS} are not
+     * <p>Note that block-compressed file extensions {@link FileExtensions#BLOCK_COMPRESSED} are not
      * checked by this method.
      *
      * @param path file to check if it is block-compressed.
@@ -1328,7 +1328,7 @@ public class IOUtil {
     }
 
     /**
-     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     * Checks if a file ends in one of the {@link FileExtensions#BLOCK_COMPRESSED}.
      *
      * @param fileName string name for the file. May be an HTTP/S url.
      *
@@ -1336,7 +1336,7 @@ public class IOUtil {
      */
     public static boolean hasBlockCompressedExtension (final String fileName) {
         String cleanedPath = stripQueryStringIfPathIsAnHttpUrl(fileName);
-        for (final String extension : BLOCK_COMPRESSED_EXTENSIONS) {
+        for (final String extension : FileExtensions.BLOCK_COMPRESSED) {
             if (cleanedPath.toLowerCase().endsWith(extension))
                 return true;
         }
@@ -1344,7 +1344,7 @@ public class IOUtil {
     }
 
     /**
-     * Checks if a path ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     * Checks if a path ends in one of the {@link FileExtensions#BLOCK_COMPRESSED}.
      *
      * @param path object to extract the name from.
      *
@@ -1355,7 +1355,7 @@ public class IOUtil {
     }
 
     /**
-     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     * Checks if a file ends in one of the {@link FileExtensions#BLOCK_COMPRESSED}.
      *
      * @param file object to extract the name from.
      *
@@ -1366,7 +1366,7 @@ public class IOUtil {
     }
 
     /**
-     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     * Checks if a file ends in one of the {@link FileExtensions#BLOCK_COMPRESSED}.
      *
      * @param uri file as an URI.
      *

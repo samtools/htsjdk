@@ -48,7 +48,7 @@ import java.util.Optional;
 public class SAMSequenceDictionaryExtractor {
 
     enum TYPE {
-        FASTA(ReferenceSequenceFileFactory.FASTA_EXTENSIONS) {
+        FASTA(FileExtensions.FASTA) {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path reference) {
@@ -58,7 +58,7 @@ public class SAMSequenceDictionaryExtractor {
                 return dict;
             }
         },
-        DICTIONARY(IOUtil.DICT_FILE_EXTENSION) {
+        DICTIONARY(FileExtensions.DICT) {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path dictionary) {
@@ -72,7 +72,7 @@ public class SAMSequenceDictionaryExtractor {
                 }
             }
         },
-        CRAM(CramIO.CRAM_FILE_EXTENSION) {
+        CRAM(FileExtensions.CRAM) {
             
             @Override
             SAMSequenceDictionary extractDictionary(final Path cramPath) {
@@ -89,14 +89,14 @@ public class SAMSequenceDictionaryExtractor {
                 throw new SAMException(String.format("Can't retrieve sequence dictionary from %s", cramPath));
             }
         },
-        SAM(IOUtil.SAM_FILE_EXTENSION, BamFileIoUtils.BAM_FILE_EXTENSION) {
+        SAM(FileExtensions.SAM, FileExtensions.BAM) {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path sam) {
                 return SamReaderFactory.makeDefault().getFileHeader(sam).getSequenceDictionary();
             }
         },
-        VCF(IOUtil.VCF_EXTENSIONS) {
+        VCF(FileExtensions.VCF_ARRAY) {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path vcf) {
@@ -105,7 +105,7 @@ public class SAMSequenceDictionaryExtractor {
                 }
             }
         },
-        INTERVAL_LIST(IOUtil.INTERVAL_LIST_FILE_EXTENSION) {
+        INTERVAL_LIST(FileExtensions.INTERVAL_LIST) {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path intervalList) {

@@ -64,10 +64,10 @@ import java.util.Optional;
  */
 public class IntervalList implements Iterable<Interval> {
     /**
-     * @deprecated Use {@link IOExtensions#INTERVAL_LIST_FILE_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#INTERVAL_LIST} instead.
      */
     @Deprecated
-    public static final String INTERVAL_LIST_FILE_EXTENSION = IOExtensions.INTERVAL_LIST_FILE_EXTENSION;
+    public static final String INTERVAL_LIST_FILE_EXTENSION = FileExtensions.INTERVAL_LIST;
 
     private final SAMFileHeader header;
     private final List<Interval> intervals = new ArrayList<>();

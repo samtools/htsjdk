@@ -27,6 +27,7 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeEOFException;
 
@@ -50,7 +51,7 @@ public final class BAMSBIIndexer {
      * @throws IOException as per java IO contract
      */
     public static void createIndex(final Path bamFile, final long granularity) throws IOException {
-        final Path splittingBaiFile = IOUtil.addExtension(bamFile, SBIIndex.FILE_EXTENSION);
+        final Path splittingBaiFile = IOUtil.addExtension(bamFile, FileExtensions.SBI);
         try (SeekableStream in = new SeekablePathStream(bamFile); OutputStream out = Files.newOutputStream(splittingBaiFile)) {
             createIndex(in, out, granularity);
         }

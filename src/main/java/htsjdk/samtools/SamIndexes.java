@@ -3,6 +3,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.FileExtensions;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -16,10 +17,10 @@ import java.net.URL;
  * Created by vadim on 14/08/2015.
  */
 public enum SamIndexes {
-    BAI(BAMIndex.BAI_INDEX_SUFFIX, "BAI\1".getBytes()),
+    BAI(FileExtensions.BAM_INDEX, "BAI\1".getBytes()),
     // CRAI is gzipped text, so it's magic is same as {@link java.util.zip.GZIPInputStream.GZIP_MAGIC}
-    CRAI(CRAIIndex.CRAI_INDEX_SUFFIX, new byte[]{(byte) 0x1f, (byte) 0x8b}),
-    CSI(BAMIndex.CSI_INDEX_SUFFIX, "CSI\1".getBytes());
+    CRAI(FileExtensions.CRAM_INDEX, new byte[]{(byte) 0x1f, (byte) 0x8b}),
+    CSI(FileExtensions.CSI, "CSI\1".getBytes());
 
     public final String fileNameSuffix;
     public final byte[] magic;

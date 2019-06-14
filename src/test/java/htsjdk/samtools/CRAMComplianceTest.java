@@ -3,10 +3,10 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 
 import htsjdk.samtools.util.SequenceUtil;
@@ -249,7 +249,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         SAMFileHeader samHeader;
         List<SAMRecord> bamRecords;
         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
-            final Path tempBam = jimfs.getPath("testCRAMToBAMToCRAM" + BamFileIoUtils.BAM_FILE_EXTENSION);
+            final Path tempBam = jimfs.getPath("testCRAMToBAMToCRAM" + FileExtensions.BAM);
             samHeader = getFileHeader(originalCRAMFile, referenceFile);
             writeRecordsToPath(copiedCRAMRecords, tempBam, referenceFile, samHeader);
             bamRecords = getSAMRecordsFromPath(tempBam, referenceFile);
@@ -265,7 +265,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         // write the BAM records to a CRAM and read them back in
         List<SAMRecord> roundTripCRAMRecords;
         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
-            final Path tempCRAM = jimfs.getPath("testCRAMToBAMToCRAM" + CramIO.CRAM_FILE_EXTENSION);
+            final Path tempCRAM = jimfs.getPath("testCRAMToBAMToCRAM" + FileExtensions.CRAM);
             writeRecordsToPath(bamRecords, tempCRAM, referenceFile, samHeader);
             roundTripCRAMRecords = getSAMRecordsFromPath(tempCRAM, referenceFile);
         }
@@ -293,7 +293,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         List<SAMRecord> originalBAMRecords = getSAMRecordsFromFile(originalBAMInputFile, referenceFile);
 
         // write the BAM records to a temporary CRAM
-        final File tempCRAMFile = File.createTempFile("testBAMThroughCRAMRoundTrip", CramIO.CRAM_FILE_EXTENSION);
+        final File tempCRAMFile = File.createTempFile("testBAMThroughCRAMRoundTrip", FileExtensions.CRAM);
         tempCRAMFile.deleteOnExit();
         SAMFileHeader samHeader = getFileHeader(originalBAMInputFile, referenceFile);
         writeRecordsToFile(originalBAMRecords, tempCRAMFile, referenceFile, samHeader);
@@ -322,7 +322,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
 
         // write the BAM records to a temporary CRAM
         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
-            final Path tempCRAM = jimfs.getPath("testBAMThroughCRAMRoundTrip" + CramIO.CRAM_FILE_EXTENSION);
+            final Path tempCRAM = jimfs.getPath("testBAMThroughCRAMRoundTrip" + FileExtensions.CRAM);
             SAMFileHeader samHeader = getFileHeader(originalBAMInputFile, referenceFile);
             writeRecordsToPath(originalBAMRecords, tempCRAM, referenceFile, samHeader);
 

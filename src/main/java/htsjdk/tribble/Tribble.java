@@ -23,7 +23,7 @@
  */
 package htsjdk.tribble;
 
-import htsjdk.samtools.util.IOExtensions;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 
@@ -37,10 +37,10 @@ public class Tribble {
     private Tribble() { } // can't be instantiated
 
     /**
-     * @deprecated Use {@link IOExtensions#TRIBBLE_STANDARD_INDEX_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#TRIBBLE_INDEX} instead.
      */
     @Deprecated
-    public final static String STANDARD_INDEX_EXTENSION = IOExtensions.TRIBBLE_STANDARD_INDEX_EXTENSION;
+    public final static String STANDARD_INDEX_EXTENSION = FileExtensions.TRIBBLE_INDEX;
 
     /**
      * Return the name of the index file for the provided {@code filename}
@@ -49,7 +49,7 @@ public class Tribble {
      * @return non-null String representing the index filename
      */
     public static String indexFile(final String filename) {
-        return indexFile(filename, STANDARD_INDEX_EXTENSION);
+        return indexFile(filename, FileExtensions.TRIBBLE_INDEX);
     }
 
     /**
@@ -59,7 +59,7 @@ public class Tribble {
      * @return a non-null File representing the index
      */
     public static File indexFile(final File file) {
-        return indexFile(file.getAbsoluteFile(), STANDARD_INDEX_EXTENSION);
+        return indexFile(file.getAbsoluteFile(), FileExtensions.TRIBBLE_INDEX);
     }
 
     /**
@@ -79,7 +79,7 @@ public class Tribble {
      * @return non-null String representing the index filename
      */
     public static String tabixIndexFile(final String filename) {
-        return indexFile(filename, TabixUtils.STANDARD_INDEX_EXTENSION);
+        return indexFile(filename, FileExtensions.TABIX_INDEX);
     }
 
     /**
@@ -89,7 +89,7 @@ public class Tribble {
      * @return a non-null File representing the index
      */
     public static File tabixIndexFile(final File file) {
-        return indexFile(file.getAbsoluteFile(), TabixUtils.STANDARD_INDEX_EXTENSION);
+        return indexFile(file.getAbsoluteFile(), FileExtensions.TABIX_INDEX);
     }
 
     /**

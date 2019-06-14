@@ -1,8 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.cram.CRAIIndex;
-import htsjdk.samtools.cram.build.CramIO;
-
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import java.io.File;
@@ -67,9 +66,9 @@ public class SamFiles {
     private static Path lookForIndex(final Path samPath) {// If input is foo.bam, look for foo.bai or foo.csi
         Path indexPath;
         final String fileName = samPath.getFileName().toString(); // works for all path types (e.g. HDFS)
-        if (fileName.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION)) {
-            final String bai = fileName.substring(0, fileName.length() - BamFileIoUtils.BAM_FILE_EXTENSION.length()) + BAMIndex.BAI_INDEX_SUFFIX;
-            final String csi = fileName.substring(0, fileName.length() - BamFileIoUtils.BAM_FILE_EXTENSION.length()) + BAMIndex.CSI_INDEX_SUFFIX;
+        if (fileName.endsWith(FileExtensions.BAM)) {
+            final String bai = fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.BAM_INDEX;
+            final String csi = fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.CSI;
             indexPath = samPath.resolveSibling(bai);
             if (Files.isRegularFile(indexPath)) { // works for all path types (e.g. HDFS)
                 return indexPath;
@@ -81,25 +80,25 @@ public class SamFiles {
             }
 
 
-        } else if (fileName.endsWith(CramIO.CRAM_FILE_EXTENSION)) {
-            final String crai = fileName.substring(0, fileName.length() - CramIO.CRAM_FILE_EXTENSION.length()) + CRAIIndex.CRAI_INDEX_SUFFIX;
+        } else if (fileName.endsWith(FileExtensions.CRAM)) {
+            final String crai = fileName.substring(0, fileName.length() - FileExtensions.CRAM.length()) + FileExtensions.CRAM_INDEX;
             indexPath = samPath.resolveSibling(crai);
             if (Files.isRegularFile(indexPath)) {
                 return indexPath;
             }
 
-            indexPath = samPath.resolveSibling(fileName + CRAIIndex.CRAI_INDEX_SUFFIX);
+            indexPath = samPath.resolveSibling(fileName + FileExtensions.CRAM_INDEX);
             if (Files.isRegularFile(indexPath)) {
                 return indexPath;
             }
         }
 
         // If foo.bai doesn't exist look for foo.bam.bai or foo.cram.bai
-        indexPath = samPath.resolveSibling(fileName + BAMIndex.BAI_INDEX_SUFFIX);
+        indexPath = samPath.resolveSibling(fileName + FileExtensions.BAM_INDEX);
         if (Files.isRegularFile(indexPath)) {
             return indexPath;
         } else {
-            indexPath = samPath.resolveSibling(fileName + BAMIndex.CSI_INDEX_SUFFIX);
+            indexPath = samPath.resolveSibling(fileName + FileExtensions.CSI);
             if (Files.isRegularFile(indexPath)) {
                 return indexPath;
             }

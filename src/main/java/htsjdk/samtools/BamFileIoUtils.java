@@ -5,7 +5,7 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.IOExtensions;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
@@ -23,10 +23,10 @@ public class BamFileIoUtils {
     private static final Log LOG = Log.getInstance(BamFileIoUtils.class);
 
     /**
-     * @deprecated Use {@link IOExtensions#BAM_FILE_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#BAM} instead.
      */
     @Deprecated
-    public static final String BAM_FILE_EXTENSION = IOExtensions.BAM_FILE_EXTENSION;
+    public static final String BAM_FILE_EXTENSION = FileExtensions.BAM;
 
     public static boolean isBamFile(final File file) {
         return ((file != null) && SamReader.Type.BAM_TYPE.hasValidFileExtension(file.getName()));
@@ -132,7 +132,7 @@ public class BamFileIoUtils {
             if (createMd5) out = new Md5CalculatingOutputStream(out, new File(output.getAbsolutePath() + ".md5"));
             File indexFile = null;
             if (createIndex) {
-                indexFile = new File(output.getParentFile(), IOUtil.basename(output) + BAMIndex.BAI_INDEX_SUFFIX);
+                indexFile = new File(output.getParentFile(), IOUtil.basename(output) + FileExtensions.BAM_INDEX);
                 out = new StreamInflatingIndexingOutputStream(out, indexFile);
             }
 
@@ -167,7 +167,7 @@ public class BamFileIoUtils {
             outputStream = new Md5CalculatingOutputStream(outputStream, new File(outputFile.getAbsolutePath() + ".md5"));
         }
         if (createIndex) {
-            outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + BAMIndex.BAI_INDEX_SUFFIX));
+            outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + FileExtensions.BAM_INDEX));
         }
         return outputStream;
     }

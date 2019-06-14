@@ -27,7 +27,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -209,10 +209,10 @@ public class VCFUtils {
         final File out = File.createTempFile(prefix, suffix);
         out.deleteOnExit();
         String indexFileExtension = null;
-        if (suffix.endsWith(IOUtil.COMPRESSED_VCF_FILE_EXTENSION)) {
-            indexFileExtension = IOUtil.COMPRESSED_VCF_INDEX_EXTENSION;
-        } else if (suffix.endsWith(IOUtil.VCF_FILE_EXTENSION)) {
-            indexFileExtension = IOUtil.VCF_INDEX_EXTENSION;
+        if (suffix.endsWith(FileExtensions.COMPRESSED_VCF)) {
+            indexFileExtension = FileExtensions.COMPRESSED_VCF_INDEX;
+        } else if (suffix.endsWith(FileExtensions.VCF)) {
+            indexFileExtension = FileExtensions.VCF_INDEX;
         }
         if (indexFileExtension != null) {
             final File indexOut = new File(out.getAbsolutePath() + indexFileExtension);
@@ -232,11 +232,11 @@ public class VCFUtils {
     public static File createTemporaryIndexedVcfFromInput(final File vcfFile, final String tempFilePrefix) throws IOException {
         final String extension;
 
-        if (vcfFile.getAbsolutePath().endsWith(IOUtil.VCF_FILE_EXTENSION)) extension = IOUtil.VCF_FILE_EXTENSION;
-        else if (vcfFile.getAbsolutePath().endsWith(IOUtil.COMPRESSED_VCF_FILE_EXTENSION))
-            extension = IOUtil.COMPRESSED_VCF_FILE_EXTENSION;
+        if (vcfFile.getAbsolutePath().endsWith(FileExtensions.VCF)) extension = FileExtensions.VCF;
+        else if (vcfFile.getAbsolutePath().endsWith(FileExtensions.COMPRESSED_VCF))
+            extension = FileExtensions.COMPRESSED_VCF;
         else
-            throw new IllegalArgumentException("couldn't find a " + IOUtil.VCF_FILE_EXTENSION + " or " + IOUtil.COMPRESSED_VCF_FILE_EXTENSION + " ending for input file " + vcfFile.getAbsolutePath());
+            throw new IllegalArgumentException("couldn't find a " + FileExtensions.VCF + " or " + FileExtensions.COMPRESSED_VCF + " ending for input file " + vcfFile.getAbsolutePath());
 
         File output = createTemporaryIndexedVcfFile(tempFilePrefix, extension);
 

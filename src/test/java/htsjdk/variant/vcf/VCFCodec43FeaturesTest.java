@@ -1,12 +1,12 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
-import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -163,7 +163,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
         Files.copy(testFile, (new File (tempDir, testFile.toFile().getName())).toPath());
         final File vcfFileCopy = new File(tempDir, testFile.toFile().getName());
         final Index index = IndexFactory.createIndex(vcfFileCopy, new VCFCodec(), IndexFactory.IndexType.TABIX);
-        final File indexFile = new File(tempDir, vcfFileCopy.getName() + TabixUtils.STANDARD_INDEX_EXTENSION);
+        final File indexFile = new File(tempDir, vcfFileCopy.getName() + FileExtensions.TABIX_INDEX);
         index.write(indexFile);
         Assert.assertTrue(indexFile.exists());
 

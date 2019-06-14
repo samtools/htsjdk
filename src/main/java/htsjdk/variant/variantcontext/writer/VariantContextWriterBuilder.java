@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext.writer;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.Log;
@@ -44,8 +45,6 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.EnumSet;
-
-import static htsjdk.samtools.util.IOUtil.VCF_EXTENSIONS_LIST;
 
 /*
  * Created with IntelliJ IDEA.
@@ -460,7 +459,7 @@ public class VariantContextWriterBuilder {
                 throw new IllegalArgumentException(
                      "Output format type is not set, or could not be inferred from the output path. "
                      + "If a path was used, does it have a valid VCF extension ("
-                     + String.join(", ", VCF_EXTENSIONS_LIST)
+                     + String.join(", ", FileExtensions.VCF_LIST)
                      + ")?"
                 );
             case VCF:
@@ -560,11 +559,11 @@ public class VariantContextWriterBuilder {
     }
 
     private static boolean isVCF(final Path outPath) {
-        return outPath != null && outPath.getFileName().toString().endsWith(IOUtil.VCF_FILE_EXTENSION);
+        return outPath != null && outPath.getFileName().toString().endsWith(FileExtensions.VCF);
     }
 
     private static boolean isBCF(final Path outPath) {
-        return outPath != null && outPath.getFileName().toString().endsWith(IOUtil.BCF_FILE_EXTENSION);
+        return outPath != null && outPath.getFileName().toString().endsWith(FileExtensions.BCF);
     }
 
     private static boolean isCompressedVCF(final Path outPath) {

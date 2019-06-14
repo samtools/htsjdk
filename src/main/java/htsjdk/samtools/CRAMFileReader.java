@@ -17,7 +17,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SamReader.Type;
-import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
@@ -26,6 +25,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 
@@ -277,7 +277,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (mIndex == null) {
             final SAMSequenceDictionary dictionary = getFileHeader()
                     .getSequenceDictionary();
-            if (mIndexFile.getName().endsWith(BAMIndex.BAI_INDEX_SUFFIX)) {
+            if (mIndexFile.getName().endsWith(FileExtensions.BAM_INDEX)) {
                 mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile,
                         dictionary, mEnableIndexMemoryMapping)
                         : new DiskBasedBAMFileIndex(mIndexFile, dictionary,
@@ -285,7 +285,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 return mIndex;
             }
 
-            if (!mIndexFile.getName().endsWith(CRAIIndex.CRAI_INDEX_SUFFIX)) return null;
+            if (!mIndexFile.getName().endsWith(FileExtensions.CRAM_INDEX)) return null;
             // convert CRAI into BAI:
             final SeekableStream baiStream;
             try {

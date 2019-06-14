@@ -1,7 +1,7 @@
 package htsjdk.tribble;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.tribble.util.TabixUtils;
+import htsjdk.samtools.util.FileExtensions;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -14,7 +14,7 @@ public class TribbleTest extends HtsjdkTest {
     public void testStandardIndex() {
 
 	final String vcf = "foo.vcf";
-	final String expectedIndex = vcf + Tribble.STANDARD_INDEX_EXTENSION;
+	final String expectedIndex = vcf + FileExtensions.TRIBBLE_INDEX;
 
 	Assert.assertEquals(Tribble.indexFile(vcf), expectedIndex);
 	Assert.assertEquals(Tribble.indexFile(new File(vcf).getAbsolutePath()), new File(expectedIndex).getAbsolutePath());
@@ -24,7 +24,7 @@ public class TribbleTest extends HtsjdkTest {
     public void testTabixIndex() {
 
 	final String vcf = "foo.vcf.gz";
-	final String expectedIndex = vcf + TabixUtils.STANDARD_INDEX_EXTENSION;
+	final String expectedIndex = vcf + FileExtensions.TABIX_INDEX;
 
 	Assert.assertEquals(Tribble.tabixIndexFile(vcf), expectedIndex);
 	Assert.assertEquals(Tribble.tabixIndexFile(new File(vcf).getAbsolutePath()), new File(expectedIndex).getAbsolutePath());

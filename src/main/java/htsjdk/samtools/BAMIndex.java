@@ -25,6 +25,8 @@ package htsjdk.samtools;
 
 import java.io.Closeable;
 
+import htsjdk.samtools.util.FileExtensions;
+
 /**
  * A basic interface for querying BAM indices.
  *
@@ -34,12 +36,20 @@ import java.io.Closeable;
 public interface BAMIndex extends Closeable {
 
     /**
-     * @deprecated prefer {@link BAMIndex#BAI_INDEX_SUFFIX} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#BAM_INDEX} instead.
      */
     @Deprecated
-    String BAMIndexSuffix = ".bai";
-    String BAI_INDEX_SUFFIX = ".bai";
-    String CSI_INDEX_SUFFIX = ".csi";
+    String BAMIndexSuffix = FileExtensions.BAM_INDEX;
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#BAM_INDEX} instead.
+     */
+    @Deprecated
+    String BAI_INDEX_SUFFIX = FileExtensions.BAM_INDEX;
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#CSI} instead.
+     */
+    @Deprecated
+    String CSI_INDEX_SUFFIX = FileExtensions.CSI;
 
     /**
      * Gets the compressed chunks which should be searched for the contents of records contained by the span

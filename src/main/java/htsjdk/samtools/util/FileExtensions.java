@@ -32,10 +32,10 @@ import java.util.Set;
 /**
  * Contains file extension constants for read, alignment, and variant files
  */
-public final class IOExtensions {
+public final class FileExtensions {
 
     /** extensions for read files and related formats. */
-    public static final Set<String> FASTA_EXTENSIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+    public static final Set<String> FASTA = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         ".fasta",
         ".fasta.gz",
         ".fa",
@@ -46,29 +46,33 @@ public final class IOExtensions {
         ".txt.gz"
     )));
         
-    public static final String FASTA_INDEX_EXTENSION = ".fai";
+    public static final String FASTA_INDEX = ".fai";
 
     /** extensions for alignment files SAM, BAM, CRAM. */
-    public static final String SAM_FILE_EXTENSION = ".sam";
-    public static final String BAM_FILE_EXTENSION = ".bam";
-    public static final String CRAM_FILE_EXTENSION = ".cram";
+    public static final String SAM = ".sam";
+    public static final String BAM = ".bam";
+    public static final String BAM_INDEX = ".bai";
+    public static final String CRAM = ".cram";
+    public static final String CRAM_INDEX = ".crai";
     
-    public static final String BED_EXTENSION = ".bed";
-    public static final String TABIX_STANDARD_INDEX_EXTENSION = ".tbi";
-    public static final String TRIBBLE_STANDARD_INDEX_EXTENSION = ".idx";
+    public static final String BED = ".bed";
+    public static final String TABIX_INDEX = ".tbi";
+    public static final String TRIBBLE_INDEX = ".idx";
 
     /** extensions for VCF files and related formats. */
-    public static final String VCF_FILE_EXTENSION = ".vcf";
-    public static final String VCF_INDEX_EXTENSION = TRIBBLE_STANDARD_INDEX_EXTENSION;
-    public static final String BCF_FILE_EXTENSION = ".bcf";
-    public static final String COMPRESSED_VCF_FILE_EXTENSION = ".vcf.gz";
-    public static final String COMPRESSED_VCF_INDEX_EXTENSION = ".tbi";
-    public static final List<String> VCF_EXTENSIONS_LIST = Collections.unmodifiableList(Arrays.asList(VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION));
+    public static final String VCF = ".vcf";
+    public static final String VCF_INDEX = TRIBBLE_INDEX;
+    public static final String BCF = ".bcf";
+    public static final String COMPRESSED_VCF = ".vcf.gz";
+    public static final String COMPRESSED_VCF_INDEX = ".tbi";
+    public static final List<String> VCF_LIST = Collections.unmodifiableList(Arrays.asList(VCF, COMPRESSED_VCF, BCF));
+    public static final String[] VCF_ARRAY = VCF_LIST.toArray(new String[0]);
 
-    public static final String INTERVAL_LIST_FILE_EXTENSION = ".interval_list";
-    public static final String DICT_FILE_EXTENSION = ".dict";
-    public static final String GZI_DEFAULT_EXTENSION = ".gzi";
-    public static final String SBI_FILE_EXTENSION = ".sbi";
+    public static final String INTERVAL_LIST = ".interval_list";
+    public static final String DICT = ".dict";
+    public static final String GZI = ".gzi";
+    public static final String SBI = ".sbi";
+    public static final String CSI = ".csi";
 
-    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
+    public static final Set<String> BLOCK_COMPRESSED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 }

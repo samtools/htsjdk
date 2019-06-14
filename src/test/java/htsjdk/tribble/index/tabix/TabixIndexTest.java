@@ -26,6 +26,7 @@ package htsjdk.tribble.index.tabix;
 import htsjdk.HtsjdkTest;
 import com.google.common.io.Files;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.tribble.AbstractFeatureReader;
@@ -36,7 +37,6 @@ import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -64,7 +64,7 @@ public class TabixIndexTest extends HtsjdkTest {
     @Test(dataProvider = "readWriteTestDataProvider")
     public void readWriteTest(final File tabixFile) throws Exception {
         final TabixIndex index = new TabixIndex(tabixFile);
-        final File indexFile = File.createTempFile("TabixIndexTest.", TabixUtils.STANDARD_INDEX_EXTENSION);
+        final File indexFile = File.createTempFile("TabixIndexTest.", FileExtensions.TABIX_INDEX);
         indexFile.deleteOnExit();
         final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(indexFile));
         index.write(los);

@@ -27,6 +27,7 @@ package htsjdk.tribble.bed;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
@@ -251,7 +252,7 @@ public class BEDCodecTest extends HtsjdkTest {
     public void testCanDecode() {
         final BEDCodec codec = new BEDCodec();
         final String pattern = "filename.%s%s";
-        for(final String bcExt: IOUtil.BLOCK_COMPRESSED_EXTENSIONS) {
+        for(final String bcExt: FileExtensions.BLOCK_COMPRESSED) {
             Assert.assertTrue(codec.canDecode(String.format(pattern, "bed", bcExt)));
             Assert.assertFalse(codec.canDecode(String.format(pattern, "vcf", bcExt)));
             Assert.assertFalse(codec.canDecode(String.format(pattern, "bed.gzip", bcExt)));

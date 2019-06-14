@@ -9,6 +9,7 @@ import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
@@ -19,7 +20,11 @@ import java.util.stream.Collectors;
  * CRAI index used for CRAM files.
  */
 public class CRAIIndex {
-    public static final String CRAI_INDEX_SUFFIX = ".crai";
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#CRAM_INDEX} instead.
+     */
+    @Deprecated
+    public static final String CRAI_INDEX_SUFFIX = FileExtensions.CRAM_INDEX;
     final private List<CRAIEntry> entries = new ArrayList<>();
 
     /**

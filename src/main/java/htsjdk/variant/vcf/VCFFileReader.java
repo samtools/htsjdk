@@ -57,7 +57,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * Returns true if the given path appears to be a BCF file.
      */
     public static boolean isBCF(final Path path) {
-        return path.toUri().getRawPath().endsWith(IOUtil.BCF_FILE_EXTENSION);
+        return path.toUri().getRawPath().endsWith(FileExtensions.BCF);
     }
 
     /**

@@ -24,12 +24,11 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.index.tabix.TabixIndex;
-import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCF3Codec;
 import htsjdk.variant.vcf.VCFHeader;
@@ -45,8 +44,8 @@ public class TabixOnTheFlyIndexCreationTest extends HtsjdkTest {
         final VCF3Codec codec = new VCF3Codec();
         final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(SMALL_VCF.getAbsolutePath(), codec, false);
         final VCFHeader headerFromFile = (VCFHeader)reader.getHeader();
-        final File vcf = File.createTempFile("TabixOnTheFlyIndexCreationTest.", IOUtil.COMPRESSED_VCF_FILE_EXTENSION);
-        final File tabix = new File(vcf.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION);
+        final File vcf = File.createTempFile("TabixOnTheFlyIndexCreationTest.", FileExtensions.COMPRESSED_VCF);
+        final File tabix = new File(vcf.getAbsolutePath() + FileExtensions.TABIX_INDEX);
         vcf.deleteOnExit();
         tabix.deleteOnExit();
         final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()

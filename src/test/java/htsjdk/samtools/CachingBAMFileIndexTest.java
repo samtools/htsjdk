@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -55,7 +56,7 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
             }).forEach(writer::addAlignment);
         }
 
-        final File indexFile = new File(outBam.getParent(), IOUtil.basename(outBam) + BAMIndex.BAMIndexSuffix);
+        final File indexFile = new File(outBam.getParent(), IOUtil.basename(outBam) + FileExtensions.BAM_INDEX);
         indexFile.deleteOnExit();
         outBam.deleteOnExit();
         return new CachingBAMFileIndex(indexFile, dict);

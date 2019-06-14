@@ -32,7 +32,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
-import htsjdk.samtools.util.IOExtensions;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 
 import java.io.BufferedInputStream;
@@ -55,16 +55,16 @@ import java.util.Set;
 public class ReferenceSequenceFileFactory {
 
     /**
-     * @deprecated Use {@link IOExtensions#FASTA_EXTENSIONS} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#FASTA} instead.
      */
     @Deprecated
-    public static final Set<String> FASTA_EXTENSIONS = IOExtensions.FASTA_EXTENSIONS;
+    public static final Set<String> FASTA_EXTENSIONS = FileExtensions.FASTA;
 
     /**
-     * @deprecated Use {@link IOExtensions#FASTA_INDEX_EXTENSION} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#FASTA_INDEX} instead.
      */
     @Deprecated
-    public static final String FASTA_INDEX_EXTENSION = IOExtensions.FASTA_INDEX_EXTENSION;
+    public static final String FASTA_INDEX_EXTENSION = FileExtensions.FASTA_INDEX;
 
     /**
      * Attempts to determine the type of the reference file and return an instance
@@ -221,7 +221,7 @@ public class ReferenceSequenceFileFactory {
     public static Path getDefaultDictionaryForReferenceSequence(final Path path) {
         final String name = path.getFileName().toString();
         final int extensionIndex = name.length() - getFastaExtension(path).length();
-        return path.resolveSibling(name.substring(0, extensionIndex) + IOUtil.DICT_FILE_EXTENSION);
+        return path.resolveSibling(name.substring(0, extensionIndex) + FileExtensions.DICT);
     }
 
     /**
@@ -249,7 +249,7 @@ public class ReferenceSequenceFileFactory {
      */
     public static String getFastaExtension(final Path path) {
         final String name = path.getFileName().toString();
-        return FASTA_EXTENSIONS.stream().filter(name::endsWith).findFirst()
+        return FileExtensions.FASTA.stream().filter(name::endsWith).findFirst()
                 .orElseGet(() -> {throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());});
     }
 
@@ -259,6 +259,6 @@ public class ReferenceSequenceFileFactory {
      * @param fastaFile the reference sequence file path.
      */
     public static Path getFastaIndexFileName(Path fastaFile) {
-        return fastaFile.resolveSibling(fastaFile.getFileName() + FASTA_INDEX_EXTENSION);
+        return fastaFile.resolveSibling(fastaFile.getFileName() + FileExtensions.FASTA_INDEX);
     }
 }
