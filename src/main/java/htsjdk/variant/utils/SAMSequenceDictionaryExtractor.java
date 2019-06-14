@@ -96,7 +96,7 @@ public class SAMSequenceDictionaryExtractor {
                 return SamReaderFactory.makeDefault().getFileHeader(sam).getSequenceDictionary();
             }
         },
-        VCF(FileExtensions.VCF_ARRAY) {
+        VCF(FileExtensions.VCF_LIST.toArray(new String[0])) {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path vcf) {

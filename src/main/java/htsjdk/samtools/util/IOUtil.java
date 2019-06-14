@@ -129,10 +129,10 @@ public class IOUtil {
 
     /**
      * Possible extensions for VCF files and related formats.
-     * @deprecated since June 2019 Use {@link FileExtensions#VCF_ARRAY} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF_LIST} instead.
      */
     @Deprecated
-    public static final String[] VCF_EXTENSIONS = FileExtensions.VCF_ARRAY;
+    public static final String[] VCF_EXTENSIONS = FileExtensions.VCF_LIST.toArray(new String[0]);
 
     /**
      * @deprecated since June 2019 Use {@link FileExtensions#INTERVAL_LIST} instead.

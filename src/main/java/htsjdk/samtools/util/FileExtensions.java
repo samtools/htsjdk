@@ -66,7 +66,6 @@ public final class FileExtensions {
     public static final String COMPRESSED_VCF = ".vcf.gz";
     public static final String COMPRESSED_VCF_INDEX = ".tbi";
     public static final List<String> VCF_LIST = Collections.unmodifiableList(Arrays.asList(VCF, COMPRESSED_VCF, BCF));
-    public static final String[] VCF_ARRAY = VCF_LIST.toArray(new String[0]);
 
     public static final String INTERVAL_LIST = ".interval_list";
     public static final String DICT = ".dict";
