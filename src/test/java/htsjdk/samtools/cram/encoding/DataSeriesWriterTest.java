@@ -21,6 +21,6 @@ public class DataSeriesWriterTest extends HtsjdkTest {
     public void negativeConstructorTest(final DataSeriesType valueType,
                                         final EncodingParams params) {
         final CompressionHeader compressionHeader = new CompressionHeader();
-        new DataSeriesWriter(valueType, params, new SliceBlocksWriter(compressionHeader, new SliceBlocks()));
+        new DataSeriesWriter(valueType, params, new SliceBlocksWriteStreams(compressionHeader, new SliceBlocks()));
     }
 }

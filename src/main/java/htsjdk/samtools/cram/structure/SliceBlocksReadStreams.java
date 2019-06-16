@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Manage the set of streams used to hold each block that is consumed when reading a CRAM stream.
  */
-public class SliceBlocksReader {
+public class SliceBlocksReadStreams {
 
     // bit input stream for the core block
     private final BitInputStream coreBlockInputStream;
@@ -23,7 +23,7 @@ public class SliceBlocksReader {
     /**
      * @param sliceBlocks {@link SliceBlocks} that have been populated from a CRAM stream
      */
-    public SliceBlocksReader(final SliceBlocks sliceBlocks) {
+    public SliceBlocksReadStreams(final SliceBlocks sliceBlocks) {
         if (sliceBlocks.getCoreBlock() == null || sliceBlocks.getNumberOfExternalBlocks() == 0) {
             throw new CRAMException("slice blocks must be initialized before being used with a reader");
         }

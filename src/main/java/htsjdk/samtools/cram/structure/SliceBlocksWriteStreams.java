@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * Manage the set of streams used to hold block content when constructing a CRAM stream to be written
  */
-public class SliceBlocksWriter {
+public class SliceBlocksWriteStreams {
 
     private final CompressionHeader compressionHeader;
     private final SliceBlocks sliceBlocks;
@@ -30,7 +30,7 @@ public class SliceBlocksWriter {
      * @param sliceBlocks {@link SliceBlocks} for the represented by these blocks {@link Slice}
      */
     //TODO: add tag streams
-    public SliceBlocksWriter(final CompressionHeader compressionHeader, final SliceBlocks sliceBlocks) {
+    public SliceBlocksWriteStreams(final CompressionHeader compressionHeader, final SliceBlocks sliceBlocks) {
         this.compressionHeader = compressionHeader;
         this.sliceBlocks = sliceBlocks;
 

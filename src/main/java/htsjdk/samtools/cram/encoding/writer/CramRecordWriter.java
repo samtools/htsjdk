@@ -63,7 +63,7 @@ public class CramRecordWriter {
 
     private final Slice slice;
     private final CompressionHeader compressionHeader;
-    private final SliceBlocksWriter sliceBlocksWriter;
+    private final SliceBlocksWriteStreams sliceBlocksWriteStreams;
 
     /**
      * Initializes a Cram Record Writer
@@ -74,7 +74,7 @@ public class CramRecordWriter {
     {
         this.slice = slice;
         this.compressionHeader = slice.getCompressionHeader();
-        sliceBlocksWriter = new SliceBlocksWriter(compressionHeader, slice.getSliceBlocks());
+        sliceBlocksWriteStreams = new SliceBlocksWriteStreams(compressionHeader, slice.getSliceBlocks());
 
         // NOTE that this implementation doesn't generate BB or QQ data series, so no writer
         // or codec is created for those.
@@ -113,7 +113,7 @@ public class CramRecordWriter {
         qualityScoreArrayCodec = new DataSeriesWriter<>(
                 DataSeriesType.BYTE_ARRAY,
                 compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
-                sliceBlocksWriter);
+                sliceBlocksWriteStreams);
 
         tagValueCodecs = compressionHeader.tMap.entrySet()
                 .stream()
@@ -122,7 +122,7 @@ public class CramRecordWriter {
                         mapEntry -> new DataSeriesWriter<>(
                                 DataSeriesType.BYTE_ARRAY,
                                 mapEntry.getValue(),
-                                sliceBlocksWriter)));
+                                sliceBlocksWriteStreams)));
     }
 
     /**
@@ -137,7 +137,7 @@ public class CramRecordWriter {
             writeRecordsToStreams(record, prevAlignmentStart);
             prevAlignmentStart = record.alignmentStart;
         }
-        sliceBlocksWriter.writeStreamsToBlocks();
+        sliceBlocksWriteStreams.writeStreamsToBlocks();
     }
 
     /**
@@ -157,7 +157,7 @@ public class CramRecordWriter {
         return new DataSeriesWriter<>(
                 dataSeries.getType(),
                 encodingParams,
-                sliceBlocksWriter);
+                sliceBlocksWriteStreams);
     }
 
     /**

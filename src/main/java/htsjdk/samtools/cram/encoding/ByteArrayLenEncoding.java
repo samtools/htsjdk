@@ -17,20 +17,16 @@
  */
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.SliceBlocksReader;
-import htsjdk.samtools.cram.structure.SliceBlocksWriter;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
     private final CRAMEncoding<Integer> lenEncoding;
@@ -80,10 +76,10 @@ public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
     }
 
     @Override
-    public CRAMCodec<byte[]> buildCodec(final SliceBlocksReader sliceBlocksReader, final SliceBlocksWriter sliceBlocksWriter) {
+    public CRAMCodec<byte[]> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new ByteArrayLenCodec(
-                lenEncoding.buildCodec(sliceBlocksReader, sliceBlocksWriter),
-                byteEncoding.buildCodec(sliceBlocksReader, sliceBlocksWriter));
+                lenEncoding.buildCodec(sliceBlocksReadStreams, sliceBlocksWriteStreams),
+                byteEncoding.buildCodec(sliceBlocksReadStreams, sliceBlocksWriteStreams));
     }
 
 }
