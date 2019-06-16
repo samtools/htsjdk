@@ -6,25 +6,44 @@ import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
 import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.block.Block;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+/**
+ * CRAM encoding map (EncodingParams for each Data Series, and compressors for each integer ContentID) for a single
+ * CRAM container compression header.
+ *
+ * There are two constructors; one populates the map using the encodings chosen by this (htsjdk)
+ * implementation, for use writing a CRAM, and one populates the map from a serialized
+ * CompressionHeader stream when reading a CRAM, resulting in encodings choden by the implementation
+ * that wrote that CRAM.
+ *
+ * Although the CRAM spec defines a fixed list of data series, individual CRAM implementations
+ * may choose to use only a subset of these. Therefore, the actual set of encodings that are
+ * instantiated can vary depending on the source.
+ *
+ * NOTE: This implementation does not use the 'BB' or 'QQ' encodings when writing CRAM.
+ */
 public class CompressionHeaderEncodingMap {
 
+    // encoding params for each data series
     private Map<DataSeries, EncodingParams> encodingMap = new TreeMap<>();
 
-    //TODO: are the keys for these (externalIDs and externalCompressors) always the same ? consolidate ?
+    // external compressor to use for each external block, keyed by external content ID; this
+    // map contains a key for each data series that is in use, plus additional ones for blocks
+    // used for tags
     private final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<>();
-    private List<Integer> externalIds= new ArrayList<>();
 
+    /**
+     * Constructor used to create an encoding map for writing CRAMs
+     */
     public CompressionHeaderEncodingMap() {
-        encodingMap = new TreeMap<>();
-
         addExternalRansOrderZeroEncoding(DataSeries.AP_AlignmentPositionOffset);
         addExternalRansOrderOneEncoding(DataSeries.BA_Base);
-        // BB is not used
+        // the BB data series is not used by this implementation when writing CRAMs
         addExternalRansOrderOneEncoding(DataSeries.BF_BitFlags);
         addExternalGzipEncoding(DataSeries.BS_BaseSubstitutionCode);
         addExternalRansOrderOneEncoding(DataSeries.CF_CompressionBitFlags);
@@ -40,7 +59,7 @@ public class CompressionHeaderEncodingMap {
         addExternalGzipEncoding(DataSeries.NP_NextFragmentAlignmentStart);
         addExternalRansOrderOneEncoding(DataSeries.NS_NextFragmentReferenceSequenceID);
         addExternalGzipEncoding(DataSeries.PD_padding);
-        // QQ is not used
+        // the QQ data series is not used by this implementation when writing CRAMs
         addExternalRansOrderOneEncoding(DataSeries.QS_QualityScore);
         addExternalRansOrderOneEncoding(DataSeries.RG_ReadGroup);
         addExternalRansOrderZeroEncoding(DataSeries.RI_RefId);
@@ -54,8 +73,11 @@ public class CompressionHeaderEncodingMap {
         addExternalRansOrderOneEncoding(DataSeries.TS_InsertSize);
     }
 
+    /**
+     * Constructor used to create an encoding map when reading a CRAM.
+     * @param inputStream the CRAM input stream to be consumed
+     */
     public CompressionHeaderEncodingMap(final InputStream inputStream) {
-        // encoding map:
         final int byteSize = ITF8.readUnsignedITF8(inputStream);
         final byte[] bytes = new byte[byteSize];
         InputStreamUtils.readFully(inputStream, bytes, 0, bytes.length);
@@ -76,22 +98,52 @@ public class CompressionHeaderEncodingMap {
         }
     }
 
-    //TODO: remove this and delegate here ?
+    /**
+     * Add an external compressor for a tag block
+     * @param tagId the tag as a content ID
+     * @param compressor compressor to be used for this tag block
+     */
+    public void addTagBlockCompression(final int tagId, final ExternalCompressor compressor) {
+        externalCompressors.put(tagId, compressor);
+    }
+
+    /**
+     * Get the encodong params that should be sued for a given DataSeries.
+     * @param dataSeries
+     * @return EncodingParams for the DataSeries
+     */
     public EncodingParams getEncodingParamsForDataSeries(final DataSeries dataSeries) {
         return encodingMap.get(dataSeries);
     }
 
-    // TODO: remove these and delegate here ?
-    public Map<Integer, ExternalCompressor> getExternalCompresssors() { return externalCompressors; }
+    /**
+     * Get a list of all external IDs for this encoding map
+     * @return list of all external IDs for this encoding map
+     */
+    public List<Integer> getExternalIDs() { return new ArrayList(externalCompressors.keySet()); }
 
-    public Map<Integer, ByteArrayOutputStream> createSliceOutputStreamMap() {
-        final Map<Integer, ByteArrayOutputStream> externalStreamMap = new HashMap<>();
-        for (final int id : externalIds) {
-            externalStreamMap.put(id, new ByteArrayOutputStream());
-        }
-        return externalStreamMap;
+    /**
+     * Given a content ID, return a {@link Block} for that ID by obtaining the contents of the stream,
+     * compressing it using the compressor for that contentID, and converting to a {@link Block}.
+     * @param contentId contentID to use
+     * @param outputStream stream to compress
+     * @return Block containing the compressed contends of the stream
+     */
+    public Block getCompressedBlockForStream(final Integer contentId, final ByteArrayOutputStream outputStream) {
+        final ExternalCompressor compressor = externalCompressors.get(contentId);
+        final byte[] rawContent = outputStream.toByteArray();
+        return Block.createExternalBlock(
+                compressor.getMethod(),
+                contentId,
+                compressor.compress(rawContent),
+                rawContent.length);
     }
 
+    /**
+     * Write the encoding map out to a CRAM Stream
+     * @param outputStream
+     * @throws IOException
+     */
     public void write(final OutputStream outputStream) throws IOException {
         // encoding map:
         int size = 0;
@@ -126,7 +178,6 @@ public class CompressionHeaderEncodingMap {
     private void addExternalEncoding(final DataSeries dataSeries,
                                      final EncodingParams params,
                                      final ExternalCompressor compressor) {
-        externalIds.add(dataSeries.getExternalBlockContentId());
         externalCompressors.put(dataSeries.getExternalBlockContentId(), compressor);
         encodingMap.put(dataSeries, params);
     }
@@ -154,11 +205,6 @@ public class CompressionHeaderEncodingMap {
 
     private void addExternalRansOrderZeroEncoding(final DataSeries dataSeries) {
         addExternalEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
-    }
-
-    void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingParams params) {
-        externalIds.add(tagId);
-        externalCompressors.put(tagId, compressor);
     }
 
 }

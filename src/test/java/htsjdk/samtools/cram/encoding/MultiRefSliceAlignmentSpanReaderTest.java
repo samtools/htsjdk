@@ -66,7 +66,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         // coordinate sorted, so we only test with coordinateSorted = true;
         final CompressionHeader header = createHeader(initialRecords, true);
         final Slice slice = Slice.buildSlice(initialRecords, header);
-        final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(header, ValidationStringency.DEFAULT_STRINGENCY);
+        final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
 
         Assert.assertEquals(spans.size(), 3);
         Assert.assertEquals(spans.get(new ReferenceContext(1)), new AlignmentSpan(1, 5, 2, 0));
@@ -83,6 +83,6 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         final CompressionHeader header = createHeader(initialRecords, false);
         final Slice slice = Slice.buildSlice(initialRecords, header);
 
-        slice.getMultiRefAlignmentSpans(header, ValidationStringency.DEFAULT_STRINGENCY);
+        slice.getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
     }
 }

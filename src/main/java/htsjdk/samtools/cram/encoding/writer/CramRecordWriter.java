@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * A writer that emits CramRecords into Slice's data series blocks.
+ */
 public class CramRecordWriter {
     private final DataSeriesWriter<Integer> bitFlagsC;
     private final DataSeriesWriter<Integer> compBitFlagsC;
@@ -59,6 +62,7 @@ public class CramRecordWriter {
     private final Charset charset = Charset.forName("UTF8");
 
     private final Slice slice;
+    private final CompressionHeader compressionHeader;
     private final SliceBlocksWriter sliceBlocksWriter;
 
     /**
@@ -66,12 +70,14 @@ public class CramRecordWriter {
      *
      * @param slice the target slice to which the records will be written
      */
-    //TODO: this doesn't really need compression header since ti can be gotten from Slice
     public CramRecordWriter(final Slice slice)
     {
-        sliceBlocksWriter = new SliceBlocksWriter(slice.getCompressionHeader(), slice.getSliceBlocks());
         this.slice = slice;
+        this.compressionHeader = slice.getCompressionHeader();
+        sliceBlocksWriter = new SliceBlocksWriter(compressionHeader, slice.getSliceBlocks());
 
+        // NOTE that this implementation doesn't generate BB or QQ data series, so no writer
+        // or codec is created for those.
         bitFlagsC =                 createDataWriter(DataSeries.BF_BitFlags);
         compBitFlagsC =             createDataWriter(DataSeries.CF_CompressionBitFlags);
         readLengthC =               createDataWriter(DataSeries.RL_ReadLength);
@@ -106,10 +112,10 @@ public class CramRecordWriter {
         // the QS_QualityScore data series, which is BYTE, not BYTE_ARRAY
         qualityScoreArrayCodec = new DataSeriesWriter<>(
                 DataSeriesType.BYTE_ARRAY,
-                slice.getCompressionHeader().getEncodingMap().getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
+                compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksWriter);
 
-        tagValueCodecs = slice.getCompressionHeader().tMap.entrySet()
+        tagValueCodecs = compressionHeader.tMap.entrySet()
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -117,26 +123,6 @@ public class CramRecordWriter {
                                 DataSeriesType.BYTE_ARRAY,
                                 mapEntry.getValue(),
                                 sliceBlocksWriter)));
-    }
-
-    /**
-     * Look up a Data Series in the Cram Compression Header's Encoding Map.  If found, create a Data Writer
-     *
-     * @param dataSeries Which Data Series to write
-     * @param <T> The Java data type associated with the Data Series
-     * @return a Data Writer for the given Data Series, or null if it's not in the encoding map
-     */
-    private <T> DataSeriesWriter<T> createDataWriter(final DataSeries dataSeries) {
-        final EncodingParams encodingParams = slice.getCompressionHeader().getEncodingMap().getEncodingParamsForDataSeries(dataSeries);
-        if (encodingParams != null) {
-            return new DataSeriesWriter<>(
-                    dataSeries.getType(),
-                    encodingParams,
-                    sliceBlocksWriter);
-        }
-        else {
-            return null;
-        }
     }
 
     /**
@@ -151,7 +137,27 @@ public class CramRecordWriter {
             writeRecordsToStreams(record, prevAlignmentStart);
             prevAlignmentStart = record.alignmentStart;
         }
-        sliceBlocksWriter.saveStreamsToBlocks();
+        sliceBlocksWriter.writeStreamsToBlocks();
+    }
+
+    /**
+     * Look up a Data Series in the Cram Compression Header's Encoding Map.  If found, create a Data Writer
+     *
+     * @param dataSeries Which Data Series to write
+     * @param <T> The Java data type associated with the Data Series
+     * @return a Data Writer for the given Data Series, or null if it's not in the encoding map
+     */
+    private <T> DataSeriesWriter<T> createDataWriter(final DataSeries dataSeries) {
+        final EncodingParams encodingParams = compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(dataSeries);
+        if (encodingParams == null) {
+            throw new IllegalArgumentException(
+                    String.format("Attempt to create data series writer for data series %s for which no encoding can be found",
+                            dataSeries));
+        }
+        return new DataSeriesWriter<>(
+                dataSeries.getType(),
+                encodingParams,
+                sliceBlocksWriter);
     }
 
     /**
@@ -169,7 +175,7 @@ public class CramRecordWriter {
 
         readLengthC.writeData(r.readLength);
 
-        if (slice.getCompressionHeader().APDelta) {
+        if (compressionHeader.isCoordinateSorted()) {
             final int alignmentDelta = r.alignmentStart - prevAlignmentStart;
             alStartC.writeData(alignmentDelta);
         } else {
@@ -178,14 +184,14 @@ public class CramRecordWriter {
 
         readGroupC.writeData(r.readGroupID);
 
-        if (slice.getCompressionHeader().readNamesIncluded) {
+        if (compressionHeader.readNamesIncluded) {
             readNameC.writeData(r.readName.getBytes(charset));
         }
 
         // mate record:
         if (r.isDetached()) {
             mateBitFlagsCodec.writeData(r.getMateFlags());
-            if (!slice.getCompressionHeader().readNamesIncluded) {
+            if (!compressionHeader.readNamesIncluded) {
                 readNameC.writeData(r.readName.getBytes(charset));
             }
 
@@ -224,7 +230,7 @@ public class CramRecordWriter {
                     case Substitution.operator:
                         final Substitution sv = (Substitution) f;
                         if (sv.getCode() < 0)
-                            baseSubstitutionCodeCodec.writeData(slice.getCompressionHeader().substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
+                            baseSubstitutionCodeCodec.writeData(compressionHeader.substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
                         else
                             baseSubstitutionCodeCodec.writeData(sv.getCode());
                         // baseSubstitutionCodec.writeData((byte) sv.getBaseChange().getChange());

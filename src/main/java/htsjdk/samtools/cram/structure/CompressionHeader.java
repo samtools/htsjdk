@@ -33,23 +33,23 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class CompressionHeader {
+    private static final Log log = Log.getInstance(CompressionHeader.class);
+
     private static final String RN_readNamesIncluded = "RN";
     private static final String AP_alignmentPositionIsDelta = "AP";
     private static final String RR_referenceRequired = "RR";
     private static final String TD_tagIdsDictionary = "TD";
     private static final String SM_substitutionMatrix = "SM";
 
-    private static final Log log = Log.getInstance(CompressionHeader.class);
-
     public boolean readNamesIncluded;
-    public boolean APDelta = true;
+    private boolean APDelta = true;
     private boolean referenceRequired = true;
 
     private CompressionHeaderEncodingMap encodingMap;
 
+    //TODO: Move the tMap into CompressionHederEncodingMap
     public Map<Integer, EncodingParams> tMap;
     public SubstitutionMatrix substitutionMatrix;
     public byte[][][] dictionary;
@@ -71,8 +71,7 @@ public class CompressionHeader {
     * so checking that flag is equivalent.
     * @return the value of the APDelta flag
     */
-    //TODO: remove this ??
-    boolean isCoordinateSorted() {
+    public boolean isCoordinateSorted() {
         return APDelta;
     }
 
@@ -129,6 +128,7 @@ public class CompressionHeader {
         return bytes;
     }
 
+    //TODO Unused ?
     public byte[][] getTagIds(final int id) {
         return dictionary[id];
     }
@@ -165,6 +165,7 @@ public class CompressionHeader {
             }
         }
 
+        // encoding map:
         encodingMap = new CompressionHeaderEncodingMap(is);
 
         { // tag encoding map:
@@ -284,7 +285,7 @@ public class CompressionHeader {
     }
 
     public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingParams params) {
-        encodingMap.addTagEncoding(tagId, compressor, params);
+        encodingMap.addTagBlockCompression(tagId, compressor);
         tMap.put(tagId, params);
     }
 

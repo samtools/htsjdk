@@ -21,7 +21,6 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.block.Block;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -256,7 +255,7 @@ public class Container {
      * to {@link AlignmentSpan}s.  Used to create BAI Indexes.
      *
      * @param validationStringency stringency for validating records, passed to
-     * {@link Slice#getMultiRefAlignmentSpans(CompressionHeader, ValidationStringency)}
+     * {@link Slice#getMultiRefAlignmentSpans(ValidationStringency)}
      * @return the map of map of reference sequence IDs to AlignmentSpans.
      */
     public Map<ReferenceContext, AlignmentSpan> getSpans(final ValidationStringency validationStringency) {
@@ -267,7 +266,7 @@ public class Container {
                     containerSpanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);
                     break;
                 case MULTIPLE_REFERENCE_TYPE:
-                    final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(compressionHeader, validationStringency);
+                    final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(validationStringency);
                     for (final Map.Entry<ReferenceContext, AlignmentSpan> entry : spans.entrySet()) {
                         containerSpanMap.merge(entry.getKey(), entry.getValue(), AlignmentSpan::combine);
                     }

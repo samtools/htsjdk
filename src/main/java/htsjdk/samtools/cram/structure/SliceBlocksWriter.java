@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.structure.block.Block;
@@ -9,64 +8,79 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
-// TODO: SliceBlocksReader and SliceBlocksWriter should live in IO package ?
+/**
+ * Manage the set of streams used to hold block content when constructing a CRAM stream to be written
+ */
 public class SliceBlocksWriter {
 
-    private CompressionHeader compressionHeader;
+    private final CompressionHeader compressionHeader;
     private final SliceBlocks sliceBlocks;
 
-    // content ID to ByteArrayOutputStream
-    private final Map<Integer, ByteArrayOutputStream> idToStream;
-    private final ByteArrayOutputStream bitBAOS;
-    private final BitOutputStream coreBlockOutputStream;
+    private final ByteArrayOutputStream coreBlockByteOutputStream;
+    private final BitOutputStream coreBlockBitOutputStream;
 
+    // content ID to ByteArrayOutputStream
+    private final Map<Integer, ByteArrayOutputStream> externalOutputStreams = new HashMap<>();
+
+    /**
+     * @param compressionHeader {@link CompressionHeader} for the container containing the slice
+     * @param sliceBlocks {@link SliceBlocks} for the represented by these blocks {@link Slice}
+     */
+    //TODO: add tag streams
     public SliceBlocksWriter(final CompressionHeader compressionHeader, final SliceBlocks sliceBlocks) {
         this.compressionHeader = compressionHeader;
         this.sliceBlocks = sliceBlocks;
-        //TODO: all these streams should be closed - make this Closeable ?
-        //TODO: the encoding map doesn't have tag streams, so how/where does that get created ?
-        idToStream = compressionHeader.getEncodingMap().createSliceOutputStreamMap();
-        bitBAOS = new ByteArrayOutputStream();
-        coreBlockOutputStream = new DefaultBitOutputStream(bitBAOS);
+
+        coreBlockByteOutputStream = new ByteArrayOutputStream();
+        coreBlockBitOutputStream = new DefaultBitOutputStream(coreBlockByteOutputStream);
+
+        // Create an output stream for each external content ID in the encoding map
+        for (final Integer contentID : compressionHeader.getEncodingMap().getExternalIDs()) {
+            externalOutputStreams.put(contentID, new ByteArrayOutputStream());
+        }
     }
 
-    // TODO: still public since its used by DataSeriesWriter
-    public BitOutputStream getCoreOutputStream() { return coreBlockOutputStream; }
+    /**
+     * @return the {@link BitOutputStream}  for the core block
+     */
+    public BitOutputStream getCoreOutputStream() { return coreBlockBitOutputStream; }
 
-    public void saveStreamsToBlocks() {
-         close();
-         sliceBlocks.setCoreBlock(Block.createRawCoreDataBlock(getCoreOuterOutputStream().toByteArray()));
+    /**
+     * Get the ByteArrayOutputStream corresponding to the requested contentID
+     * @param contentID ID of content being requuested
+     * @return ByteArrayOutputStream for contentID
+     */
+    public ByteArrayOutputStream getExternalOutputStream(final Integer contentID) { return externalOutputStreams.get(contentID); }
 
-         for (final Integer contentId : getOutputStreamMap().keySet()) {
+    /**
+     * Compress and write each block to a CRAM output stream.
+     */
+    public void writeStreamsToBlocks() {
+         closeAllStreams();
+         // core block is raw (no compression)
+         sliceBlocks.setCoreBlock(Block.createRawCoreDataBlock(coreBlockByteOutputStream.toByteArray()));
+
+         for (final Map.Entry<Integer, ByteArrayOutputStream> streamEntry : externalOutputStreams.entrySet()) {
+             final Integer contentId = streamEntry.getKey();
              // remove after https://github.com/samtools/htsjdk/issues/1232
-             if (contentId == Block.NO_CONTENT_ID) {
-                 throw new CRAMException("Valid Content ID required.  Given: " + contentId);
+             if (streamEntry.getKey().equals(Block.NO_CONTENT_ID)) {
+                 throw new CRAMException("A valid content ID is required.  Given: " + contentId);
              }
 
-             final ExternalCompressor compressor = compressionHeader.getEncodingMap().getExternalCompresssors().get(contentId);
-             final byte[] rawContent = getOutputStreamMap().get(contentId).toByteArray();
-             final Block externalBlock = Block.createExternalBlock(
-                     compressor.getMethod(),
-                     contentId,
-                     compressor.compress(rawContent),
-                     rawContent.length);
-
+             final Block externalBlock = compressionHeader.getEncodingMap().getCompressedBlockForStream(contentId, streamEntry.getValue());
              sliceBlocks.addExternalBlock(contentId, externalBlock);
          }
      }
 
-    private ByteArrayOutputStream getCoreOuterOutputStream() { return bitBAOS; }
-
-    public Map<Integer, ByteArrayOutputStream> getOutputStreamMap() { return idToStream; }
-
-    // TODO: this should turn into a method that looks up a stream from an ID, to be used by the Data SeriesReader/Writer
-    public ByteArrayOutputStream getExternalOutputStream(final Integer contentID) { return idToStream.get(contentID); }
-
-    private void close() {
+    private void closeAllStreams() {
         try {
             getCoreOutputStream().close();
+            for (ByteArrayOutputStream baos : externalOutputStreams.values()) {
+                baos.close();
+            }
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
