@@ -21,8 +21,8 @@ import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.SliceBlocksReader;
-import htsjdk.samtools.cram.structure.SliceBlocksWriter;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
@@ -46,9 +46,9 @@ public class ExternalByteArrayEncoding extends CRAMEncoding<byte[]> {
     }
 
     @Override
-    public CRAMCodec<byte[]> buildCodec(final SliceBlocksReader sliceBlocksReader, final SliceBlocksWriter sliceBlocksWriter) {
-        final ByteArrayInputStream is = sliceBlocksReader == null ? null : sliceBlocksReader.getExternalInputStream(externalBlockContentId);
-        final ByteArrayOutputStream os = sliceBlocksWriter == null ? null : sliceBlocksWriter.getExternalOutputStream(externalBlockContentId);
+    public CRAMCodec<byte[]> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        final ByteArrayInputStream is = sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getExternalInputStream(externalBlockContentId);
+        final ByteArrayOutputStream os = sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getExternalOutputStream(externalBlockContentId);
         return new ExternalByteArrayCodec(is, os);
     }
 

@@ -18,17 +18,12 @@
 package htsjdk.samtools.cram.encoding.core.experimental;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.SliceBlocksReader;
-import htsjdk.samtools.cram.structure.SliceBlocksWriter;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 public class GolombRiceIntegerEncoding extends ExperimentalEncoding<Integer> {
     private final int offset;
@@ -59,10 +54,10 @@ public class GolombRiceIntegerEncoding extends ExperimentalEncoding<Integer> {
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final SliceBlocksReader sliceBlocksReader, final SliceBlocksWriter sliceBlocksWriter) {
+    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new GolombRiceIntegerCodec(
-                sliceBlocksReader == null ? null : sliceBlocksReader.getCoreBlockInputStream(),
-                sliceBlocksWriter == null ? null : sliceBlocksWriter.getCoreOutputStream(),
+                sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
+                sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
                 offset,
                 m);
     }

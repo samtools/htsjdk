@@ -68,7 +68,7 @@ public class CramRecordReader {
 
     private final Slice slice;
     private final CompressionHeader compressionHeader;
-    private final SliceBlocksReader sliceBlocksReader;
+    private final SliceBlocksReadStreams sliceBlocksReadStreams;
     protected final ValidationStringency validationStringency;
 
     private CramCompressionRecord prevRecord;
@@ -86,7 +86,7 @@ public class CramRecordReader {
         this.slice = slice;
         this.compressionHeader = slice.getCompressionHeader();
         this.validationStringency = validationStringency;
-        this.sliceBlocksReader = new SliceBlocksReader(slice.getSliceBlocks());
+        this.sliceBlocksReadStreams = new SliceBlocksReadStreams(slice.getSliceBlocks());
 
         bitFlagsCodec =                 createDataSeriesReader(DataSeries.BF_BitFlags);
         compressionBitFlagsCodec =      createDataSeriesReader(DataSeries.CF_CompressionBitFlags);
@@ -125,7 +125,7 @@ public class CramRecordReader {
         qualityScoreArrayCodec = new DataSeriesReader<>(
                 DataSeriesType.BYTE_ARRAY,
                 compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
-                sliceBlocksReader);
+                sliceBlocksReadStreams);
 
         tagValueCodecs = compressionHeader.tMap.entrySet()
                 .stream()
@@ -133,7 +133,7 @@ public class CramRecordReader {
                         mapEntry -> new DataSeriesReader<>(
                                 DataSeriesType.BYTE_ARRAY,
                                 mapEntry.getValue(),
-                                sliceBlocksReader)));
+                                sliceBlocksReadStreams)));
     }
 
     /**
@@ -314,7 +314,7 @@ public class CramRecordReader {
             return new DataSeriesReader<>(
                     dataSeries.getType(),
                     encodingParams,
-                    sliceBlocksReader);
+                    sliceBlocksReadStreams);
         } else {
             // NOTE: Not all CRAM implementations choose to use all data series. For example, the
             // htsjdk implementation doesn't use `BB` and `QQ`; other implementations may choose to
