@@ -126,7 +126,7 @@ public class Slice {
      * Construct this Slice by providing its {@link ReferenceContext}
      * @param refContext the reference context associated with this slice
      */
-    // TODO: remove this or set the comp header; this is only used in calls sites where the
+    // TODO: remove this constructor, or require it to set the comp header; this is only used in calls sites where the
     // comp header is irrelevant (ie. indexing) ?
     public Slice(final ReferenceContext refContext) {
         this.referenceContext = refContext;
@@ -380,12 +380,10 @@ public class Slice {
      * Uses a Multiple Reference Slice Alignment Reader to determine the Reference Spans of a Slice.
      * The intended use is for CRAI indexing.
      *
-     * @param header               the associated Cram Compression Header
      * @param validationStringency how strict to be when reading CRAM records
      */
-    public Map<ReferenceContext, AlignmentSpan> getMultiRefAlignmentSpans(final CompressionHeader header,
-                                                                          final ValidationStringency validationStringency) {
-        if (!header.isCoordinateSorted()) {
+    public Map<ReferenceContext, AlignmentSpan> getMultiRefAlignmentSpans(final ValidationStringency validationStringency) {
+        if (!compressionHeader.isCoordinateSorted()) {
             throw new IllegalStateException("Can't get multiref alignment spans for non-coordinate sorted inputs");
         }
         final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(
@@ -411,7 +409,7 @@ public class Slice {
         craiIndexInitializationCheck();
 
         if (referenceContext.isMultiRef()) {
-            final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(compressionHeader, ValidationStringency.DEFAULT_STRINGENCY);
+            final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
 
             return spans.entrySet().stream()
                     .map(e -> new CRAIEntry(e.getKey().getSerializableId(),
@@ -444,7 +442,6 @@ public class Slice {
      * @param compressionHeader the enclosing {@link Container}'s Compression Header
      * @return a Slice corresponding to the given records
      */
-    //TODO: this really only needs Slice(which has compression header) and records
     public static Slice buildSlice(final List<CramCompressionRecord> records,
                                    final CompressionHeader compressionHeader) {
         final Slice slice = initializeFromRecords(records, compressionHeader);

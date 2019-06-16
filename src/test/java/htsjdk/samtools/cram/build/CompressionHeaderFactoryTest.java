@@ -37,11 +37,11 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     public void testAP_delta() {
         boolean sorted = true;
         CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
-        Assert.assertEquals(header.APDelta, sorted);
+        Assert.assertEquals(header.isCoordinateSorted(), sorted);
 
         sorted = false;
         header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
-        Assert.assertEquals(header.APDelta, sorted);
+        Assert.assertEquals(header.isCoordinateSorted(), sorted);
     }
 
     @Test

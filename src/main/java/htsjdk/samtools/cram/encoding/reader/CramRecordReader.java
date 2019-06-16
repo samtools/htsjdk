@@ -29,6 +29,9 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * A reader used to consume encoded CramRecords from a set of Slice blocks.
+ */
 public class CramRecordReader {
     private final DataSeriesReader<Integer> bitFlagsCodec;
     private final DataSeriesReader<Integer> compressionBitFlagsCodec;
@@ -64,6 +67,7 @@ public class CramRecordReader {
     private final Charset charset = Charset.forName("UTF8");
 
     private final Slice slice;
+    private final CompressionHeader compressionHeader;
     private final SliceBlocksReader sliceBlocksReader;
     protected final ValidationStringency validationStringency;
 
@@ -80,6 +84,7 @@ public class CramRecordReader {
      */
     public CramRecordReader(final Slice slice, final ValidationStringency validationStringency) {
         this.slice = slice;
+        this.compressionHeader = slice.getCompressionHeader();
         this.validationStringency = validationStringency;
         this.sliceBlocksReader = new SliceBlocksReader(slice.getSliceBlocks());
 
@@ -113,16 +118,16 @@ public class CramRecordReader {
         scoresCodec =                   createDataSeriesReader(DataSeries.QQ_scores);
 
         // special case: re-encodes QS as a byte array
-        // This appears to split the QS_QualityScore series into a second  codec that uses BYTE_ARRAY so that arrays of
+        // This appears to split the QS_QualityScore series into a second codec that uses BYTE_ARRAY so that arrays of
         // scores are read from an EXTERNAL block ?
         // We can't call compressionHeader.createDataReader here because it uses the default encoding params for
         // the QS_QualityScore data series, which is BYTE, not BYTE_ARRAY
         qualityScoreArrayCodec = new DataSeriesReader<>(
                 DataSeriesType.BYTE_ARRAY,
-                getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
+                compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksReader);
 
-        tagValueCodecs = slice.getCompressionHeader().tMap.entrySet()
+        tagValueCodecs = compressionHeader.tMap.entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         mapEntry -> new DataSeriesReader<>(
@@ -150,7 +155,7 @@ public class CramRecordReader {
             }
 
             cramRecord.readLength = readLengthCodec.readData();
-            if (slice.getCompressionHeader().APDelta) {
+            if (compressionHeader.isCoordinateSorted()) {
                 cramRecord.alignmentStart = prevAlignmentStart + alignmentStartCodec.readData();
             } else {
                 cramRecord.alignmentStart = alignmentStartCodec.readData();
@@ -158,14 +163,14 @@ public class CramRecordReader {
 
             cramRecord.readGroupID = readGroupCodec.readData();
 
-            if (slice.getCompressionHeader().readNamesIncluded) {
+            if (compressionHeader.readNamesIncluded) {
                 cramRecord.readName = new String(readNameCodec.readData(), charset);
             }
 
             // mate record:
             if (cramRecord.isDetached()) {
                 cramRecord.mateFlags = mateBitFlagCodec.readData();
-                if (!slice.getCompressionHeader().readNamesIncluded) {
+                if (!compressionHeader.readNamesIncluded) {
                     cramRecord.readName = new String(readNameCodec.readData(), charset);
                 }
 
@@ -177,7 +182,7 @@ public class CramRecordReader {
             }
 
             final Integer tagIdList = tagIdListCodec.readData();
-            final byte[][] ids = slice.getCompressionHeader().dictionary[tagIdList];
+            final byte[][] ids = compressionHeader.dictionary[tagIdList];
             if (ids.length > 0) {
                 final int tagCount = ids.length;
                 cramRecord.tags = new ReadTag[tagCount];
@@ -303,19 +308,17 @@ public class CramRecordReader {
         return cramRecord.alignmentStart;
     }
 
-    private EncodingParams getEncodingParamsForDataSeries(final DataSeries dataSeries) {
-        return slice.getCompressionHeader().getEncodingMap().getEncodingParamsForDataSeries(dataSeries);
-    }
-
     private <T> DataSeriesReader<T> createDataSeriesReader(final DataSeries dataSeries) {
-        final EncodingParams encodingParams = getEncodingParamsForDataSeries(dataSeries);
+        final EncodingParams encodingParams = compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(dataSeries);
         if (encodingParams != null) {
             return new DataSeriesReader<>(
                     dataSeries.getType(),
                     encodingParams,
                     sliceBlocksReader);
         } else {
-            //TODO: in what cases is it ok to return null ???
+            // NOTE: Not all CRAM implementations choose to use all data series. For example, the
+            // htsjdk implementation doesn't use `BB` and `QQ`; other implementations may choose to
+            // omit other data series, so its ok to return null.
             return null;
         }
     }

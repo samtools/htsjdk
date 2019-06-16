@@ -16,11 +16,9 @@
 package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 
-import java.io.ByteArrayInputStream;
 import java.util.*;
 
 /**
@@ -39,6 +37,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
      * Initializes a Multiple Reference Sequence ID Reader.
      * The intended use is for CRAI indexing.
      *
+     * @param slice                 target slice from which to retrieve spans
      * @param validationStringency  how strict to be when reading this CRAM record
      * @param initialAlignmentStart the alignmentStart used for initial calculation of spans
      * @param recordCount           the number of CRAM records to read

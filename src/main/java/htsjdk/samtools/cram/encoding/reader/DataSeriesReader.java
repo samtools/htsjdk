@@ -21,7 +21,6 @@ import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
-import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.structure.EncodingParams;
 import htsjdk.samtools.cram.structure.SliceBlocksReader;
 
@@ -45,7 +44,7 @@ public class DataSeriesReader<T> {
      */
     public DataSeriesReader(final DataSeriesType valueType,
                             final EncodingParams params,
-                            SliceBlocksReader sliceBlocksReader) {
+                            final SliceBlocksReader sliceBlocksReader) {
 
         final CRAMEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
