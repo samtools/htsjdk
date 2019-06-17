@@ -231,16 +231,17 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             rec.setReferenceIndex(contig);
             rec.setAlignmentStart(start);
         }
-        if (!recordUnmapped) {
+        rec.setReadUnmappedFlag(recordUnmapped);
+        if (recordUnmapped) {
+            rec.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
+        } else {
             rec.setReadNegativeStrandFlag(negativeStrand);
             if (null != cigar) {
                 rec.setCigarString(cigar);
             } else if (!rec.getReadUnmappedFlag()) {
                 rec.setCigarString(readLength + "M");
             }
-            rec.setMappingQuality(255);
-        } else {
-            rec.setReadUnmappedFlag(true);
+            rec.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
         }
         rec.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
 
@@ -371,7 +372,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         if (useNmFlag) {
             end1.setAttribute(ReservedTagConstants.NM, 0);
         }
-        end1.setMappingQuality(255);
+        end1.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
         end1.setReadPairedFlag(true);
         end1.setProperPairFlag(true);
         end1.setFirstOfPairFlag(end1IsFirstOfPair);
@@ -393,7 +394,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         if (useNmFlag) {
             end2.setAttribute(ReservedTagConstants.NM, 0);
         }
-        end2.setMappingQuality(255);
+        end2.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
         end2.setReadPairedFlag(true);
         end2.setProperPairFlag(true);
         end2.setFirstOfPairFlag(!end1IsFirstOfPair);
