@@ -1268,7 +1268,13 @@ public final class SAMUtils {
         return sequence.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
     }
 
-    public static String calculateOATagValue(SAMRecord record){
+    /**
+     * Function to create the OA tag value from a record. The OA tag contains the mapping information
+     * of a record encoded as a comma-separated string (REF,POS,STRAND,CIGAR,MAPPING_QUALITY,NM_TAG_VALUE)
+     * @param record to use for generating the OA tag
+     * @return the OA tag string value
+     */
+    public static String calculateOATagValue(SAMRecord record) {
         if (record.getReferenceName().contains(",")) {
             throw new SAMException(String.format("Reference name for record %s contains a comma character.", record.getReadName()));
         }
