@@ -23,9 +23,18 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private long lastStartTime = -1;
     private String lastChrom = null;
     private int lastPos = 0;
+    private int countSinceLog = 0;
     private String lastReadName = null;
     private long countNonIncreasing = 0;
+
     final static private long PRINT_READ_NAME_THRESHOLD = 1000;
+
+    public void setMinUpdateTime(final long minUpdateTime) {
+        this.minUpdateTime = minUpdateTime;
+    }
+
+    // minimum time in seconds between subsequent log events
+    private long minUpdateTime = 30;
 
     /**
      * Construct an AbstractProgressLogger.
@@ -72,9 +81,9 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
             rnInfo = "";
         }
 
-        final long n = (this.processed % this.n == 0) ? this.n : this.processed % this.n;
+       // final long n = (this.processed % this.n == 0) ? this.n : this.processed % this.n;
 
-        log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(n),
+        log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(countSinceLog),
                 ": ", period, "s.  Last read position: ", readInfo, rnInfo);
     }
 
@@ -106,7 +115,8 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         if (lastStartTime == -1) {
             lastStartTime = System.currentTimeMillis();
         }
-        if (++processed % n == 0) {
+        countSinceLog++;
+        if (++processed % n == 0 && (System.currentTimeMillis() - lastPos)/1000 > minUpdateTime) {
             record();
             return true;
         } else {
@@ -152,6 +162,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     public synchronized void reset() {
         startTime = System.currentTimeMillis();
         processed = 0;
+        this.countSinceLog = 0;
         // Set to -1 until the first record is added
         lastStartTime = -1;
         lastChrom = null;
