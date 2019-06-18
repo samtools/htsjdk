@@ -31,11 +31,13 @@ import htsjdk.tribble.TribbleException;
  * information that identifies each header version
  */
 public enum VCFHeaderVersion {
-    VCF3_2("VCRv3.2","format"),
-    VCF3_3("VCFv3.3","fileformat"),
-    VCF4_0("VCFv4.0","fileformat"),
-    VCF4_1("VCFv4.1","fileformat"),
-    VCF4_2("VCFv4.2","fileformat");
+    // Keep this list in increasing (ordinal) order, since isAtLeastAsRecentAs depends on it
+    VCF3_2("VCRv3.2", "format"),
+    VCF3_3("VCFv3.3", "fileformat"),
+    VCF4_0("VCFv4.0", "fileformat"),
+    VCF4_1("VCFv4.1", "fileformat"),
+    VCF4_2("VCFv4.2", "fileformat"),
+    VCF4_3("VCFv4.3", "fileformat");
 
     private final String versionString;
     private final String formatString;
@@ -113,19 +115,7 @@ public enum VCFHeaderVersion {
      * @return true if this version is at least as recent as the target version, false otherwise
      */
     public boolean isAtLeastAsRecentAs(final VCFHeaderVersion target) {
-        switch (target) {
-            case VCF4_2:
-                return this == VCF4_2;
-            case VCF4_1:
-                return this == VCF4_1 || this == VCF4_2;
-            case VCF4_0:
-                return this != VCF3_2 && this != VCF3_3;
-            case VCF3_3:
-                return this != VCF3_2;
-            case VCF3_2:
-            default:
-                return true;
-        }
+        return this.ordinal() >= target.ordinal();
     }
 
     public String getVersionString() {

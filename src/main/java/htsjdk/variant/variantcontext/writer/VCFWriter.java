@@ -173,6 +173,8 @@ class VCFWriter extends IndexingVariantContextWriter {
                                         final String streamNameForError) {
 
         try {
+            rejectVCFV43Headers(header);
+
             // the file format field needs to be written first
             writer.write(versionLine + "\n");
 
@@ -258,10 +260,21 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void setHeader(final VCFHeader header) {
+        rejectVCFV43Headers(header);
+
         if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
         this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
+    }
+
+    // writing vcf v4.3 is not implemented
+    private static void rejectVCFV43Headers(final VCFHeader targetHeader) {
+        if (targetHeader.getVCFHeaderVersion() != null && targetHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            throw new IllegalArgumentException(String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
+        }
+
+
     }
 }

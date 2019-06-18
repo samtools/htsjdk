@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMValidationError.Type;
 import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -55,8 +56,6 @@ public class SAMTextHeaderCodec {
     private String mSource;
     private List<SAMSequenceRecord> sequences;
     private List<SAMReadGroupRecord> readGroups;
-    // Accumulate header while reading it from input.
-    private final StringBuilder textHeader = new StringBuilder();
 
     // For error reporting when parsing
     private ValidationStringency validationStringency = ValidationStringency.SILENT;
@@ -124,23 +123,14 @@ public class SAMTextHeaderCodec {
         mFileHeader.setSequenceDictionary(new SAMSequenceDictionary(sequences));
         mFileHeader.setReadGroups(readGroups);
 
-        // Only store the header text if there was a parsing error or the it's less than 1MB on disk / 2MB in mem
-        if (!mFileHeader.getValidationErrors().isEmpty() || textHeader.length() < (1024 * 1024)) {
-            mFileHeader.setTextHeader(textHeader.toString());
-        }
-
         SAMUtils.processValidationErrors(mFileHeader.getValidationErrors(), -1, validationStringency);
         return mFileHeader;
     }
 
     private String advanceLine() {
         final int nextChar = mReader.peek();
-        if (nextChar != '@') {
-            return null;
-        }
-        mCurrentLine = mReader.readLine();
-        textHeader.append(mCurrentLine).append('\n');
-        return mCurrentLine;
+        this.mCurrentLine = (nextChar == '@') ? mReader.readLine() : null;
+        return this.mCurrentLine;
     }
 
     /**

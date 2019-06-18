@@ -30,6 +30,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -109,6 +110,7 @@ public class VariantContextWriterBuilder {
     public static final EnumSet<Options> DEFAULT_OPTIONS = EnumSet.of(Options.INDEX_ON_THE_FLY);
     public static final EnumSet<Options> NO_OPTIONS = EnumSet.noneOf(Options.class);
     private static final OpenOption[] EMPTY_OPEN_OPTION_ARRAY = new OpenOption[0];
+    private static final Log log = Log.getInstance(VariantContextWriter.class);
 
     public enum OutputType {
         UNSPECIFIED,
@@ -483,14 +485,18 @@ public class VariantContextWriterBuilder {
                 writer = createBCFWriter(outPath, outStreamFromFile);
                 break;
             case VCF_STREAM:
-                if (options.contains(Options.INDEX_ON_THE_FLY))
-                    throw new IllegalArgumentException("VCF index creation not supported for stream output.");
+                if (options.contains(Options.INDEX_ON_THE_FLY)) {
+                    log.warn("VCF index creation not supported for stream output, index will not be created");
+                    options.remove(Options.INDEX_ON_THE_FLY);
+                }
 
                 writer = createVCFWriter(null, outStreamFromFile);
                 break;
             case BCF_STREAM:
-                if (options.contains(Options.INDEX_ON_THE_FLY))
-                    throw new IllegalArgumentException("BCF index creation not supported for stream output.");
+                if (options.contains(Options.INDEX_ON_THE_FLY)) {
+                    log.warn("BCF index creation not supported for stream output, index will not be created");
+                    options.remove(Options.INDEX_ON_THE_FLY);
+                }
 
                 writer = createBCFWriter(null, outStream);
                 break;

@@ -21,10 +21,7 @@ import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.*;
 import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
-import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
-import htsjdk.samtools.cram.encoding.external.ExternalByteArrayEncoding;
-import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;
-import htsjdk.samtools.cram.encoding.external.ExternalIntegerEncoding;
+import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
@@ -80,36 +77,36 @@ public class CompressionHeaderFactory {
 
         final CompressionHeaderBuilder builder = new CompressionHeaderBuilder(coordinateSorted);
 
-        builder.addExternalIntegerRansOrderZeroEncoding(DataSeries.AP_AlignmentPositionOffset);
-        builder.addExternalByteRansOrderOneEncoding(DataSeries.BA_Base);
+        builder.addExternalRansOrderZeroEncoding(DataSeries.AP_AlignmentPositionOffset);
+        builder.addExternalRansOrderOneEncoding(DataSeries.BA_Base);
         // BB is not used
-        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.BF_BitFlags);
-        builder.addExternalByteGzipEncoding(DataSeries.BS_BaseSubstitutionCode);
-        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.CF_CompressionBitFlags);
-        builder.addExternalIntegerGzipEncoding(DataSeries.DL_DeletionLength);
-        builder.addExternalByteGzipEncoding(DataSeries.FC_FeatureCode);
-        builder.addExternalIntegerGzipEncoding(DataSeries.FN_NumberOfReadFeatures);
-        builder.addExternalIntegerGzipEncoding(DataSeries.FP_FeaturePosition);
-        builder.addExternalIntegerGzipEncoding(DataSeries.HC_HardClip);
+        builder.addExternalRansOrderOneEncoding(DataSeries.BF_BitFlags);
+        builder.addExternalGzipEncoding(DataSeries.BS_BaseSubstitutionCode);
+        builder.addExternalRansOrderOneEncoding(DataSeries.CF_CompressionBitFlags);
+        builder.addExternalGzipEncoding(DataSeries.DL_DeletionLength);
+        builder.addExternalGzipEncoding(DataSeries.FC_FeatureCode);
+        builder.addExternalGzipEncoding(DataSeries.FN_NumberOfReadFeatures);
+        builder.addExternalGzipEncoding(DataSeries.FP_FeaturePosition);
+        builder.addExternalGzipEncoding(DataSeries.HC_HardClip);
         builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.IN_Insertion);
-        builder.addExternalIntegerGzipEncoding(DataSeries.MF_MateBitFlags);
-        builder.addExternalIntegerGzipEncoding(DataSeries.MQ_MappingQualityScore);
-        builder.addExternalIntegerGzipEncoding(DataSeries.NF_RecordsToNextFragment);
-        builder.addExternalIntegerGzipEncoding(DataSeries.NP_NextFragmentAlignmentStart);
-        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.NS_NextFragmentReferenceSequenceID);
-        builder.addExternalIntegerGzipEncoding(DataSeries.PD_padding);
+        builder.addExternalGzipEncoding(DataSeries.MF_MateBitFlags);
+        builder.addExternalGzipEncoding(DataSeries.MQ_MappingQualityScore);
+        builder.addExternalGzipEncoding(DataSeries.NF_RecordsToNextFragment);
+        builder.addExternalGzipEncoding(DataSeries.NP_NextFragmentAlignmentStart);
+        builder.addExternalRansOrderOneEncoding(DataSeries.NS_NextFragmentReferenceSequenceID);
+        builder.addExternalGzipEncoding(DataSeries.PD_padding);
         // QQ is not used
-        builder.addExternalByteRansOrderOneEncoding(DataSeries.QS_QualityScore);
-        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.RG_ReadGroup);
-        builder.addExternalIntegerRansOrderZeroEncoding(DataSeries.RI_RefId);
-        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.RL_ReadLength);
+        builder.addExternalRansOrderOneEncoding(DataSeries.QS_QualityScore);
+        builder.addExternalRansOrderOneEncoding(DataSeries.RG_ReadGroup);
+        builder.addExternalRansOrderZeroEncoding(DataSeries.RI_RefId);
+        builder.addExternalRansOrderOneEncoding(DataSeries.RL_ReadLength);
         builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.RN_ReadName);
-        builder.addExternalIntegerGzipEncoding(DataSeries.RS_RefSkip);
+        builder.addExternalGzipEncoding(DataSeries.RS_RefSkip);
         builder.addExternalByteArrayStopTabGzipEncoding(DataSeries.SC_SoftClip);
-        builder.addExternalIntegerGzipEncoding(DataSeries.TC_TagCount);
-        builder.addExternalIntegerEncoding(DataSeries.TL_TagIdList, ExternalCompressor.createGZIP());
-        builder.addExternalIntegerGzipEncoding(DataSeries.TN_TagNameAndType);
-        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.TS_InsertSize);
+        builder.addExternalGzipEncoding(DataSeries.TC_TagCount);
+        builder.addExternalGzipEncoding(DataSeries.TL_TagIdList);
+        builder.addExternalGzipEncoding(DataSeries.TN_TagNameAndType);
+        builder.addExternalRansOrderOneEncoding(DataSeries.TS_InsertSize);
 
         builder.setTagIdDictionary(buildTagIdDictionary(records));
 
@@ -512,36 +509,23 @@ public class CompressionHeaderFactory {
                     ExternalCompressor.createGZIP());
         }
 
-        private void addExternalIntegerEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
-            addExternalEncoding(dataSeries,
-                    new ExternalIntegerEncoding(dataSeries.getExternalBlockContentId()).toParam(),
-                    compressor);
+        private void addExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
+            // we need a concrete type; the choice of Byte is arbitrary.
+            // params are equal for all External Encoding value types
+            final EncodingParams params = new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam();
+            addExternalEncoding(dataSeries, params, compressor);
         }
 
-        private void addExternalIntegerGzipEncoding(final DataSeries dataSeries) {
-            addExternalEncoding(dataSeries,
-                    new ExternalIntegerEncoding(dataSeries.getExternalBlockContentId()).toParam(),
-                    ExternalCompressor.createGZIP());
+        private void addExternalGzipEncoding(final DataSeries dataSeries) {
+            addExternalEncoding(dataSeries, ExternalCompressor.createGZIP());
         }
 
-        private void addExternalByteGzipEncoding(final DataSeries dataSeries) {
-            addExternalEncoding(dataSeries,
-                    new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam(),
-                    ExternalCompressor.createGZIP());
+        private void addExternalRansOrderOneEncoding(final DataSeries dataSeries) {
+            addExternalEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ONE));
         }
 
-        private void addExternalByteRansOrderOneEncoding(final DataSeries dataSeries) {
-            addExternalEncoding(dataSeries,
-                    new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam(),
-                    ExternalCompressor.createRANS(RANS.ORDER.ONE));
-        }
-
-        private void addExternalIntegerRansOrderOneEncoding(final DataSeries dataSeries) {
-            addExternalIntegerEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ONE));
-        }
-
-        private void addExternalIntegerRansOrderZeroEncoding(final DataSeries dataSeries) {
-            addExternalIntegerEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
+        private void addExternalRansOrderZeroEncoding(final DataSeries dataSeries) {
+            addExternalEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
         }
 
         void addTagEncoding(final int tagId, final EncodingDetails encodingDetails) {

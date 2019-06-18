@@ -59,9 +59,9 @@ public class VCFStandardHeaderLines {
      * Walks over the VCF header and repairs the standard VCF header lines in it, returning a freshly
      * allocated {@link VCFHeader} with standard VCF header lines repaired as necessary.
      */
-    public static VCFHeader repairStandardHeaderLines(final VCFHeader header) {
-        final Set<VCFHeaderLine> newLines = new LinkedHashSet<VCFHeaderLine>(header.getMetaDataInInputOrder().size());
-        for ( VCFHeaderLine line : header.getMetaDataInInputOrder() ) {
+    public static VCFHeader repairStandardHeaderLines(final VCFHeader oldHeader) {
+        final Set<VCFHeaderLine> newLines = new LinkedHashSet<VCFHeaderLine>(oldHeader.getMetaDataInInputOrder().size());
+        for ( VCFHeaderLine line : oldHeader.getMetaDataInInputOrder() ) {
             if ( line instanceof VCFFormatHeaderLine ) {
                 line = formatStandards.repair((VCFFormatHeaderLine) line);
             } else if ( line instanceof VCFInfoHeaderLine) {
@@ -71,7 +71,14 @@ public class VCFStandardHeaderLines {
             newLines.add(line);
         }
 
-        return new VCFHeader(newLines, header.getGenotypeSamples());
+        final VCFHeader repairedHeader = new VCFHeader(newLines, oldHeader.getGenotypeSamples());
+        final VCFHeaderVersion oldHeaderVersion = oldHeader.getVCFHeaderVersion();
+        if (oldHeaderVersion != null && oldHeaderVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            // this needs to maintain version 4.3 (and not back-version to v4.2), so propagate
+            // the old version only for v4.3
+            repairedHeader.setVCFHeaderVersion(oldHeaderVersion);
+        }
+        return repairedHeader;
     }
 
     /**

@@ -42,8 +42,9 @@ import java.util.regex.Pattern;
 public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Cloneable
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
+    public final static int UNAVAILABLE_SEQUENCE_INDEX = -1;
     private final String mSequenceName; // Value must be interned() if it's ever set/modified
-    private int mSequenceIndex = -1;
+    private int mSequenceIndex = UNAVAILABLE_SEQUENCE_INDEX;
     private int mSequenceLength = 0;
     public static final String SEQUENCE_NAME_TAG = "SN";
     public static final String SEQUENCE_LENGTH_TAG = "LN";
@@ -196,7 +197,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         int truncateAt = sequenceName.length();
         for (final char c : WHITESPACE_CHARS) {
             int index = sequenceName.indexOf(c);
-            if (index != -1 && index < truncateAt) {
+            if (index != UNAVAILABLE_SEQUENCE_INDEX && index < truncateAt) {
                 truncateAt = index;
             }
         }

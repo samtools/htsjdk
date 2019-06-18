@@ -243,7 +243,7 @@ public class GenotypeLikelihoods {
     }
 
     private final static double[] parsePLsIntoLikelihoods(String likelihoodsAsString_PLs) {
-        if ( !likelihoodsAsString_PLs.equals(VCFConstants.MISSING_VALUE_v4) ) {
+        if ( likelihoodsAsString_PLs != null && !likelihoodsAsString_PLs.equals(VCFConstants.MISSING_VALUE_v4) ) {
             String[] strings = likelihoodsAsString_PLs.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
             try {
@@ -267,10 +267,22 @@ public class GenotypeLikelihoods {
         if ( !GLString.equals(VCFConstants.MISSING_VALUE_v4) ) {
             String[] strings = GLString.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
+            int missing = 0;
             for ( int i = 0; i < strings.length; i++ ) {
-                likelihoodsAsVector[i] = VCFUtils.parseDoubleAccordingToVcfSpec(strings[i]);
+                likelihoodsAsVector[i] =
+                if (strings[i].equals(VCFConstants.MISSING_VALUE_v4)) {
+                  missing++;
+                } else {
+                  likelihoodsAsVector[i] = VCFUtils.parseDoubleAccordingToVcfSpec(strings[i]);
+                }
             }
-            return likelihoodsAsVector;
+            if (missing == 0) {
+              return likelihoodsAsVector;
+            } else if (likelihoodsAsVector.length == missing) {
+              return null; // array of missing values 
+            } else {
+              throw new TribbleException("partial missing values for GL field");
+            }
         }
 
         return null;

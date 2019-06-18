@@ -64,8 +64,8 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         this.index = index;
         IOUtil.assertFileIsReadable(path);
         reset();
-        if(getSequenceDictionary() != null) {
-            sanityCheckDictionaryAgainstIndex(path.toAbsolutePath().toString(),sequenceDictionary,index);
+        if (getSequenceDictionary() != null) {
+            sanityCheckDictionaryAgainstIndex(path.toAbsolutePath().toString(), getSequenceDictionary(), index);
         }
     }
 

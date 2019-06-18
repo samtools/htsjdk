@@ -16,7 +16,7 @@ common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
 sequencing data.  There are also an number of useful utilities for 
 manipulating HTS data.
 
-> **NOTE: _HTSJDK does not currently support the latest Variant Call Format Specification (VCFv4.3 and BCFv2.2)._**
+> **NOTE: _HTSJDK has only partial support for the latest Variant Call Format Specification.  VCFv4.3 can be read but not written and there is no support for BCFv2.2_**
 
 ### Documentation & Getting Help
 
