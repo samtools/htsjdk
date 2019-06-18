@@ -68,17 +68,29 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertEquals(variant.getGenotype(0).getPL(), new int[]{45, 0, 50});
     }
 
-    @Test
-    public void testLowerCaseQualNan() {
-        try (final VCFFileReader reader = new VCFFileReader(
-                new File("src/test/resources/htsjdk/variant/test_withNanQual.vcf"), false)) {
-            Iterator<VariantContext> iterator = reader.iterator();
-            final VariantContext baseVariant = iterator.next(); // First row uses Java-style NaN
-            iterator.forEachRemaining(v -> {
-                // Following rows use lower-case nan
-                Assert.assertEquals(baseVariant.getPhredScaledQual(), v.getPhredScaledQual());
-                Assert.assertEquals(baseVariant.getGenotype(0).getGQ(), v.getGenotype(0).getGQ());
-            });
+    @DataProvider(name = "caseIntolerantDoubles")
+    public Object[][] getCaseIntolerantDoubles() {
+        return new Object[][]{
+                {"src/test/resources/htsjdk/variant/test_withNanQual.vcf", Double.NaN},
+                {"src/test/resources/htsjdk/variant/test_withPosInfQual.vcf", Double.POSITIVE_INFINITY},
+                {"src/test/resources/htsjdk/variant/test_withNegInfQual.vcf", Double.NEGATIVE_INFINITY},
+        };
+    }
+
+    @Test(dataProvider = "caseIntolerantDoubles")
+    public void testCaseIntolerantDoubles(String vcfInput, Double value) {
+        try (final VCFFileReader reader = new VCFFileReader(new File(vcfInput), false)) {
+            try {
+                Iterator<VariantContext> iterator = reader.iterator();
+                final VariantContext baseVariant = iterator.next(); // First row uses Java-style
+                Assert.assertEquals(baseVariant.getPhredScaledQual(), value);
+                iterator.forEachRemaining(v -> {
+                    Assert.assertEquals(baseVariant.getPhredScaledQual(), v.getPhredScaledQual());
+                    Assert.assertEquals(baseVariant.getGenotype(0).getGQ(), v.getGenotype(0).getGQ());
+                });
+            } catch (TribbleException e) {
+                Assert.assertEquals(value, Double.NEGATIVE_INFINITY); // QUAL cannot be negative
+            }
         }
     }
 }

@@ -29,11 +29,7 @@ import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
-import htsjdk.variant.vcf.VCFCompoundHeaderLine;
-import htsjdk.variant.vcf.VCFConstants;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLineCount;
-import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -1629,7 +1625,7 @@ public class VariantContext implements Feature, Serializable {
                         return b;
                     case String:    return string;
                     case Integer:   return Integer.valueOf(string);
-                    case Float:     return Double.parseDouble(string);
+                    case Float:     return VCFUtils.parseDoubleAccordingToVcfSpec(string);
                     default: throw new TribbleException("Unexpected type for field" + field);
                 }
             }

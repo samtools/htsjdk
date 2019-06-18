@@ -269,7 +269,6 @@ public class GenotypeLikelihoods {
             double[] likelihoodsAsVector = new double[strings.length];
             int missing = 0;
             for ( int i = 0; i < strings.length; i++ ) {
-                likelihoodsAsVector[i] =
                 if (strings[i].equals(VCFConstants.MISSING_VALUE_v4)) {
                   missing++;
                 } else {

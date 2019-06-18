@@ -37,9 +37,13 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class VCFUtils {
+
+    private static Pattern infOrNanPattern = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
 
     public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
         // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
@@ -255,9 +259,24 @@ public class VCFUtils {
      */
     public static double parseDoubleAccordingToVcfSpec(final String str) {
         try {
-            return Double.valueOf(str);
+            return Double.parseDouble(str);
         } catch (NumberFormatException e) {
-            return Double.valueOf(str.replaceAll("[nN][aA][nN]", "NaN"));
+            final Matcher matcher = infOrNanPattern.matcher(str);
+            if (matcher.matches()) {
+                final double ret;
+                if (matcher.group("inf") == null) {
+                    ret = Double.NaN;
+                } else {
+                    if (matcher.group("sign").equals("-")) {
+                        ret = Double.NEGATIVE_INFINITY;
+                    } else {
+                        ret = Double.POSITIVE_INFINITY;
+                    }
+                }
+                return ret;
+            } else {
+                throw e;
+            }
         }
     }
 
