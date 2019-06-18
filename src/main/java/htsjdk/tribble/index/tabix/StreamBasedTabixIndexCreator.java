@@ -34,7 +34,7 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.List;
 
-public class StreamBasedTabixIndexCreator extends TabixIndexCreator {
+public class StreamBasedTabixIndexCreator extends AllRefsTabixIndexCreator {
 
   static class StreamBasedTabixIndex extends TabixIndex {
     private final OutputStream out;
