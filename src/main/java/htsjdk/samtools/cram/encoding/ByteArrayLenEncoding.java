@@ -28,6 +28,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * NOTE: this encoding is a hybrid encoding in that it splits it's data between the core block
+ * (where it stores the byte array length), and an external block (where it stores the actual
+ * bytes). This has implications for data access, since some of it's data is interleaved with
+ * other data in the core block.
+ */
 public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
     private final CRAMEncoding<Integer> lenEncoding;
     private final CRAMEncoding<byte[]> byteEncoding;

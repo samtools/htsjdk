@@ -96,11 +96,11 @@ public class ContainerIO {
             return container;
         }
 
-        container.compressionHeader = CompressionHeader.read(major, inputStream);
+        container.compressionHeader = new CompressionHeader(major, inputStream);
 
         final ArrayList<Slice> slices = new ArrayList<>();
         for (int sliceCounter = 0; sliceCounter < container.landmarks.length; sliceCounter++) {
-            slices.add(SliceIO.read(major, container.compressionHeader,inputStream));
+            slices.add(SliceIO.read(major, container.compressionHeader, inputStream));
         }
 
         container.setSlicesAndByteOffset(slices, containerByteOffset);
@@ -140,7 +140,7 @@ public class ContainerIO {
             // 1 Core Data Block per Slice
             container.blockCount++;
             // TODO: should we count the embedded reference block as an additional block?
-            if (slice.embeddedRefBlock != null) container.blockCount++;
+            if (slice.getEmbeddedReferenceBlock() != null) container.blockCount++;
             // Each Slice has a variable number of External Data Blocks
             container.blockCount += slice.getSliceBlocks().getNumberOfExternalBlocks();
         }

@@ -13,19 +13,25 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
- * CRAM encoding map (EncodingParams for each Data Series, and compressors for each integer ContentID) for a single
- * CRAM container compression header.
+ * CRAM encoding map (EncodingParams for each Data Series, and compressors for each integer ContentID)
+ * for a single CRAM container compression header.
  *
  * There are two constructors; one populates the map using the encodings chosen by this (htsjdk)
  * implementation, for use writing a CRAM, and one populates the map from a serialized
- * CompressionHeader stream when reading a CRAM, resulting in encodings choden by the implementation
+ * CompressionHeader stream when reading a CRAM, resulting in encodings chosen by the implementation
  * that wrote that CRAM.
  *
  * Although the CRAM spec defines a fixed list of data series, individual CRAM implementations
  * may choose to use only a subset of these. Therefore, the actual set of encodings that are
  * instantiated can vary depending on the source.
  *
- * NOTE: This implementation does not use the 'BB' or 'QQ' encodings when writing CRAM.
+ * Notes on the CRAM write implementation: This implementation encodes ALL DataSeries to external blocks,
+ * (although some of the external encodings split the data between core and external; see
+ * {@link htsjdk.samtools.cram.encoding.ByteArrayLenEncoding}, and does not use the 'BB' or 'QQ'
+ * DataSeries when writing CRAM at all.
+ *
+ * See {@link htsjdk.samtools.cram.encoding.EncodingFactory} for details on how the encodings defined
+ * here are mapped to the codecs that actually distribute the data to underlying blocks.
  */
 public class CompressionHeaderEncodingMap {
 
@@ -41,6 +47,9 @@ public class CompressionHeaderEncodingMap {
      * Constructor used to create an encoding map for writing CRAMs
      */
     public CompressionHeaderEncodingMap() {
+        // NOTE: all of these encodings use external blocks and compressors for actual CRAM
+        // data. The only use of the core encodings are is encoding params for other (external)
+        // encodings, i.e., ByteArrayLenEncoding uses the core blocks to store the
         addExternalRansOrderZeroEncoding(DataSeries.AP_AlignmentPositionOffset);
         addExternalRansOrderOneEncoding(DataSeries.BA_Base);
         // the BB data series is not used by this implementation when writing CRAMs
@@ -108,7 +117,7 @@ public class CompressionHeaderEncodingMap {
     }
 
     /**
-     * Get the encodong params that should be sued for a given DataSeries.
+     * Get the encodong params that should be used for a given DataSeries.
      * @param dataSeries
      * @return EncodingParams for the DataSeries
      */
@@ -188,7 +197,10 @@ public class CompressionHeaderEncodingMap {
                 ExternalCompressor.createGZIP());
     }
 
-    private void addExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
+    // Visible for testing, because without this we have no way to unit test round tripping an
+    // encoding map that contains the handful of data series that htsjdk generally doesn't use
+    // when writing, since there is no code add those data series to the map.
+    void addExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
         // we need a concrete type; the choice of Byte is arbitrary.
         // params are equal for all External Encoding value types
         final EncodingParams params = new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam();

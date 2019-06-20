@@ -153,6 +153,7 @@ public class CRAMIterator implements SAMRecordIterator {
         else
             cramRecords.clear();
 
+        // TODO: getRecords should (and does) return a list, so there is no need to manage one in this code
         parser.getRecords(container, cramRecords, validationStringency);
 
         final ReferenceContext containerContext = container.getReferenceContext();

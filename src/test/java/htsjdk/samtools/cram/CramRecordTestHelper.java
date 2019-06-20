@@ -35,6 +35,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         record1.mateAlignmentStart = 30;
         record1.mappingQuality = 30;
         record1.sequenceName = "SEQNAME";
+        record1.readName = "record1";
         record1.sequenceId = 3;
         record1.templateSize = 60;
         record1.sliceIndex = 7;
@@ -51,6 +52,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         record2.mateAlignmentStart = 3;
         record2.mappingQuality = 15;
         record2.sequenceName = "SEQNAME2";
+        record2.readName = "record2";
         record2.sequenceId = 1;
         record2.templateSize = 30;
         record2.sliceIndex = 0;
@@ -67,6 +69,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         record3.mateAlignmentStart = 20;
         record3.mappingQuality = 20;
         record3.sequenceName = "SEQNAME3";
+        record3.readName = "record3";
         record3.sequenceId = 10;
         record3.templateSize = 200;
         record3.sliceIndex = 1;
@@ -83,6 +86,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         record4.mateAlignmentStart = 11;
         record4.mappingQuality = 50;
         record4.sequenceName = "SEQNAME4";
+        record4.readName = "record4";
         record4.sequenceId = 0;
         record4.templateSize = 450;
         record4.sliceIndex = 15;

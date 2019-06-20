@@ -254,6 +254,7 @@ public class CramIO {
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
         final Block block = Block.createRawFileHeaderBlock(blockContent);
 
+        // TODO: make sure this container is initialized correctly/fully
         final Container container = new Container(new ReferenceContext(0));
         container.blockCount = 1;
         container.landmarks = new int[0];

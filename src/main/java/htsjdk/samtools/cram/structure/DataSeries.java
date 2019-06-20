@@ -78,8 +78,8 @@ public enum DataSeries {
     BB_bases                            (DataSeriesType.BYTE_ARRAY, "BB", 20),
     QQ_scores                           (DataSeriesType.BYTE_ARRAY, "QQ", 21),
     BA_Base                             (DataSeriesType.BYTE,       "BA", 22),
-    // NOTE: the CramrecordReader and CramRecordWriter split the QS_QualityScore into two separate
-    // DataSeriesReader/Writer(s), onue uses the paramsdescribed here (BYTE) and one uses BYTE_ARRAY
+    // NOTE: the CramRecordReader and CramRecordWriter split the QS_QualityScore into two separate
+    // DataSeriesReader/Writer(s), one uses the params described here (BYTE) and one uses BYTE_ARRAY
     QS_QualityScore                     (DataSeriesType.BYTE,       "QS", 23),
     BS_BaseSubstitutionCode             (DataSeriesType.BYTE,       "BS", 24),
     IN_Insertion                        (DataSeriesType.BYTE_ARRAY, "IN", 25),

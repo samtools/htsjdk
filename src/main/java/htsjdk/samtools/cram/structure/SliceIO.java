@@ -54,7 +54,8 @@ class SliceIO {
         slice.nofBlocks = ITF8.readUnsignedITF8(parseInputStream);
 
         slice.contentIDs = CramIntArray.array(parseInputStream);
-        slice.embeddedRefBlockContentID = ITF8.readUnsignedITF8(parseInputStream);
+        // embedded ref content id == -1 if embedded ref not present
+        slice.setEmbeddedReferenceContentID(ITF8.readUnsignedITF8(parseInputStream));
         slice.refMD5 = new byte[16];
         InputStreamUtils.readFully(parseInputStream, slice.refMD5, 0, slice.refMD5.length);
 
@@ -89,7 +90,7 @@ class SliceIO {
             slice.contentIDs[i++] = id;
         }
         CramIntArray.write(slice.contentIDs, byteArrayOutputStream);
-        ITF8.writeUnsignedITF8(slice.embeddedRefBlockContentID, byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getEmbeddedReferenceContentID(), byteArrayOutputStream);
         try {
             byteArrayOutputStream.write(slice.refMD5 == null ? new byte[16] : slice.refMD5);
         } catch (final IOException e) {
@@ -114,28 +115,6 @@ class SliceIO {
         return byteArrayOutputStream.toByteArray();
     }
 
-    private static void readSliceBlocks(final int major, final CompressionHeader compressionHeader, final Slice slice, final InputStream inputStream) {
-        for (int i = 0; i < slice.nofBlocks; i++) {
-            final Block block = Block.read(major, inputStream);
-
-            switch (block.getContentType()) {
-                case CORE:
-                    slice.getSliceBlocks().setCoreBlock(block);
-                    break;
-                case EXTERNAL:
-                    if (slice.embeddedRefBlockContentID == block.getContentId()) {
-                        // TODO: embeddedRefBlock seems redundant since it also kept by ID in externa blocks
-                        slice.embeddedRefBlock = block;
-                    }
-                    slice.getSliceBlocks().addExternalBlock(block.getContentId(), block);
-                    break;
-
-                default:
-                    throw new RuntimeException("Not a slice block, content type id " + block.getContentType().name());
-            }
-        }
-    }
-
     public static void write(final int major, final Slice slice, final OutputStream outputStream) {
         // TODO: ensure that the Slice blockCount stays in sync with the
         // Container's blockCount in ContainerIO.writeContainer()
@@ -144,7 +123,7 @@ class SliceIO {
         // Each Slice has a variable number of External Data Blocks
         // TODO: should we count the embedded reference block as an additional block?
         
-        slice.nofBlocks = 1 + slice.getSliceBlocks().getNumberOfExternalBlocks() + (slice.embeddedRefBlock == null ? 0 : 1);
+        slice.nofBlocks = 1 + slice.getSliceBlocks().getNumberOfExternalBlocks() + (slice.getEmbeddedReferenceBlock() == null ? 0 : 1);
         slice.contentIDs = new int[slice.getSliceBlocks().getNumberOfExternalBlocks()];
         final int i = 0;
         for (final int id : slice.getSliceBlocks().getExternalContentIDs()) {
@@ -154,12 +133,13 @@ class SliceIO {
         slice.headerBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, slice));
         slice.headerBlock.write(major, outputStream);
 
-        slice.getSliceBlocks().write(major, outputStream);
+        slice.getSliceBlocks().writeBlocks(major, outputStream);
     }
 
+    // TODO: this should just be a Slice constructor
     public static Slice read(final int major, final CompressionHeader compressionHeader, final InputStream inputStream) {
         final Slice slice = readSliceHeader(major, compressionHeader, inputStream);
-        readSliceBlocks(major, compressionHeader, slice, inputStream);
+        slice.readSliceBlocks(major, inputStream);
         return slice;
     }
 }

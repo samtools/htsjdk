@@ -12,7 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Manage the set of streams used to hold block content when constructing a CRAM stream to be written
+ * Provides a bridge between the DataSeries codecs and their underlying blocks for use when
+ * writing a CRAM stream by presenting a bit (core) or byte (external) stream on each block.
+ * This allows the the individual codecs to output to streams rather than blocks.
  */
 public class SliceBlocksWriteStreams {
 
@@ -58,9 +60,10 @@ public class SliceBlocksWriteStreams {
     /**
      * Compress and write each block to a CRAM output stream.
      */
-    public void writeStreamsToBlocks() {
+    public void writeStreamsToSliceBlocks() {
          closeAllStreams();
-         // core block is raw (no compression)
+
+         // core block is raw (no compression) and must be written first (prescribed by the spec)
          sliceBlocks.setCoreBlock(Block.createRawCoreDataBlock(coreBlockByteOutputStream.toByteArray()));
 
          for (final Map.Entry<Integer, ByteArrayOutputStream> streamEntry : externalOutputStreams.entrySet()) {
@@ -71,7 +74,7 @@ public class SliceBlocksWriteStreams {
              }
 
              final Block externalBlock = compressionHeader.getEncodingMap().getCompressedBlockForStream(contentId, streamEntry.getValue());
-             sliceBlocks.addExternalBlock(contentId, externalBlock);
+             sliceBlocks.addExternalBlock(externalBlock);
          }
      }
 

@@ -17,12 +17,10 @@
  */
 package htsjdk.samtools.cram.encoding.reader;
 
-import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.nio.charset.Charset;
 import java.util.LinkedList;
@@ -30,7 +28,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A reader used to consume encoded CramRecords from a set of Slice blocks.
+ * A reader used to consume encoded CramRecords, via codecs, from a set of Streams representing
+ * a Slice's data series blocks.
  */
 public class CramRecordReader {
     private final DataSeriesReader<Integer> bitFlagsCodec;
@@ -144,6 +143,9 @@ public class CramRecordReader {
      * @return the alignmentStart of the newly-read record
      */
     public int read(final CramCompressionRecord cramRecord, final int prevAlignmentStart) {
+
+        // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,
+        // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.
         cramRecord.flags = bitFlagsCodec.readData();
         cramRecord.compressionFlags = compressionBitFlagsCodec.readData();
         if (slice.getReferenceContext().isMultiRef()) {

@@ -21,6 +21,7 @@ import java.util.zip.GZIPOutputStream;
  * Methods to provide CRAM external compression/decompression features.
  */
 public class ExternalCompression {
+    //TODO: expose this properly - see https://github.com/samtools/htsjdk/issues/1367
     private static final int GZIP_COMPRESSION_LEVEL = Integer.parseInt(System.getProperty("gzip.compression.level", "5"));
 
     /**

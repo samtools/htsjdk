@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A writer that emits CramRecords into Slice's data series blocks.
+ * A writer that emits CramRecords into Streams representing a Slice's data series blocks via codecs.
  */
 public class CramRecordWriter {
     private final DataSeriesWriter<Integer> bitFlagsC;
@@ -137,7 +137,7 @@ public class CramRecordWriter {
             writeRecordsToStreams(record, prevAlignmentStart);
             prevAlignmentStart = record.alignmentStart;
         }
-        sliceBlocksWriteStreams.writeStreamsToBlocks();
+        sliceBlocksWriteStreams.writeStreamsToSliceBlocks();
     }
 
     /**
@@ -167,6 +167,9 @@ public class CramRecordWriter {
      * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
      */
     private void writeRecordsToStreams(final CramCompressionRecord r, final int prevAlignmentStart) {
+
+        // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,
+        // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
         if (slice.getReferenceContext().isMultiRef()) {

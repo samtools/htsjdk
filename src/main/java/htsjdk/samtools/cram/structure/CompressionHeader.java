@@ -43,13 +43,13 @@ public class CompressionHeader {
     private static final String TD_tagIdsDictionary = "TD";
     private static final String SM_substitutionMatrix = "SM";
 
-    public boolean readNamesIncluded;
+    public boolean readNamesIncluded = true;
     private boolean APDelta = true;
     private boolean referenceRequired = true;
 
     private CompressionHeaderEncodingMap encodingMap;
 
-    //TODO: Move the tMap into CompressionHederEncodingMap
+    //TODO: Move the tMap into CompressionHeaderEncodingMap
     public Map<Integer, EncodingParams> tMap;
     public SubstitutionMatrix substitutionMatrix;
     public byte[][][] dictionary;
@@ -57,6 +57,25 @@ public class CompressionHeader {
     public CompressionHeader() {
         encodingMap = new CompressionHeaderEncodingMap();
         tMap = new TreeMap<>();
+    }
+
+    /**
+     * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader.
+     *
+     * @param cramVersion the CRAM version
+     * @param blockStream the stream to read from
+     * @return a new CompressionHeader
+     */
+    public CompressionHeader(final int cramVersion, final InputStream blockStream) {
+        final Block compressionHeaderBlock = Block.read(cramVersion, blockStream);
+        if (compressionHeaderBlock.getContentType() != BlockContentType.COMPRESSION_HEADER)
+            throw new RuntimeIOException("Compression Header Block expected, found: " + compressionHeaderBlock.getContentType().name());
+
+        try (final ByteArrayInputStream internalStream = new ByteArrayInputStream(compressionHeaderBlock.getUncompressedContent())) {
+            internalRead(internalStream);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     public CompressionHeaderEncodingMap getEncodingMap() { return encodingMap; }
@@ -259,28 +278,6 @@ public class CompressionHeader {
 
             ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
             outputStream.write(mapBytes);
-        }
-    }
-
-    /**
-     * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader
-     * We do this instead of reading the InputStream directly because the Block content may be compressed
-     *
-     * @param cramVersion the CRAM version
-     * @param blockStream the stream to read from
-     * @return a new CompressionHeader from the input
-     */
-    public static CompressionHeader read(final int cramVersion, final InputStream blockStream) {
-        final Block block = Block.read(cramVersion, blockStream);
-        if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
-            throw new RuntimeIOException("Compression Header Block expected, found: " + block.getContentType().name());
-
-        try (final ByteArrayInputStream internalStream = new ByteArrayInputStream(block.getUncompressedContent())) {
-            final CompressionHeader header = new CompressionHeader();
-            header.internalRead(internalStream);
-            return header;
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
         }
     }
 
