@@ -86,6 +86,7 @@ public class Block {
         this.compressedContent = compressedContent;
         this.uncompressedLength = uncompressedLength;
 
+        //TODO: Fix this
         // causes test failures.  https://github.com/samtools/htsjdk/issues/1232
 //        if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
 //            throw new CRAMException("Valid Content ID required for external blocks.");
@@ -269,12 +270,12 @@ public class Block {
      * Write the block out to the the specified {@link OutputStream}.
      * The method is parameterized with the CRAM major version number.
      *
-     * @param major CRAM version major number
+     * @param majorVersion CRAM version major number
      * @param outputStream output stream to write to
      */
-    public final void write(final int major, final OutputStream outputStream) {
+    public final void write(final int majorVersion, final OutputStream outputStream) {
         try {
-            if (major >= CramVersions.CRAM_v3.major) {
+            if (majorVersion >= CramVersions.CRAM_v3.major) {
                 final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
                 doWrite(crc32OutputStream);
                 outputStream.write(crc32OutputStream.getCrc32_LittleEndian());
@@ -310,4 +311,5 @@ public class Block {
                 getCompressionMethod().name(), getContentType().name(), getContentId(),
                 getUncompressedContentSize(), getCompressedContentSize(), raw, comp);
     }
+
 }

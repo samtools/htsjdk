@@ -4,6 +4,7 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
@@ -11,19 +12,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Manage the set of streams used to hold each block that is consumed when reading a CRAM stream.
+ * Provides a bridge between the DataSeries codecs and their underlying blocks for use when
+ * reading a CRAM stream by presenting a bit (core) or byte (external) stream on each block.
+ * This allows the the individual codecs to read from streams rather than blocks.
  */
 public class SliceBlocksReadStreams {
 
     // bit input stream for the core block
     private final BitInputStream coreBlockInputStream;
-    // ByteArrayInputStreams for all external contentIDs, including tags
+    // Map of ByteArrayInputStreams for all external contentIDs, including tag blocks, by content ID
     private final Map<Integer, ByteArrayInputStream> externalInputStreams = new HashMap<>();
 
     /**
      * @param sliceBlocks {@link SliceBlocks} that have been populated from a CRAM stream
      */
     public SliceBlocksReadStreams(final SliceBlocks sliceBlocks) {
+        ValidationUtils.nonNull(sliceBlocks.getCoreBlock(), "sliceBlocks must have been initialized");
+        ValidationUtils.nonNull(sliceBlocks.getNumberOfExternalBlocks() > 0, "sliceBlocks must have been initialized");
+
         if (sliceBlocks.getCoreBlock() == null || sliceBlocks.getNumberOfExternalBlocks() == 0) {
             throw new CRAMException("slice blocks must be initialized before being used with a reader");
         }

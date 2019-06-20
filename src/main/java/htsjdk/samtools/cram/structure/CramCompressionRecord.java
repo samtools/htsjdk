@@ -122,6 +122,7 @@ public class CramCompressionRecord {
 
         final CramCompressionRecord cramRecord = (CramCompressionRecord) obj;
 
+        //TODO: this doesn't include readName! Audit this for other missing fields...
         if (alignmentStart != cramRecord.alignmentStart) return false;
         if (isNegativeStrand() != cramRecord.isNegativeStrand()) return false;
         if (isVendorFiltered() != cramRecord.isVendorFiltered()) return false;

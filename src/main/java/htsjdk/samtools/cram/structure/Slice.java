@@ -30,6 +30,7 @@ import htsjdk.samtools.cram.ref.ReferenceContextType;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.*;
@@ -58,13 +59,10 @@ public class Slice {
     public long globalRecordCounter = -1;
     public int nofBlocks = -1;
     public int[] contentIDs;
-    public int embeddedRefBlockContentID = -1;
     public byte[] refMD5 = new byte[16];
 
     // content associated with ids:
     public Block headerBlock;
-    public Block embeddedRefBlock;
-    // TODO: add embeddedRefBlock ?
     private SliceBlocks sliceBlocks = new SliceBlocks();
 
     // for indexing purposes
@@ -126,8 +124,9 @@ public class Slice {
      * Construct this Slice by providing its {@link ReferenceContext}
      * @param refContext the reference context associated with this slice
      */
-    // TODO: remove this constructor, or require it to set the comp header; this is only used in calls sites where the
-    // comp header is irrelevant (ie. indexing) ?
+    // TODO: remove this constructor, or require it to set the comp header; this is only used in calls sites
+    // TODO: where the comp header is irrelevant (ie. indexing) ? Unfortunately, this is the constructor thats
+    // TODO: used all over the place...
     public Slice(final ReferenceContext refContext) {
         this.referenceContext = refContext;
     }
@@ -145,6 +144,17 @@ public class Slice {
     public ReferenceContext getReferenceContext() {
         return referenceContext;
     }
+
+    public void readSliceBlocks(final int major, final InputStream inputStream) {
+        sliceBlocks.readBlocks(major, nofBlocks, inputStream);
+    }
+
+    public void setEmbeddedReferenceContentID(final int embeddedRefContentID) { sliceBlocks.setEmbeddedReferenceContentID(embeddedRefContentID); }
+    public int getEmbeddedReferenceContentID() { return sliceBlocks.getEmbeddedReferenceContentID(); }
+
+    // Unused because embedded reference isn't implemented for write
+    public void setEmbeddedReferenceBlock(final Block embeddedRefBlock) { sliceBlocks.setEmbeddedReferenceBlock(embeddedRefBlock); }
+    public Block getEmbeddedReferenceBlock() { return sliceBlocks.getEmbeddedReferenceBlock(); }
 
     /**
      * Confirm that we have initialized the 3 BAI index parameters:

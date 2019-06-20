@@ -34,6 +34,7 @@ public class ContainerParser {
         this.samFileHeader = samFileHeader;
     }
 
+    //TODO: its unnecessary to both pass in AND return the list of records
     public List<CramCompressionRecord> getRecords(final Container container,
                                                   ArrayList<CramCompressionRecord> records,
                                                   final ValidationStringency validationStringency) {

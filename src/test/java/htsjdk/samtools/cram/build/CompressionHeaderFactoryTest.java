@@ -16,24 +16,6 @@ import java.util.List;
  */
 public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
-    public void testAllEncodingsPresent() {
-        final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap();
-        for (final DataSeries key : DataSeries.values()) {
-            switch (key) {
-                // skip test marks and unused series:
-                case TV_TestMark:
-                case TM_TestMark:
-                case BB_bases:
-                case QQ_scores:
-                    Assert.assertNull(encodingMap.getEncodingParamsForDataSeries(key), "Unexpected encoding key found: " + key.name());
-                    continue;
-            }
-            Assert.assertNotNull(encodingMap.getEncodingParamsForDataSeries(key), "Encoding key not found: " + key.name());
-            Assert.assertFalse(encodingMap.getEncodingParamsForDataSeries(key).id == EncodingID.NULL);
-        }
-    }
-
-    @Test
     public void testAP_delta() {
         boolean sorted = true;
         CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
