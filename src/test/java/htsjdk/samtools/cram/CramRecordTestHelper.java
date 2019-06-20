@@ -24,7 +24,7 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
     // attempt at minimal initialization for tests
 
     public CompressionHeader createHeader(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
-        return new CompressionHeaderFactory().build(records, new SubstitutionMatrix(new long[256][256]), coordinateSorted);
+        return new CompressionHeaderFactory().build(records, coordinateSorted);
     }
 
     public List<CramCompressionRecord> createRecords() {

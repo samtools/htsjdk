@@ -22,7 +22,7 @@ public class ContainerTest extends HtsjdkTest {
     private static final ContainerFactory FACTORY = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
 
     private static final CompressionHeader COMPRESSION_HEADER =
-            new CompressionHeaderFactory().build(Collections.EMPTY_LIST, null, true);
+            new CompressionHeaderFactory().build(Collections.EMPTY_LIST, true);
 
     @DataProvider(name = "containerStateTestCases")
     private Object[][] containerStateTestCases() {

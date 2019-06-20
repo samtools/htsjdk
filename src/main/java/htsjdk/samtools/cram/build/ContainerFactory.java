@@ -52,7 +52,7 @@ public class ContainerFactory {
     public Container buildContainer(final List<CramCompressionRecord> records, final long containerByteOffset) {
         // sets header APDelta
         final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-        final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(records, null, coordinateSorted);
+        final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(records, coordinateSorted);
 
         compressionHeader.readNamesIncluded = preserveReadNames;
 

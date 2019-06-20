@@ -17,7 +17,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
     private static final Random RANDOM = new Random(TestUtil.RANDOM_SEED);
 
     private static final CompressionHeader COMPRESSION_HEADER =
-            new CompressionHeaderFactory().build(Collections.EMPTY_LIST, null, true);
+            new CompressionHeaderFactory().build(Collections.EMPTY_LIST, true);
 
     @Test(dataProvider = "uninitializedCRAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
     public void uninitializedSliceParameterTest(final Slice s) {
@@ -74,7 +74,7 @@ public class CRAIEntryTest extends CramRecordTestHelper {
             addAll(records2);
         }};
 
-        final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(allRecords, null, true);
+        final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(allRecords, true);
         final Slice slice1 = Slice.buildSlice(records1, compressionHeader);
         final Slice slice2 = Slice.buildSlice(records2, compressionHeader);
 

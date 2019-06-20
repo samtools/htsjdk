@@ -26,10 +26,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
 import htsjdk.samtools.util.Log;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class CramCompressionRecord {
     private static final int MULTI_FRAGMENT_FLAG = 0x1;
@@ -105,6 +102,17 @@ public class CramCompressionRecord {
 
     public int getCompressionFlags() {
         return (0xFF & compressionFlags);
+    }
+
+    /**
+     * Add a ReadFeature for this record.
+     * @param readFeature the ReadFeature to add
+     */
+    public final void addReadFeature(final ReadFeature readFeature) {
+        if (this.readFeatures == null) {
+            this.readFeatures = new ArrayList<>();
+        }
+        this.readFeatures.add(readFeature);
     }
 
     @SuppressWarnings("SimplifiableIfStatement")
