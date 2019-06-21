@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 
 public class VCFUtils {
 
-    private static Pattern infOrNanPattern = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INF_OR_NAN_PATTERN = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
 
     public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
         // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
@@ -255,13 +255,13 @@ public class VCFUtils {
     }
 
     /**
-     * Parses a String as a Double, being tolerant for lower-case NaN (nan).
+     * Parses a String as a Double, being tolerant for case-insensitive NaN and Inf/Infinity.
      */
-    public static double parseDoubleAccordingToVcfSpec(final String str) {
+    public static double parseVcfDouble(final String str) {
         try {
             return Double.parseDouble(str);
         } catch (NumberFormatException e) {
-            final Matcher matcher = infOrNanPattern.matcher(str);
+            final Matcher matcher = INF_OR_NAN_PATTERN.matcher(str);
             if (matcher.matches()) {
                 final double ret;
                 if (matcher.group("inf") == null) {
@@ -274,9 +274,8 @@ public class VCFUtils {
                     }
                 }
                 return ret;
-            } else {
-                throw e;
             }
+            throw e;
         }
     }
 

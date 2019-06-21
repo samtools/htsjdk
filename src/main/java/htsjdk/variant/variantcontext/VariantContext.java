@@ -1625,7 +1625,7 @@ public class VariantContext implements Feature, Serializable {
                         return b;
                     case String:    return string;
                     case Integer:   return Integer.valueOf(string);
-                    case Float:     return VCFUtils.parseDoubleAccordingToVcfSpec(string);
+                    case Float:     return VCFUtils.parseVcfDouble(string);
                     default: throw new TribbleException("Unexpected type for field" + field);
                 }
             }

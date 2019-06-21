@@ -78,7 +78,7 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "caseIntolerantDoubles")
-    public void testCaseIntolerantDoubles(String vcfInput, Double value) {
+    public void testCaseIntolerantDoubles(String vcfInput, double value) {
         try (final VCFFileReader reader = new VCFFileReader(new File(vcfInput), false)) {
             try {
                 Iterator<VariantContext> iterator = reader.iterator();

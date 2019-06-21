@@ -616,7 +616,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if ( qualString.equals(VCFConstants.MISSING_VALUE_v4))
             return VariantContext.NO_LOG10_PERROR;
 
-        Double val = VCFUtils.parseDoubleAccordingToVcfSpec(qualString);
+        Double val = VCFUtils.parseVcfDouble(qualString);
 
         // check to see if they encoded the missing qual score in VCF 3 style, with either the -1 or -1.0.  check for val < 0 to save some CPU cycles
         if ((val < 0) && (Math.abs(val - VCFConstants.MISSING_QUALITY_v3_DOUBLE) < VCFConstants.VCF_ENCODING_EPSILON))
@@ -804,7 +804,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                             if ( genotypeValues.get(i).equals(VCFConstants.MISSING_GENOTYPE_QUALITY_v3) )
                                 gb.noGQ();
                             else
-                                gb.GQ((int)Math.round(VCFUtils.parseDoubleAccordingToVcfSpec(genotypeValues.get(i))));
+                                gb.GQ((int)Math.round(VCFUtils.parseVcfDouble(genotypeValues.get(i))));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
                             gb.AD(decodeInts(genotypeValues.get(i)));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {

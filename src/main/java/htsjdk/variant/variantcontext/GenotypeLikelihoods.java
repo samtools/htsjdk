@@ -272,7 +272,7 @@ public class GenotypeLikelihoods {
                 if (strings[i].equals(VCFConstants.MISSING_VALUE_v4)) {
                   missing++;
                 } else {
-                  likelihoodsAsVector[i] = VCFUtils.parseDoubleAccordingToVcfSpec(strings[i]);
+                  likelihoodsAsVector[i] = VCFUtils.parseVcfDouble(strings[i]);
                 }
             }
             if (missing == 0) {

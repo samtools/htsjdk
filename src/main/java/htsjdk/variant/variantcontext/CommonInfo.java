@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext;
 
 
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -296,7 +297,7 @@ public final class CommonInfo implements Serializable {
             } else if (x instanceof Number) {
                 return ((Number) x).doubleValue();
             } else {
-                return Double.parseDouble((String)x); // throws an exception if this isn't a string
+                return VCFUtils.parseVcfDouble((String)x); // throws an exception if this isn't a string
             }
         });
     }
@@ -320,7 +321,7 @@ public final class CommonInfo implements Serializable {
         if ( x == null ) return defaultValue;
         if ( x instanceof Double ) return (Double)x;
         if ( x instanceof Integer ) return (Integer)x;
-        return Double.parseDouble((String)x); // throws an exception if this isn't a string
+        return VCFUtils.parseVcfDouble((String)x); // throws an exception if this isn't a string
     }
 
     public boolean getAttributeAsBoolean(String key, boolean defaultValue) {

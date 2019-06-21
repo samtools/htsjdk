@@ -527,7 +527,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         Object x = getExtendedAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof Double ) return (Double)x;
-        return VCFUtils.parseDoubleAccordingToVcfSpec((String) x); // throws an exception if this isn't a string
+        return VCFUtils.parseVcfDouble((String) x); // throws an exception if this isn't a string
     }
 
     /**
