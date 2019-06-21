@@ -3,11 +3,13 @@
 Please explain the changes you made here.
 Explain the **motivation** for making this change. What existing problem does the pull request solve?
 
-### Checklist
-
-- [ ] Code compiles correctly
-- [ ] New tests covering changes and new functionality
-- [ ] All tests passing
+### Things to think about before submitting:
+- [ ] Make sure your changes compile and new tests pass locally.
+- [ ] Add new tests or update existing ones:
+  - A bugfix should include a test that previously would have failed and passes now.
+  - New features should come with new tests that exercise and validate the new functionality.
 - [ ] Extended the README / documentation, if necessary
-- [ ] Is not backward compatible (breaks binary or source compatibility)
-
+- [ ] Check your code style.
+- [ ] Write a clear commit title and message
+  - The commit message should describe what changed and is targetted at htsjdk developers
+  - Breaking changes should be mentioned in the commit message.
