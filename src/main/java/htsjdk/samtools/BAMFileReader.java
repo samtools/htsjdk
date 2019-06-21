@@ -433,7 +433,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      */
     public SamIndexes getIndexType() {
         if (mIndexFile != null) {
-            if (mIndexFile.getName().toLowerCase().endsWith(FileExtensions.BAM_INDEX)) {
+            if (mIndexFile.getName().toLowerCase().endsWith(FileExtensions.BAI_INDEX)) {
                 return SamIndexes.BAI;
             } else if (mIndexFile.getName().toLowerCase().endsWith(FileExtensions.CSI)) {
                 return SamIndexes.CSI;

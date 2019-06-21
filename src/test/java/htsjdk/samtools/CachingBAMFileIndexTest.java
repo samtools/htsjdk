@@ -56,7 +56,7 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
             }).forEach(writer::addAlignment);
         }
 
-        final File indexFile = new File(outBam.getParent(), IOUtil.basename(outBam) + FileExtensions.BAM_INDEX);
+        final File indexFile = new File(outBam.getParent(), IOUtil.basename(outBam) + FileExtensions.BAI_INDEX);
         indexFile.deleteOnExit();
         outBam.deleteOnExit();
         return new CachingBAMFileIndex(indexFile, dict);

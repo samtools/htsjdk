@@ -36,15 +36,15 @@ import htsjdk.samtools.util.FileExtensions;
 public interface BAMIndex extends Closeable {
 
     /**
-     * @deprecated since June 2019 Use {@link FileExtensions#BAM_INDEX} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#BAI_INDEX} instead.
      */
     @Deprecated
-    String BAMIndexSuffix = FileExtensions.BAM_INDEX;
+    String BAMIndexSuffix = FileExtensions.BAI_INDEX;
     /**
-     * @deprecated since June 2019 Use {@link FileExtensions#BAM_INDEX} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#BAI_INDEX} instead.
      */
     @Deprecated
-    String BAI_INDEX_SUFFIX = FileExtensions.BAM_INDEX;
+    String BAI_INDEX_SUFFIX = FileExtensions.BAI_INDEX;
     /**
      * @deprecated since June 2019 Use {@link FileExtensions#CSI} instead.
      */

@@ -277,7 +277,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (mIndex == null) {
             final SAMSequenceDictionary dictionary = getFileHeader()
                     .getSequenceDictionary();
-            if (mIndexFile.getName().endsWith(FileExtensions.BAM_INDEX)) {
+            if (mIndexFile.getName().endsWith(FileExtensions.BAI_INDEX)) {
                 mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile,
                         dictionary, mEnableIndexMemoryMapping)
                         : new DiskBasedBAMFileIndex(mIndexFile, dictionary,
