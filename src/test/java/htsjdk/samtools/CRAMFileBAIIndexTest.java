@@ -1,11 +1,11 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
@@ -211,7 +211,7 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
             counter++;
         }
         Assert.assertTrue(matchFound);
-        Assert.assertTrue(counter <= CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
+        Assert.assertTrue(counter <= new CRAMEncodingStrategy().getRecordsPerSlice());
     }
 
     @Test
@@ -280,24 +280,24 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         return baos.toByteArray();
     }
 
-    private byte[] cramFromBAM(File bamFile, ReferenceSource source) throws IOException {
+    private byte[] cramFromBAM(File bamFile, ReferenceSource source) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
         final SAMRecordIterator iterator = reader.iterator();
-        // to reduce granularity let's use this hacky approach:
-        int previousValue = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE ;
-        CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = nofReadsPerContainer;
-        try {
-            CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), bamFile.getName());
+        try (final CRAMFileWriter writer = new CRAMFileWriter(
+                // to reduce granularity call setReadsPerSlice
+                new CRAMEncodingStrategy().setReadsPerSlice(nofReadsPerContainer),
+                baos,
+                null,
+                true,
+                source,
+                reader.getFileHeader(),
+                bamFile.getName())) {
+
             while (iterator.hasNext()) {
                 SAMRecord record = iterator.next();
                 writer.addAlignment(record);
             }
-            writer.close();
-        }
-        finally {
-            // failing to reset this can cause unrelated tests to fail if this test fails
-            CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = previousValue;
         }
         return baos.toByteArray();
     }

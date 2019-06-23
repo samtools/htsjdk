@@ -23,7 +23,9 @@ import java.util.function.Consumer;
 public class CRAMBAIIndexerTest extends HtsjdkTest {
     private static final int RECORDS_PER_SLICE = 3;
     private static final SAMFileHeader SAM_FILE_HEADER = CRAMStructureTestUtil.getSAMFileHeaderForTests();
-    private static final ContainerFactory FACTORY = new ContainerFactory(SAM_FILE_HEADER, RECORDS_PER_SLICE);
+    private static final ContainerFactory FACTORY = new ContainerFactory(
+            SAM_FILE_HEADER,
+            new CRAMEncodingStrategy().setReadsPerSlice(RECORDS_PER_SLICE));
 
     @Test
     public void test_processSingleRefMappedSlice() {

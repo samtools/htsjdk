@@ -144,7 +144,9 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
     }
 
     public static List<Container> getMultiRefContainersForStateTest(final long firstContainerByteOffset) {
-        final ContainerFactory factory = new ContainerFactory(getSAMFileHeaderForTests(), 10);
+        final ContainerFactory factory = new ContainerFactory(
+                getSAMFileHeaderForTests(),
+                new CRAMEncodingStrategy().setReadsPerSlice(10));
         final List<Container> testContainers = new ArrayList<>(3);
 
         final List<CramCompressionRecord> records = new ArrayList<>();

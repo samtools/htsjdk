@@ -2,10 +2,7 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.CRAMStructureTestUtil;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -22,7 +19,9 @@ public class ContainerFactoryTest extends HtsjdkTest {
     @Test
     public void recordsPerSliceTest() {
         final int recordsPerSlice = 100;
-        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), recordsPerSlice);
+        CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
+        cramEncodingStrategy.setReadsPerSlice(recordsPerSlice);
+        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), cramEncodingStrategy);
 
         // build a container with the max records per slice
 
@@ -104,7 +103,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
                                    final ReferenceContext expectedReferenceContext,
                                    final int expectedAlignmentStart,
                                    final int expectedAlignmentSpan) {
-        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), TEST_RECORD_COUNT);
+        CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
+        cramEncodingStrategy.setReadsPerSlice(TEST_RECORD_COUNT);
+
+        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), cramEncodingStrategy);
         final long byteOffset = 9999;
         final Container container = factory.buildContainer(records, byteOffset);
         final int globalRecordCounter = 0; // first Container

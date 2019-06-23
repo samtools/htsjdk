@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -151,7 +152,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
     }
 
     @BeforeTest
-    public void beforeTest() throws Exception {
+    public void beforeTest() {
         Log.setGlobalLogLevel(Log.LogLevel.ERROR);
 
         header = new SAMFileHeader();
@@ -175,7 +176,8 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         ByteArrayOutputStream indexOS = new ByteArrayOutputStream();
         CRAMFileWriter writer = new CRAMFileWriter(os, indexOS, source, header, null);
 
-        int readPairsPerSequence = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE;
+        // use the defaults
+        int readPairsPerSequence = new CRAMEncodingStrategy().getRecordsPerSlice();
 
         for (SAMSequenceRecord sequenceRecord : header.getSequenceDictionary().getSequences()) {
             int alignmentStart = 1;

@@ -6,6 +6,7 @@ import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
@@ -279,7 +280,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
             counter++;
         }
         Assert.assertTrue(matchFound);
-        Assert.assertTrue(counter <= CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
+        Assert.assertTrue(counter <= new CRAMEncodingStrategy().getRecordsPerSlice());
     }
 
     @Test
@@ -357,15 +358,15 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
     private byte[] cramFromBAM(File bamFile, ReferenceSource source) throws IOException {
 
-        int previousValue = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE;
-        CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = nofReadsPerContainer;
-
         try (final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
              final SAMRecordIterator iterator = reader.iterator();
              final ByteArrayOutputStream baos = new ByteArrayOutputStream())
         {
             CRAMFileWriter writer = new CRAMFileWriter(
+                    new CRAMEncodingStrategy().setReadsPerSlice(nofReadsPerContainer),
                     baos,
+                    null,
+                    true,
                     source,
                     reader.getFileHeader(),
                     bamFile.getName());
@@ -375,10 +376,6 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
             }
             writer.close();
             return baos.toByteArray();
-        }
-        finally {
-            // failing to reset this can cause unrelated tests to fail if this test fails
-            CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = previousValue;
         }
     }
 

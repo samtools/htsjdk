@@ -32,11 +32,10 @@ import java.util.TreeSet;
 public class CRAMContainerStreamWriter {
     private static final Version cramVersion = CramVersions.DEFAULT_CRAM_VERSION;
 
-    static int DEFAULT_RECORDS_PER_SLICE = 10000;
-    static int MIN_SINGLE_REF_RECORDS = 1000;
-    protected final int recordsPerSlice = DEFAULT_RECORDS_PER_SLICE;
-    private static final int DEFAULT_SLICES_PER_CONTAINER = 1;
-    protected final int containerSize = recordsPerSlice * DEFAULT_SLICES_PER_CONTAINER;
+    private final CRAMEncodingStrategy encodingStrategy;
+
+    private final int containerSize;
+    private static int MIN_SINGLE_REF_RECORDS = 1000;
     private static final int REF_SEQ_INDEX_NOT_INITIALIZED = -3;
 
     private final SAMFileHeader samFileHeader;
@@ -56,7 +55,7 @@ public class CRAMContainerStreamWriter {
     private Set<String> captureTags = new TreeSet<>();
     private Set<String> ignoreTags = new TreeSet<>();
 
-    private CRAMIndexer indexer;
+    private final CRAMIndexer indexer;
     private long offset;
 
     /**
@@ -94,12 +93,35 @@ public class CRAMContainerStreamWriter {
             final SAMFileHeader samFileHeader,
             final String cramId,
             final CRAMIndexer indexer) {
-        this.outputStream = outputStream;
-        this.source = source;
+        this(new CRAMEncodingStrategy(), source, samFileHeader, outputStream, indexer, cramId);
+    }
+
+    /**
+     * Create a CRAMContainerStreamWriter for writing SAM records into a series of CRAM
+     * containers on output stream, with an optional index.
+     *
+     * @param encodingStrategy encoding strategy values
+     * @param referenceSource reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param outputStream where to write the CRAM stream.
+     * @param indexer CRAM indexer. Can be null if no index is required.
+     * @param streamIdentifier informational string included in error reporting
+     */
+    public CRAMContainerStreamWriter(
+            final CRAMEncodingStrategy encodingStrategy,
+            final CRAMReferenceSource referenceSource,
+            final SAMFileHeader samFileHeader,
+            final OutputStream outputStream,
+            final CRAMIndexer indexer,
+            final String streamIdentifier) {
+        this.encodingStrategy = encodingStrategy;
+        this.source = referenceSource;
         this.samFileHeader = samFileHeader;
-        this.cramID = cramId;
+        this.outputStream = outputStream;
+        this.cramID = streamIdentifier;
         this.indexer = indexer;
-        containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice);
+        containerFactory = new ContainerFactory(samFileHeader, encodingStrategy);
+        containerSize = this.encodingStrategy.getRecordsPerSlice() * this.encodingStrategy.getSlicesPerContainer();
     }
 
     /**
