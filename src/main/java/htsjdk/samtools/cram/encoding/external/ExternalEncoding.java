@@ -16,4 +16,9 @@ public abstract class ExternalEncoding<T> extends CRAMEncoding<T> {
     public byte[] toByteArray() {
         return ITF8.writeUnsignedITF8(externalBlockContentId);
     }
+
+    @Override
+    public String toString() {
+        return String.format("Content ID: %d", externalBlockContentId);
+    }
 }

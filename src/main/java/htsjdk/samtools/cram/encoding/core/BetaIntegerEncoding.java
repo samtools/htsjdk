@@ -70,5 +70,9 @@ public class BetaIntegerEncoding extends CRAMEncoding<Integer> {
                 bitsPerValue);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Offset: %d BitsPerValue: %d", offset, bitsPerValue);
+    }
 
 }

@@ -29,10 +29,14 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+// TODO: why does the spec require that ByteArrayStopEncoding has a externalContentID, but
+// TODO: ByteArrayLenEncoding does not (and NEITHER are External) ?
+//
+// TODO: this has an externalID: why is this not derived from ExternalEncoding ?
 public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
     private final byte stopByte;
     private final int externalId;
-    private final ByteBuffer buf;
+    private final ByteBuffer buf; //TODO: this is only used to covert params
 
     public ByteArrayStopEncoding(final byte stopByte, final int externalId) {
         super(EncodingID.BYTE_ARRAY_STOP);
@@ -71,4 +75,8 @@ public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
         return new ByteArrayStopCodec(is, os, stopByte);
     }
 
+    @Override
+    public String toString() {
+        return String.format("External ID: %d StopByte: %d", externalId, stopByte);
+    }
 }

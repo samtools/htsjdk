@@ -331,9 +331,10 @@ public class CompressionHeaderFactory {
      * A combination of external compressor and encoding params. This is all
      * that is needed to encode a data series.
      */
+    //TODO: can this go away ?
     private static class EncodingDetails {
         ExternalCompressor compressor;
-        EncodingParams params;
+        EncodingParams params; // EncodingID + byte array of params
     }
 
     /**
@@ -345,6 +346,8 @@ public class CompressionHeaderFactory {
      * @return EncodingParams a complete description of the result Encoding
      */
     private EncodingParams buildTagEncodingForSize(final int tagValueSize, final int tagID) {
+        // NOTE: This usage of ByteArrayLenEncoding splits the stream between core (for the
+        // length) and external (for the bytes).
         return new ByteArrayLenEncoding(
                 new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, singleZero),
                 new ExternalByteArrayEncoding(tagID)).toParam();
@@ -405,6 +408,9 @@ public class CompressionHeaderFactory {
                     }
                 }
 
+                // NOTE: This usage of ByteArrayLenEncoding does NOT split the stream between core
+                // and external, since both the length and byte encoding instantiated here are
+                // external. But it does create two different external encodings with the same externalID (???)
                 details.params = new ByteArrayLenEncoding(
                         new ExternalIntegerEncoding(tagID),
                         new ExternalByteArrayEncoding(tagID)).toParam();

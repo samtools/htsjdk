@@ -22,6 +22,8 @@ import htsjdk.samtools.util.StringUtil;
 
 import java.util.Arrays;
 
+// TODO: unless caching the params byte[] is somehow useful for perf reasons, this class is
+// TODO: completely redundant with `CRAMEncoding`, since both carry the encoding ID and byte[] params
 public class EncodingParams {
 
     public final EncodingID id;

@@ -29,15 +29,18 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * NOTE: this encoding is a hybrid encoding in that it splits it's data between the core block
- * (where it stores the byte array length), and an external block (where it stores the actual
- * bytes). This has implications for data access, since some of it's data is interleaved with
- * other data in the core block.
+ * NOTE: this encoding is a hybrid encoding in that it ALLOWS for the possibility to splits it's data
+ * between the core block and an external block (i.e., if lenEncoding is CORE and byteEncoding is EXTERNAL)
+ * This has implications for data access, since some of it's data is interleaved with other data in the
+ * core block.
  */
+//TODO: is this considered "external" or "core" (some use cases split the encodings across core/external streams)
 public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
     private final CRAMEncoding<Integer> lenEncoding;
     private final CRAMEncoding<byte[]> byteEncoding;
 
+    // TODO: why does the spec require that ByteArrayStopEncoding has a externalContentID, but
+    // TODO: this ByteArrayLenEncoding does not (and NEITHER are External) ?
     public ByteArrayLenEncoding(final CRAMEncoding<Integer> lenEncoding, final CRAMEncoding<byte[]> byteEncoding) {
         super(EncodingID.BYTE_ARRAY_LEN);
         this.lenEncoding = lenEncoding;
@@ -86,6 +89,11 @@ public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
         return new ByteArrayLenCodec(
                 lenEncoding.buildCodec(sliceBlocksReadStreams, sliceBlocksWriteStreams),
                 byteEncoding.buildCodec(sliceBlocksReadStreams, sliceBlocksWriteStreams));
+    }
+
+    @Override
+    public String toString() {
+        return String.format("LenEncoding: %s ByteEncoding: %s", lenEncoding.toString(), byteEncoding.toString());
     }
 
 }

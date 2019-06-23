@@ -26,6 +26,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 public class ExternalIntegerEncoding extends ExternalEncoding<Integer> {
+
     public ExternalIntegerEncoding(final int externalBlockContentId) {
         super(externalBlockContentId);
     }

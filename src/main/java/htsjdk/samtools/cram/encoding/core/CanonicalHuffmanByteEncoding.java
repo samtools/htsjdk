@@ -25,13 +25,14 @@ import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
     private final byte[] values;
     private final int[] bitLengths;
     private final ByteBuffer buf;
 
-    private CanonicalHuffmanByteEncoding(final byte[] values, final int[] bitLengths) {
+    public CanonicalHuffmanByteEncoding(final byte[] values, final int[] bitLengths) {
         super(EncodingID.HUFFMAN);
         this.values = values;
         this.bitLengths = bitLengths;
@@ -81,5 +82,12 @@ public class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
                 sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
                 values,
                 bitLengths);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Values: %s BitLengths %s",
+                Arrays.toString(values),
+                Arrays.toString(bitLengths));
     }
 }

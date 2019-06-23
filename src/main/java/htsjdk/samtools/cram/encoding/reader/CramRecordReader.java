@@ -130,6 +130,7 @@ public class CramRecordReader {
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         mapEntry -> new DataSeriesReader<>(
+                                // TODO: why are tags always BYTE_ARRAY ? is that in the spec ?
                                 DataSeriesType.BYTE_ARRAY,
                                 mapEntry.getValue(),
                                 sliceBlocksReadStreams)));

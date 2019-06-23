@@ -103,4 +103,11 @@ public class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer> {
         result = 31 * result + Arrays.hashCode(values);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Values: %s BitLengths %s",
+                Arrays.toString(values),
+                Arrays.toString(bitLengths));
+    }
 }

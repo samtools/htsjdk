@@ -63,4 +63,9 @@ public class GolombIntegerEncoding extends ExperimentalEncoding<Integer> {
                 offset);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Offset: %d m: %d", offset, m);
+    }
+
 }

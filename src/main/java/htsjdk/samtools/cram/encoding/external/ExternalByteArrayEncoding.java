@@ -27,12 +27,10 @@ import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 
-public class ExternalByteArrayEncoding extends CRAMEncoding<byte[]> {
-    private final int externalBlockContentId;
+public class ExternalByteArrayEncoding extends ExternalEncoding<byte[]> {
 
     public ExternalByteArrayEncoding(final int externalBlockContentId) {
-        super(EncodingID.EXTERNAL);
-        this.externalBlockContentId = externalBlockContentId;
+        super(externalBlockContentId);
     }
 
     public static ExternalByteArrayEncoding fromParams(byte[] params) {
@@ -51,5 +49,11 @@ public class ExternalByteArrayEncoding extends CRAMEncoding<byte[]> {
         final ByteArrayOutputStream os = sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getExternalOutputStream(externalBlockContentId);
         return new ExternalByteArrayCodec(is, os);
     }
+
+    @Override
+    public String toString() {
+        return String.format("Content ID: %d", externalBlockContentId);
+    }
+
 
 }

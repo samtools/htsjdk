@@ -43,6 +43,7 @@ public class CompressionHeader {
     private static final String TD_tagIdsDictionary = "TD";
     private static final String SM_substitutionMatrix = "SM";
 
+    //TODO: add public methods for readNamesINCluded and referenceRequired
     public boolean readNamesIncluded = true;
     private boolean APDelta = true;
     private boolean referenceRequired = true;

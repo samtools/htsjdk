@@ -37,4 +37,11 @@ public class SubexponentialIntegerEncodingTest extends HtsjdkTest {
     public void negativeK() {
         new SubexponentialIntegerEncoding(0, -1);
     }
+
+    @Test
+    public void testToString() {
+        final SubexponentialIntegerEncoding encoding = new SubexponentialIntegerEncoding(1, 3);
+        Assert.assertTrue(encoding.toString().contains("1"));
+        Assert.assertTrue(encoding.toString().contains("3"));
+    }
 }
