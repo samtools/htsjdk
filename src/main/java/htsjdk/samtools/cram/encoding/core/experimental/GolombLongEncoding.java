@@ -29,7 +29,7 @@ public class GolombLongEncoding extends ExperimentalEncoding<Long> {
     private final int offset;
     private final int m;
 
-    private GolombLongEncoding(final int offset, final int m) {
+    public GolombLongEncoding(final int offset, final int m) {
         super(EncodingID.GOLOMB);
         this.offset = offset;
         this.m = m;
@@ -61,4 +61,10 @@ public class GolombLongEncoding extends ExperimentalEncoding<Long> {
                 offset,
                 m);
     }
+
+    @Override
+    public String toString() {
+        return String.format("Offset: %d m: %d", offset, m);
+    }
+
 }

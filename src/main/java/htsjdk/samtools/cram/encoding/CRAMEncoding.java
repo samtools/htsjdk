@@ -44,6 +44,12 @@ public abstract class CRAMEncoding<T> {
         return encodingId;
     }
 
+    // TODO: The interconversion method names are confusing:
+    // TODO:   this (base) class has a `toParam` method that returns type `EncodingParams`
+    // TODO:   every subclass has a static `fromParams` that takes a byteArray and returns a subclass instance
+    // TODO:   (not an `EncodingParams`)
+    // TODO: Should/can these be symmetric and both use `EncodingParams` ? or can we get rid of EncodingParams
+    // TODO: altogether ? Its redundant with this class since you can always render one given a CRAMEncoding
     public EncodingParams toParam() {
         return new EncodingParams(id(), toByteArray());
     }

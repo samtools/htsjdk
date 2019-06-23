@@ -302,14 +302,15 @@ public class Block {
     @Override
     public String toString() {
         final byte[] uncompressed = getUncompressedContent();
-        final byte[] compressed = getCompressedContent();
-
         final String raw = Arrays.toString(Arrays.copyOf(uncompressed, Math.min(5, uncompressed.length)));
-        final String comp = Arrays.toString(Arrays.copyOf(compressed, Math.min(5, compressed.length)));
 
-        return String.format("compression method=%s, content type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s, comp=%s.",
-                getCompressionMethod().name(), getContentType().name(), getContentId(),
-                getUncompressedContentSize(), getCompressedContentSize(), raw, comp);
+        return String.format("compression method=%s, content type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s",
+                getCompressionMethod().name(),
+                getContentType().name(),
+                getContentId(),
+                getUncompressedContentSize(),
+                getCompressedContentSize(),
+                raw);
     }
 
 }

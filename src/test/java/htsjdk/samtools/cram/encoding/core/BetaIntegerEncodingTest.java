@@ -47,4 +47,11 @@ public class BetaIntegerEncodingTest extends HtsjdkTest {
     public void bitsPerValue(final int bitsPerValue) {
         new BetaIntegerEncoding(0, bitsPerValue);
     }
+
+    @Test
+    public void testToString() {
+        final BetaIntegerEncoding encoding = new BetaIntegerEncoding(1, 27);
+        Assert.assertTrue(encoding.toString().contains("1"));
+        Assert.assertTrue(encoding.toString().contains("27"));
+    }
 }

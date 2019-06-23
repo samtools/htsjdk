@@ -57,4 +57,8 @@ public class GammaIntegerEncoding extends CRAMEncoding<Integer> {
                 offset);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Offset: %d", offset);
+    }
 }

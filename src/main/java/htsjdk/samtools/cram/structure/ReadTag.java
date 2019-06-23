@@ -83,6 +83,7 @@ public class ReadTag implements Comparable<ReadTag> {
         code = SAMTag.makeBinaryTag(this.key);
     }
 
+    // two bytes are tag name and one byte is type
     public static int name3BytesToInt(final byte[] name) {
         int value = 0xFF & name[0];
         value <<= 8;
@@ -103,6 +104,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
+    // two bytes are tag name and one byte is type
     public static String intToNameType3Bytes(final int value) {
         final byte b3 = (byte) (0xFF & value);
         final byte b2 = (byte) (0xFF & (value >> 8));

@@ -29,7 +29,7 @@ public class GolombRiceIntegerEncoding extends ExperimentalEncoding<Integer> {
     private final int offset;
     private final int m;
 
-    private GolombRiceIntegerEncoding(final int offset, final int m) {
+    public GolombRiceIntegerEncoding(final int offset, final int m) {
         super(EncodingID.GOLOMB_RICE);
         this.offset = offset;
         this.m = m;
@@ -62,4 +62,8 @@ public class GolombRiceIntegerEncoding extends ExperimentalEncoding<Integer> {
                 m);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Offset: %d m: %d", offset, m);
+    }
 }

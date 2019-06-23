@@ -30,4 +30,10 @@ public class GammaIntegerEncodingTest extends HtsjdkTest {
         final GammaIntegerEncoding fromParams = GammaIntegerEncoding.fromParams(expected);
         Assert.assertEquals(fromParams.toByteArray(), expected);
     }
+
+    @Test
+    public void testToString() {
+        final GammaIntegerEncoding encoding = new GammaIntegerEncoding(3);
+        Assert.assertTrue(encoding.toString().contains("3"));
+    }
 }

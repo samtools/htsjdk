@@ -103,6 +103,7 @@ public class CompressionHeaderEncodingMap {
             final byte[] paramBytes = new byte[paramLen];
             buffer.get(paramBytes);
 
+            //TODO: why can't this just instantiate and store the CRAMEncoding directly, and get rid of EncodingParams
             encodingMap.put(dataSeries, new EncodingParams(id, paramBytes));
         }
     }

@@ -70,4 +70,8 @@ public class SubexponentialIntegerEncoding extends CRAMEncoding<Integer> {
                 k);
     }
 
+    @Override
+    public String toString() {
+        return String.format("Offset: %d k: %d", offset, k);
+    }
 }
