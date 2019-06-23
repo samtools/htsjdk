@@ -18,23 +18,20 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ContainerFactory {
     private final SAMFileHeader samFileHeader;
-    private final int recordsPerSlice; // default 10000; see CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE
+    final CRAMEncodingStrategy encodingStrategy;
     private boolean preserveReadNames = true;
     private long globalRecordCounter = 0;
 
-    public ContainerFactory(final SAMFileHeader samFileHeader, final int recordsPerSlice) {
+    public ContainerFactory(final SAMFileHeader samFileHeader, final CRAMEncodingStrategy encodingStrategy) {
         this.samFileHeader = samFileHeader;
-        this.recordsPerSlice = recordsPerSlice;
+        this.encodingStrategy = encodingStrategy;
     }
 
     /**
@@ -60,9 +57,9 @@ public class ContainerFactory {
 
         int baseCount = 0;
         long lastGlobalRecordCounter = globalRecordCounter;
-        for (int i = 0; i < records.size(); i += recordsPerSlice) {
+        for (int i = 0; i < records.size(); i += encodingStrategy.getRecordsPerSlice()) {
             final List<CramCompressionRecord> sliceRecords = records.subList(i,
-                    Math.min(records.size(), i + recordsPerSlice));
+                    Math.min(records.size(), i + encodingStrategy.getRecordsPerSlice()));
             final Slice slice = Slice.buildSlice(sliceRecords, compressionHeader);
             slice.globalRecordCounter = globalRecordCounter;
             globalRecordCounter += slice.nofRecords;

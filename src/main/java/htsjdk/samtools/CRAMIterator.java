@@ -24,11 +24,7 @@ import htsjdk.samtools.cram.build.CramSpanContainerIterator;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableStream;
 
 import java.io.InputStream;
@@ -88,7 +84,8 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        records = new ArrayList<>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
+        //TODO: pass in a CRAMEncodingStrategy
+        records = new ArrayList<>(new CRAMEncodingStrategy().getRecordsPerSlice());
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -110,7 +107,8 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        records = new ArrayList<>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
+        //TODO: pass in a CRAMEncodingStrategy
+        records = new ArrayList<>(new CRAMEncodingStrategy().getRecordsPerSlice());
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());

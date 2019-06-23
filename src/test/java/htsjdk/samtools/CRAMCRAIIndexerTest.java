@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
@@ -51,17 +52,21 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
 
         final ReferenceSource source = new ReferenceSource(new FakeReferenceSequenceFile(samFileHeader.getSequenceDictionary().getSequences()));
 
-        // force the containers to be small to ensure there are 2
-        int originalDefaultSize = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE;
-        CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = 3;
-
         byte[] cramBytes;
         byte[] indexBytes;
 
         try (final ByteArrayOutputStream cramBAOS = new ByteArrayOutputStream();
              final ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream()) {
 
-            final CRAMContainerStreamWriter containerWriter = new CRAMContainerStreamWriter(cramBAOS, indexBAOS, source, samFileHeader, "test");
+            final CRAMContainerStreamWriter containerWriter = new CRAMContainerStreamWriter(
+                    // force the containers to be small to ensure there are 2
+                    new CRAMEncodingStrategy().setReadsPerSlice(3),
+                    source,
+                    samFileHeader,
+                    cramBAOS,
+                    //TODO: this fixes https://github.com/samtools/htsjdk/issues/1339 where this was creating BAI not CRAI
+                    new CRAMCRAIIndexer(indexBAOS, samFileHeader),
+                    "test");
             containerWriter.writeHeader(samFileHeader);
 
             containerWriter.writeAlignment(createSAMRecord(samFileHeader, 0, 0, 1));
@@ -76,9 +81,6 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
 
             cramBytes = cramBAOS.toByteArray();
             indexBytes = indexBAOS.toByteArray();
-        } finally {
-            // failing to reset this can cause unrelated tests to fail if this test fails
-            CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = originalDefaultSize;
         }
 
         // These tests all fail due to https://github.com/samtools/htsjdk/issues/531
