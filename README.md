@@ -112,8 +112,27 @@ Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support |
 8  | Jan 2019 | TBD      | TBD
 11 | Sep 2022 | TBD      | TBD
 
+ 
+### Meaning of the Htsjdk version number
+We encourage downstream projects to use the most recent htsjdk release in order to have access to the most up to date features and bug fixes.  It is therefore important therefore to make upgrading to newer versions as easy as possible. We make a best effort to adhere to the following principles in order to minimize disruption to projects that depend on htsjdk:
+* Avoid making breaking changes whenever possible. A breaking change is one which requires downstream projects to recompile against the new version of htsjdk or make changes to their source code.  These include both binary incompatiblities and source incompatibilites. 
+* Deprecate and provide new alternatives instead of removing exising APIs.
+* Document breaking changes in the release notes.
+* Provide clear instructions for upgrading to new API's when breaking changes/ deprecations occur.
+* Provide explanations for the rare cases when functionality is deprecated or removed without replacement.
 
-HTSJDK is migrating to semantic versioning (http://semver.org/). We will eventually adhere to it strictly and bump our major version whenever there are breaking changes to our API, but until we more clearly define what constitutes our official API, clients should assume that every release potentially contains at least minor changes to public methods.
+We treat any accessible class/method/field as part of our API and attempt to minimize changes to it with the following exceptions:
+  * The `htsjdk.samtools.cram` package and subpackages are considered unstable and are undergoing major changes.
+  * Code which has not yet been released in a numbered version is considered unstable and subject to change without warning.
+  * We consider changes to *public* code more disruptive than changes to *protected* code in classes that we believe are not generally subclassed by the downstream community.
+  
+Our current version number has 3 parts. **ex: 2.19.0**
+
+* **Major version bumps (2.19.0 -> 3.0.0)** allow large changes to the existing API's and require substantial changes in downstream projects. These are extremely rare. 
+* **Minor versions bumps ( 2.18.2 -> 2.19.0)** may include additions to the API and well as breaking changes which may require recompiling downstream projects. We attempt to limit breaking changes as much as possible and generally most projects which depend on htsjdk should be able to update to a new minor version with no changes or only simple and obvious changes. We may introduce deprecations which suggest but don't mandate more complex code changes. Minor releases may also remove functionality which has been deprecated for a long time.
+* **Patch version changes (2.18.1 -> 2.18.2)** include additions and possibly deprecations but no breaking changes.
+
+
 
 [1]: http://samtools.sourceforge.net
 [2]: http://vcftools.sourceforge.net/specs.html
