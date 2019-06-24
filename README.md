@@ -90,7 +90,8 @@ From time to time if dependencies change in htsjdk you may need to refresh the p
 
 ### Code style
 Style guides files are included for Intellij and Eclipse.  These are a variation of the [Google Java Style](https://google.github.io/styleguide/javaguide.html) with 4 space indentation.
-This style is suggested for new code but not rigidly checked.  We allow for contributors to deviate from the style when it improves clarity or to match surrounding code. Existing code does not necessarily conform to this and does not need to be modified to do so. 
+This style is suggested for new code but not rigidly checked.  We allow for contributors to deviate from the style when it improves clarity or to match surrounding code. 
+Existing code does not necessarily conform to this and does not need to be modified to do so, but users are encouraged to correct the formatting of code that they modify.
 
 ### Licensing Information
 
