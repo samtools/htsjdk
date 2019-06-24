@@ -126,7 +126,7 @@ We treat any accessible class/method/field as part of our API and attempt to min
   * Code which has not yet been released in a numbered version is considered unstable and subject to change without warning.
   * We consider changes to *public* code more disruptive than changes to *protected* code in classes that we believe are not generally subclassed by the downstream community.
   
-Our current version number has 3 parts. ** ex: 2.19.0 **
+Our current version number has 3 parts. **ex: 2.19.0**
 
 * **Major version bumps (2.19.0 -> 3.0.0)** allow large changes to the existing API's and require substantial changes in downstream projects. These are extremely rare. 
 * **Minor versions bumps ( 2.18.2 -> 2.19.0)** may include additions to the API and well as breaking changes which may require recompiling downstream projects. We attempt to limit breaking changes as much as possible and generally most projects which depend on htsjdk should be able to update to a new minor version with no changes or only simple and obvious changes. We may introduce deprecations which suggest but don't mandate more complex code changes. Minor releases may also remove functionality which has been deprecated for a long time.
