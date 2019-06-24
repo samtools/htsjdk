@@ -1,0 +1,8 @@
+##fileformat=VCFv4.1
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##contig=<ID=chr1,length=14640000>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12878
+chr1	1	.	C	T	-Infinity	.	.	GT:GQ	./.:-Infinity
+chr1	2	.	C	T	-infinity	.	.	GT:GQ	./.:-infinity
+chr1	3	.	C	T	-Inf	.	.	GT:GQ	./.:-Inf
+chr1	4	.	C	T	-inf	.	.	GT:GQ	./.:-inf

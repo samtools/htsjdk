@@ -1,6 +1,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.HtsjdkTest;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -49,6 +50,27 @@ public class VCFUtilsTest extends HtsjdkTest {
                 new VCFHeader(VCFHeaderVersion.toHeaderVersion(hv), Collections.emptySet(), Collections.emptySet()))
         );
         VCFUtils.smartMergeHeaders(headersToMerge, true);
+    }
+
+    @DataProvider(name = "caseIntolerantDoubles")
+    public Object[][] getCaseIntolerantDoubles() {
+        return new Object[][]{
+                {Double.NaN, Arrays.asList("NaN", "nan", "+nan", "-nan")},
+                {Double.POSITIVE_INFINITY, Arrays.asList("+Infinity", "+infinity", "+Inf", "+inf", "Infinity", "infinity", "Inf", "inf")},
+                {Double.NEGATIVE_INFINITY, Arrays.asList("-Infinity", "-infinity", "-Inf", "-inf")},
+                {null, Arrays.asList("znan", "nanz", "zinf", "infz", "hello")},
+        };
+    }
+
+    @Test(dataProvider = "caseIntolerantDoubles")
+    public void testCaseIntolerantDoubles(Double value, final List<String> stringDoubles) {
+        stringDoubles.forEach(sd -> {
+                try {
+                    Assert.assertEquals(VCFUtils.parseVcfDouble(sd), value);
+                } catch (NumberFormatException e) {
+                    Assert.assertNull(value);
+                }
+        });
     }
 
 }

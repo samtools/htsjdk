@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -526,7 +527,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         Object x = getExtendedAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof Double ) return (Double)x;
-        return Double.valueOf((String)x); // throws an exception if this isn't a string
+        return VCFUtils.parseVcfDouble((String) x); // throws an exception if this isn't a string
     }
 
     /**

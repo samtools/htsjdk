@@ -37,9 +37,13 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class VCFUtils {
+
+    private static final Pattern INF_OR_NAN_PATTERN = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
 
     public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
         // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
@@ -248,6 +252,31 @@ public class VCFUtils {
         }
 
         return output;
+    }
+
+    /**
+     * Parses a String as a Double, being tolerant for case-insensitive NaN and Inf/Infinity.
+     */
+    public static double parseVcfDouble(final String str) {
+        try {
+            return Double.parseDouble(str);
+        } catch (NumberFormatException e) {
+            final Matcher matcher = INF_OR_NAN_PATTERN.matcher(str);
+            if (matcher.matches()) {
+                final double ret;
+                if (matcher.group("inf") == null) {
+                    ret = Double.NaN;
+                } else {
+                    if (matcher.group("sign").equals("-")) {
+                        ret = Double.NEGATIVE_INFINITY;
+                    } else {
+                        ret = Double.POSITIVE_INFINITY;
+                    }
+                }
+                return ret;
+            }
+            throw e;
+        }
     }
 
     private static String getReferenceAssembly(final String refPath) {

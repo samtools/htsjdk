@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -271,7 +272,7 @@ public class GenotypeLikelihoods {
                 if (strings[i].equals(VCFConstants.MISSING_VALUE_v4)) {
                   missing++;
                 } else {
-                  likelihoodsAsVector[i] = Double.parseDouble(strings[i]);
+                  likelihoodsAsVector[i] = VCFUtils.parseVcfDouble(strings[i]);
                 }
             }
             if (missing == 0) {

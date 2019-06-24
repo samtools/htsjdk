@@ -347,4 +347,10 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
         GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.clear();
         final List<Integer> alleles = GenotypeLikelihoods.getAlleles(0, 3);
     }
+
+    @Test
+    public void testFromCaseInsensitiveString() {
+        GenotypeLikelihoods gl = GenotypeLikelihoods.fromGLField("nan,Infinity,-inf");
+        assertDoubleArraysAreEqual(gl.getAsVector(), new double[]{Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY});
+    }
 }
