@@ -90,7 +90,7 @@ public class VCFEncoderTest extends HtsjdkTest {
         tests.add(new Object[]{keepMissing, vc, "./.:.:2", alleleMap, formatKeys});
         baseGT.noAttributes();
 
-        //check that we only produce a single . when writing attributes with multiple values instead of .,.
+        // check that we only produce a single . when writing attributes with multiple values instead of .,.
         vc = baseVC.genotypes(baseGT.attribute("CC", VCFConstants.MISSING_VALUE_v4).make()).make();
         tests.add(new Object[]{keepMissing, vc, "./.:.", alleleMap, Arrays.asList("GT", "CC")});
         baseGT.noAttributes();
