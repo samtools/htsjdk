@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
@@ -7,9 +9,11 @@ import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -105,6 +109,43 @@ public class CompressionHeaderEncodingMap {
 
             //TODO: why can't this just instantiate and store the CRAMEncoding directly, and get rid of EncodingParams
             encodingMap.put(dataSeries, new EncodingParams(id, paramBytes));
+        }
+    }
+
+    /**
+     * Constructor used to create an encoding map from a serialized JSON file when writing a CRAM.
+     * @param encodingMapPath the CRAM input stream to be consumed
+     */
+    public static CompressionHeaderEncodingMap readFromPath(final Path encodingMapPath) {
+        //TODO: replace FileReader with something path friendly
+        try (final FileReader fr = new FileReader(encodingMapPath.toFile())) {
+            final Gson gson = new Gson();
+            return gson.fromJson(fr, CompressionHeaderEncodingMap.class);
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Failed opening encoding strategy json file", e);
+        }
+    }
+
+
+    /**
+     * Constructor used to write a serialized (JSON) encoding map to record the encoding map
+     * used to create a particular CRAM stream..
+     * @param encodingMapPath the path to an encoding map JSON file
+     */
+    public void writeToPath(final Path encodingMapPath) {
+        //TODO: no external compressors
+        //TODO: no version #
+        //TODO: no encoding Params are present
+
+        //TODO: replace FilerWriter with something path friendly
+        try (final FileWriter fw = new FileWriter(encodingMapPath.toFile())) {
+            GsonBuilder gsonBuilder = new GsonBuilder();
+            gsonBuilder.setPrettyPrinting();
+            final Gson gson = gsonBuilder.create();
+            final String jsonEncodingString = gson.toJson(this);
+            fw.write(jsonEncodingString);
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Failed creating json file for encoding strategy", e);
         }
     }
 

@@ -66,4 +66,10 @@ public abstract class ExternalCompressor {
             }
         };
     }
+
+    @Override
+    public String toString() {
+        final String methodString = method.toString();
+        return methodString;
+    }
 }
