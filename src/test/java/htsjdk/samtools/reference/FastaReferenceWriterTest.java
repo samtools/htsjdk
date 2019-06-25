@@ -258,7 +258,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         IOUtil.deleteOnExit(fastaFile);
         Files.delete(fastaFile);
 
-        final Path fastaIndexFile = fastaFile.resolveSibling(fastaFile.getFileName().toString() + ReferenceSequenceFileFactory.FASTA_INDEX_EXTENSION);
+        final Path fastaIndexFile = fastaFile.resolveSibling(fastaFile.getFileName().toString() + FileExtensions.FASTA_INDEX);
         final Path gzipIndexFile = GZIIndex.resolveIndexNameForBgzipFile(fastaFile);
         final Path dictFile = fastaFile.resolveSibling(fastaFile.getFileName().toString().replaceAll("\\.fa", ".dict").replaceAll("\\.gz", ""));
         IOUtil.deleteOnExit(gzipIndexFile);
@@ -648,7 +648,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
     @DataProvider
     Iterator<Object[]> fastaExtensions() {
-        return ReferenceSequenceFileFactory.FASTA_EXTENSIONS.stream()
+        return FileExtensions.FASTA.stream()
                 .filter(s -> !s.endsWith(".gz"))
                 .map(s -> new Object[]{s})
                 .collect(Collectors.toList())

@@ -25,8 +25,8 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
@@ -1134,7 +1134,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
     private static Object[][] getFileExtensions(){
         return new Object[][]{
-                {BamFileIoUtils.BAM_FILE_EXTENSION}, {IOUtil.SAM_FILE_EXTENSION}, {CramIO.CRAM_FILE_EXTENSION}
+                {FileExtensions.BAM}, {FileExtensions.SAM}, {FileExtensions.CRAM}
         };
     }
 

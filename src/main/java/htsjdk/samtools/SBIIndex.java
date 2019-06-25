@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.FileExtensions;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -113,7 +114,11 @@ public final class SBIIndex implements Serializable {
         }
     }
 
-    public static final String FILE_EXTENSION = ".sbi";
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#SBI} instead.
+     */
+    @Deprecated
+    public static final String FILE_EXTENSION = FileExtensions.SBI;
 
     /**
      * SBI magic number.

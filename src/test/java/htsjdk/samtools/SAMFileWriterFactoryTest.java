@@ -26,9 +26,9 @@ package htsjdk.samtools;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import org.testng.Assert;
@@ -58,7 +58,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
     @Test()
     public void ordinaryFileWriterTest() throws Exception {
-        final File outputFile = File.createTempFile("tmp.", BamFileIoUtils.BAM_FILE_EXTENSION);
+        final File outputFile = File.createTempFile("tmp.", FileExtensions.BAM);
         outputFile.delete();
         outputFile.deleteOnExit();
         createSmallBam(outputFile);
@@ -74,7 +74,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
     @Test()
     public void ordinaryPathWriterTest() throws Exception {
         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
-            final Path outputPath = jimfs.getPath("ordinaryPathWriterTest" + BamFileIoUtils.BAM_FILE_EXTENSION);
+            final Path outputPath = jimfs.getPath("ordinaryPathWriterTest" + FileExtensions.BAM);
             createSmallBam(outputPath);
             final Path indexPath = SamFiles.findIndex(outputPath);
             final Path md5File = IOUtil.addExtension(outputPath, ".md5");
@@ -383,7 +383,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
     @Test
     public void testMakeCRAMWriterWithOptions() throws Exception {
-        final File outputFile = prepareOutputFileWithSuffix("." + CramIO.CRAM_FILE_EXTENSION);
+        final File outputFile = prepareOutputFileWithSuffix("." + FileExtensions.CRAM);
         final SAMFileHeader header = new SAMFileHeader();
         final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
         final File referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta");
@@ -399,7 +399,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
     // throws an exception since no reference is provided
     @Test(expectedExceptions = IllegalStateException.class)
     public void testMakeCRAMWriterWithNoReference() throws Exception {
-        final File outputFile = prepareOutputFileWithSuffix("." + CramIO.CRAM_FILE_EXTENSION);
+        final File outputFile = prepareOutputFileWithSuffix("." + FileExtensions.CRAM);
         final SAMFileHeader header = new SAMFileHeader();
         final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
 
@@ -410,7 +410,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
     @Test
     public void testMakeCRAMWriterIgnoresOptions() throws Exception {
-        final File outputFile = prepareOutputFileWithSuffix("." + CramIO.CRAM_FILE_EXTENSION);
+        final File outputFile = prepareOutputFileWithSuffix("." + FileExtensions.CRAM);
         final SAMFileHeader header = new SAMFileHeader();
         final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
         final File referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta");
@@ -426,7 +426,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
     @Test
     public void testMakeCRAMWriterPresortedDefault() throws Exception {
-        final File outputFile = prepareOutputFileWithSuffix("." + CramIO.CRAM_FILE_EXTENSION);
+        final File outputFile = prepareOutputFileWithSuffix("." + FileExtensions.CRAM);
         final SAMFileHeader header = new SAMFileHeader();
         final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
         final File referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta");
@@ -444,7 +444,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
     public void testAsync() throws IOException {
         final SAMFileWriterFactory builder = new SAMFileWriterFactory();
 
-        final File outputFile = prepareOutputFileWithSuffix(BamFileIoUtils.BAM_FILE_EXTENSION);
+        final File outputFile = prepareOutputFileWithSuffix(FileExtensions.BAM);
         final SAMFileHeader header = new SAMFileHeader();
         final File referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta");
 

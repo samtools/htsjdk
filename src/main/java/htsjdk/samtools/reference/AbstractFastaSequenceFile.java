@@ -29,6 +29,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 
@@ -107,7 +108,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
             return dictionary;
         }
         // try without removing the file extension
-        final Path dictionaryExt = fastaPath.resolveSibling(fastaPath.getFileName().toString() + IOUtil.DICT_FILE_EXTENSION);
+        final Path dictionaryExt = fastaPath.resolveSibling(fastaPath.getFileName().toString() + FileExtensions.DICT);
         if (Files.exists(dictionaryExt)) {
             return dictionaryExt;
         }

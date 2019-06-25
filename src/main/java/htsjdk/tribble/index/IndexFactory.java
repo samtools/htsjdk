@@ -40,7 +40,6 @@ import htsjdk.tribble.index.tabix.TabixIndexCreator;
 import htsjdk.tribble.readers.*;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.ParsingUtils;
-import htsjdk.tribble.util.TabixUtils;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -210,7 +209,7 @@ public class IndexFactory {
         if (indexFile.endsWith(".gz")) {
             return new GZIPInputStream(inputStreamInitial);
         }
-        else if (indexFile.endsWith(TabixUtils.STANDARD_INDEX_EXTENSION)) {
+        else if (indexFile.endsWith(FileExtensions.TABIX_INDEX)) {
             return new BlockCompressedInputStream(inputStreamInitial);
         }
         else {

@@ -26,6 +26,7 @@
 package htsjdk.variant;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.variant.example.PrintVariantsExample;
 import htsjdk.variant.vcf.VCFUtils;
@@ -41,7 +42,7 @@ import java.util.stream.IntStream;
 public class PrintVariantsExampleTest extends HtsjdkTest {
     @Test
     public void testExampleWriteFile() throws IOException {
-        final File tempFile = File.createTempFile("example", IOUtil.VCF_FILE_EXTENSION);
+        final File tempFile = File.createTempFile("example", FileExtensions.VCF);
         tempFile.deleteOnExit();
         File f1 = new File("src/test/resources/htsjdk/variant/ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf");
         final String[] args = {

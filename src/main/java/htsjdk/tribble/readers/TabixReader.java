@@ -27,6 +27,7 @@ import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 
@@ -158,7 +159,7 @@ public class TabixReader {
         mFp = new BlockCompressedInputStream(stream);
         mIndexWrapper = indexWrapper;
         if(indexPath == null){
-            mIndexPath = ParsingUtils.appendToPath(filePath, TabixUtils.STANDARD_INDEX_EXTENSION);
+            mIndexPath = ParsingUtils.appendToPath(filePath, FileExtensions.TABIX_INDEX);
         } else {
             mIndexPath = indexPath;
         }

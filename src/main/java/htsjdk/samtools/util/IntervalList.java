@@ -63,7 +63,11 @@ import java.util.Optional;
  * @author Yossi Farjoun
  */
 public class IntervalList implements Iterable<Interval> {
-    public static final String INTERVAL_LIST_FILE_EXTENSION = ".interval_list";
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#INTERVAL_LIST} instead.
+     */
+    @Deprecated
+    public static final String INTERVAL_LIST_FILE_EXTENSION = FileExtensions.INTERVAL_LIST;
 
     private final SAMFileHeader header;
     private final List<Interval> intervals = new ArrayList<>();
