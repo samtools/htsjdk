@@ -45,6 +45,8 @@ class SliceIO {
 
         final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getUncompressedContent());
 
+        //TODO: validate that this matches the container
+        // if MULTIPLE_REFERENCE_ID, enclosing container must also be MULTIPLE_REFERENCE_ID
         final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
         final Slice slice = new Slice(compressionHeader, refContext);
         slice.alignmentStart = ITF8.readUnsignedITF8(parseInputStream);

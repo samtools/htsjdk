@@ -25,11 +25,7 @@ import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
-import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.EncodingParams;
-import htsjdk.samtools.cram.structure.ReadTag;
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
@@ -56,7 +52,25 @@ public class CompressionHeaderFactory {
     private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
 
-    final CompressionHeader compressionHeader = new CompressionHeader();
+    private CompressionHeader compressionHeader;
+
+    /**
+     * Create a CompressionHeaderFactory using default CRAMEncodingStrategy.
+     */
+    public CompressionHeaderFactory() {
+        this(new CRAMEncodingStrategy());
+    }
+
+    /**
+     * Create a CompressionHeaderFactory using the provided CRAMEncodingStrategy.
+     * @param encodingStrategy
+     */
+    public CompressionHeaderFactory(final CRAMEncodingStrategy encodingStrategy) {
+        // TODO: the path should be interpreted by the caller so it only
+        // TODO: happens once for the (container ?) factory rather than once
+        // TODO: per container
+        compressionHeader = new CompressionHeader(encodingStrategy);
+    }
 
     /**
      * Decides on compression methods to use for the given records.
@@ -71,6 +85,8 @@ public class CompressionHeaderFactory {
      */
     public CompressionHeader build(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
 
+        //TODO: this should be set by the caller since it should only be set once on the header so
+        //TODO: that all the containers created by the factory use the same settings
         compressionHeader.setIsCoordinateSorted(coordinateSorted);
         compressionHeader.setTagIdDictionary(buildTagIdDictionary(records));
 

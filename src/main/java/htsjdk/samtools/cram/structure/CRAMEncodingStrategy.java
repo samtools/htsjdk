@@ -19,7 +19,7 @@ public class CRAMEncodingStrategy {
     private final String strategyName = "default";
 
     // encoding strategies
-    //private CompressionMap compressionMap;
+    private String customCompressionMapPath = "";
     private int gzipCompressionLevel = Defaults.COMPRESSION_LEVEL;
     private int readsPerSlice = 10000; // use to replace CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE.;
     private int slicesPerContainer = 1;
@@ -43,6 +43,8 @@ public class CRAMEncodingStrategy {
         return this;
     }
 
+
+    public String getCustomCompressionMapPath() { return customCompressionMapPath; }
     public int getGZIPCompressionLevel() { return gzipCompressionLevel; }
     public int getRecordsPerSlice() { return readsPerSlice; }
     public int getSlicesPerContainer() { return slicesPerContainer; }
