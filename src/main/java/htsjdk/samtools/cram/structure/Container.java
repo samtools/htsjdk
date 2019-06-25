@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Container {
+    // if MULTIPLE_REFERENCE_ID, all slices in the container must also be MULTIPLE_REFERENCE_ID
     private final ReferenceContext referenceContext;
 
     // container header as defined in the specs, in addition to sequenceId from ReferenceContext

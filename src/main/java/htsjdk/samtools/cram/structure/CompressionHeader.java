@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -57,6 +58,27 @@ public class CompressionHeader {
 
     public CompressionHeader() {
         encodingMap = new CompressionHeaderEncodingMap();
+        tMap = new TreeMap<>();
+    }
+
+    // TODO: the path should be interpreted by the caller so it only
+    // TODO: happens once for the (container ?) factory rather than once
+    // TODO: per container
+    /**
+     * Create a compression header using the given encodingStrategy.
+     * @param encodingStrategy
+     */
+    public CompressionHeader(final CRAMEncodingStrategy encodingStrategy) {
+        final String customCompressionMapPath = encodingStrategy.getCustomCompressionMapPath();
+        if (customCompressionMapPath.isEmpty()) {
+            encodingMap = new CompressionHeaderEncodingMap();
+        } else {
+            try {
+                encodingMap = CompressionHeaderEncodingMap.readFromPath(IOUtil.getPath(customCompressionMapPath));
+            } catch (final IOException e) {
+                throw new RuntimeIOException("Failure reading custom encoding map from Path", e);
+            }
+        }
         tMap = new TreeMap<>();
     }
 
