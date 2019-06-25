@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.github.samtools</groupId>
+  <artifactId>htsjdk</artifactId>
+  <version>2.19.0</version>
+  <name>HTSJDK</name>
+  <description>A Java API for high-throughput sequencing data (HTS) formats</description>
+  <url>https://samtools.github.io/htsjdk/</url>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>htsjdk</id>
+      <name>Htsjdk Team</name>
+      <url>https://github.com/samtools/htsjdk</url>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:git@github.com:samtools/htsjdk.git</connection>
+    <url>git@github.com:samtools/htsjdk.git</url>
+  </scm>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-jexl</artifactId>
+      <version>2.1.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.1.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.xerial.snappy</groupId>
+      <artifactId>snappy-java</artifactId>
+      <version>1.1.4</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+      <version>1.4.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.tukaani</groupId>
+      <artifactId>xz</artifactId>
+      <version>1.5</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>gov.nih.nlm.ncbi</groupId>
+      <artifactId>ngs-java</artifactId>
+      <version>2.9.0</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>
