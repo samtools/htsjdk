@@ -387,7 +387,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                                                             final int start) {
         final SAMFileHeader fileHeader = getFileHeader();
         final int referenceIndex = fileHeader.getSequenceIndex(sequence);
-        return new CRAMIntervalIterator(new QueryInterval[]{new QueryInterval(referenceIndex, start, -1)}, true);
+        // alignment start requires a filtering iterator to ensure that records in the
+        // same container that start AFTER the requested start are filtered out
+        return new CRAMAlignmentStartIterator(referenceIndex, start);
     }
 
     @Override
@@ -489,21 +491,32 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return BAMFileSpan.merge(spanArray).toCoordinateArray();
     }
 
-    private class CRAMIntervalIterator extends BAMQueryMultipleIntervalsIteratorFilter
+    /**
+     * This class is intended to be a base class for various CRAM filtering iterators. Subclasses must
+     * ensure that {@link CRAMIntervalIteratorBase#initializeIterator} is called once after the subclass'
+     * construction is complete, preferably at the end of the subclass' constructor, but before any
+     * attempt is made to use the iterator.
+     */
+    private abstract class CRAMIntervalIteratorBase extends BAMQueryMultipleIntervalsIteratorFilter
             implements CloseableIterator<SAMRecord> {
 
         // the granularity of this iterator is the container, so the records returned
         // by it must still be filtered to find those matching the filter criteria
         private CRAMIterator unfilteredIterator;
-        SAMRecord nextRec = null;
+        private SAMRecord nextRec = null;
 
-        public CRAMIntervalIterator(final QueryInterval[] queries, final boolean contained) {
-            this(queries, contained, coordinatesFromQueryIntervals(getIndex(), queries));
+        public CRAMIntervalIteratorBase(final QueryInterval[] queries, final boolean contained) {
+            super(queries, contained);
         }
 
-        public CRAMIntervalIterator(final QueryInterval[] queries, final boolean contained, final long[] coordinates) {
-            super(queries, contained);
-
+        /**
+         * Subclasses must call this method in their constructors AFTER construction of this class is complete.
+         * It can't be called directly by this class's constructor because it calls getRecord(), which may be
+         * overridden in subclasses, and can depend on state established by the subclass' constructor (specifically,
+         * it may need to establish a filter comparator).
+         * @param coordinates array or coordinates as produced by {@link BAMFileSpan#toCoordinateArray}
+         */
+        protected void initializeIterator(final long[] coordinates) {
             if (coordinates != null && coordinates.length != 0) {
 
                 unfilteredIterator = new CRAMIterator(
@@ -537,19 +550,19 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             return getNextRecord();
         }
 
-        private SAMRecord getNextRecord() {
+        protected SAMRecord getNextRecord() {
             final SAMRecord result = nextRec;
             nextRec = null;
-            while(nextRec == null && unfilteredIterator.hasNext()) {
+            while (nextRec == null && unfilteredIterator.hasNext()) {
                 SAMRecord nextRecord = unfilteredIterator.next();
-                switch(compareToFilter(nextRecord)) {
+                switch (compareToFilter(nextRecord)) {
                     case MATCHES_FILTER:
                         nextRec = nextRecord;
                         break;
                     case CONTINUE_ITERATION:
                         continue;
                     case STOP_ITERATION:
-                        break;
+                        return result;
                     default:
                         throw new SAMException("Unexpected return from compareToFilter");
                 }
@@ -560,6 +573,34 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         @Override
         public void remove() {
             throw new RuntimeException("Method \"remove\" not implemented for CRAMIntervalIterator.");
+        }
+    }
+
+    // An iterator for querying reads that match a set of query intervals
+    private class CRAMIntervalIterator extends CRAMIntervalIteratorBase {
+        public CRAMIntervalIterator(final QueryInterval[] queries, final boolean contained) {
+            this(queries, contained, coordinatesFromQueryIntervals(getIndex(), queries));
+        }
+
+        public CRAMIntervalIterator(final QueryInterval[] queries, final boolean contained, final long[] coordinates) {
+            super(queries, contained);
+            initializeIterator(coordinates);
+        }
+    }
+
+    // An iterator for querying reads that match a given alignment start
+    private class CRAMAlignmentStartIterator extends CRAMIntervalIteratorBase {
+        final BAMStartingAtIteratorFilter startingAtIteratorFilter;
+
+        public CRAMAlignmentStartIterator(final int referenceIndex, final int start) {
+            super(new QueryInterval[]{new QueryInterval(referenceIndex, start, -1)}, true);
+            startingAtIteratorFilter = new BAMStartingAtIteratorFilter(referenceIndex, start);
+            initializeIterator(coordinatesFromQueryIntervals(getIndex(), intervals));
+        }
+
+        @Override
+        public FilteringIteratorState compareToFilter(final SAMRecord record) {
+            return startingAtIteratorFilter.compareToFilter(record);
         }
     }
 }

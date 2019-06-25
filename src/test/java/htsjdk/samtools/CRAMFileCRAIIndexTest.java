@@ -53,12 +53,12 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 tmpCraiFile,
                 source,
                 ValidationStringency.STRICT);
-        CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1500);
+        CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519);
 
         Assert.assertTrue(iterator.hasNext());
         SAMRecord record = iterator.next();
         Assert.assertEquals(record.getReferenceName(), "chrM");
-        Assert.assertTrue(record.getAlignmentStart() >= 1500);
+        Assert.assertEquals(record.getAlignmentStart(), 1519);
         reader.close();
     }
 
@@ -69,12 +69,12 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 tmpCraiFile,
                 source,
                 ValidationStringency.STRICT);
-        CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1500);
+        CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519);
         Assert.assertTrue(iterator.hasNext());
         SAMRecord record = iterator.next();
 
         Assert.assertEquals(record.getReferenceName(), "chrM");
-        Assert.assertTrue(record.getAlignmentStart() >= 1500);
+        Assert.assertEquals(record.getAlignmentStart(), 1519);
         reader.close();
     }
 
@@ -85,12 +85,12 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 new SeekableFileStream(tmpCraiFile),
                 source,
                 ValidationStringency.STRICT);
-        CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1500);
+        CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519);
         Assert.assertTrue(iterator.hasNext());
         SAMRecord record = iterator.next();
 
         Assert.assertEquals(record.getReferenceName(), "chrM");
-        Assert.assertTrue(record.getAlignmentStart() >= 1500);
+        Assert.assertEquals(record.getAlignmentStart(), 1519);
         reader.close();
     }
 
@@ -102,7 +102,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 source,
                 ValidationStringency.STRICT);
         try {
-            reader.queryAlignmentStart("chrM", 1500);
+            reader.queryAlignmentStart("chrM", 1519);
         }
         finally {
             reader.close();
@@ -117,7 +117,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 source,
                 ValidationStringency.STRICT);
         try {
-            reader.queryAlignmentStart("chrM", 1500);
+            reader.queryAlignmentStart("chrM", 1519);
         }
         finally {
             reader.close();
