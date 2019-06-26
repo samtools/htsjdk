@@ -398,14 +398,23 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         }
     }
 
-    private void skipToSequence(final int sequenceIndex) {
+    protected void skipToSequence(final int sequenceIndex) {
     	//Use sequence position cache if available
     	if(sequenceIndexes[sequenceIndex] != -1){
     		seek(sequenceIndexes[sequenceIndex]);
     		return;
     	}
+
+        // Use previous sequence position if in cache
+        final int startSequenceIndex;
+        if (sequenceIndex > 0 && sequenceIndexes[sequenceIndex - 1] != -1) {
+            seek(sequenceIndexes[sequenceIndex - 1]);
+            startSequenceIndex = sequenceIndex - 1;
+        } else {
+            startSequenceIndex = 0;
+        }
     	
-        for (int i = 0; i < sequenceIndex; i++) {
+        for (int i = startSequenceIndex; i < sequenceIndex; i++) {
             // System.out.println("# Sequence TID: " + i);
             final int nBins = readInteger();
             // System.out.println("# nBins: " + nBins);
