@@ -44,6 +44,8 @@ public class ContainerHeaderIO {
         try {
             int character = inputStream.read();
             if (character == -1) {
+                // Apparently this is synthesizing an EOF container for v2.1 if one isn't already present
+                // in the input stream. Not sure why thats necessary ?
                 final int majorVersionForEOF = 2;
                 final byte[] eofMarker = major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER;
 

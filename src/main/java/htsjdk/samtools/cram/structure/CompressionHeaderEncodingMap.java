@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.structure;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
@@ -12,6 +13,7 @@ import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.*;
@@ -112,6 +114,14 @@ public class CompressionHeaderEncodingMap {
         }
     }
 
+//    /**
+//     * Constructor used to create an encoding map from a serialized JSON file.
+//     * @param dataSeriesMap treeMpa representing the default encodings
+//     */
+//    protected CompressionHeaderEncodingMap(final TreeMap<DataSeries, EncodingParams> dataSeriesMap) {
+//        encodingMap = dataSeriesMap;
+//    }
+//
     /**
      * Constructor used to create an encoding map from a serialized JSON file when writing a CRAM.
      * @param encodingMapPath the CRAM input stream to be consumed
@@ -120,12 +130,16 @@ public class CompressionHeaderEncodingMap {
         //TODO: replace FileReader with something path friendly
         try (final FileReader fr = new FileReader(encodingMapPath.toFile())) {
             final Gson gson = new Gson();
-            return gson.fromJson(fr, CompressionHeaderEncodingMap.class);
+//            final Type encodingMapType = new TypeToken<TreeMap<DataSeries, EncodingParams>>() { }.getType();
+//            final TreeMap<DataSeries, EncodingParams> encodingMap = gson.fromJson(fr, encodingMapType);
+            final Type encodingMapType = new TypeToken<CompressionHeaderEncodingMap>() { }.getType();
+            final CompressionHeaderEncodingMap encodingMap = gson.fromJson(fr, CompressionHeaderEncodingMap.class);
+//            return new CompressionHeaderEncodingMap(encodingMap);
+            return encodingMap;
         } catch (final IOException e) {
             throw new RuntimeIOException("Failed opening encoding strategy json file", e);
         }
     }
-
 
     /**
      * Constructor used to write a serialized (JSON) encoding map to record the encoding map
@@ -139,10 +153,12 @@ public class CompressionHeaderEncodingMap {
 
         //TODO: replace FilerWriter with something path friendly
         try (final FileWriter fw = new FileWriter(encodingMapPath.toFile())) {
-            GsonBuilder gsonBuilder = new GsonBuilder();
-            gsonBuilder.setPrettyPrinting();
+            GsonBuilder gsonBuilder = new GsonBuilder().enableComplexMapKeySerialization().setPrettyPrinting();
             final Gson gson = gsonBuilder.create();
-            final String jsonEncodingString = gson.toJson(this);
+            //final Type encodingMapType = new TypeToken<TreeMap<DataSeries, EncodingParams>>() { }.getType();
+            //final String jsonEncodingString = gson.toJson(encodingMap, encodingMapType);
+            //final Type encodingMapType = new TypeToken<CompressionHeaderEncodingMap>() { }.getType();
+            final String jsonEncodingString = gson.toJson(this, CompressionHeaderEncodingMap.class);
             fw.write(jsonEncodingString);
         } catch (final IOException e) {
             throw new RuntimeIOException("Failed creating json file for encoding strategy", e);
@@ -180,7 +196,7 @@ public class CompressionHeaderEncodingMap {
      * @param outputStream stream to compress
      * @return Block containing the compressed contends of the stream
      */
-    public Block getCompressedBlockForStream(final Integer contentId, final ByteArrayOutputStream outputStream) {
+    public Block createCompressedBlockForStream(final Integer contentId, final ByteArrayOutputStream outputStream) {
         final ExternalCompressor compressor = externalCompressors.get(contentId);
         final byte[] rawContent = outputStream.toByteArray();
         return Block.createExternalBlock(
@@ -199,15 +215,19 @@ public class CompressionHeaderEncodingMap {
         // encoding map:
         int size = 0;
         for (final DataSeries dataSeries : encodingMap.keySet()) {
-            if (encodingMap.get(dataSeries).id != EncodingID.NULL)
+            // not all DataSeries are used by this implementation
+            if (encodingMap.get(dataSeries).id != EncodingID.NULL) {
                 size++;
+            }
         }
 
         final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
         ITF8.writeUnsignedITF8(size, mapBuffer);
         for (final DataSeries dataSeries : encodingMap.keySet()) {
-            if (encodingMap.get(dataSeries).id == EncodingID.NULL)
+            if (encodingMap.get(dataSeries).id == EncodingID.NULL) {
+                // not all DataSeries are used by this implementation
                 continue;
+            }
 
             final String dataSeriesAbbreviation = dataSeries.getCanonicalName();
             mapBuffer.put((byte) dataSeriesAbbreviation.charAt(0));
@@ -261,4 +281,21 @@ public class CompressionHeaderEncodingMap {
         addExternalEncoding(dataSeries, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CompressionHeaderEncodingMap that = (CompressionHeaderEncodingMap) o;
+
+        if (!this.encodingMap.equals(that.encodingMap)) return false;
+        return this.externalCompressors.equals(that.externalCompressors);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = encodingMap.hashCode();
+        result = 31 * result + externalCompressors.hashCode();
+        return result;
+    }
 }

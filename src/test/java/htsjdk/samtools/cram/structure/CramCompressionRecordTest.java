@@ -182,6 +182,29 @@ public class CramCompressionRecordTest extends HtsjdkTest {
     }
 
     @Test
+    public void testEqualsReadName() {
+        final CramCompressionRecord r1 = new CramCompressionRecord();
+        r1.alignmentStart = 10;
+        r1.readLength = 10;
+        r1.flags = 0;
+        r1.readFeatures = null;
+        r1.readBases = new byte[]{'a', 'c'};
+        r1.qualityScores = null;
+
+        final CramCompressionRecord r2 = new CramCompressionRecord();
+        r2.alignmentStart = r1.alignmentStart;
+        r2.readLength = r1.readLength;
+        r2.flags = r1.flags;
+        r2.readFeatures = r1.readFeatures;
+        r2.readBases = r1.readBases;
+        r2.qualityScores = r1.qualityScores;
+
+        r1.readName = "read1";
+        r2.readName = "read2";
+        Assert.assertNotEquals(r1, r2);
+    }
+
+    @Test
     public void testEqualsAndHashCodeAreConsistent() {
         final List<CramCompressionRecord> records = new ArrayList<>();
 

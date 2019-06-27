@@ -109,6 +109,9 @@ public class SliceBlocksTest  extends HtsjdkTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testRejectEmbeddedReferenceBlockNoContentID() {
         final SliceBlocks sliceBlocks = new SliceBlocks();
+        // this test is a little bogus in that, per the spec, it shouldn't even be possible to create an external block
+        // with contentID=0 in the first place, but we allow it due to  https://github.com/samtools/htsjdk/issues/1232,
+        // and because we have lots of CRAM files floating around that were generated this way
         final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, Block.NO_CONTENT_ID, new byte[2], 2);
         sliceBlocks.setEmbeddedReferenceBlock(block);
     }
