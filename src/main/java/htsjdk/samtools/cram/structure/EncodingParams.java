@@ -40,4 +40,22 @@ public class EncodingParams {
         return id.name() + ":" + StringUtil.bytesToHexString(Arrays.copyOfRange(params, 0, Math.max(20, params.length)));
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        EncodingParams that = (EncodingParams) o;
+
+        if (id != that.id) return false;
+        return Arrays.equals(params, that.params);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id.hashCode();
+        result = 31 * result + Arrays.hashCode(params);
+        return result;
+    }
 }

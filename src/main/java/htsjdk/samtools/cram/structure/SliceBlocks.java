@@ -155,7 +155,7 @@ public class SliceBlocks {
     public int getNumberOfExternalBlocks() { return externalBlocks.size(); }
 
     /**
-     * Read the slic blocks from a CRAM stream.
+     * Read the set of blocks that make up a slice from a CRAM stream.
      * @param majorVersion CRAM version being read
      * @param numberOfBlocks number of blocks to consume from the stream
      * @param inputStream stream to consume
@@ -170,7 +170,7 @@ public class SliceBlocks {
                     break;
                 case EXTERNAL:
                     if (embeddedReferenceBlockContentID == block.getContentId()) {
-                        // TODO: embeddedRefBlock seems redundant since its also kept by ID in external blocks
+                        //also adds this block to the external list
                         setEmbeddedReferenceBlock(block);
                     } else {
                         addExternalBlock(block);

@@ -69,7 +69,23 @@ public abstract class ExternalCompressor {
 
     @Override
     public String toString() {
-        final String methodString = method.toString();
-        return methodString;
+        return method.toString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ExternalCompressor that = (ExternalCompressor) o;
+
+        return getMethod() == that.getMethod();
+
+    }
+
+    @Override
+    public int hashCode() {
+        return getMethod().hashCode();
+    }
+
 }

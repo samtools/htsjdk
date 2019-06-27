@@ -86,11 +86,12 @@ public class Block {
         this.compressedContent = compressedContent;
         this.uncompressedLength = uncompressedLength;
 
-        //TODO: Fix this
-        // causes test failures.  https://github.com/samtools/htsjdk/issues/1232
-//        if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
-//            throw new CRAMException("Valid Content ID required for external blocks.");
-//        }
+        // There are quite a few htsjdk and GATk test files around that contain external blocks that violate this
+        // (that is they have contentID==0). So we may have to leave this out, and only validate that we don't violate
+        // this on write. See https://github.com/samtools/htsjdk/issues/1232
+        //if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
+        //    throw new CRAMException("Valid Content ID required for external blocks.");
+        //}
 
         if (contentType != BlockContentType.EXTERNAL && contentId != Block.NO_CONTENT_ID) {
             throw new CRAMException("Cannot set a Content ID for non-external blocks.");

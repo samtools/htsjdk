@@ -71,7 +71,6 @@ public class CramIO {
     public static final byte[] ZERO_F_EOF_MARKER = bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 " +
             "" + "06 06 01 00 01 00 01 00 ee 63 01 4b");
 
-
     private static final int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
     private static final Log log = Log.getInstance(CramIO.class);
 

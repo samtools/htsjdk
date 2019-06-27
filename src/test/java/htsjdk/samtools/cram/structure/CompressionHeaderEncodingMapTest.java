@@ -21,7 +21,7 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
     }
 
     @Test
-    public void testAllHTSJDKWriteEncodingsRoundTrip() throws IOException {
+    public void testAllHTSJDKWriteEncodingsRoundTripThroughStream() throws IOException {
         // make sure all of the default encodings that HTSJDK writes can be round tripped
         final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap();
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -37,7 +37,7 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
     }
 
     @Test
-    public void testAllEncodingsRoundTrip() throws IOException {
+    public void testAllCRAMEncodingsRoundTripThroughStream() throws IOException {
         // Test that ALL data series can be round tripped through an encoding map, including the
         // data series that htsjdk doesn't normally write, by starting with a default compression
         // header and default encoding map, and synthesizing and adding the remaining data series
@@ -63,7 +63,7 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
     }
 
     @Test
-    public void testRoundTripThroughPath() throws IOException {
+    public void testAllHTSJDKWriteEncodingsRoundTripThroughJSON() throws IOException {
         final File tempFile = File.createTempFile("encodingMapTest", ".json");
         tempFile.deleteOnExit();
 
@@ -75,12 +75,12 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
 
         final String originalEncodingMapString = gson.toJson(originalEncodingMap);
         final String roundTripEncodingMapString = gson.toJson(roundTripEncodingMap);
-        System.out.println("Original: " + originalEncodingMapString);
+        System.out.println("Original:  " + originalEncodingMapString);
         System.out.println("RoundTrip: " + roundTripEncodingMapString);
 
         // equality fails due to roundtripped encoding params addresses being different on read
-        //Assert.assertEquals(roundTripEncodingMap, originalEncodingMap);
-        //Assert.assertEquals(roundTripEncodingMapString, originalEncodingMapString);
+        Assert.assertEquals(roundTripEncodingMap, originalEncodingMap);
+        Assert.assertEquals(roundTripEncodingMapString, originalEncodingMapString);
     }
 
     private void assertExpectedHTSJDKGeneratedEncodings(

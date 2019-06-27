@@ -52,7 +52,7 @@ public class SliceBlocksWriteStreams {
 
     /**
      * Get the ByteArrayOutputStream corresponding to the requested contentID
-     * @param contentID ID of content being requuested
+     * @param contentID ID of content being requested
      * @return ByteArrayOutputStream for contentID
      */
     public ByteArrayOutputStream getExternalOutputStream(final Integer contentID) { return externalOutputStreams.get(contentID); }
@@ -73,7 +73,7 @@ public class SliceBlocksWriteStreams {
                  throw new CRAMException("A valid content ID is required.  Given: " + contentId);
              }
 
-             final Block externalBlock = compressionHeader.getEncodingMap().getCompressedBlockForStream(contentId, streamEntry.getValue());
+             final Block externalBlock = compressionHeader.getEncodingMap().createCompressedBlockForStream(contentId, streamEntry.getValue());
              sliceBlocks.addExternalBlock(externalBlock);
          }
      }
