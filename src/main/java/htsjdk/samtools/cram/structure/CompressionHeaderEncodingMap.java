@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.structure;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
@@ -10,11 +9,12 @@ import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -47,7 +47,7 @@ public class CompressionHeaderEncodingMap {
     // external compressor to use for each external block, keyed by external content ID; this
     // map contains a key for each data series that is in use, plus additional ones for blocks
     // used for tags
-    private final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<>();
+    private final Map<Integer, ExternalCompressor> externalCompressors = new TreeMap<>();
 
     /**
      * Constructor used to create an encoding map for writing CRAMs
@@ -111,57 +111,6 @@ public class CompressionHeaderEncodingMap {
 
             //TODO: why can't this just instantiate and store the CRAMEncoding directly, and get rid of EncodingParams
             encodingMap.put(dataSeries, new EncodingParams(id, paramBytes));
-        }
-    }
-
-//    /**
-//     * Constructor used to create an encoding map from a serialized JSON file.
-//     * @param dataSeriesMap treeMpa representing the default encodings
-//     */
-//    protected CompressionHeaderEncodingMap(final TreeMap<DataSeries, EncodingParams> dataSeriesMap) {
-//        encodingMap = dataSeriesMap;
-//    }
-//
-    /**
-     * Constructor used to create an encoding map from a serialized JSON file when writing a CRAM.
-     * @param encodingMapPath the CRAM input stream to be consumed
-     */
-    public static CompressionHeaderEncodingMap readFromPath(final Path encodingMapPath) {
-        //TODO: replace FileReader with something path friendly
-        try (final FileReader fr = new FileReader(encodingMapPath.toFile())) {
-            final Gson gson = new Gson();
-//            final Type encodingMapType = new TypeToken<TreeMap<DataSeries, EncodingParams>>() { }.getType();
-//            final TreeMap<DataSeries, EncodingParams> encodingMap = gson.fromJson(fr, encodingMapType);
-            final Type encodingMapType = new TypeToken<CompressionHeaderEncodingMap>() { }.getType();
-            final CompressionHeaderEncodingMap encodingMap = gson.fromJson(fr, CompressionHeaderEncodingMap.class);
-//            return new CompressionHeaderEncodingMap(encodingMap);
-            return encodingMap;
-        } catch (final IOException e) {
-            throw new RuntimeIOException("Failed opening encoding strategy json file", e);
-        }
-    }
-
-    /**
-     * Constructor used to write a serialized (JSON) encoding map to record the encoding map
-     * used to create a particular CRAM stream..
-     * @param encodingMapPath the path to an encoding map JSON file
-     */
-    public void writeToPath(final Path encodingMapPath) {
-        //TODO: no external compressors
-        //TODO: no version #
-        //TODO: no encoding Params are present
-
-        //TODO: replace FilerWriter with something path friendly
-        try (final FileWriter fw = new FileWriter(encodingMapPath.toFile())) {
-            GsonBuilder gsonBuilder = new GsonBuilder().enableComplexMapKeySerialization().setPrettyPrinting();
-            final Gson gson = gsonBuilder.create();
-            //final Type encodingMapType = new TypeToken<TreeMap<DataSeries, EncodingParams>>() { }.getType();
-            //final String jsonEncodingString = gson.toJson(encodingMap, encodingMapType);
-            //final Type encodingMapType = new TypeToken<CompressionHeaderEncodingMap>() { }.getType();
-            final String jsonEncodingString = gson.toJson(this, CompressionHeaderEncodingMap.class);
-            fw.write(jsonEncodingString);
-        } catch (final IOException e) {
-            throw new RuntimeIOException("Failed creating json file for encoding strategy", e);
         }
     }
 
@@ -297,5 +246,86 @@ public class CompressionHeaderEncodingMap {
         int result = encodingMap.hashCode();
         result = 31 * result + externalCompressors.hashCode();
         return result;
+    }
+
+    private static class SerializedEncodingMap {
+        final List<EncodingMapEntry> entries = new ArrayList<>();
+
+        public SerializedEncodingMap(final CompressionHeaderEncodingMap targetMap) {
+            targetMap.encodingMap.entrySet().forEach(
+                    e -> entries.add(
+                                new EncodingMapEntry(
+                                        e.getKey().getExternalBlockContentId(),
+                                        e.getKey(),
+                                        e.getValue(),
+                                        targetMap.externalCompressors.get(e.getKey().getExternalBlockContentId())))
+                    );
+        }
+    }
+
+    private static class EncodingMapEntry {
+        final Integer contentID;
+        final DataSeries dataSeries;
+        final EncodingParams encodingParams;
+        final BlockCompressionMethod compressionMethod;
+        final RANS.ORDER order;
+
+        public EncodingMapEntry(final Integer contentID,
+                                final DataSeries dataSeries,
+                                final EncodingParams encodingParams,
+                                final ExternalCompressor compressor){
+            this.contentID = contentID;
+            this.dataSeries = dataSeries;
+            this.encodingParams = encodingParams;
+            this.compressionMethod = compressor.getMethod();
+            //TODO: fix this
+            if (compressionMethod == BlockCompressionMethod.RANS) {
+                this.order = compressor.getClass().equals(ExternalCompressor.RANSOrder0ExternalCompressor.class) ?
+                        RANS.ORDER.ZERO :
+                        RANS.ORDER.ONE;
+            } else {
+                this.order = null;
+            }
+        }
+    }
+
+    public CompressionHeaderEncodingMap(final SerializedEncodingMap serializedMap) {
+        serializedMap.entries.forEach(e -> {
+            this.encodingMap.put(e.dataSeries, e.encodingParams);
+            this.externalCompressors.put(e.contentID, ExternalCompressor.getCompressorForMethod(e.compressionMethod, e.order));
+        });
+    }
+
+    /**
+     * Constructor used to create an encoding map from a serialized JSON file when writing a CRAM.
+     * @param encodingMapPath the CRAM input stream to be consumed
+     */
+    public static CompressionHeaderEncodingMap readFromPath(final Path encodingMapPath) {
+        try (final BufferedReader fr = Files.newBufferedReader(encodingMapPath)) {
+            final Gson gson = new Gson();
+            final SerializedEncodingMap serializedMap = gson.fromJson(fr, SerializedEncodingMap.class);
+            final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap(serializedMap);
+            return encodingMap;
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Failed reading encoding map json file", e);
+        }
+    }
+
+    /**
+     * Constructor used to write a serialized (JSON) encoding map to record the encoding map
+     * used to create a particular CRAM stream..
+     * @param encodingMapPath the path to an encoding map JSON file
+     */
+    public void writeToPath(final Path encodingMapPath) {
+        //TODO: add a version #
+        try (final BufferedWriter fileWriter = Files.newBufferedWriter(encodingMapPath)) {
+            final GsonBuilder gsonBuilder = new GsonBuilder().enableComplexMapKeySerialization().setPrettyPrinting();
+            final SerializedEncodingMap serializedMap = new SerializedEncodingMap(this);
+            final Gson gson = gsonBuilder.create();
+            final String jsonEncodingString = gson.toJson(serializedMap, SerializedEncodingMap.class);
+            fileWriter.write(jsonEncodingString);
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Failed writing json file for encoding map", e);
+        }
     }
 }

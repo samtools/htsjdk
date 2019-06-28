@@ -71,16 +71,15 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
         originalEncodingMap.writeToPath(tempFile.toPath());
         final CompressionHeaderEncodingMap roundTripEncodingMap = CompressionHeaderEncodingMap.readFromPath(tempFile.toPath());
 
-        final Gson gson = new Gson();
-
-        final String originalEncodingMapString = gson.toJson(originalEncodingMap);
-        final String roundTripEncodingMapString = gson.toJson(roundTripEncodingMap);
-        System.out.println("Original:  " + originalEncodingMapString);
-        System.out.println("RoundTrip: " + roundTripEncodingMapString);
+        //final Gson gson = new Gson();
+        //final String originalEncodingMapString = gson.toJson(originalEncodingMap);
+        //final String roundTripEncodingMapString = gson.toJson(roundTripEncodingMap);
+        //System.out.println("Original:  " + originalEncodingMapString);
+        //System.out.println("RoundTrip: " + roundTripEnc odingMapString);
 
         // equality fails due to roundtripped encoding params addresses being different on read
         Assert.assertEquals(roundTripEncodingMap, originalEncodingMap);
-        Assert.assertEquals(roundTripEncodingMapString, originalEncodingMapString);
+        //Assert.assertEquals(roundTripEncodingMapString, originalEncodingMapString);
     }
 
     private void assertExpectedHTSJDKGeneratedEncodings(
