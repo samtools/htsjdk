@@ -6,9 +6,8 @@ import htsjdk.utils.ValidationUtils;
 
 import com.google.gson.*;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -21,17 +20,15 @@ public class CRAMEncodingStrategy {
     // encoding strategies
     private String customCompressionMapPath = "";
     private int gzipCompressionLevel = Defaults.COMPRESSION_LEVEL;
-    private int readsPerSlice = 10000; // use to replace CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE.;
+    private int readsPerSlice = 10000;
     private int slicesPerContainer = 1;
 
-    // should these preservation policies be stored independentlyof encoding strategy ?
+    // should these preservation policies be stored independently of encoding strategy ?
     private boolean preserveReadNames = true;
     private String readNamePrefix = "";          // only if preserveReadNames = false
     private boolean retainMD = true;
     private boolean embedReference = false; // embed reference
     private boolean embedBases = true;      // embed bases rather than doing reference compression
-
-    //TODO: should there be a DEFAULT_RECORDS_PER_SLICE ?
 
     public CRAMEncodingStrategy() {
         // use defaults;
@@ -43,30 +40,25 @@ public class CRAMEncodingStrategy {
         return this;
     }
 
-
     public String getCustomCompressionMapPath() { return customCompressionMapPath; }
     public int getGZIPCompressionLevel() { return gzipCompressionLevel; }
     public int getRecordsPerSlice() { return readsPerSlice; }
     public int getSlicesPerContainer() { return slicesPerContainer; }
 
     public void writeToPath(final Path outputPath) {
-        //TODO: replace FilerWriter with something path friendly
-        try (final FileWriter fw = new FileWriter(outputPath.toFile())) {
-            GsonBuilder gsonBuilder = new GsonBuilder();
-            gsonBuilder.setPrettyPrinting();
-            final Gson gson = gsonBuilder.create();
+        try (final BufferedWriter fileWriter = Files.newBufferedWriter(outputPath)) {
+            final Gson gson = new GsonBuilder().setPrettyPrinting().create();
             final String jsonEncodingString = gson.toJson(this);
-            fw.write(jsonEncodingString);
+            fileWriter.write(jsonEncodingString);
         } catch (final IOException e) {
             throw new RuntimeIOException("Failed creating json file for encoding strategy", e);
         }
     }
 
     public static CRAMEncodingStrategy readFromPath(final Path outputPath) {
-        //TODO: replace FileReader with something path friendly
-        try (final FileReader fr = new FileReader(outputPath.toFile())) {
+        try (final BufferedReader fileReader = Files.newBufferedReader(outputPath)) {
             final Gson gson = new Gson();
-            return gson.fromJson(fr, CRAMEncodingStrategy.class);
+            return gson.fromJson(fileReader, CRAMEncodingStrategy.class);
         } catch (final IOException e) {
             throw new RuntimeIOException("Failed opening encoding strategy json file", e);
         }

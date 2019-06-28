@@ -17,7 +17,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.lossy.PreservationPolicy;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
-import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.Log;
@@ -96,7 +95,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     /**
       * Create a CRAMFileWriter and optional index on output streams.
       *
-      * @param CRAMEncodingStrategy encoding strategy to use when writing
+      * @param encodingStrategy encoding strategy to use when writing
       * @param outputStream where to write the output. Can not be null.
       * @param indexOS where to write the output index. Can be null if no index is required.
       * @param presorted if true records written to this writer must already be sorted in the order specified by the header
