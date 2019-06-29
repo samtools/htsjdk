@@ -40,6 +40,16 @@ public class CRAMEncodingStrategy {
         return this;
     }
 
+    public void setGZIPCompressionLevel(final int compressionLevel) {
+        ValidationUtils.validateArg(compressionLevel >=0 && compressionLevel <= 10, "cram gzip compression level must be > 0 and <= 10");
+        this.gzipCompressionLevel = compressionLevel;
+    }
+
+    public void setSlicesPerContainer(final int slicesPerContainer) {
+        ValidationUtils.validateArg(slicesPerContainer >=0, "slicesPerContainer must be > 0");
+        this.slicesPerContainer = slicesPerContainer;
+    }
+
     public String getCustomCompressionMapPath() { return customCompressionMapPath; }
     public int getGZIPCompressionLevel() { return gzipCompressionLevel; }
     public int getRecordsPerSlice() { return readsPerSlice; }
@@ -62,6 +72,23 @@ public class CRAMEncodingStrategy {
         } catch (final IOException e) {
             throw new RuntimeIOException("Failed opening encoding strategy json file", e);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "CRAMEncodingStrategy{" +
+                "version=" + version +
+                ", strategyName='" + strategyName + '\'' +
+                ", customCompressionMapPath='" + customCompressionMapPath + '\'' +
+                ", gzipCompressionLevel=" + gzipCompressionLevel +
+                ", readsPerSlice=" + readsPerSlice +
+                ", slicesPerContainer=" + slicesPerContainer +
+                ", preserveReadNames=" + preserveReadNames +
+                ", readNamePrefix='" + readNamePrefix + '\'' +
+                ", retainMD=" + retainMD +
+                ", embedReference=" + embedReference +
+                ", embedBases=" + embedBases +
+                '}';
     }
 
     @Override

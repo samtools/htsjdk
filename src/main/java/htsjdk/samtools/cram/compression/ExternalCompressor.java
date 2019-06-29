@@ -137,6 +137,7 @@ public abstract class ExternalCompressor {
     // Replace StructureTestUtils with calls to this
     public static ExternalCompressor getCompressorForMethod(
             final BlockCompressionMethod compressionMethod,
+            //TODO: fix this arg list to be compressor-specific
             final RANS.ORDER order) {
         switch (compressionMethod) {
             case RAW:

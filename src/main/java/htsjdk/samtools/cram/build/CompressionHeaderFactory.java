@@ -86,7 +86,7 @@ public class CompressionHeaderFactory {
     public CompressionHeader build(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
 
         //TODO: this should be set by the caller since it should only be set once on the header so
-        //TODO: that all the containers created by the factory use the same settings
+        //TODO: that all containers created by the factory use the same settings
         compressionHeader.setIsCoordinateSorted(coordinateSorted);
         compressionHeader.setTagIdDictionary(buildTagIdDictionary(records));
 
