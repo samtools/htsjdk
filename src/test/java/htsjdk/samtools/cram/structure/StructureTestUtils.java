@@ -36,6 +36,7 @@ public class StructureTestUtils extends HtsjdkTest {
             case LZMA:
                 return ExternalCompressor.createLZMA();
             case RANS:
+                //TODO: Why ????
                 // always returns order zero
                 return ExternalCompressor.createRANS(RANS.ORDER.ZERO);
             case BZIP2:
