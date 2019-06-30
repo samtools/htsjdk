@@ -1,6 +1,8 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import org.testng.Assert;
@@ -30,7 +32,7 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
                 Block.createExternalBlock(
                         compressionMethod,
                         refContentID,
-                        StructureTestUtils.getCompressorForMethod(compressionMethod).compress(refContent),
+                        ExternalCompressor.getCompressorForMethod(compressionMethod, RANS.ORDER.ZERO).compress(refContent),
                         refContent.length));
         for (final DataSeries dataSeries : DataSeries.values()) {
             final String uncompressedContent = dataSeries.getCanonicalName();
@@ -38,7 +40,7 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
                     Block.createExternalBlock(
                             compressionMethod,
                             dataSeries.getExternalBlockContentId(),
-                            StructureTestUtils.getCompressorForMethod(compressionMethod).compress(uncompressedContent.getBytes()),
+                            ExternalCompressor.getCompressorForMethod(compressionMethod, RANS.ORDER.ZERO).compress(uncompressedContent.getBytes()),
                             dataSeries.getCanonicalName().getBytes().length));
             expectedExternalContent.put(dataSeries.getExternalBlockContentId(), uncompressedContent);
         }

@@ -35,15 +35,20 @@ public class GolombIntegerEncoding extends ExperimentalEncoding<Integer> {
         this.m = m;
     }
 
-    public static GolombIntegerEncoding fromParams(final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return GolombIntegerEncoding with parameters populated from serializedParams
+     */
+    public static GolombIntegerEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buffer = ByteBuffer.wrap(serializedParams);
         final int offset = ITF8.readUnsignedITF8(buffer);
         final int m = ITF8.readUnsignedITF8(buffer);
         return new GolombIntegerEncoding(offset, m);
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES * 2);
         ITF8.writeUnsignedITF8(offset, buffer);
         ITF8.writeUnsignedITF8(m, buffer);

@@ -19,7 +19,7 @@ import java.io.IOException;
  */
 public class HuffmanTest extends HtsjdkTest {
     @Test
-    public void testHuffmanIntHelper() throws IOException {
+    public void testHuffmanIntHelper() {
         int size = 1000000;
 
         HuffmanParamsCalculator cal = new HuffmanParamsCalculator();
@@ -69,7 +69,7 @@ public class HuffmanTest extends HtsjdkTest {
     }
 
     @Test
-    public void testHuffmanByteHelper() throws IOException {
+    public void testHuffmanByteHelper() {
         int size = 1000000;
 
         HuffmanParamsCalculator cal = new HuffmanParamsCalculator();

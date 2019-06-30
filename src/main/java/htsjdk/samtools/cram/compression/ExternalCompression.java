@@ -21,20 +21,18 @@ import java.util.zip.GZIPOutputStream;
  * Methods to provide CRAM external compression/decompression features.
  */
 public class ExternalCompression {
-    //TODO: expose this properly - see https://github.com/samtools/htsjdk/issues/1367
-    private static final int GZIP_COMPRESSION_LEVEL = Integer.parseInt(System.getProperty("gzip.compression.level", "5"));
-
     /**
-     * Compress a byte array into GZIP blob. The method obeys {@link ExternalCompression#GZIP_COMPRESSION_LEVEL} compression level.
+     * Compress a byte array into GZIP blob.
      *
      * @param data byte array to compress
+     * @param level
      * @return compressed blob
      */
-    public static byte[] gzip(final byte[] data) {
+    public static byte[] gzip(final byte[] data, final int level) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try (final GZIPOutputStream gos = new GZIPOutputStream(byteArrayOutputStream) {
             {
-                def.setLevel(GZIP_COMPRESSION_LEVEL);
+                def.setLevel(level);
             }
         }) {
             IOUtil.copyStream(new ByteArrayInputStream(data), gos);

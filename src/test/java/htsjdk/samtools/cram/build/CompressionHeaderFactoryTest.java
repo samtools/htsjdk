@@ -43,14 +43,9 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
 
     @Test
     public void test_getBestExternalCompressor() {
-        try {
-            Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor(null));
-            Assert.fail("NPE expected for null data");
-        } catch (final NullPointerException e) {
-
-        }
-        Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor("".getBytes()));
-        Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor("qwe".getBytes()));
+        final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy();
+        Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor(encodingStrategy, "".getBytes()));
+        Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor(encodingStrategy, "qwe".getBytes()));
     }
 
     @Test

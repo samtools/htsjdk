@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Parameters that can be set to control encoding strategy used on write
+ * Parameters that can be set to control encoding strategy used on write.
  */
 public class CRAMEncodingStrategy {
     private final int version = 1;
@@ -19,6 +19,8 @@ public class CRAMEncodingStrategy {
 
     // encoding strategies
     private String customCompressionMapPath = "";
+
+    //TODO: should this have separate values for tags (separate from CRAMRecord data) ?
     private int gzipCompressionLevel = Defaults.COMPRESSION_LEVEL;
     private int readsPerSlice = 10000;
     private int slicesPerContainer = 1;
@@ -33,6 +35,11 @@ public class CRAMEncodingStrategy {
     public CRAMEncodingStrategy() {
         // use defaults;
     }
+
+    public void setEncodingMap(final Path encodingMap) {
+        this.customCompressionMapPath = encodingMap.toAbsolutePath().toString();
+    }
+
 
     public CRAMEncodingStrategy setReadsPerSlice(final int readsPerSlice) {
         ValidationUtils.validateArg(readsPerSlice > 0, "Reads per slice must be > 1");
@@ -77,12 +84,12 @@ public class CRAMEncodingStrategy {
     @Override
     public String toString() {
         return "CRAMEncodingStrategy{" +
-                "version=" + version +
-                ", strategyName='" + strategyName + '\'' +
-                ", customCompressionMapPath='" + customCompressionMapPath + '\'' +
+                "strategyName='" + strategyName + '\'' +
+                ", version=" + version +
                 ", gzipCompressionLevel=" + gzipCompressionLevel +
                 ", readsPerSlice=" + readsPerSlice +
                 ", slicesPerContainer=" + slicesPerContainer +
+                ", customCompressionMapPath='" + customCompressionMapPath + '\'' +
                 ", preserveReadNames=" + preserveReadNames +
                 ", readNamePrefix='" + readNamePrefix + '\'' +
                 ", retainMD=" + retainMD +

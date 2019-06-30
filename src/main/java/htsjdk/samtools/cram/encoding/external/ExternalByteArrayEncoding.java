@@ -33,13 +33,18 @@ public class ExternalByteArrayEncoding extends ExternalEncoding<byte[]> {
         super(externalBlockContentId);
     }
 
-    public static ExternalByteArrayEncoding fromParams(byte[] params) {
-        final int contentId = ITF8.readUnsignedITF8(params);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return ExternalByteArrayEncoding with parameters populated from serializedParams
+     */
+    public static ExternalByteArrayEncoding fromSerializedEncodingParams(byte[] serializedParams) {
+        final int contentId = ITF8.readUnsignedITF8(serializedParams);
         return new ExternalByteArrayEncoding(contentId);
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         return ITF8.writeUnsignedITF8(externalBlockContentId);
     }
 

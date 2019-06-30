@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.encoding.core.SubexponentialIntegerEncoding;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -25,10 +24,10 @@ public class ByteArrayStopEncodingTest extends HtsjdkTest {
     public void paramsTest(final byte stopByte, final int externalBlockContentId, final byte[] expected) {
 
         final ByteArrayStopEncoding constructed = new ByteArrayStopEncoding(stopByte, externalBlockContentId);
-        Assert.assertEquals(constructed.toByteArray(), expected);
+        Assert.assertEquals(constructed.toSerializedEncodingParams(), expected);
 
-        final ByteArrayStopEncoding fromParams = ByteArrayStopEncoding.fromParams(expected);
-        Assert.assertEquals(fromParams.toByteArray(), expected);
+        final ByteArrayStopEncoding params = ByteArrayStopEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(params.toSerializedEncodingParams(), expected);
     }
 
     @Test

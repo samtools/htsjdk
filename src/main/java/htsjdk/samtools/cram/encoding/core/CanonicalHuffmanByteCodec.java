@@ -36,7 +36,7 @@ class CanonicalHuffmanByteCodec extends CoreCodec<Byte> {
      * @param values the alphabet (provided as Integers)
      * @param bitLengths the number of bits of symbol's huffman code
      */
-    public CanonicalHuffmanByteCodec(final BitInputStream coreBlockInputStream,
+    CanonicalHuffmanByteCodec(final BitInputStream coreBlockInputStream,
                                      final BitOutputStream coreBlockOutputStream,
                                      final byte[] values, final int[] bitLengths) {
         super(coreBlockInputStream, coreBlockOutputStream);

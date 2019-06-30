@@ -19,6 +19,8 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
+import htsjdk.samtools.cram.compression.RANSExternalCompressor;
 import htsjdk.samtools.cram.encoding.*;
 import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.external.*;
@@ -53,6 +55,7 @@ public class CompressionHeaderFactory {
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
 
     private CompressionHeader compressionHeader;
+    private CRAMEncodingStrategy encodingStrategy;
 
     /**
      * Create a CompressionHeaderFactory using default CRAMEncodingStrategy.
@@ -69,7 +72,8 @@ public class CompressionHeaderFactory {
         // TODO: the path should be interpreted by the caller so it only
         // TODO: happens once for the (container ?) factory rather than once
         // TODO: per container
-        compressionHeader = new CompressionHeader(encodingStrategy);
+        this.compressionHeader = new CompressionHeader(encodingStrategy);
+        this.encodingStrategy = encodingStrategy;
     }
 
     /**
@@ -254,14 +258,14 @@ public class CompressionHeaderFactory {
         return (byte) (tagID & 0xFF);
     }
 
-    static ExternalCompressor getBestExternalCompressor(final byte[] data) {
-        final ExternalCompressor gzip = ExternalCompressor.createGZIP();
+    static ExternalCompressor getBestExternalCompressor(final CRAMEncodingStrategy encodingStrategy, final byte[] data) {
+        final ExternalCompressor gzip = new GZIPExternalCompressor(encodingStrategy.getGZIPCompressionLevel());
         final int gzipLen = gzip.compress(data).length;
 
-        final ExternalCompressor rans0 = ExternalCompressor.createRANS(RANS.ORDER.ZERO);
+        final ExternalCompressor rans0 = new RANSExternalCompressor(RANS.ORDER.ZERO);
         final int rans0Len = rans0.compress(data).length;
 
-        final ExternalCompressor rans1 = ExternalCompressor.createRANS(RANS.ORDER.ONE);
+        final ExternalCompressor rans1 = new RANSExternalCompressor(RANS.ORDER.ONE);
         final int rans1Len = rans1.compress(data).length;
 
         // find the best of general purpose codecs:
@@ -350,7 +354,7 @@ public class CompressionHeaderFactory {
     //TODO: can this go away ?
     private static class EncodingDetails {
         ExternalCompressor compressor;
-        EncodingParams params; // EncodingID + byte array of params
+        EncodingDescriptor params; // EncodingID + byte array of params
     }
 
     /**
@@ -359,14 +363,14 @@ public class CompressionHeaderFactory {
      *
      * @param tagValueSize the size of the tag value, to be Huffman encoded
      * @param tagID the ID of the tag
-     * @return EncodingParams a complete description of the result Encoding
+     * @return EncodingDescriptor a complete description of the result Encoding
      */
-    private EncodingParams buildTagEncodingForSize(final int tagValueSize, final int tagID) {
+    private EncodingDescriptor buildTagEncodingForSize(final int tagValueSize, final int tagID) {
         // NOTE: This usage of ByteArrayLenEncoding splits the stream between core (for the
         // length) and external (for the bytes).
         return new ByteArrayLenEncoding(
                 new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, singleZero),
-                new ExternalByteArrayEncoding(tagID)).toParam();
+                new ExternalByteArrayEncoding(tagID)).toEncodingDescriptor();
     }
 
     /**
@@ -380,7 +384,7 @@ public class CompressionHeaderFactory {
         final EncodingDetails details = new EncodingDetails();
         final byte[] data = getDataForTag(records, tagID);
 
-        details.compressor = getBestExternalCompressor(data);
+        details.compressor = getBestExternalCompressor(encodingStrategy, data);
 
         final byte type = getTagType(tagID);
         switch (type) {
@@ -411,7 +415,7 @@ public class CompressionHeaderFactory {
                 }
 
                 if (type == 'Z') {
-                    details.params = new ByteArrayStopEncoding((byte) '\t', tagID).toParam();
+                    details.params = new ByteArrayStopEncoding((byte) '\t', tagID).toEncodingDescriptor();
                     return details;
                 }
 
@@ -419,7 +423,7 @@ public class CompressionHeaderFactory {
                 if (stats.min > minSize_threshold_ForByteArrayStopEncoding) {
                     final int unusedByte = getUnusedByte(data);
                     if (unusedByte > ALL_BYTES_USED) {
-                        details.params = new ByteArrayStopEncoding((byte) unusedByte, tagID).toParam();
+                        details.params = new ByteArrayStopEncoding((byte) unusedByte, tagID).toEncodingDescriptor();
                         return details;
                     }
                 }
@@ -429,7 +433,7 @@ public class CompressionHeaderFactory {
                 // external. But it does create two different external encodings with the same externalID (???)
                 details.params = new ByteArrayLenEncoding(
                         new ExternalIntegerEncoding(tagID),
-                        new ExternalByteArrayEncoding(tagID)).toParam();
+                        new ExternalByteArrayEncoding(tagID)).toEncodingDescriptor();
                 return details;
             default:
                 throw new IllegalArgumentException("Unknown tag type: " + (char) type);

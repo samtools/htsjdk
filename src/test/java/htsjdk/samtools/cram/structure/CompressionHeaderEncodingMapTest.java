@@ -1,8 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
-import com.google.gson.Gson;
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -16,14 +15,14 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
     public void testAllHTSJDKWriteEncodings() {
         // make sure all of the expected encodings that HTSJDK writes are present in the default encoding map
         assertExpectedHTSJDKGeneratedEncodings(
-                new CompressionHeaderEncodingMap(),
+                new CompressionHeaderEncodingMap(new CRAMEncodingStrategy()),
                 StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK);
     }
 
     @Test
     public void testAllHTSJDKWriteEncodingsRoundTripThroughStream() throws IOException {
         // make sure all of the default encodings that HTSJDK writes can be round tripped
-        final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap();
+        final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             encodingMap.write(baos);
             final byte[] roundTrippedBytes = baos.toByteArray();
@@ -46,7 +45,7 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
         final CompressionHeader compressionHeader = new CompressionHeader();
         final CompressionHeaderEncodingMap encodingMap = compressionHeader.getEncodingMap();
         for (final DataSeries dataSeries : StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK) {
-            encodingMap.addExternalEncoding(dataSeries, ExternalCompressor.createGZIP());
+            encodingMap.addExternalEncoding(dataSeries, new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel()));
         }
 
         // serialize and then resurrect the encoding map
@@ -67,19 +66,11 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
         final File tempFile = File.createTempFile("encodingMapTest", ".json");
         tempFile.deleteOnExit();
 
-        final CompressionHeaderEncodingMap originalEncodingMap = new CompressionHeaderEncodingMap();
+        final CompressionHeaderEncodingMap originalEncodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
         originalEncodingMap.writeToPath(tempFile.toPath());
         final CompressionHeaderEncodingMap roundTripEncodingMap = CompressionHeaderEncodingMap.readFromPath(tempFile.toPath());
 
-        //final Gson gson = new Gson();
-        //final String originalEncodingMapString = gson.toJson(originalEncodingMap);
-        //final String roundTripEncodingMapString = gson.toJson(roundTripEncodingMap);
-        //System.out.println("Original:  " + originalEncodingMapString);
-        //System.out.println("RoundTrip: " + roundTripEnc odingMapString);
-
-        // equality fails due to roundtripped encoding params addresses being different on read
         Assert.assertEquals(roundTripEncodingMap, originalEncodingMap);
-        //Assert.assertEquals(roundTripEncodingMapString, originalEncodingMapString);
     }
 
     private void assertExpectedHTSJDKGeneratedEncodings(
@@ -88,11 +79,11 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
         for (final DataSeries dataSeries : DataSeries.values()) {
             // skip test marks and data series that are unused when writing:
             if (expectedMissingDataSeries.contains(dataSeries)) {
-                Assert.assertNull(encodingMap.getEncodingParamsForDataSeries(dataSeries),
+                Assert.assertNull(encodingMap.getEncodingDescriptorForDataSeries(dataSeries),
                         "Unexpected encoding key found: " + dataSeries.name());
             } else {
-                Assert.assertNotNull(encodingMap.getEncodingParamsForDataSeries(dataSeries), "Encoding key not found: " + dataSeries.name());
-                Assert.assertFalse(encodingMap.getEncodingParamsForDataSeries(dataSeries).id == EncodingID.NULL);
+                Assert.assertNotNull(encodingMap.getEncodingDescriptorForDataSeries(dataSeries), "Encoding key not found: " + dataSeries.name());
+                Assert.assertFalse(encodingMap.getEncodingDescriptorForDataSeries(dataSeries).getEncodingID() == EncodingID.NULL);
             }
         }
     }
