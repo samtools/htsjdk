@@ -43,15 +43,20 @@ public class BetaIntegerEncoding extends CRAMEncoding<Integer> {
         this.bitsPerValue = bitsPerValue;
     }
 
-    public static BetaIntegerEncoding fromParams(final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return BetaIntegerEncoding with parameters populated from serializedParams
+     */
+    public static BetaIntegerEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buffer = ByteBuffer.wrap(serializedParams);
         final int offset = ITF8.readUnsignedITF8(buffer);
         final int bitLimit = ITF8.readUnsignedITF8(buffer);
         return new BetaIntegerEncoding(offset, bitLimit);
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES * 2);
         ITF8.writeUnsignedITF8(offset, buffer);
         ITF8.writeUnsignedITF8(bitsPerValue, buffer);

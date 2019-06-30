@@ -27,23 +27,4 @@ public class StructureTestUtils extends HtsjdkTest {
         return BlockCompressionMethod.values();
     }
 
-    public static ExternalCompressor getCompressorForMethod(final BlockCompressionMethod compressionMethod) {
-        switch (compressionMethod) {
-            case RAW:
-                return ExternalCompressor.createRAW();
-            case GZIP:
-                return ExternalCompressor.createGZIP();
-            case LZMA:
-                return ExternalCompressor.createLZMA();
-            case RANS:
-                //TODO: Why ????
-                // always returns order zero
-                return ExternalCompressor.createRANS(RANS.ORDER.ZERO);
-            case BZIP2:
-                return ExternalCompressor.createBZIP2();
-            default:
-                throw new IllegalArgumentException(String.format("Unknown compression method %s", compressionMethod));
-        }
-    }
-
 }

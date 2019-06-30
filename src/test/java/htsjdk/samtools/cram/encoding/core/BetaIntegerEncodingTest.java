@@ -26,10 +26,10 @@ public class BetaIntegerEncodingTest extends HtsjdkTest {
     public void paramsTest(final int offset, final int bitLength, final byte[] expected) {
 
         final BetaIntegerEncoding constructed = new BetaIntegerEncoding(offset, bitLength);
-        Assert.assertEquals(constructed.toByteArray(), expected);
+        Assert.assertEquals(constructed.toSerializedEncodingParams(), expected);
 
-        final BetaIntegerEncoding fromParams = BetaIntegerEncoding.fromParams(expected);
-        Assert.assertEquals(fromParams.toByteArray(), expected);
+        final BetaIntegerEncoding params = BetaIntegerEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(params.toSerializedEncodingParams(), expected);
     }
 
 

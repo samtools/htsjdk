@@ -30,8 +30,13 @@ public class ExternalByteEncoding extends ExternalEncoding<Byte> {
         super(externalBlockContentId);
     }
 
-    public static ExternalByteEncoding fromParams(byte[] params) {
-        final int contentId = ITF8.readUnsignedITF8(params);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return ExternalByteEncoding with parameters populated from serializedParams
+     */
+    public static ExternalByteEncoding fromSerializedEncodingParams(byte[] serializedParams) {
+        final int contentId = ITF8.readUnsignedITF8(serializedParams);
         return new ExternalByteEncoding(contentId);
     }
 

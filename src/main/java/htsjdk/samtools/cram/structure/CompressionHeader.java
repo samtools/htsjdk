@@ -44,7 +44,7 @@ public class CompressionHeader {
     private static final String TD_tagIdsDictionary = "TD";
     private static final String SM_substitutionMatrix = "SM";
 
-    //TODO: add public methods for readNamesINCluded and referenceRequired
+    //TODO: add public methods for readNamesIncluded and referenceRequired
     public boolean readNamesIncluded = true;
     private boolean APDelta = true;
     private boolean referenceRequired = true;
@@ -52,12 +52,12 @@ public class CompressionHeader {
     private CompressionHeaderEncodingMap encodingMap;
 
     //TODO: Move the tMap into CompressionHeaderEncodingMap
-    public Map<Integer, EncodingParams> tMap;
+    public Map<Integer, EncodingDescriptor> tMap;
     public SubstitutionMatrix substitutionMatrix;
     public byte[][][] dictionary;
 
     public CompressionHeader() {
-        encodingMap = new CompressionHeaderEncodingMap();
+        encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
         tMap = new TreeMap<>();
     }
 
@@ -71,7 +71,7 @@ public class CompressionHeader {
     public CompressionHeader(final CRAMEncodingStrategy encodingStrategy) {
         final String customCompressionMapPath = encodingStrategy.getCustomCompressionMapPath();
         if (customCompressionMapPath.isEmpty()) {
-            encodingMap = new CompressionHeaderEncodingMap();
+            encodingMap = new CompressionHeaderEncodingMap(encodingStrategy);
         } else {
             try {
                 encodingMap = CompressionHeaderEncodingMap.readFromPath(IOUtil.getPath(customCompressionMapPath));
@@ -217,7 +217,7 @@ public class CompressionHeader {
             final ByteBuffer buf = ByteBuffer.wrap(bytes);
 
             final int mapSize = ITF8.readUnsignedITF8(buf);
-            tMap = new TreeMap<Integer, EncodingParams>();
+            tMap = new TreeMap<>();
             for (int i = 0; i < mapSize; i++) {
                 final int key = ITF8.readUnsignedITF8(buf);
 
@@ -226,7 +226,7 @@ public class CompressionHeader {
                 final byte[] paramBytes = new byte[paramLen];
                 buf.get(paramBytes);
 
-                tMap.put(key, new EncodingParams(id, paramBytes));
+                tMap.put(key, new EncodingDescriptor(id, paramBytes));
             }
         }
     }
@@ -285,15 +285,16 @@ public class CompressionHeader {
         encodingMap.write(outputStream);
 
         { // tag encoding map:
+            //TOTO: fix this static allocation size
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(tMap.size(), mapBuffer);
             for (final Integer dataSeries : tMap.keySet()) {
                 ITF8.writeUnsignedITF8(dataSeries, mapBuffer);
 
-                final EncodingParams params = tMap.get(dataSeries);
-                mapBuffer.put((byte) (0xFF & params.id.getId()));
-                ITF8.writeUnsignedITF8(params.params.length, mapBuffer);
-                mapBuffer.put(params.params);
+                final EncodingDescriptor params = tMap.get(dataSeries);
+                mapBuffer.put((byte) (0xFF & params.getEncodingID().getId()));
+                ITF8.writeUnsignedITF8(params.getEncodingParameters().length, mapBuffer);
+                mapBuffer.put(params.getEncodingParameters());
             }
             mapBuffer.flip();
             final byte[] mapBytes = new byte[mapBuffer.limit()];
@@ -304,7 +305,7 @@ public class CompressionHeader {
         }
     }
 
-    public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingParams params) {
+    public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingDescriptor params) {
         encodingMap.addTagBlockCompression(tagId, compressor);
         tMap.put(tagId, params);
     }

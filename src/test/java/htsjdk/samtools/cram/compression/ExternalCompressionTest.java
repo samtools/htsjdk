@@ -1,8 +1,8 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.compression.ExternalCompression;
 import htsjdk.samtools.cram.compression.rans.RANS;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -22,14 +22,14 @@ public class ExternalCompressionTest extends HtsjdkTest {
     }
 
     @Test
-    public void testGZipRoundtrip() throws IOException {
-        final byte [] compressed = ExternalCompression.gzip(TEST_BYTES);
+    public void testGZipRoundtrip() {
+        final byte [] compressed = ExternalCompression.gzip(TEST_BYTES, new CRAMEncodingStrategy().getGZIPCompressionLevel());
         final byte [] restored = ExternalCompression.gunzip(compressed);
         Assert.assertEquals(TEST_BYTES, restored);
     }
 
     @Test
-    public void testBZip2Roundtrip() throws IOException {
+    public void testBZip2Roundtrip() {
         final byte [] compressed = ExternalCompression.bzip2(TEST_BYTES);
         final byte [] restored = ExternalCompression.unbzip2(compressed);
         Assert.assertEquals(TEST_BYTES, restored);
@@ -45,7 +45,7 @@ public class ExternalCompressionTest extends HtsjdkTest {
     }
 
     @Test
-    public void testXZRoundtrip() throws IOException {
+    public void testXZRoundtrip() {
         final byte [] compressed = ExternalCompression.xz(TEST_BYTES);
         final byte [] restored = ExternalCompression.unxz(compressed);
         Assert.assertEquals(TEST_BYTES, restored);

@@ -28,10 +28,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A reader used to consume encoded CramRecords, via codecs, from a set of Streams representing
+ * A reader used to consume encoded CramRecords, via codecs, from a set of streams representing
  * a Slice's data series blocks.
  */
 public class CramRecordReader {
+    //NOTE: these are all named with a "Codec" suffix, but they're really DataSeriesReaders, which are
+    // generic-typed wrappers around a CRAMCodec
     private final DataSeriesReader<Integer> bitFlagsCodec;
     private final DataSeriesReader<Integer> compressionBitFlagsCodec;
     private final DataSeriesReader<Integer> readLengthCodec;
@@ -123,14 +125,15 @@ public class CramRecordReader {
         // the QS_QualityScore data series, which is BYTE, not BYTE_ARRAY
         qualityScoreArrayCodec = new DataSeriesReader<>(
                 DataSeriesType.BYTE_ARRAY,
-                compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
+                compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksReadStreams);
 
         tagValueCodecs = compressionHeader.tMap.entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         mapEntry -> new DataSeriesReader<>(
-                                // TODO: why are tags always BYTE_ARRAY ? is that in the spec ?
+                                // TODO: why are tags always BYTE_ARRAY ? is that in the spec, or just a logical
+                                // consequence/choice for tags
                                 DataSeriesType.BYTE_ARRAY,
                                 mapEntry.getValue(),
                                 sliceBlocksReadStreams)));
@@ -295,11 +298,11 @@ public class CramRecordReader {
     }
 
     private <T> DataSeriesReader<T> createDataSeriesReader(final DataSeries dataSeries) {
-        final EncodingParams encodingParams = compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(dataSeries);
-        if (encodingParams != null) {
+        final EncodingDescriptor encodingDescriptor = compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(dataSeries);
+        if (encodingDescriptor != null) {
             return new DataSeriesReader<>(
                     dataSeries.getType(),
-                    encodingParams,
+                    encodingDescriptor,
                     sliceBlocksReadStreams);
         } else {
             // NOTE: Not all CRAM implementations choose to use all data series. For example, the

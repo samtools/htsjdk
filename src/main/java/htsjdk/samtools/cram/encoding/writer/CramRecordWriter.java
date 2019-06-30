@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
  * A writer that emits CramRecords into Streams representing a Slice's data series blocks via codecs.
  */
 public class CramRecordWriter {
+    //NOTE: these are all named with a "Codec" suffix, but they're really DataSeriesWriters, which are
+    // generic-typed wrappers around a CRAMCodec
+
     private final DataSeriesWriter<Integer> bitFlagsC;
     private final DataSeriesWriter<Integer> compBitFlagsC;
     private final DataSeriesWriter<Integer> readLengthC;
@@ -106,13 +109,13 @@ public class CramRecordWriter {
         refSkipCodec =              createDataWriter(DataSeries.RS_RefSkip);
 
         // special case: re-encodes QS as a byte array
-        // This appears to split the QS_QualityScore series into a second  codec that uses BYTE_ARRAY so that arrays of
+        // This appears to split the QS_QualityScore series into a second codec that uses BYTE_ARRAY so that arrays of
         // scores are written to an EXTERNAL block ?
         // We can't call compressionHeader.createDataWriter here because it uses the default encoding params for
         // the QS_QualityScore data series, which is BYTE, not BYTE_ARRAY
         qualityScoreArrayCodec = new DataSeriesWriter<>(
                 DataSeriesType.BYTE_ARRAY,
-                compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(DataSeries.QS_QualityScore),
+                compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksWriteStreams);
 
         tagValueCodecs = compressionHeader.tMap.entrySet()
@@ -148,15 +151,15 @@ public class CramRecordWriter {
      * @return a Data Writer for the given Data Series, or null if it's not in the encoding map
      */
     private <T> DataSeriesWriter<T> createDataWriter(final DataSeries dataSeries) {
-        final EncodingParams encodingParams = compressionHeader.getEncodingMap().getEncodingParamsForDataSeries(dataSeries);
-        if (encodingParams == null) {
+        final EncodingDescriptor encodingDescriptor = compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(dataSeries);
+        if (encodingDescriptor == null) {
             throw new IllegalArgumentException(
                     String.format("Attempt to create data series writer for data series %s for which no encoding can be found",
                             dataSeries));
         }
         return new DataSeriesWriter<>(
                 dataSeries.getType(),
-                encodingParams,
+                encodingDescriptor,
                 sliceBlocksWriteStreams);
     }
 

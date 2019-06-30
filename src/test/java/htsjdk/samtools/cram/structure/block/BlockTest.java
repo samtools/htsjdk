@@ -5,6 +5,8 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -96,7 +98,7 @@ public class BlockTest extends HtsjdkTest {
     @Test
     public void testExternalBlockRoundTrips() throws IOException {
         // arbitrary values
-        final ExternalCompressor compressor = ExternalCompressor.createGZIP();
+        final ExternalCompressor compressor = new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel());
         final int contentID = 5;
 
         final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();

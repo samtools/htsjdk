@@ -33,6 +33,7 @@ import java.nio.ByteOrder;
 // TODO: ByteArrayLenEncoding does not (and NEITHER are External) ?
 //
 // TODO: this has an externalID: why is this not derived from ExternalEncoding ?
+// See https://github.com/samtools/hts-specs/issues/426).
 public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
     private final byte stopByte;
     private final int externalId;
@@ -45,8 +46,13 @@ public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
         this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES + 1);
     }
 
-    public static ByteArrayStopEncoding fromParams(final byte[] data) {
-        final ByteBuffer buf = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return ByteArrayStopEncoding with parameters populated from serializedParams
+     */
+    public static ByteArrayStopEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buf = ByteBuffer.wrap(serializedParams);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         final byte stopByte = buf.get();
         final int externalId = ITF8.readUnsignedITF8(buf);
@@ -54,7 +60,7 @@ public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         buf.clear();
 
         buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -77,6 +83,6 @@ public class ByteArrayStopEncoding extends CRAMEncoding<byte[]> {
 
     @Override
     public String toString() {
-        return String.format("External ID: %d StopByte: %d", externalId, stopByte);
+        return String.format("Content ID: %d StopByte: %d", externalId, stopByte);
     }
 }

@@ -32,6 +32,8 @@ public class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer> {
     private final int[] bitLengths;
     private final ByteBuffer buf;
 
+    // Unlike the others, this is public because ByteArrayLenEncoding uses it to create an
+    // encoding for the length of the byte array.
     public CanonicalHuffmanIntegerEncoding(final int[] values, final int[] bitLengths) {
         super(EncodingID.HUFFMAN);
         this.values = values;
@@ -39,8 +41,13 @@ public class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer> {
         this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
     }
 
-    public static CanonicalHuffmanIntegerEncoding fromParams(final byte[] data) {
-        final ByteBuffer buf = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return CanonicalHuffmanIntegerEncoding with parameters populated from serializedParams
+     */
+    public static CanonicalHuffmanIntegerEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buf = ByteBuffer.wrap(serializedParams);
 
         final int valueSize = ITF8.readUnsignedITF8(buf);
         final int[] values = new int[valueSize];
@@ -58,7 +65,7 @@ public class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer> {
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         buf.clear();
 
         ITF8.writeUnsignedITF8(values.length, buf);

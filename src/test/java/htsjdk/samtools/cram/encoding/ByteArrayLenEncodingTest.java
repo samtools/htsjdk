@@ -60,10 +60,10 @@ public class ByteArrayLenEncodingTest extends HtsjdkTest {
         final CRAMEncoding<Integer> constructedLength = new BetaIntegerEncoding(offset, bitsPerValue);
         final CRAMEncoding<byte[]> constructedValues = new ExternalByteArrayEncoding(externalBlockContentId);
         final ByteArrayLenEncoding constructed = new ByteArrayLenEncoding(constructedLength, constructedValues);
-        Assert.assertEquals(constructed.toByteArray(), expected);
+        Assert.assertEquals(constructed.toSerializedEncodingParams(), expected);
 
-        final ByteArrayLenEncoding fromParams = ByteArrayLenEncoding.fromParams(expected);
-        Assert.assertEquals(fromParams.toByteArray(), expected);
+        final ByteArrayLenEncoding params = ByteArrayLenEncoding.fromSerializedEncodingParams(expected);
+        Assert.assertEquals(params.toSerializedEncodingParams(), expected);
     }
 
     @Test

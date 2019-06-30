@@ -13,13 +13,13 @@ public class DataSeriesWriterTest extends HtsjdkTest {
     public static Object[][] negativeConstructor() {
         return new Object[][] {
                 // mismatch type and encoding
-                {DataSeriesType.BYTE, new BetaIntegerEncoding(0, 8).toParam()}
+                {DataSeriesType.BYTE, new BetaIntegerEncoding(0, 8).toEncodingDescriptor()}
         };
     }
 
     @Test(dataProvider = "negativeConstructor", expectedExceptions = RuntimeException.class)
     public void negativeConstructorTest(final DataSeriesType valueType,
-                                        final EncodingParams params) {
+                                        final EncodingDescriptor params) {
         final CompressionHeader compressionHeader = new CompressionHeader();
         new DataSeriesWriter(valueType, params, new SliceBlocksWriteStreams(compressionHeader, new SliceBlocks()));
     }

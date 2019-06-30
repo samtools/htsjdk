@@ -39,8 +39,13 @@ public class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
         this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
     }
 
-    public static CanonicalHuffmanByteEncoding fromParams(final byte[] data) {
-        final ByteBuffer buf = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return CanonicalHuffmanByteEncoding with parameters populated from serializedParams
+     */
+    public static CanonicalHuffmanByteEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buf = ByteBuffer.wrap(serializedParams);
 
         final int valueSize = ITF8.readUnsignedITF8(buf);
         final byte[] values = new byte[valueSize];
@@ -56,7 +61,7 @@ public class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         buf.clear();
         ITF8.writeUnsignedITF8(values.length, buf);
         for (final byte value : values) {
