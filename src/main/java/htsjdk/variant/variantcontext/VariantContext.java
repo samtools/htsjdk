@@ -1659,12 +1659,29 @@ public class VariantContext implements Feature, Serializable {
     }
 
     /**
-     * @return 1-based inclusive start position of the Variant
-     * INDEL events usually start on the first unaltered reference base before the INDEL
-     * 
-     * <strong>Warning:</strong> be aware that the start position of the VariantContext is defined in terms of the start position specified in the
-     * underlying vcf file, VariantContexts representing the same biological event may have different start positions depending on the
-     * specifics of the vcf file they are derived from
+     * Returns 1-based inclusive start position of the variant.
+     *
+     * <p>
+     *     INDEL events usually start on the first unaltered reference base before the INDEL.
+     * </p>
+     *
+     * <p>
+     *     <strong>Warning:</strong>
+     *     be aware that the start position of the VariantContext is defined
+     *     in terms of the start position specified in the underlying vcf file,
+     *     VariantContexts representing the same biological event may have different
+     *     start positions depending on the specifics of the vcf file they are derived from.
+     * </p>
+     *
+     * <p>
+     *     <strong>Warning:</strong>
+     *     Note also that the VCF spec allows 0 and N + 1 for POS field for telomeric event,
+     *     where N is the length of the chromosome.
+     *     The "0" value returned should be interpreted as telomere, and does not violate the above "1-based" comment.
+     *     Code consuming the returned {@code start} should be prepared for such out-of-the-ordinary values.
+     * </p>
+     *
+     * @return 0 or greater.
      */
     @Override
     public int getStart() {
