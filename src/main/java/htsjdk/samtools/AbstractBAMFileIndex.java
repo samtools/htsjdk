@@ -405,7 +405,8 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     		return;
     	}
 
-        // Use previous sequence position if in cache
+        // Use previous sequence position if in cache, which optimizes for common access pattern
+        // of iterating through sequences in order.
         final int startSequenceIndex;
         if (sequenceIndex > 0 && sequenceIndexes[sequenceIndex - 1] != -1) {
             seek(sequenceIndexes[sequenceIndex - 1]);
