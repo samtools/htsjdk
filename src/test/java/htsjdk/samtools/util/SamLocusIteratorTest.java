@@ -263,6 +263,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
+        // add record without insertions first
+        builder.addFrag("record", 0, startPosition, true, false, "33M", null, 10);
         for (int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
             builder.addFrag("record" + i, 0, startPosition, true, false, "3I33M", null, 10);
@@ -278,8 +280,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             for (final SamLocusIterator.LocusInfo li : sli) {
                 Assert.assertEquals(li.getPosition(), pos);
                 // accumulation of coverage
-                Assert.assertEquals(li.getRecordAndOffsets().size(), (indelPosition) ? 0 : coverage);
-                Assert.assertEquals(li.size(), (indelPosition) ? 0 : coverage);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), (indelPosition) ? 0 : coverage + 1);
+                Assert.assertEquals(li.size(), (indelPosition) ? 0 : coverage + 1);
 
                 // no accumulation of deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
