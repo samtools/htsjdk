@@ -159,12 +159,12 @@ public class BinningIndexContent {
             this.maxBinNumber = mBinArray.length - 1;
         }
 
-        Bin getBin(final int binNumber) {
+        public Bin getBin(final int binNumber) {
             if (binNumber > maxBinNumber) return null;
             return mBinArray[binNumber];
         }
 
-        int getNumberOfNonNullBins() {
+        public int getNumberOfNonNullBins() {
             return numberOfNonNullBins;
         }
 

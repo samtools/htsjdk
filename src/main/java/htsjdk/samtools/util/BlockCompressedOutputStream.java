@@ -328,13 +328,19 @@ public class BlockCompressedOutputStream
      */
     @Override
     public void close() throws IOException {
+        close(true);
+    }
+
+    public void close(final boolean writeTerminatorBlock) throws IOException {
         flush();
         // For debugging...
         // if (numberOfThrottleBacks > 0) {
         //     System.err.println("In BlockCompressedOutputStream, had to throttle back " + numberOfThrottleBacks +
         //                        " times for file " + codec.getOutputFileName());
         // }
-        codec.writeBytes(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK);
+        if (writeTerminatorBlock) {
+            codec.writeBytes(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK);
+        }
         codec.close();
         if (indexer != null) {
             indexer.close();

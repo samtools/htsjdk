@@ -31,6 +31,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
+import htsjdk.utils.ValidationUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,13 +56,9 @@ public class AllRefsTabixIndexCreator implements IndexCreator {
     // defines the location of the end of the previous feature in the output file.
     private TabixFeature previousFeature = null;
 
-
-    /**
-     * @param sequenceDictionary is not required, but if present all features added must refer to sequences in the
-     *                           dictionary.  It is used to optimize the memory needed to build the index.
-     */
     public AllRefsTabixIndexCreator(final SAMSequenceDictionary sequenceDictionary,
                                     final TabixFormat formatSpec) {
+        ValidationUtils.nonNull(sequenceDictionary);
         this.sequenceDictionary = sequenceDictionary;
         this.formatSpec = formatSpec.clone();
     }
