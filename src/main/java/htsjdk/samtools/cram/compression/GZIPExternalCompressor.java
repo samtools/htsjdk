@@ -19,6 +19,11 @@ public class GZIPExternalCompressor extends ExternalCompressor {
         this.writeCompressionLevel = compressionLevel;
     }
 
+    /**
+     * @return the gzip compression level used by this compressor's compress method
+     */
+    public int getWriteCompressionLevel() { return writeCompressionLevel; }
+
     @Override
     public byte[] compress(final byte[] data) {
         return ExternalCompression.gzip(data, writeCompressionLevel);

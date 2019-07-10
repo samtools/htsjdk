@@ -12,6 +12,10 @@ public class RANSExternalCompressor extends ExternalCompressor {
         this.order = order;
     }
 
+    public RANSExternalCompressor(final int order) {
+        this(RANS.ORDER.fromInt(order));
+    }
+
     @Override
     public byte[] compress(final byte[] data) {
         return ExternalCompression.rans(data, order);
