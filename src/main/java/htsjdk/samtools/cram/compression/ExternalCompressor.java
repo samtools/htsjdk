@@ -1,9 +1,6 @@
 package htsjdk.samtools.cram.compression;
 
-import htsjdk.samtools.cram.compression.rans.RANS;
-import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-import htsjdk.samtools.cram.compression.rans.RANS.ORDER;
 
 public abstract class ExternalCompressor {
     private BlockCompressionMethod method;
@@ -38,25 +35,26 @@ public abstract class ExternalCompressor {
         return getMethod().hashCode();
     }
 
-    // TODO: this is only used to create a compressor from a serialized compression map (and for tests)
+    /**
+     * Return an ExternalCompressor subclass based on the BlockCompressionMethod. Compressor-specific arguments
+     * must be populated by the caller.
+     * @param compressionMethod the type of compressor required ({@link BlockCompressionMethod})
+     * @param compressorSpecificArg the required order for RANS compressors; or the desired write compression
+     *                             level for GZIP
+     * @return an ExternalCompressor of the requested type, populated with an compressor-specific args
+     */
     public static ExternalCompressor getCompressorForMethod(
             final BlockCompressionMethod compressionMethod,
-            //TODO: fix this arg list to be compressor-specific (ie. add gzip level)
-            // or make it just use defaults ?
-            final RANS.ORDER order) {
+            final int compressorSpecificArg) {
         switch (compressionMethod) {
             case RAW:
                 return new RAWExternalCompressor();
             case GZIP:
-                return new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel());
+                return new GZIPExternalCompressor(compressorSpecificArg);
             case LZMA:
                 return new LZMAExternalCompressor();
             case RANS:
-                if (order == RANS.ORDER.ZERO) {
-                    return new RANSExternalCompressor(ORDER.ZERO);
-                } else {
-                    return new RANSExternalCompressor(ORDER.ONE);
-                }
+                return new RANSExternalCompressor(compressorSpecificArg);
             case BZIP2:
                 return new BZIP2ExternalCompressor();
             default:

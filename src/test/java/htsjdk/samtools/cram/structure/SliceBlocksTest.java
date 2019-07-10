@@ -49,7 +49,7 @@ public class SliceBlocksTest  extends HtsjdkTest {
                     Block.createExternalBlock(
                             compressionMethod,
                             dataSeries.getExternalBlockContentId(),
-                            ExternalCompressor.getCompressorForMethod(compressionMethod, RANS.ORDER.ZERO).compress(uncompressedContent.getBytes()),
+                            ExternalCompressor.getCompressorForMethod(compressionMethod, 0).compress(uncompressedContent.getBytes()),
                             dataSeries.getCanonicalName().getBytes().length));
             expectedExternalContent.put(dataSeries.getExternalBlockContentId(), uncompressedContent);
         }

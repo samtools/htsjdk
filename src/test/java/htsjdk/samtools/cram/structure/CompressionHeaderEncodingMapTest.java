@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
@@ -10,6 +11,7 @@ import java.util.Collections;
 import java.util.Set;
 
 public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram/json");
 
     @Test
     public void testAllHTSJDKWriteEncodings() {
@@ -50,9 +52,7 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
 
         // serialize and then resurrect the encoding map
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            //final SliceBlocksWriteStreams sliceBlocksWriteStreams = new SliceBlocksWriteStreams(compressionHeader, sliceBlocks);
-            //sliceBlocks.write(CramVersions.CRAM_v3,
-                    encodingMap.write(baos);
+            encodingMap.write(baos);
             final byte[] roundTrippedBytes = baos.toByteArray();
             try (final InputStream is = new ByteArrayInputStream(roundTrippedBytes)) {
                 final CompressionHeaderEncodingMap roundTippedEncodingMap = new CompressionHeaderEncodingMap(is);
@@ -73,6 +73,19 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
         Assert.assertEquals(roundTripEncodingMap, originalEncodingMap);
     }
 
+    @DataProvider
+    public Object[][] getBadEncodingMapJSONs() {
+        return new Object[][] {
+                { new File(TEST_DATA_DIR, "encodingMapWithBadMapVersion.json") }, // htsjdkCRAMEncodingMapVersion 99999
+                { new File(TEST_DATA_DIR, "encodingMapWithBadCRAMVersion.json") } // CRAM version 271.1.8
+        };
+    }
+
+    @Test(dataProvider="getBadEncodingMapJSONs", expectedExceptions = IllegalArgumentException.class)
+    public void testRejectJSONWithEncodingVersionMismatch(final File badJSONFile) {
+        CompressionHeaderEncodingMap.readFromPath(badJSONFile.toPath());
+    }
+
     private void assertExpectedHTSJDKGeneratedEncodings(
             final CompressionHeaderEncodingMap encodingMap,
             final Set<DataSeries> expectedMissingDataSeries) {
@@ -82,7 +95,8 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
                 Assert.assertNull(encodingMap.getEncodingDescriptorForDataSeries(dataSeries),
                         "Unexpected encoding key found: " + dataSeries.name());
             } else {
-                Assert.assertNotNull(encodingMap.getEncodingDescriptorForDataSeries(dataSeries), "Encoding key not found: " + dataSeries.name());
+                Assert.assertNotNull(encodingMap.getEncodingDescriptorForDataSeries(dataSeries),
+                        "Encoding key not found: " + dataSeries.name());
                 Assert.assertFalse(encodingMap.getEncodingDescriptorForDataSeries(dataSeries).getEncodingID() == EncodingID.NULL);
             }
         }
