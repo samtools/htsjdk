@@ -13,7 +13,7 @@ public class RANS {
             try {
                 return ORDER.values()[value];
             } catch (final ArrayIndexOutOfBoundsException e) {
-                throw new RuntimeException("Unknown rANS order: " + value);
+                throw new IllegalArgumentException("Unknown rANS order: " + value);
             }
         }
     }

@@ -2,10 +2,16 @@ package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
+
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class RANSExternalCompressor extends ExternalCompressor {
     private final RANS.ORDER order;
+
+    public RANSExternalCompressor() {
+        this(RANS.ORDER.ZERO);
+    }
 
     public RANSExternalCompressor(final RANS.ORDER order) {
         super(BlockCompressionMethod.RANS);
@@ -18,13 +24,14 @@ public class RANSExternalCompressor extends ExternalCompressor {
 
     @Override
     public byte[] compress(final byte[] data) {
-        return ExternalCompression.rans(data, order);
+        final ByteBuffer buffer = RANS.compress(ByteBuffer.wrap(data), order, null);
+        return toByteArray(buffer);
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        //TODO: implement this
-        return new byte[0];
+        final ByteBuffer buf = RANS.uncompress(ByteBuffer.wrap(data), null);
+        return toByteArray(buf);
     }
 
     public RANS.ORDER getOrder() { return order; }
@@ -47,6 +54,16 @@ public class RANSExternalCompressor extends ExternalCompressor {
     @Override
     public int hashCode() {
         return Objects.hash(getMethod(), order);
+    }
+
+    private byte[] toByteArray(final ByteBuffer buffer) {
+        if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.limit()) {
+            return buffer.array();
+        }
+
+        final byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+        return bytes;
     }
 
 }
