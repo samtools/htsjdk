@@ -14,7 +14,7 @@ import java.nio.file.Path;
  * Parameters that can be set to control encoding strategy used on write.
  */
 public class CRAMEncodingStrategy {
-    private final int version = 1;
+    private final long version = 1L;
     private final String strategyName = "default";
 
     // encoding strategies
@@ -40,8 +40,7 @@ public class CRAMEncodingStrategy {
         this.customCompressionMapPath = encodingMap.toAbsolutePath().toString();
     }
 
-
-    public CRAMEncodingStrategy setReadsPerSlice(final int readsPerSlice) {
+    public CRAMEncodingStrategy setRecordsPerSlice(final int readsPerSlice) {
         ValidationUtils.validateArg(readsPerSlice > 0, "Reads per slice must be > 1");
         this.readsPerSlice = readsPerSlice;
         return this;
@@ -119,7 +118,7 @@ public class CRAMEncodingStrategy {
 
     @Override
     public int hashCode() {
-        int result = version;
+        int result = Long.hashCode(version);
         result = 31 * result + gzipCompressionLevel;
         result = 31 * result + readsPerSlice;
         result = 31 * result + getSlicesPerContainer();

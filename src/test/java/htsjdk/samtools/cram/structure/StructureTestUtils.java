@@ -1,8 +1,6 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.compression.ExternalCompressor;
-import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import org.testng.annotations.DataProvider;
 

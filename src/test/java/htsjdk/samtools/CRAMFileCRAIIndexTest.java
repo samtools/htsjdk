@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -363,7 +362,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
              final ByteArrayOutputStream baos = new ByteArrayOutputStream())
         {
             CRAMFileWriter writer = new CRAMFileWriter(
-                    new CRAMEncodingStrategy().setReadsPerSlice(nofReadsPerContainer),
+                    new CRAMEncodingStrategy().setRecordsPerSlice(nofReadsPerContainer),
                     baos,
                     null,
                     true,

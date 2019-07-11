@@ -57,6 +57,8 @@ public class Slice {
     public int alignmentSpan = NO_ALIGNMENT_SPAN;
     public int nofRecords = -1;
     public long globalRecordCounter = -1;
+
+    // total number of blocks in this slice, including the core block
     public int nofBlocks = -1;
     public int[] contentIDs;
     public byte[] refMD5 = new byte[16];

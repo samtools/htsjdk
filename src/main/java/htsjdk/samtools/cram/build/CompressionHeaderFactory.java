@@ -369,6 +369,8 @@ public class CompressionHeaderFactory {
         // NOTE: This usage of ByteArrayLenEncoding splits the stream between core (for the
         // length) and external (for the bytes).
         return new ByteArrayLenEncoding(
+                // TODO: are these args reversed ? first arg is values, then bit lengths ?
+                //CanonicalHuffmanIntegerEncoding(final int[] values, final int[] bitLengths)
                 new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, singleZero),
                 new ExternalByteArrayEncoding(tagID)).toEncodingDescriptor();
     }

@@ -60,7 +60,7 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
 
             final CRAMContainerStreamWriter containerWriter = new CRAMContainerStreamWriter(
                     // force the containers to be small to ensure there are 2
-                    new CRAMEncodingStrategy().setReadsPerSlice(3),
+                    new CRAMEncodingStrategy().setRecordsPerSlice(3),
                     source,
                     samFileHeader,
                     cramBAOS,

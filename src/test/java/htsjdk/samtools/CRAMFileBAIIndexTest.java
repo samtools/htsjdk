@@ -285,8 +285,8 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
         final SAMRecordIterator iterator = reader.iterator();
         try (final CRAMFileWriter writer = new CRAMFileWriter(
-                // to reduce granularity call setReadsPerSlice
-                new CRAMEncodingStrategy().setReadsPerSlice(nofReadsPerContainer),
+                // to reduce granularity call setRecordsPerSlice
+                new CRAMEncodingStrategy().setRecordsPerSlice(nofReadsPerContainer),
                 baos,
                 null,
                 true,

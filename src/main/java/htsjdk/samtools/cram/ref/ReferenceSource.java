@@ -100,7 +100,7 @@ public class ReferenceSource implements CRAMReferenceSource {
             }
         }
         else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
-            log.info("USE_CRAM_REF_DOWNLOAD=true, so attmpting to download reference file as needed.");
+            log.info("USE_CRAM_REF_DOWNLOAD=true, so attempting to download reference file as needed.");
             return new ReferenceSource((ReferenceSequenceFile)null);
         }
         else {

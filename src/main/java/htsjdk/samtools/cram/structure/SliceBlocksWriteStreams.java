@@ -12,9 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Provides a bridge between the DataSeries codecs and their underlying blocks for use when
- * writing a CRAM stream by presenting a bit (core) or byte (external) stream on each block.
- * This allows the the individual codecs to output to streams rather than blocks.
+ * Provides a layer over a {@link SliceBlocks} object and acts as a bridge between the DataSeries codecs
+ * and their underlying blocks when writing a CRAM stream by presenting a bit (core) or byte (external) stream
+ * for each block.
  */
 public class SliceBlocksWriteStreams {
 

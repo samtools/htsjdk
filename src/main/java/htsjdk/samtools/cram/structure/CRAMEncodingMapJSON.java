@@ -14,7 +14,7 @@ import java.util.List;
  * CompressionHeaderEncodingMap objects to be serialized and used as input for testing or running
  * with various encoding map strategy combinations.
  */
-class CRAMEncodingMapJSON {
+public class CRAMEncodingMapJSON {
     // Include a map version and a CRAM that can be validated after round-tripping (these names appear in
     // the json file).
     final private long htsjdkCRAMEncodingMapVersion;
@@ -30,9 +30,14 @@ class CRAMEncodingMapJSON {
 
     /**
      * Add an CRAMEncodingMapJSONEntry to be serialized
-     * @param entry
+     * @param entry entry to be serialized
      */
     public void addEncodingMapEntry(final CRAMEncodingMapJSONEntry entry) { entries.add(entry); }
+
+    /**
+     * @return the target CompressionHeaderEncodingMap version this map represents
+     */
+    public List<CRAMEncodingMapJSONEntry> getEncodingMapEntries() { return entries; }
 
     /*
      * @return the target CRAM version for which this map is intended
@@ -47,19 +52,21 @@ class CRAMEncodingMapJSON {
     /**
      * Container for entries that are serialized.
      */
-    static class CRAMEncodingMapJSONEntry {
+    public static class CRAMEncodingMapJSONEntry {
         final static int NO_COMPRESSION_ARG = -1;
 
-        final Integer contentID;
-        final DataSeries dataSeries;
-        final EncodingDescriptor encodingDescriptor;
-        final BlockCompressionMethod compressionMethod;
-        final int compressorSpecificArg; // RANS order or GZIP compression level, otherwise NO_COMPRESSION_ARG
+        public final Integer contentID;
+        public final DataSeries dataSeries;
+        public final EncodingDescriptor encodingDescriptor;
+        public final BlockCompressionMethod compressionMethod;
+        public final int compressorSpecificArg; // RANS order or GZIP compression level, otherwise NO_COMPRESSION_ARG
 
+        // TODO: contentID and dataSeries are redundant ?
+        // TODO: also, compressor will be unused if we ever use a DataSeries encoding that is not External
         public CRAMEncodingMapJSONEntry(final Integer contentID,
                                         final DataSeries dataSeries,
                                         final EncodingDescriptor encodingDescriptor,
-                                        final ExternalCompressor compressor){
+                                        final ExternalCompressor compressor) {
             this.contentID = contentID;
             this.dataSeries = dataSeries;
             this.encodingDescriptor = encodingDescriptor;

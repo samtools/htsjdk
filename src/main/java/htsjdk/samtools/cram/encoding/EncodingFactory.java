@@ -31,7 +31,7 @@ import htsjdk.samtools.cram.structure.EncodingID;
 public class EncodingFactory {
 
     /**
-     * Use the data series value type and EncodingDescriptor to create a corresponding CRAMEncoding of the correct
+     * Use the data series value type and EncodingDescriptor to instantiate a corresponding CRAMEncoding of the correct
      * (generic) type.
      * @param valueType
      * @param encodingDescriptor
@@ -41,7 +41,10 @@ public class EncodingFactory {
     public static <T> CRAMEncoding<T> createCRAMEncoding(
             final DataSeriesType valueType,
             final EncodingDescriptor encodingDescriptor) {
-        return createCRAMEncoding(valueType, encodingDescriptor.getEncodingID(), encodingDescriptor.getEncodingParameters());
+        return createCRAMEncoding(
+                valueType,
+                encodingDescriptor.getEncodingID(),
+                encodingDescriptor.getEncodingParameters());
     }
 
     /**

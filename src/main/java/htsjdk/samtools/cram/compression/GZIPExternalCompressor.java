@@ -65,4 +65,10 @@ public class GZIPExternalCompressor extends ExternalCompressor {
             throw new RuntimeIOException(e);
         }
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s: writeLevel %d", super.toString() + writeCompressionLevel);
+    }
+
 }

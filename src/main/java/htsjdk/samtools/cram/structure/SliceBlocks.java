@@ -13,9 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Manage the (logical) set of blocks that constitute a {@link Slice}. Prevents duplicate
- * blocks (blocks with non-unique content ID) or illogical blocks (i.e., setting  a core block
- * that is not of type core block, or an external block that is not an external block) from
+ * Manage the (logical) set of blocks that constitute a {@link Slice}. The Slice Header block is
+ * not managed by this class.
+ *
+ * Prevents duplicate blocks (blocks with non-unique content ID) or illogical blocks (i.e., setting
+ * a core block that is not of type core block, or an external block that is not an external block) from
  * being added.
  */
 public class SliceBlocks {
@@ -95,7 +97,7 @@ public class SliceBlocks {
                 this.embeddedReferenceBlock.getContentId() != embeddedReferenceBlockContentID) {
             throw new IllegalArgumentException(
                     String.format("Attempt to set embedded reference block content ID (%d) that is in conflict" +
-                            "with the content ID (%d) of the existing reference block",
+                            "with the content ID (%d) of the existing reference block ID",
                             embeddedReferenceBlockContentID,
                             this.embeddedReferenceBlock.getContentId()));
         }
@@ -127,6 +129,7 @@ public class SliceBlocks {
                             this.embeddedReferenceBlockContentID));
         }
 
+        setEmbeddedReferenceContentID(embeddedReferenceBlock.getContentId());
         this.embeddedReferenceBlock = embeddedReferenceBlock;
         addExternalBlock(embeddedReferenceBlock);
     }
@@ -190,6 +193,12 @@ public class SliceBlocks {
      * @param outputStream stream to write blocks to
      */
     public void writeBlocks(final int majorVersion, final OutputStream outputStream) {
+        if (coreBlock == null) {
+            throw new IllegalArgumentException(
+                    "A core block must be provided before slice blocks can be written to a CRAM stream");
+        }
+        // write the core and external blocks; any embedded reference block is included in the list of
+        // external blocks
         coreBlock.write(majorVersion, outputStream);
         for (final Block block : externalBlocks.values()) {
             block.write(majorVersion, outputStream);
