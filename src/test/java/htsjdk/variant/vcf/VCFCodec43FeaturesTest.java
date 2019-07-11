@@ -111,7 +111,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
         final Path vcfWithPedigreeHeaderLine = TEST_PATH.resolve("all43Features.utf8.vcf");
         final VCFHeader headerWithPedigree = new VCFFileReader(vcfWithPedigreeHeaderLine, false).getFileHeader();
         final VCFHeaderLine vcf43PedigreeLine = headerWithPedigree.getMetaDataInInputOrder()
-                .stream().filter((l) -> l.getKey().equals("PEDIGREE")).findFirst().get();
+                .stream().filter((l) -> l.getKey().equals(VCFConstants.PEDIGREE_HEADER_KEY)).findFirst().get();
         Assert.assertEquals(vcf43PedigreeLine.getClass(), VCFPedigreeHeaderLine.class);
     }
 

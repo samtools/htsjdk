@@ -17,7 +17,7 @@ public class VCFCodec42FeaturesTest extends HtsjdkTest {
         final Path vcfWithPedigreeHeaderLine = TEST_PATH.resolve("vcf42HeaderLines.vcf");
         final VCFHeader headerWithPedigree = new VCFFileReader(vcfWithPedigreeHeaderLine, false).getFileHeader();
         final VCFHeaderLine vcf42PedigreeLine = headerWithPedigree.getMetaDataInInputOrder()
-                .stream().filter((l) -> l.getKey().equals("PEDIGREE")).findFirst().get();
+                .stream().filter((l) -> l.getKey().equals(VCFConstants.PEDIGREE_HEADER_KEY)).findFirst().get();
         Assert.assertEquals(vcf42PedigreeLine.getClass(), VCFHeaderLine.class);
         Assert.assertEquals(vcf42PedigreeLine.getValue(), "<Derived=NA12891, Original=NA12878>");
     }
