@@ -121,11 +121,10 @@ class SliceIO {
         // TODO: ensure that the Slice blockCount stays in sync with the
         // Container's blockCount in ContainerIO.writeContainer()
 
-        // 1 Core Data Block per Slice
-        // Each Slice has a variable number of External Data Blocks
-        // TODO: should we count the embedded reference block as an additional block?
-        
-        slice.nofBlocks = 1 + slice.getSliceBlocks().getNumberOfExternalBlocks() + (slice.getEmbeddedReferenceBlock() == null ? 0 : 1);
+        // Each Slice has 1 core data block, plus zero or more external data blocks.
+        // Since an embedded reference block is just stored as an external block, it is included in
+        // the external block count, and does not need to be counted separately.
+        slice.nofBlocks = 1 + slice.getSliceBlocks().getNumberOfExternalBlocks();
         slice.contentIDs = new int[slice.getSliceBlocks().getNumberOfExternalBlocks()];
         final int i = 0;
         for (final int id : slice.getSliceBlocks().getExternalContentIDs()) {

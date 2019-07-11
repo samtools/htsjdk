@@ -1,9 +1,6 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.compression.ExternalCompressor;
-import htsjdk.samtools.cram.compression.rans.RANS;
-import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -18,59 +15,37 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
 
         // Write directly to blocks, and verify by reading through streams (SliceBlocksReadStreams)
 
-        final byte[] coreContent = "core".getBytes();
-        final byte[] refContent = "ref".getBytes();
-        final int refContentID = 293; // totally made it up
-        final Map<Integer, String> expectedExternalContent = new HashMap<>();
+        final byte[] coreBlockContent = "core".getBytes();
+        final byte[] embeddedRefBlockContent = "ref".getBytes();
+        final int embeddedRefBlockContentID = 293; // totally made it up
+        final Map<Integer, String> expectedExternalContentStrings = new HashMap<>();
 
-        final SliceBlocks sliceBlocks = new SliceBlocks();
-
-        // Add a core block, and one external block for each Data Series. The core block is actually
-        // a bit stream, but for this test we hijack it and write bits that we'll interpret as a String.
-        sliceBlocks.setCoreBlock(Block.createRawCoreDataBlock(coreContent));
-        sliceBlocks.setEmbeddedReferenceBlock(
-                Block.createExternalBlock(
-                        compressionMethod,
-                        refContentID,
-                        // use a non-default RANS order (ORDER one) compressor to ensure that the order is round-tripped correctly
-                        ExternalCompressor.getCompressorForMethod(
-                                compressionMethod,
-                                compressionMethod == BlockCompressionMethod.RANS ?
-                                    1 :
-                                    ExternalCompressor.NO_COMPRESSION_ARG).compress(refContent),
-                        refContent.length));
-        for (final DataSeries dataSeries : DataSeries.values()) {
-            final String uncompressedContent = dataSeries.getCanonicalName();
-            sliceBlocks.addExternalBlock(
-                    Block.createExternalBlock(
-                            compressionMethod,
-                            dataSeries.getExternalBlockContentId(),
-                            ExternalCompressor.getCompressorForMethod(
-                                    compressionMethod,
-                                    compressionMethod == BlockCompressionMethod.RANS ?
-                                            1 :  // use RANS order 1 to test non-default RANS order
-                                            ExternalCompressor.NO_COMPRESSION_ARG).compress(uncompressedContent.getBytes()),
-                            dataSeries.getCanonicalName().getBytes().length));
-            expectedExternalContent.put(dataSeries.getExternalBlockContentId(), uncompressedContent);
-        }
+        // populate a SliceBlocksObject and update expectedExternalContent
+        final SliceBlocks sliceBlocks = SliceBlocksTest.getSliceBlocksForAllDataSeries(
+                compressionMethod,
+                coreBlockContent,
+                embeddedRefBlockContent,
+                embeddedRefBlockContentID,
+                expectedExternalContentStrings
+        );
 
         final SliceBlocksReadStreams sliceBlocksReadStream = new SliceBlocksReadStreams(sliceBlocks);
 
         // "core" is a a bit stream, but interpret the bits as a 4 byte string for verification
-        Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreContent[0]);
-        Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreContent[1]);
-        Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreContent[2]);
-        Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreContent[3]);
+        Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[0]);
+        Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[1]);
+        Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[2]);
+        Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[3]);
 
-        byte[] roundTrippedReferenceBlockContent = new byte[refContent.length];
+        byte[] roundTrippedReferenceBlockContent = new byte[embeddedRefBlockContent.length];
         Assert.assertEquals(
                 sliceBlocksReadStream
-                        .getExternalInputStream(refContentID)
+                        .getExternalInputStream(embeddedRefBlockContentID)
                         .read(roundTrippedReferenceBlockContent, 0, roundTrippedReferenceBlockContent.length),
-                refContent.length);
+                embeddedRefBlockContent.length);
         Assert.assertEquals(
                 new String(roundTrippedReferenceBlockContent),
-                new String(refContent));
+                new String(embeddedRefBlockContent));
 
         // and read back the content (name of the data series) from the stream and verify
         for (final DataSeries dataSeries : DataSeries.values()) {
@@ -79,7 +54,7 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
                     .getExternalInputStream(dataSeries.getExternalBlockContentId())
                     .read(roundTrippedContent, 0, roundTrippedContent.length);
             Assert.assertEquals(roundTrippedContent.length, dataSeries.getCanonicalName().length());
-            Assert.assertEquals( new String(roundTrippedContent), expectedExternalContent.get(dataSeries.getExternalBlockContentId()));
+            Assert.assertEquals( new String(roundTrippedContent), expectedExternalContentStrings.get(dataSeries.getExternalBlockContentId()));
         }
     }
 }

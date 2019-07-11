@@ -21,7 +21,7 @@ public class ContainerTest extends HtsjdkTest {
 
     private static final ContainerFactory FACTORY = new ContainerFactory(
             CRAMStructureTestUtil.getSAMFileHeaderForTests(),
-            new CRAMEncodingStrategy().setReadsPerSlice(TEST_RECORD_COUNT));
+            new CRAMEncodingStrategy().setRecordsPerSlice(TEST_RECORD_COUNT));
 
     private static final CompressionHeader COMPRESSION_HEADER =
             new CompressionHeaderFactory().build(Collections.EMPTY_LIST, true);

@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Provides a bridge between the DataSeries codecs and their underlying blocks for use when
- * reading a CRAM stream by presenting a bit (core) or byte (external) stream on each block.
- * This allows the the individual codecs to read from streams rather than blocks.
+ * Provides a layer over a {@link SliceBlocks} object and acts as a bridge between the DataSeries codecs
+ * and their underlying blocks when reading a CRAM stream by presenting a bit (core) or byte (external) stream
+ * for each block.
  */
 public class SliceBlocksReadStreams {
 

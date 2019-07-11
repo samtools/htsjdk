@@ -129,9 +129,9 @@ public class CompressionHeaderEncodingMap {
             final byte[] paramBytes = new byte[paramLen];
             buffer.get(paramBytes);
 
-            // NOTE: the compression associated with this data series is a property of the BLOCK in
-            // which it resides, so the externalCompressors map isn't populated here. The block data
-            // will be uncompressed before the encoding ever sees it.
+            // NOTE: the compression associated with this DataSeries is a property of the BLOCK in which it
+            // resides, not of the encoding, so the externalCompressors map isn't populated when reading a
+            // CRAM. The block data will be uncompressed before the codec ever sees it.
             encodingMap.put(dataSeries, new EncodingDescriptor(id, paramBytes));
         }
     }
@@ -265,7 +265,7 @@ public class CompressionHeaderEncodingMap {
 
     /**
      * Constructor used to write a serialized (JSON) encoding map to record the encoding map
-     * used to create a particular CRAM stream..
+     * used to create a particular CRAM stream.
      * @param encodingMapPath the path to an encoding map JSON file
      */
     public void writeToPath(final Path encodingMapPath) {
@@ -311,6 +311,8 @@ public class CompressionHeaderEncodingMap {
     private void addExternalRansOrderZeroEncoding(final DataSeries dataSeries) {
         addExternalEncoding(dataSeries, new RANSExternalCompressor(RANS.ORDER.ZERO));
     }
+
+    //TODO: should this be called putExternalEncoding ?? it adds to a map
 
     // add an external encoding and corresponding compressor
     private void addExternalEncoding(final DataSeries dataSeries,

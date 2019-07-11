@@ -26,7 +26,7 @@ public class ContainerParserTest extends HtsjdkTest {
 
     private static final ContainerFactory FACTORY = new ContainerFactory(
             CRAMStructureTestUtil.getSAMFileHeaderForTests(),
-            new CRAMEncodingStrategy().setReadsPerSlice(TEST_RECORD_COUNT));
+            new CRAMEncodingStrategy().setRecordsPerSlice(TEST_RECORD_COUNT));
     private static final ContainerParser PARSER = new ContainerParser(CRAMStructureTestUtil.getSAMFileHeaderForTests());
 
     @DataProvider(name = "cramVersions")

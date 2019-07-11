@@ -20,7 +20,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
     public void recordsPerSliceTest() {
         final int recordsPerSlice = 100;
         CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
-        cramEncodingStrategy.setReadsPerSlice(recordsPerSlice);
+        cramEncodingStrategy.setRecordsPerSlice(recordsPerSlice);
         final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), cramEncodingStrategy);
 
         // build a container with the max records per slice
@@ -104,7 +104,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
                                    final int expectedAlignmentStart,
                                    final int expectedAlignmentSpan) {
         CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
-        cramEncodingStrategy.setReadsPerSlice(TEST_RECORD_COUNT);
+        cramEncodingStrategy.setRecordsPerSlice(TEST_RECORD_COUNT);
 
         final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), cramEncodingStrategy);
         final long byteOffset = 9999;

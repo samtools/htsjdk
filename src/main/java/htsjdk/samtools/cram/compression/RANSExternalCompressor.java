@@ -8,6 +8,7 @@ import java.util.Objects;
 
 public class RANSExternalCompressor extends ExternalCompressor {
     private final RANS.ORDER order;
+    private final RANS rans = new RANS();
 
     public RANSExternalCompressor() {
         this(RANS.ORDER.ZERO);
@@ -24,13 +25,13 @@ public class RANSExternalCompressor extends ExternalCompressor {
 
     @Override
     public byte[] compress(final byte[] data) {
-        final ByteBuffer buffer = RANS.compress(ByteBuffer.wrap(data), order, null);
+        final ByteBuffer buffer = rans.compress(ByteBuffer.wrap(data), order, null);
         return toByteArray(buffer);
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        final ByteBuffer buf = RANS.uncompress(ByteBuffer.wrap(data), null);
+        final ByteBuffer buf = rans.uncompress(ByteBuffer.wrap(data), null);
         return toByteArray(buf);
     }
 
