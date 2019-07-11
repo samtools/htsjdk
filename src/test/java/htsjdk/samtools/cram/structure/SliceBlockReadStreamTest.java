@@ -33,7 +33,11 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
                         compressionMethod,
                         refContentID,
                         // use a non-default RANS order (ORDER one) compressor to ensure that the order is round-tripped correctly
-                        ExternalCompressor.getCompressorForMethod(compressionMethod, 1).compress(refContent),
+                        ExternalCompressor.getCompressorForMethod(
+                                compressionMethod,
+                                compressionMethod == BlockCompressionMethod.RANS ?
+                                    1 :
+                                    ExternalCompressor.NO_COMPRESSION_ARG).compress(refContent),
                         refContent.length));
         for (final DataSeries dataSeries : DataSeries.values()) {
             final String uncompressedContent = dataSeries.getCanonicalName();
@@ -41,7 +45,11 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
                     Block.createExternalBlock(
                             compressionMethod,
                             dataSeries.getExternalBlockContentId(),
-                            ExternalCompressor.getCompressorForMethod(compressionMethod, 1).compress(uncompressedContent.getBytes()),
+                            ExternalCompressor.getCompressorForMethod(
+                                    compressionMethod,
+                                    compressionMethod == BlockCompressionMethod.RANS ?
+                                            1 :  // use RANS order 1 to test non-default RANS order
+                                            ExternalCompressor.NO_COMPRESSION_ARG).compress(uncompressedContent.getBytes()),
                             dataSeries.getCanonicalName().getBytes().length));
             expectedExternalContent.put(dataSeries.getExternalBlockContentId(), uncompressedContent);
         }

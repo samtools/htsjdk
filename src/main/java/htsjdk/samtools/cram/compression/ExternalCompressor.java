@@ -1,8 +1,12 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
+import htsjdk.utils.ValidationUtils;
 
 public abstract class ExternalCompressor {
+    final public static int NO_COMPRESSION_ARG = -1;
+    final static String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compression";
+
     private BlockCompressionMethod method;
 
     protected ExternalCompressor(final BlockCompressionMethod method) {
@@ -48,15 +52,33 @@ public abstract class ExternalCompressor {
             final int compressorSpecificArg) {
         switch (compressionMethod) {
             case RAW:
+                ValidationUtils.validateArg(
+                        compressorSpecificArg == NO_COMPRESSION_ARG,
+                        String.format(argErrorMessage, compressorSpecificArg, compressionMethod));
                 return new RAWExternalCompressor();
+
             case GZIP:
-                return new GZIPExternalCompressor(compressorSpecificArg);
+                return compressorSpecificArg == NO_COMPRESSION_ARG ?
+                        new GZIPExternalCompressor() :
+                        new GZIPExternalCompressor(compressorSpecificArg);
+
             case LZMA:
+                ValidationUtils.validateArg(
+                        compressorSpecificArg == NO_COMPRESSION_ARG,
+                        String.format(argErrorMessage, compressorSpecificArg, compressionMethod));
                 return new LZMAExternalCompressor();
+
             case RANS:
-                return new RANSExternalCompressor(compressorSpecificArg);
+                return compressorSpecificArg == NO_COMPRESSION_ARG ?
+                        new RANSExternalCompressor() :
+                        new RANSExternalCompressor(compressorSpecificArg);
+
             case BZIP2:
+                ValidationUtils.validateArg(
+                        compressorSpecificArg == NO_COMPRESSION_ARG,
+                        String.format(argErrorMessage, compressorSpecificArg, compressionMethod));
                 return new BZIP2ExternalCompressor();
+
             default:
                 throw new IllegalArgumentException(String.format("Unknown compression method %s", compressionMethod));
         }

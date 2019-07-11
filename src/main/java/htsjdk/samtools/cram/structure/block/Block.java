@@ -19,7 +19,7 @@ package htsjdk.samtools.cram.structure.block;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
-import htsjdk.samtools.cram.compression.ExternalCompression;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.*;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -202,9 +202,16 @@ public class Block {
      * @throws CRAMException The uncompressed length did not match what was expected.
      */
     public final byte[] getUncompressedContent() {
-        final byte[] uncompressedContent = ExternalCompression.uncompress(compressionMethod, compressedContent);
+        // when uncompressing, no compressor-specific args are required
+        final ExternalCompressor compressor = ExternalCompressor.getCompressorForMethod(
+                compressionMethod,
+                ExternalCompressor.NO_COMPRESSION_ARG);
+        final byte[] uncompressedContent = compressor.uncompress(compressedContent);
         if (uncompressedContent.length != uncompressedLength) {
-            throw new CRAMException(String.format("Block uncompressed length did not match expected length: %04x vs %04x", uncompressedLength, uncompressedContent.length));
+            throw new CRAMException(String.format(
+                    "Block uncompressed length did not match expected length: %04x vs %04x",
+                    uncompressedLength,
+                    uncompressedContent.length));
         }
         return uncompressedContent;
     }
