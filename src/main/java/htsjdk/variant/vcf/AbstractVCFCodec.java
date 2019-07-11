@@ -202,7 +202,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     metaData.add(contig);
                 } else if ( str.startsWith(VCFConstants.ALT_HEADER_START) ) {
                     metaData.add(getAltHeaderLine(str.substring(VCFConstants.ALT_HEADER_OFFSET), version));
-                } else if ( str.startsWith(VCFConstants.PEDIGREE_HEADER_START) ) {
+                } else if ( str.startsWith(VCFConstants.PEDIGREE_HEADER_START) && version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+                    // only model pedigree header lines as structured header lines starting with v4.3
                     metaData.add(getPedigreeHeaderLine(str.substring(VCFConstants.PEDIGREE_HEADER_OFFSET), version));
                 } else if ( str.startsWith(VCFConstants.META_HEADER_START) ) {
                     metaData.add(getMetaHeaderLine(str.substring(VCFConstants.META_HEADER_OFFSET), version));

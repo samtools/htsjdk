@@ -103,6 +103,18 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
         Assert.assertEquals(pedigreeLine.getGenericFieldValue("ExtraPedigreeField"), "extra pedigree");
     }
 
+    @Test
+    public void testV43PedigreeParsing() {
+        // make sure that a vcf4.3 PEDIGREE header lines *IS* modeled as a VCFPedigreeHeaderLine, which is
+        // a VCFIDHeaderLine(s) and requires an ID. This is different than vcf4.2, where PEDIGREE header
+        // lines do not have to have a ID.
+        final Path vcfWithPedigreeHeaderLine = TEST_PATH.resolve("all43Features.utf8.vcf");
+        final VCFHeader headerWithPedigree = new VCFFileReader(vcfWithPedigreeHeaderLine, false).getFileHeader();
+        final VCFHeaderLine vcf43PedigreeLine = headerWithPedigree.getMetaDataInInputOrder()
+                .stream().filter((l) -> l.getKey().equals("PEDIGREE")).findFirst().get();
+        Assert.assertEquals(vcf43PedigreeLine.getClass(), VCFPedigreeHeaderLine.class);
+    }
+
     @Test(dataProvider="all43Files")
     public void testVCF43MetaLine(final Path testFile) {
         // ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome or Exome],ExtraMetaField="extra meta">
