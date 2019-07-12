@@ -112,7 +112,7 @@ public class VCF3Codec extends AbstractVCFCodec {
             return new ArrayList<String>(fFields);
 
         if (filterString.isEmpty())
-            generateException("The VCF specification requires a valid filter status");
+            throwTribbleException("The VCF specification requires a valid filter status");
 
         // do we have the filter string cached?
         if ( filterHash.containsKey(filterString) )

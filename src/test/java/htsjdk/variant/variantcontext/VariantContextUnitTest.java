@@ -1555,10 +1555,10 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @DataProvider(name = "referenceBlockData")
     public Object[][] referenceBlockData() {
         return new Object[][]{
-                {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, false},
-                {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, true},
+                {Arrays.asList(Aref, Allele.UNSPECIFIED_ALT), false, false},
+                {Arrays.asList(Aref, Allele.UNSPECIFIED_ALT), true, true},
                 {Arrays.asList(Aref, Allele.NON_REF_ALLELE), true, true},
-                {Arrays.asList(Aref, C, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, false},
+                {Arrays.asList(Aref, C, Allele.UNSPECIFIED_ALT), true, false},
                 {Arrays.asList(Aref, C), false, false}
         };
     }
