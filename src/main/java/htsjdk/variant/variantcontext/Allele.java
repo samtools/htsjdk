@@ -190,16 +190,16 @@ public class Allele implements Comparable<Allele>, Serializable {
         this.isSymbolic = allele.isSymbolic;
     }
 
-    private static final Allele REF_A = new Allele("A", true);
-    private static final Allele ALT_A = new Allele("A", false);
-    private static final Allele REF_C = new Allele("C", true);
-    private static final Allele ALT_C = new Allele("C", false);
-    private static final Allele REF_G = new Allele("G", true);
-    private static final Allele ALT_G = new Allele("G", false);
-    private static final Allele REF_T = new Allele("T", true);
-    private static final Allele ALT_T = new Allele("T", false);
-    private static final Allele REF_N = new Allele("N", true);
-    private static final Allele ALT_N = new Allele("N", false);
+    public static final Allele REF_A = new Allele("A", true);
+    public static final Allele ALT_A = new Allele("A", false);
+    public static final Allele REF_C = new Allele("C", true);
+    public static final Allele ALT_C = new Allele("C", false);
+    public static final Allele REF_G = new Allele("G", true);
+    public static final Allele ALT_G = new Allele("G", false);
+    public static final Allele REF_T = new Allele("T", true);
+    public static final Allele ALT_T = new Allele("T", false);
+    public static final Allele REF_N = new Allele("N", true);
+    public static final Allele ALT_N = new Allele("N", false);
     public static final Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
     public static final Allele NO_CALL = new Allele(NO_CALL_STRING, false);
     public static final Allele NON_REF_ALLELE = new Allele(NON_REF_STRING, false);

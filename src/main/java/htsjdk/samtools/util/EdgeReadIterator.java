@@ -102,7 +102,7 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
 
 
             // Ensure there are AbstractLocusInfos up to and including this position
-            for (int j = accumulator.size(); j <= refOffsetEnd; ++j) {
+            for (int j = accumulator.size(); j < refOffsetEnd; ++j) {
                 accumulator.add(createLocusInfo(getReferenceSequence(rec.getReferenceIndex()),
                         rec.getAlignmentStart() + j));
             }

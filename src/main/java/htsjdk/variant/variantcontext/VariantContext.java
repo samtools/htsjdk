@@ -229,25 +229,25 @@ import java.util.stream.Collectors;
 public class VariantContext implements Feature, Serializable {
     public static final long serialVersionUID = 1L;
 
-    private final static boolean WARN_ABOUT_BAD_END = true;
-    private final static int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
+    private static final boolean WARN_ABOUT_BAD_END = true;
+    private static final int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
     private boolean fullyDecoded = false;
     protected CommonInfo commonInfo = null;
-    public final static double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
+    public static final double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
 
-    public final static Set<String> PASSES_FILTERS = Collections.emptySet();
+    public static final Set<String> PASSES_FILTERS = Collections.emptySet();
 
     /** The location of this VariantContext */
-    final protected String contig;
-    final protected long start;
-    final protected long stop;
+    protected final String contig;
+    protected final long start;
+    protected final long stop;
     private final String ID;
 
     /** The type (cached for performance reasons) of this context */
     protected Type type = null;
 
     /** A set of the alleles segregating in this context */
-    final protected List<Allele> alleles;
+    protected final List<Allele> alleles;
 
     /** A mapping from sampleName -&gt; genotype objects for all genotypes associated with this context */
     protected GenotypesContext genotypes = null;
@@ -255,7 +255,7 @@ public class VariantContext implements Feature, Serializable {
     /** Counts for each of the possible Genotype types in this context */
     protected int[] genotypeCounts = null;
 
-    public final static GenotypesContext NO_GENOTYPES = GenotypesContext.NO_GENOTYPES;
+    public static final GenotypesContext NO_GENOTYPES = GenotypesContext.NO_GENOTYPES;
 
     // a fast cached access point to the ref / alt alleles for biallelic case
     private Allele REF = null;
@@ -267,10 +267,9 @@ public class VariantContext implements Feature, Serializable {
     private Boolean monomorphic = null;
 
     /*
-* Determine which genotype fields are in use in the genotypes in VC
-* @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
-*/
-
+     * Determine which genotype fields are in use in the genotypes in VC
+     * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
+     */
 
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
         final Set<String> keys = new HashSet<>();
@@ -345,7 +344,7 @@ public class VariantContext implements Feature, Serializable {
         abstract void validate(VariantContext variantContext);
 
 
-        static private void validateAlleles(final VariantContext vc) {
+        private static void validateAlleles(final VariantContext vc) {
 
             boolean alreadySeenRef = false;
 
@@ -369,7 +368,7 @@ public class VariantContext implements Feature, Serializable {
             }
         }
 
-        static private void validateGenotypes(final VariantContext variantContext) {
+        private static void validateGenotypes(final VariantContext variantContext) {
 
             final ArrayList<Genotype> genotypes = variantContext.genotypes.getGenotypes();
 
@@ -391,7 +390,7 @@ public class VariantContext implements Feature, Serializable {
             }
         }
 
-        static private void validateFilters(final VariantContext variantContext) {
+        private static void validateFilters(final VariantContext variantContext) {
             final Set<String> filters = variantContext.getFilters();
             if (filters == null) {
                 return;
@@ -406,7 +405,7 @@ public class VariantContext implements Feature, Serializable {
         }
     }
 
-    private final static EnumSet<Validation> NO_VALIDATION = EnumSet.noneOf(Validation.class);
+    private static final EnumSet<Validation> NO_VALIDATION = EnumSet.noneOf(Validation.class);
 
     // ---------------------------------------------------------------------------------------------------------
     //
@@ -1381,13 +1380,10 @@ public class VariantContext implements Feature, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    private boolean validate(final EnumSet<Validation> validationToPerform) {
+    private void validate(final EnumSet<Validation> validationsToPerform) {
         validateStop();
-        validationToPerform.forEach(v->v.validate(this));
-
-        return true;
+        validationsToPerform.forEach(v->v.validate(this));
     }
-
 
     /**
      * Check that getEnd() == END from the info field, if it's present
@@ -1402,14 +1398,13 @@ public class VariantContext implements Feature, Serializable {
                         + " but this VariantContext contains an END key with value " + end;
                 if ( GeneralUtils.DEBUG_MODE_ENABLED && WARN_ABOUT_BAD_END ) {
                     System.err.println(message);
-                }
-                else {
+                } else {
                     throw new TribbleException(message);
                 }
             }
         } else {
             final long length = (stop - start) + 1;
-            if ( ! hasSymbolicAlleles() && length != getReference().length() ) {
+            if (!hasSymbolicAlleles() && length != getReference().length()) {
                 throw new IllegalStateException("BUG: GenomeLoc " + contig + ":" + start + "-" + stop + " has a size == " + length + " but the variation reference allele has length " + getReference().length() + " this = " + this);
             }
         }

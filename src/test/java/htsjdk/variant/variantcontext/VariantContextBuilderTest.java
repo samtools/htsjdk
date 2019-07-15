@@ -2,7 +2,6 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -14,22 +13,15 @@ import java.util.Map;
 import java.util.Set;
 
 public class VariantContextBuilderTest extends VariantBaseTest {
-    Allele Aref, C;
-    Allele Tref, G;
+    static final Allele Aref = Allele.REF_A;
+    static final Allele Tref = Allele.REF_T;
+    static final Allele G = Allele.ALT_G;
+    static final Allele C = Allele.ALT_C;
 
     String snpChr = "chr1";
     String snpSource = "test";
     long snpLocStart = 10;
     long snpLocStop = 10;
-
-    @BeforeTest
-    public void before() {
-
-        C = Allele.create("C");
-        Aref = Allele.create("A", true);
-        G = Allele.create("G");
-        Tref = Allele.create("T", true);
-    }
 
     @DataProvider(name = "trueFalse")
     public Object[][] testAttributesWorksTest() {
@@ -57,7 +49,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
 
 
     @Test()
-    public void testBuilkAttributeResettingWorks() {
+    public void testBulkAttributeResettingWorks() {
         final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
         final VariantContext result1 = root1
                 .attribute("AC", 1)
@@ -80,6 +72,12 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         root2.attributes(map);
 
         final VariantContext result3 = root2.make();
+
+        Assert.assertEquals(result1.getAttribute("AC"), 1);
+        Assert.assertEquals(result1.getAttribute("AN"), 2);
+
+        Assert.assertEquals(result2.getAttribute("AC"), 1);
+        Assert.assertEquals(result2.getAttribute("AN"), 2);
 
         Assert.assertEquals(result3.getAttribute("AC"), 2);
         Assert.assertEquals(result3.getAttribute("AN"), 4);
@@ -109,42 +107,95 @@ public class VariantContextBuilderTest extends VariantBaseTest {
     }
 
     @DataProvider
-    public Object[][] BuilderSchemes() {
+    public Object[][] builderSchemes() {
         return new Object[][]{
                 {VCBuilderScheme.NEW_ON_BUILDER},
                 {VCBuilderScheme.NEW_ON_VC},
                 {VCBuilderScheme.SAME}};
     }
 
-    @Test(dataProvider = "BuilderSchemes")
+    @Test(dataProvider = "builderSchemes")
     public void testAttributeResettingWorks(final VCBuilderScheme builderScheme) {
         final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
 
         final VariantContext result1 = root1.attribute("AC", 1).make();
         final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1, result1)
-                .source(snpSource).chr(snpChr).start(snpLocStart).stop(snpLocStop).alleles(Arrays.asList(Aref, C));
+                .source(snpSource)
+                .chr(snpChr)
+                .start(snpLocStart)
+                .stop(snpLocStop)
+                .alleles(Arrays.asList(Aref, C));
 
         //this is a red-herring and should not change anything.
         final VariantContext ignored = root1.attribute("AC", 2).make();
         final VariantContext result2 = root2.attribute("AC", 1).make();
 
-        Assert.assertEquals(result1.getAttribute("AC"), result2.getAttribute("AC"));
+        Assert.assertEquals(result1.getAttribute("AC"), 1);
+        Assert.assertEquals(result2.getAttribute("AC"), 1);
     }
 
-    @Test(dataProvider = "BuilderSchemes")
-    public void testAttributeResettingWorks2(final VCBuilderScheme builderScheme) {
-        final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
+    @Test(dataProvider = "builderSchemes")
+    public void testAttributeResettingWorksPreMake1(final VCBuilderScheme builderScheme) {
+        final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C))
+                .attribute("AC", 1);
 
-        final VariantContext result1 = root1.attribute("AC", 1).make();
+        final VariantContext result1 = root1.make();
+
+        final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1, root1.make())
+                .source(snpSource)
+                .chr(snpChr)
+                .start(snpLocStart)
+                .stop(snpLocStop)
+                .alleles(Arrays.asList(Aref, C));
+
+        //this is a red-herring and should not change anything.
+        final VariantContext result2 = root2.attribute("AC", 2).make();
+
+        Assert.assertEquals(result1.getAttribute("AC"), 1);
+        Assert.assertEquals(result2.getAttribute("AC"), 2);
+    }
+
+
+    @Test(dataProvider = "builderSchemes")
+    public void testAttributeResettingWorksPreMake2(final VCBuilderScheme builderScheme) {
+        final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C)).attribute("AC", 1);
+
+        final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1, root1.make())
+                .source(snpSource)
+                .chr(snpChr)
+                .start(snpLocStart)
+                .stop(snpLocStop)
+                .alleles(Arrays.asList(Aref, C));
+
+        //this is a red-herring and should not change anything.
+        final VariantContext result1 = root1.make();
+        final VariantContext result2 = root2.attribute("AC", 2).make();
+
+        Assert.assertEquals(result1.getAttribute("AC"), 1);
+        Assert.assertEquals(result2.getAttribute("AC"), 2);
+    }
+
+
+    @Test(dataProvider = "builderSchemes")
+    public void testAttributeResettingWorks2(final VCBuilderScheme builderScheme) {
+        final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C))
+                .attribute("AC", 1);
+
+        final VariantContext result1 = root1.make();
         final VariantContextBuilder root2 = builderScheme.getOtherBuilder(root1, result1)
-                .source(snpSource).chr(snpChr).start(snpLocStart).stop(snpLocStop).alleles(Arrays.asList(Aref, C));
+                .source(snpSource)
+                .chr(snpChr)
+                .start(snpLocStart)
+                .stop(snpLocStop)
+                .alleles(Arrays.asList(Aref, C));
 
         final VariantContext result2 = root2.attribute("AC", 2).make();
 
-        Assert.assertNotEquals(result1.getAttribute("AC"), result2.getAttribute("AC"));
+        Assert.assertEquals(result1.getAttribute("AC"), 1);
+        Assert.assertEquals(result2.getAttribute("AC"), 2);
     }
 
-    @Test(dataProvider = "BuilderSchemes")
+    @Test(dataProvider = "builderSchemes")
     public void testAttributeResettingWorks3(final VCBuilderScheme builderScheme) {
         final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpChr, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
 
@@ -159,10 +210,11 @@ public class VariantContextBuilderTest extends VariantBaseTest {
 
         final VariantContext result2 = root2.attributes(attributes).make();
 
-        Assert.assertNotEquals(result1.getAttribute("AC"), result2.getAttribute("AC"), "AC attributes should be different, found: " + result2.getAttribute("AC").toString());
+        Assert.assertEquals(result1.getAttribute("AC"), 1);
+        Assert.assertEquals(result2.getAttribute("AC"), 2);
     }
 
-    @Test(dataProvider = "BuilderSchemes")
+    @Test(dataProvider = "builderSchemes")
     public void testFiltersUnaffectedByClonedVariants(final VCBuilderScheme builderScheme) {
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filter("TEST");
         final VariantContext vc1 = builder.make();
@@ -170,7 +222,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         Assert.assertNotEquals(vc2.getFilters(), vc1.getFilters(), "The two lists of filters should be different");
     }
 
-    @Test(dataProvider = "BuilderSchemes")
+    @Test(dataProvider = "builderSchemes")
     public void testFilterExternalSetUnaffectedByClonedVariantsBuilders(final VCBuilderScheme builderScheme) {
         final Set<String> filters = new HashSet<>();
         filters.add("TEST");
@@ -185,7 +237,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
     }
 
     @Test
-    public void testFilterCanUseUnmodifyableSet() {
+    public void testFilterCanUseUnmodifiableSet() {
         final Set<String> filters = new HashSet<>();
         filters.add("TEST");
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filters(Collections.unmodifiableSet(filters));
@@ -206,7 +258,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         };
     }
 
-    @Test(dataProvider = "illegalFilterStrings",expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "illegalFilterStrings", expectedExceptions = IllegalStateException.class)
     public void testFilterCannotUseBadFilters(final String filter) {
         final Set<String> filters = new HashSet<>();
         filters.add(filter);
@@ -218,7 +270,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
     }
 
 
-    @Test(dataProvider = "BuilderSchemes")
+    @Test(dataProvider = "builderSchemes")
     public void testAllelesUnaffectedByClonedVariants(final VCBuilderScheme builderScheme) {
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C)).filter("TEST");
         final VariantContext ignored = builder.make();
@@ -233,7 +285,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         }
     }
 
-    @Test(dataProvider = "BuilderSchemes")
+    @Test(dataProvider = "builderSchemes")
     public void testGenotypesUnaffectedByClonedVariants(final VCBuilderScheme builderScheme) {
         if (builderScheme == VCBuilderScheme.NEW_ON_VC) {
             return;
@@ -248,7 +300,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         builder.genotypes(gc);
         try {
             gc.add(sample2);
-        } catch (IllegalAccessError e) {
+        } catch (UnsupportedOperationException e) {
             // nice work...
             gc = GenotypesContext.create(sample2);
         }
