@@ -32,7 +32,17 @@ import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.*;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -215,25 +225,25 @@ import java.util.stream.Collectors;
 public class VariantContext implements Feature, Serializable {
     public static final long serialVersionUID = 1L;
 
-    private final static boolean WARN_ABOUT_BAD_END = true;
-    private final static int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
+    private static final boolean WARN_ABOUT_BAD_END = true;
+    private static final int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
     private boolean fullyDecoded = false;
     protected CommonInfo commonInfo = null;
-    public final static double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
+    public static final double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
 
-    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<String>());
+    public static final Set<String> PASSES_FILTERS = Collections.emptySet();
 
     /** The location of this VariantContext */
-    final protected String contig;
-    final protected long start;
-    final protected long stop;
+    protected final String contig;
+    protected final long start;
+    protected final long stop;
     private final String ID;
 
     /** The type (cached for performance reasons) of this context */
     protected Type type = null;
 
     /** A set of the alleles segregating in this context */
-    final protected List<Allele> alleles;
+    protected final List<Allele> alleles;
 
     /** A mapping from sampleName -&gt; genotype objects for all genotypes associated with this context */
     protected GenotypesContext genotypes = null;
@@ -241,7 +251,7 @@ public class VariantContext implements Feature, Serializable {
     /** Counts for each of the possible Genotype types in this context */
     protected int[] genotypeCounts = null;
 
-    public final static GenotypesContext NO_GENOTYPES = GenotypesContext.NO_GENOTYPES;
+    public static final GenotypesContext NO_GENOTYPES = GenotypesContext.NO_GENOTYPES;
 
     // a fast cached access point to the ref / alt alleles for biallelic case
     private Allele REF = null;
@@ -253,9 +263,10 @@ public class VariantContext implements Feature, Serializable {
     private Boolean monomorphic = null;
 
     /*
-* Determine which genotype fields are in use in the genotypes in VC
-* @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
-*/
+     * Determine which genotype fields are in use in the genotypes in VC
+     * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
+     */
+
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
         final Set<String> keys = new HashSet<>();
 
@@ -306,12 +317,91 @@ public class VariantContext implements Feature, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
+    //no controls and white-spaces characters, no semicolon.
+    public static final Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
+
     public enum Validation {
-        ALLELES,
-        GENOTYPES
+        ALLELES() {
+            void validate(VariantContext variantContext) {
+                validateAlleles(variantContext);
+            }
+        },
+        GENOTYPES() {
+            void validate(VariantContext variantContext) {
+                validateGenotypes(variantContext);
+            }
+        },
+        FILTERS {
+            void validate(VariantContext variantContext) {
+                validateFilters(variantContext);
+            }
+        };
+
+        abstract void validate(VariantContext variantContext);
+
+
+        private static void validateAlleles(final VariantContext vc) {
+
+            boolean alreadySeenRef = false;
+
+            for (final Allele allele : vc.alleles) {
+                // make sure there's only one reference allele
+                if (allele.isReference()) {
+                    if (alreadySeenRef) {
+                        throw new IllegalArgumentException("BUG: Received two reference tagged alleles in VariantContext " + vc.alleles + " vc=" + vc);
+                    }
+                    alreadySeenRef = true;
+                }
+
+                if (allele.isNoCall()) {
+                    throw new IllegalArgumentException("BUG: Cannot add a no call allele to a variant context " + vc.alleles + " vc=" + vc);
+                }
+            }
+
+            // make sure there's one reference allele
+            if (!alreadySeenRef) {
+                throw new IllegalArgumentException("No reference allele found in VariantContext");
+            }
+        }
+
+        private static void validateGenotypes(final VariantContext variantContext) {
+
+            final ArrayList<Genotype> genotypes = variantContext.genotypes.getGenotypes();
+
+            if (genotypes == null) {
+                throw new IllegalStateException("Genotypes is null");
+            }
+
+            for (int i = 0; i < genotypes.size(); i++) {
+                final Genotype genotype = genotypes.get(i);
+                if (genotype.isAvailable()) {
+                    final List<Allele> alleles = genotype.getAlleles();
+                    for (int j = 0, size = alleles.size(); j < size; j++) {
+                        final Allele gAllele = alleles.get(j);
+                        if (!variantContext.hasAllele(gAllele) && gAllele.isCalled()) {
+                            throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void validateFilters(final VariantContext variantContext) {
+            final Set<String> filters = variantContext.getFilters();
+            if (filters == null) {
+                return;
+            }
+
+            for (String filter : filters) {
+                if (!VALID_FILTER.matcher(filter).matches()) {
+                    throw new IllegalStateException("Filter '" + filter +
+                            "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
+                }
+            }
+        }
     }
 
-    private final static EnumSet<Validation> NO_VALIDATION = EnumSet.noneOf(Validation.class);
+    private static final EnumSet<Validation> NO_VALIDATION = EnumSet.noneOf(Validation.class);
 
     // ---------------------------------------------------------------------------------------------------------
     //
@@ -1198,7 +1288,7 @@ public class VariantContext implements Feature, Serializable {
 
         // maintain a list of non-symbolic alleles expected in the REF and ALT fields of the record
         // (we exclude symbolic alleles because it's commonly expected that they don't show up in the genotypes, e.g. with GATK gVCFs)
-        final List<Allele> reportedAlleles = new ArrayList<Allele>();
+        final List<Allele> reportedAlleles = new ArrayList<>();
         for ( final Allele allele : getAlleles() ) {
             if ( !allele.isSymbolic() )
                 reportedAlleles.add(allele);
@@ -1286,17 +1376,9 @@ public class VariantContext implements Feature, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    private boolean validate(final EnumSet<Validation> validationToPerform) {
+    private void validate(final EnumSet<Validation> validationsToPerform) {
         validateStop();
-        for (final Validation val : validationToPerform ) {
-            switch (val) {
-                case ALLELES: validateAlleles(); break;
-                case GENOTYPES: validateGenotypes(); break;
-                default: throw new IllegalArgumentException("Unexpected validation mode " + val);
-            }
-        }
-
-        return true;
+        validationsToPerform.forEach(v->v.validate(this));
     }
 
     /**
@@ -1312,52 +1394,14 @@ public class VariantContext implements Feature, Serializable {
                         + " but this VariantContext contains an END key with value " + end;
                 if ( GeneralUtils.DEBUG_MODE_ENABLED && WARN_ABOUT_BAD_END ) {
                     System.err.println(message);
-                }
-                else {
+                } else {
                     throw new TribbleException(message);
                 }
             }
         } else {
             final long length = (stop - start) + 1;
-            if ( ! hasSymbolicAlleles() && length != getReference().length() ) {
+            if (!hasSymbolicAlleles() && length != getReference().length()) {
                 throw new IllegalStateException("BUG: GenomeLoc " + contig + ":" + start + "-" + stop + " has a size == " + length + " but the variation reference allele has length " + getReference().length() + " this = " + this);
-            }
-        }
-    }
-
-    private void validateAlleles() {
-
-        boolean alreadySeenRef = false;
-
-        for ( final Allele allele : alleles ) {
-            // make sure there's only one reference allele
-            if ( allele.isReference() ) {
-                if ( alreadySeenRef ) throw new IllegalArgumentException("BUG: Received two reference tagged alleles in VariantContext " + alleles + " this=" + this);
-                alreadySeenRef = true;
-            }
-
-            if ( allele.isNoCall() ) {
-                throw new IllegalArgumentException("BUG: Cannot add a no call allele to a variant context " + alleles + " this=" + this);
-            }
-        }
-
-        // make sure there's one reference allele
-        if ( ! alreadySeenRef )
-            throw new IllegalArgumentException("No reference allele found in VariantContext");
-    }
-
-    private void validateGenotypes() {
-        if ( this.genotypes == null ) throw new IllegalStateException("Genotypes is null");
-
-        for ( int i = 0; i < genotypes.size(); i++ ) {
-            Genotype genotype = genotypes.get(i);
-            if ( genotype.isAvailable() ) {
-                final List<Allele> alleles = genotype.getAlleles();
-                for ( int j = 0, size = alleles.size(); j < size; j++ ) {
-                    final Allele gAllele = alleles.get(j);
-                    if ( ! hasAllele(gAllele) && gAllele.isCalled() )
-                        throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
-                }
             }
         }
     }

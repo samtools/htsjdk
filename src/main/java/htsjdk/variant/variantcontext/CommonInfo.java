@@ -106,7 +106,7 @@ public final class CommonInfo implements Serializable {
     }
 
     public boolean isFiltered() {
-        return filters == null ? false : !filters.isEmpty();
+        return filters != null && !filters.isEmpty();
     }
 
     public boolean isNotFiltered() {
@@ -115,7 +115,7 @@ public final class CommonInfo implements Serializable {
 
     public void addFilter(String filter) {
         if ( filters == null ) // immutable -> mutable
-            filters = new HashSet<String>();
+            filters = new HashSet<>();
 
         if ( filter == null ) throw new IllegalArgumentException("BUG: Attempting to add null filter " + this);
         if ( getFilters().contains(filter) ) throw new IllegalArgumentException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
