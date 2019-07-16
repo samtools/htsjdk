@@ -47,7 +47,7 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
         final CompressionHeader compressionHeader = new CompressionHeader();
         final CompressionHeaderEncodingMap encodingMap = compressionHeader.getEncodingMap();
         for (final DataSeries dataSeries : StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK) {
-            encodingMap.addExternalEncoding(dataSeries, new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel()));
+            encodingMap.putExternalEncoding(dataSeries, new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel()));
         }
 
         // serialize and then resurrect the encoding map

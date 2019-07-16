@@ -14,7 +14,7 @@ import java.util.List;
  * CompressionHeaderEncodingMap objects to be serialized and used as input for testing or running
  * with various encoding map strategy combinations.
  */
-public class CRAMEncodingMapJSON {
+class CRAMEncodingMapJSON {
     // Include a map version and a CRAM that can be validated after round-tripping (these names appear in
     // the json file).
     final private long htsjdkCRAMEncodingMapVersion;

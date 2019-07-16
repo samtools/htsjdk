@@ -51,34 +51,25 @@ public class CompressionHeader {
 
     private CompressionHeaderEncodingMap encodingMap;
 
-    //TODO: Move the tMap into CompressionHeaderEncodingMap
+    //TODO: Move the tMap into CompressionHeaderEncodingMap ?
     public Map<Integer, EncodingDescriptor> tMap;
     public SubstitutionMatrix substitutionMatrix;
     public byte[][][] dictionary;
 
+    /**
+     * Create a CompressionHeader using te default {@link CRAMEncodingStrategy}
+     */
     public CompressionHeader() {
         encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
         tMap = new TreeMap<>();
     }
 
-    // TODO: the path should be interpreted by the caller so it only
-    // TODO: happens once for the (container ?) factory rather than once
-    // TODO: per container
     /**
      * Create a compression header using the given encodingStrategy.
-     * @param encodingStrategy
+     * @param encodingMap the encoding map to use for this compression header
      */
-    public CompressionHeader(final CRAMEncodingStrategy encodingStrategy) {
-        final String customCompressionMapPath = encodingStrategy.getCustomCompressionMapPath();
-        if (customCompressionMapPath.isEmpty()) {
-            encodingMap = new CompressionHeaderEncodingMap(encodingStrategy);
-        } else {
-            try {
-                encodingMap = CompressionHeaderEncodingMap.readFromPath(IOUtil.getPath(customCompressionMapPath));
-            } catch (final IOException e) {
-                throw new RuntimeIOException("Failure reading custom encoding map from Path", e);
-            }
-        }
+    public CompressionHeader(final CompressionHeaderEncodingMap encodingMap) {
+        this.encodingMap = encodingMap;
         tMap = new TreeMap<>();
     }
 
@@ -306,7 +297,7 @@ public class CompressionHeader {
     }
 
     public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingDescriptor params) {
-        encodingMap.addTagBlockCompression(tagId, compressor);
+        encodingMap.putTagBlockCompression(tagId, compressor);
         tMap.put(tagId, params);
     }
 

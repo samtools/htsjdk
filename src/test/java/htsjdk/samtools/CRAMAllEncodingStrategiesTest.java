@@ -1,9 +1,7 @@
 package htsjdk.samtools;
 
-import com.google.gson.Gson;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.*;
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
@@ -12,7 +10,6 @@ import htsjdk.samtools.cram.encoding.external.ExternalIntegerEncoding;
 import htsjdk.samtools.cram.encoding.external.ExternalLongEncoding;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.Tuple;
 import org.testng.annotations.Test;
 
@@ -187,54 +184,15 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     public CompressionHeaderEncodingMap createEncodingMapVariationFor(
             final DataSeries ds,
             final EncodingID id,
-            final ExternalCompressor compressor) throws IOException {
-        final List<CRAMEncodingMapJSON.CRAMEncodingMapJSONEntry> entries;
+            final ExternalCompressor compressor) {
 
-        // TODO: this is silly - we're serializing the map because its the only way to get a list of entries...
-
-        // create a default encoding map, write to a json file, and then rehydrate to get a default CRAMEncodingMapJSON
-        final File tempOutFile = File.createTempFile("encodingMap", ".json");
-        tempOutFile.deleteOnExit();
-        final CompressionHeaderEncodingMap baseEncodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
-        baseEncodingMap.writeToPath(tempOutFile.toPath());
-
-        try (final BufferedReader fr = Files.newBufferedReader(tempOutFile.toPath())) {
-            final Gson gson = new Gson();
-            final CRAMEncodingMapJSON originalMap = gson.fromJson(fr, CRAMEncodingMapJSON.class);
-            // filter out the one we're targeting to replace
-            entries = originalMap.getEncodingMapEntries().stream()
-                            .filter(e -> !e.dataSeries.equals(ds))
-                            .collect(Collectors.toList());
-        } catch (final IOException e) {
-            throw new RuntimeIOException("Failed reading json file for encoding map", e);
+        final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
+        if (id == EncodingID.EXTERNAL) {
+            encodingMap.putExternalEncoding(ds, compressor);
+        } else {
+            encodingMap.putEncoding(ds, createEncodingDescriptorFor(ds, id));
         }
-
-        // and update the entries with the replacement...
-        final CRAMEncodingMapJSON.CRAMEncodingMapJSONEntry modifiedEntry =
-                new CRAMEncodingMapJSON.CRAMEncodingMapJSONEntry(
-                        ds.getExternalBlockContentId(),
-                        ds,
-                        createEncodingDescriptorFor(ds, id),
-                        id == EncodingID.EXTERNAL ?
-                                compressor :
-                                null);
-        entries.add(modifiedEntry);
-
-        // now create the new map with the modified entry
-        final CRAMEncodingMapJSON updatedMap = new CRAMEncodingMapJSON(
-                // TODO: fix this version number
-                1L,
-                CramVersions.DEFAULT_CRAM_VERSION);
-        entries.stream().forEach(e -> updatedMap.addEncodingMapEntry(e));
-
-        // and round trip out to a file
-        try (final BufferedWriter fr = Files.newBufferedWriter(tempOutFile.toPath())) {
-            final Gson gson = new Gson();
-            final String jsonEncodingString = gson.toJson(updatedMap, CRAMEncodingMapJSON.class);
-            fr.write(jsonEncodingString);
-        }
-
-        return CompressionHeaderEncodingMap.readFromPath(tempOutFile.toPath());
+        return encodingMap;
     }
 
     private EncodingDescriptor createEncodingDescriptorFor(

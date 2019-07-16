@@ -60,52 +60,52 @@ public class CompressionHeaderEncodingMap {
     // External compressor to use for each external block, keyed by external content ID. This
     // map contains a key for each data series that is in an external block, plus additional
     // ones for each external block used for tags.
+    // TODO: the encodingMap itself is a template that is the same for each container being
+    // TODO: written, but the externalCompressor list is a little different since it  varies
+    // TODO: with the tags discovered for each container
     private final Map<Integer, ExternalCompressor> externalCompressors = new TreeMap<>();
 
     /**
      * Constructor used to create an encoding map for writing CRAMs
+     *
+     * @param encodingStrategy {@link CRAMEncodingStrategy} containing parameter values to use when creating
+     *                                                     the encoding map
      */
-    // TODO: pull the encoding map out of the encoding strategy if there is one ?
-    // TODO: it seems backwards to require a CRAMEncodingStrategy to create a CompressionHeaderEncodingMap
-    // TODO: when CRAMEncodingStrategy has a CompressionHeaderEncodingMap
-    // TODO: though CRAMEncodingStrategy does have some params, like gzip level that are needed to
-    // TODO: create an CompressionHeaderEncodingMap
-    // TODO: validate that the strategy encoding path is "default" in this code path
     public CompressionHeaderEncodingMap(final CRAMEncodingStrategy encodingStrategy) {
         // NOTE: all of these encodings use external blocks and compressors for actual CRAM
         // data. The only use of core block encodings are as params for other (external)
         // encodings, i.e., the ByteArrayLenEncoding used for tag data uses a core (sub-)encoding
         // to store the length of the array that is stored in an external block.
-        addExternalRansOrderZeroEncoding(DataSeries.AP_AlignmentPositionOffset);
-        addExternalRansOrderOneEncoding(DataSeries.BA_Base);
+        putExternalRansOrderZeroEncoding(DataSeries.AP_AlignmentPositionOffset);
+        putExternalRansOrderOneEncoding(DataSeries.BA_Base);
         // the BB data series is not used by this implementation when writing CRAMs
-        addExternalRansOrderOneEncoding(DataSeries.BF_BitFlags);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.BS_BaseSubstitutionCode);
-        addExternalRansOrderOneEncoding(DataSeries.CF_CompressionBitFlags);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.DL_DeletionLength);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.FC_FeatureCode);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.FN_NumberOfReadFeatures);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.FP_FeaturePosition);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.HC_HardClip);
-        addExternalByteArrayStopTabGzipEncoding(encodingStrategy, DataSeries.IN_Insertion);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.MF_MateBitFlags);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.MQ_MappingQualityScore);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.NF_RecordsToNextFragment);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.NP_NextFragmentAlignmentStart);
-        addExternalRansOrderOneEncoding(DataSeries.NS_NextFragmentReferenceSequenceID);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.PD_padding);
+        putExternalRansOrderOneEncoding(DataSeries.BF_BitFlags);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.BS_BaseSubstitutionCode);
+        putExternalRansOrderOneEncoding(DataSeries.CF_CompressionBitFlags);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.DL_DeletionLength);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.FC_FeatureCode);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.FN_NumberOfReadFeatures);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.FP_FeaturePosition);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.HC_HardClip);
+        putExternalByteArrayStopTabGzipEncoding(encodingStrategy, DataSeries.IN_Insertion);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.MF_MateBitFlags);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.MQ_MappingQualityScore);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.NF_RecordsToNextFragment);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.NP_NextFragmentAlignmentStart);
+        putExternalRansOrderOneEncoding(DataSeries.NS_NextFragmentReferenceSequenceID);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.PD_padding);
         // the QQ data series is not used by this implementation when writing CRAMs
-        addExternalRansOrderOneEncoding(DataSeries.QS_QualityScore);
-        addExternalRansOrderOneEncoding(DataSeries.RG_ReadGroup);
-        addExternalRansOrderZeroEncoding(DataSeries.RI_RefId);
-        addExternalRansOrderOneEncoding(DataSeries.RL_ReadLength);
-        addExternalByteArrayStopTabGzipEncoding(encodingStrategy, DataSeries.RN_ReadName);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.RS_RefSkip);
-        addExternalByteArrayStopTabGzipEncoding(encodingStrategy, DataSeries.SC_SoftClip);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.TC_TagCount);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.TL_TagIdList);
-        addExternalGzipEncoding(encodingStrategy, DataSeries.TN_TagNameAndType);
-        addExternalRansOrderOneEncoding(DataSeries.TS_InsertSize);
+        putExternalRansOrderOneEncoding(DataSeries.QS_QualityScore);
+        putExternalRansOrderOneEncoding(DataSeries.RG_ReadGroup);
+        putExternalRansOrderZeroEncoding(DataSeries.RI_RefId);
+        putExternalRansOrderOneEncoding(DataSeries.RL_ReadLength);
+        putExternalByteArrayStopTabGzipEncoding(encodingStrategy, DataSeries.RN_ReadName);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.RS_RefSkip);
+        putExternalByteArrayStopTabGzipEncoding(encodingStrategy, DataSeries.SC_SoftClip);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.TC_TagCount);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.TL_TagIdList);
+        putExternalGzipEncoding(encodingStrategy, DataSeries.TN_TagNameAndType);
+        putExternalRansOrderOneEncoding(DataSeries.TS_InsertSize);
     }
 
     /**
@@ -140,7 +140,7 @@ public class CompressionHeaderEncodingMap {
      * Create an encoding map from a previously serialized encoding map.
      * @param serializedMap
      */
-    public CompressionHeaderEncodingMap(final CRAMEncodingMapJSON serializedMap) {
+    private CompressionHeaderEncodingMap(final CRAMEncodingMapJSON serializedMap) {
         if (serializedMap.getEncodingMapVersion() != CompressionHeaderEncodingMap.serialVersionUID) {
             // if the encoding map version doesn't match this implementation's version, the serialized map can't be used
             throw new IllegalArgumentException(
@@ -168,7 +168,7 @@ public class CompressionHeaderEncodingMap {
      * @param tagId the tag as a content ID
      * @param compressor compressor to be used for this tag block
      */
-    public void addTagBlockCompression(final int tagId, final ExternalCompressor compressor) {
+    public void putTagBlockCompression(final int tagId, final ExternalCompressor compressor) {
         ValidationUtils.validateArg(
                 Arrays.asList(DataSeries.values()).stream().noneMatch(ds -> ds.getExternalBlockContentId().intValue() == tagId),
                 String.format("tagID %d overlaps with data series content ID", tagId));
@@ -291,42 +291,11 @@ public class CompressionHeaderEncodingMap {
         }
     }
 
-    private void addExternalByteArrayStopTabGzipEncoding(final CRAMEncodingStrategy encodingStrategy, final DataSeries dataSeries) {
-        addExternalEncoding(dataSeries,
-                new ByteArrayStopEncoding((byte) '\t', dataSeries.getExternalBlockContentId()).toEncodingDescriptor(),
-                new GZIPExternalCompressor(encodingStrategy.getGZIPCompressionLevel()));
-    }
-
-    // add an external encoding appropriate for the dataSeries value type, with a GZIP compressor
-    private void addExternalGzipEncoding(final CRAMEncodingStrategy encodingStrategy, final DataSeries dataSeries) {
-        addExternalEncoding(dataSeries, new GZIPExternalCompressor(encodingStrategy.getGZIPCompressionLevel()));
-    }
-
-    // add an external encoding appropriate for the dataSeries value type, with a RANS order 1 compressor
-    private void addExternalRansOrderOneEncoding(final DataSeries dataSeries) {
-        addExternalEncoding(dataSeries, new RANSExternalCompressor(RANS.ORDER.ONE));
-    }
-
-    // add an external encoding appropriate for the dataSeries value type, with a RANS order 0 compressor
-    private void addExternalRansOrderZeroEncoding(final DataSeries dataSeries) {
-        addExternalEncoding(dataSeries, new RANSExternalCompressor(RANS.ORDER.ZERO));
-    }
-
-    //TODO: should this be called putExternalEncoding ?? it adds to a map
-
-    // add an external encoding and corresponding compressor
-    private void addExternalEncoding(final DataSeries dataSeries,
-                                     final EncodingDescriptor encodingDescriptor,
-                                     final ExternalCompressor compressor) {
-        externalCompressors.put(dataSeries.getExternalBlockContentId(), compressor);
-        addEncoding(dataSeries, encodingDescriptor);
-    }
-
     // Visible for testing, because without this we have no way to unit test round-tripping an
     // encoding map that contains the handful of data series that htsjdk generally doesn't use
     // when writing, since there is no code to add those data series to the map as part of the
     // CRAM write implementation.
-    void addExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
+    public void putExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
         // This spins up a CRAMEncoding temporarily in order to retrieve its EncodingDescriptor.
         // In reality, the encoding descriptor/parameters for each of these external encoding
         // classes happens to be identical and are all interchangeable (they only contain the
@@ -350,13 +319,42 @@ public class CompressionHeaderEncodingMap {
             default:
                 throw new CRAMException("Unknown data series value type");
         }
-        addExternalEncoding(dataSeries, cramEncoding.toEncodingDescriptor(), compressor);
+        putExternalEncoding(dataSeries, cramEncoding.toEncodingDescriptor(), compressor);
     }
 
     // May be either EXTERNAL or CORE. If EXTERNAL, the caller should also add an appropriate compressor
     // to the externalCompressor map.
-    private void addEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
+    public void putEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
         encodingMap.put(dataSeries, encodingDescriptor);
+    }
+
+    private void putExternalByteArrayStopTabGzipEncoding(final CRAMEncodingStrategy encodingStrategy, final DataSeries dataSeries) {
+        putExternalEncoding(dataSeries,
+                new ByteArrayStopEncoding((byte) '\t', dataSeries.getExternalBlockContentId()).toEncodingDescriptor(),
+                new GZIPExternalCompressor(encodingStrategy.getGZIPCompressionLevel()));
+    }
+
+    // add an external encoding appropriate for the dataSeries value type, with a GZIP compressor
+    private void putExternalGzipEncoding(final CRAMEncodingStrategy encodingStrategy, final DataSeries dataSeries) {
+        putExternalEncoding(dataSeries, new GZIPExternalCompressor(encodingStrategy.getGZIPCompressionLevel()));
+    }
+
+    // add an external encoding appropriate for the dataSeries value type, with a RANS order 1 compressor
+    private void putExternalRansOrderOneEncoding(final DataSeries dataSeries) {
+        putExternalEncoding(dataSeries, new RANSExternalCompressor(RANS.ORDER.ONE));
+    }
+
+    // add an external encoding appropriate for the dataSeries value type, with a RANS order 0 compressor
+    private void putExternalRansOrderZeroEncoding(final DataSeries dataSeries) {
+        putExternalEncoding(dataSeries, new RANSExternalCompressor(RANS.ORDER.ZERO));
+    }
+
+    // add an external encoding and corresponding compressor
+    private void putExternalEncoding(final DataSeries dataSeries,
+                                     final EncodingDescriptor encodingDescriptor,
+                                     final ExternalCompressor compressor) {
+        externalCompressors.put(dataSeries.getExternalBlockContentId(), compressor);
+        putEncoding(dataSeries, encodingDescriptor);
     }
 
     @Override
