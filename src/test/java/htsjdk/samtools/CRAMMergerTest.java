@@ -54,11 +54,32 @@ public class CRAMMergerTest extends HtsjdkTest {
     private final static Path CRAM_REF = new File("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz").toPath();
 
     /**
-     * Write a CRAM file in parts in a specified directory: the header file, one or more part files containing only CRAM records
-     * (no header or terminator), and a terminator file.
+     * Writes a <i>partitioned CRAM</i>.
+     *
+     * A partitioned CRAM is a directory containing the following files:
+     * <ol>
+     *     <li>A file named <i>header</i> containing all header bytes (CRAM header and CRAM container containing the BAM header).</li>
+     *     <li>Zero or more files named <i>part-00000</i>, <i>part-00001</i>, ... etc, containing CRAM containers.</li>
+     *     <li>A file named <i>terminator</i> containing a CRAM end-of-file marker container.</li>
+     * </ol>
+     *
+     * If an index is required, a CRAM index can be generated for each (headerless) part file. These files
+     * should be named <i>.part-00000.crai</i>, <i>.part-00001.crai</i>, ... etc. Note the leading <i>.</i> to make the files hidden.
+     *
+     * This format has the following properties:
+     *
+     * <ul>
+     *     <li>Parts and their indexes may be written in parallel, since one part file can be written independently of the others.</li>
+     *     <li>A CRAM file can be created from a partitioned CRAM file by merging all the non-hidden files (<i>header</i>, <i>part-00000</i>, <i>part-00001</i>, ..., <i>terminator</i>).</li>
+     *     <li>A CRAM index can be created from a partitioned CRAM file by merging all of the hidden files with a <i>.crai</i> suffix. Note that this is <i>not</i> a simple file concatenation operation. See {@link CRAIIndexMerger}.</li>
+     * </ul>
+     *
+     * Technically, it is not valid to concatenate non-hidden files to create a CRAM file from a partitioned CRAM file, since each slice header has a record
+     * counter acting a a sequential index of records in the file, which would be incorrect if the file was created by concatenation. The implementation
+     * here ignores this complication.
      *
      * Note that this writer is only for single-threaded use. Consider using the implementation in Disq for a partitioned CRAM writer
-     * that works with multiple threads.
+     * that works with multiple threads or in a distributed setting.
      */
     static class PartitionedCRAMFileWriter implements SAMFileWriter {
         private final Path outputDir;

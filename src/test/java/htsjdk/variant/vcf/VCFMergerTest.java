@@ -59,11 +59,30 @@ public class VCFMergerTest extends HtsjdkTest {
     private final static Path VCF_FILE = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf.bgz").toPath();
 
     /**
-     * Write a VCF file in parts in a specified directory: the header file, one or more part files containing only VCF records
-     * (no header or terminator), and a terminator file.
+     * Writes a <i>partitioned VCF</i>.
+     *
+     * A partitioned VCF is a directory containing the following files:
+     * <ol>
+     *     <li>A file named <i>header</i> containing all header bytes in VCF format.</li>
+     *     <li>Zero or more files named <i>part-00000</i>, <i>part-00001</i>, ... etc, containing a list of VCF records.</li>
+     *     <li>A file named <i>terminator</i> containing a BGZF end-of-file marker block (only if the VCF is bgzip-compressed).</li>
+     * </ol>
+     *
+     * If the VCF is bgzip-compressed then the header and part files must be all bgzip-compressed.
+     *
+     * For a compressed VCF, if an index is required, then a tabix index can be generated for each (headerless) part file. These files
+     * should be named <i>.part-00000.tbi</i>, <i>.part-00001.tbi</i>, ... etc. Note the leading <i>.</i> to make the files hidden.
+     *
+     * This format has the following properties:
+     *
+     * <ul>
+     *     <li>Parts and their indexes may be written in parallel, since one part file can be written independently of the others.</li>
+     *     <li>A VCF file can be created from a partitioned VCF file by concatenating all the non-hidden files (<i>header</i>, <i>part-00000</i>, <i>part-00001</i>, ..., <i>terminator</i>).</li>
+     *     <li>A VCF index can be created from a partitioned VCF file by merging all of the hidden files with a <i>.tbi</i> suffix. Note that this is <i>not</i> a simple file concatenation operation. See {@link TabixIndexMerger}.</li>
+     * </ul>
      *
      * Note that this writer is only for single-threaded use. Consider using the implementation in Disq for a partitioned VCF writer
-     * that works with multiple threads.
+     * that works with multiple threads or in a distributed setting.
      */
     static class PartitionedVCFFileWriter implements VariantContextWriter {
         private final Path outputDir;

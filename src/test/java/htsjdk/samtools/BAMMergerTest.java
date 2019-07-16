@@ -49,11 +49,28 @@ public class BAMMergerTest extends HtsjdkTest {
     private final static Path BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam").toPath();
 
     /**
-     * Write a BAM file in parts in a specified directory: the header file, one or more part files containing only BAM records
-     * (no header or terminator), and a terminator file.
+     * Writes a <i>partitioned BAM</i>.
+     *
+     * A partitioned BAM is a directory containing the following files:
+     * <ol>
+     *     <li>A file named <i>header</i> containing all header bytes in BAM format.</li>
+     *     <li>Zero or more files named <i>part-00000</i>, <i>part-00001</i>, ... etc, containing a list of alignments in BAM format.</li>
+     *     <li>A file named <i>terminator</i> containing a BGZF end-of-file marker block.</li>
+     * </ol>
+     *
+     * If an index is required, a BAM index can be generated for each (headerless) part file. These files
+     * should be named <i>.part-00000.bai</i>, <i>.part-00001.bai</i>, ... etc. Note the leading <i>.</i> to make the files hidden.
+     *
+     * This format has the following properties:
+     *
+     * <ul>
+     *     <li>Parts and their indexes may be written in parallel, since one part file can be written independently of the others.</li>
+     *     <li>A BAM file can be created from a partitioned BAM file by concatenating all the non-hidden files (<i>header</i>, <i>part-00000</i>, <i>part-00001</i>, ..., <i>terminator</i>).</li>
+     *     <li>A BAM index can be created from a partitioned BAM file by merging all of the hidden files with a <i>.bai</i> suffix. Note that this is <i>not</i> a simple file concatenation operation. See {@link BAMIndexMerger}.</li>
+     * </ul>
      *
      * Note that this writer is only for single-threaded use. Consider using the implementation in Disq for a partitioned BAM writer
-     * that works with multiple threads.
+     * that works with multiple threads or in a distributed setting.
      */
     static class PartitionedBAMFileWriter implements SAMFileWriter {
         private final Path outputDir;
