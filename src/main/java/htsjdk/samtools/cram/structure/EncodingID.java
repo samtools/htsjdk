@@ -90,4 +90,12 @@ public enum EncodingID {
     public int getId() {
         return id;
     }
+
+    /**
+     * Return true if this encoding can be used in an external block
+     * @return
+     */
+    public boolean isExternalEncoding() {
+        return this == EXTERNAL || this == BYTE_ARRAY_LEN || this == BYTE_ARRAY_STOP;
+    }
 }

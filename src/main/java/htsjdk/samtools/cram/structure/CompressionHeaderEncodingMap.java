@@ -158,8 +158,14 @@ public class CompressionHeaderEncodingMap {
         }
 
         serializedMap.entries.forEach(e -> {
-            this.encodingMap.put(e.dataSeries, e.encodingDescriptor);
-            this.externalCompressors.put(e.contentID, ExternalCompressor.getCompressorForMethod(e.compressionMethod, e.compressorSpecificArg));
+            if (e.encodingDescriptor.getEncodingID().isExternalEncoding()) {
+                putExternalEncoding(
+                        e.dataSeries,
+                        e.encodingDescriptor,
+                        ExternalCompressor.getCompressorForMethod(e.compressionMethod, e.compressorSpecificArg));
+            } else {
+                putCoreEncoding(e.dataSeries, e.encodingDescriptor);
+            }
         });
     }
 
@@ -280,9 +286,11 @@ public class CompressionHeaderEncodingMap {
                                     e.getKey().getExternalBlockContentId(),
                                     e.getKey(),
                                     e.getValue(),
-                                    externalCompressors.get(e.getKey().getExternalBlockContentId())))
-            );
-
+                                    // external compressor is only present for external encodings
+                                    // so store null in JSON map
+                                    externalCompressors.getOrDefault(
+                                            e.getKey().getExternalBlockContentId(),
+                                            null)))); // store null in JSON map
             final Gson gson = gsonBuilder.create();
             final String jsonEncodingString = gson.toJson(serializedMap, CRAMEncodingMapJSON.class);
             fileWriter.write(jsonEncodingString);
@@ -322,10 +330,44 @@ public class CompressionHeaderEncodingMap {
         putExternalEncoding(dataSeries, cramEncoding.toEncodingDescriptor(), compressor);
     }
 
-    // May be either EXTERNAL or CORE. If EXTERNAL, the caller should also add an appropriate compressor
-    // to the externalCompressor map.
-    public void putEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
+    /**
+     * Puts a CORE encoding into the encoding map, replacing any existing encoding for this data series with
+     * the new encoding, and removing any compressor that was previously registered for the corresponding
+     * content id.
+     * @param dataSeries data series to add
+     * @param encodingDescriptor encoding descriptor to use
+     */
+    public void putCoreEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
+        ValidationUtils.validateArg(!encodingDescriptor.getEncodingID().isExternalEncoding(),
+                "Attempt to use an external encoding as a core encoding");
+        if (externalCompressors.containsKey(dataSeries.getExternalBlockContentId())) {
+            externalCompressors.remove(dataSeries.getExternalBlockContentId());
+        }
+        putEncoding(dataSeries, encodingDescriptor);
+    }
+
+    /**
+     * Puts an encoding, either EXTERNAL or CORE, into the encoding map, replacing any existing encoding
+     * for this data series with the new encoding, and removing any compressor that might also be registered.
+     * For external encodings, the caller should establish the corresponding compressor for this encoding
+     * AFTER this call returns by calling .
+     * @param dataSeries
+     * @param encodingDescriptor
+     */
+    private void putEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
         encodingMap.put(dataSeries, encodingDescriptor);
+    }
+
+    // add an external encoding and corresponding compressor
+    private void putExternalEncoding(final DataSeries dataSeries,
+                                    final EncodingDescriptor encodingDescriptor,
+                                    final ExternalCompressor compressor) {
+        ValidationUtils.validateArg(encodingDescriptor.getEncodingID().isExternalEncoding(),
+                "Attempt to use an external encoding as a core encoding");
+        putEncoding(dataSeries, encodingDescriptor);
+        // add the external compressor after the call to putEncoding, since putEncoding removes
+        // any compressor that is already registered
+        externalCompressors.put(dataSeries.getExternalBlockContentId(), compressor);
     }
 
     private void putExternalByteArrayStopTabGzipEncoding(final CRAMEncodingStrategy encodingStrategy, final DataSeries dataSeries) {
@@ -347,14 +389,6 @@ public class CompressionHeaderEncodingMap {
     // add an external encoding appropriate for the dataSeries value type, with a RANS order 0 compressor
     private void putExternalRansOrderZeroEncoding(final DataSeries dataSeries) {
         putExternalEncoding(dataSeries, new RANSExternalCompressor(RANS.ORDER.ZERO));
-    }
-
-    // add an external encoding and corresponding compressor
-    private void putExternalEncoding(final DataSeries dataSeries,
-                                     final EncodingDescriptor encodingDescriptor,
-                                     final ExternalCompressor compressor) {
-        externalCompressors.put(dataSeries.getExternalBlockContentId(), compressor);
-        putEncoding(dataSeries, encodingDescriptor);
     }
 
     @Override

@@ -70,13 +70,18 @@ class CRAMEncodingMapJSON {
             this.contentID = contentID;
             this.dataSeries = dataSeries;
             this.encodingDescriptor = encodingDescriptor;
-            this.compressionMethod = compressor.getMethod();
-            if (this.compressionMethod == BlockCompressionMethod.RANS) {
-                this.compressorSpecificArg = ((RANSExternalCompressor) compressor).getOrder().ordinal();
-            } else if (this.compressionMethod == BlockCompressionMethod.GZIP) {
-                this.compressorSpecificArg = ((GZIPExternalCompressor) compressor).getWriteCompressionLevel();
+            if (compressor != null) {
+                this.compressionMethod = compressor.getMethod();
+                if (this.compressionMethod == BlockCompressionMethod.RANS) {
+                    this.compressorSpecificArg = ((RANSExternalCompressor) compressor).getOrder().ordinal();
+                } else if (this.compressionMethod == BlockCompressionMethod.GZIP) {
+                    this.compressorSpecificArg = ((GZIPExternalCompressor) compressor).getWriteCompressionLevel();
+                } else {
+                    this.compressorSpecificArg = NO_COMPRESSION_ARG;
+                }
             } else {
-                this.compressorSpecificArg = NO_COMPRESSION_ARG;
+                this.compressionMethod = null;
+                this.compressorSpecificArg = 0;
             }
         }
     }

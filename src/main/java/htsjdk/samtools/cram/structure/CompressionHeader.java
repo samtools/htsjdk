@@ -57,7 +57,7 @@ public class CompressionHeader {
     public byte[][][] dictionary;
 
     /**
-     * Create a CompressionHeader using te default {@link CRAMEncodingStrategy}
+     * Create a CompressionHeader using the default {@link CRAMEncodingStrategy}
      */
     public CompressionHeader() {
         encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
@@ -65,7 +65,7 @@ public class CompressionHeader {
     }
 
     /**
-     * Create a compression header using the given encodingStrategy.
+     * Create a compression header using the given {@link CompressionHeaderEncodingMap}.
      * @param encodingMap the encoding map to use for this compression header
      */
     public CompressionHeader(final CompressionHeaderEncodingMap encodingMap) {
