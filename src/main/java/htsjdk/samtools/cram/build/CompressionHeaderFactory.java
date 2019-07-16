@@ -28,6 +28,7 @@ import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
@@ -56,6 +57,7 @@ public class CompressionHeaderFactory {
 
     private CompressionHeader compressionHeader;
     private CRAMEncodingStrategy encodingStrategy;
+    private CompressionHeaderEncodingMap encodingMap;
 
     /**
      * Create a CompressionHeaderFactory using default CRAMEncodingStrategy.
@@ -69,10 +71,19 @@ public class CompressionHeaderFactory {
      * @param encodingStrategy
      */
     public CompressionHeaderFactory(final CRAMEncodingStrategy encodingStrategy) {
-        // TODO: the path should be interpreted by the caller so it only
-        // TODO: happens once for the (container ?) factory rather than once
-        // TODO: per container
-        this.compressionHeader = new CompressionHeader(encodingStrategy);
+        // cache the encodingMap if its serialized so it only gets created once per
+        // container factory rather than once per container
+        final String customCompressionMapPath = encodingStrategy.getCustomCompressionMapPath();
+        if (customCompressionMapPath.isEmpty()) {
+            this.encodingMap = new CompressionHeaderEncodingMap(encodingStrategy);
+        } else {
+            try {
+                this.encodingMap = CompressionHeaderEncodingMap.readFromPath(IOUtil.getPath(customCompressionMapPath));
+            } catch (final IOException e) {
+                throw new RuntimeIOException("Failure reading custom encoding map from Path", e);
+            }
+        }
+        this.compressionHeader = new CompressionHeader(encodingMap);
         this.encodingStrategy = encodingStrategy;
     }
 

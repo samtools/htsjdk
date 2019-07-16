@@ -47,6 +47,7 @@ public class ContainerFactory {
     public Container buildContainer(final List<CramCompressionRecord> records, final long containerByteOffset) {
         // sets header APDelta
         final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
+
         // TODO: this creates a new CompressionHeaderFactory for each container!
         final CompressionHeader compressionHeader = new CompressionHeaderFactory(encodingStrategy).build(records, coordinateSorted);
 
