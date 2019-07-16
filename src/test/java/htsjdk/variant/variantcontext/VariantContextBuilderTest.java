@@ -300,8 +300,12 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         builder.genotypes(gc);
         try {
             gc.add(sample2);
+            Assert.fail("shouldn't have gotten here");
         } catch (UnsupportedOperationException e) {
-            // nice work...
+            // The exception is expected since calling builder.genotypes(gc) should make the
+            // gc object immutable (to protect the builder from unexpected changes)
+
+            // By making a new gc object and setting it to sample2 the resulting vc1 and vc2 will be different
             gc = GenotypesContext.create(sample2);
         }
 
