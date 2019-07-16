@@ -185,12 +185,13 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             final DataSeries ds,
             final EncodingID id,
             final ExternalCompressor compressor) {
-
         final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
         if (id == EncodingID.EXTERNAL) {
             encodingMap.putExternalEncoding(ds, compressor);
         } else {
-            encodingMap.putEncoding(ds, createEncodingDescriptorFor(ds, id));
+            // NOTE: if this is replacing an existing external encoding with a core encoding, the corresponding
+            // external compressor is also removed from the map
+            encodingMap.putCoreEncoding(ds, createEncodingDescriptorFor(ds, id));
         }
         return encodingMap;
     }
