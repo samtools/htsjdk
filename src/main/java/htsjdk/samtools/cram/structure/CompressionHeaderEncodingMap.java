@@ -71,6 +71,7 @@ public class CompressionHeaderEncodingMap {
      * @param encodingStrategy {@link CRAMEncodingStrategy} containing parameter values to use when creating
      *                                                     the encoding map
      */
+    //TODO: this constructor ignores the encoding map embedded in the encodingStrategy...
     public CompressionHeaderEncodingMap(final CRAMEncodingStrategy encodingStrategy) {
         // NOTE: all of these encodings use external blocks and compressors for actual CRAM
         // data. The only use of core block encodings are as params for other (external)
@@ -265,7 +266,8 @@ public class CompressionHeaderEncodingMap {
             final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap(serializedMap);
             return encodingMap;
         } catch (final IOException e) {
-            throw new RuntimeIOException("Failed reading json file for encoding map", e);
+            throw new RuntimeIOException(String.format(
+                    "Failed reading json file for encoding map '%s'", encodingMapPath), e);
         }
     }
 
@@ -354,12 +356,12 @@ public class CompressionHeaderEncodingMap {
      * @param dataSeries
      * @param encodingDescriptor
      */
-    private void putEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
+    public void putEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
         encodingMap.put(dataSeries, encodingDescriptor);
     }
 
     // add an external encoding and corresponding compressor
-    private void putExternalEncoding(final DataSeries dataSeries,
+    public void putExternalEncoding(final DataSeries dataSeries,
                                     final EncodingDescriptor encodingDescriptor,
                                     final ExternalCompressor compressor) {
         ValidationUtils.validateArg(encodingDescriptor.getEncodingID().isExternalEncoding(),

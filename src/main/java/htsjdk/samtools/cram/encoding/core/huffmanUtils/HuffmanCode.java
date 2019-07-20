@@ -27,7 +27,7 @@ import java.util.TreeMap;
 public class HuffmanCode {
 
     public static <T> HuffmanTree<T> buildTree(final int[] charFrequencies, final T[] values) {
-        final LinkedList<HuffmanTree<T>> list = new LinkedList<HuffmanTree<T>>();
+        final LinkedList<HuffmanTree<T>> list = new LinkedList<>();
         for (int i = 0; i < charFrequencies.length; i++)
             if (charFrequencies[i] > 0)
                 list.add(new HuffmanLeaf<T>(charFrequencies[i], values[i]));

@@ -478,7 +478,10 @@ public class CRAMContainerStreamWriter {
                 }
             }
         }
-
+        //TODO: these records need to be broken up into groups with like reference context types, since if there is
+        //TODO: more than one type present, they need to be split across multiple containers
+        //TODO: this should really accumulate records to a slice, not a container, and then submit the slices
+        //TODO: one at a time to container and let it aggregate and write them out as needed
         final Container container = containerFactory.buildContainer(cramRecords, offset);
         for (final Slice slice : container.getSlices()) {
             slice.setRefMD5(referenceBases);

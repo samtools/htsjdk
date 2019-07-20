@@ -146,7 +146,12 @@ public class Container {
             throw new CRAMException("Cannot construct a Container without any Slices");
         }
         else if (sliceRefContexts.size() > 1) {
-            throw new CRAMException("Cannot construct a Container from Slices with conflicting types or sequence IDs");
+            final String msg = String.format(
+                    "Cannot construct a Container from Slices with conflicting types or sequence IDs: %s",
+                    sliceRefContexts.stream()
+                            .map(ReferenceContext::toString)
+                            .collect(Collectors.joining(", ")));
+            throw new CRAMException(msg);
         }
 
         final ReferenceContext commonRefContext = sliceRefContexts.iterator().next();

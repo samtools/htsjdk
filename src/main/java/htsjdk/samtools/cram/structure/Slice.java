@@ -223,6 +223,7 @@ public class Slice {
             throw new RuntimeException("Slice mapped outside of the reference.");
         }
 
+        //TODO: is it OK to proceed in this case ? why does this not throw ?
         if (alignmentStart - 1 + alignmentSpan > ref.length) {
             log.warn(String.format("Slice partially mapped outside of reference: seqID=%s, start=%d, span=%d, counter=%d.",
                     referenceContext, alignmentStart, alignmentSpan, globalRecordCounter));

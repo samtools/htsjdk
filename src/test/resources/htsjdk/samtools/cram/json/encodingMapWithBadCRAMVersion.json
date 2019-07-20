@@ -1,7 +1,7 @@
 {
   "htsjdkCRAMEncodingMapVersion": 1,
   "targetCRAMVersion": {
-    "major": 279,
+    "major": 271,
     "minor": 1,
     "build": 8
   },
@@ -15,8 +15,8 @@
           1
         ]
       },
-      "compressionMethod": "RANS",
-      "compressorSpecificArg": 1
+      "compressionMethod": "GZIP",
+      "compressorSpecificArg": 5
     },
     {
       "contentID": 2,

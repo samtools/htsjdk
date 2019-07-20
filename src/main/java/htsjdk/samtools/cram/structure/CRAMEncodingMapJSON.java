@@ -81,7 +81,7 @@ class CRAMEncodingMapJSON {
                 }
             } else {
                 this.compressionMethod = null;
-                this.compressorSpecificArg = 0;
+                this.compressorSpecificArg = NO_COMPRESSION_ARG;
             }
         }
     }
