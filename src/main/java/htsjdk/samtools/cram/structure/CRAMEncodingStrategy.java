@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
+import htsjdk.samtools.cram.ref.ReferenceContextType;
 
 import com.google.gson.*;
 
@@ -40,6 +41,13 @@ public class CRAMEncodingStrategy {
         this.customCompressionMapPath = encodingMap.toAbsolutePath().toString();
     }
 
+    /**
+     * Set number of slices per container. In some cases, a container containing fewer slices than the
+     * requested value will be produced in order to honor the specification rule that all slices in a
+     * container must have the same {@link ReferenceContextType}.
+     * @param readsPerSlice number of slices written per container
+     * @return updated CRAMEncodingStrategy
+     */
     public CRAMEncodingStrategy setRecordsPerSlice(final int readsPerSlice) {
         ValidationUtils.validateArg(readsPerSlice > 0, "Reads per slice must be > 1");
         this.readsPerSlice = readsPerSlice;

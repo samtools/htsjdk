@@ -17,6 +17,13 @@
  */
 package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
+// TODO: How does this differ from:
+//  HuffmanCode.HuffmanBitCode
+//         long bitCode;
+//         int bitLength;
+//  HuffmanParamsCalculator.BitCode
+//        final int value;
+//        final int length;
 class HuffmanBitCode {
     int bitCode;
     int bitLength;

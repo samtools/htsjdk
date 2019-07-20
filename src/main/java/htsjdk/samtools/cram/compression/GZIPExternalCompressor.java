@@ -68,7 +68,7 @@ public class GZIPExternalCompressor extends ExternalCompressor {
 
     @Override
     public String toString() {
-        return String.format("%s: writeLevel %d", super.toString() + writeCompressionLevel);
+        return String.format("%s(%d)", super.toString(), writeCompressionLevel);
     }
 
 }

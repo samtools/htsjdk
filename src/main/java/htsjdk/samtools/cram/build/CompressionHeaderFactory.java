@@ -379,6 +379,8 @@ public class CompressionHeaderFactory {
     private EncodingDescriptor buildTagEncodingForSize(final int tagValueSize, final int tagID) {
         // NOTE: This usage of ByteArrayLenEncoding splits the stream between core (for the
         // length) and external (for the bytes).
+        // Using Huffman encoding takes advantage of the fact that for an alphabet of one symbol,
+        // the canonical huffman encoding uses 0 bits to store the (constant) symbol ?
         return new ByteArrayLenEncoding(
                 // TODO: are these args reversed ? first arg is values, then bit lengths ?
                 //CanonicalHuffmanIntegerEncoding(final int[] values, final int[] bitLengths)

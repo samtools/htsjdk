@@ -1,16 +1,14 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.*;
 import htsjdk.samtools.cram.compression.rans.RANS;
-import htsjdk.samtools.cram.encoding.CRAMEncoding;
-import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;
-import htsjdk.samtools.cram.encoding.external.ExternalIntegerEncoding;
-import htsjdk.samtools.cram.encoding.external.ExternalLongEncoding;
+import htsjdk.samtools.cram.encoding.ByteArrayLenEncoding;
+import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.Tuple;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.*;
@@ -28,10 +26,27 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
     final File cramSourceFile = new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
     final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta");
-    //final File cramSourceFile = new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram");
+    //final File cramSourceFile = new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.samtools.cram");
     //final File referenceFile = new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta");
     //final File cramSourceFile = new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram");
     //final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+
+    @Test
+    public final void testBestEncodingStrategy() throws IOException {
+        System.out.println(String.format("Test file size: %,d", Files.size(cramSourceFile.toPath())));
+        // src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingMapProfileBEST.json has the encoding map used by this strategy
+        final File encodingStrategyFile = new File("src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingStrategyTemplate.json");
+        final CRAMEncodingStrategy testStrategy = CRAMEncodingStrategy.readFromPath(encodingStrategyFile.toPath());
+        final File tempOutCRAM = File.createTempFile("encodingStrategiesTest", ".cram");
+        System.out.println(String.format("Output file: %s", tempOutCRAM.toPath()));
+        final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
+        assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile);
+        tempOutCRAM.delete();
+        final String testSummary = String.format("Size: %,d Strategy %s",
+                fileSize,
+                testStrategy);
+        System.out.println(testSummary);
+    }
 
     @Test
     public final void testAllEncodingStrategyCombinations() throws IOException {
@@ -48,25 +63,28 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             for (final int readsPerSlice : Arrays.asList(10000, 20000)) {
                 for (final int slicesPerContainer : Arrays.asList(1, 3)) {
                     for (final DataSeries dataSeries : enumerateDataSeries()) {
-                        for (final EncodingID encodingID : enumerateEncodingIDs()) {
+                        for (final EncodingDescriptor encodingDescriptor : enumerateEncodingDescriptorsFor(dataSeries)) {
                             for (final ExternalCompressor compressor : enumerateExternalCompressors(gzipCompressionLevel)) {
                                 final CRAMEncodingStrategy testStrategy = createEncodingStrategyForParams(
                                         gzipCompressionLevel,
                                         readsPerSlice,
                                         slicesPerContainer,
                                         dataSeries,
-                                        encodingID,
+                                        encodingDescriptor,
                                         compressor);
                                 final File tempOutCRAM = File.createTempFile("encodingStrategiesTest", ".cram");
-                                tempOutCRAM.delete();
                                 final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
+
+                                assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile);
+
+                                tempOutCRAM.delete();
                                 final String testSummary = String.format(
-                                        "Test %,d FileSize: %,d DS: %s Encoding: %s Comp: %s %s",
-                                        testCount,
+                                        "Size: %,d Test: %,d Series: %s Encoding: %s Compressor: %s %s",
                                         fileSize,
-                                        dataSeries.getCanonicalName(),
-                                        encodingID,
-                                        compressor.getMethod(),
+                                        testCount,
+                                        dataSeries,
+                                        encodingDescriptor.getEncodingID(),
+                                        compressor,
                                         testStrategy);
                                 System.out.println(testSummary);
                                 encodingParamsByTest.put(testCount, testSummary);
@@ -76,7 +94,6 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                             }
                         }
                     }
-                    //TODO: add validation/equality assertion
                 }
             }
             System.out.println();
@@ -92,7 +109,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         System.out.println(String.format("%d tests, sorted by result size:", testCount));
         bestEncodingStrategies
                 // take the 500 best results
-                .stream().limit(500)
+                .stream().limit(50)
                 .forEach((Tuple<Long, Integer> t) ->
                         System.out.println(String.format("Size: %,d Test: %d Params: %s Encoding: %s",
                                 t.a,
@@ -102,23 +119,42 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 );
     }
 
+    public void assertRoundTripFidelity(final File cramSourceFile, final File tempOutCRAM, final File referenceFile) {
+        try (final CRAMFileReader origReader = new CRAMFileReader(cramSourceFile, new ReferenceSource(referenceFile));
+             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
+            final SAMRecordIterator origIterator = origReader.getIterator();
+            final SAMRecordIterator copyIterator = copyReader.getIterator();
+            while (origIterator.hasNext() && copyIterator.hasNext()) {
+                Assert.assertEquals(copyIterator.next(), origIterator.next());
+            }
+            Assert.assertEquals(origIterator.hasNext(), copyIterator.hasNext());
+        }
+    }
+
     public final CRAMEncodingStrategy createEncodingStrategyForParams(
            final int  gzipCompressionLevel,
            final int readsPerSlice,
            final int slicesPerContainer,
            final DataSeries ds,
-           final EncodingID encodingID,
+           final EncodingDescriptor encodingDescriptor,
            final ExternalCompressor compressor) throws IOException {
         final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy();
         encodingStrategy.setGZIPCompressionLevel(gzipCompressionLevel);
         encodingStrategy.setRecordsPerSlice(readsPerSlice);
         encodingStrategy.setSlicesPerContainer(slicesPerContainer);
-        final CompressionHeaderEncodingMap encodingMap = createEncodingMapVariationFor(ds, encodingID, compressor);
-        final File tempEncodingMapPath = File.createTempFile("testEncodingMap", ".json");
-        tempEncodingMapPath.deleteOnExit();
-        final Path encodingMapPath = tempEncodingMapPath.toPath();
+        final CompressionHeaderEncodingMap encodingMap = createEncodingMapExternalEncodingVariationFor(ds, encodingDescriptor, compressor);
+        final File tempEncodingMapFile = File.createTempFile("testEncodingMap", ".json");
+        tempEncodingMapFile.deleteOnExit();
+        final Path encodingMapPath = tempEncodingMapFile.toPath();
         encodingMap.writeToPath(encodingMapPath);
         encodingStrategy.setEncodingMap(encodingMapPath);
+
+        // save the map to retrieve it in case its the best one
+        //final File tempStrategyFile = File.createTempFile("testEncodingMap", ".json");
+        //tempStrategyFile.deleteOnExit();
+        //final Path strategyPath = tempStrategyFile.toPath();
+        //encodingStrategy.writeToPath(strategyPath);
+
         return encodingStrategy;
     }
 
@@ -176,74 +212,28 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         return seriesToUse;
     }
 
-    private List<EncodingID> enumerateEncodingIDs() {
-        //TODO: add HUFFMAN
-        return Arrays.asList(EncodingID.EXTERNAL);
+    // For now, just use the descriptors that are the default for this implementation, since not all
+    // encodings are interchangeable
+    private Set<EncodingDescriptor> enumerateEncodingDescriptorsFor(final DataSeries ds) {
+        final Set<EncodingDescriptor> descriptors = new HashSet<>();
+        descriptors.add(new CompressionHeaderEncodingMap(new CRAMEncodingStrategy()).getEncodingDescriptorForDataSeries(ds));
+        if (ds == DataSeries.RN_ReadName) {
+            descriptors.add(
+                    (new ByteArrayLenEncoding(
+                        new ExternalIntegerEncoding(ds.getExternalBlockContentId()),
+                        new ExternalByteArrayEncoding(ds.getExternalBlockContentId()))).toEncodingDescriptor());
+        }
+        return descriptors;
     }
 
-    public CompressionHeaderEncodingMap createEncodingMapVariationFor(
+    public CompressionHeaderEncodingMap createEncodingMapExternalEncodingVariationFor(
             final DataSeries ds,
-            final EncodingID id,
+            final EncodingDescriptor encodingDescriptor,
             final ExternalCompressor compressor) {
+        // create a default encoding map and update it with the requested EXTERNAL descriptor/compressor
         final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
-        if (id == EncodingID.EXTERNAL) {
-            encodingMap.putExternalEncoding(ds, compressor);
-        } else {
-            // NOTE: if this is replacing an existing external encoding with a core encoding, the corresponding
-            // external compressor is also removed from the map
-            encodingMap.putCoreEncoding(ds, createEncodingDescriptorFor(ds, id));
-        }
+        encodingMap.putExternalEncoding(ds, encodingDescriptor, compressor);
         return encodingMap;
-    }
-
-    private EncodingDescriptor createEncodingDescriptorFor(
-            final DataSeries ds,
-            final EncodingID id) {
-        switch (id) {
-            case EXTERNAL:
-                final CRAMEncoding<?> cramEncoding;
-
-                switch (ds.getType()) {
-                    case BYTE:
-                        cramEncoding = new ExternalByteEncoding(ds.getExternalBlockContentId());
-                        break;
-                    case INT:
-                        cramEncoding = new ExternalIntegerEncoding(ds.getExternalBlockContentId());
-                        break;
-                    case LONG:
-                        cramEncoding = new ExternalLongEncoding(ds.getExternalBlockContentId());
-                        break;
-                    case BYTE_ARRAY:
-                        cramEncoding = new ExternalByteEncoding(ds.getExternalBlockContentId());
-                        break;
-                    default:
-                        throw new CRAMException("Unknown data series value type");
-                }
-                return cramEncoding.toEncodingDescriptor();
-
-            case HUFFMAN:
-                //TODO: need a way to create a huffman encoder before knowing the params
-                switch(ds.getType()) {
-                    case BYTE:
-                    case INT:
-                    case LONG:
-                    case BYTE_ARRAY:
-                        throw new IllegalArgumentException("Huffman test encoding not implemented");
-                }
-
-            case NULL:
-            case GOLOMB:
-            case BYTE_ARRAY_LEN:
-            case BYTE_ARRAY_STOP:
-            case BETA:
-            case SUBEXPONENTIAL:
-            case GOLOMB_RICE:
-            case GAMMA:
-            default:
-                throw new IllegalArgumentException(
-                        String.format("Can't create test encoding for encoding %s", id));
-        }
-
     }
 
 }

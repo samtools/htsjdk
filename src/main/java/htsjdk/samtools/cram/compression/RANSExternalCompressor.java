@@ -39,7 +39,7 @@ public class RANSExternalCompressor extends ExternalCompressor {
 
     @Override
     public String toString() {
-        return String.format("%s (%s)", this.getMethod(), order);
+        return String.format("%s(%s)", this.getMethod(), order);
     }
 
     @Override

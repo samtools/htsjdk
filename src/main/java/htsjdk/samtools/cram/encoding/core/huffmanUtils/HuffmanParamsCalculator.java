@@ -88,6 +88,7 @@ public class HuffmanParamsCalculator {
         final List<Integer> lens = new ArrayList<Integer>();
         HuffmanCode.getValuesAndBitLengths(valueList, lens, tree);
 
+        //TODO: is this sorting required or not ?
         // the following sorting is not really required, but whatever:
         final BitCode[] codes = new BitCode[valueList.size()];
         for (int i = 0; i < valueList.size(); i++) {
