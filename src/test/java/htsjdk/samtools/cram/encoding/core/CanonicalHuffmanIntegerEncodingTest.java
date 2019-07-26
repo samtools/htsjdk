@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+//TODO: this test is stupid....
 public class CanonicalHuffmanIntegerEncodingTest extends HtsjdkTest {
     @Test
     public void testToString() {

@@ -17,20 +17,62 @@
  */
 package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
-// TODO: How does this differ from:
-//  HuffmanCode.HuffmanBitCode
-//         long bitCode;
-//         int bitLength;
-//  HuffmanParamsCalculator.BitCode
-//        final int value;
-//        final int length;
-class HuffmanBitCode {
-    int bitCode;
-    int bitLength;
-    int value;
+/**
+ * Huffman bit code word consisting of a symbol, the corresponding codeword and codeword bit length.
+ * @param <T> type of the symbols in the alphabet being huffman-encoded
+ */
+public class HuffmanBitCode<T> {
+    private final T symbol;
+    private final int codeWord;
+    private final int codeWordBitLength;
+
+    public HuffmanBitCode(final T symbol, final int codeWord, final int codeWordBitLength) {
+        this.symbol = symbol;
+        this.codeWord = codeWord;
+        this.codeWordBitLength = codeWordBitLength;
+    }
+
+    /**
+     * @return the symbol for this bit code
+     */
+    public T getSymbol() {
+        return symbol;
+    }
+
+    /**
+     * @return the codeword for this bit code
+     */
+    public int getCodeWord() {
+        return codeWord;
+    }
+
+    /**
+     * @return the codeword bit length for this bit code
+     */
+    public int getCodeWordBitLength() {
+        return codeWordBitLength;
+    }
 
     @Override
     public String toString() {
-        return value + ":\t" + Integer.toBinaryString(bitCode).substring(32 - bitLength) + " " + bitCode;
+        return String.format("Symbol: %d CodeWord: %d (%s) BitLength: %d",
+                symbol,
+                codeWord,
+                getBitCodeWithPrefix(),
+                codeWordBitLength);
     }
+
+    /**
+     * @return the codeword for this bit code as a String, padded out to {@code codeWordBitLength} with leading zeros
+     */
+    public String getBitCodeWithPrefix() {
+        final String codeWordBinaryString = Integer.toBinaryString(codeWord);
+        final StringBuffer binaryWordBuffer = new StringBuffer();
+        for (int i = codeWordBinaryString.length(); i < codeWordBitLength; i++) {
+            binaryWordBuffer.append('0');
+        }
+        binaryWordBuffer.append(codeWordBinaryString);
+        return binaryWordBuffer.toString();
+    }
+
 }

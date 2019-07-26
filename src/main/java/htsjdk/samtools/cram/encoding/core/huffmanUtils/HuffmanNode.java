@@ -17,12 +17,38 @@
  */
 package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
-class HuffmanNode<T> extends HuffmanTree<T> {
-    public final HuffmanTree<T> left, right;
+import java.util.Map;
 
+/**
+ * A node in the {@code HuffmanTree}.
+ * @param <T> type of the symbols in the alphabet being huffman-encoded
+ */
+class HuffmanNode<T> extends HuffmanTree<T> {
+    public final HuffmanTree left, right;
+
+    /**
+     * A node in a {@code HuffmanTree}.
+     * @param left left node
+     * @param right right node
+     */
     public HuffmanNode(final HuffmanTree<T> left, final HuffmanTree<T> right) {
         super(left.frequency + right.frequency);
         this.left = left;
         this.right = right;
+    }
+
+    /**
+     * Populate a map with the HuffmanBitCode<T> for each symbol in the alphabet
+     */
+    @Override
+    public void getCodeWords(int codeWord, int codeWordLength, final Map<T, HuffmanBitCode<T>> symbolsToCodes) {
+        // traverse left
+        codeWord <<= 1;
+        codeWordLength++;
+        left.getCodeWords(codeWord, codeWordLength, symbolsToCodes);
+
+        // traverse right
+        codeWord = codeWord | 1;
+        right.getCodeWords(codeWord, codeWordLength, symbolsToCodes);
     }
 }
