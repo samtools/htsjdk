@@ -370,20 +370,20 @@ public class CompressionHeaderFactory {
 
     /**
      * Used by buildEncodingForTag to create a ByteArrayLenEncoding with CanonicalHuffmanIntegerEncoding and
-     * ExternalByteArrayEncoding sub-encodings
+     * ExternalByteArrayEncoding sub-encodings.
      *
-     * @param tagValueSize the size of the tag value, to be Huffman encoded
-     * @param tagID the ID of the tag
-     * @return EncodingDescriptor a complete description of the result Encoding
+     * @param tagValueSize the size in bytes of the values for the tag being encoded
+     * @param tagID the ID of the tag being encoded
+     * @return EncodingDescriptor descriptor for the resulting encoding
      */
     private EncodingDescriptor buildTagEncodingForSize(final int tagValueSize, final int tagID) {
-        // NOTE: This usage of ByteArrayLenEncoding splits the stream between core (for the
-        // length) and external (for the bytes).
-        // Using Huffman encoding takes advantage of the fact that for an alphabet of one symbol,
-        // the canonical huffman encoding uses 0 bits to store the (constant) symbol ?
+        // NOTE: This usage of ByteArrayLenEncoding splits the stream between core (for the tag value length)
+        // and external (for the tag value bytes). Since the tag value size is determined by the tag type, it
+        // is constant and can be represented using a canonical Huffman encoding with a single symbol alphabet,
+        // which in turn can use a huffman code of length 0 bits.
         return new ByteArrayLenEncoding(
-                // TODO: are these args reversed ? first arg is values, then bit lengths ?
-                //CanonicalHuffmanIntegerEncoding(final int[] values, final int[] bitLengths)
+                // for the huffman encoding, our alphabet has just one symbol (the tag value size, which is constant),
+                // so we can just declare that the canonical codeword size will be 0
                 new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, singleZero),
                 new ExternalByteArrayEncoding(tagID)).toEncodingDescriptor();
     }

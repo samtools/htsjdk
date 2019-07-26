@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
+import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanParams;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
@@ -26,23 +27,23 @@ import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer> {
-    private final int[] values;
-    private final int[] bitLengths;
-    private final ByteBuffer buf;
+    private final HuffmanParams<Integer> huffmanParams;
 
     // Unlike the others, this is public because ByteArrayLenEncoding uses it to create an
     // encoding for the length of the byte array.
-    public CanonicalHuffmanIntegerEncoding(final int[] values, final int[] bitLengths) {
+    public CanonicalHuffmanIntegerEncoding(final int[] symbols, final int[] bitLengths) {
         super(EncodingID.HUFFMAN);
-        this.values = values;
-        this.bitLengths = bitLengths;
-        this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
+        huffmanParams = new HuffmanParams(
+                Arrays.stream(symbols).boxed().collect(Collectors.toList()),
+                Arrays.stream(bitLengths).boxed().collect(Collectors.toList()));
     }
 
     /**
      * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     *
      * @param serializedParams
      * @return CanonicalHuffmanIntegerEncoding with parameters populated from serializedParams
      */
@@ -66,15 +67,16 @@ public class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer> {
 
     @Override
     public byte[] toSerializedEncodingParams() {
-        buf.clear();
+        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES *
+                (huffmanParams.getSymbols().size() + huffmanParams.getCodeWordLengths().size()));
 
-        ITF8.writeUnsignedITF8(values.length, buf);
-        for (final int value : values) {
+        ITF8.writeUnsignedITF8(huffmanParams.getSymbols().size(), buf);
+        for (final int value : huffmanParams.getSymbols()) {
             ITF8.writeUnsignedITF8(value, buf);
         }
 
-        ITF8.writeUnsignedITF8(bitLengths.length, buf);
-        for (final int value : bitLengths) {
+        ITF8.writeUnsignedITF8(huffmanParams.getCodeWordLengths().size(), buf);
+        for (final int value : huffmanParams.getCodeWordLengths()) {
             ITF8.writeUnsignedITF8(value, buf);
         }
 
@@ -86,12 +88,12 @@ public class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer> {
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams,
+                                         final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new CanonicalHuffmanIntegerCodec(
                 sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
                 sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
-                values,
-                bitLengths);
+                huffmanParams);
     }
 
     @Override
@@ -99,22 +101,14 @@ public class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CanonicalHuffmanIntegerEncoding that = (CanonicalHuffmanIntegerEncoding) o;
-        return Arrays.equals(bitLengths, that.bitLengths) &&
-                Arrays.equals(values, that.values);
+        return huffmanParams.equals(that.huffmanParams);
     }
 
     @Override
-    public int hashCode() {
-
-        int result = Arrays.hashCode(bitLengths);
-        result = 31 * result + Arrays.hashCode(values);
-        return result;
-    }
+    public int hashCode() { return huffmanParams.hashCode(); }
 
     @Override
     public String toString() {
-        return String.format("Values: %s BitLengths %s",
-                Arrays.toString(values),
-                Arrays.toString(bitLengths));
+        return huffmanParams.toString();
     }
 }

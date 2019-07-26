@@ -17,7 +17,8 @@
  */
 package htsjdk.samtools.cram.encoding.core;
 
-import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanByteHelper;
+import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanCodecHelper;
+import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanParams;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 
@@ -26,21 +27,20 @@ import htsjdk.samtools.cram.io.BitOutputStream;
  * https://en.wikipedia.org/wiki/Canonical_Huffman_code
  */
 class CanonicalHuffmanByteCodec extends CoreCodec<Byte> {
-    private final HuffmanByteHelper helper;
+    private final HuffmanCodecHelper<Byte> helper;
 
     /**
      * Construct a Canonical Huffman Codec for Byte data
      *
      * @param coreBlockInputStream the input bitstream to read from
      * @param coreBlockOutputStream the output bitstream to write to
-     * @param values the alphabet (provided as Integers)
-     * @param bitLengths the number of bits of symbol's huffman code
+     * @param huffmanParams HuffmanByteParams for this codex
      */
     CanonicalHuffmanByteCodec(final BitInputStream coreBlockInputStream,
                                      final BitOutputStream coreBlockOutputStream,
-                                     final byte[] values, final int[] bitLengths) {
+                                     final HuffmanParams<Byte> huffmanParams) {
         super(coreBlockInputStream, coreBlockOutputStream);
-        helper = new HuffmanByteHelper(values, bitLengths);
+        helper = new HuffmanCodecHelper(huffmanParams);
     }
 
     @Override
@@ -55,6 +55,6 @@ class CanonicalHuffmanByteCodec extends CoreCodec<Byte> {
 
     @Override
     public Byte read(final int length) {
-        throw new RuntimeException("Not implemented");
+        throw new RuntimeException("read(length) only applicable array codecs");
     }
 }
