@@ -44,7 +44,9 @@ public class VCFEncoder {
      * allowing missing fields in the header.
      */
     public VCFEncoder(final VCFHeader header, final boolean allowMissingFieldsInHeader, final boolean outputTrailingFormatFields) {
-        if (header == null) throw new NullPointerException("The VCF header must not be null.");
+        if (header == null) {
+            throw new NullPointerException("The VCF header must not be null.");
+        }
         this.header = header;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.outputTrailingFormatFields = outputTrailingFormatFields;
@@ -128,8 +130,11 @@ public class VCFEncoder {
         vcfOutput.append(VCFConstants.FIELD_SEPARATOR);
 
         // QUAL
-        if ( ! context.hasLog10PError()) vcfOutput.append(VCFConstants.MISSING_VALUE_v4);
-        else vcfOutput.append(formatQualValue(context.getPhredScaledQual()));
+        if ( !context.hasLog10PError()) {
+            vcfOutput.append(VCFConstants.MISSING_VALUE_v4);
+        } else {
+            vcfOutput.append(formatQualValue(context.getPhredScaledQual()));
+        }
         vcfOutput.append(VCFConstants.FIELD_SEPARATOR)
                 // FILTER
                 .append(getFilterString(context)).append(VCFConstants.FIELD_SEPARATOR);
@@ -137,11 +142,14 @@ public class VCFEncoder {
         // INFO
         final Map<String, String> infoFields = new TreeMap<>();
         for (final Map.Entry<String, Object> field : context.getAttributes().entrySet()) {
-            if (!this.header.hasInfoLine(field.getKey()))
+            if (!this.header.hasInfoLine(field.getKey())) {
                 fieldIsMissingFromHeaderError(context, field.getKey(), "INFO");
+            }
 
             final String outputValue = formatVCFField(field.getValue());
-            if (outputValue != null) infoFields.put(field.getKey(), outputValue);
+            if (outputValue != null) {
+                infoFields.put(field.getKey(), outputValue);
+            }
         }
         writeInfoString(infoFields, vcfOutput);
 
@@ -152,11 +160,12 @@ public class VCFEncoder {
             vcfOutput.append(((LazyGenotypesContext) gc).getUnparsedGenotypeData().toString());
         } else {
             final List<String> genotypeAttributeKeys = context.calcVCFGenotypeKeys(this.header);
-            if ( ! genotypeAttributeKeys.isEmpty()) {
-                for (final String format : genotypeAttributeKeys)
-                    if ( ! this.header.hasFormatLine(format))
+            if ( !genotypeAttributeKeys.isEmpty()) {
+                for (final String format : genotypeAttributeKeys) {
+                    if (!this.header.hasFormatLine(format)) {
                         fieldIsMissingFromHeaderError(context, format, "FORMAT");
-
+                    }
+                }
                 final String genotypeFormatString = ParsingUtils.join(VCFConstants.GENOTYPE_FIELD_SEPARATOR, genotypeAttributeKeys);
 
                 vcfOutput.append(VCFConstants.FIELD_SEPARATOR);
@@ -166,8 +175,6 @@ public class VCFEncoder {
                 appendGenotypeData(context, alleleStrings, genotypeAttributeKeys, vcfOutput);
             }
         }
-
-
     }
 
     VCFHeader getVCFHeader() {
@@ -181,52 +188,71 @@ public class VCFEncoder {
     private String getFilterString(final VariantContext vc) {
         if (vc.isFiltered()) {
             for (final String filter : vc.getFilters()) {
-                if (!this.header.hasFilterLine(filter)) fieldIsMissingFromHeaderError(vc, filter, "FILTER");
+                if (!this.header.hasFilterLine(filter)) {
+                    fieldIsMissingFromHeaderError(vc, filter, "FILTER");
+                }
             }
 
             return ParsingUtils.join(";", ParsingUtils.sortList(vc.getFilters()));
-        } else if (vc.filtersWereApplied()) return VCFConstants.PASSES_FILTERS_v4;
-        else return VCFConstants.UNFILTERED;
+        } else {
+            if (vc.filtersWereApplied()){
+                return VCFConstants.PASSES_FILTERS_v4;
+            } else {
+                return VCFConstants.UNFILTERED;
+            }
+        }
     }
 
     private static String formatQualValue(final double qual) {
         String s = String.format(QUAL_FORMAT_STRING, qual);
-        if (s.endsWith(QUAL_FORMAT_EXTENSION_TO_TRIM))
+        if (s.endsWith(QUAL_FORMAT_EXTENSION_TO_TRIM)) {
             s = s.substring(0, s.length() - QUAL_FORMAT_EXTENSION_TO_TRIM.length());
+        }
         return s;
     }
 
     private void fieldIsMissingFromHeaderError(final VariantContext vc, final String id, final String field) {
-        if (!allowMissingFieldsInHeader)
+        if (!allowMissingFieldsInHeader) {
             throw new IllegalStateException("Key " + id + " found in VariantContext field " + field
-                                                    + " at " + vc.getContig() + ":" + vc.getStart()
-                                                    + " but this key isn't defined in the VCFHeader.  We require all VCFs to have"
-                                                    + " complete VCF headers by default.");
+                    + " at " + vc.getContig() + ":" + vc.getStart()
+                    + " but this key isn't defined in the VCFHeader.  We require all VCFs to have"
+                    + " complete VCF headers by default.");
+        }
     }
 
     @SuppressWarnings("rawtypes")
     String formatVCFField(final Object val) {
         final String result;
-        if ( val == null )
+        if (val == null) {
             result = VCFConstants.MISSING_VALUE_v4;
-        else if ( val instanceof Double )
-            result = formatVCFDouble((Double) val);
-        else if ( val instanceof Boolean )
-            result = (Boolean)val ? "" : null; // empty string for true, null for false
-        else if ( val instanceof List ) {
-            result = formatVCFField(((List)val).toArray());
-        } else if ( val.getClass().isArray() ) {
-            final int length = Array.getLength(val);
-            if ( length == 0 )
-                return formatVCFField(null);
-            final StringBuilder sb = new StringBuilder(formatVCFField(Array.get(val, 0)));
-            for ( int i = 1; i < length; i++) {
-                sb.append(',');
-                sb.append(formatVCFField(Array.get(val, i)));
+        } else {
+            if (val instanceof Double) {
+                result = formatVCFDouble((Double) val);
+            } else {
+                if (val instanceof Boolean) {
+                    result = (Boolean) val ? "" : null; // empty string for true, null for false
+                } else {
+                    if (val instanceof List) {
+                        result = formatVCFField(((List) val).toArray());
+                    } else {
+                        if (val.getClass().isArray()) {
+                            final int length = Array.getLength(val);
+                            if (length == 0) {
+                                return formatVCFField(null);
+                            }
+                            final StringBuilder sb = new StringBuilder(formatVCFField(Array.get(val, 0)));
+                            for (int i = 1; i < length; i++) {
+                                sb.append(',');
+                                sb.append(formatVCFField(Array.get(val, i)));
+                            }
+                            result = sb.toString();
+                        } else {
+                            result = val.toString();
+                        }
+                    }
+                }
             }
-            result = sb.toString();
-        } else
-            result = val.toString();
+        }
 
         return result;
     }
@@ -245,9 +271,9 @@ public class VCFEncoder {
         final String format;
         if (d < 1) {
             if (d < 0.01) {
-                if (Math.abs(d) >= 1e-20)
+                if (Math.abs(d) >= 1e-20) {
                     format = "%.3e";
-                else {
+                } else {
                     // return a zero format
                     return "0.00";
                 }
@@ -299,7 +325,9 @@ public class VCFEncoder {
             vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
 
             Genotype g = vc.getGenotype(sample);
-            if (g == null) g = GenotypeBuilder.createMissing(sample, ploidy);
+            if (g == null) {
+                g = GenotypeBuilder.createMissing(sample, ploidy);
+            }
 
             final List<String> attrs = new ArrayList<>(genotypeFormatKeys.size());
             for (final String field : genotypeFormatKeys) {
@@ -323,18 +351,21 @@ public class VCFEncoder {
                         final IntGenotypeFieldAccessors.Accessor accessor = GENOTYPE_FIELD_ACCESSORS.getAccessor(field);
                         if (accessor != null) {
                             final int[] intValues = accessor.getValues(g);
-                            if (intValues == null)
+                            if (intValues == null) {
                                 outputValue = VCFConstants.MISSING_VALUE_v4;
-                            else if (intValues.length == 1) // fast path
-                                outputValue = Integer.toString(intValues[0]);
+                            }
                             else {
-                                final StringBuilder sb = new StringBuilder();
-                                sb.append(intValues[0]);
-                                for (int i = 1; i < intValues.length; i++) {
-                                    sb.append(',');
-                                    sb.append(intValues[i]);
+                                if (intValues.length == 1) { // fast path
+                                    outputValue = Integer.toString(intValues[0]);
+                                } else {
+                                    final StringBuilder sb = new StringBuilder();
+                                    sb.append(intValues[0]);
+                                    for (int i = 1; i < intValues.length; i++) {
+                                        sb.append(',');
+                                        sb.append(intValues[i]);
+                                    }
+                                    outputValue = sb.toString();
                                 }
-                                outputValue = sb.toString();
                             }
                         } else {
                             Object val = g.hasExtendedAttribute(field) ? g.getExtendedAttribute(field) : VCFConstants.MISSING_VALUE_v4;
@@ -342,16 +373,20 @@ public class VCFEncoder {
                         }
                     }
 
-                    if (outputValue != null)
+                    if (outputValue != null) {
                         attrs.add(outputValue);
+                    }
                 }
             }
 
             // strip off trailing missing values
             if (!outputTrailingFormatFields) {
                 for (int i = attrs.size() - 1; i >= 0; i--) {
-                    if (isMissingValue(attrs.get(i))) attrs.remove(i);
-                    else break;
+                    if (isMissingValue(attrs.get(i))) {
+                        attrs.remove(i);
+                    } else {
+                        break;
+                    }
                 }
             }
 
@@ -375,8 +410,11 @@ public class VCFEncoder {
 
         boolean isFirst = true;
         for (final Map.Entry<String, String> entry : infoFields.entrySet()) {
-            if (isFirst) isFirst = false;
-            else vcfoutput.append(VCFConstants.INFO_FIELD_SEPARATOR);
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                vcfoutput.append(VCFConstants.INFO_FIELD_SEPARATOR);
+            }
 
             vcfoutput.append(entry.getKey());
 
