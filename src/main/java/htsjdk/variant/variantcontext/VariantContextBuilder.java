@@ -397,10 +397,13 @@ public class VariantContextBuilder {
     /**
      * {@link #filters}
      *
-     * @param filters  Set of strings to set as the filters for this builder
+     * @param filters  Strings to set as the filters for this builder
      * @return this builder
      */
     public VariantContextBuilder filters(final String ... filters) {
+        if(filters == null){
+            this.unfiltered();
+        }
         filtersAsIs(new LinkedHashSet<>(Arrays.asList(filters)));
         return this;
     }

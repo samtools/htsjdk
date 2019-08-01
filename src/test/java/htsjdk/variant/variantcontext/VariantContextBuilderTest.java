@@ -329,6 +329,19 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         builder.filters((String)null);
         builder.make();
     }
-    
+
+    @Test
+    public void testNullFilterArray(){
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
+        builder.filters((String[])null);
+    }
+
+    @Test
+    public void testNullFilterSet(){
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
+        builder.filters((Set<String>)null);
+        builder.make();
+    }
+
 
 }
