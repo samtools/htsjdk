@@ -195,11 +195,7 @@ public class VCFEncoder {
 
             return ParsingUtils.join(";", ParsingUtils.sortList(vc.getFilters()));
         } else {
-            if (vc.filtersWereApplied()){
-                return VCFConstants.PASSES_FILTERS_v4;
-            } else {
-                return VCFConstants.UNFILTERED;
-            }
+            return vc.filtersWereApplied() ? VCFConstants.PASSES_FILTERS_v4 : VCFConstants.UNFILTERED;
         }
     }
 
@@ -225,33 +221,26 @@ public class VCFEncoder {
         final String result;
         if (val == null) {
             result = VCFConstants.MISSING_VALUE_v4;
-        } else {
-            if (val instanceof Double) {
-                result = formatVCFDouble((Double) val);
-            } else {
-                if (val instanceof Boolean) {
-                    result = (Boolean) val ? "" : null; // empty string for true, null for false
-                } else {
-                    if (val instanceof List) {
-                        result = formatVCFField(((List) val).toArray());
-                    } else {
-                        if (val.getClass().isArray()) {
-                            final int length = Array.getLength(val);
-                            if (length == 0) {
-                                return formatVCFField(null);
-                            }
-                            final StringBuilder sb = new StringBuilder(formatVCFField(Array.get(val, 0)));
-                            for (int i = 1; i < length; i++) {
-                                sb.append(',');
-                                sb.append(formatVCFField(Array.get(val, i)));
-                            }
-                            result = sb.toString();
-                        } else {
-                            result = val.toString();
-                        }
-                    }
-                }
+        } else if (val instanceof Double) {
+            result = formatVCFDouble((Double) val);
+        } else if (val instanceof Boolean) {
+            result = (Boolean) val ? "" : null; // empty string for true, null for false
+        } else if (val instanceof List) {
+            result = formatVCFField(((List) val).toArray());
+        } else if (val.getClass().isArray()) {
+            final int length = Array.getLength(val);
+            if (length == 0) {
+                return formatVCFField(null);
             }
+            final StringBuilder sb = new StringBuilder(
+                formatVCFField(Array.get(val, 0)));
+            for (int i = 1; i < length; i++) {
+                sb.append(',');
+                sb.append(formatVCFField(Array.get(val, i)));
+            }
+            result = sb.toString();
+        } else {
+            result = val.toString();
         }
 
         return result;
@@ -353,19 +342,16 @@ public class VCFEncoder {
                             final int[] intValues = accessor.getValues(g);
                             if (intValues == null) {
                                 outputValue = VCFConstants.MISSING_VALUE_v4;
-                            }
-                            else {
-                                if (intValues.length == 1) { // fast path
-                                    outputValue = Integer.toString(intValues[0]);
-                                } else {
-                                    final StringBuilder sb = new StringBuilder();
-                                    sb.append(intValues[0]);
-                                    for (int i = 1; i < intValues.length; i++) {
-                                        sb.append(',');
-                                        sb.append(intValues[i]);
-                                    }
-                                    outputValue = sb.toString();
+                            } else if (intValues.length == 1) { // fast path
+                                outputValue = Integer.toString(intValues[0]);
+                            } else {
+                                final StringBuilder sb = new StringBuilder();
+                                sb.append(intValues[0]);
+                                for (int i = 1; i < intValues.length; i++) {
+                                    sb.append(',');
+                                    sb.append(intValues[i]);
                                 }
+                                outputValue = sb.toString();
                             }
                         } else {
                             Object val = g.hasExtendedAttribute(field) ? g.getExtendedAttribute(field) : VCFConstants.MISSING_VALUE_v4;
