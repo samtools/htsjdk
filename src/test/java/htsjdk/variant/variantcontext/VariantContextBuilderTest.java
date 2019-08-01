@@ -318,12 +318,17 @@ public class VariantContextBuilderTest extends VariantBaseTest {
 
     @Test
     public void testCanResetFilters() {
-
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
-
         builder.unfiltered();
         builder.filter("mayIPlease?");
-
     }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testCantCreateNullFilter(){
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
+        builder.filters((String)null);
+        builder.make();
+    }
+    
 
 }
