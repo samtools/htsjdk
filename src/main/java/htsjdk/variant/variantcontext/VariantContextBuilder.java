@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -354,7 +353,7 @@ public class VariantContextBuilder {
         if (!filtersCanBeModified) {
             this.filtersCanBeModified = true;
             final Set<String> tempFilters = filters;
-            this.filters = new HashSet<>();
+            this.filters = new LinkedHashSet<>();
             if (tempFilters != null) {
                 this.filters.addAll(tempFilters);
             }
@@ -376,7 +375,7 @@ public class VariantContextBuilder {
             unfiltered();
         } else {
             this.filtersCanBeModified = true;
-            filtersAsIs(new HashSet<>(filters));
+            filtersAsIs(new LinkedHashSet<>(filters));
         }
         return this;
     }
@@ -398,11 +397,16 @@ public class VariantContextBuilder {
     /**
      * {@link #filters}
      *
-     * @param filters  Set of strings to set as the filters for this builder
+     * @param filters  Strings to set as the filters for this builder
      * @return this builder
      */
     public VariantContextBuilder filters(final String ... filters) {
-        filtersAsIs(new LinkedHashSet<>(Arrays.asList(filters)));
+        if(filters == null){
+            this.unfiltered();
+        } else {
+            this.filtersCanBeModified = true;
+            filtersAsIs(new LinkedHashSet<>(Arrays.asList(filters)));
+        }
         return this;
     }
 
@@ -435,6 +439,7 @@ public class VariantContextBuilder {
      */
     public VariantContextBuilder unfiltered() {
         this.filters = null;
+        this.filtersCanBeModified = false;
         return this;
     }
 

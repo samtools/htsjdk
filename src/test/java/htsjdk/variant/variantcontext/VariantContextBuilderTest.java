@@ -314,4 +314,31 @@ public class VariantContextBuilderTest extends VariantBaseTest {
 
         Assert.assertNotEquals(vc2.getGenotypes(), vc1.getGenotypes(), "The two genotype lists should be different. only saw " + vc1.getGenotypes().toString());
     }
+
+    @Test
+    public void testCanResetFilters() {
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
+        builder.unfiltered();
+        builder.filter("mayIPlease?");
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testCantCreateNullFilter(){
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
+        builder.filters((String)null);
+        builder.make();
+    }
+
+    @Test
+    public void testNullFilterArray(){
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
+        builder.filters((String[])null);
+    }
+
+    @Test
+    public void testNullFilterSet(){
+        final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
+        builder.filters((Set<String>)null);
+        builder.make();
+    }
 }

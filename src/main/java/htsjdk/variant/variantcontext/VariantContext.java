@@ -393,6 +393,9 @@ public class VariantContext implements Feature, Serializable {
             }
 
             for (String filter : filters) {
+                if ( filter == null) {
+                    throw new IllegalStateException("'null' is not a valid filter string.");
+                }
                 if (!VALID_FILTER.matcher(filter).matches()) {
                     throw new IllegalStateException("Filter '" + filter +
                             "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
