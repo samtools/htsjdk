@@ -315,7 +315,6 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         Assert.assertNotEquals(vc2.getGenotypes(), vc1.getGenotypes(), "The two genotype lists should be different. only saw " + vc1.getGenotypes().toString());
     }
 
-
     @Test
     public void testCanResetFilters() {
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
@@ -342,6 +341,4 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         builder.filters((Set<String>)null);
         builder.make();
     }
-
-
 }
