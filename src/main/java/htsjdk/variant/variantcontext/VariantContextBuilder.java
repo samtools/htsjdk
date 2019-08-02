@@ -403,8 +403,10 @@ public class VariantContextBuilder {
     public VariantContextBuilder filters(final String ... filters) {
         if(filters == null){
             this.unfiltered();
+        } else {
+            this.filtersCanBeModified = true;
+            filtersAsIs(new LinkedHashSet<>(Arrays.asList(filters)));
         }
-        filtersAsIs(new LinkedHashSet<>(Arrays.asList(filters)));
         return this;
     }
 
