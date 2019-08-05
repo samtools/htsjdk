@@ -11,6 +11,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.List;
 
+@Test(singleThreaded = true)
 public class LogTest extends HtsjdkTest {
 
     private final Log log = Log.getInstance(getClass());
