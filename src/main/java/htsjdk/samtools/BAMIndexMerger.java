@@ -43,7 +43,7 @@ public class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
     private static final int UNINITIALIZED_WINDOW = -1;
 
     private int numReferences = -1;
-    private List<AbstractBAMFileIndex> indexes = new ArrayList<>();
+    private final List<AbstractBAMFileIndex> indexes = new ArrayList<>();
     private long noCoordinateCount;
 
     public BAMIndexMerger(final OutputStream out, final long headerLength) {
