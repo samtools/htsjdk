@@ -28,6 +28,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.function.Supplier;
 
 /**
  * <p>A <em>wafer thin</em> wrapper around System.err that uses var-args to make it
@@ -40,8 +41,10 @@ import java.util.Date;
  * @author Tim Fennell
  */
 public final class Log {
-    /** Enumeration for setting log levels. */
-    public enum LogLevel { ERROR, WARNING, INFO, DEBUG }
+    /**
+     * Enumeration for setting log levels.
+     */
+    public enum LogLevel {ERROR, WARNING, INFO, DEBUG}
 
     private static LogLevel globalLogLevel = LogLevel.INFO;
     private static PrintStream out = System.err;
@@ -60,6 +63,7 @@ public final class Log {
     /**
      * Get a Log instance to perform logging within the Class specified.  Returns an instance
      * of this class which wraps an instance of the commons logging Log class.
+     *
      * @param clazz the Class which is going to be doing the logging
      * @return a Log instance with which to log
      */
@@ -70,7 +74,7 @@ public final class Log {
     /**
      * Set the log level.
      *
-     * @param logLevel  The log level enumeration
+     * @param logLevel The log level enumeration
      */
     public static void setGlobalLogLevel(final LogLevel logLevel) {
         globalLogLevel = logLevel;
@@ -88,21 +92,24 @@ public final class Log {
     /**
      * Set the {@link PrintStream} for writing.
      *
-     * @param stream    {@link PrintStream} to write to.
+     * @param stream {@link PrintStream} to write to.
      */
-    public static void setGlobalPrintStream(final PrintStream stream) { out = stream; }
+    public static void setGlobalPrintStream(final PrintStream stream) {
+        out = stream;
+    }
 
     /**
      * Get the {@link PrintStream} for writing.
      *
-     * @return  {@link PrintStream} to write to.
+     * @return {@link PrintStream} to write to.
      */
     public static PrintStream getGlobalPrintStream() {
         return out;
     }
 
-
-    /** Returns true if the specified log level is enabled otherwise false. */
+    /**
+     * Returns true if the specified log level is enabled otherwise false.
+     */
     public static final boolean isEnabled(final LogLevel level) {
         return level.ordinal() <= globalLogLevel.ordinal();
     }
@@ -111,9 +118,9 @@ public final class Log {
      * Private method that does the actual printing of messages to a PrintWriter. Outputs the log level,
      * class name and parts followed by the stack trace if a throwable is provided.
      *
-     * @param level the Log level being logged at
+     * @param level     the Log level being logged at
      * @param throwable a Throwable if one is available otherwise null
-     * @param parts the parts of the message to be concatenated
+     * @param parts     the parts of the message to be concatenated
      */
     private void emit(final LogLevel level, final Throwable throwable, final Object... parts) {
         if (isEnabled(level)) {
@@ -128,17 +135,26 @@ public final class Log {
             for (final Object part : parts) {
                 if (part != null && part.getClass().isArray()) {
                     final Class<?> component = part.getClass().getComponentType();
-                    if (component.equals(Boolean.TYPE))        tmp.append(Arrays.toString( (boolean[]) part));
-                    else if (component.equals(Byte.TYPE))      tmp.append(Arrays.toString( (byte[]) part));
-                    else if (component.equals(Character.TYPE)) tmp.append(Arrays.toString( (char[]) part));
-                    else if (component.equals(Double.TYPE))    tmp.append(Arrays.toString( (double[]) part));
-                    else if (component.equals(Float.TYPE))     tmp.append(Arrays.toString( (float[]) part));
-                    else if (component.equals(Integer.TYPE))   tmp.append(Arrays.toString( (int[]) part));
-                    else if (component.equals(Long.TYPE))      tmp.append(Arrays.toString( (long[]) part));
-                    else if (component.equals(Short.TYPE))     tmp.append(Arrays.toString( (short[]) part));
-                    else tmp.append(Arrays.toString( (Object[]) part));
-                }
-                else {
+                    if (component.equals(Boolean.TYPE)) {
+                        tmp.append(Arrays.toString((boolean[]) part));
+                    } else if (component.equals(Byte.TYPE)) {
+                        tmp.append(Arrays.toString((byte[]) part));
+                    } else if (component.equals(Character.TYPE)) {
+                        tmp.append(Arrays.toString((char[]) part));
+                    } else if (component.equals(Double.TYPE)) {
+                        tmp.append(Arrays.toString((double[]) part));
+                    } else if (component.equals(Float.TYPE)) {
+                        tmp.append(Arrays.toString((float[]) part));
+                    } else if (component.equals(Integer.TYPE)) {
+                        tmp.append(Arrays.toString((int[]) part));
+                    } else if (component.equals(Long.TYPE)) {
+                        tmp.append(Arrays.toString((long[]) part));
+                    } else if (component.equals(Short.TYPE)) {
+                        tmp.append(Arrays.toString((short[]) part));
+                    } else {
+                        tmp.append(Arrays.toString((Object[]) part));
+                    }
+                } else {
                     tmp.append(part);
                 }
             }
@@ -149,8 +165,7 @@ public final class Log {
                     this.out.println(tmp.toString());
                     throwable.printStackTrace(this.out);
                 }
-            }
-            else {
+            } else {
                 this.out.println(tmp.toString());
             }
         }
@@ -167,9 +182,10 @@ public final class Log {
 
     /**
      * Logs a Throwable and optional message parts at level error.
-     * @param throwable an instance of Throwable that should be logged with stack trace
+     *
+     * @param throwable    an instance of Throwable that should be logged with stack trace
      * @param messageParts zero or more objects which should be combined, by calling toString()
-     *        to form the log message.
+     *                     to form the log message.
      */
     public final void error(final Throwable throwable, final Object... messageParts) {
         emit(LogLevel.ERROR, throwable, messageParts);
@@ -177,9 +193,10 @@ public final class Log {
 
     /**
      * Logs a Throwable and optional message parts at level warn.
-     * @param throwable an instance of Throwable that should be logged with stack trace
+     *
+     * @param throwable    an instance of Throwable that should be logged with stack trace
      * @param messageParts zero or more objects which should be combined, by calling toString()
-     *        to form the log message.
+     *                     to form the log message.
      */
     public final void warn(final Throwable throwable, final Object... messageParts) {
         emit(LogLevel.WARNING, throwable, messageParts);
@@ -187,9 +204,10 @@ public final class Log {
 
     /**
      * Logs a Throwable and optional message parts at level info.
-     * @param throwable an instance of Throwable that should be logged with stack trace
+     *
+     * @param throwable    an instance of Throwable that should be logged with stack trace
      * @param messageParts zero or more objects which should be combined, by calling toString()
-     *        to form the log message.
+     *                     to form the log message.
      */
     public final void info(final Throwable throwable, final Object... messageParts) {
         emit(LogLevel.INFO, throwable, messageParts);
@@ -197,9 +215,10 @@ public final class Log {
 
     /**
      * Logs a Throwable and optional message parts at level debug.
-     * @param throwable an instance of Throwable that should be logged with stack trace
+     *
+     * @param throwable    an instance of Throwable that should be logged with stack trace
      * @param messageParts zero or more objects which should be combined, by calling toString()
-     *        to form the log message.
+     *                     to form the log message.
      */
     public final void debug(final Throwable throwable, final Object... messageParts) {
         emit(LogLevel.DEBUG, throwable, messageParts);
@@ -209,8 +228,9 @@ public final class Log {
 
     /**
      * Logs one or more message parts at level error.
+     *
      * @param messageParts one or more objects which should be combined, by calling toString()
-     *        to form the log message.
+     *                     to form the log message.
      */
     public final void error(final Object... messageParts) {
         emit(LogLevel.ERROR, null, messageParts);
@@ -218,8 +238,9 @@ public final class Log {
 
     /**
      * Logs one or more message parts at level warn.
+     *
      * @param messageParts one or more objects which should be combined, by calling toString()
-     *        to form the log message.
+     *                     to form the log message.
      */
     public final void warn(final Object... messageParts) {
         emit(LogLevel.WARNING, null, messageParts);
@@ -227,8 +248,9 @@ public final class Log {
 
     /**
      * Logs one or more message parts at level info.
+     *
      * @param messageParts one or more objects which should be combined, by calling toString()
-     *        to form the log message.
+     *                     to form the log message.
      */
     public final void info(final Object... messageParts) {
         emit(LogLevel.INFO, null, messageParts);
@@ -236,10 +258,60 @@ public final class Log {
 
     /**
      * Logs one or more message parts at level debug.
+     *
      * @param messageParts one or more objects which should be combined, by calling toString()
-     *        to form the log message.
+     *                     to form the log message.
      */
     public final void debug(final Object... messageParts) {
         emit(LogLevel.DEBUG, null, messageParts);
+    }
+
+    // Similar methods, but with Suppliers, follow. These enable avoiding generating the message
+    // if the logging level is such that the message will be dropped.
+
+    private final void getAndEmitIfEnabled(LogLevel logLevel, final Supplier<Object> messageParts) {
+        if (Log.isEnabled(logLevel)) {
+            emit(logLevel, null, messageParts.get());
+        }
+    }
+
+    /**
+     * Logs a message part at level error.
+     *
+     * @param messageParts a supplier of the object that will be obtained and then toString'ed
+     *                     to form the log message.
+     */
+    public final void error(final Supplier<Object> messageParts) {
+        getAndEmitIfEnabled(LogLevel.ERROR, messageParts);
+    }
+
+    /**
+     * Logs a message part at level warn.
+     *
+     * @param messageParts a supplier of the object that will be obtained and then toString'ed
+     *                     to form the log message.
+     */
+    public final void warn(final Supplier<Object> messageParts) {
+        getAndEmitIfEnabled(LogLevel.WARNING, messageParts);
+    }
+
+    /**
+     * Logs a message part at level info.
+     *
+     * @param messageParts a supplier of the object that will be obtained and then toString'ed
+     *                     to form the log message.
+     */
+    public final void info(final Supplier<Object> messageParts) {
+        getAndEmitIfEnabled(LogLevel.INFO, messageParts);
+    }
+
+    /**
+     * Logs a message at level debug.
+     *
+     * @param messageParts a supplier of the object that will be obtained and then toString'ed
+     *                     to form the log message.
+     */
+    public final void debug(final Supplier<Object> messageParts) {
+        getAndEmitIfEnabled(LogLevel.DEBUG, messageParts);
     }
 }
