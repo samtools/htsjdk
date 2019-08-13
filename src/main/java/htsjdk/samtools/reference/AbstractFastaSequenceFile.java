@@ -35,8 +35,10 @@ import htsjdk.samtools.util.Lazy;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 /**
  * Provide core sequence dictionary functionality required by all fasta file readers.
@@ -62,7 +64,8 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     AbstractFastaSequenceFile(final Path path) {
         this.path = path;
         this.source = path == null ? "unknown" : path.toAbsolutePath().toString();
-        this.dictionary = new Lazy<>(() -> findAndLoadSequenceDictionary(path));
+        // ensure lambda is serializable (by Kryo, when used with Spark)
+        this.dictionary = new Lazy<>((Supplier<SAMSequenceDictionary> & Serializable) (() -> findAndLoadSequenceDictionary(path)));
     }
 
     /**
@@ -74,7 +77,8 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     AbstractFastaSequenceFile(final Path path, final String source, final SAMSequenceDictionary sequenceDictionary) {
         this.path = path;
         this.source = source;
-        this.dictionary = new Lazy<>(() -> sequenceDictionary);
+        // ensure lambda is serializable (by Kryo, when used with Spark)
+        this.dictionary = new Lazy<>((Supplier<SAMSequenceDictionary> & Serializable) (() -> sequenceDictionary));
     }
 
     /** Attempts to find and load the sequence dictionary if present. */
