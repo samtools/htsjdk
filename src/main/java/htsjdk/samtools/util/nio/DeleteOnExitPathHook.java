@@ -1,5 +1,7 @@
 package htsjdk.samtools.util.nio;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +18,7 @@ import java.util.LinkedHashSet;
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
 public class DeleteOnExitPathHook {
+    private static final Log LOG = Log.getInstance(DeleteOnExitPathHook.class);
     private static LinkedHashSet<Path> paths = new LinkedHashSet<>();
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(DeleteOnExitPathHook::runHooks));
@@ -55,8 +58,8 @@ public class DeleteOnExitPathHook {
         for (Path path : toBeDeleted) {
             try {
                 Files.delete(path);
-            } catch (IOException | SecurityException e) {
-                // do nothing if cannot be deleted, because it is a shutdown hook
+            } catch (Exception e) {
+                LOG.debug(e, "Failed to delete file: ", path, " during shutdown because we encountered an exception.");
             }
         }
     }
