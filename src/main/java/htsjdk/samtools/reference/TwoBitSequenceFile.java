@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -56,9 +55,9 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile  {
     private final ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.BYTES);
     private final ByteOrder byteOrder;
     private Map<String,TwoBitIndex> seq2index;
-    private SAMSequenceDictionary dict = null;
+    private final SAMSequenceDictionary dict;
     /** iterator for {@link #nextSequence()} */
-    private Iterator<String> entryIterator = null;
+    private Iterator<SAMSequenceRecord> entryIterator = null;
     /* Cache information about last sequence accessed, including
      * nBlock and mask block.  This doesn't include the data.
      * This speeds fragment reads.  */
@@ -90,11 +89,8 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile  {
     
     private static class TwoBitIndex {
         String name;
+        int seqIndex;
         long offset;
-        @Override
-        public String toString() {
-            return name+" offset:"+offset;
-            }
     }
     
     public TwoBitSequenceFile(final Path path) {
@@ -127,10 +123,22 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile  {
             for(int i=0;i< seqCount;i++) {
                 final TwoBitIndex twoBitIndex = new TwoBitIndex();
                 twoBitIndex.name = this.readString();
+                twoBitIndex.seqIndex = this.seq2index.size();
                 twoBitIndex.offset = this.readInt();
                 this.seq2index.put(twoBitIndex.name, twoBitIndex);
             }
-            this.entryIterator = this.seq2index.keySet().iterator();
+            
+            final List<SAMSequenceRecord> ssrs = new ArrayList<>(this.seq2index.size());
+          
+            for( final Iterator<String> iter = this.seq2index.values().stream().sorted((A,B)->Integer.compare(A.seqIndex,B.seqIndex)).map(R->R.name).iterator();
+                iter.hasNext();) {
+                final String contig = iter.next();
+                final TwoBit  tbi= getTwoBitSeqHeader(contig);
+                final  int length = tbi.size;
+                ssrs.add(new SAMSequenceRecord(contig, length));
+                }
+            this.dict = new SAMSequenceDictionary(ssrs);
+            this.entryIterator = this.dict.getSequences().iterator();
         } catch (final IOException err) {
            throw new RuntimeIOException(err);
         }
@@ -285,19 +293,6 @@ if (doMask)
     
     @Override
     public SAMSequenceDictionary getSequenceDictionary() {
-        if(this.dict==null) {
-            List<SAMSequenceRecord> ssrs = new ArrayList<>(this.seq2index.size());
-            try {
-            for( final String contig: this.seq2index.keySet()) {
-                final TwoBit  tbi= getTwoBitSeqHeader(contig);
-                final  int length = tbi.size;
-                ssrs.add(new SAMSequenceRecord(contig, length));
-                }
-            } catch(IOException err) {
-                throw new RuntimeIOException(err);
-            }
-            this.dict = new SAMSequenceDictionary(ssrs);
-        }
         return dict;
     }
     @Override
@@ -313,22 +308,9 @@ if (doMask)
         }
     @Override
     public ReferenceSequence getSequence(final String contig) {
-        final int length;
-        if(dict!=null) {
-            final SAMSequenceRecord ssr = this.dict.getSequence(contig);
-            if(ssr==null) throw new IllegalArgumentException("unknow contig "+contig);
-            length=ssr.getSequenceLength();
-            }
-        else
-            {
-            try {
-                final TwoBit  tbi= getTwoBitSeqHeader(contig);
-                length = tbi.size;
-            } catch (IOException e) {
-                throw new RuntimeIOException(e);
-                }
-            }
-        return getSubsequenceAt( contig, 1,length);
+        final SAMSequenceRecord ssr = this.dict.getSequence(contig);
+        if(ssr==null) throw new IllegalArgumentException("unknow contig "+contig);
+        return getSubsequenceAt( contig, 1,ssr.getSequenceLength());
         }
     
     @Override
@@ -340,11 +322,12 @@ if (doMask)
         if(!this.entryIterator.hasNext()) {
             return null;
             }
-        return getSequence(this.entryIterator.next());
+        return getSequence(this.entryIterator.next().getSequenceName());
         }
+    
     @Override
     public void reset() {
-        this.entryIterator = this.seq2index.keySet().iterator();
+        this.entryIterator = this.dict.getSequences().iterator();
         }
     
     private byte valToNt(int b) {
