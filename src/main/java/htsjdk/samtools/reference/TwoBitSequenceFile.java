@@ -93,8 +93,11 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile  {
         long offset;
     }
     
-    public TwoBitSequenceFile(final Path path) {
-        try {
+    public TwoBitSequenceFile(final Path path) throws IOException {
+        this(path,true);
+    }
+    
+    public TwoBitSequenceFile(final Path path,final boolean truncateNamesAtWhitespace) throws IOException {
             this.channel = Files.newByteChannel(path);
             byteBuffer.clear();
             byteBuffer.limit(Integer.BYTES);
@@ -121,8 +124,19 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile  {
             /* int reserved ignored */ this.readInt();
             this.seq2index = new HashMap<>(seqCount);
             for(int i=0;i< seqCount;i++) {
+                String seqName = this.readString();
+                if(truncateNamesAtWhitespace) {
+                int ws=0;
+                for(ws=0;ws<seqName.length();++ws) {
+                    if(Character.isSpaceChar(seqName.charAt(ws))) break;
+                }
+                seqName=seqName.substring(0,ws);
+                }
+                if(this.seq2index.containsKey(seqName)) {
+                    throw new IOException("duplicate sequence name \""+ seqName+"\" in "+path);
+                }
                 final TwoBitIndex twoBitIndex = new TwoBitIndex();
-                twoBitIndex.name = this.readString();
+                twoBitIndex.name = seqName;
                 twoBitIndex.seqIndex = this.seq2index.size();
                 twoBitIndex.offset = this.readInt();
                 this.seq2index.put(twoBitIndex.name, twoBitIndex);
@@ -139,9 +153,7 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile  {
                 }
             this.dict = new SAMSequenceDictionary(ssrs);
             this.entryIterator = this.dict.getSequences().iterator();
-        } catch (final IOException err) {
-           throw new RuntimeIOException(err);
-        }
+        
     }
     
     private byte[] query(final Locatable loc,boolean doMask) throws IOException {

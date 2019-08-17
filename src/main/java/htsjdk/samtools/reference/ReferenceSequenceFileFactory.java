@@ -25,7 +25,6 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -35,15 +34,11 @@ import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -133,6 +128,16 @@ public class ReferenceSequenceFileFactory {
     public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
         // this should thrown an exception if the fasta file is not supported
         getFastaExtension(path);
+        
+        // 2bit sequences
+        if (path.toString().endsWith(FileExtensions.TWOBIT)) {
+            try {
+                return new TwoBitSequenceFile(path, truncateNamesAtWhitespace);
+            } catch (final IOException e) {
+                throw new SAMException("Error opening .2bit : " + path, e);
+            }
+        }
+        
         // Using faidx requires truncateNamesAtWhitespace
         if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
             try {
@@ -150,6 +155,7 @@ public class ReferenceSequenceFileFactory {
      *
      * <p>For a FASTA file to be indexed, it requires to have:
      * <ul>
+     *     <li>A '.2bit' extension</li>
      *     <li>Associated .fai index ({@link FastaSequenceIndex}).</li>
      *     <li>Associated .gzi index if it is block-compressed ({@link GZIIndex}).</li>
      * </ul>
@@ -160,9 +166,14 @@ public class ReferenceSequenceFileFactory {
     public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
         // this should thrown an exception if the fasta file is not supported
         getFastaExtension(fastaFile);
-
+        
+        if (!Files.exists(fastaFile)) return false;
+        
+        // 2bit file
+        if (fastaFile.toString().endsWith(FileExtensions.TWOBIT)) return true;
+        
         // both the FASTA file should exists and the .fai index should exist
-        if (Files.exists(fastaFile) && Files.exists(getFastaIndexFileName(fastaFile))) {
+        if (Files.exists(getFastaIndexFileName(fastaFile))) {
             // open the file for checking for block-compressed input
             try {
                 // if it is bgzip, it requires the .gzi index

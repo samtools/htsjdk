@@ -28,14 +28,11 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ReadableSeekableStreamByteChannel;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
