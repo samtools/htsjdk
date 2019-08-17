@@ -311,9 +311,10 @@ if (doMask)
     public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
         if (start > Integer.MAX_VALUE) throw new SAMException("start is too large: " +  stop);
         if (stop > Integer.MAX_VALUE) throw new SAMException("stop is too large: " +  stop);
+        if(this.dict.getSequence(contig)==null) return null;
         try {
         final byte bases[] = query(new Interval(contig,(int)start,(int)stop),false);
-        return new ReferenceSequence(contig, (int)start, bases);
+        return new ReferenceSequence(contig, (int)start -1 /* 0-based */, bases);
         } catch(IOException err) {
             throw new RuntimeIOException(err);
         }
@@ -321,7 +322,7 @@ if (doMask)
     @Override
     public ReferenceSequence getSequence(final String contig) {
         final SAMSequenceRecord ssr = this.dict.getSequence(contig);
-        if(ssr==null) throw new IllegalArgumentException("unknow contig "+contig);
+        if(ssr==null) return null;
         return getSubsequenceAt( contig, 1,ssr.getSequenceLength());
         }
     

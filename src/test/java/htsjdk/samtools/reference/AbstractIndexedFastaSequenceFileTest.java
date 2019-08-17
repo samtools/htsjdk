@@ -54,6 +54,8 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     private static final File SEQUENCE_FILE_BGZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
     private static final File SEQUENCE_FILE_GZI = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz.gzi");
     private static final File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");
+    private static final File SEQUENCE_FILE_MASKED_2BIT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.masked.2bit");
+    private static final File SEQUENCE_FILE_UNMASKED_2BIT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nomask.2bit");
 
     private final String firstBasesOfChrM = "GATCACAGGTCTATCACCCT";
     private final String extendedBasesOfChrM = "GATCACAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCAT" +
@@ -69,7 +71,10 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT.toPath()) },
-                { new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_BGZ.toPath())}};
+                { new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_BGZ.toPath())},
+                { new TwoBitSequenceFile(SEQUENCE_FILE_MASKED_2BIT.toPath())},
+                { new TwoBitSequenceFile(SEQUENCE_FILE_UNMASKED_2BIT.toPath())},
+                };
     }
 
     @DataProvider(name="comparative")
