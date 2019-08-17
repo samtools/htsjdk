@@ -1,6 +1,5 @@
 package htsjdk.samtools.reference;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -11,17 +10,19 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.RuntimeIOException;
 
-public class TwoBitSequenceFile implements Closeable {
+public class TwoBitSequenceFile implements ReferenceSequenceFile  {
     /** standard suffix of 2bit files */
     public static final String SUFFIX=".2bit";
     // https://github.com/rpique/UCSC-Browser-code-add-ons/blob/ba859c047e46d8074b93700d34cb601fa9ba4288/src/lib/dnautil.c
@@ -52,10 +53,12 @@ public class TwoBitSequenceFile implements Closeable {
    private final static int twoBitSwapSig = 0x4327411A;
     
     private final SeekableByteChannel channel;
-    private final ByteBuffer byteBuffer = ByteBuffer.allocate(2*Long.BYTES);
+    private final ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.BYTES);
     private final ByteOrder byteOrder;
     private Map<String,TwoBitIndex> seq2index;
     private SAMSequenceDictionary dict = null;
+    /** iterator for {@link #nextSequence()} */
+    private Iterator<String> entryIterator = null;
     /* Cache information about last sequence accessed, including
      * nBlock and mask block.  This doesn't include the data.
      * This speeds fragment reads.  */
@@ -70,14 +73,18 @@ public class TwoBitSequenceFile implements Closeable {
     
     private static class TwoBit {
         String name;            /* Name of sequence. */
+        @SuppressWarnings("unused")
         byte[] data;        /* DNA at two bits per base. */
         int size;        /* Size of this sequence. */
-        int nBlockCount;     /* Count of blocks of Ns. */
-        int[] nStarts;        /* Starts of blocks of Ns. */
-        int[] nSizes;     /* Sizes of blocks of Ns. */
-        int maskBlockCount;  /* Count of masked blocks. */
-        int[] maskStarts;     /* Starts of masked regions. */
-        int[] maskSizes;      /* Sizes of masked regions. */
+        Block nBlock;
+        //int nBlockCount;     /* Count of blocks of Ns. */
+        //int[] nStarts;        /* Starts of blocks of Ns. */
+        //int[] nSizes;     /* Sizes of blocks of Ns. */
+        Block maskBlock;
+        //int maskBlockCount;  /* Count of masked blocks. */
+        //int[] maskStarts;     /* Starts of masked regions. */
+        //int[] maskSizes;      /* Sizes of masked regions. */
+        @SuppressWarnings("unused")
         int reserved;        /* Reserved for future expansion. */
     }
     
@@ -94,7 +101,7 @@ public class TwoBitSequenceFile implements Closeable {
         try {
             this.channel = Files.newByteChannel(path);
             byteBuffer.clear();
-            byteBuffer.limit(Integer.BYTES*4);
+            byteBuffer.limit(Integer.BYTES);
             channel.read(byteBuffer);
             byteBuffer.flip();
             final int sig = byteBuffer.getInt();
@@ -110,28 +117,26 @@ public class TwoBitSequenceFile implements Closeable {
                 throw new IOException("Cannot read header from "+path);
                 }
             this.byteBuffer.order(this.byteOrder);
-            final int version = byteBuffer.getInt();
+            final int version = this.readInt();
             if(version!=0) {
                 throw new IOException("Can only handle version 0 or version 1 of this file. This is version "+version);
             }
-            int seqCount = byteBuffer.getInt();
-            System.err.println("n="+seqCount);
-            /* int reserved ignored */ byteBuffer.getInt();
+            final int seqCount = this.readInt();
+            /* int reserved ignored */ this.readInt();
             this.seq2index = new HashMap<>(seqCount);
             for(int i=0;i< seqCount;i++) {
                 final TwoBitIndex twoBitIndex = new TwoBitIndex();
-                twoBitIndex.name = readString();
-                twoBitIndex.offset = readInt();
+                twoBitIndex.name = this.readString();
+                twoBitIndex.offset = this.readInt();
                 this.seq2index.put(twoBitIndex.name, twoBitIndex);
             }
-            
-            
+            this.entryIterator = this.seq2index.keySet().iterator();
         } catch (final IOException err) {
            throw new RuntimeIOException(err);
         }
     }
     
-    public byte[] query(final Locatable loc,boolean doMask) throws IOException {
+    private byte[] query(final Locatable loc,boolean doMask) throws IOException {
         int  remainder, midStart, midEnd;
         final TwoBitIndex tbi = this.seq2index.get(loc.getContig());
         if(tbi==null) {
@@ -181,11 +186,9 @@ if (packByteCount == 1)
     }
 else
     {
-    System.err.println("ICI-A");
     /* Handle partial first packed byte. */
     midStart = fragStart;
     remainder = (fragStart&3);
-    System.err.println("ICI-C remind"+remainder);
     if (remainder > 0)
         {
         int partial = Byte.toUnsignedInt(packed[packed_idx++]);
@@ -197,7 +200,6 @@ else
             }
         midStart += partCount;
         dna_idx += partCount;
-        System.err.println("ICI-B"+dna_idx);
         }
 
     /* Handle middle bytes. */
@@ -206,7 +208,6 @@ else
     System.err.println("ICI-D "+remainder+" "+dna_idx);
     for (int i=midStart; i<midEnd; i += 4)
         {
-        System.err.println("i="+i+" "+dna_idx);
         int b = Byte.toUnsignedInt(packed[packed_idx++]);
         dna[dna_idx+3] = valToNt(b&3);
         b >>= 2;
@@ -230,13 +231,13 @@ else
         }
     }
 
-if (twoBit.nBlockCount > 0)
+if (twoBit.nBlock.count > 0)
     {
-    int startIx = findGreatestLowerBound(twoBit.nBlockCount, twoBit.nStarts, fragStart);
-    for (int i=startIx; i<twoBit.nBlockCount; ++i)
+    int startIx = findGreatestLowerBound(twoBit.nBlock.count, twoBit.nBlock.starts, fragStart);
+    for (int i=startIx; i<twoBit.nBlock.count; ++i)
         {
-        int s = twoBit.nStarts[i];
-        int e = s + twoBit.nSizes[i];
+        int s = twoBit.nBlock.starts[i];
+        int e = s + twoBit.nBlock.sizes[i];
         if (s >= fragEnd)
             break;
         if (s < fragStart)
@@ -255,14 +256,14 @@ if (twoBit.nBlockCount > 0)
 if (doMask)
         {
         toUpperN(dna);
-        if (twoBit.maskBlockCount > 0)
+        if (twoBit.maskBlock.count > 0)
             {
-            int startIx = findGreatestLowerBound(twoBit.maskBlockCount, twoBit.maskStarts,
+            int startIx = findGreatestLowerBound(twoBit.maskBlock.count, twoBit.maskBlock.starts,
                 fragStart);
-            for (int i=startIx; i<twoBit.maskBlockCount; ++i)
+            for (int i=startIx; i<twoBit.maskBlock.count; ++i)
                 {
-                int s = twoBit.maskStarts[i];
-                int e = s + twoBit.maskSizes[i];
+                int s = twoBit.maskBlock.starts[i];
+                int e = s + twoBit.maskBlock.sizes[i];
                 if (s >= fragEnd)
                 break;
                 if (s < fragStart)
@@ -282,14 +283,15 @@ if (doMask)
     return dna;
     }
     
-    public SAMSequenceDictionary getDictionary() {
+    @Override
+    public SAMSequenceDictionary getSequenceDictionary() {
         if(this.dict==null) {
             List<SAMSequenceRecord> ssrs = new ArrayList<>(this.seq2index.size());
             try {
-            for( final TwoBitIndex twoBitIndex: this.seq2index.values()) {
-                this.channel.position(twoBitIndex.offset);
-                final  int length = readInt();
-                ssrs.add(new SAMSequenceRecord(twoBitIndex.name, length));
+            for( final String contig: this.seq2index.keySet()) {
+                final TwoBit  tbi= getTwoBitSeqHeader(contig);
+                final  int length = tbi.size;
+                ssrs.add(new SAMSequenceRecord(contig, length));
                 }
             } catch(IOException err) {
                 throw new RuntimeIOException(err);
@@ -298,6 +300,52 @@ if (doMask)
         }
         return dict;
     }
+    @Override
+    public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
+        if (start > Integer.MAX_VALUE) throw new SAMException("start is too large: " +  stop);
+        if (stop > Integer.MAX_VALUE) throw new SAMException("stop is too large: " +  stop);
+        try {
+        final byte bases[] = query(new Interval(contig,(int)start,(int)stop),false);
+        return new ReferenceSequence(contig, (int)start, bases);
+        } catch(IOException err) {
+            throw new RuntimeIOException(err);
+        }
+        }
+    @Override
+    public ReferenceSequence getSequence(final String contig) {
+        final int length;
+        if(dict!=null) {
+            final SAMSequenceRecord ssr = this.dict.getSequence(contig);
+            if(ssr==null) throw new IllegalArgumentException("unknow contig "+contig);
+            length=ssr.getSequenceLength();
+            }
+        else
+            {
+            try {
+                final TwoBit  tbi= getTwoBitSeqHeader(contig);
+                length = tbi.size;
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+                }
+            }
+        return getSubsequenceAt( contig, 1,length);
+        }
+    
+    @Override
+    public boolean isIndexed() {
+        return true;
+        }
+    @Override
+    public ReferenceSequence nextSequence() {
+        if(!this.entryIterator.hasNext()) {
+            return null;
+            }
+        return getSequence(this.entryIterator.next());
+        }
+    @Override
+    public void reset() {
+        this.entryIterator = this.seq2index.keySet().iterator();
+        }
     
     private byte valToNt(int b) {
         /*
@@ -388,19 +436,11 @@ private TwoBit readTwoBitSeqHeader(final String name) throws IOException
     twoBit.size = readInt();
 
     /* Read in blocks of N. */
-    Block b= readBlockCoords();
-    //tbf, isSwapped, &(twoBit->nBlockCount),
-    //        &(twoBit->nStarts), &(twoBit->nSizes));
-    twoBit.nBlockCount = b.count;
-    twoBit.nStarts = b.starts;
-    twoBit.nSizes = b.sizes;
+    twoBit.nBlock = readBlockCoords();
+   
     
     /* Read in masked blocks. */
-    b = readBlockCoords();
-    twoBit.maskBlockCount = b.count;
-    twoBit.maskStarts = b.starts;
-    twoBit.maskSizes = b.sizes;
-    
+    twoBit.maskBlock = readBlockCoords();
 
     /* Reserved word. */
     twoBit.reserved = readInt();
@@ -412,9 +452,6 @@ private void toUpperN(byte array[])  {
     
 }
 
-private void toLowerN(byte array[])  {
-    
-}
 
 
 private Block readBlockCoords() throws IOException
@@ -486,6 +523,7 @@ public static void main(String[] args) {
         TwoBitSequenceFile r= new TwoBitSequenceFile(Paths.get("/home/lindenb/src/jvarkit-git/src/test/resources/rotavirus_rf.2bit"));
         byte array[]=r.query(new Interval("RF01",1,20),false);
         System.err.println(new String(array));
+        System.err.println(r.getSequence("RF11").getBaseString());
         r.close();
         System.err.println("done");
     } catch(Exception err) {
