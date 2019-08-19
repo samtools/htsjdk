@@ -130,6 +130,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         return (value == null) ? null : Topology.valueOf(value);
     }
     public void setTopology(final Topology value) { setAttribute(TOPOLOGY_TAG, (value == null) ? null : value.name()); }
+    public boolean isCircular() { return getTopology() == Topology.circular; }
 
     /**
      * @return Index of this record in the sequence dictionary it lives in. 

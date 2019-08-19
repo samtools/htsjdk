@@ -98,9 +98,11 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
     public void testSetAndCheckTopology() {
         final SAMSequenceRecord record = new SAMSequenceRecord("Test", 1000);
         Assert.assertNull(record.getTopology());
+        Assert.assertFalse(record.isCircular());
         final SAMSequenceRecord.Topology topology = SAMSequenceRecord.Topology.circular;
         record.setTopology(topology);
         Assert.assertEquals(record.getTopology(), topology);
+        Assert.assertTrue(record.isCircular());
     }
 
     @DataProvider
