@@ -158,7 +158,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * abs(insertSize) must be <= this
      */
-    public static final int MAX_INSERT_SIZE = 1<<29;
+    public static final int MAX_INSERT_SIZE = Integer.MAX_VALUE;
 
     /**
      * Tags that are known to need the reverse complement if the read is reverse complemented.
