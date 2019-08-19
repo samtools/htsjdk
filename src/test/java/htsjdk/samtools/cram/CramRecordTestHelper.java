@@ -99,7 +99,10 @@ public abstract class CramRecordTestHelper extends HtsjdkTest {
         final SAMFileHeader fileHeader = new SAMFileHeader();
         final SAMRecord record = new SAMRecord(fileHeader);
 
-        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(null, fileHeader, CramVersions.CRAM_v3);
+        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(
+                new CRAMEncodingStrategy(),
+                null,
+                fileHeader, CramVersions.CRAM_v3);
         return sam2CramRecordFactory.createCramRecord(record);
     }
 }

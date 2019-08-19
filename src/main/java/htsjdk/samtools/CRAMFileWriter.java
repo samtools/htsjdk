@@ -15,20 +15,15 @@
  ******************************************************************************/
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.lossy.PreservationPolicy;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.Log;
 
 import java.io.OutputStream;
-import java.util.List;
-import java.util.Set;
 
-@SuppressWarnings("UnusedDeclaration")
 public class CRAMFileWriter extends SAMFileWriterImpl {
     private CRAMContainerStreamWriter cramContainerStream;
-    private final SAMFileHeader samFileHeader;
     private final String fileName;
 
     private static final Log log = Log.getInstance(CRAMFileWriter.class);
@@ -122,7 +117,6 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         if (samFileHeader == null) {
             throw new IllegalArgumentException("A valid SAMFileHeader is required for CRAM writers");
         }
-        this.samFileHeader = samFileHeader;
         this.fileName = fileName;
         setSortOrder(samFileHeader.getSortOrder(), presorted);
         cramContainerStream = new CRAMContainerStreamWriter(
@@ -164,39 +158,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         return fileName;
     }
 
-    public boolean isPreserveReadNames() {
-        return cramContainerStream.isPreserveReadNames();
-    }
-
-    public void setPreserveReadNames(final boolean preserveReadNames) {
-        cramContainerStream.setPreserveReadNames(preserveReadNames);
-    }
-
-    public List<PreservationPolicy> getPreservationPolicies() {
-        return cramContainerStream.getPreservationPolicies();
-    }
-
-    public boolean isCaptureAllTags() {
-        return cramContainerStream.isCaptureAllTags();
-    }
-
     public void setCaptureAllTags(final boolean captureAllTags) {
         cramContainerStream.setCaptureAllTags(captureAllTags);
-    }
-
-    public Set<String> getCaptureTags() {
-        return cramContainerStream.getCaptureTags();
-    }
-
-    public void setCaptureTags(final Set<String> captureTags) {
-        cramContainerStream.setCaptureTags(captureTags);
-    }
-
-    public Set<String> getIgnoreTags() {
-        return cramContainerStream.getIgnoreTags();
-    }
-
-    public void setIgnoreTags(final Set<String> ignoreTags) {
-        cramContainerStream.setIgnoreTags(ignoreTags);
     }
 }

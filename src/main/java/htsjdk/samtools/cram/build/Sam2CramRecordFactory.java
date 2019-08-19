@@ -22,6 +22,7 @@ import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.util.Log;
@@ -30,30 +31,36 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.util.*;
 
 public class Sam2CramRecordFactory {
+    private static final Log log = Log.getInstance(Sam2CramRecordFactory.class);
+
+    private final CRAMEncodingStrategy encodingStrategy;
+
     private byte[] refBases;
     private final Version version;
 
     final private SAMFileHeader header;
 
-    private static final Log log = Log.getInstance(Sam2CramRecordFactory.class);
 
-    private final Map<String, Integer> readGroupMap = new HashMap<String, Integer>();
+    private final Map<String, Integer> readGroupMap = new HashMap<>();
 
     public boolean captureAllTags = false;
-    public boolean preserveReadNames = false;
-    public final Set<String> captureTags = new TreeSet<String>();
-    public final Set<String> ignoreTags = new TreeSet<String>();
-
+    public final Set<String> captureTags = new TreeSet<>();
+    public final Set<String> ignoreTags = new TreeSet<>();
     {
         ignoreTags.add(SAMTag.RG.name());
     }
 
-    private final List<ReadTag> readTagList = new ArrayList<ReadTag>();
+    private final List<ReadTag> readTagList = new ArrayList<>();
 
     private long baseCount = 0;
     private long featureCount = 0;
 
-    public Sam2CramRecordFactory(final byte[] refBases, final SAMFileHeader samFileHeader, final Version version) {
+    public Sam2CramRecordFactory(
+            final CRAMEncodingStrategy encodingStrategy,
+            final byte[] refBases,
+            final SAMFileHeader samFileHeader,
+            final Version version) {
+        this.encodingStrategy = encodingStrategy;
         this.refBases = refBases;
         this.version = version;
         this.header = samFileHeader;
@@ -152,7 +159,9 @@ public class Sam2CramRecordFactory {
 
         cramRecord.setVendorFiltered(record.getReadFailsVendorQualityCheckFlag());
 
-        if (preserveReadNames) cramRecord.readName = record.getReadName();
+        if (encodingStrategy.getPreserveReadNames()) {
+            cramRecord.readName = record.getReadName();
+        }
 
         return cramRecord;
     }
