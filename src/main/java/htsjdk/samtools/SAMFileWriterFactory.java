@@ -684,7 +684,6 @@ public class SAMFileWriterFactory implements Cloneable {
 
     // Set the default CRAM writer preservation parameters
     private void setCRAMWriterDefaults(final CRAMFileWriter writer) {
-        writer.setPreserveReadNames(true);
         writer.setCaptureAllTags(true);
     }
 

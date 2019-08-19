@@ -45,6 +45,7 @@ public class CompressionHeader {
     private static final String SM_substitutionMatrix = "SM";
 
     //TODO: add public methods for readNamesIncluded and referenceRequired
+    //TODO: CompressionHeader can just get this value from the EncodingStrategy
     public boolean readNamesIncluded = true;
     private boolean APDelta = true;
     private boolean referenceRequired = true;

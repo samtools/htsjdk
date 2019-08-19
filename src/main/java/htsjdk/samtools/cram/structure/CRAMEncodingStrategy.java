@@ -37,6 +37,14 @@ public class CRAMEncodingStrategy {
         // use defaults;
     }
 
+    public boolean getPreserveReadNames() {
+        return preserveReadNames;
+    }
+
+    public void setPreserveReadNames(boolean preserveReadNames) {
+        this.preserveReadNames = preserveReadNames;
+    }
+
     public void setEncodingMap(final Path encodingMap) {
         this.customCompressionMapPath = encodingMap.toAbsolutePath().toString();
     }

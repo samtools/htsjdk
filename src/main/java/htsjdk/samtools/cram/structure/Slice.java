@@ -37,13 +37,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * CRAM slice is a logical union of blocks into for example alignment slices.
+ * A CRAM slice is a logical union of blocks into for example alignment slices.
  */
 public class Slice {
+    private static final Log log = Log.getInstance(Slice.class);
     public static final int NO_ALIGNMENT_START = -1;
     public static final int NO_ALIGNMENT_SPAN = 0;
     public static final int NO_ALIGNMENT_END = SAMRecord.NO_ALIGNMENT_START; // 0
-    private static final Log log = Log.getInstance(Slice.class);
 
     private final ReferenceContext referenceContext;
 

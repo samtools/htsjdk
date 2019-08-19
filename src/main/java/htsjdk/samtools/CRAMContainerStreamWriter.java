@@ -7,11 +7,8 @@ import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.lossy.PreservationPolicy;
-import htsjdk.samtools.cram.lossy.QualityScorePreservation;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.ref.ReferenceTracks;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -49,8 +46,6 @@ public class CRAMContainerStreamWriter {
 
     private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
 
-    private boolean preserveReadNames = true;
-    private QualityScorePreservation preservation = null;
     private boolean captureAllTags = true;
     private Set<String> captureTags = new TreeSet<>();
     private Set<String> ignoreTags = new TreeSet<>();
@@ -172,44 +167,12 @@ public class CRAMContainerStreamWriter {
         }
     }
 
-    public boolean isPreserveReadNames() {
-        return preserveReadNames;
-    }
-
-    public void setPreserveReadNames(final boolean preserveReadNames) {
-        this.preserveReadNames = preserveReadNames;
-    }
-
-    public List<PreservationPolicy> getPreservationPolicies() {
-        if (preservation == null) {
-            // set up greedy policy by default:
-            preservation = new QualityScorePreservation("*8");
-        }
-        return preservation.getPreservationPolicies();
-    }
-
     public boolean isCaptureAllTags() {
         return captureAllTags;
     }
 
     public void setCaptureAllTags(final boolean captureAllTags) {
         this.captureAllTags = captureAllTags;
-    }
-
-    public Set<String> getCaptureTags() {
-        return captureTags;
-    }
-
-    public void setCaptureTags(final Set<String> captureTags) {
-        this.captureTags = captureTags;
-    }
-
-    public Set<String> getIgnoreTags() {
-        return ignoreTags;
-    }
-
-    public void setIgnoreTags(final Set<String> ignoreTags) {
-        this.ignoreTags = ignoreTags;
     }
 
     /**
@@ -258,44 +221,10 @@ public class CRAMContainerStreamWriter {
         }
     }
 
-    private static void updateTracks(final List<SAMRecord> samRecords, final ReferenceTracks tracks) {
-        for (final SAMRecord samRecord : samRecords) {
-            if (samRecord.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
-                int refPos = samRecord.getAlignmentStart();
-                int readPos = 0;
-                for (final CigarElement cigarElement : samRecord.getCigar().getCigarElements()) {
-                    if (cigarElement.getOperator().consumesReferenceBases()) {
-                        for (int elementIndex = 0; elementIndex < cigarElement.getLength(); elementIndex++)
-                            tracks.addCoverage(refPos + elementIndex, 1);
-                    }
-                    switch (cigarElement.getOperator()) {
-                        case M:
-                        case X:
-                        case EQ:
-                            for (int pos = readPos; pos < cigarElement.getLength(); pos++) {
-                                final byte readBase = samRecord.getReadBases()[readPos + pos];
-                                final byte refBase = tracks.baseAt(refPos + pos);
-                                if (readBase != refBase) tracks.addMismatches(refPos + pos, 1);
-                            }
-                            break;
-
-                        default:
-                            break;
-                    }
-
-                    readPos += cigarElement.getOperator().consumesReadBases() ? cigarElement.getLength() : 0;
-                    refPos += cigarElement.getOperator().consumesReferenceBases() ? cigarElement.getLength() : 0;
-                }
-            }
-        }
-    }
-
     /**
      * Complete the current container and flush it to the output stream.
      *
      * @throws IllegalArgumentException
-     * @throws IllegalAccessException
-     * @throws IOException
      */
     protected void flushContainer() throws IllegalArgumentException {
 
@@ -303,9 +232,6 @@ public class CRAMContainerStreamWriter {
         String refSeqName = null;
         switch (refSeqIndex) {
             case ReferenceContext.MULTIPLE_REFERENCE_ID:
-                if (preservation != null && preservation.areReferenceTracksRequired()) {
-                    throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
-                }
                 referenceBases = new byte[0];
                 break;
             case ReferenceContext.UNMAPPED_UNPLACED_ID:
@@ -333,22 +259,12 @@ public class CRAMContainerStreamWriter {
             stop = Math.max(r.getAlignmentEnd(), stop);
         }
 
-        ReferenceTracks tracks = null;
-        if (preservation != null && preservation.areReferenceTracksRequired()) {
-            tracks = new ReferenceTracks(refSeqIndex, refSeqName, referenceBases);
-
-            tracks.ensureRange(start, stop - start + 1);
-            updateTracks(samRecords, tracks);
-        }
-
         final List<CramCompressionRecord> cramRecords = new ArrayList<>(samRecords.size());
 
-        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(referenceBases, samFileHeader, cramVersion);
-        sam2CramRecordFactory.preserveReadNames = preserveReadNames;
+        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(encodingStrategy, referenceBases, samFileHeader, cramVersion);
         sam2CramRecordFactory.captureAllTags = captureAllTags;
         sam2CramRecordFactory.captureTags.addAll(captureTags);
         sam2CramRecordFactory.ignoreTags.addAll(ignoreTags);
-        containerFactory.setPreserveReadNames(preserveReadNames);
 
         int index = 0;
         for (final SAMRecord samRecord : samRecords) {
@@ -361,9 +277,10 @@ public class CRAMContainerStreamWriter {
             cramRecord.alignmentStart = samRecord.getAlignmentStart();
             cramRecords.add(cramRecord);
 
-            if (preservation != null) preservation.addQualityScores(samRecord, cramRecord, tracks);
-            else if (cramRecord.qualityScores != SAMRecord.NULL_QUALS) cramRecord.setForcePreserveQualityScores(true);
+            if (cramRecord.qualityScores != SAMRecord.NULL_QUALS) {
+                cramRecord.setForcePreserveQualityScores(true);
             }
+        }
 
 
         if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount())

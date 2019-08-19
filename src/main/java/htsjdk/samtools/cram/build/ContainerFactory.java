@@ -24,9 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ContainerFactory {
+    private final CRAMEncodingStrategy encodingStrategy;
     private final SAMFileHeader samFileHeader;
-    final CRAMEncodingStrategy encodingStrategy;
-    private boolean preserveReadNames = true;
     private long globalRecordCounter = 0;
 
     public ContainerFactory(final SAMFileHeader samFileHeader, final CRAMEncodingStrategy encodingStrategy) {
@@ -50,8 +49,8 @@ public class ContainerFactory {
 
         // TODO: this creates a new CompressionHeaderFactory for each container!
         final CompressionHeader compressionHeader = new CompressionHeaderFactory(encodingStrategy).build(records, coordinateSorted);
-
-        compressionHeader.readNamesIncluded = preserveReadNames;
+        //TODO: CompressionHeader can just get this value from the EncodingStrategy
+        compressionHeader.readNamesIncluded = encodingStrategy.getPreserveReadNames();
 
         final List<Slice> slices = new ArrayList<>();
 
@@ -78,11 +77,4 @@ public class ContainerFactory {
         return container;
     }
 
-    public boolean isPreserveReadNames() {
-        return preserveReadNames;
-    }
-
-    public void setPreserveReadNames(final boolean preserveReadNames) {
-        this.preserveReadNames = preserveReadNames;
-    }
 }
