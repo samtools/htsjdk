@@ -278,17 +278,28 @@ public class CRAMComplianceTest extends HtsjdkTest {
         Assert.assertEquals(i, originalCRAMRecords.size());
     }
 
-    @Test
-    public void testBAMThroughCRAMRoundTrip() throws IOException, NoSuchAlgorithmException {
+    @DataProvider(name="roundTripTest")
+    public Object[][] roundTripTestData() {
+        return new Object[][] {
+                // This file is a reduced version of the CEUTrio.HiSeq.WGS.b37.NA12878.20.21.bam and human_g1k_v37.20.21.fasta
+                // files used in GATK4 tests. The first 8000 records from chr20 were extracted; from those around 80 placed but
+                // unmapped reads that contained cigar elements were removed, along with one read who's mate was on chr21.
+                // Finally all read positions were remapped to the subsetted reference file, which contains only the ~9000 bases
+                // used by the reduced read set.
+                { "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam", "human_g1k_v37.20.subset.fasta" },
+
+                // Test that we round-trip read group ids, since these are treated specially and not round-tripped as
+                // through the general tag facility, but instead have a dedicated data series and read group.
+                { "c1WithRG.bam", "c1.fa"}
+        };
+    }
+
+    @Test(dataProvider = "roundTripTest")
+    public void testBAMThroughCRAMRoundTrip(final String testFileName, final String referenceFileName) throws IOException {
         final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
-        // These files are reduced versions of the CEUTrio.HiSeq.WGS.b37.NA12878.20.21.bam and human_g1k_v37.20.21.fasta
-        // files used in GATK4 tests. The first 8000 records from chr20 were extracted; from those around 80 placed but
-        // unmapped reads that contained cigar elements were removed, along with one read who's mate was on chr21.
-        // Finally all read positions were remapped to the subsetted reference file, which contains only the ~9000 bases
-        // used by the reduced read set.
-        final File originalBAMInputFile = new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam");
-        final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta");
+        final File originalBAMInputFile = new File(TEST_DATA_DIR, testFileName);
+        final File referenceFile = new File(TEST_DATA_DIR, referenceFileName);
 
         List<SAMRecord> originalBAMRecords = getSAMRecordsFromFile(originalBAMInputFile, referenceFile);
 

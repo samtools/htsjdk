@@ -23,7 +23,8 @@ import htsjdk.samtools.util.Log;
 import java.io.OutputStream;
 
 public class CRAMFileWriter extends SAMFileWriterImpl {
-    private CRAMContainerStreamWriter cramContainerStream;
+    private final CRAMContainerStreamWriter cramContainerStream;
+    private final SAMFileHeader samFileHeader;
     private final String fileName;
 
     private static final Log log = Log.getInstance(CRAMFileWriter.class);
@@ -117,6 +118,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         if (samFileHeader == null) {
             throw new IllegalArgumentException("A valid SAMFileHeader is required for CRAM writers");
         }
+        this.samFileHeader = samFileHeader;
         this.fileName = fileName;
         setSortOrder(samFileHeader.getSortOrder(), presorted);
         cramContainerStream = new CRAMContainerStreamWriter(
@@ -145,7 +147,12 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void writeHeader(final SAMFileHeader header) {
-        cramContainerStream.writeHeader(header);
+        // the header must have been previously provided the container stream writer, so this
+        // header is unused
+        if (!header.equals(samFileHeader)) {
+            throw new IllegalArgumentException("Attempt to write a differetn file header than was previously provided");
+        }
+        cramContainerStream.writeHeader();
     }
 
     @Override
@@ -158,7 +165,4 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         return fileName;
     }
 
-    public void setCaptureAllTags(final boolean captureAllTags) {
-        cramContainerStream.setCaptureAllTags(captureAllTags);
-    }
 }

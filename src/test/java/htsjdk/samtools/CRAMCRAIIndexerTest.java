@@ -67,7 +67,7 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
                     //TODO: this fixes https://github.com/samtools/htsjdk/issues/1339 where this was creating BAI not CRAI
                     new CRAMCRAIIndexer(indexBAOS, samFileHeader),
                     "test");
-            containerWriter.writeHeader(samFileHeader);
+            containerWriter.writeHeader();
 
             containerWriter.writeAlignment(createSAMRecord(samFileHeader, 0, 0, 1));
             containerWriter.writeAlignment(createSAMRecord(samFileHeader, 1, 1, 2));

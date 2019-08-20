@@ -70,7 +70,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         final ReferenceSource refSource = createReferenceSource();
 
         final CRAMContainerStreamWriter containerStream = new CRAMContainerStreamWriter(outStream, indexStream, refSource, header, "test");
-        containerStream.writeHeader(header);
+        containerStream.writeHeader();
 
         writeThenReadRecords(samRecords, outStream, refSource, containerStream);
     }
@@ -79,7 +79,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         final ReferenceSource refSource = createReferenceSource();
 
         final CRAMContainerStreamWriter containerStream = new CRAMContainerStreamWriter(outStream, refSource, header, "test", indexer);
-        containerStream.writeHeader(header);
+        containerStream.writeHeader();
 
         writeThenReadRecords(samRecords, outStream, refSource, containerStream);
     }
@@ -137,7 +137,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         // time with a CRAM and SAM header at the front and an EOF container at the end
         final ByteArrayOutputStream aggregateStream = new ByteArrayOutputStream();
         final CRAMContainerStreamWriter aggregateContainerStreamWriter = new CRAMContainerStreamWriter(aggregateStream, null, refSource, header, "test");
-        aggregateContainerStreamWriter .writeHeader(header); // write out one CRAM and SAM header
+        aggregateContainerStreamWriter.writeHeader(); // write out one CRAM and SAM header
         for (int j = 0; j < nPartitions; j++) {
             byteStreamArray.get(j).writeTo(aggregateStream);
         }

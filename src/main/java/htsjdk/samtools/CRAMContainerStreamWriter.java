@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.cram.build.ContainerFactory;
-import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
@@ -12,21 +11,19 @@ import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  * Class for writing SAMRecords into a series of CRAM containers on an output stream.
  */
 public class CRAMContainerStreamWriter {
+    private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
     private static final Version cramVersion = CramVersions.DEFAULT_CRAM_VERSION;
 
     private final CRAMEncodingStrategy encodingStrategy;
@@ -35,7 +32,7 @@ public class CRAMContainerStreamWriter {
     private static int MIN_SINGLE_REF_RECORDS = 1000;
     private static final int REF_SEQ_INDEX_NOT_INITIALIZED = -3;
 
-    private final SAMFileHeader samFileHeader;
+    private SAMFileHeader samFileHeader;
     private final String cramID;
     private final OutputStream outputStream;
     private CRAMReferenceSource source;
@@ -43,12 +40,6 @@ public class CRAMContainerStreamWriter {
     private final List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
     private ContainerFactory containerFactory;
     private int refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
-
-    private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
-
-    private boolean captureAllTags = true;
-    private Set<String> captureTags = new TreeSet<>();
-    private Set<String> ignoreTags = new TreeSet<>();
 
     private final CRAMIndexer indexer;
     private long offset;
@@ -134,12 +125,9 @@ public class CRAMContainerStreamWriter {
     }
 
     /**
-     * Write a CRAM file header and SAM header to the stream.
-
-     * @param header SAMFileHeader to write
+     * Write a CRAM file header and the previously provided SAM header to the stream.
      */
-    public void writeHeader(final SAMFileHeader header) {
-        // TODO: header must be written exactly once per writer life cycle.
+    public void writeHeader() {
         final CramHeader cramHeader = new CramHeader(cramVersion, cramID, samFileHeader);
         offset = CramIO.writeCramHeader(cramHeader, outputStream);
     }
@@ -167,16 +155,8 @@ public class CRAMContainerStreamWriter {
         }
     }
 
-    public boolean isCaptureAllTags() {
-        return captureAllTags;
-    }
-
-    public void setCaptureAllTags(final boolean captureAllTags) {
-        this.captureAllTags = captureAllTags;
-    }
-
     /**
-     * Decide if the current container should be completed and flushed. The decision is based on a) number of records and b) if the
+     * Decide if the current container should be completed and flushed based on number of records and whether the
      * reference sequence id has changed.
      *
      * @param nextRecord the record to be added into the current or next container
@@ -262,9 +242,6 @@ public class CRAMContainerStreamWriter {
         final List<CramCompressionRecord> cramRecords = new ArrayList<>(samRecords.size());
 
         final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(encodingStrategy, referenceBases, samFileHeader, cramVersion);
-        sam2CramRecordFactory.captureAllTags = captureAllTags;
-        sam2CramRecordFactory.captureTags.addAll(captureTags);
-        sam2CramRecordFactory.ignoreTags.addAll(ignoreTags);
 
         int index = 0;
         for (final SAMRecord samRecord : samRecords) {
@@ -283,118 +260,90 @@ public class CRAMContainerStreamWriter {
         }
 
 
-        if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount())
+        if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount()) {
             log.warn("Abnormally high number of mismatches, possibly wrong reference.");
+        }
 
-        {
-            if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
-                // mating:
-                final Map<String, CramCompressionRecord> primaryMateMap = new TreeMap<String, CramCompressionRecord>();
-                final Map<String, CramCompressionRecord> secondaryMateMap = new TreeMap<String, CramCompressionRecord>();
-                for (final CramCompressionRecord r : cramRecords) {
-                    if (!r.isMultiFragment()) {
-                        r.setDetached(true);
+        if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
+            // mating:
+            final Map<String, CramCompressionRecord> primaryMateMap = new TreeMap<String, CramCompressionRecord>();
+            final Map<String, CramCompressionRecord> secondaryMateMap = new TreeMap<String, CramCompressionRecord>();
+            for (final CramCompressionRecord r : cramRecords) {
+                if (!r.isMultiFragment()) {
+                    r.setDetached(true);
 
-                        r.setHasMateDownStream(false);
-                        r.recordsToNextFragment = -1;
-                        r.next = null;
-                        r.previous = null;
+                    r.setHasMateDownStream(false);
+                    r.recordsToNextFragment = -1;
+                    r.next = null;
+                    r.previous = null;
+                } else {
+                    final String name = r.readName;
+                    final Map<String, CramCompressionRecord> mateMap = r.isSecondaryAlignment() ? secondaryMateMap : primaryMateMap;
+                    final CramCompressionRecord mate = mateMap.get(name);
+                    if (mate == null) {
+                        mateMap.put(name, r);
                     } else {
-                        final String name = r.readName;
-                        final Map<String, CramCompressionRecord> mateMap = r.isSecondaryAlignment() ? secondaryMateMap : primaryMateMap;
-                        final CramCompressionRecord mate = mateMap.get(name);
-                        if (mate == null) {
-                            mateMap.put(name, r);
-                        } else {
-                            CramCompressionRecord prev = mate;
-                            while (prev.next != null) prev = prev.next;
-                            prev.recordsToNextFragment = r.index - prev.index - 1;
-                            prev.next = r;
-                            r.previous = prev;
-                            r.previous.setHasMateDownStream(true);
-                            r.setHasMateDownStream(false);
-                            r.setDetached(false);
-                            r.previous.setDetached(false);
+                        CramCompressionRecord prev = mate;
+                        while (prev.next != null) prev = prev.next;
+                        prev.recordsToNextFragment = r.index - prev.index - 1;
+                        prev.next = r;
+                        r.previous = prev;
+                        r.previous.setHasMateDownStream(true);
+                        r.setHasMateDownStream(false);
+                        r.setDetached(false);
+                        r.previous.setDetached(false);
+                    }
+                }
+            }
+
+            // mark unpredictable reads as detached:
+            for (final CramCompressionRecord cramRecord : cramRecords) {
+                if (cramRecord.next == null || cramRecord.previous != null) continue;
+                CramCompressionRecord last = cramRecord;
+                while (last.next != null) last = last.next;
+
+                if (cramRecord.isFirstSegment() && last.isLastSegment()) {
+                    final int templateLength = CramNormalizer.computeInsertSize(cramRecord, last);
+
+                    if (cramRecord.templateSize == templateLength) {
+                        last = cramRecord.next;
+                        while (last.next != null) {
+                            if (last.templateSize != -templateLength)
+                                break;
+
+                            last = last.next;
                         }
-                    }
-                }
-
-                // mark unpredictable reads as detached:
-                for (final CramCompressionRecord cramRecord : cramRecords) {
-                    if (cramRecord.next == null || cramRecord.previous != null) continue;
-                    CramCompressionRecord last = cramRecord;
-                    while (last.next != null) last = last.next;
-
-                    if (cramRecord.isFirstSegment() && last.isLastSegment()) {
-                        final int templateLength = CramNormalizer.computeInsertSize(cramRecord, last);
-
-                        if (cramRecord.templateSize == templateLength) {
-                            last = cramRecord.next;
-                            while (last.next != null) {
-                                if (last.templateSize != -templateLength)
-                                    break;
-
-                                last = last.next;
-                            }
-                            if (last.templateSize != -templateLength) detach(cramRecord);
-                        }else detach(cramRecord);
-                    } else detach(cramRecord);
-                }
-
-                for (final CramCompressionRecord cramRecord : primaryMateMap.values()) {
-                    if (cramRecord.next != null) continue;
-                    cramRecord.setDetached(true);
-
-                    cramRecord.setHasMateDownStream(false);
-                    cramRecord.recordsToNextFragment = -1;
-                    cramRecord.next = null;
-                    cramRecord.previous = null;
-                }
-
-                for (final CramCompressionRecord cramRecord : secondaryMateMap.values()) {
-                    if (cramRecord.next != null) continue;
-                    cramRecord.setDetached(true);
-
-                    cramRecord.setHasMateDownStream(false);
-                    cramRecord.recordsToNextFragment = -1;
-                    cramRecord.next = null;
-                    cramRecord.previous = null;
-                }
+                        if (last.templateSize != -templateLength) detach(cramRecord);
+                    }else detach(cramRecord);
+                } else detach(cramRecord);
             }
-            else {
-                for (final CramCompressionRecord cramRecord : cramRecords) {
-                    cramRecord.setDetached(true);
-                }
+
+            for (final CramCompressionRecord cramRecord : primaryMateMap.values()) {
+                if (cramRecord.next != null) continue;
+                cramRecord.setDetached(true);
+
+                cramRecord.setHasMateDownStream(false);
+                cramRecord.recordsToNextFragment = -1;
+                cramRecord.next = null;
+                cramRecord.previous = null;
+            }
+
+            for (final CramCompressionRecord cramRecord : secondaryMateMap.values()) {
+                if (cramRecord.next != null) continue;
+                cramRecord.setDetached(true);
+
+                cramRecord.setHasMateDownStream(false);
+                cramRecord.recordsToNextFragment = -1;
+                cramRecord.next = null;
+                cramRecord.previous = null;
+            }
+        }
+        else {
+            for (final CramCompressionRecord cramRecord : cramRecords) {
+                cramRecord.setDetached(true);
             }
         }
 
-
-        {
-            /**
-             * The following passage is for paranoid mode only. When java is run with asserts on it will throw an {@link AssertionError} if
-             * read bases or quality scores of a restored SAM record mismatch the original. This is effectively a runtime round trip test.
-             */
-            @SuppressWarnings("UnusedAssignment") boolean assertsEnabled = false;
-            //noinspection AssertWithSideEffects,ConstantConditions
-            assert assertsEnabled = true;
-            //noinspection ConstantConditions
-            if (assertsEnabled) {
-                final Cram2SamRecordFactory f = new Cram2SamRecordFactory(samFileHeader);
-                for (int i = 0; i < samRecords.size(); i++) {
-                    final SAMRecord restoredSamRecord = f.create(cramRecords.get(i));
-                    assert (restoredSamRecord.getAlignmentStart() == samRecords.get(i).getAlignmentStart());
-                    assert (restoredSamRecord.getReferenceName().equals(samRecords.get(i).getReferenceName()));
-
-                    if (!restoredSamRecord.getReadString().equals(samRecords.get(i).getReadString())) {
-                        // try to fix the original read bases by normalizing them to BAM set:
-                        final byte[] originalReadBases = samRecords.get(i).getReadString().getBytes();
-                        final String originalReadBasesUpperCaseIupacNoDot = new String(SequenceUtil.toBamReadBasesInPlace(originalReadBases));
-                        assert (restoredSamRecord.getReadString().equals(originalReadBasesUpperCaseIupacNoDot));
-                    }
-                    assert (restoredSamRecord.getBaseQualityString().equals(samRecords.get(i).getBaseQualityString()));
-                }
-            }
-        }
         //TODO: these records need to be broken up into groups with like reference context types, since if there is
         //TODO: more than one type present, they need to be split across multiple containers
         //TODO: this should really accumulate records to a slice, not a container, and then submit the slices
