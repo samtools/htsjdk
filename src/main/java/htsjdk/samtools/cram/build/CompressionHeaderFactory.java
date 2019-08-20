@@ -51,14 +51,14 @@ public class CompressionHeaderFactory {
     public static final int ALL_BYTES_USED = -1;
 
     // a parameter for Huffman encoding, so we don't have to re-construct on each call
-    private static final int[] singleZero = new int[] { 0 };
-    private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
-    private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
+    private static final int[] SINGLE_ZERO = new int[] { 0 };
 
-    private CompressionHeader compressionHeader;
     private CRAMEncodingStrategy encodingStrategy;
     private CompressionHeaderEncodingMap encodingMap;
 
+    private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
+    //TODO: fix this allocation
+    private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
     /**
      * Create a CompressionHeaderFactory using default CRAMEncodingStrategy.
      */
@@ -83,7 +83,6 @@ public class CompressionHeaderFactory {
                 throw new RuntimeIOException("Failure reading custom encoding map from Path", e);
             }
         }
-        this.compressionHeader = new CompressionHeader(encodingMap);
         this.encodingStrategy = encodingStrategy;
     }
 
@@ -99,6 +98,7 @@ public class CompressionHeaderFactory {
      *         describing the encoding chosen for the data
      */
     public CompressionHeader build(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
+        final CompressionHeader compressionHeader = new CompressionHeader(encodingMap);
 
         //TODO: this should be set by the caller since it should only be set once on the header so
         //TODO: that all containers created by the factory use the same settings
@@ -384,7 +384,7 @@ public class CompressionHeaderFactory {
         return new ByteArrayLenEncoding(
                 // for the huffman encoding, our alphabet has just one symbol (the tag value size, which is constant),
                 // so we can just declare that the canonical codeword size will be 0
-                new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, singleZero),
+                new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, SINGLE_ZERO),
                 new ExternalByteArrayEncoding(tagID)).toEncodingDescriptor();
     }
 

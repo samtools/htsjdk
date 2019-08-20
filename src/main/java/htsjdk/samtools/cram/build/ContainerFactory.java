@@ -25,11 +25,13 @@ import java.util.List;
 
 public class ContainerFactory {
     private final CRAMEncodingStrategy encodingStrategy;
-    private final SAMFileHeader samFileHeader;
+    private final CompressionHeaderFactory compressionHeaderFactory;
+    private final boolean coordinateSorted;
     private long globalRecordCounter = 0;
 
     public ContainerFactory(final SAMFileHeader samFileHeader, final CRAMEncodingStrategy encodingStrategy) {
-        this.samFileHeader = samFileHeader;
+        this.coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
+        compressionHeaderFactory = new CompressionHeaderFactory(encodingStrategy);
         this.encodingStrategy = encodingStrategy;
     }
 
@@ -44,11 +46,7 @@ public class ContainerFactory {
      * @return the container built from these records
      */
     public Container buildContainer(final List<CramCompressionRecord> records, final long containerByteOffset) {
-        // sets header APDelta
-        final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-
-        // TODO: this creates a new CompressionHeaderFactory for each container!
-        final CompressionHeader compressionHeader = new CompressionHeaderFactory(encodingStrategy).build(records, coordinateSorted);
+        final CompressionHeader compressionHeader = compressionHeaderFactory.build(records, coordinateSorted);
         //TODO: CompressionHeader can just get this value from the EncodingStrategy
         compressionHeader.readNamesIncluded = encodingStrategy.getPreserveReadNames();
 
@@ -67,7 +65,7 @@ public class ContainerFactory {
         }
 
         // TODO: somewhere code needs to handle the case where these slices have different sliceRefContexts
-        // TODO: to prevent initializeFromSlices from throwing (i.e., if there is a a single and a multi, or any
+        // TODO: to prevent initializeFromSlices from throwing (i.e., if there is a single and a multi, or any
         // TODO: other combination)
         final Container container = Container.initializeFromSlices(slices, compressionHeader, containerByteOffset);
         container.nofRecords = records.size();

@@ -115,67 +115,6 @@ public class CramCompressionRecord {
         this.readFeatures.add(readFeature);
     }
 
-    @SuppressWarnings("SimplifiableIfStatement")
-    @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof CramCompressionRecord)) return false;
-
-        final CramCompressionRecord cramRecord = (CramCompressionRecord) obj;
-
-        if (alignmentStart != cramRecord.alignmentStart) return false;
-        if (isNegativeStrand() != cramRecord.isNegativeStrand()) return false;
-        if (isVendorFiltered() != cramRecord.isVendorFiltered()) return false;
-        if (isSegmentUnmapped() != cramRecord.isSegmentUnmapped()) return false;
-        if (readLength != cramRecord.readLength) return false;
-        if (isLastSegment() != cramRecord.isLastSegment()) return false;
-        if (recordsToNextFragment != cramRecord.recordsToNextFragment) return false;
-        if (isFirstSegment() != cramRecord.isFirstSegment()) return false;
-        if (mappingQuality != cramRecord.mappingQuality) return false;
-
-        if (!deepEquals(readFeatures, cramRecord.readFeatures)) return false;
-
-        if (!Arrays.equals(readBases, cramRecord.readBases)) return false;
-        return Arrays.equals(qualityScores, cramRecord.qualityScores) && areEqual(flags, cramRecord.flags) && areEqual(readName, cramRecord.readName);
-    }
-
-    private boolean areEqual(final Object o1, final Object o2) {
-        return o1 == null && o2 == null || o1 != null && o1.equals(o2);
-    }
-
-    private boolean deepEquals(final Collection<?> c1, final Collection<?> c2) {
-        return (c1 == null || c1.isEmpty()) && (c2 == null || c2.isEmpty()) || c1 != null && c1.equals(c2);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = Objects.hash(alignmentStart, readLength, recordsToNextFragment, mappingQuality, flags, readName);
-        if (readFeatures != null && !readFeatures.isEmpty()) {
-            result = 31 * result + Objects.hash(readFeatures);
-        }
-        result = 31 * result + Arrays.hashCode(readBases);
-        result = 31 * result + Arrays.hashCode(qualityScores);
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder stringBuilder = new StringBuilder("[");
-        if (readName != null) stringBuilder.append(readName).append("; ");
-        stringBuilder.append("flags=").append(flags)
-                .append("; alignmentStart=").append(alignmentStart)
-                .append("; mateOffset=").append(recordsToNextFragment)
-                .append("; mappingQuality=").append(mappingQuality);
-
-        if (readFeatures != null) for (final ReadFeature feature : readFeatures)
-            stringBuilder.append("; ").append(feature.toString());
-
-        if (readBases != null) stringBuilder.append("; ").append("bases: ").append(new String(readBases));
-        if (qualityScores != null) stringBuilder.append("; ").append("scores: ").append(new String(qualityScores));
-
-        stringBuilder.append(']');
-        return stringBuilder.toString();
-    }
-
     /**
      * Check whether alignmentSpan has been initialized, and do so if it has not
      * @return the initialized alignmentSpan
@@ -400,4 +339,65 @@ public class CramCompressionRecord {
     public void setSupplementary(final boolean supplementary) {
         flags = supplementary ? flags | SUPPLEMENTARY_FLAG : flags & ~SUPPLEMENTARY_FLAG;
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof CramCompressionRecord)) return false;
+
+        final CramCompressionRecord cramRecord = (CramCompressionRecord) obj;
+
+        if (alignmentStart != cramRecord.alignmentStart) return false;
+        if (isNegativeStrand() != cramRecord.isNegativeStrand()) return false;
+        if (isVendorFiltered() != cramRecord.isVendorFiltered()) return false;
+        if (isSegmentUnmapped() != cramRecord.isSegmentUnmapped()) return false;
+        if (readLength != cramRecord.readLength) return false;
+        if (isLastSegment() != cramRecord.isLastSegment()) return false;
+        if (recordsToNextFragment != cramRecord.recordsToNextFragment) return false;
+        if (isFirstSegment() != cramRecord.isFirstSegment()) return false;
+        if (mappingQuality != cramRecord.mappingQuality) return false;
+
+        if (!deepEquals(readFeatures, cramRecord.readFeatures)) return false;
+
+        if (!Arrays.equals(readBases, cramRecord.readBases)) return false;
+        return Arrays.equals(qualityScores, cramRecord.qualityScores) && areEqual(flags, cramRecord.flags) && areEqual(readName, cramRecord.readName);
+    }
+
+    private boolean areEqual(final Object o1, final Object o2) {
+        return o1 == null && o2 == null || o1 != null && o1.equals(o2);
+    }
+
+    private boolean deepEquals(final Collection<?> c1, final Collection<?> c2) {
+        return (c1 == null || c1.isEmpty()) && (c2 == null || c2.isEmpty()) || c1 != null && c1.equals(c2);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(alignmentStart, readLength, recordsToNextFragment, mappingQuality, flags, readName);
+        if (readFeatures != null && !readFeatures.isEmpty()) {
+            result = 31 * result + Objects.hash(readFeatures);
+        }
+        result = 31 * result + Arrays.hashCode(readBases);
+        result = 31 * result + Arrays.hashCode(qualityScores);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder stringBuilder = new StringBuilder("[");
+        if (readName != null) stringBuilder.append(readName).append("; ");
+        stringBuilder.append("flags=").append(flags)
+                .append("; alignmentStart=").append(alignmentStart)
+                .append("; mateOffset=").append(recordsToNextFragment)
+                .append("; mappingQuality=").append(mappingQuality);
+
+        if (readFeatures != null) for (final ReadFeature feature : readFeatures)
+            stringBuilder.append("; ").append(feature.toString());
+
+        if (readBases != null) stringBuilder.append("; ").append("bases: ").append(new String(readBases));
+        if (qualityScores != null) stringBuilder.append("; ").append("scores: ").append(new String(qualityScores));
+
+        stringBuilder.append(']');
+        return stringBuilder.toString();
+    }
+
 }

@@ -40,15 +40,7 @@ public class Sam2CramRecordFactory {
 
     final private SAMFileHeader header;
 
-
     private final Map<String, Integer> readGroupMap = new HashMap<>();
-
-    public boolean captureAllTags = false;
-    public final Set<String> captureTags = new TreeSet<>();
-    public final Set<String> ignoreTags = new TreeSet<>();
-    {
-        ignoreTags.add(SAMTag.RG.name());
-    }
 
     private final List<ReadTag> readTagList = new ArrayList<>();
 
@@ -138,25 +130,15 @@ public class Sam2CramRecordFactory {
             cramRecord.setUnknownBases(record.getReadBases() == SAMRecord.NULL_SEQUENCE);
 
         readTagList.clear();
-        if (captureAllTags) {
-            final List<SAMTagAndValue> attributes = record.getAttributes();
-            for (final SAMTagAndValue tagAndValue : attributes) {
-                if (ignoreTags.contains(tagAndValue.tag)) continue;
+        final List<SAMTagAndValue> attributes = record.getAttributes();
+        for (final SAMTagAndValue tagAndValue : attributes) {
+            // Skip read group since those have a dedicated data series
+            if (!SAMTag.RG.name().equals(tagAndValue.tag)) {
                 readTagList.add(ReadTag.deriveTypeFromValue(tagAndValue.tag, tagAndValue.value));
             }
-        } else {
-            if (!captureTags.isEmpty()) {
-                final List<SAMTagAndValue> attributes = record.getAttributes();
-                cramRecord.tags = new ReadTag[attributes.size()];
-                for (final SAMTagAndValue tagAndValue : attributes) {
-                    if (captureTags.contains(tagAndValue.tag)) {
-                        readTagList.add(ReadTag.deriveTypeFromValue(tagAndValue.tag, tagAndValue.value));
-                    }
-                }
-            }
         }
-        cramRecord.tags = readTagList.toArray(new ReadTag[readTagList.size()]);
 
+        cramRecord.tags = readTagList.toArray(new ReadTag[readTagList.size()]);
         cramRecord.setVendorFiltered(record.getReadFailsVendorQualityCheckFlag());
 
         if (encodingStrategy.getPreserveReadNames()) {
@@ -315,18 +297,9 @@ public class Sam2CramRecordFactory {
         }
     }
 
-    public byte[] getRefBases() {
-        return refBases;
-    }
-
     public void setRefBases(final byte[] refBases) {
         this.refBases = refBases;
     }
-
-    public Map<String, Integer> getReadGroupMap() {
-        return readGroupMap;
-    }
-
 
     public long getBaseCount() {
         return baseCount;
