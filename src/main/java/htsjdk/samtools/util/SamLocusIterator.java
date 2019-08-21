@@ -206,6 +206,16 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         public RecordAndOffset(final SAMRecord record, final int offset) {
             super(record, offset);
         }
+
+        /**
+         * @param record inner <code>SAMRecord</code>
+         * @param offset 0-based offset from the start of <code>SAMRecord</code>
+         * @param alignmentType The {@link AlignmentType} of this object, which is used when queried in
+         *                      a {@link SamLocusIterator}.
+         */
+        public RecordAndOffset(final SAMRecord record, final int offset, final AlignmentType alignmentType) {
+            super(record, offset, alignmentType);
+        }
     }
 
     /**
@@ -234,7 +244,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
             if (deletedInRecord == null) {
                 deletedInRecord = new ArrayList<>();
             }
-            deletedInRecord.add(new RecordAndOffset(read, previousPosition));
+            deletedInRecord.add(new RecordAndOffset(read, previousPosition, AbstractRecordAndOffset.AlignmentType.Deletion));
         }
 
         /**
@@ -247,7 +257,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
             if (insertedInRecord == null) {
                 insertedInRecord = new ArrayList<>();
             }
-            insertedInRecord.add(new RecordAndOffset(read, firstPosition));
+            insertedInRecord.add(new RecordAndOffset(read, firstPosition, AbstractRecordAndOffset.AlignmentType.Insertion));
         }
 
         public List<RecordAndOffset> getDeletedInRecord() {

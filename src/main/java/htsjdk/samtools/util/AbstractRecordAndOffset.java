@@ -38,6 +38,16 @@ import htsjdk.samtools.SAMRecord;
 public class AbstractRecordAndOffset {
 
     /**
+     * Classifies whether the given event is a match, insertion, or deletion. This is deliberately not expressed
+     * as CIGAR operators, since there is no knowledge of the CIGAR string at the time that this is determined.
+     */
+    public enum AlignmentType {
+        Match,
+        Insertion,
+        Deletion,
+    }
+
+    /**
      * A SAMRecord aligned to reference position
      */
     protected final SAMRecord record;
@@ -47,12 +57,31 @@ public class AbstractRecordAndOffset {
     protected final int offset;
 
     /**
+     * The {@link AlignmentType} of this object, which classifies whether the given event is a match, insertion, or
+     * deletion when queried from a {@link SamLocusIterator}.
+     */
+    protected final AlignmentType alignmentType;
+
+    /**
      * @param record inner SAMRecord
      * @param offset from the start of the read
      */
     public AbstractRecordAndOffset(final SAMRecord record, final int offset) {
         this.offset = offset;
         this.record = record;
+        this.alignmentType = AlignmentType.Match;
+    }
+
+    /**
+     * @param record inner SAMRecord
+     * @param offset from the start of the read
+     * @param alignmentType The {@link AlignmentType} of this object, which is used when queried in
+     *                      a {@link SamLocusIterator}.
+     */
+    public AbstractRecordAndOffset(final SAMRecord record, final int offset, final AlignmentType alignmentType) {
+        this.offset = offset;
+        this.record = record;
+        this.alignmentType = alignmentType;
     }
 
     /**
@@ -67,6 +96,14 @@ public class AbstractRecordAndOffset {
      */
     public SAMRecord getRecord() {
         return record;
+    }
+
+    /**
+     * The {@link AlignmentType} of this object, which classifies whether the given event is a match, insertion, or
+     * deletion when queried from a {@link SamLocusIterator}.
+     */
+    public AlignmentType getAlignmentType() {
+        return alignmentType;
     }
 
     /**
