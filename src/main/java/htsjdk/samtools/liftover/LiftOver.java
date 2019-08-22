@@ -25,12 +25,11 @@ package htsjdk.samtools.liftover;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.OverlapDetector;
+import htsjdk.samtools.util.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,6 +37,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static htsjdk.samtools.util.IOUtil.openFileForReading;
 
 /**
  * Java port of UCSC liftOver.  Only the most basic liftOver functionality is implemented.
@@ -84,9 +85,16 @@ public class LiftOver {
     /**
      * Load UCSC chain file in order to lift over Intervals.
      */
-    public LiftOver(File chainFile) {
-        IOUtil.assertFileIsReadable(chainFile);
-        chains = Chain.loadChains(chainFile);
+    public LiftOver(File chainFile){
+        this(openFileForReading(chainFile), chainFile.toString());
+    }
+
+    /**
+     * Load UCSC chain file in order to lift over Intervals.
+     */
+    public LiftOver(InputStream chainFileInputStream, String sourceName) {
+        BufferedLineReader bufferedLineReader = new BufferedLineReader(chainFileInputStream);
+        chains = Chain.loadChains(bufferedLineReader, sourceName);
 
         for (final Chain chain : this.chains.getAll()) {
             final String from = chain.fromSequenceName;
@@ -101,6 +109,11 @@ public class LiftOver {
             }
             names.add(to);
         }
+    }
+
+    private static InputStream toInputStream(File chainFile) {
+        IOUtil.assertFileIsReadable(chainFile);
+        return IOUtil.openFileForReading(chainFile);
     }
 
     /**
