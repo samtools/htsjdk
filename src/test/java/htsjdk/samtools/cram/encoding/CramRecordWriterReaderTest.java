@@ -1,39 +1,25 @@
 package htsjdk.samtools.cram.encoding;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFlag;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.CramRecordTestHelper;
+import htsjdk.samtools.cram.build.CompressionHeaderFactory;
+import htsjdk.samtools.cram.structure.CRAMRecord;
 import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-public class CramRecordWriterReaderTest extends CramRecordTestHelper {
+//TODO: this really needs to use SAMRecords to check round tripping of read bases via reference/substitution matrix,
+// bases, qual scores, etc.
 
-    private List<CramCompressionRecord> initRTRecords() {
-        // note for future refactoring
-        // createRecords() calls Sam2CramRecordFactory.createCramRecord()
-        // which is the only way to set a record's readFeatures (except via read codec)
-        // which would otherwise be null
-
-        List<CramCompressionRecord> records = createRecords();
-
-        // note for future refactoring
-        // Sam2CramRecordFactory.createCramRecord() sets readBases = qualityScores = new byte[0] if missing
-        // but CramRecordReader.read() sets readBases = qualityScores = null if missing
-        // so we force it here to match the round trips
-
-        for (CramCompressionRecord record : records) {
-            record.readBases = record.qualityScores = new byte[0];
-        }
-
-        return records;
-    }
+public class CramRecordWriterReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "coordSortedTrueFalse")
     private Object[][] tf() {
@@ -41,24 +27,119 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
     }
 
     @Test(dataProvider = "coordSortedTrueFalse")
-    public void roundTripTest(final boolean coordinateSorted) throws IOException {
-        final List<CramCompressionRecord> initialRecords = initRTRecords();
+    public void roundTripTest(final boolean coordinateSorted) {
+        // we can only use unmapped records in order to ensure that readbases are roundtripped
+        // (since we're not doing full substitution matrix/reference compression
+        final List<CRAMRecord> unmappedRecords = getUnmappedRecords();
 
+        // TODO:
         // note for future refactoring
         // createHeader(records) calls CompressionHeaderBuilder.setTagIdDictionary(buildTagIdDictionary(records));
         // which is the only way to set a record's tagIdsIndex
         // which would otherwise be null
 
-        final CompressionHeader header = createHeader(initialRecords, coordinateSorted);
+        final CompressionHeader header = new CompressionHeaderFactory().build(unmappedRecords, coordinateSorted);
 
-        final Slice slice = Slice.buildSlice(initialRecords, header);
-        final List<CramCompressionRecord> roundTripRecords = slice.getRecords(new SAMFileHeader(), ValidationStringency.STRICT);
+        final Slice slice = Slice.buildSlice(unmappedRecords, header);
+        final List<CRAMRecord> roundTripRecords = slice.getRecords(new SAMFileHeader(), ValidationStringency.STRICT);
 
-        //TODO: fix me - we can't use null above since the hasher fails - temporary to make test pass - see comment above
-        for (CramCompressionRecord record : roundTripRecords) {
-            record.readBases = record.qualityScores = new byte[0];
-        }
-
-        Assert.assertEquals(roundTripRecords, initialRecords);
+        Assert.assertEquals(roundTripRecords, unmappedRecords);
     }
+
+    public static List<CRAMRecord> getUnmappedRecords() {
+        final List<CRAMRecord> cramRecords = new ArrayList<>();
+
+        // note for future refactoring
+        // createRecord() calls Sam2CramRecordFactory.createCramRecord()
+        // which is the only way to set a record's readFeatures (except via read codec)
+        // which would otherwise be null
+
+        cramRecords.add(new CRAMRecord(
+                1,
+                2,
+                SAMFlag.READ_UNMAPPED.intValue(),
+                0,
+                "rec1",
+                "AAA".length(),
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                0,
+                0,
+                SAMRecord.NULL_QUALS,
+                "AAA".getBytes(),
+                null,
+                null,
+                2,
+                0,
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1));
+
+        cramRecords.add(new CRAMRecord(
+                1,
+                2,
+                SAMFlag.READ_UNMAPPED.intValue(),
+                0,
+                "rec2",
+                "CCCCCC".length(),
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                0,
+                0,
+                SAMRecord.NULL_QUALS,
+                "CCCCCC".getBytes(),
+                null,
+                null,
+                2,
+                0,
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1));
+
+        cramRecords.add(new CRAMRecord(
+                1,
+                2,
+                SAMFlag.READ_UNMAPPED.intValue(),
+                0,
+                "rec2",
+                "GG".length(),
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                0,
+                0,
+                SAMRecord.NULL_QUALS,
+                "GG".getBytes(),
+                null,
+                null,
+                2,
+                0,
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1));
+
+        cramRecords.add(new CRAMRecord(
+                1,
+                2,
+                SAMFlag.READ_UNMAPPED.intValue(),
+                0,
+                "rec2",
+                "TTTTTTTTTT".length(),
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                0,
+                0,
+                SAMRecord.NULL_QUALS,
+                "TTTTTTTTTT".getBytes(),
+                null,
+                null,
+                2,
+                0,
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1));
+
+        return cramRecords;
+
+    }
+
 }

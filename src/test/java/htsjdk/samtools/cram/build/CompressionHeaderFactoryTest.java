@@ -15,6 +15,7 @@ import java.util.List;
  * Created by vadim on 07/01/2016.
  */
 public class CompressionHeaderFactoryTest extends HtsjdkTest {
+
     @Test
     public void testAP_delta() {
         boolean sorted = true;
@@ -28,56 +29,53 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
 
     @Test
     public void testGetDataForTag() {
-        final CompressionHeaderFactory factory = new CompressionHeaderFactory();
-        final List<CramCompressionRecord> records = new ArrayList<>();
-        final CramCompressionRecord record = new CramCompressionRecord();
         final int tagID = ReadTag.name3BytesToInt("ACi".getBytes());
         final byte[] data = new byte[]{1, 2, 3, 4};
-        final ReadTag tag = new ReadTag(tagID, data, ValidationStringency.STRICT);
-        record.tags = new ReadTag[]{tag};
-        records.add(record);
 
-        final byte[] dataForTag = factory.getDataForTag(records, tagID);
+        final CRAMRecord cramRecord = CRAMRecordTestHelper.getCRAMRecordWithTags(
+                "rname", 10, 1, 1, 10, new byte[]{'a', 'c', 'g', 't'},2,
+                Collections.singletonList(new ReadTag(tagID, data, ValidationStringency.STRICT)));
+
+        final CompressionHeaderFactory factory = new CompressionHeaderFactory();
+
+        final byte[] dataForTag = factory.getDataForTag(Collections.singletonList(cramRecord), tagID);
         Assert.assertEquals(dataForTag, data);
     }
 
     @Test
-    public void test_getBestExternalCompressor() {
+    public void testGetBestExternalCompressor() {
         final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy();
         Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor(encodingStrategy, "".getBytes()));
         Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor(encodingStrategy, "qwe".getBytes()));
     }
 
     @Test
-    public void test_geByteSizeRangeOfTagValues() {
-        final List<CramCompressionRecord> records = new ArrayList<>();
+    public void testGeByteSizeRangeOfTagValues() {
         final int tagID = ReadTag.name3BytesToInt("ACi".getBytes());
         // test empty list:
-        CompressionHeaderFactory.ByteSizeRange range = CompressionHeaderFactory.getByteSizeRangeOfTagValues(records, tagID);
+        CompressionHeaderFactory.ByteSizeRange range = CompressionHeaderFactory.getByteSizeRangeOfTagValues(Collections.EMPTY_LIST, tagID);
         Assert.assertNotNull(range);
         Assert.assertEquals(range.min, Integer.MAX_VALUE);
         Assert.assertEquals(range.max, Integer.MIN_VALUE);
 
         // test single record with a single tag:
-        final CramCompressionRecord record = new CramCompressionRecord();
-        final byte[] data = new byte[]{1, 2, 3, 4};
-        final ReadTag tag = new ReadTag(tagID, data, ValidationStringency.STRICT);
-        record.tags = new ReadTag[]{tag};
-        records.add(record);
+        final CRAMRecord cramRecord = CRAMRecordTestHelper.getCRAMRecordWithTags(
+                "rname", 10, 1, 1, 10, new byte[]{'a', 'c', 'g', 't'},2,
+                Collections.singletonList(new ReadTag(tagID, new byte[]{1, 2, 3, 4}, ValidationStringency.STRICT)));
 
-        range = CompressionHeaderFactory.getByteSizeRangeOfTagValues(records, tagID);
+        range = CompressionHeaderFactory.getByteSizeRangeOfTagValues(Collections.singletonList(cramRecord), tagID);
         Assert.assertNotNull(range);
         Assert.assertEquals(range.min, 4);
         Assert.assertEquals(range.max, 4);
     }
 
     @Test
-    public void test_getTagType() {
+    public void testGetTagType() {
         Assert.assertEquals(CompressionHeaderFactory.getTagType(ReadTag.name3BytesToInt("ACi".getBytes())), 'i');
     }
 
     @Test
-    public void test_getUnusedByte() {
+    public void testGetUnusedByte() {
         final byte[] data = new byte[256];
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte) i;
@@ -97,25 +95,25 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     }
 
     @Test
-    public void test_updateSubstitutionCodes() {
-        final CramCompressionRecord record = new CramCompressionRecord();
-
+    public void testUpdateSubstitutionCodes() {
         final byte refBase = 'A';
         final byte readBase = 'C';
         final Substitution s = new Substitution(1, readBase, refBase);
-        record.addReadFeature(s);
 
-        final List<CramCompressionRecord> records = Collections.singletonList(record);
-        final SubstitutionMatrix matrix = new SubstitutionMatrix(records);
+        final CRAMRecord cramRecord = CRAMRecordTestHelper.getCRAMRecordWithReadFeatures(
+                "rname", 10, 1, 1, 0,10, new byte[]{'a', 'c', 'g', 't'},2,
+                Collections.singletonList(s));
+
+        final SubstitutionMatrix matrix = new SubstitutionMatrix(Collections.singletonList(cramRecord));
 
         Assert.assertTrue(s.getCode() == -1);
-        CompressionHeaderFactory.updateSubstitutionCodes(records, matrix);
+        CompressionHeaderFactory.updateSubstitutionCodes(Collections.singletonList(cramRecord), matrix);
         Assert.assertFalse(s.getCode() == -1);
         Assert.assertEquals(s.getCode(), matrix.code(refBase, readBase));
     }
 
     @Test
-    public void test_getTagValueByteSize() {
+    public void testGetTagValueByteSize() {
         Assert.assertEquals(CompressionHeaderFactory.getTagValueByteSize((byte) 'i', 1), 4);
         Assert.assertEquals(CompressionHeaderFactory.getTagValueByteSize((byte) 'I', 1), 4);
         Assert.assertEquals(CompressionHeaderFactory.getTagValueByteSize((byte) 'c', (byte) 1), 1);

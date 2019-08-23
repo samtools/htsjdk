@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
@@ -13,7 +14,7 @@ import java.util.*;
 /**
  * Created by vadim on 25/08/2015.
  */
-public class CRAIEntryTest extends CramRecordTestHelper {
+public class CRAIEntryTest extends HtsjdkTest {
     private static final Random RANDOM = new Random(TestUtil.RANDOM_SEED);
 
     private static final CompressionHeader COMPRESSION_HEADER =
@@ -66,10 +67,10 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         // this will create 6 CRAI Entries
 
         int indexStart = 0;
-        final List<CramCompressionRecord> records1 = createMultiRefRecords(indexStart, slice1AlnStartOffset, 0, 1, 2);
+        final List<CRAMRecord> records1 = createMultiRefRecords(indexStart, slice1AlnStartOffset, 0, 1, 2);
         indexStart += records1.size();
-        final List<CramCompressionRecord> records2 = createMultiRefRecords(indexStart, slice2AlnStartOffset, 2, 3, 4);
-        final List<CramCompressionRecord> allRecords = new ArrayList<CramCompressionRecord>() {{
+        final List<CRAMRecord> records2 = createMultiRefRecords(indexStart, slice2AlnStartOffset, 2, 3, 4);
+        final List<CRAMRecord> allRecords = new ArrayList<CRAMRecord>() {{
             addAll(records1);
             addAll(records2);
         }};
@@ -274,11 +275,11 @@ public class CRAIEntryTest extends CramRecordTestHelper {
         return single;
     }
 
-    private List<CramCompressionRecord> createMultiRefRecords(final int indexStart,
+    private List<CRAMRecord> createMultiRefRecords(final int indexStart,
                                                               final int alignmentStartOffset,
                                                               final Integer... refs) {
         int index = indexStart;
-        final List<CramCompressionRecord> records = new ArrayList<>();
+        final List<CRAMRecord> records = new ArrayList<>();
         for (final int ref : refs) {
             records.add(CRAMStructureTestUtil.createMappedRecord(index, ref, alignmentStartOffset + index));
             index++;

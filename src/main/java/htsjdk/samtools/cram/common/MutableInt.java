@@ -52,4 +52,14 @@ public class MutableInt {
     public int hashCode() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MutableInt that = (MutableInt) o;
+
+        return value == that.value;
+    }
 }

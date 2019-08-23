@@ -85,11 +85,11 @@ public class ContainerParserTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "getRecordsTestCases")
-    public void getRecordsTest(final List<CramCompressionRecord> records) {
+    public void getRecordsTest(final List<CRAMRecord> records) {
         final long dummyByteOffset = 0;
         final Container container = FACTORY.buildContainer(records, dummyByteOffset);
 
-        final List<CramCompressionRecord> roundTripRecords = PARSER.getRecords(container, null, ValidationStringency.STRICT);
+        final List<CRAMRecord> roundTripRecords = PARSER.getRecords(container, null, ValidationStringency.STRICT);
         // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
         //Assert.assertEquals(roundTripRecords, records);
         Assert.assertEquals(roundTripRecords.size(), TEST_RECORD_COUNT);

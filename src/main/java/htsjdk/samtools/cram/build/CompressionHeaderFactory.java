@@ -97,7 +97,7 @@ public class CompressionHeaderFactory {
      * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} object
      *         describing the encoding chosen for the data
      */
-    public CompressionHeader build(final List<CramCompressionRecord> records, final boolean coordinateSorted) {
+    public CompressionHeader build(final List<CRAMRecord> records, final boolean coordinateSorted) {
         final CompressionHeader compressionHeader = new CompressionHeader(encodingMap);
 
         //TODO: this should be set by the caller since it should only be set once on the header so
@@ -124,15 +124,15 @@ public class CompressionHeaderFactory {
      * @param compressionHeader
      *            compression header to register encodings
      */
-    private void buildTagEncodings(final List<CramCompressionRecord> records, final CompressionHeader compressionHeader) {
+    private void buildTagEncodings(final List<CRAMRecord> records, final CompressionHeader compressionHeader) {
         final Set<Integer> tagIdSet = new HashSet<>();
 
-        for (final CramCompressionRecord record : records) {
-            if (record.tags == null || record.tags.length == 0) {
+        for (final CRAMRecord record : records) {
+            if (record.getTags() == null || record.getTags().size() == 0) {
                 continue;
             }
 
-            for (final ReadTag tag : record.tags) {
+            for (final ReadTag tag : record.getTags()) {
                 tagIdSet.add(tag.keyType3BytesAsInt);
             }
         }
@@ -157,11 +157,10 @@ public class CompressionHeaderFactory {
      * @param substitutionMatrix
      *            the matrix to be updated
      */
-    static void updateSubstitutionCodes(final List<CramCompressionRecord> records,
-                                                final SubstitutionMatrix substitutionMatrix) {
-        for (final CramCompressionRecord record : records) {
-            if (record.readFeatures != null) {
-                for (final ReadFeature recordFeature : record.readFeatures) {
+    static void updateSubstitutionCodes(final List<CRAMRecord> records, final SubstitutionMatrix substitutionMatrix) {
+        for (final CRAMRecord record : records) {
+            if (record.getReadFeatures() != null) {
+                for (final ReadFeature recordFeature : record.getReadFeatures()) {
                     if (recordFeature.getOperator() == Substitution.operator) {
                         final Substitution substitution = ((Substitution) recordFeature);
                         if (substitution.getCode() == Substitution.NO_CODE) {
@@ -182,7 +181,7 @@ public class CompressionHeaderFactory {
      *            records holding the tags
      * @return a 3D byte array: a set of unique lists of tag ids.
      */
-    private static byte[][][] buildTagIdDictionary(final List<CramCompressionRecord> records) {
+    private static byte[][][] buildTagIdDictionary(final List<CRAMRecord> records) {
         final Comparator<ReadTag> comparator = new Comparator<ReadTag>() {
 
             @Override
@@ -209,24 +208,25 @@ public class CompressionHeaderFactory {
             }
         };
 
+        //TODO: WTF?
         final Map<byte[], MutableInt> map = new TreeMap<>(baComparator);
         final MutableInt noTagCounter = new MutableInt();
         map.put(new byte[0], noTagCounter);
-        for (final CramCompressionRecord record : records) {
-            if (record.tags == null) {
+        for (final CRAMRecord record : records) {
+            if (record.getTags() == null) {
                 noTagCounter.value++;
-                record.tagIdsIndex = noTagCounter;
+                record.setTagIdsIndex(noTagCounter);
                 continue;
             }
 
-            Arrays.sort(record.tags, comparator);
-            final byte[] tagIds = new byte[record.tags.length * 3];
+            record.getTags().sort(comparator);
+            final byte[] tagIds = new byte[record.getTags().size() * 3];
 
             int tagIndex = 0;
-            for (int i = 0; i < record.tags.length; i++) {
-                tagIds[i * 3] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(0);
-                tagIds[i * 3 + 1] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(1);
-                tagIds[i * 3 + 2] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(2);
+            for (int i = 0; i < record.getTags().size(); i++) {
+                tagIds[i * 3] = (byte) record.getTags().get(tagIndex).keyType3Bytes.charAt(0);
+                tagIds[i * 3 + 1] = (byte) record.getTags().get(tagIndex).keyType3Bytes.charAt(1);
+                tagIds[i * 3 + 2] = (byte) record.getTags().get(tagIndex).keyType3Bytes.charAt(2);
                 tagIndex++;
             }
 
@@ -236,7 +236,7 @@ public class CompressionHeaderFactory {
                 map.put(tagIds, count);
             }
             count.value++;
-            record.tagIdsIndex = count;
+            record.setTagIdsIndex(count);
         }
 
         final byte[][][] dictionary = new byte[map.size()][][];
@@ -290,15 +290,15 @@ public class CompressionHeaderFactory {
         }
     }
 
-    byte[] getDataForTag(final List<CramCompressionRecord> records, final int tagID) {
+    byte[] getDataForTag(final List<CRAMRecord> records, final int tagID) {
         baosForTagValues.reset();
 
-        for (final CramCompressionRecord record : records) {
-            if (record.tags == null) {
+        for (final CRAMRecord record : records) {
+            if (record.getTags() == null) {
                 continue;
             }
 
-            for (final ReadTag tag : record.tags) {
+            for (final ReadTag tag : record.getTags()) {
                 if (tag.keyType3BytesAsInt != tagID) {
                     continue;
                 }
@@ -314,15 +314,15 @@ public class CompressionHeaderFactory {
         return baosForTagValues.toByteArray();
     }
 
-    static ByteSizeRange getByteSizeRangeOfTagValues(final List<CramCompressionRecord> records, final int tagID) {
+    static ByteSizeRange getByteSizeRangeOfTagValues(final List<CRAMRecord> records, final int tagID) {
         final byte type = getTagType(tagID);
         final ByteSizeRange stats = new ByteSizeRange();
-        for (final CramCompressionRecord record : records) {
-            if (record.tags == null) {
+        for (final CRAMRecord record : records) {
+            if (record.getTags() == null) {
                 continue;
             }
 
-            for (final ReadTag tag : record.tags) {
+            for (final ReadTag tag : record.getTags()) {
                 if (tag.keyType3BytesAsInt != tagID) {
                     continue;
                 }
@@ -395,7 +395,7 @@ public class CompressionHeaderFactory {
      * @param tagID an integer id of the tag
      * @return an encoding for the tag
      */
-    private EncodingDetails buildEncodingForTag(final List<CramCompressionRecord> records, final int tagID) {
+    private EncodingDetails buildEncodingForTag(final List<CRAMRecord> records, final int tagID) {
         final EncodingDetails details = new EncodingDetails();
         final byte[] data = getDataForTag(records, tagID);
 

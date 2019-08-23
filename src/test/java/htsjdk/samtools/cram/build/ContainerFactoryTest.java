@@ -25,7 +25,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
         // build a container with the max records per slice
 
-        final List<CramCompressionRecord> records = CRAMStructureTestUtil.getSingleRefRecords(recordsPerSlice, 0);
+        final List<CRAMRecord> records = CRAMStructureTestUtil.getSingleRefRecords(recordsPerSlice, 0);
         final long dummyByteOffset = 0;
         final Container container = factory.buildContainer(records, dummyByteOffset);
 
@@ -99,7 +99,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "containerStateTests")
-    public void testContainerState(final List<CramCompressionRecord> records,
+    public void testContainerState(final List<CRAMRecord> records,
                                    final ReferenceContext expectedReferenceContext,
                                    final int expectedAlignmentStart,
                                    final int expectedAlignmentSpan) {

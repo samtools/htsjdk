@@ -148,6 +148,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
             final TriConsumer<Integer, SAMRecord, SAMRecord> assertFunction) throws IOException {
         TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
 
+        // 1) Read from SAM/BAM Round Trip thorugh CRAM
         // retrieve all records from the original file
         List<SAMRecord> samRecords = getSAMRecordsFromFile(t.bamFile, t.refFile);
         SAMFileHeader samFileHeader = getFileHeader(t.bamFile, t.refFile);
@@ -172,7 +173,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         }
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
-        //v2.1 test
+        // Read from v2.1 CRAM round trip through cram
         cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_21), (SeekableStream) null, source, ValidationStringency.SILENT);
         cramFileReaderIterator = cramFileReader.getIterator();
         for (SAMRecord samRecord : samRecords) {
@@ -183,7 +184,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         }
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
-        //v3.0 test
+        // Read from v3.0 CRAM round trip through cram
         cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_30), (SeekableStream) null, source, ValidationStringency.SILENT);
         cramFileReaderIterator = cramFileReader.getIterator();
         for (SAMRecord samRecord : samRecords) {

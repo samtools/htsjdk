@@ -29,6 +29,8 @@ import htsjdk.samtools.util.Log;
 import java.util.*;
 
 public class CramCompressionRecord {
+    private static final Log log = Log.getInstance(CramCompressionRecord.class);
+
     private static final int MULTI_FRAGMENT_FLAG = 0x1;
     private static final int PROPER_PAIR_FLAG = 0x2;
     private static final int SEGMENT_UNMAPPED_FLAG = 0x4;
@@ -50,8 +52,6 @@ public class CramCompressionRecord {
 
     private static final int UNINITIALIZED_END = -1;
     private static final int UNINITIALIZED_SPAN = -1;
-
-    private static final Log log = Log.getInstance(CramCompressionRecord.class);
 
     // sequential index of the record in a stream:
     public int index = 0;
@@ -108,6 +108,7 @@ public class CramCompressionRecord {
      * Add a ReadFeature for this record.
      * @param readFeature the ReadFeature to add
      */
+    //TODO: test only
     public final void addReadFeature(final ReadFeature readFeature) {
         if (this.readFeatures == null) {
             this.readFeatures = new ArrayList<>();
@@ -119,6 +120,7 @@ public class CramCompressionRecord {
      * Check whether alignmentSpan has been initialized, and do so if it has not
      * @return the initialized alignmentSpan
      */
+    //TODO: test only
     public int getAlignmentSpan() {
         if (alignmentSpan == UNINITIALIZED_SPAN) {
             intializeAlignmentBoundaries();

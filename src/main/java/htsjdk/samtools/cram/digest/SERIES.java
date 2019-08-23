@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.digest;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
+import htsjdk.samtools.cram.structure.CRAMRecord;
 
 enum SERIES {
     BASES {
@@ -11,8 +11,8 @@ enum SERIES {
         }
 
         @Override
-        byte[] getBytes(final CramCompressionRecord record) {
-            return record.readBases;
+        byte[] getBytes(final CRAMRecord record) {
+            return record.getReadBases();
         }
     },
     SCORES {
@@ -22,13 +22,13 @@ enum SERIES {
         }
 
         @Override
-        byte[] getBytes(final CramCompressionRecord record) {
-            return record.qualityScores;
+        byte[] getBytes(final CRAMRecord record) {
+            return record.getQualityScores();
         }
     };
 
     abstract byte[] getBytes(SAMRecord record);
 
-    abstract byte[] getBytes(CramCompressionRecord record);
+    abstract byte[] getBytes(CRAMRecord record);
 
 }

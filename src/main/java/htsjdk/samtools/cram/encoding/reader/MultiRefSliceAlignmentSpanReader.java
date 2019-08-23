@@ -55,8 +55,9 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         int prevAlignmentStart = initialAlignmentStart;
 
         for (int i = 0; i < recordCount; i++) {
-            final CramCompressionRecord cramRecord = new CramCompressionRecord();
-            prevAlignmentStart = super.read(cramRecord, prevAlignmentStart);
+            //TODO: its a little sketchy to require
+            final CRAMRecord cramRecord = super.read(slice.index,0, prevAlignmentStart);
+            prevAlignmentStart = cramRecord.getAlignmentStart();
             processRecordSpan(cramRecord);
         }
     }
@@ -65,7 +66,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         return Collections.unmodifiableMap(spans);
     }
 
-    private void processRecordSpan(final CramCompressionRecord cramRecord) {
+    private void processRecordSpan(final CRAMRecord cramRecord) {
         // if unplaced: create or replace the current spans map entry.
         // we don't need to combine entries for different records because
         // we count them elsewhere and span is irrelevant
@@ -81,15 +82,15 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         if (cramRecord.isSegmentUnmapped()) {
             final int mappedCount = 0;
             final int unmappedCount = 1;
-            span = new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength, mappedCount, unmappedCount);
+            span = new AlignmentSpan(cramRecord.getAlignmentStart(), cramRecord.getReadLength(), mappedCount, unmappedCount);
         }
         else {
             final int mappedCount = 1;
             final int unmappedCount = 0;
-            span = new AlignmentSpan(cramRecord.alignmentStart, cramRecord.readLength, mappedCount, unmappedCount);
+            span = new AlignmentSpan(cramRecord.getAlignmentStart(), cramRecord.getReadLength(), mappedCount, unmappedCount);
         }
 
-        final ReferenceContext recordContext = new ReferenceContext(cramRecord.sequenceId);
+        final ReferenceContext recordContext = new ReferenceContext(cramRecord.getReferenceIndex());
         spans.merge(recordContext, span, AlignmentSpan::combine);
     }
 }

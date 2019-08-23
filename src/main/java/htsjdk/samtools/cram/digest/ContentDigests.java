@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.digest;
 import htsjdk.samtools.SAMBinaryTagAndValue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
+import htsjdk.samtools.cram.structure.CRAMRecord;
 import htsjdk.samtools.util.Log;
 
 import java.security.MessageDigest;
@@ -56,19 +56,9 @@ public class ContentDigests {
             digester.add(record);
     }
 
-    public void add(final CramCompressionRecord record) {
+    public void add(final CRAMRecord record) {
         for (final Digester digester : digesters)
             digester.addCramRecord(record);
-    }
-
-    public void addSAMRecords(final Iterable<SAMRecord> records) {
-        for (final SAMRecord record : records)
-            add(record);
-    }
-
-    public void addCramRecords(final Iterable<CramCompressionRecord> records) {
-        for (final CramCompressionRecord record : records)
-            add(record);
     }
 
     public SAMBinaryTagAndValue getAsTags() {
@@ -138,7 +128,7 @@ public class ContentDigests {
             digest.add(series.getBytes(record));
         }
 
-        void addCramRecord(final CramCompressionRecord record) {
+        void addCramRecord(final CRAMRecord record) {
             digest.add(series.getBytes(record));
         }
 

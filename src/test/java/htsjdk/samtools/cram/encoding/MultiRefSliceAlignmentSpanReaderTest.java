@@ -1,20 +1,23 @@
 package htsjdk.samtools.cram.encoding;
 
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMFlag;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.CramRecordTestHelper;
+import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
+public class MultiRefSliceAlignmentSpanReaderTest extends HtsjdkTest {
 
-    private List<CramCompressionRecord> initSpanRecords() {
-        final List<CramCompressionRecord> initialRecords = createRecords();
+    private List<CRAMRecord> initSpanRecords() {
+        final List<CRAMRecord> cramRecords = new ArrayList<>();
 
         // note for future refactoring
         // createRecord() calls Sam2CramRecordFactory.createCramRecord()
@@ -24,38 +27,69 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         final String commonRead = "AAA";
 
         // span 1:1,3
-        initialRecords.get(0).sequenceId = 1;
-        initialRecords.get(0).alignmentStart = 1;
-        initialRecords.get(0).readBases = commonRead.getBytes();
-        initialRecords.get(0).readLength = commonRead.length();
+        cramRecords.add(CRAMRecordTestHelper.getCRAMRecord(
+                "rec1",
+                commonRead.length(),
+                1,
+                1,
+                3,
+                commonRead.getBytes(),
+                1
+        ));
 
+        // unmapped but placed
         // span 2:2,4
-        initialRecords.get(1).sequenceId = 2;
-        initialRecords.get(1).alignmentStart = 2;
-        initialRecords.get(1).readBases = commonRead.getBytes();
-        initialRecords.get(1).readLength = commonRead.length();
-        initialRecords.get(1).setSegmentUnmapped(true);     // unmapped but placed
+        cramRecords.add(new CRAMRecord(
+        1,
+                2,
+                SAMFlag.READ_UNMAPPED.intValue(),
+                0,
+                "rec2",
+                commonRead.length(),
+                2,
+                2,
+                3,
+                0,
+                new byte[] { 0x10, 0x20, 0x30 },
+                commonRead.getBytes(),
+                null,
+                null,
+                2,
+                0,
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1));
 
         // span 1:3,5
-        initialRecords.get(2).sequenceId = 1;
-        initialRecords.get(2).alignmentStart = 3;
-        initialRecords.get(2).readBases = commonRead.getBytes();
-        initialRecords.get(2).readLength = commonRead.length();
+        cramRecords.add(CRAMRecordTestHelper.getCRAMRecord(
+                "rec3",
+                commonRead.length(),
+                1,
+                3,
+                3,
+                commonRead.getBytes(),
+                1
+        ));
 
         // span <unmapped>
-        initialRecords.get(3).sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-        initialRecords.get(3).alignmentStart = 7;
-        initialRecords.get(3).readBases = commonRead.getBytes();
-        initialRecords.get(3).readLength = commonRead.length();
+        cramRecords.add(CRAMRecordTestHelper.getCRAMRecord(
+                "rec4",
+                commonRead.length(),
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                7,
+                3,
+                commonRead.getBytes(),
+                1
+        ));
 
         // span totals -> 1:1,5 and 2:2,4
 
-        return initialRecords;
+        return cramRecords;
     }
 
     @Test
     public void testSpansCoordinateSorted() {
-        final List<CramCompressionRecord> initialRecords = initSpanRecords();
+        final List<CRAMRecord> cramRecords = initSpanRecords();
 
         // note for future refactoring
         // createHeader(records) calls CompressionHeaderBuilder.setTagIdDictionary(buildTagIdDictionary(records));
@@ -64,8 +98,8 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
 
         // NOTE: multiref alignment spans are ony used for CRAI indexing, and only make sense when records are
         // coordinate sorted, so we only test with coordinateSorted = true;
-        final CompressionHeader header = createHeader(initialRecords, true);
-        final Slice slice = Slice.buildSlice(initialRecords, header);
+        final CompressionHeader header = new CompressionHeaderFactory().build(cramRecords, true);
+        final Slice slice = Slice.buildSlice(cramRecords, header);
         final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
 
         Assert.assertEquals(spans.size(), 3);
@@ -76,12 +110,12 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testSpansNonCoordinateSorted() {
-        final List<CramCompressionRecord> initialRecords = initSpanRecords();
+        final List<CRAMRecord> cramRecords = initSpanRecords();
 
         // NOTE: multiref alignment spans are ony used for CRAI indexing, and only make sense when records are
         // coordinate sorted, so test that we reject coordinateSorted = true;
-        final CompressionHeader header = createHeader(initialRecords, false);
-        final Slice slice = Slice.buildSlice(initialRecords, header);
+        final CompressionHeader header = new CompressionHeaderFactory().build(cramRecords, false);
+        final Slice slice = Slice.buildSlice(cramRecords, header);
 
         slice.getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
     }

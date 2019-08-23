@@ -1,48 +1,46 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.build.CramNormalizer;
-import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+
+//TODO: test mate recovery for detached/not for both coord-sorted/not
+//TODO: are mates recovered if the mate winds up in a separate container altogether ??
 
 /**
  * Class for writing SAMRecords into a series of CRAM containers on an output stream.
  */
 public class CRAMContainerStreamWriter {
-    private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
-    private static final Version cramVersion = CramVersions.DEFAULT_CRAM_VERSION;
+    //private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
+    private static final Version CRAM_VERSION = CramVersions.DEFAULT_CRAM_VERSION;
+    private static final int MIN_SINGLE_REF_RECORDS = 1000;
 
     private final CRAMEncodingStrategy encodingStrategy;
+    private final SAMFileHeader samFileHeader;
+    final Map<String, Integer> readGroupMap = new HashMap<>();
 
-    private final int containerSize;
-    private static int MIN_SINGLE_REF_RECORDS = 1000;
-    private static final int REF_SEQ_INDEX_NOT_INITIALIZED = -3;
-
-    private SAMFileHeader samFileHeader;
     private final String cramID;
     private final OutputStream outputStream;
-    private CRAMReferenceSource source;
+    private final CRAMReferenceSource cramReferenceSource;
 
-    private final List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
-    private ContainerFactory containerFactory;
-    private int refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
-
+    private final List<SAMRecord> samRecords = new ArrayList<>();
+    private final ContainerFactory containerFactory;
     private final CRAMIndexer indexer;
-    private long offset;
+
+    private int currentReferenceContext = ReferenceContext.UNINITIALIZED_REFERENCE_ID;
+    private long streamOffset = 0;
+
+    private final int maxRecordsPerContainer;
 
     /**
      * Create a CRAMContainerStreamWriter for writing SAM records into a series of CRAM
@@ -50,7 +48,7 @@ public class CRAMContainerStreamWriter {
      *
      * @param outputStream where to write the CRAM stream.
      * @param indexStream where to write the output index. Can be null if no index is required.
-     * @param source reference source
+     * @param source reference cramReferenceSource
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
      * @param cramId used for display in error message display
      */
@@ -68,7 +66,7 @@ public class CRAMContainerStreamWriter {
      * containers on output stream, with an optional index.
      *
      * @param outputStream where to write the CRAM stream.
-     * @param source reference source
+     * @param source reference cramReferenceSource
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
      * @param cramId used for display in error message display
      * @param indexer CRAM indexer. Can be null if no index is required.
@@ -87,7 +85,7 @@ public class CRAMContainerStreamWriter {
      * containers on output stream, with an optional index.
      *
      * @param encodingStrategy encoding strategy values
-     * @param referenceSource reference source
+     * @param referenceSource reference cramReferenceSource
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
      * @param outputStream where to write the CRAM stream.
      * @param indexer CRAM indexer. Can be null if no index is required.
@@ -101,35 +99,52 @@ public class CRAMContainerStreamWriter {
             final CRAMIndexer indexer,
             final String streamIdentifier) {
         this.encodingStrategy = encodingStrategy;
-        this.source = referenceSource;
+        this.cramReferenceSource = referenceSource;
         this.samFileHeader = samFileHeader;
         this.outputStream = outputStream;
         this.cramID = streamIdentifier;
         this.indexer = indexer;
         containerFactory = new ContainerFactory(samFileHeader, encodingStrategy);
-        containerSize = this.encodingStrategy.getRecordsPerSlice() * this.encodingStrategy.getSlicesPerContainer();
+        maxRecordsPerContainer = this.encodingStrategy.getRecordsPerSlice() * this.encodingStrategy.getSlicesPerContainer();
+
+        // create our read group id map
+        final List<SAMReadGroupRecord> readGroups = samFileHeader.getReadGroups();
+        for (int i = 0; i < readGroups.size(); i++) {
+            final SAMReadGroupRecord readGroupRecord = readGroups.get(i);
+            readGroupMap.put(readGroupRecord.getId(), i);
+        }
     }
 
     /**
-     * Write an alignment record.
+     * Accumulate alignment records until we meet the threshold to flush a container.
      * @param alignment must not be null
      */
     public void writeAlignment(final SAMRecord alignment) {
-        if (shouldFlushContainer(alignment)) {
-            flushContainer();
+        final int nextReferenceContext = alignment.getReferenceIndex();
+        if (shouldFlushRecords(nextReferenceContext)) {
+            flushRecords();
+            samRecords.clear();
+            currentReferenceContext = ReferenceContext.UNINITIALIZED_REFERENCE_ID;
         }
-
-        updateReferenceContext(alignment.getReferenceIndex());
-
+        currentReferenceContext = getNewReferenceContext(nextReferenceContext);
         samRecords.add(alignment);
     }
 
     /**
      * Write a CRAM file header and the previously provided SAM header to the stream.
      */
+    // TODO: retained for BWC with direct users of CRAMContainerStreamWriter such as disq
+    public void writeHeader(final SAMFileHeader requestedSAMFileHeader) {
+        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, cramID, requestedSAMFileHeader);
+        streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
+    }
+
+    /**
+     * Write a CRAM file header and the previously provided SAM header to the stream.
+     */
     public void writeHeader() {
-        final CramHeader cramHeader = new CramHeader(cramVersion, cramID, samFileHeader);
-        offset = CramIO.writeCramHeader(cramHeader, outputStream);
+        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, cramID, samFileHeader);
+        streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
     }
 
     /**
@@ -140,10 +155,10 @@ public class CRAMContainerStreamWriter {
     public void finish(final boolean writeEOFContainer) {
         try {
             if (!samRecords.isEmpty()) {
-                flushContainer();
+                flushRecords();
             }
             if (writeEOFContainer) {
-                CramIO.issueEOF(cramVersion, outputStream);
+                CramIO.issueEOF(CRAM_VERSION, outputStream);
             }
             outputStream.flush();
             if (indexer != null) {
@@ -155,62 +170,195 @@ public class CRAMContainerStreamWriter {
         }
     }
 
+    // TODO: should the spec allow embedded references for multi-ref containers (or more specifically, should it
+    // TODO: be allowed for non-coord sorted inputs) ?
+
     /**
-     * Decide if the current container should be completed and flushed based on number of records and whether the
+     * Decide if the current records should be flushed based on number of records and whether the
      * reference sequence id has changed.
      *
-     * @param nextRecord the record to be added into the current or next container
+     * @param nextReferenceContext
      * @return true if the current container should be flushed and the following records should go into a new container; false otherwise.
      */
-    protected boolean shouldFlushContainer(final SAMRecord nextRecord) {
-        if (samRecords.isEmpty()) {
-            refSeqIndex = nextRecord.getReferenceIndex();
+    protected boolean shouldFlushRecords(final int nextReferenceContext) {
+        if (samRecords.isEmpty() || currentReferenceContext == ReferenceContext.UNINITIALIZED_REFERENCE_ID) {
             return false;
         }
 
-        if (samRecords.size() >= containerSize) {
+        if (samRecords.size() >= maxRecordsPerContainer) {
             return true;
         }
 
+        // we have fewer than maxRecordsPerContainer, so if we're not coord sorted, keep going
         if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             return false;
         }
 
+        // we're coord-sorted, and have < recordsPerContainer
+
+        //TODO: why ? unmapped reads can go into multi-ref containers...
         // make unmapped reads don't get into multiref containers:
-        if (refSeqIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && nextRecord.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+        if (currentReferenceContext != ReferenceContext.UNMAPPED_UNPLACED_ID &&
+                nextReferenceContext == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             return true;
         }
 
-        if (refSeqIndex == ReferenceContext.MULTIPLE_REFERENCE_ID) {
+        if (currentReferenceContext == nextReferenceContext || currentReferenceContext == ReferenceContext.MULTIPLE_REFERENCE_ID) {
             return false;
         }
 
-        final boolean sameRef = (refSeqIndex == nextRecord.getReferenceIndex());
-        if (sameRef) {
-            return false;
-        }
-
-        /**
-         * Protection against too small containers: flush at least X single refs, switch to multiref otherwise.
-         */
+        // we're singleRef, but the reference context has changed
+        // Protection against too small containers: flush at least X single refs, switch to multiref otherwise.
         if (samRecords.size() > MIN_SINGLE_REF_RECORDS) {
             return true;
-        } else {
-            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_ID;
-            return false;
         }
+
+        return false;
     }
 
     /**
-     * Complete the current container and flush it to the output stream.
+     * Check if the reference has changed.
      *
-     * @throws IllegalArgumentException
+     * @param samRecordReferenceIndex index of the new reference sequence
      */
-    protected void flushContainer() throws IllegalArgumentException {
+    //TODO: old comment says...and create a new record factory using the new reference ????
+    private int getNewReferenceContext(final int samRecordReferenceIndex) {
+        if (currentReferenceContext == ReferenceContext.UNINITIALIZED_REFERENCE_ID) {
+            return samRecordReferenceIndex;
+        } else if (currentReferenceContext == ReferenceContext.MULTIPLE_REFERENCE_ID) {
+            return currentReferenceContext;
+        } else if (currentReferenceContext != samRecordReferenceIndex) {
+            return ReferenceContext.MULTIPLE_REFERENCE_ID;
+        } else {
+            return currentReferenceContext;
+        }
+    }
 
+    // Slices with the Multiple Reference flag (-2) set as the sequence ID in the header may contain reads mapped to
+    // multiple external references, including unmapped reads (placed on these references or unplaced), but multiple
+    // embedded references cannot be combined in this way. When multiple references are used, the RI data series will
+    // be used to determine the reference sequence ID for each record. This data series is not present when only a
+    // single reference is used within a slice.
+    //
+    // The Unmapped (-1) sequence ID in the header is for slices containing only unplaced unmapped3 reads.
+    // A slice containing data that does not use the external reference in any sequence may set the reference MD5 sum
+    // to zero. This can happen because the data is unmapped or the sequence has been stored verbatim instead of via
+    // reference-differencing.
+    /**
+     * Complete the current container and flush it to the output stream.
+     */
+    protected void flushRecords() {
+
+        // get the reference bases for the current reference context (even though it might not match the first
+        // record we're about to convert
+        byte[] referenceBases = getReferenceBaseForRecords(samFileHeader, currentReferenceContext, cramReferenceSource);
+
+        final List<CRAMRecord> cramRecords = new ArrayList<>(samRecords.size());
+
+        int index = 0;
+        for (final SAMRecord samRecord : samRecords) {
+            if (samRecord.getReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+                    currentReferenceContext != samRecord.getReferenceIndex()) {
+                // this may load all ref sequences into memory:
+                referenceBases = cramReferenceSource.getReferenceBases(
+                        samFileHeader.getSequence(samRecord.getReferenceIndex()),
+                        true);
+            }
+            if (samRecord.getHeader() == null) {
+                samRecord.setHeader(samFileHeader);
+            }
+            cramRecords.add(
+                    new CRAMRecord(
+                            CRAM_VERSION,
+                            encodingStrategy,
+                            samRecord,
+                            referenceBases,
+                            ++index,
+                            readGroupMap)
+            );
+        }
+
+        // TODO: this mate processing assumes that all of these records wind up in the same slice!!!!;
+        // TODO: it will need to be updated when the container/slice partitioning is updated
+        if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
+            // mating:
+            final Map<String, CRAMRecord> primaryMateMap = new TreeMap<>();
+            final Map<String, CRAMRecord> secondaryMateMap = new TreeMap<>();
+            for (final CRAMRecord r : cramRecords) {
+                if (r.isMultiFragment()) {
+                    final Map<String, CRAMRecord> mateMap =
+                            r.isSecondaryAlignment() ?
+                                    secondaryMateMap :
+                                    primaryMateMap;
+                    final CRAMRecord mate = mateMap.get(r.getReadName());
+                    if (mate == null) {
+                        mateMap.put(r.getReadName(), r);
+                    } else {
+                        mate.attachToMate(r);
+                    }
+                }
+            }
+
+            // mark unpredictable reads as detached:
+            for (final CRAMRecord cramRecord : cramRecords) {
+                cramRecord.updateDetachedState();
+            }
+        }
+
+        // TODO: Use this code (previously inline in CRAMContainerStreamWriter)
+        // as test for validation
+//    /**
+//     * The following passage is for paranoid mode only. When java is run with asserts on it will throw an {@link AssertionError} if
+//     * read bases or quality scores of a restored SAM record mismatch the original. This is effectively a runtime round trip test.
+//     */
+//    @SuppressWarnings("UnusedAssignment") boolean assertsEnabled = false;
+//    //noinspection AssertWithSideEffects,ConstantConditions
+//    assert assertsEnabled = true;
+//    //noinspection ConstantConditions
+//    if (assertsEnabled) {
+//        final Cram2SamRecordFactory f = new Cram2SamRecordFactory(samFileHeader);
+//        for (int i = 0; i < samRecords.size(); i++) {
+//            final SAMRecord restoredSamRecord = f.create(cramRecords.get(i));
+//            assert (restoredSamRecord.getAlignmentStart() == samRecords.get(i).getAlignmentStart());
+//            assert (restoredSamRecord.getReferenceName().equals(samRecords.get(i).getReferenceName()));
+//
+//            if (!restoredSamRecord.getReadString().equals(samRecords.get(i).getReadString())) {
+//                // try to fix the original read bases by normalizing them to BAM set:
+//                final byte[] originalReadBases = samRecords.get(i).getReadString().getBytes();
+//                final String originalReadBasesUpperCaseIupacNoDot = new String(SequenceUtil.toBamReadBasesInPlace(originalReadBases));
+//                assert (restoredSamRecord.getReadString().equals(originalReadBasesUpperCaseIupacNoDot));
+//            }
+//            assert (restoredSamRecord.getBaseQualityString().equals(samRecords.get(i).getBaseQualityString()));
+//        }
+//    }
+
+        //TODO: these records need to be broken up into groups with like reference context types, since if there is
+        //TODO: more than one type present, they need to be split across multiple containers
+        //TODO: this should really accumulate records to a slice, not a container, and then submit the slices
+        //TODO: one at a time to container and let it aggregate and write them out as needed
+        final Container container = containerFactory.buildContainer(cramRecords, streamOffset);
+        for (final Slice slice : container.getSlices()) {
+            //TODO: this is setting a reference MD5 even if the slice is multi-ref...
+            //TODO: also, suppress this for embedded references...
+            slice.setRefMD5(referenceBases);
+        }
+        streamOffset += ContainerIO.writeContainer(CRAM_VERSION, container, outputStream);
+        if (indexer != null) {
+            // using silent validation here because the reads have been through validation already or
+            // they have been generated somehow through the htsjdk
+            //TODO: do we need this....?
+            indexer.processContainer(container, ValidationStringency.SILENT);
+        }
+    }
+
+    private static byte[] getReferenceBaseForRecords(
+            final SAMFileHeader samFileHeader,
+            final int currentReferenceContext,
+            final CRAMReferenceSource referenceSource) {
         final byte[] referenceBases;
-        String refSeqName = null;
-        switch (refSeqIndex) {
+        switch (currentReferenceContext) {
+            case ReferenceContext.UNINITIALIZED_REFERENCE_ID:
+                throw new CRAMException("Uninitialized reference context state in flushRecords");
             case ReferenceContext.MULTIPLE_REFERENCE_ID:
                 referenceBases = new byte[0];
                 break;
@@ -218,182 +366,11 @@ public class CRAMContainerStreamWriter {
                 referenceBases = new byte[0];
                 break;
             default:
-                final SAMSequenceRecord sequence = samFileHeader.getSequence(refSeqIndex);
-                referenceBases = source.getReferenceBases(sequence, true);
-                refSeqName = sequence.getSequenceName();
+                final SAMSequenceRecord sequence = samFileHeader.getSequence(currentReferenceContext);
+                referenceBases = referenceSource.getReferenceBases(sequence, true);
                 break;
         }
-
-        int start = SAMRecord.NO_ALIGNMENT_START;
-        int stop = SAMRecord.NO_ALIGNMENT_START;
-        for (final SAMRecord r : samRecords) {
-            if (r.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
-                continue;
-            }
-
-            if (start == SAMRecord.NO_ALIGNMENT_START) {
-                start = r.getAlignmentStart();
-            }
-
-            start = Math.min(r.getAlignmentStart(), start);
-            stop = Math.max(r.getAlignmentEnd(), stop);
-        }
-
-        final List<CramCompressionRecord> cramRecords = new ArrayList<>(samRecords.size());
-
-        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(encodingStrategy, referenceBases, samFileHeader, cramVersion);
-
-        int index = 0;
-        for (final SAMRecord samRecord : samRecords) {
-            if (samRecord.getReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && refSeqIndex != samRecord.getReferenceIndex()) {
-                // this may load all ref sequences into memory:
-                sam2CramRecordFactory.setRefBases(source.getReferenceBases(samFileHeader.getSequence(samRecord.getReferenceIndex()), true));
-            }
-            final CramCompressionRecord cramRecord = sam2CramRecordFactory.createCramRecord(samRecord);
-            cramRecord.index = ++index;
-            cramRecord.alignmentStart = samRecord.getAlignmentStart();
-            cramRecords.add(cramRecord);
-
-            if (cramRecord.qualityScores != SAMRecord.NULL_QUALS) {
-                cramRecord.setForcePreserveQualityScores(true);
-            }
-        }
-
-
-        if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount()) {
-            log.warn("Abnormally high number of mismatches, possibly wrong reference.");
-        }
-
-        if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
-            // mating:
-            final Map<String, CramCompressionRecord> primaryMateMap = new TreeMap<String, CramCompressionRecord>();
-            final Map<String, CramCompressionRecord> secondaryMateMap = new TreeMap<String, CramCompressionRecord>();
-            for (final CramCompressionRecord r : cramRecords) {
-                if (!r.isMultiFragment()) {
-                    r.setDetached(true);
-
-                    r.setHasMateDownStream(false);
-                    r.recordsToNextFragment = -1;
-                    r.next = null;
-                    r.previous = null;
-                } else {
-                    final String name = r.readName;
-                    final Map<String, CramCompressionRecord> mateMap = r.isSecondaryAlignment() ? secondaryMateMap : primaryMateMap;
-                    final CramCompressionRecord mate = mateMap.get(name);
-                    if (mate == null) {
-                        mateMap.put(name, r);
-                    } else {
-                        CramCompressionRecord prev = mate;
-                        while (prev.next != null) prev = prev.next;
-                        prev.recordsToNextFragment = r.index - prev.index - 1;
-                        prev.next = r;
-                        r.previous = prev;
-                        r.previous.setHasMateDownStream(true);
-                        r.setHasMateDownStream(false);
-                        r.setDetached(false);
-                        r.previous.setDetached(false);
-                    }
-                }
-            }
-
-            // mark unpredictable reads as detached:
-            for (final CramCompressionRecord cramRecord : cramRecords) {
-                if (cramRecord.next == null || cramRecord.previous != null) continue;
-                CramCompressionRecord last = cramRecord;
-                while (last.next != null) last = last.next;
-
-                if (cramRecord.isFirstSegment() && last.isLastSegment()) {
-                    final int templateLength = CramNormalizer.computeInsertSize(cramRecord, last);
-
-                    if (cramRecord.templateSize == templateLength) {
-                        last = cramRecord.next;
-                        while (last.next != null) {
-                            if (last.templateSize != -templateLength)
-                                break;
-
-                            last = last.next;
-                        }
-                        if (last.templateSize != -templateLength) detach(cramRecord);
-                    }else detach(cramRecord);
-                } else detach(cramRecord);
-            }
-
-            for (final CramCompressionRecord cramRecord : primaryMateMap.values()) {
-                if (cramRecord.next != null) continue;
-                cramRecord.setDetached(true);
-
-                cramRecord.setHasMateDownStream(false);
-                cramRecord.recordsToNextFragment = -1;
-                cramRecord.next = null;
-                cramRecord.previous = null;
-            }
-
-            for (final CramCompressionRecord cramRecord : secondaryMateMap.values()) {
-                if (cramRecord.next != null) continue;
-                cramRecord.setDetached(true);
-
-                cramRecord.setHasMateDownStream(false);
-                cramRecord.recordsToNextFragment = -1;
-                cramRecord.next = null;
-                cramRecord.previous = null;
-            }
-        }
-        else {
-            for (final CramCompressionRecord cramRecord : cramRecords) {
-                cramRecord.setDetached(true);
-            }
-        }
-
-        //TODO: these records need to be broken up into groups with like reference context types, since if there is
-        //TODO: more than one type present, they need to be split across multiple containers
-        //TODO: this should really accumulate records to a slice, not a container, and then submit the slices
-        //TODO: one at a time to container and let it aggregate and write them out as needed
-        final Container container = containerFactory.buildContainer(cramRecords, offset);
-        for (final Slice slice : container.getSlices()) {
-            slice.setRefMD5(referenceBases);
-        }
-        offset += ContainerIO.writeContainer(cramVersion, container, outputStream);
-        if (indexer != null) {
-            /**
-             * Using silent validation here because the reads have been through validation already or
-             * they have been generated somehow through the htsjdk.
-             */
-            indexer.processContainer(container, ValidationStringency.SILENT);
-        }
-        samRecords.clear();
-        refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
-    }
-
-    /**
-     * Traverse the graph and mark all segments as detached.
-     *
-     * @param cramRecord the starting point of the graph
-     */
-    private static void detach(CramCompressionRecord cramRecord) {
-        do {
-            cramRecord.setDetached(true);
-
-            cramRecord.setHasMateDownStream(false);
-            cramRecord.recordsToNextFragment = -1;
-        }
-        while ((cramRecord = cramRecord.next) != null);
-    }
-
-    /**
-     * Check if the reference has changed and create a new record factory using the new reference.
-     *
-     * @param samRecordReferenceIndex index of the new reference sequence
-     */
-    private void updateReferenceContext(final int samRecordReferenceIndex) {
-        if (refSeqIndex == ReferenceContext.MULTIPLE_REFERENCE_ID) {
-            return;
-        }
-
-        if (refSeqIndex == REF_SEQ_INDEX_NOT_INITIALIZED) {
-            refSeqIndex = samRecordReferenceIndex;
-        } else if (refSeqIndex != samRecordReferenceIndex) {
-            refSeqIndex = ReferenceContext.MULTIPLE_REFERENCE_ID;
-    }
+        return referenceBases;
     }
 
 }

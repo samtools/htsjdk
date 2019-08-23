@@ -37,15 +37,12 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         // src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingMapProfileBEST.json has the encoding map used by this strategy
         final File encodingStrategyFile = new File("src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingStrategyTemplate.json");
         final CRAMEncodingStrategy testStrategy = CRAMEncodingStrategy.readFromPath(encodingStrategyFile.toPath());
-        final File tempOutCRAM = File.createTempFile("encodingStrategiesTest", ".cram");
+        final File tempOutCRAM = File.createTempFile("bestEncodingStrategyTest", ".cram");
         System.out.println(String.format("Output file: %s", tempOutCRAM.toPath()));
         final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
         assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile);
         tempOutCRAM.delete();
-        final String testSummary = String.format("Size: %,d Strategy %s",
-                fileSize,
-                testStrategy);
-        System.out.println(testSummary);
+        System.out.println(String.format("Size: %,d Strategy %s", fileSize, testStrategy));
     }
 
     @Test
@@ -59,9 +56,10 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
         // the larger reads/slice and slices/container values are only interesting if there
         // are enough records in the input file to cause these thresholds to be crossed
+        //      for (final int slicesPerContainer : Arrays.asList(1, 3)) {
         for (final int gzipCompressionLevel : Arrays.asList(5, 9)) {
             for (final int readsPerSlice : Arrays.asList(10000, 20000)) {
-                for (final int slicesPerContainer : Arrays.asList(1, 3)) {
+                for (final int slicesPerContainer : Arrays.asList(1)) {
                     for (final DataSeries dataSeries : enumerateDataSeries()) {
                         for (final EncodingDescriptor encodingDescriptor : enumerateEncodingDescriptorsFor(dataSeries)) {
                             for (final ExternalCompressor compressor : enumerateExternalCompressors(gzipCompressionLevel)) {
@@ -72,12 +70,14 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                                         dataSeries,
                                         encodingDescriptor,
                                         compressor);
-                                final File tempOutCRAM = File.createTempFile("encodingStrategiesTest", ".cram");
+
+                                final File tempOutCRAM = File.createTempFile("allEncodingStrategyCombinations", ".cram");
                                 final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
-
                                 assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile);
-
                                 tempOutCRAM.delete();
+                                final File mapPath = new File(testStrategy.getCustomCompressionMapPath());
+                                mapPath.delete();
+
                                 final String testSummary = String.format(
                                         "Size: %,d Test: %,d Series: %s Encoding: %s Compressor: %s %s",
                                         fileSize,
