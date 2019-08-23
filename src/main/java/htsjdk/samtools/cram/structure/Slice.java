@@ -68,6 +68,7 @@ public class Slice {
     private SliceBlocks sliceBlocks = new SliceBlocks();
 
     // for indexing purposes
+    //TODO: this should be the same as CRAMRecord.SLICE_INDEX_DEFAULT when used for sliceIndex
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
 
     /**
@@ -295,6 +296,11 @@ public class Slice {
     }
 
     public void setRefMD5(final byte[] ref) {
+        if (referenceContext.isMultiRef()) {
+            //TODO: fix this
+            //log.warn("Attempt to set MD5 on multiref slice");
+            //throw new IllegalArgumentException("Attempt to set MD5 on multiref slice");
+        }
         alignmentBordersSanityCheck(ref);
 
         if (! referenceContext.isMappedSingleRef() && alignmentStart < 1) {
@@ -455,16 +461,16 @@ public class Slice {
      * @param compressionHeader the enclosing {@link Container}'s Compression Header
      * @return a Slice corresponding to the given records
      */
-    public static Slice buildSlice(final List<CramCompressionRecord> records,
+    public static Slice buildSlice(final List<CRAMRecord> records,
                                    final CompressionHeader compressionHeader) {
         final Slice slice = initializeFromRecords(records, compressionHeader);
         final CramRecordWriter writer = new CramRecordWriter(slice);
-        writer.writeCramCompressionRecords(records, slice.alignmentStart);
+        writer.writeCRAMCompressionRecords(records, slice.alignmentStart);
         return slice;
     }
 
     /**
-     * Using a collection of {@link CramCompressionRecord}s,
+     * Using a collection of {@link CRAMRecord}s,
      * determine whether the slice is single ref, unmapped or multi reference.
      * Derive alignment boundaries for the slice if single ref.
      *
@@ -479,14 +485,14 @@ public class Slice {
      *
      * Unmapped: all records are unmapped and unplaced
      * - note however that we do not actually check mapping flags for unplaced reads.
-     * @see CramCompressionRecord#isPlaced()
+     * @see CRAMRecord#isPlaced()
      *
      * @see ReferenceContextType
      * @param records the input records
      * @return the initialized Slice
      */
     private static Slice initializeFromRecords(
-            final Collection<CramCompressionRecord> records,
+            final Collection<CRAMRecord> records,
             final CompressionHeader compressionHeader)
     {
         final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
@@ -500,13 +506,13 @@ public class Slice {
         int unmappedReadsCount = 0;
         int unplacedReadsCount = 0;
 
-        for (final CramCompressionRecord record : records) {
+        for (final CRAMRecord record : records) {
             hasher.add(record);
-            baseCount += record.readLength;
+            baseCount += record.getReadLength();
 
             if (record.isPlaced()) {
-                referenceContexts.add(new ReferenceContext(record.sequenceId));
-                singleRefAlignmentStart = Math.min(record.alignmentStart, singleRefAlignmentStart);
+                referenceContexts.add(new ReferenceContext(record.getReferenceIndex()));
+                singleRefAlignmentStart = Math.min(record.getAlignmentStart(), singleRefAlignmentStart);
                 singleRefAlignmentEnd = Math.max(record.getAlignmentEnd(), singleRefAlignmentEnd);
 
                 if (record.isSegmentUnmapped()) {
@@ -524,7 +530,7 @@ public class Slice {
             // TODO? either update isPlaced() to match this logic (i.e. don't check the reference ID)
             // or update BAMIndexMetadata.recordMetaData(SAMRecord) to have a similar notion of placement
 
-            if (record.alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+            if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
                 unplacedReadsCount++;
             }
         }
@@ -560,43 +566,23 @@ public class Slice {
         return slice;
     }
 
-    public ArrayList<CramCompressionRecord> getRecords(
-            final SAMFileHeader samFileHeader,
+    public ArrayList<CRAMRecord> getRecords(
+            final SAMFileHeader samFileHeader, //TODO: unused ....
             final ValidationStringency validationStringency) {
-        final ReferenceContext sliceContext = getReferenceContext();
-        String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
-        if (sliceContext.isMappedSingleRef()) {
-            final SAMSequenceRecord sequence = samFileHeader.getSequence(sliceContext.getSequenceId());
-            seqName = sequence.getSequenceName();
-        }
-
         final CramRecordReader reader = new CramRecordReader(this, validationStringency);
 
-        final ArrayList<CramCompressionRecord> records = new ArrayList<>(nofRecords);
+        final ArrayList<CRAMRecord> records = new ArrayList<>(nofRecords);
 
         int prevAlignmentStart = alignmentStart;
         for (int i = 0; i < nofRecords; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.sliceIndex = index;
-            record.index = i;
-
             // read the new record and update the running prevAlignmentStart
-            prevAlignmentStart = reader.read(record, prevAlignmentStart);
+            final CRAMRecord cramRecord = reader.read(index, i, prevAlignmentStart);
+            prevAlignmentStart = cramRecord.getAlignmentStart();
 
-            if (sliceContext.isMappedSingleRef() && record.sequenceId == sliceContext.getSequenceId()) {
-                record.sequenceName = seqName;
-            } else {
-                if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                    record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
-                } else {
-                    record.sequenceName = samFileHeader.getSequence(record.sequenceId)
-                            .getSequenceName();
-                }
-            }
-
-            records.add(record);
+            records.add(cramRecord);
         }
 
         return records;
     }
+
 }

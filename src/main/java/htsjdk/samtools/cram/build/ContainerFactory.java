@@ -36,7 +36,7 @@ public class ContainerFactory {
     }
 
     /**
-     * Build a Container (and its constituent Slices) from {@link CramCompressionRecord}s.
+     * Build a Container (and its constituent Slices) from {@link CRAMRecord}s.
      * Note that this will always result in a single Container, regardless of how many Slices
      * are created.  It is up to the caller to divide the records into multiple Containers,
      * if that is desired.
@@ -45,7 +45,7 @@ public class ContainerFactory {
      * @param containerByteOffset the Container's byte offset from the start of the stream
      * @return the container built from these records
      */
-    public Container buildContainer(final List<CramCompressionRecord> records, final long containerByteOffset) {
+    public Container buildContainer(final List<CRAMRecord> records, final long containerByteOffset) {
         final CompressionHeader compressionHeader = compressionHeaderFactory.build(records, coordinateSorted);
         //TODO: CompressionHeader can just get this value from the EncodingStrategy
         compressionHeader.readNamesIncluded = encodingStrategy.getPreserveReadNames();
@@ -55,7 +55,7 @@ public class ContainerFactory {
         int baseCount = 0;
         long lastGlobalRecordCounter = globalRecordCounter;
         for (int i = 0; i < records.size(); i += encodingStrategy.getRecordsPerSlice()) {
-            final List<CramCompressionRecord> sliceRecords = records.subList(i,
+            final List<CRAMRecord> sliceRecords = records.subList(i,
                     Math.min(records.size(), i + encodingStrategy.getRecordsPerSlice()));
             final Slice slice = Slice.buildSlice(sliceRecords, compressionHeader);
             slice.globalRecordCounter = globalRecordCounter;
@@ -74,5 +74,4 @@ public class ContainerFactory {
         container.bases += baseCount;
         return container;
     }
-
 }

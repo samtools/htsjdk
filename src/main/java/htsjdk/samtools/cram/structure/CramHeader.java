@@ -55,8 +55,9 @@ public final class CramHeader {
      */
     public CramHeader(final Version version, final String id, final SAMFileHeader samFileHeader) {
         this.version = version;
-
-        if (id != null) System.arraycopy(id.getBytes(), 0, this.id, 0, Math.min(id.length(), this.id.length));
+        if (id != null) {
+            System.arraycopy(id.getBytes(),0, this.id, 0, Math.min(id.length(), this.id.length));
+        }
         this.samFileHeader = samFileHeader;
     }
 

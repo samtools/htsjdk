@@ -80,7 +80,7 @@ import java.util.List;
      * Create a SubstitutionMatrix given a list of CramCompressionRecord
      * @param records array of CramCompressionRecord with Substitutions
      */
-    public SubstitutionMatrix(final List<CramCompressionRecord> records) {
+    public SubstitutionMatrix(final List<CRAMRecord> records) {
         final long[][] frequencies = buildFrequencies(records);
         for (final SubstitutionBase b : BASES) {
             // substitutionCodeVector has a side effect of updating codeByBase
@@ -218,11 +218,11 @@ import java.util.List;
     }
 
     // populate a matrix of substitution frequencies from a list of CramCompressionRecords with Substitution features
-    private static long[][] buildFrequencies(final List<CramCompressionRecord> cramRecords) {
+    private static long[][] buildFrequencies(final List<CRAMRecord> cramRecords) {
         final long[][] frequencies = new long[SYMBOL_SPACE_SIZE][SYMBOL_SPACE_SIZE];
-        for (final CramCompressionRecord record : cramRecords) {
-            if (record.readFeatures != null) {
-                for (final ReadFeature readFeature : record.readFeatures) {
+        for (final CRAMRecord record : cramRecords) {
+            if (record.getReadFeatures() != null) {
+                for (final ReadFeature readFeature : record.getReadFeatures()) {
                     if (readFeature.getOperator() == Substitution.operator) {
                         final Substitution substitution = ((Substitution) readFeature);
                         final byte refBase = substitution.getReferenceBase();

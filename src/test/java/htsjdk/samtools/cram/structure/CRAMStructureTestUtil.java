@@ -1,17 +1,13 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.*;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class CRAMStructureTestUtil extends HtsjdkTest {
@@ -44,53 +40,71 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         return header;
     }
 
-    public static CramCompressionRecord createMappedRecord(final int index,
-                                                           final int sequenceId,
-                                                           final int alignmentStart) {
-        final CramCompressionRecord record = new CramCompressionRecord();
-        record.index = index;
-        record.sequenceId = sequenceId;
-        record.alignmentStart = alignmentStart;
-        record.setSegmentUnmapped(false);
-
-        record.readBases = "AAA".getBytes();
-        record.qualityScores = "!!!".getBytes();
-        record.readLength = READ_LENGTH_FOR_TEST_RECORDS;
-        record.readName = "A READ NAME";
-        record.setLastSegment(true);
-        record.readFeatures = Collections.emptyList();
-        return record;
+    public static CRAMRecord createMappedRecord(final int index, final int referenceIndex, final int alignmentStart) {
+        return new CRAMRecord(
+                1,
+                index,
+                SAMFlag.SECOND_OF_PAIR.intValue(),
+                0,
+                "A READ NAME",
+                READ_LENGTH_FOR_TEST_RECORDS,
+                referenceIndex,
+                alignmentStart,
+                0,
+                30,
+                "!!!".getBytes(),
+                "AAA".getBytes(),
+                null,
+                null,
+                1,
+                0,
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1);
     }
 
-
-    public static CramCompressionRecord createUnmappedPlacedRecord(final int index,
-                                                                   final int sequenceId,
-                                                                   final int alignmentStart) {
-        final CramCompressionRecord record = createMappedRecord(index, sequenceId, alignmentStart);
-        record.setSegmentUnmapped(true);
-        return record;
+    public static CRAMRecord createUnmappedPlacedRecord(final int index, final int referenceIndex, final int alignmentStart) {
+        return new CRAMRecord(
+                1,
+                index,
+                SAMFlag.READ_UNMAPPED.intValue(),
+                0,
+                "A READ NAME",
+                READ_LENGTH_FOR_TEST_RECORDS,
+                referenceIndex,
+                alignmentStart,
+                0,
+                30,
+                "!!!".getBytes(),
+                "AAA".getBytes(),
+                null,
+                null,
+                1,
+                0,
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1);
     }
 
-    public static CramCompressionRecord createUnmappedUnplacedRecord(final int index) {
+    public static CRAMRecord createUnmappedUnplacedRecord(final int index) {
         return createUnmappedPlacedRecord(index, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);
     }
 
-    public static List<CramCompressionRecord> getSingleRefRecords(final int recordCount,
-                                                                  final int singleSequenceId) {
-        final List<CramCompressionRecord> records = new ArrayList<>();
+    public static List<CRAMRecord> getSingleRefRecords(final int recordCount, final int singleReferenceIndex) {
+        final List<CRAMRecord> records = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
             // set half unmapped-but-placed, to show that it does not make a difference
             if (i % 2 == 0) {
-                records.add(createUnmappedPlacedRecord(i, singleSequenceId, i + 1));
+                records.add(createUnmappedPlacedRecord(i, singleReferenceIndex, i + 1));
             } else {
-                records.add(createMappedRecord(i, singleSequenceId, i + 1));
+                records.add(createMappedRecord(i, singleReferenceIndex, i + 1));
             }
         }
         return records;
     }
 
-    public static List<CramCompressionRecord> getMultiRefRecords(final int recordCount) {
-        final List<CramCompressionRecord> records = new ArrayList<>();
+    public static List<CRAMRecord> getMultiRefRecords(final int recordCount) {
+        final List<CRAMRecord> records = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
             // set half unmapped-but-placed, to show that it does not make a difference
             if (i % 2 == 0) {
@@ -102,10 +116,10 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         return records;
     }
 
-    public static List<CramCompressionRecord> getUnplacedRecords(final int recordCount) {
-        final List<CramCompressionRecord> records = new ArrayList<>();
+    public static List<CRAMRecord> getUnplacedRecords(final int recordCount) {
+        final List<CRAMRecord> records = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
-            final CramCompressionRecord record = createUnmappedUnplacedRecord(i);
+            final CRAMRecord record = createUnmappedUnplacedRecord(i);
             records.add(record);
         }
         return records;
@@ -115,30 +129,30 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
     // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
     // but not both.  We treat these weird edge cases as unplaced.
 
-    public static List<CramCompressionRecord> getHalfUnplacedNoRefRecords(final int recordCount) {
-        final List<CramCompressionRecord> records = new ArrayList<>();
+    public static List<CRAMRecord> getHalfUnplacedNoRefRecords(final int recordCount) {
+        final List<CRAMRecord> records = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
             records.add(createUnmappedPlacedRecord(i, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, i + 1));
         }
         return records;
     }
 
-    public static List<CramCompressionRecord> getHalfUnplacedNoStartRecords(final int recordCount, final int sequenceId) {
-        final List<CramCompressionRecord> records = new ArrayList<>();
+    public static List<CRAMRecord> getHalfUnplacedNoStartRecords(final int recordCount, final int referenceIndex) {
+        final List<CRAMRecord> records = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
-            records.add(createUnmappedPlacedRecord(i, sequenceId, SAMRecord.NO_ALIGNMENT_START));
+            records.add(createUnmappedPlacedRecord(i, referenceIndex, SAMRecord.NO_ALIGNMENT_START));
         }
         return records;
     }
 
-    public static List<CramCompressionRecord> getSingleRefRecordsWithOneUnmapped(final int testRecordCount, final int mappedSequenceId) {
-        final List<CramCompressionRecord> retval = getSingleRefRecords(testRecordCount - 1, mappedSequenceId);
+    public static List<CRAMRecord> getSingleRefRecordsWithOneUnmapped(final int testRecordCount, final int mappedReferenceIndex) {
+        final List<CRAMRecord> retval = getSingleRefRecords(testRecordCount - 1, mappedReferenceIndex);
         retval.add(createUnmappedUnplacedRecord(testRecordCount - 1));
         return retval;
     }
 
-    public static List<CramCompressionRecord> getMultiRefRecordsWithOneUnmapped(final int testRecordCount) {
-        final List<CramCompressionRecord> retval = getMultiRefRecords(testRecordCount - 1);
+    public static List<CRAMRecord> getMultiRefRecordsWithOneUnmapped(final int testRecordCount) {
+        final List<CRAMRecord> retval = getMultiRefRecords(testRecordCount - 1);
         retval.add(createUnmappedUnplacedRecord(testRecordCount - 1));
         return retval;
     }
@@ -149,7 +163,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
                 new CRAMEncodingStrategy().setRecordsPerSlice(10));
         final List<Container> testContainers = new ArrayList<>(3);
 
-        final List<CramCompressionRecord> records = new ArrayList<>();
+        final List<CRAMRecord> records = new ArrayList<>();
 
         int index = 0;
         records.add(createMappedRecord(index, index, index + 1));

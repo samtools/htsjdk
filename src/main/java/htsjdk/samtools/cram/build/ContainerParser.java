@@ -19,8 +19,8 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.structure.CRAMRecord;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 
 import java.util.ArrayList;
@@ -35,8 +35,8 @@ public class ContainerParser {
     }
 
     //TODO: its unnecessary to both pass in AND return the list of records
-    public List<CramCompressionRecord> getRecords(final Container container,
-                                                  ArrayList<CramCompressionRecord> records,
+    public List<CRAMRecord> getRecords(final Container container,
+                                                  ArrayList<CRAMRecord> records,
                                                   final ValidationStringency validationStringency) {
         if (container.isEOF()) {
             return Collections.emptyList();

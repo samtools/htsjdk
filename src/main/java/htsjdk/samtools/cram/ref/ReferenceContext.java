@@ -14,8 +14,9 @@ import htsjdk.samtools.cram.CRAMException;
  *
  */
 public class ReferenceContext implements Comparable<ReferenceContext> {
-    public static final int MULTIPLE_REFERENCE_ID = -2;
     public static final int UNMAPPED_UNPLACED_ID = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX; // -1
+    public static final int MULTIPLE_REFERENCE_ID = -2;
+    public static final int UNINITIALIZED_REFERENCE_ID = -3;
 
     public static final ReferenceContext MULTIPLE_REFERENCE_CONTEXT = new ReferenceContext(MULTIPLE_REFERENCE_ID);
     public static final ReferenceContext UNMAPPED_UNPLACED_CONTEXT = new ReferenceContext(UNMAPPED_UNPLACED_ID);
@@ -88,7 +89,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * Does this ReferenceContext refer to only unmapped-unplaced reads?
      *
      * Note: not a guarantee that the unmapped flag is set for all records
-     * @see htsjdk.samtools.cram.structure.CramCompressionRecord#isPlaced()
+     * @see htsjdk.samtools.cram.structure.CRAMRecord#isPlaced()
      *
      * @return true if the ReferenceContext refers only to unmapped-unplaced reads
      */

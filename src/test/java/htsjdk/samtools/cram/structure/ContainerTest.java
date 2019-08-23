@@ -148,7 +148,7 @@ public class ContainerTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "getSpansTestCases")
-    public void getSpansTest(final List<CramCompressionRecord> records,
+    public void getSpansTest(final List<CRAMRecord> records,
                              final ReferenceContext expectedReferenceContext,
                              final AlignmentSpan expectedAlignmentSpan) {
         final long dummyByteOffset = 0;

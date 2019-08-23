@@ -29,7 +29,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
     }
 
     private List<SAMRecord> createRecords(int count) {
-        final List<SAMRecord> list = new ArrayList<SAMRecord>(count);
+        final List<SAMRecord> list = new ArrayList<>(count);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         if (builder.getHeader().getReadGroups().isEmpty()) {
             throw new IllegalStateException("Read group expected in the header");
@@ -95,7 +95,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         final SAMRecordIterator iterator = cReader.getIterator();
         int count = 0;
         while (iterator.hasNext()) {
-            SAMRecord actualRecord = iterator.next();
+            iterator.next();
             count++;
         }
         Assert.assertEquals(count, samRecords.size());

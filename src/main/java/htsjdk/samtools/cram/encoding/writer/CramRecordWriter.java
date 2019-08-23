@@ -134,11 +134,11 @@ public class CramRecordWriter {
      * @param records the Cram Compression Records to write
      * @param initialAlignmentStart the alignmentStart of the enclosing {@link Slice}, for delta calculation
      */
-    public void writeCramCompressionRecords(final List<CramCompressionRecord> records, final int initialAlignmentStart) {
+    public void writeCRAMCompressionRecords(final List<CRAMRecord> records, final int initialAlignmentStart) {
         int prevAlignmentStart = initialAlignmentStart;
-        for (final CramCompressionRecord record : records) {
+        for (final CRAMRecord record : records) {
             writeRecordsToStreams(record, prevAlignmentStart);
-            prevAlignmentStart = record.alignmentStart;
+            prevAlignmentStart = record.getAlignmentStart();
         }
         sliceBlocksWriteStreams.writeStreamsToSliceBlocks();
     }
@@ -169,129 +169,132 @@ public class CramRecordWriter {
      * @param r the Cram Compression Record to write
      * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
      */
-    private void writeRecordsToStreams(final CramCompressionRecord r, final int prevAlignmentStart) {
+    private void writeRecordsToStreams(final CRAMRecord r, final int prevAlignmentStart) {
 
         // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,
         // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.
-        bitFlagsC.writeData(r.flags);
-        compBitFlagsC.writeData(r.getCompressionFlags());
+        bitFlagsC.writeData(r.getBamFlags());
+        compBitFlagsC.writeData(r.getCRAMFlags());
         if (slice.getReferenceContext().isMultiRef()) {
-            refIdCodec.writeData(r.sequenceId);
+            refIdCodec.writeData(r.getReferenceIndex());
         }
 
-        readLengthC.writeData(r.readLength);
+        readLengthC.writeData(r.getReadLength());
 
         if (compressionHeader.isCoordinateSorted()) {
-            final int alignmentDelta = r.alignmentStart - prevAlignmentStart;
+            final int alignmentDelta = r.getAlignmentStart() - prevAlignmentStart;
             alStartC.writeData(alignmentDelta);
         } else {
-            alStartC.writeData(r.alignmentStart);
+            alStartC.writeData(r.getAlignmentStart());
         }
 
-        readGroupC.writeData(r.readGroupID);
+        readGroupC.writeData(r.getReadGroupID());
 
         if (compressionHeader.readNamesIncluded) {
-            readNameC.writeData(r.readName.getBytes(charset));
+            readNameC.writeData(r.getReadName().getBytes(charset));
         }
 
         // mate record:
         if (r.isDetached()) {
             mateBitFlagsCodec.writeData(r.getMateFlags());
             if (!compressionHeader.readNamesIncluded) {
-                readNameC.writeData(r.readName.getBytes(charset));
+                readNameC.writeData(r.getReadName().getBytes(charset));
             }
 
-            nextFragmentReferenceSequenceIDCodec.writeData(r.mateSequenceID);
-            nextFragmentAlignmentStart.writeData(r.mateAlignmentStart);
-            templateSize.writeData(r.templateSize);
+            nextFragmentReferenceSequenceIDCodec.writeData(r.getMateReferenceIndex());
+            nextFragmentAlignmentStart.writeData(r.getMateAlignmentStart());
+            templateSize.writeData(r.getTemplateSize());
         } else if (r.isHasMateDownStream()) {
-            distanceC.writeData(r.recordsToNextFragment);
+            distanceC.writeData(r.getRecordsToNextFragment());
         }
 
         // tag records:
-        tagIdListCodec.writeData(r.tagIdsIndex.value);
-        if (r.tags != null) {
-            for (int i = 0; i < r.tags.length; i++) {
-                final DataSeriesWriter<byte[]> writer = tagValueCodecs.get(r.tags[i].keyType3BytesAsInt);
-                writer.writeData(r.tags[i].getValueAsByteArray());
+        tagIdListCodec.writeData(r.getTagIdsIndex().value);
+        if (r.getTags() != null) {
+            for (int i = 0; i < r.getTags().size(); i++) {
+                final DataSeriesWriter<byte[]> writer = tagValueCodecs.get(r.getTags().get(i).keyType3BytesAsInt);
+                writer.writeData(r.getTags().get(i).getValueAsByteArray());
             }
         }
 
         if (!r.isSegmentUnmapped()) {
             // writing read features:
-            numberOfReadFeaturesCodec.writeData(r.readFeatures.size());
-            int prevPos = 0;
-            for (final ReadFeature f : r.readFeatures) {
-                featuresCodeCodec.writeData(f.getOperator());
+            final int featuresSize = r.getReadFeatures() == null ? 0 : r.getReadFeatures().size();
+            numberOfReadFeaturesCodec.writeData(featuresSize);
+            if (featuresSize != 0) {
+                int prevPos = 0;
+                for (final ReadFeature f : r.getReadFeatures()) {
+                    featuresCodeCodec.writeData(f.getOperator());
 
-                featurePositionCodec.writeData(f.getPosition() - prevPos);
-                prevPos = f.getPosition();
+                    featurePositionCodec.writeData(f.getPosition() - prevPos);
+                    prevPos = f.getPosition();
 
-                switch (f.getOperator()) {
-                    case ReadBase.operator:
-                        final ReadBase rb = (ReadBase) f;
-                        baseCodec.writeData(rb.getBase());
-                        qualityScoreCodec.writeData(rb.getQualityScore());
-                        break;
-                    case Substitution.operator:
-                        final Substitution sv = (Substitution) f;
-                        if (sv.getCode() < 0)
-                            baseSubstitutionCodeCodec.writeData(compressionHeader.substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
-                        else
-                            baseSubstitutionCodeCodec.writeData(sv.getCode());
-                        // baseSubstitutionCodec.writeData((byte) sv.getBaseChange().getChange());
-                        break;
-                    case Insertion.operator:
-                        final Insertion iv = (Insertion) f;
-                        insertionCodec.writeData(iv.getSequence());
-                        break;
-                    case SoftClip.operator:
-                        final SoftClip fv = (SoftClip) f;
-                        softClipCodec.writeData(fv.getSequence());
-                        break;
-                    case HardClip.operator:
-                        final HardClip hv = (HardClip) f;
-                        hardClipCodec.writeData(hv.getLength());
-                        break;
-                    case Padding.operator:
-                        final Padding pv = (Padding) f;
-                        paddingCodec.writeData(pv.getLength());
-                        break;
-                    case Deletion.operator:
-                        final Deletion dv = (Deletion) f;
-                        deletionLengthCodec.writeData(dv.getLength());
-                        break;
-                    case RefSkip.operator:
-                        final RefSkip rsv = (RefSkip) f;
-                        refSkipCodec.writeData(rsv.getLength());
-                        break;
-                    case InsertBase.operator:
-                        final InsertBase ib = (InsertBase) f;
-                        baseCodec.writeData(ib.getBase());
-                        break;
-                    case BaseQualityScore.operator:
-                        final BaseQualityScore bqs = (BaseQualityScore) f;
-                        qualityScoreCodec.writeData(bqs.getQualityScore());
-                        break;
-                    default:
-                        throw new RuntimeException("Unknown read feature operator: " + (char) f.getOperator());
+                    switch (f.getOperator()) {
+                        case ReadBase.operator:
+                            final ReadBase rb = (ReadBase) f;
+                            baseCodec.writeData(rb.getBase());
+                            qualityScoreCodec.writeData(rb.getQualityScore());
+                            break;
+                        case Substitution.operator:
+                            final Substitution sv = (Substitution) f;
+                            if (sv.getCode() < 0)
+                                baseSubstitutionCodeCodec.writeData(compressionHeader.substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
+                            else
+                                baseSubstitutionCodeCodec.writeData(sv.getCode());
+                            // baseSubstitutionCodec.writeData((byte) sv.getBaseChange().getChange());
+                            break;
+                        case Insertion.operator:
+                            final Insertion iv = (Insertion) f;
+                            insertionCodec.writeData(iv.getSequence());
+                            break;
+                        case SoftClip.operator:
+                            final SoftClip fv = (SoftClip) f;
+                            softClipCodec.writeData(fv.getSequence());
+                            break;
+                        case HardClip.operator:
+                            final HardClip hv = (HardClip) f;
+                            hardClipCodec.writeData(hv.getLength());
+                            break;
+                        case Padding.operator:
+                            final Padding pv = (Padding) f;
+                            paddingCodec.writeData(pv.getLength());
+                            break;
+                        case Deletion.operator:
+                            final Deletion dv = (Deletion) f;
+                            deletionLengthCodec.writeData(dv.getLength());
+                            break;
+                        case RefSkip.operator:
+                            final RefSkip rsv = (RefSkip) f;
+                            refSkipCodec.writeData(rsv.getLength());
+                            break;
+                        case InsertBase.operator:
+                            final InsertBase ib = (InsertBase) f;
+                            baseCodec.writeData(ib.getBase());
+                            break;
+                        case BaseQualityScore.operator:
+                            final BaseQualityScore bqs = (BaseQualityScore) f;
+                            qualityScoreCodec.writeData(bqs.getQualityScore());
+                            break;
+                        default:
+                            throw new RuntimeException("Unknown read feature operator: " + (char) f.getOperator());
+                    }
                 }
             }
 
             // mapping quality:
-            mappingQualityScoreCodec.writeData(r.mappingQuality);
+            mappingQualityScoreCodec.writeData(r.getMappingQuality());
             if (r.isForcePreserveQualityScores()) {
-                qualityScoreArrayCodec.writeData(r.qualityScores);
+                qualityScoreArrayCodec.writeData(r.getQualityScores());
             }
         } else {
             if (!r.isUnknownBases()) {
-                for (final byte b : r.readBases) {
+                for (final byte b : r.getReadBases()) {
                     baseCodec.writeData(b);
                 }
             }
 
             if (r.isForcePreserveQualityScores()) {
-                qualityScoreArrayCodec.writeData(r.qualityScores);
+                qualityScoreArrayCodec.writeData(r.getQualityScores());
             }
         }
     }

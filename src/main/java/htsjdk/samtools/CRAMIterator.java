@@ -17,7 +17,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.build.ContainerParser;
-import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.build.CramSpanContainerIterator;
@@ -67,7 +66,7 @@ public class CRAMIterator implements SAMRecordIterator {
      * (for identification by the validator which records are invalid)
      */
     private long samRecordIndex;
-    private ArrayList<CramCompressionRecord> cramRecords;
+    private ArrayList<CRAMRecord> cramRecords;
 
     public CRAMIterator(final InputStream inputStream,
                         final CRAMReferenceSource referenceSource,
@@ -193,25 +192,21 @@ public class CRAMIterator implements SAMRecordIterator {
             }
         }
 
-        normalizer.normalize(cramRecords, referenceBases, 0,
-                container.compressionHeader.substitutionMatrix);
+        normalizer.normalize(cramRecords, referenceBases, 0, container.compressionHeader.substitutionMatrix);
 
-        final Cram2SamRecordFactory cramToSamRecordFactory = new Cram2SamRecordFactory(
-                cramHeader.getSamFileHeader());
-
-        for (final CramCompressionRecord cramRecord : cramRecords) {
-            final SAMRecord samRecord = cramToSamRecordFactory.create(cramRecord);
+        for (final CRAMRecord cramRecord : cramRecords) {
+            final SAMRecord samRecord = cramRecord.toSAMRecord(cramHeader.getSamFileHeader());
             if (!cramRecord.isSegmentUnmapped()) {
-                final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
-                        .getSequence(cramRecord.sequenceId);
+                final SAMSequenceRecord sequence = cramHeader.getSamFileHeader().getSequence(cramRecord.getReferenceIndex());
                 referenceBases = referenceSource.getReferenceBases(sequence, true);
             }
 
             samRecord.setValidationStringency(validationStringency);
 
+            //TODO:
             if (mReader != null) {
-                final long chunkStart = (container.byteOffset << 16) | cramRecord.sliceIndex;
-                final long chunkEnd = ((container.byteOffset << 16) | cramRecord.sliceIndex) + 1;
+                final long chunkStart = (container.byteOffset << 16) | cramRecord.getSliceIndex();
+                final long chunkEnd = ((container.byteOffset << 16) | cramRecord.getSliceIndex()) + 1;
                 samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
             

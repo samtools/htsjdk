@@ -149,7 +149,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final int expectedUnplaced = 1;
 
-        final List<CramCompressionRecord> records = CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(RECORDS_PER_SLICE * 2);
+        final List<CRAMRecord> records = CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(RECORDS_PER_SLICE * 2);
 
         final long dummyByteOffset = 0;
         final Container container1 = FACTORY.buildContainer(records.subList(0, RECORDS_PER_SLICE), dummyByteOffset);
