@@ -36,7 +36,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import static htsjdk.samtools.util.IOUtil.openFileForReading;
 
 /**
  * Holds a single chain from a UCSC chain file.  Chain file format is described here: http://genome.ucsc.edu/goldenPath/help/chain.html
@@ -308,14 +307,22 @@ class Chain {
         return result;
     }
 
+    /**
+     * Read all the chains and load into an OverlapDetector.
+     * @param chainFile File in UCSC chain format.
+     * @return OverlapDetector with all Chains from reader loaded into it.
+     */
     static OverlapDetector<Chain> loadChains(final File chainFile) {
-        return loadChains(new BufferedLineReader(openFileForReading(chainFile)), chainFile.toString());
+        IOUtil.assertFileIsReadable(chainFile);
+        try(final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile))){
+            return loadChains(reader, chainFile.toString());
+        }
     }
 
     /**
      * Read all the chains and load into an OverlapDetector.
      * @param reader reader of file in UCSC chain format.
-     * @return OverlapDetector will all Chains from reader loaded into it.
+     * @return OverlapDetector with all Chains from reader loaded into it.
      */
     static OverlapDetector<Chain> loadChains(final BufferedLineReader reader, String sourceName) {
         final OverlapDetector<Chain> ret = new OverlapDetector<Chain>(0, 0);
@@ -323,7 +330,6 @@ class Chain {
         while ((chain = Chain.loadChain(reader, sourceName)) != null) {
             ret.addLhs(chain, chain.interval);
         }
-        reader.close();
         return ret;
     }
 
