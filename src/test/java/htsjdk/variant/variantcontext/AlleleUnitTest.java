@@ -104,6 +104,12 @@ public class AlleleUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void testPartiallySpannedAllele() {
+        final Allele partial = new Allele("*ATAT", false);
+        Assert.assertEquals(partial.getDisplayString(), "*ATAT");
+    }
+
+    @Test
     public void testCreatingIndelAlleles() {
         Assert.assertEquals(ATIns.length(), 2);
         Assert.assertEquals(ATCIns.length(), 3);
