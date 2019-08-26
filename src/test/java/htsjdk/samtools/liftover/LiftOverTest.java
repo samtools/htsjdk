@@ -31,8 +31,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -44,12 +43,19 @@ public class LiftOverTest extends HtsjdkTest {
     private static final File CHAIN_FILE = new File(TEST_DATA_DIR, "hg18ToHg19.over.chain");
 
     private LiftOver liftOver;
-    Map<String, Set<String>> contigMap;
+    private Map<String, Set<String>> contigMap;
+    private LiftOver liftOverFromInputStream;
 
     @BeforeClass
     public void initLiftOver() {
         liftOver = new LiftOver(CHAIN_FILE);
         contigMap = liftOver.getContigMap();
+    }
+
+    @BeforeClass
+    public void initLiftOverFromInputStream() throws FileNotFoundException {
+        InputStream chainFileInputStream = new FileInputStream(CHAIN_FILE);
+        liftOverFromInputStream = new LiftOver(chainFileInputStream, CHAIN_FILE.toString());
     }
 
     @Test(dataProvider = "testIntervals")
@@ -461,7 +467,7 @@ public class LiftOverTest extends HtsjdkTest {
         File outFile = File.createTempFile("test.", ".chain");
         outFile.deleteOnExit();
         PrintWriter pw = new PrintWriter(outFile);
-        final Map<Integer, Chain> originalChainMap = new TreeMap<Integer, Chain>();
+        final Map<Integer, Chain> originalChainMap = new TreeMap<>();
         for (final Chain chain : chains.getAll()) {
             chain.write(pw);
             originalChainMap.put(chain.id, chain);
@@ -469,11 +475,16 @@ public class LiftOverTest extends HtsjdkTest {
         pw.close();
 
         final OverlapDetector<Chain> newChains = Chain.loadChains(outFile);
-        final Map<Integer, Chain> newChainMap = new TreeMap<Integer, Chain>();
+        final Map<Integer, Chain> newChainMap = new TreeMap<>();
         for (final Chain chain : newChains.getAll()) {
             newChainMap.put(chain.id, chain);
         }
         Assert.assertEquals(newChainMap, originalChainMap);
+    }
+
+    @Test(dataProvider = "testIntervals")
+    public void loadLiftOverFromInputStream(final Interval in, final Interval expected) {
+        Assert.assertEquals(liftOverFromInputStream.liftOver(in), expected);
     }
 
     @Test(dataProvider = "testIntervals")
