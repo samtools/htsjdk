@@ -339,9 +339,14 @@ public class DiskBackedQueue<E> implements Queue<E> {
     private void closeIOResources() {
         CloserUtil.close(this.outputStream);
         CloserUtil.close(this.inputStream);
-        if (this.diskRecords != null) IOUtil.deletePaths(this.diskRecords);
+        if (this.diskRecords != null){
+            try {
+                Files.delete(this.diskRecords);
+            } catch (IOException e) {
+                System.err.println("Could not delete file " + this.diskRecords);
+            }
+        }
     }
-
     /**
      * Not supported. Cannot access particular elements, as some elements may have been written to disk
      *
