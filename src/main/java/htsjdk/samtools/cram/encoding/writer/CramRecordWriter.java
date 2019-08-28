@@ -27,7 +27,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A writer that emits CramRecords into Streams representing a Slice's data series blocks via codecs.
+ * A writer that emits CRAMRecords into streams representing a Slice's data series blocks. This essentially acts as
+ * a bridge between CRAMRecord fields and the various various data series streams associated with a Slice.
  */
 public class CramRecordWriter {
     //NOTE: these are all named with a "Codec" suffix, but they're really DataSeriesWriters, which are
@@ -173,7 +174,7 @@ public class CramRecordWriter {
 
         // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,
         // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.
-        bitFlagsC.writeData(r.getBamFlags());
+        bitFlagsC.writeData(r.getBAMFlags());
         compBitFlagsC.writeData(r.getCRAMFlags());
         if (slice.getReferenceContext().isMultiRef()) {
             refIdCodec.writeData(r.getReferenceIndex());
@@ -272,6 +273,7 @@ public class CramRecordWriter {
                             baseCodec.writeData(ib.getBase());
                             break;
                         case BaseQualityScore.operator:
+                            //TODO: the code never generates these...
                             final BaseQualityScore bqs = (BaseQualityScore) f;
                             qualityScoreCodec.writeData(bqs.getQualityScore());
                             break;

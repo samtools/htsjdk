@@ -29,8 +29,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A reader used to consume encoded CramRecords, via codecs, from a set of streams representing
- * a Slice's data series blocks.
+ * A reader used to consume encoded CRAMRecords from a set of streams representing a Slice's data series blocks.
+ * This essentially acts as a bridge between CRAMRecord fields and the various various data series streams
+ * associated with a Slice.
  */
 public class CramRecordReader {
     //TODO: these are all named with a "Codec" suffix, but they're really DataSeriesReaders, which are
@@ -322,8 +323,7 @@ public class CramRecordReader {
                 mateFlags,
                 mateSequenceID,
                 mateAlignmentStart,
-                recordsToNextFragment
-        );
+                recordsToNextFragment);
     }
 
     private <T> DataSeriesReader<T> createDataSeriesReader(final DataSeries dataSeries) {

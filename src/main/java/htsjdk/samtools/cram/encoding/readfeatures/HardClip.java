@@ -29,9 +29,6 @@ public class HardClip implements Serializable, ReadFeature {
     private int position;
     private int length;
 
-    public HardClip() {
-    }
-
     public HardClip(final int position, final int length) {
         this.position = position;
         this.length = length;

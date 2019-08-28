@@ -246,27 +246,11 @@ public class CRAMRecordTest extends HtsjdkTest {
     }
 
     private List<ReadFeature> buildMatchOrMismatchReadFeatures(final String refBases, final String readBases, final String scores) {
-//        final CramCompressionRecord record = new CramCompressionRecord();
-//        record.alignmentStart = 1;
         final List<ReadFeature> readFeatures = new ArrayList<>();
         final int fromPosInRead = 0;
         final int alignmentStartOffset = 0;
         final int nofReadBases = 1;
-
-//        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(
-//                new CRAMEncodingStrategy(),
-//                refBases.getBytes(),
-//                header,
-//                CramVersions.CRAM_v3);
-//        final byte[] refBases,
-//        final int alignmentStart,
-//        final List<ReadFeature> features,
-//        final int fromPosInRead,
-//        final int alignmentStartOffset,
-//        final int nofReadBases,
-//        final byte[] bases,
-//        final byte[] qualityScore)
-        CRAMRecord.addMismatchReadFeatures(refBases.getBytes(),
+        CRAMRecordReadFeatures.addMismatchReadFeatures(refBases.getBytes(),
                 1,
                 readFeatures,
                 fromPosInRead,
