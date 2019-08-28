@@ -28,6 +28,7 @@ import htsjdk.samtools.util.Log;
 
 import java.util.*;
 
+//TODO: remove this..
 public class CramCompressionRecord {
     private static final Log log = Log.getInstance(CramCompressionRecord.class);
 

@@ -1,11 +1,12 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
-import htsjdk.samtools.cram.build.Utils;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.encoding.readfeatures.*;
+import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
+import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
+import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.ValidationUtils;
@@ -34,7 +35,7 @@ public class CRAMRecord {
     // TODO: these 4 fields are immutable (fixes
     private final int alignmentStart;
     private final int readLength;
-    private final List<ReadFeature> readFeatures;
+    private final CRAMRecordReadFeatures readFeatures;
     private final int alignmentEnd; // derived alignmentStart, readFeatures, and readLength by initializeAlignmentEnd
 
     private final int referenceIndex;
@@ -123,12 +124,14 @@ public class CRAMRecord {
         // then alignmentEnd needs to be recalculated
         readLength = samRecord.getReadLength();
         alignmentStart = samRecord.getAlignmentStart();
-        readFeatures = samRecord.getReadUnmappedFlag() || (samRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) ?
-                null :
-                createReadFeatures(samRecord, refBases);
-        alignmentEnd = isPlaced() ?
-                initializeAlignmentEnd(alignmentStart, readLength, readFeatures ) :
-                Slice.NO_ALIGNMENT_END;
+        if (isPlaced()) {
+            //TODO: previously conditional on samRecord.getReadUnmappedFlag() || (samRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START)
+            readFeatures = new CRAMRecordReadFeatures(samRecord, refBases);
+            alignmentEnd = readFeatures.initializeAlignmentEnd(alignmentStart, readLength);
+        } else {
+            readFeatures = new CRAMRecordReadFeatures();
+            alignmentEnd = Slice.NO_ALIGNMENT_END;
+        }
 
         templateSize = samRecord.getInferredInsertSize();
         mappingQuality = samRecord.getMappingQuality();
@@ -173,13 +176,35 @@ public class CRAMRecord {
                     tags.add(ReadTag.deriveTypeFromValue(tagAndValue.tag, tagAndValue.value));
                 }
             }
-        } else {
+        }
+        else {
             tags = null;
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-
+    /**
+     * Create a CRAMRecord from a set of values retrieved from a serialized Slice's data series streams.
+     *
+     * @param sliceIndex
+     * @param sequentialIndex
+     * @param bamFlags
+     * @param cramFlags
+     * @param readName
+     * @param readLength
+     * @param referenceIndex
+     * @param alignmentStart
+     * @param templateSize
+     * @param mappingQuality
+     * @param qualityScores
+     * @param readBases
+     * @param readTags
+     * @param readFeatures
+     * @param readGroupID
+     * @param mateFlags
+     * @param mateReferenceIndex
+     * @param mateAlignmentStart
+     * @param recordsToNextFragment
+     */
     public CRAMRecord(
             final int sliceIndex,
             final int sequentialIndex,
@@ -220,17 +245,26 @@ public class CRAMRecord {
         this.qualityScores = qualityScores;
         this.readBases = readBases;
         this.tags = readTags;
-        this.readFeatures = readFeatures;
+        this.readFeatures = readFeatures == null ?
+                new CRAMRecordReadFeatures() :
+                new CRAMRecordReadFeatures(readFeatures);
         this.readGroupID = readGroupID;
         this.mateFlags = mateFlags;
         this.mateReferenceIndex = mateReferenceIndex;
         this.mateAlignmentStart = mateAlignmentStart;
         this.recordsToNextFragment = recordsToNextFragment;
+        // its acceptable to have a mapped, placed read, but no read features, if the read matches the
+        // reference exactly
         alignmentEnd = isPlaced() ?
-                initializeAlignmentEnd(alignmentStart, readLength, readFeatures ) :
+                this.readFeatures.initializeAlignmentEnd(alignmentStart, readLength) :
                 Slice.NO_ALIGNMENT_END;
     }
 
+    /**
+     * Create a SAMRecord from the CRAMRecord.
+     * @param header SAMFileHeader
+     * @return a SAMRecord
+     */
     public SAMRecord toSAMRecord(final SAMFileHeader header) {
         final SAMRecord samRecord = new SAMRecord(header);
 
@@ -250,7 +284,7 @@ public class CRAMRecord {
         if (isSegmentUnmapped())
             samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         else
-            samRecord.setCigar(getCigar2(readFeatures, readLength));
+            samRecord.setCigar(readFeatures.getCigarForReadFeatures(readLength));
 
         if (samRecord.getReadPairedFlag()) {
             samRecord.setMateReferenceIndex(mateReferenceIndex);
@@ -268,9 +302,11 @@ public class CRAMRecord {
         samRecord.setReadBases(readBases);
         samRecord.setBaseQualities(qualityScores);
 
-        if (tags != null)
-            for (final ReadTag tag : tags)
+        if (tags != null) {
+            for (final ReadTag tag : tags) {
                 samRecord.setAttribute(tag.getKey(), tag.getValue());
+            }
+        }
 
         if (readGroupID > -1) {
             final SAMReadGroupRecord readGroupRecord = header.getReadGroups().get(readGroupID);
@@ -280,149 +316,234 @@ public class CRAMRecord {
         return samRecord;
     }
 
-//TODO: factor out ReadFeatures and Mate code ?
-    private static List<ReadFeature> createReadFeatures(final SAMRecord samRecord, final byte[] refBases) {
-        final List<ReadFeature> features = new LinkedList<>();
-        final List<CigarElement> cigarElements = samRecord.getCigar().getCigarElements();
-
-        int cigarLen = 0;
-        for (final CigarElement cigarElement : cigarElements) {
-            if (cigarElement.getOperator().consumesReadBases()) {
-                cigarLen += cigarElement.getLength();
-            }
+    public void assignReadName() {
+        if (readName == null) {
+            final String readNamePrefix = "";
+            final String name = readNamePrefix + getSequentialIndex();
+            readName = name;
+            if (nextSegment != null)
+                nextSegment.readName = name;
+            if (previousSegment != null)
+                previousSegment.readName = name;
         }
 
-        byte[] bases = samRecord.getReadBases();
-        if (bases.length == 0) {
-            bases = new byte[cigarLen];
-            Arrays.fill(bases, (byte) 'N');
-        }
-
-        final byte[] qualityScore = samRecord.getBaseQualities();
-        int zeroBasedPositionInRead = 0;
-        int alignmentStartOffset = 0;
-        for (final CigarElement cigarElement : cigarElements) {
-            int cigarElementLength = cigarElement.getLength();
-            final CigarOperator operator = cigarElement.getOperator();
-            switch (operator) {
-                case D:
-                    features.add(new Deletion(zeroBasedPositionInRead + 1, cigarElementLength));
-                    break;
-                case N:
-                    features.add(new RefSkip(zeroBasedPositionInRead + 1, cigarElementLength));
-                    break;
-                case P:
-                    features.add(new Padding(zeroBasedPositionInRead + 1, cigarElementLength));
-                    break;
-                case H:
-                    features.add(new HardClip(zeroBasedPositionInRead + 1, cigarElementLength));
-                    break;
-                case S:
-                    addSoftClip(features, zeroBasedPositionInRead, cigarElementLength, bases);
-                    break;
-                case I:
-                    addInsertion(features, zeroBasedPositionInRead, cigarElementLength, bases);
-                    break;
-                case M:
-                case X:
-                case EQ:
-                    addMismatchReadFeatures(
-                            refBases,
-                            samRecord.getAlignmentStart(),
-                            features,
-                            zeroBasedPositionInRead,
-                            alignmentStartOffset,
-                            cigarElementLength,
-                            bases,
-                            qualityScore);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported cigar operator: " + cigarElement.getOperator());
-            }
-
-            if (cigarElement.getOperator().consumesReadBases()) {
-                zeroBasedPositionInRead += cigarElementLength;
-            }
-            if (cigarElement.getOperator().consumesReferenceBases()) {
-                alignmentStartOffset += cigarElementLength;
-            }
-        }
-
-        //used in Sam2CramRecordFactory for sequentialIndex error reporting
-        //this.baseCount += bases.length;
-        //this.featureCount += features.size();
-
-        return features.size() == 0 ? null : features;
     }
 
-    private static void addSoftClip(final List<ReadFeature> features, final int zeroBasedPositionInRead, final int cigarElementLength, final byte[] bases) {
-        final byte[] insertedBases = Arrays.copyOfRange(bases, zeroBasedPositionInRead, zeroBasedPositionInRead + cigarElementLength);
-        features.add(new SoftClip(zeroBasedPositionInRead + 1, insertedBases));
-    }
+    public static void restoreQualityScores(final byte defaultQualityScore, final List<CRAMRecord> records) {
+        for (final CRAMRecord record : records) {
+            if (!record.isForcePreserveQualityScores()) {
+                boolean star = true;
+                final byte[] scores = new byte[record.readLength];
+                Arrays.fill(scores, defaultQualityScore);
+                for (final ReadFeature feature : record.getReadFeatures()) {
+                    switch (feature.getOperator()) {
+                        case BaseQualityScore.operator:
+                            int pos = feature.getPosition();
+                            scores[pos - 1] = ((BaseQualityScore) feature).getQualityScore();
+                            star = false;
+                            break;
+                        case ReadBase.operator:
+                            pos = feature.getPosition();
+                            scores[pos - 1] = ((ReadBase) feature).getQualityScore();
+                            star = false;
+                            break;
 
-    //TODO: why is this unused ?
-    private void addHardClip(final List<ReadFeature> features, final int zeroBasedPositionInRead, final int cigarElementLength, final byte[] bases) {
-        final byte[] insertedBases = Arrays.copyOfRange(bases, zeroBasedPositionInRead, zeroBasedPositionInRead + cigarElementLength);
-        features.add(new HardClip(zeroBasedPositionInRead + 1, insertedBases.length));
-    }
+                        default:
+                            break;
+                    }
+                }
 
-    private static void addInsertion(final List<ReadFeature> features, final int zeroBasedPositionInRead, final int cigarElementLength, final byte[] bases) {
-        final byte[] insertedBases = Arrays.copyOfRange(bases, zeroBasedPositionInRead, zeroBasedPositionInRead + cigarElementLength);
-        for (int i = 0; i < insertedBases.length; i++) {
-            // single base insertion:
-            final InsertBase insertBase = new InsertBase();
-            insertBase.setPosition(zeroBasedPositionInRead + 1 + i);
-            insertBase.setBase(insertedBases[i]);
-            features.add(insertBase);
+                if (star) {
+                    record.qualityScores = SAMRecord.NULL_QUALS;
+                } else {
+                    record.qualityScores = scores;
+                }
+            } else {
+                final byte[] scores = record.qualityScores;
+                int missingScores = 0;
+                for (int i = 0; i < scores.length; i++) {
+                    if (scores[i] == -1) {
+                        scores[i] = defaultQualityScore;
+                        missingScores++;
+                    }
+                }
+                if (missingScores == scores.length) {
+                    record.qualityScores = SAMRecord.NULL_QUALS;
+                }
+            }
         }
     }
 
     /**
-     * Processes a stretch of read bases marked as match or mismatch and emits appropriate read features.
-     * Briefly the algorithm is:
-     * <ul><li>emit nothing for a read base matching corresponding reference base.</li>
-     * <li>emit a {@link Substitution} read feature for each ACTGN-ACTGN mismatch.</li>
-     * <li>emit {@link ReadBase} for a non-ACTGN mismatch. The side effect is the quality score stored twice.</li>
-     * <p>
-     * IMPORTANT: reference and read bases are always compared for match/mismatch in upper case due to BAM limitations.
+     * The method is similar in semantics to
+     * {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)
+     * computeInsertSize} but operates on CRAM native records instead of
+     * SAMRecord objects.
      *
-     * @param alignmentStart       CRAM record alignment start
-     * @param features             a list of read features to add to
-     * @param fromPosInRead        a zero based position in the read to start with
-     * @param alignmentStartOffset offset into the reference array
-     * @param nofReadBases         how many read bases to process
-     * @param bases                the read bases array
-     * @param qualityScore         the quality score array
+     * @param firstEnd  first mate of the pair
+     * @param secondEnd second mate of the pair
+     * @return template length
      */
-    static void addMismatchReadFeatures(
-            final byte[] refBases,
-            final int alignmentStart,
-            final List<ReadFeature> features,
-            final int fromPosInRead,
-            final int alignmentStartOffset,
-            final int nofReadBases,
-            final byte[] bases,
-            final byte[] qualityScore) {
-        int oneBasedPositionInRead = fromPosInRead + 1;
-        int refIndex = alignmentStart + alignmentStartOffset - 1;
-
-        byte refBase;
-        for (int i = 0; i < nofReadBases; i++, oneBasedPositionInRead++, refIndex++) {
-            if (refIndex >= refBases.length) refBase = 'N';
-            else refBase = refBases[refIndex];
-
-            final byte readBase = bases[i + fromPosInRead];
-
-            if (readBase != refBase) {
-                final boolean isSubstitution = SequenceUtil.isUpperACGTN(readBase) && SequenceUtil.isUpperACGTN(refBase);
-                if (isSubstitution) {
-                    features.add(new Substitution(oneBasedPositionInRead, readBase, refBase));
-                } else {
-                    final byte score = qualityScore[i + fromPosInRead];
-                    features.add(new ReadBase(oneBasedPositionInRead, readBase, score));
-                }
-            }
+    private static int computeInsertSize(final CRAMRecord firstEnd, final CRAMRecord secondEnd) {
+        if (firstEnd.isSegmentUnmapped() ||
+                secondEnd.isSegmentUnmapped()||
+                firstEnd.referenceIndex != secondEnd.referenceIndex) {
+            return 0;
         }
+
+        final int firstEnd5PrimePosition = firstEnd.isNegativeStrand() ? firstEnd.getAlignmentEnd() : firstEnd.alignmentStart;
+        final int secondEnd5PrimePosition = secondEnd.isNegativeStrand() ? secondEnd.getAlignmentEnd() : secondEnd.alignmentStart;
+
+        final int adjustment = (secondEnd5PrimePosition >= firstEnd5PrimePosition) ? +1 : -1;
+        return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;
+    }
+
+    public void establishReadBases(
+            final byte[] refBases,
+            final int refOffset_zeroBased,
+            final SubstitutionMatrix substitutionMatrix) {
+        if (isUnknownBases()) {
+            readBases = SAMRecord.NULL_SEQUENCE;
+        } else {
+            readBases = CRAMRecordReadFeatures.restoreReadBases(
+                    readFeatures == null ? Collections.EMPTY_LIST : readFeatures.getReadFeatures(),
+                    isUnknownBases(),
+                    alignmentStart,
+                    readLength,
+                    refBases,
+                    refOffset_zeroBased,
+                    substitutionMatrix);
+        }
+    }
+
+    //////////////////////////////////////
+    // Start Mate stuff
+    //////////////////////////////////////
+    public void updateDetachedState() {
+        if (nextSegment == null || previousSegment != null) {
+            return;
+        }
+        CRAMRecord last = this;
+        while (last.nextSegment != null) {
+            last = last.nextSegment;
+        }
+
+        if (isFirstSegment() && last.isLastSegment()) {
+            final int templateLength = computeInsertSize(this, last);
+
+            if (templateSize == templateLength) {
+                last = nextSegment;
+                while (last.nextSegment != null) {
+                    if (last.templateSize != -templateLength)
+                        break;
+
+                    last = last.nextSegment;
+                }
+                if (last.templateSize != -templateLength) {
+                    detachAllMateFragments();
+                }
+            } else {
+                detachAllMateFragments();
+            }
+        } else {
+            detachAllMateFragments();
+        }
+    }
+
+    public void restoreMateInfo() {
+        if (getNextSegment() == null) {
+            return;
+        }
+        CRAMRecord cur;
+        cur = this;
+        while (cur.getNextSegment() != null) {
+            cur.setNextMate(cur.getNextSegment());
+            cur = cur.getNextSegment();
+        }
+
+        // cur points to the last segment now:
+        final CRAMRecord last = cur;
+        last.setNextMate(this);
+        //record.setFirstSegment(true);
+        //last.setLastSegment(true);
+
+        final int templateLength = computeInsertSize(this, last);
+        templateSize = templateLength;
+        last.templateSize = -templateLength;
+    }
+
+    public void attachToMate(final CRAMRecord r) {
+        // go back to the beginning of the graph...
+        CRAMRecord prev = this;
+        while (prev.nextSegment != null) {
+            prev = prev.nextSegment;
+        }
+        prev.recordsToNextFragment = r.sequentialIndex - prev.sequentialIndex - 1;
+        prev.nextSegment = r;
+        r.previousSegment = prev;
+        r.previousSegment.setHasMateDownStream(true);
+        r.setHasMateDownStream(false);
+        r.setDetached(false);
+        r.previousSegment.setDetached(false);
+    }
+
+    private void setToDetachedState() {
+        setDetached(true);
+        setHasMateDownStream(false);
+        recordsToNextFragment = -1;
+    }
+
+    /**
+     * Traverse the graph and mark all segments as detached.
+     */
+    private void detachAllMateFragments() {
+        CRAMRecord cramRecord = this;
+        do {
+            cramRecord.setToDetachedState();
+        }
+        while ((cramRecord = cramRecord.nextSegment) != null);
+    }
+
+    private void setNextMate(final CRAMRecord next) {
+        mateAlignmentStart = next.alignmentStart;
+        setMateUnmapped(next.isSegmentUnmapped());
+        setMateNegativeStrand(next.isNegativeStrand());
+        mateReferenceIndex = next.referenceIndex;
+        if (mateReferenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+            mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
+        }
+    }
+
+    //////////////////////////////////////
+    // End Mate stuff
+    //////////////////////////////////////
+
+    /**
+     * Does this record have a valid placement/alignment location?
+     * <p>
+     * It must have a valid reference sequence ID and a valid alignment start position
+     * to be considered placed.
+     * <p>
+     * Normally we expect to see that the unmapped flag is set for unplaced reads,
+     * so we log a WARNING here if the read is unplaced yet somehow mapped.
+     *
+     * @return true if the record is placed
+     * @see #isSegmentUnmapped()
+     */
+    public boolean isPlaced() {
+        // placement requires a valid sequence ID and alignment start coordinate
+        boolean placed = referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
+                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
+
+        if (!placed && !isSegmentUnmapped()) {
+            final String warning = String.format(
+                    "Cram Compression Record [%s] does not have the unmapped flag set, " +
+                            "but also does not have a valid placement on a reference sequence.",
+                    this.toString());
+            log.warn(warning);
+        }
+
+        return placed;
     }
 
     public String getReadName() { return readName; }
@@ -445,11 +566,11 @@ public class CRAMRecord {
 
     public int getRecordsToNextFragment() { return recordsToNextFragment; }
 
-    public List<ReadFeature> getReadFeatures() { return readFeatures; }
+    public List<ReadFeature> getReadFeatures() { return this.readFeatures.getReadFeatures(); }
 
     public int getReadGroupID() { return readGroupID; }
 
-    public int getBamFlags() { return bamFlags; }
+    public int getBAMFlags() { return bamFlags; }
 
     public int getMateReferenceIndex() { return mateReferenceIndex; }
 
@@ -487,18 +608,6 @@ public class CRAMRecord {
 
     public int getSliceIndex() { return sliceIndex; }
 
-    public void assignReadName() {
-        if (readName == null) {
-            final String readNamePrefix = "";
-            final String name = readNamePrefix + getSequentialIndex();
-            readName = name;
-            if (nextSegment != null)
-                nextSegment.readName = name;
-            if (previousSegment != null)
-                previousSegment.readName = name;
-        }
-
-    }
     public CRAMRecord getNextSegment() {
         return nextSegment;
     }
@@ -513,126 +622,6 @@ public class CRAMRecord {
 
     public void setPreviousSegment(CRAMRecord previousSegment) {
         this.previousSegment = previousSegment;
-    }
-
-    // https://github.com/samtools/htsjdk/issues/1301
-    // does not update alignmentSpan/alignmentEnd when the record changes
-    private static int initializeAlignmentEnd(int alignmentStart, int readLength, final List<ReadFeature> readFeatures) {
-        int alignmentSpan = readLength;
-        if (readFeatures != null) {
-            for (final ReadFeature readFeature : readFeatures) {
-                switch (readFeature.getOperator()) {
-                    case InsertBase.operator:
-                        alignmentSpan--;
-                        break;
-                    case Insertion.operator:
-                        alignmentSpan -= ((Insertion) readFeature).getSequence().length;
-                        break;
-                    case SoftClip.operator:
-                        alignmentSpan -= ((SoftClip) readFeature).getSequence().length;
-                        break;
-                    case Deletion.operator:
-                        alignmentSpan += ((Deletion) readFeature).getLength();
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-        }
-
-        return alignmentStart + alignmentSpan - 1;
-    }
-
-    /**
-     * Does this record have a valid placement/alignment location?
-     * <p>
-     * It must have a valid reference sequence ID and a valid alignment start position
-     * to be considered placed.
-     * <p>
-     * Normally we expect to see that the unmapped flag is set for unplaced reads,
-     * so we log a WARNING here if the read is unplaced yet somehow mapped.
-     *
-     * @return true if the record is placed
-     * @see #isSegmentUnmapped()
-     */
-    public boolean isPlaced() {
-        // placement requires a valid sequence ID and alignment start coordinate
-        boolean placed = referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
-                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
-
-        if (!placed && !isSegmentUnmapped()) {
-            final String warning = String.format(
-                    "Cram Compression Record [%s] does not have the unmapped flag set, " +
-                            "but also does not have a valid placement on a reference sequence.",
-                    this.toString());
-            log.warn(warning);
-        }
-
-        return placed;
-    }
-
-    public void setToDetachedState() {
-        setDetached(true);
-        setHasMateDownStream(false);
-        recordsToNextFragment = -1;
-    }
-
-    public void attachToMate(final CRAMRecord r) {
-        // go back to the beginning of the graph...
-        CRAMRecord prev = this;
-        while (prev.nextSegment != null) {
-            prev = prev.nextSegment;
-        }
-        prev.recordsToNextFragment = r.sequentialIndex - prev.sequentialIndex - 1;
-        prev.nextSegment = r;
-        r.previousSegment = prev;
-        r.previousSegment.setHasMateDownStream(true);
-        r.setHasMateDownStream(false);
-        r.setDetached(false);
-        r.previousSegment.setDetached(false);
-    }
-
-    /**
-     * Traverse the graph and mark all segments as detached.
-     */
-    private void detachAllMateFragments() {
-        CRAMRecord cramRecord = this;
-        do {
-            cramRecord.setToDetachedState();
-        }
-        while ((cramRecord = cramRecord.nextSegment) != null);
-    }
-
-    public void updateDetachedState() {
-        if (nextSegment == null || previousSegment != null) {
-            return;
-        }
-        CRAMRecord last = this;
-        while (last.nextSegment != null) {
-            last = last.nextSegment;
-        }
-
-        if (isFirstSegment() && last.isLastSegment()) {
-            final int templateLength = computeInsertSize(this, last);
-
-            if (templateSize == templateLength) {
-                last = nextSegment;
-                while (last.nextSegment != null) {
-                    if (last.templateSize != -templateLength)
-                        break;
-
-                    last = last.nextSegment;
-                }
-                if (last.templateSize != -templateLength) {
-                    detachAllMateFragments();
-                }
-            } else {
-                detachAllMateFragments();
-            }
-        } else {
-            detachAllMateFragments();
-        }
     }
 
     public boolean isSecondaryAlignment() {
@@ -674,10 +663,10 @@ public class CRAMRecord {
     public boolean isMultiFragment() {
         return (bamFlags & SAMFlag.READ_PAIRED.intValue()) != 0;
     }
+
     private void setMultiFragment(final boolean multiFragment) {
         bamFlags = multiFragment ? bamFlags | SAMFlag.READ_PAIRED.intValue() : bamFlags & ~SAMFlag.READ_PAIRED.intValue();
     }
-
 
     /**
      * Does this record have the mapped flag set? This is independent of placement/alignment status.
@@ -782,30 +771,6 @@ public class CRAMRecord {
         bamFlags = supplementary ? bamFlags | SAMFlag.SUPPLEMENTARY_ALIGNMENT.intValue() : bamFlags & ~SAMFlag.SUPPLEMENTARY_ALIGNMENT.intValue();
     }
 
-    /**
-     * The method is similar in semantics to
-     * {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)
-     * computeInsertSize} but operates on CRAM native records instead of
-     * SAMRecord objects.
-     *
-     * @param firstEnd  first mate of the pair
-     * @param secondEnd second mate of the pair
-     * @return template length
-     */
-    private static int computeInsertSize(final CRAMRecord firstEnd, final CRAMRecord secondEnd) {
-        if (firstEnd.isSegmentUnmapped() ||
-                secondEnd.isSegmentUnmapped()||
-                firstEnd.referenceIndex != secondEnd.referenceIndex) {
-            return 0;
-        }
-
-        final int firstEnd5PrimePosition = firstEnd.isNegativeStrand() ? firstEnd.getAlignmentEnd() : firstEnd.alignmentStart;
-        final int secondEnd5PrimePosition = secondEnd.isNegativeStrand() ? secondEnd.getAlignmentEnd() : secondEnd.alignmentStart;
-
-        final int adjustment = (secondEnd5PrimePosition >= firstEnd5PrimePosition) ? +1 : -1;
-        return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;
-    }
-
     private void setForcePreserveQualityScores(final boolean forcePreserveQualityScores) {
         cramFlags = forcePreserveQualityScores ?
                 cramFlags | CF_FORCE_PRESERVE_QS :
@@ -825,307 +790,10 @@ public class CRAMRecord {
         samRecord.setSupplementaryAlignmentFlag(cramRecord.isSupplementary());
     }
 
-    private static Cigar getCigar2(final Collection<ReadFeature> features,
-                                   final int readLength) {
-        if (features == null || features.isEmpty()) {
-            final CigarElement cigarElement = new CigarElement(readLength, CigarOperator.M);
-            return new Cigar(Collections.singletonList(cigarElement));
-        }
-
-        final List<CigarElement> list = new ArrayList<CigarElement>();
-        int totalOpLen = 1;
-        CigarElement cigarElement;
-        CigarOperator lastOperator = CigarOperator.MATCH_OR_MISMATCH;
-        int lastOpLen = 0;
-        int lastOpPos = 1;
-        CigarOperator cigarOperator;
-        int readFeatureLength;
-        for (final ReadFeature feature : features) {
-
-            final int gap = feature.getPosition() - (lastOpPos + lastOpLen);
-            if (gap > 0) {
-                if (lastOperator != CigarOperator.MATCH_OR_MISMATCH) {
-                    list.add(new CigarElement(lastOpLen, lastOperator));
-                    lastOpPos += lastOpLen;
-                    totalOpLen += lastOpLen;
-                    lastOpLen = gap;
-                } else {
-                    lastOpLen += gap;
-                }
-
-                lastOperator = CigarOperator.MATCH_OR_MISMATCH;
-            }
-
-            switch (feature.getOperator()) {
-                case Insertion.operator:
-                    cigarOperator = CigarOperator.INSERTION;
-                    readFeatureLength = ((Insertion) feature).getSequence().length;
-                    break;
-                case SoftClip.operator:
-                    cigarOperator = CigarOperator.SOFT_CLIP;
-                    readFeatureLength = ((SoftClip) feature).getSequence().length;
-                    break;
-                case HardClip.operator:
-                    cigarOperator = CigarOperator.HARD_CLIP;
-                    readFeatureLength = ((HardClip) feature).getLength();
-                    break;
-                case InsertBase.operator:
-                    cigarOperator = CigarOperator.INSERTION;
-                    readFeatureLength = 1;
-                    break;
-                case Deletion.operator:
-                    cigarOperator = CigarOperator.DELETION;
-                    readFeatureLength = ((Deletion) feature).getLength();
-                    break;
-                case RefSkip.operator:
-                    cigarOperator = CigarOperator.SKIPPED_REGION;
-                    readFeatureLength = ((RefSkip) feature).getLength();
-                    break;
-                case Padding.operator:
-                    cigarOperator = CigarOperator.PADDING;
-                    readFeatureLength = ((Padding) feature).getLength();
-                    break;
-                case Substitution.operator:
-                case ReadBase.operator:
-                    cigarOperator = CigarOperator.MATCH_OR_MISMATCH;
-                    readFeatureLength = 1;
-                    break;
-                default:
-                    continue;
-            }
-
-            if (lastOperator != cigarOperator) {
-                // add last feature
-                if (lastOpLen > 0) {
-                    list.add(new CigarElement(lastOpLen, lastOperator));
-                    totalOpLen += lastOpLen;
-                }
-                lastOperator = cigarOperator;
-                lastOpLen = readFeatureLength;
-                lastOpPos = feature.getPosition();
-            } else
-                lastOpLen += readFeatureLength;
-
-            if (!cigarOperator.consumesReadBases())
-                lastOpPos -= readFeatureLength;
-        }
-
-        if (lastOperator != null) {
-            if (lastOperator != CigarOperator.M) {
-                list.add(new CigarElement(lastOpLen, lastOperator));
-                if (readLength >= lastOpPos + lastOpLen) {
-                    cigarElement = new CigarElement(readLength - (lastOpLen + lastOpPos)
-                            + 1, CigarOperator.M);
-                    list.add(cigarElement);
-                }
-            } else if (readLength == 0 || readLength > lastOpPos - 1) {
-                if (readLength == 0)
-                    cigarElement = new CigarElement(lastOpLen, CigarOperator.M);
-                else
-                    cigarElement = new CigarElement(readLength - lastOpPos + 1,
-                            CigarOperator.M);
-                list.add(cigarElement);
-            }
-        }
-
-        if (list.isEmpty()) {
-            cigarElement = new CigarElement(readLength, CigarOperator.M);
-            return new Cigar(Collections.singletonList(cigarElement));
-        }
-
-        return new Cigar(list);
-    }
-
-    public void restoreMateInfo() {
-        if (getNextSegment() == null) {
-            return;
-        }
-        CRAMRecord cur;
-        cur = this;
-        while (cur.getNextSegment() != null) {
-            cur.setNextMate(cur.getNextSegment());
-            cur = cur.getNextSegment();
-        }
-
-        // cur points to the last segment now:
-        final CRAMRecord last = cur;
-        last.setNextMate(this);
-        //record.setFirstSegment(true);
-        //last.setLastSegment(true);
-
-        final int templateLength = computeInsertSize(this, last);
-        templateSize = templateLength;
-        last.templateSize = -templateLength;
-    }
-
-    private void setNextMate(final CRAMRecord next) {
-        mateAlignmentStart = next.alignmentStart;
-        setMateUnmapped(next.isSegmentUnmapped());
-        setMateNegativeStrand(next.isNegativeStrand());
-        mateReferenceIndex = next.referenceIndex;
-        if (mateReferenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
-        }
-    }
-
-    public static void restoreQualityScores(final byte defaultQualityScore, final List<CRAMRecord> records) {
-        for (final CRAMRecord record : records) {
-            if (!record.isForcePreserveQualityScores()) {
-                boolean star = true;
-                final byte[] scores = new byte[record.readLength];
-                Arrays.fill(scores, defaultQualityScore);
-                if (record.readFeatures != null)
-                    for (final ReadFeature feature : record.readFeatures) {
-                        switch (feature.getOperator()) {
-                            case BaseQualityScore.operator:
-                                int pos = feature.getPosition();
-                                scores[pos - 1] = ((BaseQualityScore) feature).getQualityScore();
-                                star = false;
-                                break;
-                            case ReadBase.operator:
-                                pos = feature.getPosition();
-                                scores[pos - 1] = ((ReadBase) feature).getQualityScore();
-                                star = false;
-                                break;
-
-                            default:
-                                break;
-                        }
-                    }
-
-                if (star) {
-                    record.qualityScores = SAMRecord.NULL_QUALS;
-                } else {
-                    record.qualityScores = scores;
-                }
-            } else {
-                final byte[] scores = record.qualityScores;
-                int missingScores = 0;
-                for (int i = 0; i < scores.length; i++) {
-                    if (scores[i] == -1) {
-                        scores[i] = defaultQualityScore;
-                        missingScores++;
-                    }
-                }
-                if (missingScores == scores.length) {
-                    record.qualityScores = SAMRecord.NULL_QUALS;
-                }
-            }
-        }
-    }
-
-    public void establishReadBases(
-           final byte[] refBases,
-           final int refOffset_zeroBased,
-           final SubstitutionMatrix substitutionMatrix) {
-        if (isUnknownBases()) {
-            readBases = SAMRecord.NULL_SEQUENCE;
-        } else {
-            readBases = restoreReadBases(refBases, refOffset_zeroBased, substitutionMatrix);
-        }
-    }
-
-    private byte[] restoreReadBases(
-            final byte[] ref,
-            final int refOffsetZeroBased,
-            final SubstitutionMatrix substitutionMatrix) {
-        if (isUnknownBases() || readLength == 0) {
-            return SAMRecord.NULL_SEQUENCE;
-        }
-        final byte[] bases = new byte[readLength];
-
-        int posInRead = 1;
-        final int alignmentStart = this.alignmentStart - 1;
-
-        int posInSeq = 0;
-        if (readFeatures == null || readFeatures.isEmpty()) {
-            if (ref.length + refOffsetZeroBased < alignmentStart
-                    + bases.length) {
-                Arrays.fill(bases, (byte) 'N');
-                System.arraycopy(
-                        ref,
-                        alignmentStart - refOffsetZeroBased,
-                        bases,
-                        0,
-                        Math.min(bases.length, ref.length + refOffsetZeroBased
-                                - alignmentStart));
-            } else
-                System.arraycopy(ref, alignmentStart - refOffsetZeroBased,
-                        bases, 0, bases.length);
-
-            return SequenceUtil.toBamReadBasesInPlace(bases);
-        }
-
-        final List<ReadFeature> variations = readFeatures;
-        for (final ReadFeature variation : variations) {
-            for (; posInRead < variation.getPosition(); posInRead++) {
-                final int rp = alignmentStart + posInSeq++ - refOffsetZeroBased;
-                bases[posInRead - 1] = getByteOrDefault(ref, rp, (byte) 'N');
-            }
-
-            switch (variation.getOperator()) {
-                case Substitution.operator:
-                    final Substitution substitution = (Substitution) variation;
-                    byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq
-                            - refOffsetZeroBased, (byte) 'N');
-                    // substitution requires ACGTN only:
-                    refBase = Utils.normalizeBase(refBase);
-                    final byte base = substitutionMatrix.base(refBase, substitution.getCode());
-                    substitution.setBase(base);
-                    substitution.setReferenceBase(refBase);
-                    bases[posInRead++ - 1] = base;
-                    posInSeq++;
-                    break;
-                case Insertion.operator:
-                    final Insertion insertion = (Insertion) variation;
-                    for (int i = 0; i < insertion.getSequence().length; i++)
-                        bases[posInRead++ - 1] = insertion.getSequence()[i];
-                    break;
-                case SoftClip.operator:
-                    final SoftClip softClip = (SoftClip) variation;
-                    for (int i = 0; i < softClip.getSequence().length; i++)
-                        bases[posInRead++ - 1] = softClip.getSequence()[i];
-                    break;
-                case Deletion.operator:
-                    final Deletion deletion = (Deletion) variation;
-                    posInSeq += deletion.getLength();
-                    break;
-                case InsertBase.operator:
-                    final InsertBase insert = (InsertBase) variation;
-                    bases[posInRead++ - 1] = insert.getBase();
-                    break;
-                case RefSkip.operator:
-                    posInSeq += ((RefSkip) variation).getLength();
-                    break;
-            }
-        }
-
-        for (; posInRead <= readLength
-                && alignmentStart + posInSeq - refOffsetZeroBased < ref.length; posInRead++, posInSeq++) {
-            bases[posInRead - 1] = ref[alignmentStart + posInSeq
-                    - refOffsetZeroBased];
-        }
-
-        // ReadBase overwrites bases:
-        for (final ReadFeature variation : variations) {
-            switch (variation.getOperator()) {
-                case ReadBase.operator:
-                    final ReadBase readBase = (ReadBase) variation;
-                    bases[variation.getPosition() - 1] = readBase.getBase();
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        return SequenceUtil.toBamReadBasesInPlace(bases);
-    }
-
     //TODO: should sliceIndex be required to match ?
     //if (getSliceIndex() != that.getSliceIndex()) return false;
     //TODO: should sequentialIndex be required to match ?
     //if (getSequentialIndex() != that.getSequentialIndex()) return false;
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -1143,7 +811,7 @@ public class CRAMRecord {
         //if (getSliceIndex() != that.getSliceIndex()) return false;
         //TODO: should sequentialIndex be required to match ?
         //if (getSequentialIndex() != that.getSequentialIndex()) return false;
-        if (getBamFlags() != that.getBamFlags()) return false;
+        if (getBAMFlags() != that.getBAMFlags()) return false;
         if (cramFlags != that.cramFlags) return false;
         //if (getTemplateSize() != that.getTemplateSize()) return false;
         if (getMateFlags() != that.getMateFlags()) return false;
@@ -1181,7 +849,7 @@ public class CRAMRecord {
         result = 31 * result + (getTags() != null ? getTags().hashCode() : 0);
         result = 31 * result + getSliceIndex();
         result = 31 * result + getSequentialIndex();
-        result = 31 * result + getBamFlags();
+        result = 31 * result + getBAMFlags();
         result = 31 * result + cramFlags;
         result = 31 * result + getTemplateSize();
         result = 31 * result + (getReadName() != null ? getReadName().hashCode() : 0);
@@ -1196,13 +864,5 @@ public class CRAMRecord {
         result = 31 * result + (getPreviousSegment() != null ? getPreviousSegment().hashCode() : 0);
         return result;
     }
-
-    private static byte getByteOrDefault(final byte[] array, final int pos, final byte outOfBoundsValue) {
-        return pos >= array.length ?
-                outOfBoundsValue :
-                array[pos];
-    }
-
-
 
 }

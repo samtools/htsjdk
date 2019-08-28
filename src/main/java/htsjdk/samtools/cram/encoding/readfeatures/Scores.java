@@ -24,6 +24,7 @@ import java.util.Objects;
 /**
  * A read feature representing a contiguous stretch of quality scores in a read.
  */
+// TODO: This is never generated, only consumed...
 public class Scores implements Serializable, ReadFeature {
 
     private int position;

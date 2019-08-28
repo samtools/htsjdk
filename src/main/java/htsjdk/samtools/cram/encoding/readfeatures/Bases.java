@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
+// TODO: This is never generated, only consumed...
 public class Bases implements Serializable, ReadFeature {
 
     private int position;
