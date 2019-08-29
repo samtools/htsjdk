@@ -339,7 +339,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
     private void closeIOResources() {
         CloserUtil.close(this.outputStream);
         CloserUtil.close(this.inputStream);
-        if (this.diskRecords != null) IOUtil.deletePaths(this.diskRecords);
+        if (this.diskRecords != null) IOUtil.deletePath(this.diskRecords);
     }
 
     /**
