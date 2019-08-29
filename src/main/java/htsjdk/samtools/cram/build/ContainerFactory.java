@@ -67,11 +67,11 @@ public class ContainerFactory {
         // TODO: somewhere code needs to handle the case where these slices have different sliceRefContexts
         // TODO: to prevent initializeFromSlices from throwing (i.e., if there is a single and a multi, or any
         // TODO: other combination)
-        final Container container = Container.initializeFromSlices(slices, compressionHeader, containerByteOffset);
-        container.nofRecords = records.size();
-        container.globalRecordCounter = lastGlobalRecordCounter;
-        container.blockCount = 0;
-        container.bases += baseCount;
+        final Container container = new Container(
+                compressionHeader,
+                slices,
+                containerByteOffset, lastGlobalRecordCounter, 0, baseCount);
+
         return container;
     }
 }

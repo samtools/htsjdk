@@ -38,16 +38,17 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
         for (int i = 0; i < fullContainers.size(); i++) {
             Container fullContainer = fullContainers.get(i);
             Container headerOnlyContainer = headerOnlyContainers.get(i);
-            Assert.assertEquals(headerOnlyContainer.containerBlocksByteSize, fullContainer.containerBlocksByteSize);
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getContainerBlocksByteSize(), fullContainer.getContainerHeader().getContainerBlocksByteSize());
             Assert.assertEquals(headerOnlyContainer.getReferenceContext(), fullContainer.getReferenceContext());
-            Assert.assertEquals(headerOnlyContainer.alignmentStart, fullContainer.alignmentStart);
-            Assert.assertEquals(headerOnlyContainer.alignmentSpan, fullContainer.alignmentSpan);
-            Assert.assertEquals(headerOnlyContainer.nofRecords, fullContainer.nofRecords);
-            Assert.assertEquals(headerOnlyContainer.globalRecordCounter, fullContainer.globalRecordCounter);
-            Assert.assertEquals(headerOnlyContainer.bases, fullContainer.bases);
-            Assert.assertEquals(headerOnlyContainer.blockCount, fullContainer.blockCount);
-            Assert.assertEquals(headerOnlyContainer.landmarks, fullContainer.landmarks);
-            Assert.assertEquals(headerOnlyContainer.checksum, fullContainer.checksum);
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getAlignmentStart(), fullContainer.getContainerHeader().getAlignmentStart());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getAlignmentSpan(), fullContainer.getContainerHeader().getAlignmentSpan());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getNofRecords(), fullContainer.getContainerHeader().getNofRecords());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getGlobalRecordCounter(), fullContainer.getContainerHeader().getGlobalRecordCounter());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBases(), fullContainer.getContainerHeader().getBases());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBlockCount(), fullContainer.getContainerHeader().getBlockCount());
+            //TODO:this needs to be Arrays.equals ?
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getLandmarks(), fullContainer.getContainerHeader().getLandmarks());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getChecksum(), fullContainer.getContainerHeader().getChecksum());
             Assert.assertEquals(headerOnlyContainer.byteOffset, fullContainer.byteOffset);
             // unpopulated fields
             Assert.assertNull(headerOnlyContainer.compressionHeader);
@@ -56,10 +57,10 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             try (SeekableFileStream seekableFileStream = new SeekableFileStream(cramFile)) {
                 seekableFileStream.seek(headerOnlyContainer.byteOffset);
                 Container container = ContainerIO.readContainer(actualHeader.getVersion(), seekableFileStream);
-                Assert.assertEquals(container.alignmentStart, fullContainer.alignmentStart);
-                Assert.assertEquals(container.alignmentSpan, fullContainer.alignmentSpan);
-                Assert.assertEquals(container.nofRecords, fullContainer.nofRecords);
-                Assert.assertEquals(container.checksum, fullContainer.checksum);
+                Assert.assertEquals(container.getContainerHeader().getAlignmentStart(), fullContainer.getContainerHeader().getAlignmentStart());
+                Assert.assertEquals(container.getContainerHeader().getAlignmentSpan(), fullContainer.getContainerHeader().getAlignmentSpan());
+                Assert.assertEquals(container.getContainerHeader().getNofRecords(), fullContainer.getContainerHeader().getNofRecords());
+                Assert.assertEquals(container.getContainerHeader().getChecksum(), fullContainer.getContainerHeader().getChecksum());
             }
         }
     }

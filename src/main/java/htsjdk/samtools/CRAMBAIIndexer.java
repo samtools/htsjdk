@@ -289,7 +289,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                         sequenceName = cramHeader.getSamFileHeader().getSequence(containerContext.getSequenceId()).getSequenceName();
                         break;
                 }
-                progressLogger.record(sequenceName, container.alignmentStart);
+                progressLogger.record(sequenceName, container.getContainerHeader().getAlignmentStart());
             }
 
         } while (!container.isEOF());

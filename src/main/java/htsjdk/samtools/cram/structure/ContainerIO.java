@@ -16,35 +16,6 @@ import java.util.List;
  * Methods to read and write CRAM containers.
  */
 public class ContainerIO {
-    private static final Log log = Log.getInstance(ContainerIO.class);
-
-    /**
-     * Reads a CRAM container from an {@link InputStream}.
-     * Returns an EOF container when there is no more data or the EOF marker found.
-     *
-     * @param version CRAM version to expect
-     * @param inputStream the {@link InputStream} stream to read from
-     * @param containerByteOffset the byte offset from the start of the stream
-     * @return a new container object read from the stream
-     */
-    private static Container readContainer(final Version version,
-                                          final InputStream inputStream,
-                                          final long containerByteOffset) {
-        Container container = readContainerInternal(version.major, inputStream, containerByteOffset);
-        if (container == null) {
-            // this will cause System.exit(1):
-            CramVersionPolicies.eofNotFound(version);
-
-            return readContainerInternal(version.major, new ByteArrayInputStream(CramIO.ZERO_B_EOF_MARKER), containerByteOffset);
-        }
-
-        if (container.isEOF()) {
-            log.debug("EOF marker found, file/stream is complete.");
-        }
-
-        return container;
-    }
-
     // convenience methods for SeekableStream and CountingInputStream
     // TODO: merge these two classes?
 
@@ -59,7 +30,7 @@ public class ContainerIO {
     public static Container readContainer(final Version version, final SeekableStream seekableInputStream) {
         try {
             final long containerByteOffset = seekableInputStream.position();
-            return readContainer(version, seekableInputStream, containerByteOffset);
+            return readContainerInternal(version.major, seekableInputStream, containerByteOffset);
         }
         catch (final IOException e) {
             throw new RuntimeIOException(e);
@@ -76,7 +47,7 @@ public class ContainerIO {
      */
     public static Container readContainer(final Version version, final CountingInputStream countingInputStream) {
         final long containerByteOffset = countingInputStream.getCount();
-        return readContainer(version, countingInputStream, containerByteOffset);
+        return readContainerInternal(version.major, countingInputStream, containerByteOffset);
     }
 
     /**
@@ -91,22 +62,27 @@ public class ContainerIO {
                                                    final InputStream inputStream,
                                                    final long containerByteOffset) {
 
-        final Container container = ContainerHeaderIO.readContainerHeader(major, inputStream, containerByteOffset);
-        if (container.isEOF()) {
-            return container;
+        final ContainerHeader containerHeader = ContainerHeaderIO.readContainerHeader(major, inputStream);
+        if (containerHeader.isEOF()) {
+            return new Container(containerHeader, containerByteOffset);
         }
 
-        container.compressionHeader = new CompressionHeader(major, inputStream);
+        final CompressionHeader compressionHeader = new CompressionHeader(major, inputStream);
 
         final ArrayList<Slice> slices = new ArrayList<>();
-        for (int sliceCounter = 0; sliceCounter < container.landmarks.length; sliceCounter++) {
-            slices.add(SliceIO.read(major, container.compressionHeader, inputStream));
+        for (int sliceCounter = 0; sliceCounter < containerHeader.getLandmarks().length; sliceCounter++) {
+            final Slice slice = SliceIO.read(major, compressionHeader, inputStream);
+            slice.containerByteOffset = containerByteOffset;
+            slices.add(slice);
         }
 
-        container.setSlicesAndByteOffset(slices, containerByteOffset);
-        container.distributeIndexingParametersToSlices();
+        final Container container = new Container(
+                containerHeader,
+                compressionHeader,
+                slices,
+                containerByteOffset);
 
-        log.debug("READ CONTAINER: " + container.toString());
+        container.distributeIndexingParametersToSlices();
 
         return container;
     }
@@ -122,13 +98,16 @@ public class ContainerIO {
     public static int writeContainer(final Version version, final Container container, final OutputStream outputStream) {
         // use this BAOS for two purposes: writing out and counting bytes for landmarks/containerBlocksByteSize
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+        // write out the compression header...
         container.compressionHeader.write(version, byteArrayOutputStream);
 
         // TODO: ensure that the Container blockCount stays in sync with the
         // Slice's blockCount in SliceIO.write()
         // 1 Compression Header Block
-        container.blockCount = 1;
 
+        // ...then write out the slice blocks....
+        int blockCount = 1;
         final List<Integer> landmarks = new ArrayList<>();
         for (final Slice slice : container.getSlices()) {
             // landmark 0 = byte length of the compression header
@@ -136,30 +115,34 @@ public class ContainerIO {
             landmarks.add(byteArrayOutputStream.size());
             SliceIO.write(version.major, slice, byteArrayOutputStream);
             // 1 Slice Header Block
-            container.blockCount++;
+            blockCount++;
             // 1 Core Data Block per Slice
-            container.blockCount++;
+            blockCount++;
             // TODO: should we count the embedded reference block as an additional block?
-            if (slice.getEmbeddedReferenceBlock() != null) container.blockCount++;
+            if (slice.getEmbeddedReferenceBlock() != null) {
+                blockCount++;
+            }
             // Each Slice has a variable number of External Data Blocks
-            container.blockCount += slice.getSliceBlocks().getNumberOfExternalBlocks();
+            blockCount += slice.getSliceBlocks().getNumberOfExternalBlocks();
         }
-        container.landmarks = landmarks.stream().mapToInt(Integer::intValue).toArray();
+        container.getContainerHeader().setLandmarks(landmarks.stream().mapToInt(Integer::intValue).toArray());
         // compression header plus all slices, if any (EOF Containers do not; File Header Containers are handled above)
-        container.containerBlocksByteSize = byteArrayOutputStream.size();
+        container.getContainerHeader().setContainerBlocksByteSize(byteArrayOutputStream.size());
 
         // Slices require the Container's landmarks and containerBlocksByteSize in case we're indexing
         container.distributeIndexingParametersToSlices();
 
-        final int containerHeaderLength = ContainerHeaderIO.writeContainerHeader(version.major, container, outputStream);
+        // ...then write the container header
+        final int containerHeaderLength = ContainerHeaderIO.writeContainerHeader(version.major, container.getContainerHeader(), outputStream);
+
+        // .. and finally, write the entire stream to the actual output stream, now that we know how big it is
         try {
-            outputStream.write(byteArrayOutputStream.toByteArray(), 0, container.containerBlocksByteSize);
+            outputStream.write(byteArrayOutputStream.toByteArray(), 0, container.getContainerHeader().getContainerBlocksByteSize());
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
 
-        log.debug("CONTAINER WRITTEN: " + container.toString());
-
-        return containerHeaderLength + container.containerBlocksByteSize;
+        return containerHeaderLength + container.getContainerHeader().getContainerBlocksByteSize();
     }
+
 }

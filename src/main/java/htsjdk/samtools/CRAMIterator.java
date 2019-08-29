@@ -146,7 +146,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
         records.clear();
         if (cramRecords == null)
-            cramRecords = new ArrayList<>(container.nofRecords);
+            cramRecords = new ArrayList<>(container.getContainerHeader().getNofRecords());
         else
             cramRecords.clear();
 

@@ -496,7 +496,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
     @Test(groups = {"defaultReference"})
     public void testMakeWriterForCramExtensionNoReference() throws IOException {
-
+        // NOTE: This requires an environment variable that is set in the gradle file for the defaultReference test group
         final File cramTmpFile = File.createTempFile("testMakeWriterForCramExtension", "." + CRAM_TYPE.fileExtension());
         cramTmpFile.deleteOnExit();
         try (SAMFileWriter samFileWriter = new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, cramTmpFile, null)) {

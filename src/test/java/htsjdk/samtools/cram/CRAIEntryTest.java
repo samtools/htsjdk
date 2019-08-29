@@ -32,7 +32,9 @@ public class CRAIEntryTest extends HtsjdkTest {
         final Slice slice2 = createSliceWithArbitraryValues(refContext);
 
         final long containerByteOffset = 12345;
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), COMPRESSION_HEADER, containerByteOffset);
+        final Container container = new Container(
+                COMPRESSION_HEADER,
+                Arrays.asList(slice1, slice2), containerByteOffset, 0, 0, 0);
         final List<CRAIEntry> entries = container.getCRAIEntries();
 
         Assert.assertNotNull(entries);
@@ -87,7 +89,9 @@ public class CRAIEntryTest extends HtsjdkTest {
         slice2.byteSize = sliceByteSize;
         slice2.byteOffsetFromCompressionHeaderStart = slice2ByteOffsetFromContainer;
 
-        final Container container = Container.initializeFromSlices(Arrays.asList(slice1, slice2), compressionHeader, containerOffset);
+        final Container container = new Container(
+                COMPRESSION_HEADER,
+                Arrays.asList(slice1, slice2), containerOffset, 0, 0, 0);
 
         final List<CRAIEntry> entries = container.getCRAIEntries();
         Assert.assertNotNull(entries);

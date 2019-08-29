@@ -20,7 +20,9 @@ import htsjdk.samtools.SamReader.Type;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerHeader;
 import htsjdk.samtools.cram.structure.ContainerHeaderIO;
+import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
@@ -402,8 +404,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             seekableStream.seek(0);
             newIterator = new CRAMIterator(seekableStream, referenceSource, validationStringency);
             seekableStream.seek(startOfLastLinearBin >>> 16);
-            final Container container = ContainerHeaderIO.readContainerHeader(newIterator.getCramHeader().getVersion().major, seekableStream);
-            seekableStream.seek(seekableStream.position() + container.containerBlocksByteSize);
+            final ContainerHeader containerHeader = ContainerHeaderIO.readContainerHeader(newIterator.getCramHeader().getVersion().major, seekableStream);
+            seekableStream.seek(seekableStream.position() + containerHeader.getContainerBlocksByteSize());
             iterator = newIterator;
             boolean atAlignments;
             do {
