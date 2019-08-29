@@ -40,8 +40,8 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
 
         final CompressionHeader header = new CompressionHeaderFactory().build(unmappedRecords, coordinateSorted);
 
-        final Slice slice = Slice.buildSlice(unmappedRecords, header);
-        final List<CRAMRecord> roundTripRecords = slice.getRecords(new SAMFileHeader(), ValidationStringency.STRICT);
+        final Slice slice = new Slice(unmappedRecords, header);
+        final List<CRAMRecord> roundTripRecords = slice.getRecords(ValidationStringency.STRICT);
 
         Assert.assertEquals(roundTripRecords, unmappedRecords);
     }

@@ -50,27 +50,36 @@ public class ContainerFactory {
         //TODO: CompressionHeader can just get this value from the EncodingStrategy
         compressionHeader.readNamesIncluded = encodingStrategy.getPreserveReadNames();
 
-        final List<Slice> slices = new ArrayList<>();
+        // TODO: this code needs to handle the case where these slices have different sliceRefContexts
+        // TODO: to prevent initializeFromSlices from throwing (i.e., if there is a single and a multi, or any
+        // TODO: other combination)
+        // break up the records into groups based on ref context, recodes/container, etc.
 
+        final List<Slice> slices = new ArrayList<>();
         int baseCount = 0;
         long lastGlobalRecordCounter = globalRecordCounter;
         for (int i = 0; i < records.size(); i += encodingStrategy.getRecordsPerSlice()) {
-            final List<CRAMRecord> sliceRecords = records.subList(i,
-                    Math.min(records.size(), i + encodingStrategy.getRecordsPerSlice()));
-            final Slice slice = Slice.buildSlice(sliceRecords, compressionHeader);
-            slice.globalRecordCounter = globalRecordCounter;
-            globalRecordCounter += slice.nofRecords;
-            baseCount += slice.bases;
+            final List<CRAMRecord> sliceRecords = records.subList(
+                    i,
+                    Math.min(records.size(),
+                            i + encodingStrategy.getRecordsPerSlice()));
+            final Slice slice = new Slice(sliceRecords, compressionHeader);
+            // TODO: we might be building more than one container here...
+            slice.setGlobalRecordCounter(globalRecordCounter);
+            globalRecordCounter += slice.getNofRecords();
+            baseCount += slice.getBaseCount();
             slices.add(slice);
         }
 
-        // TODO: somewhere code needs to handle the case where these slices have different sliceRefContexts
-        // TODO: to prevent initializeFromSlices from throwing (i.e., if there is a single and a multi, or any
-        // TODO: other combination)
+        //TODO: blockCount and baseCount should be able to be derived from within the constructor based on the slices,
+        //TODO: so they can be removed from this constuctor's args
         final Container container = new Container(
                 compressionHeader,
                 slices,
-                containerByteOffset, lastGlobalRecordCounter, 0, baseCount);
+                containerByteOffset,
+                lastGlobalRecordCounter,
+                0,
+                baseCount);
 
         return container;
     }

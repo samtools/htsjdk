@@ -4,7 +4,6 @@ import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerHeader;
-import htsjdk.samtools.cram.structure.ContainerHeaderIO;
 
 import java.io.InputStream;
 
@@ -33,10 +32,8 @@ public class CramContainerHeaderIterator extends CramContainerIterator {
      */
     @Override
     protected Container containerFromStream(final CountingInputStream countingStream) {
-        // TODO: this only needs to be a header ? check disq to see if it uses the byteoffset (which is in the
-        // TODO: container, not the containerHeader - maybe that should move ?)
         long byteOffset = countingStream.getCount();
-        final ContainerHeader containerHeader = ContainerHeaderIO.readContainerHeader(getCramHeader().getVersion().major, countingStream);
+        final ContainerHeader containerHeader = ContainerHeader.readContainerHeader(getCramHeader().getVersion().major, countingStream);
         InputStreamUtils.skipFully(countingStream, containerHeader.getContainerBlocksByteSize());
         return new Container(containerHeader, byteOffset);
     }

@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -99,7 +98,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
                     throw new RuntimeException("No more containers in this boundary.");
                 }
                 
-                return ContainerIO.readContainer(cramHeader.getVersion(), seekableStream);
+                return new Container(cramHeader.getVersion(), seekableStream, seekableStream.position());
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);
             }

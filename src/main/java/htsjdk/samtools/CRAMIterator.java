@@ -16,7 +16,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.build.CramSpanContainerIterator;
@@ -45,8 +44,14 @@ public class CRAMIterator implements SAMRecordIterator {
     private SamReader mReader;
     long firstContainerOffset = 0;
     private final Iterator<Container> containerIterator;
+    /**
+     * `samRecordIndex` only used when validation is not `SILENT`
+     * (for identification by the validator which records are invalid)
+     */
+    private long samRecordIndex;
+    private List<CRAMRecord> cramRecords;
 
-    private final ContainerParser parser;
+
     private final CRAMReferenceSource referenceSource;
 
     private Iterator<SAMRecord> iterator = Collections.<SAMRecord>emptyList().iterator();
@@ -60,13 +65,6 @@ public class CRAMIterator implements SAMRecordIterator {
     public void setValidationStringency(final ValidationStringency validationStringency) {
         this.validationStringency = validationStringency;
     }
-
-    /**
-     * `samRecordIndex` only used when validation is not `SILENT`
-     * (for identification by the validator which records are invalid)
-     */
-    private long samRecordIndex;
-    private ArrayList<CRAMRecord> cramRecords;
 
     public CRAMIterator(final InputStream inputStream,
                         final CRAMReferenceSource referenceSource,
@@ -83,11 +81,9 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        //TODO: pass in a CRAMEncodingStrategy
+        //TODO: this needs a smarter initializer param (don't need encoding strategy here)
         records = new ArrayList<>(new CRAMEncodingStrategy().getRecordsPerSlice());
-        normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
-                referenceSource);
-        parser = new ContainerParser(cramHeader.getSamFileHeader());
+        normalizer = new CramNormalizer(cramHeader.getSamFileHeader(), referenceSource);
     }
 
     public CRAMIterator(final SeekableStream seekableStream,
@@ -106,11 +102,9 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        //TODO: pass in a CRAMEncodingStrategy
+        //TODO: this needs a smarter initializer param (don't need encoding strategy here)
         records = new ArrayList<>(new CRAMEncodingStrategy().getRecordsPerSlice());
-        normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
-                referenceSource);
-        parser = new ContainerParser(cramHeader.getSamFileHeader());
+        normalizer = new CramNormalizer(cramHeader.getSamFileHeader(), referenceSource);
     }
 
     @Deprecated
@@ -137,7 +131,8 @@ public class CRAMIterator implements SAMRecordIterator {
                 return;
             }
         } else {
-            container = ContainerIO.readContainer(cramHeader.getVersion(), countingInputStream);
+            final long containerByteOffset = countingInputStream.getCount();
+            container = new Container(cramHeader.getVersion(), countingInputStream, containerByteOffset);
             if (container.isEOF()) {
                 records.clear();
                 return;
@@ -145,13 +140,7 @@ public class CRAMIterator implements SAMRecordIterator {
         }
 
         records.clear();
-        if (cramRecords == null)
-            cramRecords = new ArrayList<>(container.getContainerHeader().getNofRecords());
-        else
-            cramRecords.clear();
-
-        // TODO: getRecords should (and does) return a list, so there is no need to manage one in this code
-        parser.getRecords(container, cramRecords, validationStringency);
+        cramRecords = container.getCRAMRecords(validationStringency);
 
         final ReferenceContext containerContext = container.getReferenceContext();
         switch (containerContext.getType()) {
@@ -185,14 +174,14 @@ public class CRAMIterator implements SAMRecordIterator {
                 final String msg = String.format(
                         "Reference sequence MD5 mismatch for slice: sequence id %d, start %d, span %d, expected MD5 %s",
                         sliceContext.getSequenceId(),
-                        slice.alignmentStart,
-                        slice.alignmentSpan,
-                        String.format("%032x", new BigInteger(1, slice.refMD5)));
+                        slice.getAlignmentStart(),
+                        slice.getAlignmentSpan(),
+                        String.format("%032x", new BigInteger(1, slice.getRefMD5())));
                 throw new CRAMException(msg);
             }
         }
 
-        normalizer.normalize(cramRecords, referenceBases, 0, container.compressionHeader.substitutionMatrix);
+        normalizer.normalize(cramRecords, referenceBases, 0, container.getCompressionHeader().substitutionMatrix);
 
         for (final CRAMRecord cramRecord : cramRecords) {
             final SAMRecord samRecord = cramRecord.toSAMRecord(cramHeader.getSamFileHeader());
@@ -205,8 +194,8 @@ public class CRAMIterator implements SAMRecordIterator {
 
             //TODO:
             if (mReader != null) {
-                final long chunkStart = (container.byteOffset << 16) | cramRecord.getSliceIndex();
-                final long chunkEnd = ((container.byteOffset << 16) | cramRecord.getSliceIndex()) + 1;
+                final long chunkStart = (container.getContainerByteOffset() << 16) | cramRecord.getSliceIndex();
+                final long chunkEnd = ((container.getContainerByteOffset() << 16) | cramRecord.getSliceIndex()) + 1;
                 samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
             

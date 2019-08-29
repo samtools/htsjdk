@@ -187,35 +187,35 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Slice slice = new Slice(refContext);
-        slice.byteOffsetFromCompressionHeaderStart = 1;
-        slice.containerByteOffset = 1;
-        slice.byteSize = 1;
-        slice.index = 1;
+        slice.setByteOffsetFromCompressionHeaderStart(1);
+        slice.setContainerByteOffset(1);
+        slice.setByteSize(1);
+        slice.setIndex(1);
 
         return slice;
     }
 
     private static Slice getNoContainerOffsetSlice() {
         final Slice noContainerOffset = getIndexInitializedSlice();
-        noContainerOffset.containerByteOffset = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        noContainerOffset.setContainerByteOffset(Slice.UNINITIALIZED_INDEXING_PARAMETER);
         return noContainerOffset;
     }
 
     private static Slice getNoOffsetFromContainerSlice() {
         final Slice noOffsetFromContainer = getIndexInitializedSlice();
-        noOffsetFromContainer.byteOffsetFromCompressionHeaderStart = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        noOffsetFromContainer.setByteOffsetFromCompressionHeaderStart(Slice.UNINITIALIZED_INDEXING_PARAMETER);
         return noOffsetFromContainer;
     }
 
     private static Slice getNoSizeSlice() {
         final Slice noSize = getIndexInitializedSlice();
-        noSize.byteSize = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        noSize.setByteSize(Slice.UNINITIALIZED_INDEXING_PARAMETER);
         return noSize;
     }
 
     private static Slice getNoIndexSlice() {
         final Slice noIndex = getIndexInitializedSlice();
-        noIndex.index = Slice.UNINITIALIZED_INDEXING_PARAMETER;
+        noIndex.setIndex(Slice.UNINITIALIZED_INDEXING_PARAMETER);
         return noIndex;
     }
 
@@ -248,10 +248,10 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
                                         final int expectedRecordCount,
                                         final int expectedBaseCount) {
         Assert.assertEquals(slice.getReferenceContext(), expectedReferenceContext);
-        Assert.assertEquals(slice.alignmentStart, expectedAlignmentStart);
-        Assert.assertEquals(slice.alignmentSpan, expectedAlignmentSpan);
-        Assert.assertEquals(slice.nofRecords, expectedRecordCount);
-        Assert.assertEquals(slice.bases, expectedBaseCount);
+        Assert.assertEquals(slice.getAlignmentStart(), expectedAlignmentStart);
+        Assert.assertEquals(slice.getAlignmentSpan(), expectedAlignmentSpan);
+        Assert.assertEquals(slice.getNofRecords(), expectedRecordCount);
+        Assert.assertEquals(slice.getBaseCount(), expectedBaseCount);
     }
 
     public static void assertSliceState(final Slice slice,
@@ -262,7 +262,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
                                         final int expectedBaseCount,
                                         final int expectedGlobalRecordCounter) {
         assertSliceState(slice, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, expectedRecordCount, expectedBaseCount);
-        Assert.assertEquals(slice.globalRecordCounter, expectedGlobalRecordCounter);
+        Assert.assertEquals(slice.getGlobalRecordCounter(), expectedGlobalRecordCounter);
     }
 
     public static void assertContainerState(final Container container,
@@ -273,7 +273,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         Assert.assertEquals(container.getReferenceContext(), expectedReferenceContext);
         Assert.assertEquals(container.getContainerHeader().getAlignmentStart(), expectedAlignmentStart);
         Assert.assertEquals(container.getContainerHeader().getAlignmentSpan(), expectedAlignmentSpan);
-        Assert.assertEquals(container.byteOffset, expectedByteOffset);
+        Assert.assertEquals(container.getContainerByteOffset(), expectedByteOffset);
     }
 
     public static void assertContainerState(final Container container,
@@ -286,15 +286,15 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
                                             final long expectedByteOffset) {
         assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, expectedByteOffset);
 
-        Assert.assertEquals(container.getContainerHeader().getNofRecords(), expectedRecordCount);
-        Assert.assertEquals(container.getContainerHeader().getBases(), expectedBaseCount);
+        Assert.assertEquals(container.getContainerHeader().getRecordCount(), expectedRecordCount);
+        Assert.assertEquals(container.getContainerHeader().getBaseCount(), expectedBaseCount);
         Assert.assertEquals(container.getContainerHeader().getGlobalRecordCounter(), expectedGlobalRecordCounter);
 
-        Assert.assertEquals(container.getSlices().length, 1);
+        Assert.assertEquals(container.getSlices().size(), 1);
 
         // verify the underlying slice too
 
-        assertSliceState(container.getSlices()[0], expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
+        assertSliceState(container.getSlices().get(0), expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
                 expectedRecordCount, expectedBaseCount, expectedGlobalRecordCounter);
     }
 }

@@ -56,7 +56,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
 
         for (int i = 0; i < recordCount; i++) {
             //TODO: its a little sketchy to require
-            final CRAMRecord cramRecord = super.read(slice.index,0, prevAlignmentStart);
+            final CRAMRecord cramRecord = super.read(slice.getIndex(),0, prevAlignmentStart);
             prevAlignmentStart = cramRecord.getAlignmentStart();
             processRecordSpan(cramRecord);
         }

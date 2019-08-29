@@ -158,15 +158,15 @@ public class BAMIndexMetaData {
      */
     void recordMetaData(final Slice slice) {
          if (slice.getReferenceContext().isUnmappedUnplaced()) {
-            noCoordinateRecords += slice.unplacedReadsCount;
+            noCoordinateRecords += slice.getUnplacedReadsCount();
             return;
         }
         else {
-            alignedRecords += slice.mappedReadsCount;
-            unAlignedRecords += slice.unmappedReadsCount;
+            alignedRecords += slice.getMappedReadsCount();
+            unAlignedRecords += slice.getUnmappedReadsCount();
         }
 
-        final long start = slice.byteOffsetFromCompressionHeaderStart;
+        final long start = slice.getByteOffsetFromCompressionHeaderStart();
 
         if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
             this.firstOffset = start;

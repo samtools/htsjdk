@@ -10,11 +10,10 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.CramInt;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.ContainerHeaderIO;
-import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
+import htsjdk.samtools.cram.structure.ContainerHeader;
 import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import org.testng.Assert;
@@ -62,11 +61,12 @@ public class VersionTest extends HtsjdkTest {
 
         // read whole container:
         long containerStart = cramSeekableStream.position();
-        Container container = ContainerIO.readContainer(version, cramSeekableStream);
+        Container container = new Container(version, cramSeekableStream, containerStart);
         Assert.assertNotNull(container);
 
         // ensure EOF follows:
-        Container eof = ContainerIO.readContainer(version, cramSeekableStream);
+        final long streamPos = cramSeekableStream.position();
+        Container eof = new Container(version, cramSeekableStream, streamPos);
         Assert.assertNotNull(eof);
         Assert.assertTrue(eof.isEOF());
 
@@ -75,7 +75,7 @@ public class VersionTest extends HtsjdkTest {
         // position stream at the start of the 1st container:
         cramSeekableStream.seek(containerStart);
         // read only container header:
-        ContainerHeaderIO.readContainerHeader(version.major, cramSeekableStream);
+        ContainerHeader.readContainerHeader(version.major, cramSeekableStream);
 
         // read the following 4 bytes of CRC32:
         int crcByteSize = 4;

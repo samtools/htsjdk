@@ -2,8 +2,6 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerHeader;
-import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 
 import java.io.InputStream;
@@ -41,7 +39,8 @@ public class CramContainerIterator implements Iterator<Container> {
      * @return The next Container from the stream.
      */
     protected Container containerFromStream(final CountingInputStream countingStream) {
-        return ContainerIO.readContainer(cramHeader.getVersion(), countingStream);
+        final long containerByteOffset = countingStream.getCount();
+        return new Container(cramHeader.getVersion(), countingStream, containerByteOffset);
     }
 
     @Override

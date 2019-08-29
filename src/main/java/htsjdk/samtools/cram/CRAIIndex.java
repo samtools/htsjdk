@@ -89,19 +89,19 @@ public class CRAIIndex {
 
         for (final CRAIEntry entry : full) {
             final Slice slice = new Slice(new ReferenceContext(entry.getSequenceId()));
-            slice.containerByteOffset = entry.getContainerStartByteOffset();
-            slice.alignmentStart = entry.getAlignmentStart();
-            slice.alignmentSpan = entry.getAlignmentSpan();
-            slice.byteOffsetFromCompressionHeaderStart = entry.getSliceByteOffsetFromCompressionHeaderStart();
+            slice.setContainerByteOffset(entry.getContainerStartByteOffset());
+            slice.setAlignmentStart(entry.getAlignmentStart());
+            slice.setAlignmentSpan(entry.getAlignmentSpan());
+            slice.setByteOffsetFromCompressionHeaderStart(entry.getSliceByteOffsetFromCompressionHeaderStart());
 
             // NOTE: the sliceIndex and read count fields can't be derived from the CRAM index
             // so we can only set them to zero
             // see https://github.com/samtools/htsjdk/issues/531
 
-            slice.mappedReadsCount = 0;
-            slice.unmappedReadsCount = 0;
-            slice.unplacedReadsCount = 0;
-            slice.index = 0;
+            slice.setMappedReadsCount(0);
+            slice.setUnmappedReadsCount(0);
+            slice.setUnplacedReadsCount(0);
+            slice.setIndex(0);
 
             indexer.processAsSingleReferenceSlice(slice);
         }
