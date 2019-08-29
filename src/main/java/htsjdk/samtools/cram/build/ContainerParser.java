@@ -43,7 +43,7 @@ public class ContainerParser {
         }
 
         if (records == null) {
-            records = new ArrayList<>(container.nofRecords);
+            records = new ArrayList<>(container.getContainerHeader().getNofRecords());
         }
 
         for (final Slice slice : container.getSlices()) {

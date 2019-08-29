@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerHeader;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 

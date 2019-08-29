@@ -73,7 +73,7 @@ public class Slice {
 
     /**
      * The Slice's offset in bytes from the beginning of the Container's Compression Header
-     * (or the end of the Container Header), equal to {@link Container#landmarks}
+     * (or the end of the Container Header), equal to {@link ContainerHeader#getLandmarks()}
      *
      * Used by BAI and CRAI indexing
      */
@@ -339,19 +339,19 @@ public class Slice {
      * Hijacking attributes-related methods from SAMRecord:
      */
 
-    /**
-     * Get tag value attached to the slice.
-     * @param tag tag ID as a short integer as returned by {@link SAMTag#makeBinaryTag(String)}
-     * @return a value of the tag
-     */
-    public Object getAttribute(final short tag) {
-        if (this.sliceTags == null) return null;
-        else {
-            final SAMBinaryTagAndValue tmp = this.sliceTags.find(tag);
-            if (tmp != null) return tmp.value;
-            else return null;
-        }
-    }
+//    /**
+//     * Get tag value attached to the slice.
+//     * @param tag tag ID as a short integer as returned by {@link SAMTag#makeBinaryTag(String)}
+//     * @return a value of the tag
+//     */
+//    public Object getAttribute(final short tag) {
+//        if (this.sliceTags == null) return null;
+//        else {
+//            final SAMBinaryTagAndValue tmp = this.sliceTags.find(tag);
+//            if (tmp != null) return tmp.value;
+//            else return null;
+//        }
+//    }
 
     /**
      * Set a value for the tag.

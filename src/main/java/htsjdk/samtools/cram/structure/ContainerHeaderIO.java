@@ -34,12 +34,9 @@ public class ContainerHeaderIO {
      *
      * @param major the CRAM version to assume
      * @param inputStream the input stream to read from
-     * @param containerByteOffset the byte offset from the start of the stream
-     * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
+     * @return a new {@link ContainerHeader} object with container header values filled out but empty body (no slices and blocks).
      */
-    public static Container readContainerHeader(final int major,
-                                                final InputStream inputStream,
-                                                final long containerByteOffset) {
+    public static ContainerHeader readContainerHeader(final int major, final InputStream inputStream) {
         final byte[] peek = new byte[4];
         try {
             int character = inputStream.read();
@@ -50,7 +47,7 @@ public class ContainerHeaderIO {
                 final byte[] eofMarker = major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER;
 
                 try (final ByteArrayInputStream eofBAIS = new ByteArrayInputStream(eofMarker)) {
-                    return readContainerHeader(majorVersionForEOF, eofBAIS, containerByteOffset);
+                    return readContainerHeader(majorVersionForEOF, eofBAIS);
                 }
             }
             peek[0] = (byte) character;
@@ -66,74 +63,48 @@ public class ContainerHeaderIO {
 
         final int containerByteSize = CramInt.readInt32(peek);
         final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(inputStream));
-        final Container container = new Container(refContext);
-        container.containerBlocksByteSize = containerByteSize;
+        final int alignmentStart = ITF8.readUnsignedITF8(inputStream);
+        final int alignmentSpan = ITF8.readUnsignedITF8(inputStream);
+        final int nofRecords = ITF8.readUnsignedITF8(inputStream);
+        final long globalRecordCounter = LTF8.readUnsignedLTF8(inputStream);
+        final long bases = LTF8.readUnsignedLTF8(inputStream);
+        final int blockCount = ITF8.readUnsignedITF8(inputStream);
+        final int landmarks[] = CramIntArray.array(inputStream);
+        final int checksum = major >= 3 ? CramInt.readInt32(inputStream) : 0;
 
-        container.alignmentStart = ITF8.readUnsignedITF8(inputStream);
-        container.alignmentSpan = ITF8.readUnsignedITF8(inputStream);
-        container.nofRecords = ITF8.readUnsignedITF8(inputStream);
-        container.globalRecordCounter = LTF8.readUnsignedLTF8(inputStream);
-        container.bases = LTF8.readUnsignedLTF8(inputStream);
-        container.blockCount = ITF8.readUnsignedITF8(inputStream);
-        container.landmarks = CramIntArray.array(inputStream);
-        if (major >= 3)
-            container.checksum = CramInt.readInt32(inputStream);
-
-        container.byteOffset = containerByteOffset;
-        return container;
-    }
-
-    // convenience methods for SeekableStream and CountingInputStream
-    // TODO: merge these two classes?
-
-    /**
-     * Reads container header only from a {@link SeekableStream}.
-     *
-     * @param major the CRAM version to assume
-     * @param seekableStream the seekable input stream to read from
-     * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
-     */
-    public static Container readContainerHeader(final int major, final SeekableStream seekableStream) {
-        try {
-            final long containerByteOffset = seekableStream.position();
-            return readContainerHeader(major, seekableStream, containerByteOffset);
-        }
-        catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-    }
-
-    /**
-     * Reads container header only from a {@link CountingInputStream}.
-     *
-     * @param major the CRAM version to assume
-     * @param countingStream the counting input stream to read from
-     * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
-     */
-    public static Container readContainerHeader(final int major, final CountingInputStream countingStream) {
-        final long containerByteOffset = countingStream.getCount();
-        return readContainerHeader(major, countingStream, containerByteOffset);
+        return new ContainerHeader(
+                containerByteSize,
+                refContext,
+                alignmentStart,
+                alignmentSpan,
+                nofRecords,
+                globalRecordCounter,
+                bases,
+                blockCount,
+                landmarks,
+                checksum);
     }
 
     /**
      * Write CRAM {@link Container} (header only) out into the given {@link OutputStream}.
      * @param major CRAM major version
-     * @param container container containing the container header to be written
+     * @param containerHeader containerHeader to be written
      * @param outputStream the output stream to write the container header to
      * @return number of bytes written out to the output stream
      */
-    public static int writeContainerHeader(final int major, final Container container, final OutputStream outputStream) {
+    //TODO: move this into containerHeader
+    public static int writeContainerHeader(final int major, final ContainerHeader containerHeader, final OutputStream outputStream) {
         final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
 
-        int length = (CramInt.writeInt32(container.containerBlocksByteSize, crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(container.getReferenceContext().getSerializableId(), crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(container.alignmentStart, crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(container.alignmentSpan, crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(container.nofRecords, crc32OutputStream) + 7) / 8;
-        length += (LTF8.writeUnsignedLTF8(container.globalRecordCounter, crc32OutputStream) + 7) / 8;
-        length += (LTF8.writeUnsignedLTF8(container.bases, crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(container.blockCount, crc32OutputStream) + 7) / 8;
-        length += (CramIntArray.write(container.landmarks, crc32OutputStream) + 7) / 8;
+        int length = (CramInt.writeInt32(containerHeader.getContainerBlocksByteSize(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(containerHeader.getReferenceContext().getSerializableId(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(containerHeader.getAlignmentStart(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(containerHeader.getAlignmentSpan(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(containerHeader.getNofRecords(), crc32OutputStream) + 7) / 8;
+        length += (LTF8.writeUnsignedLTF8(containerHeader.getGlobalRecordCounter(), crc32OutputStream) + 7) / 8;
+        length += (LTF8.writeUnsignedLTF8(containerHeader.getBases(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(containerHeader.getBlockCount(), crc32OutputStream) + 7) / 8;
+        length += (CramIntArray.write(containerHeader.getLandmarks(), crc32OutputStream) + 7) / 8;
 
         if (major >= 3) {
             try {

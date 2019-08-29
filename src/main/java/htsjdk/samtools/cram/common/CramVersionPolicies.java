@@ -19,6 +19,8 @@ public class CramVersionPolicies {
             log.error("Incomplete data: EOF marker not found.");
             throw new RuntimeException("EOF not found.");
         }
-        if (version.compatibleWith(CramVersions.CRAM_v2_1)) log.warn("EOF marker not found, possibly incomplete file/stream.");
+        if (version.compatibleWith(CramVersions.CRAM_v2_1)) {
+            log.warn("EOF marker not found, possibly incomplete file/stream.");
+        }
     }
 }
