@@ -40,11 +40,11 @@ public class SliceTests extends HtsjdkTest {
         byte[] ref = "AAAAA".getBytes();
         final byte[] md5 = SequenceUtil.calculateMD5(ref, 0, Math.min(5, ref.length));
         final Slice slice = new Slice(new ReferenceContext(0));
-        slice.alignmentSpan = 5;
-        slice.alignmentStart = 1;
+        slice.setAlignmentSpan(5);
+        slice.setAlignmentStart(1);
         slice.setRefMD5(ref);
 
-        Assert.assertEquals(slice.refMD5, md5);
+        Assert.assertEquals(slice.getRefMD5(), md5);
         Assert.assertTrue(slice.validateRefMD5(ref));
     }
 
@@ -129,7 +129,7 @@ public class SliceTests extends HtsjdkTest {
                                final int expectedAlignmentStart,
                                final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, coordinateSorted);
-        final Slice slice = Slice.buildSlice(records, header);
+        final Slice slice = new Slice(records, header);
         final int expectedBaseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
         CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,
                 expectedAlignmentStart, expectedAlignmentSpan, TEST_RECORD_COUNT, expectedBaseCount);
@@ -204,7 +204,7 @@ public class SliceTests extends HtsjdkTest {
                                             final int expectedAlignmentStart,
                                             final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
-        final Slice slice = Slice.buildSlice(records, header);
+        final Slice slice = new Slice(records, header);
         final int expectedBaseCount = records.size() * READ_LENGTH_FOR_TEST_RECORDS;
         CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,
                 expectedAlignmentStart, expectedAlignmentSpan, records.size(), expectedBaseCount);

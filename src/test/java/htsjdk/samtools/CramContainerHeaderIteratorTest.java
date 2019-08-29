@@ -4,7 +4,6 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.CramContainerHeaderIterator;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.Iterables;
@@ -42,24 +41,25 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Assert.assertEquals(headerOnlyContainer.getReferenceContext(), fullContainer.getReferenceContext());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getAlignmentStart(), fullContainer.getContainerHeader().getAlignmentStart());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getAlignmentSpan(), fullContainer.getContainerHeader().getAlignmentSpan());
-            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getNofRecords(), fullContainer.getContainerHeader().getNofRecords());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getRecordCount(), fullContainer.getContainerHeader().getRecordCount());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getGlobalRecordCounter(), fullContainer.getContainerHeader().getGlobalRecordCounter());
-            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBases(), fullContainer.getContainerHeader().getBases());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBaseCount(), fullContainer.getContainerHeader().getBaseCount());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBlockCount(), fullContainer.getContainerHeader().getBlockCount());
             //TODO:this needs to be Arrays.equals ?
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getLandmarks(), fullContainer.getContainerHeader().getLandmarks());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getChecksum(), fullContainer.getContainerHeader().getChecksum());
-            Assert.assertEquals(headerOnlyContainer.byteOffset, fullContainer.byteOffset);
+            Assert.assertEquals(headerOnlyContainer.getContainerByteOffset(), fullContainer.getContainerByteOffset());
             // unpopulated fields
-            Assert.assertNull(headerOnlyContainer.compressionHeader);
-            Assert.assertNull(headerOnlyContainer.getSlices());
+            Assert.assertNull(headerOnlyContainer.getCompressionHeader());
+            Assert.assertTrue(headerOnlyContainer.getSlices().isEmpty());
             // try to read a container from the offset to check it's correct
             try (SeekableFileStream seekableFileStream = new SeekableFileStream(cramFile)) {
-                seekableFileStream.seek(headerOnlyContainer.byteOffset);
-                Container container = ContainerIO.readContainer(actualHeader.getVersion(), seekableFileStream);
+                final long byteOffset = headerOnlyContainer.getContainerByteOffset();
+                seekableFileStream.seek(headerOnlyContainer.getContainerByteOffset());
+                Container container = new Container(actualHeader.getVersion(), seekableFileStream, byteOffset);
                 Assert.assertEquals(container.getContainerHeader().getAlignmentStart(), fullContainer.getContainerHeader().getAlignmentStart());
                 Assert.assertEquals(container.getContainerHeader().getAlignmentSpan(), fullContainer.getContainerHeader().getAlignmentSpan());
-                Assert.assertEquals(container.getContainerHeader().getNofRecords(), fullContainer.getContainerHeader().getNofRecords());
+                Assert.assertEquals(container.getContainerHeader().getRecordCount(), fullContainer.getContainerHeader().getRecordCount());
                 Assert.assertEquals(container.getContainerHeader().getChecksum(), fullContainer.getContainerHeader().getChecksum());
             }
         }

@@ -104,11 +104,15 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
         final Version cramVersion = cramHeader.getVersion();
 
         // get the first container
-        Container container = ContainerIO.readContainer(cramVersion, cramStream);
+        try {
+            Container container = new Container(cramVersion, cramStream, cramStream.position());
 
-        while (container != null && !container.isEOF()) {
-            indexer.processContainer(container);
-            container = ContainerIO.readContainer(cramVersion, cramStream);
+            while (container != null && !container.isEOF()) {
+                indexer.processContainer(container);
+                container = new Container(cramVersion, cramStream, cramStream.position());
+            }
+        } catch (final IOException e) {
+            throw new RuntimeIOException("error getting stream position", e);
         }
 
         indexer.finish();

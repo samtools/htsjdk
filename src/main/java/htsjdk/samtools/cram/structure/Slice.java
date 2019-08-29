@@ -20,17 +20,25 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.digest.ContentDigests;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
+import htsjdk.samtools.cram.io.CramIntArray;
+import htsjdk.samtools.cram.io.ITF8;
+import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.io.LTF8;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
+import htsjdk.samtools.cram.structure.block.BlockContentType;
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.*;
@@ -44,83 +52,80 @@ public class Slice {
     public static final int NO_ALIGNMENT_START = -1;
     public static final int NO_ALIGNMENT_SPAN = 0;
     public static final int NO_ALIGNMENT_END = SAMRecord.NO_ALIGNMENT_START; // 0
-
-    private final ReferenceContext referenceContext;
-
-    private CompressionHeader compressionHeader;
-
-    // header values as defined in the specs, in addition to sequenceId from ReferenceContext
-
-    // minimum alignment start of the reads in this Slice
-    // uses a 1-based coordinate system
-    public int alignmentStart = NO_ALIGNMENT_START;
-    public int alignmentSpan = NO_ALIGNMENT_SPAN;
-    public int nofRecords = -1;
-    public long globalRecordCounter = -1;
-
-    // total number of blocks in this slice, including the core block
-    public int nofBlocks = -1;
-    public int[] contentIDs;
-    public byte[] refMD5 = new byte[16];
-
-    // content associated with ids:
-    public Block headerBlock;
-    private SliceBlocks sliceBlocks = new SliceBlocks();
-
     // for indexing purposes
     //TODO: this should be the same as CRAMRecord.SLICE_INDEX_DEFAULT when used for sliceIndex
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
 
-    /**
-     * The Slice's offset in bytes from the beginning of the Container's Compression Header
-     * (or the end of the Container Header), equal to {@link ContainerHeader#getLandmarks()}
-     *
-     * Used by BAI and CRAI indexing
-     */
-    public int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
-    /**
-     * The Slice's Container's offset in bytes from the beginning of the stream
-     * equal to {@link Container#byteOffset}
-     *
-     * Used by BAI and CRAI indexing
-     */
-    public long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
-    /**
-     * The Slice's size in bytes
-     *
-     * Used by CRAI indexing only
-     */
-    public int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
-    /**
-     * The Slice's index number within its Container
-     *
-     * Used by BAI indexing only
-     */
-    public int index = UNINITIALIZED_INDEXING_PARAMETER;
+    ////////////////////////////////
+    // Start slice header values
+    // header values as defined in the specs, in addition to sequenceId from ReferenceContext
+    // int sequenceID
+    private final ReferenceContext referenceContext;
+    // minimum alignment start of the reads in this Slice
+    // uses a 1-based coordinate system
+    private int alignmentStart = NO_ALIGNMENT_START;
+    private int alignmentSpan = NO_ALIGNMENT_SPAN;
+    private int nofRecords = -1;
+    private long globalRecordCounter = -1;
+    // total number of blocks in this slice, including the core block
+    private int nofBlocks = -1;
+    private int[] contentIDs;
+    // embeddedReferenceContentID (stored in SliceBlocks)..
+    private byte[] refMD5 = new byte[16];
+    private SAMBinaryTagAndValue sliceTags;
+    // End slice header values
+    ////////////////////////////////
 
+    private CompressionHeader compressionHeader;
+    // content associated with ids:
+    //private Block headerBlock;
+    private SliceBlocks sliceBlocks = new SliceBlocks();
+
+    private int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
+    private long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
+    private int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
+    private int index = UNINITIALIZED_INDEXING_PARAMETER;
     // to pass this to the container:
-    public long bases;
-
-    public SAMBinaryTagAndValue sliceTags;
+    private long baseCount;
 
     // read counters per type, for BAMIndexMetaData.recordMetaData()
-    //
     // see also AlignmentSpan and CRAMBAIIndexer.processContainer()
-    //
-    // TODO: redesign/refactor
 
-    public int mappedReadsCount = 0;
-    public int unmappedReadsCount = 0;
-    public int unplacedReadsCount = 0;
+    private int mappedReadsCount = 0;
+    private int unmappedReadsCount = 0;
+    private int unplacedReadsCount = 0;
 
-    /**
-     * Construct this Slice by providing its {@link ReferenceContext}
-     * @param compressionHeader the compression header for the enclosing container
-     * @param refContext the reference context associated with this slice
-     */
-    public Slice(final CompressionHeader compressionHeader, final ReferenceContext refContext) {
+    public Slice (final int major, final CompressionHeader compressionHeader, final InputStream inputStream) {
+        final Block sliceHeaderBlock = Block.read(major, inputStream);
+        if (sliceHeaderBlock.getContentType() != BlockContentType.MAPPED_SLICE) {
+            throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
+        }
+
+        final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getUncompressedContent());
+
+        //TODO: validate that this matches the container
+        // if MULTIPLE_REFERENCE_ID, enclosing container must also be MULTIPLE_REFERENCE_ID
+        this.referenceContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
         this.compressionHeader = compressionHeader;
-        this.referenceContext = refContext;
+        setAlignmentStart(ITF8.readUnsignedITF8(parseInputStream));
+        setAlignmentSpan(ITF8.readUnsignedITF8(parseInputStream));
+        setNofRecords(ITF8.readUnsignedITF8(parseInputStream));
+        setGlobalRecordCounter(LTF8.readUnsignedLTF8(parseInputStream));
+        setNofBlocks(ITF8.readUnsignedITF8(parseInputStream));
+
+        setContentIDs(CramIntArray.array(parseInputStream));
+        // embedded ref content id == -1 if embedded ref not present
+        setEmbeddedReferenceContentID(ITF8.readUnsignedITF8(parseInputStream));
+        setReferenceMD5(new byte[16]);
+        InputStreamUtils.readFully(parseInputStream, getRefMD5(), 0, getRefMD5().length);
+
+        final byte[] bytes = InputStreamUtils.readFully(parseInputStream);
+
+        if (major >= CramVersions.CRAM_v3.major) {
+            setSliceTags(BinaryTagCodec.readTags(bytes, 0, bytes.length, ValidationStringency.DEFAULT_STRINGENCY));
+        }
+
+        sliceBlocks.readBlocks(major, nofBlocks, inputStream);
     }
 
     /**
@@ -134,12 +139,101 @@ public class Slice {
         this.referenceContext = refContext;
     }
 
-    public CompressionHeader getCompressionHeader() {
-        if (compressionHeader == null) {
-            // temporary guard until the Slice(refContext) constructor is expunged
-            throw new IllegalStateException("null compression header");
+    /**
+     * Create a single Slice from CRAM Compression Records and a Compression Header.
+     * The caller is responsible for appropriate subdivision of records into
+     * containers and slices.
+     *
+     * @param records input CRAM Compression Records
+     * @param compressionHeader the enclosing {@link Container}'s Compression Header
+     * @return a Slice corresponding to the given records
+     * //
+     * Using a collection of {@link CRAMRecord}s,
+     * determine whether the slice is single ref, unmapped or multi reference.
+     * Derive alignment boundaries for the slice if single ref.
+     *
+     * Valid Slice states, by individual record contents:
+     *
+     * Single Reference: all records have valid placements/alignments on the same reference sequence
+     * - records can be unmapped-but-placed
+     * - reference can be external or embedded
+     *
+     * Multiple Reference: records may be placed or not, and may have differing reference sequences
+     * - reference must not be embedded (not checked here)
+     *
+     * Unmapped: all records are unmapped and unplaced
+     * - note however that we do not actually check mapping flags for unplaced reads.
+     * @see CRAMRecord#isPlaced()
+     *
+     * @see ReferenceContextType
+     * @param records the input records
+     * @return the initialized Slice
+     */
+    public Slice(final List<CRAMRecord> records, final CompressionHeader compressionHeader) {
+        this.compressionHeader = compressionHeader;
+
+        final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
+        final Set<ReferenceContext> referenceContexts = new HashSet<>();
+        // ignore these values if we later determine this Slice is not single-ref
+        int singleRefAlignmentStart = Integer.MAX_VALUE;
+        int singleRefAlignmentEnd = SAMRecord.NO_ALIGNMENT_START;
+
+        int baseCount = 0;
+        for (final CRAMRecord record : records) {
+            hasher.add(record);
+            baseCount += record.getReadLength();
+
+            if (record.isPlaced()) {
+                referenceContexts.add(new ReferenceContext(record.getReferenceIndex()));
+                singleRefAlignmentStart = Math.min(record.getAlignmentStart(), singleRefAlignmentStart);
+                singleRefAlignmentEnd = Math.max(record.getAlignmentEnd(), singleRefAlignmentEnd);
+
+                if (record.isSegmentUnmapped()) {
+                    unmappedReadsCount++;
+                } else {
+                    mappedReadsCount++;
+                }
+            } else {
+                referenceContexts.add(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+            }
+
+            // this check matches the logic of BAMIndexMetadata.recordMetaData(SAMRecord)
+            // we's prefer to use isPlaced() like we do elsewhere, but we'd have inconsistent results if we did
+
+            // TODO? either update isPlaced() to match this logic (i.e. don't check the reference ID)
+            // or update BAMIndexMetadata.recordMetaData(SAMRecord) to have a similar notion of placement
+
+            if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
+                unplacedReadsCount++;
+            }
         }
-        return compressionHeader;
+
+        switch (referenceContexts.size()) {
+            case 0:
+                this.referenceContext = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
+                break;
+            case 1:
+                // SINGLE_REFERENCE_TYPE context: all reads placed on the same reference
+                // or UNMAPPED_UNPLACED_CONTEXT: all reads unplaced
+                this.referenceContext = referenceContexts.iterator().next();
+                break;
+            default:
+                // placed reads on multiple references and/or a combination of placed and unplaced reads
+                this.referenceContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
+        }
+
+        //final Slice slice = new Slice(compressionHeader, sliceRefContext);
+        if (this.referenceContext.isMappedSingleRef()) {
+            alignmentStart = singleRefAlignmentStart;
+            alignmentSpan = singleRefAlignmentEnd - singleRefAlignmentStart + 1;
+        }
+
+        sliceTags = hasher.getAsTags();
+        this.baseCount = baseCount;
+        nofRecords = records.size();
+
+        final CramRecordWriter writer = new CramRecordWriter(this);
+        writer.writeCRAMCompressionRecords(records, this.alignmentStart);
     }
 
     public SliceBlocks getSliceBlocks() { return sliceBlocks; }
@@ -148,16 +242,235 @@ public class Slice {
         return referenceContext;
     }
 
-    public void readSliceBlocks(final int major, final InputStream inputStream) {
-        sliceBlocks.readBlocks(major, nofBlocks, inputStream);
+    public int getAlignmentStart() {
+        return alignmentStart;
+    }
+    public void setAlignmentStart(int alignmentStart) {
+        this.alignmentStart = alignmentStart;
     }
 
+    public int getAlignmentSpan() {
+        return alignmentSpan;
+    }
+    public void setAlignmentSpan(int alignmentSpan) {
+        this.alignmentSpan = alignmentSpan;
+    }
+
+    public int getNofRecords() {
+        return nofRecords;
+    }
+    private void setNofRecords(int nofRecords) {
+        this.nofRecords = nofRecords;
+    }
+
+    public long getGlobalRecordCounter() {
+        return globalRecordCounter;
+    }
+    public void setGlobalRecordCounter(long globalRecordCounter) {
+        this.globalRecordCounter = globalRecordCounter;
+    }
+
+    public int getNofBlocks() {
+        return nofBlocks;
+    }
+    public void setNofBlocks(int nofBlocks) {
+        this.nofBlocks = nofBlocks;
+    }
+
+    public int[] getContentIDs() {
+        return contentIDs;
+    }
+    public void setContentIDs(int[] contentIDs) {
+        this.contentIDs = contentIDs;
+    }
+
+    public byte[] getRefMD5() {
+        return refMD5;
+    }
+
+    /**
+     * The Slice's offset in bytes from the beginning of the Container's Compression Header
+     * (or the end of the Container Header), equal to {@link ContainerHeader#getLandmarks()}
+     *
+     * Used by BAI and CRAI indexing
+     */
+    public int getByteOffsetFromCompressionHeaderStart() {
+        return byteOffsetFromCompressionHeaderStart;
+    }
+
+    public void setByteOffsetFromCompressionHeaderStart(int byteOffsetFromCompressionHeaderStart) {
+        this.byteOffsetFromCompressionHeaderStart = byteOffsetFromCompressionHeaderStart;
+    }
+
+    /**
+     * The Slice's Container's offset in bytes from the beginning of the stream
+     * equal to {@link Container#getContainerByteOffset()}
+     *
+     * Used by BAI and CRAI indexing
+     */
+    public long getContainerByteOffset() {
+        return containerByteOffset;
+    }
+
+    public void setContainerByteOffset(long containerByteOffset) {
+        this.containerByteOffset = containerByteOffset;
+    }
+
+    /**
+     * The Slice's size in bytes
+     *
+     * Used by CRAI indexing only
+     */
+    public int getByteSize() {
+        return byteSize;
+    }
+
+    public void setByteSize(int byteSize) {
+        this.byteSize = byteSize;
+    }
+
+    /**
+     * The Slice's index number within its Container
+     *
+     * Used by BAI indexing only
+     */
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public long getBaseCount() {
+        return baseCount;
+    }
+
+    public SAMBinaryTagAndValue getSliceTags() {
+        return sliceTags;
+    }
+
+    public void setSliceTags(SAMBinaryTagAndValue sliceTags) {
+        this.sliceTags = sliceTags;
+    }
+
+    public int getMappedReadsCount() {
+        return mappedReadsCount;
+    }
+
+    public void setMappedReadsCount(int mappedReadsCount) {
+        this.mappedReadsCount = mappedReadsCount;
+    }
+
+    public int getUnmappedReadsCount() {
+        return unmappedReadsCount;
+    }
+
+    public void setUnmappedReadsCount(int unmappedReadsCount) {
+        this.unmappedReadsCount = unmappedReadsCount;
+    }
+
+    public int getUnplacedReadsCount() {
+        return unplacedReadsCount;
+    }
+
+    public void setUnplacedReadsCount(int unplacedReadsCount) {
+        this.unplacedReadsCount = unplacedReadsCount;
+    }
+
+    public void setReferenceMD5(final byte[] ref) {
+        refMD5 = ref;
+    }
     public void setEmbeddedReferenceContentID(final int embeddedRefContentID) { sliceBlocks.setEmbeddedReferenceContentID(embeddedRefContentID); }
     public int getEmbeddedReferenceContentID() { return sliceBlocks.getEmbeddedReferenceContentID(); }
 
     // Unused because embedded reference isn't implemented for write
-    public void setEmbeddedReferenceBlock(final Block embeddedRefBlock) { sliceBlocks.setEmbeddedReferenceBlock(embeddedRefBlock); }
     public Block getEmbeddedReferenceBlock() { return sliceBlocks.getEmbeddedReferenceBlock(); }
+
+    public CompressionHeader getCompressionHeader() {
+        if (compressionHeader == null) {
+            //TODO: do we need this guard....
+            // temporary guard until the Slice(refContext) constructor is expunged
+            throw new IllegalStateException("null compression header");
+        }
+        return compressionHeader;
+    }
+
+    public ArrayList<CRAMRecord> getRecords(final ValidationStringency validationStringency) {
+        final CramRecordReader reader = new CramRecordReader(this, validationStringency);
+
+        final ArrayList<CRAMRecord> records = new ArrayList<>(nofRecords);
+
+        int prevAlignmentStart = alignmentStart;
+        for (int i = 0; i < nofRecords; i++) {
+            // read the new record and update the running prevAlignmentStart
+            final CRAMRecord cramRecord = reader.read(index, i, prevAlignmentStart);
+            prevAlignmentStart = cramRecord.getAlignmentStart();
+
+            records.add(cramRecord);
+        }
+
+        return records;
+    }
+
+    public void write(final int major, final OutputStream outputStream) {
+        // TODO: ensure that the Slice blockCount stays in sync with the
+        // Container's blockCount in Container.writeContainer()
+
+        // Each Slice has 1 core data block, plus zero or more external data blocks.
+        // Since an embedded reference block is just stored as an external block, it is included in
+        // the external block count, and does not need to be counted separately.
+        setNofBlocks(1 + getSliceBlocks().getNumberOfExternalBlocks());
+        setContentIDs(new int[getSliceBlocks().getNumberOfExternalBlocks()]);
+        final int i = 0;
+        for (final int id : getSliceBlocks().getExternalContentIDs()) {
+            getContentIDs()[i] = id;
+        }
+
+        final Block sliceHeaderBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, this));
+        sliceHeaderBlock.write(major, outputStream);
+        getSliceBlocks().writeBlocks(major, outputStream);
+    }
+
+    private static byte[] createSliceHeaderBlockContent(final int major, final Slice slice) {
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ITF8.writeUnsignedITF8(slice.getReferenceContext().getSerializableId(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getAlignmentStart(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getAlignmentSpan(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getNofRecords(), byteArrayOutputStream);
+        LTF8.writeUnsignedLTF8(slice.getGlobalRecordCounter(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getNofBlocks(), byteArrayOutputStream);
+
+        slice.setContentIDs(new int[slice.getSliceBlocks().getNumberOfExternalBlocks()]);
+        int i = 0;
+        for (final int id : slice.getSliceBlocks().getExternalContentIDs()) {
+            slice.getContentIDs()[i++] = id;
+        }
+        CramIntArray.write(slice.getContentIDs(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getEmbeddedReferenceContentID(), byteArrayOutputStream);
+        try {
+            byteArrayOutputStream.write(slice.getRefMD5() == null ? new byte[16] : slice.getRefMD5());
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+
+        if (major >= CramVersions.CRAM_v3.major) {
+            if (slice.getSliceTags() != null) {
+                final BinaryCodec binaryCoded = new BinaryCodec(byteArrayOutputStream);
+                final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(binaryCoded);
+                SAMBinaryTagAndValue samBinaryTagAndValue = slice.getSliceTags();
+                do {
+                    log.debug("Writing slice tag: " + SAMTag.makeStringTag(samBinaryTagAndValue.tag));
+                    binaryTagCodec.writeTag(samBinaryTagAndValue.tag, samBinaryTagAndValue.value, samBinaryTagAndValue.isUnsignedArray());
+                } while ((samBinaryTagAndValue = samBinaryTagAndValue.getNext()) != null);
+                // BinaryCodec doesn't seem to cache things.
+                // In any case, not calling baseCodec.close() because it's behaviour is
+                // irrelevant here.
+            }
+        }
+
+        return byteArrayOutputStream.toByteArray();
+    }
 
     /**
      * Confirm that we have initialized the 3 BAI index parameters:
@@ -295,6 +608,7 @@ public class Slice {
                 referenceContext, alignmentStart, alignmentSpan, nofRecords);
     }
 
+    // *calculate* the MD5 for this reference
     public void setRefMD5(final byte[] ref) {
         if (referenceContext.isMultiRef()) {
             //TODO: fix this
@@ -365,16 +679,16 @@ public class Slice {
         setAttribute(SAMTag.makeBinaryTag(tag), value);
     }
 
-    //TODO this is unused
-    public void setUnsignedArrayAttribute(final String tag, final Object value) {
-        if (!value.getClass().isArray()) {
-            throw new IllegalArgumentException("Non-array passed to setUnsignedArrayAttribute for tag " + tag);
-        }
-        if (Array.getLength(value) == 0) {
-            throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
-        }
-        setAttribute(SAMTag.makeBinaryTag(tag), value, true);
-    }
+//    //TODO this is unused
+//    public void setUnsignedArrayAttribute(final String tag, final Object value) {
+//        if (!value.getClass().isArray()) {
+//            throw new IllegalArgumentException("Non-array passed to setUnsignedArrayAttribute for tag " + tag);
+//        }
+//        if (Array.getLength(value) == 0) {
+//            throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
+//        }
+//        setAttribute(SAMTag.makeBinaryTag(tag), value, true);
+//    }
 
     void setAttribute(final short tag, final Object value) {
         setAttribute(tag, value, false);
@@ -450,139 +764,6 @@ public class Slice {
                     byteOffsetFromCompressionHeaderStart,
                     byteSize));
         }
-    }
-
-    /**
-     * Create a single Slice from CRAM Compression Records and a Compression Header.
-     * The caller is responsible for appropriate subdivision of records into
-     * containers and slices.
-     *
-     * @param records input CRAM Compression Records
-     * @param compressionHeader the enclosing {@link Container}'s Compression Header
-     * @return a Slice corresponding to the given records
-     */
-    public static Slice buildSlice(final List<CRAMRecord> records,
-                                   final CompressionHeader compressionHeader) {
-        final Slice slice = initializeFromRecords(records, compressionHeader);
-        final CramRecordWriter writer = new CramRecordWriter(slice);
-        writer.writeCRAMCompressionRecords(records, slice.alignmentStart);
-        return slice;
-    }
-
-    /**
-     * Using a collection of {@link CRAMRecord}s,
-     * determine whether the slice is single ref, unmapped or multi reference.
-     * Derive alignment boundaries for the slice if single ref.
-     *
-     * Valid Slice states, by individual record contents:
-     *
-     * Single Reference: all records have valid placements/alignments on the same reference sequence
-     * - records can be unmapped-but-placed
-     * - reference can be external or embedded
-     *
-     * Multiple Reference: records may be placed or not, and may have differing reference sequences
-     * - reference must not be embedded (not checked here)
-     *
-     * Unmapped: all records are unmapped and unplaced
-     * - note however that we do not actually check mapping flags for unplaced reads.
-     * @see CRAMRecord#isPlaced()
-     *
-     * @see ReferenceContextType
-     * @param records the input records
-     * @return the initialized Slice
-     */
-    private static Slice initializeFromRecords(
-            final Collection<CRAMRecord> records,
-            final CompressionHeader compressionHeader)
-    {
-        final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
-        final Set<ReferenceContext> referenceContexts = new HashSet<>();
-        // ignore these values if we later determine this Slice is not single-ref
-        int singleRefAlignmentStart = Integer.MAX_VALUE;
-        int singleRefAlignmentEnd = SAMRecord.NO_ALIGNMENT_START;
-
-        int baseCount = 0;
-        int mappedReadsCount = 0;
-        int unmappedReadsCount = 0;
-        int unplacedReadsCount = 0;
-
-        for (final CRAMRecord record : records) {
-            hasher.add(record);
-            baseCount += record.getReadLength();
-
-            if (record.isPlaced()) {
-                referenceContexts.add(new ReferenceContext(record.getReferenceIndex()));
-                singleRefAlignmentStart = Math.min(record.getAlignmentStart(), singleRefAlignmentStart);
-                singleRefAlignmentEnd = Math.max(record.getAlignmentEnd(), singleRefAlignmentEnd);
-
-                if (record.isSegmentUnmapped()) {
-                    unmappedReadsCount++;
-                } else {
-                    mappedReadsCount++;
-                }
-            } else {
-                referenceContexts.add(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
-            }
-
-            // this check matches the logic of BAMIndexMetadata.recordMetaData(SAMRecord)
-            // we's prefer to use isPlaced() like we do elsewhere, but we'd have inconsistent results if we did
-
-            // TODO? either update isPlaced() to match this logic (i.e. don't check the reference ID)
-            // or update BAMIndexMetadata.recordMetaData(SAMRecord) to have a similar notion of placement
-
-            if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
-                unplacedReadsCount++;
-            }
-        }
-
-        ReferenceContext sliceRefContext;
-        switch (referenceContexts.size()) {
-            case 0:
-                sliceRefContext = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
-                break;
-            case 1:
-                // SINGLE_REFERENCE_TYPE context: all reads placed on the same reference
-                // or UNMAPPED_UNPLACED_CONTEXT: all reads unplaced
-                sliceRefContext = referenceContexts.iterator().next();
-                break;
-            default:
-                // placed reads on multiple references and/or a combination of placed and unplaced reads
-                sliceRefContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
-        }
-
-        final Slice slice = new Slice(compressionHeader, sliceRefContext);
-        if (sliceRefContext.isMappedSingleRef()) {
-            slice.alignmentStart = singleRefAlignmentStart;
-            slice.alignmentSpan = singleRefAlignmentEnd - singleRefAlignmentStart + 1;
-        }
-
-        slice.sliceTags = hasher.getAsTags();
-        slice.bases = baseCount;
-        slice.nofRecords = records.size();
-        slice.mappedReadsCount = mappedReadsCount;
-        slice.unmappedReadsCount = unmappedReadsCount;
-        slice.unplacedReadsCount = unplacedReadsCount;
-
-        return slice;
-    }
-
-    public ArrayList<CRAMRecord> getRecords(
-            final SAMFileHeader samFileHeader, //TODO: unused ....
-            final ValidationStringency validationStringency) {
-        final CramRecordReader reader = new CramRecordReader(this, validationStringency);
-
-        final ArrayList<CRAMRecord> records = new ArrayList<>(nofRecords);
-
-        int prevAlignmentStart = alignmentStart;
-        for (int i = 0; i < nofRecords; i++) {
-            // read the new record and update the running prevAlignmentStart
-            final CRAMRecord cramRecord = reader.read(index, i, prevAlignmentStart);
-            prevAlignmentStart = cramRecord.getAlignmentStart();
-
-            records.add(cramRecord);
-        }
-
-        return records;
     }
 
 }

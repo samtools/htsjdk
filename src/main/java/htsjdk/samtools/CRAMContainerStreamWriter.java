@@ -14,51 +14,57 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
-//TODO: test mate recovery for detached/not for both coord-sorted/not
-//TODO: are mates recovered if the mate winds up in a separate container altogether ??
+// TODO: test mate recovery for detached/not for both coord-sorted/not
+// TODO: are mates recovered if the mate winds up in a separate container altogether ??
+// TODO: should the spec allow embedded references for multi-ref containers (or more specifically, should it
+// TODO: be allowed for non-coord sorted inputs) ?
+// TODO: non-coordinate sorted inputs
 
 /**
- * Class for writing SAMRecords into a series of CRAM containers on an output stream.
+ * Class for writing SAMRecords into a series of CRAM containers on an output stream, with an optional index.
  */
 public class CRAMContainerStreamWriter {
-    //private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
     private static final Version CRAM_VERSION = CramVersions.DEFAULT_CRAM_VERSION;
     private static final int MIN_SINGLE_REF_RECORDS = 1000;
 
     private final CRAMEncodingStrategy encodingStrategy;
-    private final SAMFileHeader samFileHeader;
-    final Map<String, Integer> readGroupMap = new HashMap<>();
-
-    private final String cramID;
     private final OutputStream outputStream;
+    private final String outputStreamIdentifier;
+    private final SAMFileHeader samFileHeader;
     private final CRAMReferenceSource cramReferenceSource;
 
-    private final List<SAMRecord> samRecords = new ArrayList<>();
     private final ContainerFactory containerFactory;
-    private final CRAMIndexer indexer;
+    private final CRAMIndexer cramIndexer;
+    private final List<SAMRecord> samRecords = new ArrayList<>();
+    private final Map<String, Integer> readGroupMap = new HashMap<>();
+    private final int maxRecordsPerContainer;
 
     private int currentReferenceContext = ReferenceContext.UNINITIALIZED_REFERENCE_ID;
     private long streamOffset = 0;
-
-    private final int maxRecordsPerContainer;
 
     /**
      * Create a CRAMContainerStreamWriter for writing SAM records into a series of CRAM
      * containers on output stream, with an optional index.
      *
-     * @param outputStream where to write the CRAM stream.
-     * @param indexStream where to write the output index. Can be null if no index is required.
+     * @param recordOutputStream where to write the CRAM stream.
+     * @param indexOutputStream where to write the output index. Can be null if no index is required.
      * @param source reference cramReferenceSource
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
-     * @param cramId used for display in error message display
+     * @param outputIdentifier used for display in error message display
      */
     public CRAMContainerStreamWriter(
-            final OutputStream outputStream,
-            final OutputStream indexStream,
+            final OutputStream recordOutputStream,
+            final OutputStream indexOutputStream,
             final CRAMReferenceSource source,
             final SAMFileHeader samFileHeader,
-            final String cramId) {
-        this(outputStream, source, samFileHeader, cramId, indexStream == null ? null : new CRAMBAIIndexer(indexStream, samFileHeader));
+            final String outputIdentifier) {
+        this(recordOutputStream,
+                source,
+                samFileHeader,
+                outputIdentifier,
+                indexOutputStream == null ?
+                        null :
+                        new CRAMBAIIndexer(indexOutputStream, samFileHeader)); // default to BAI index
     }
 
     /**
@@ -68,16 +74,16 @@ public class CRAMContainerStreamWriter {
      * @param outputStream where to write the CRAM stream.
      * @param source reference cramReferenceSource
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
-     * @param cramId used for display in error message display
+     * @param outputIdentifier used for display in error message display
      * @param indexer CRAM indexer. Can be null if no index is required.
      */
     public CRAMContainerStreamWriter(
             final OutputStream outputStream,
             final CRAMReferenceSource source,
             final SAMFileHeader samFileHeader,
-            final String cramId,
+            final String outputIdentifier,
             final CRAMIndexer indexer) {
-        this(new CRAMEncodingStrategy(), source, samFileHeader, outputStream, indexer, cramId);
+        this(new CRAMEncodingStrategy(), source, samFileHeader, outputStream, indexer, outputIdentifier);
     }
 
     /**
@@ -89,7 +95,7 @@ public class CRAMContainerStreamWriter {
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
      * @param outputStream where to write the CRAM stream.
      * @param indexer CRAM indexer. Can be null if no index is required.
-     * @param streamIdentifier informational string included in error reporting
+     * @param outputIdentifier informational string included in error reporting
      */
     public CRAMContainerStreamWriter(
             final CRAMEncodingStrategy encodingStrategy,
@@ -97,13 +103,13 @@ public class CRAMContainerStreamWriter {
             final SAMFileHeader samFileHeader,
             final OutputStream outputStream,
             final CRAMIndexer indexer,
-            final String streamIdentifier) {
+            final String outputIdentifier) {
         this.encodingStrategy = encodingStrategy;
         this.cramReferenceSource = referenceSource;
         this.samFileHeader = samFileHeader;
         this.outputStream = outputStream;
-        this.cramID = streamIdentifier;
-        this.indexer = indexer;
+        this.cramIndexer = indexer;
+        this.outputStreamIdentifier = outputIdentifier;
         containerFactory = new ContainerFactory(samFileHeader, encodingStrategy);
         maxRecordsPerContainer = this.encodingStrategy.getRecordsPerSlice() * this.encodingStrategy.getSlicesPerContainer();
 
@@ -121,21 +127,21 @@ public class CRAMContainerStreamWriter {
      */
     public void writeAlignment(final SAMRecord alignment) {
         final int nextReferenceContext = alignment.getReferenceIndex();
-        if (shouldFlushRecords(nextReferenceContext)) {
-            flushRecords();
+        if (shouldWriteContainer(nextReferenceContext)) {
+            writeContainer();
             samRecords.clear();
             currentReferenceContext = ReferenceContext.UNINITIALIZED_REFERENCE_ID;
         }
-        currentReferenceContext = getNewReferenceContext(nextReferenceContext);
+        currentReferenceContext = getUpdatedReferenceContext(nextReferenceContext);
         samRecords.add(alignment);
     }
 
     /**
      * Write a CRAM file header and the previously provided SAM header to the stream.
      */
-    // TODO: retained for BWC with direct users of CRAMContainerStreamWriter such as disq
+    // TODO: retained for backward compatibility for disq in order to run GATK tests (remove before merging this branch)
     public void writeHeader(final SAMFileHeader requestedSAMFileHeader) {
-        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, cramID, requestedSAMFileHeader);
+        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, outputStreamIdentifier, requestedSAMFileHeader);
         streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
     }
 
@@ -143,7 +149,7 @@ public class CRAMContainerStreamWriter {
      * Write a CRAM file header and the previously provided SAM header to the stream.
      */
     public void writeHeader() {
-        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, cramID, samFileHeader);
+        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, outputStreamIdentifier, samFileHeader);
         streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
     }
 
@@ -155,14 +161,14 @@ public class CRAMContainerStreamWriter {
     public void finish(final boolean writeEOFContainer) {
         try {
             if (!samRecords.isEmpty()) {
-                flushRecords();
+                writeContainer();
             }
             if (writeEOFContainer) {
                 CramIO.issueEOF(CRAM_VERSION, outputStream);
             }
             outputStream.flush();
-            if (indexer != null) {
-                indexer.finish();
+            if (cramIndexer != null) {
+                cramIndexer.finish();
             }
             outputStream.close();
         } catch (final IOException e) {
@@ -170,67 +176,26 @@ public class CRAMContainerStreamWriter {
         }
     }
 
-    // TODO: should the spec allow embedded references for multi-ref containers (or more specifically, should it
-    // TODO: be allowed for non-coord sorted inputs) ?
+    // Get the updated reference context based on the current reference context and the reference index
+    // for the next samRecord;
+    private int getUpdatedReferenceContext(final int nextSAMRecordReferenceIndex) {
+        switch (currentReferenceContext) {
 
-    /**
-     * Decide if the current records should be flushed based on number of records and whether the
-     * reference sequence id has changed.
-     *
-     * @param nextReferenceContext
-     * @return true if the current container should be flushed and the following records should go into a new container; false otherwise.
-     */
-    protected boolean shouldFlushRecords(final int nextReferenceContext) {
-        if (samRecords.isEmpty() || currentReferenceContext == ReferenceContext.UNINITIALIZED_REFERENCE_ID) {
-            return false;
-        }
+            case ReferenceContext.UNINITIALIZED_REFERENCE_ID:
+                return nextSAMRecordReferenceIndex;
 
-        if (samRecords.size() >= maxRecordsPerContainer) {
-            return true;
-        }
+            case ReferenceContext.UNMAPPED_UNPLACED_ID:
+                return nextSAMRecordReferenceIndex == ReferenceContext.UNMAPPED_UNPLACED_ID ?
+                        ReferenceContext.UNMAPPED_UNPLACED_ID :
+                        ReferenceContext.MULTIPLE_REFERENCE_ID;
 
-        // we have fewer than maxRecordsPerContainer, so if we're not coord sorted, keep going
-        if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
-            return false;
-        }
+            case ReferenceContext.MULTIPLE_REFERENCE_ID:
+                return ReferenceContext.MULTIPLE_REFERENCE_ID;
 
-        // we're coord-sorted, and have < recordsPerContainer
-
-        //TODO: why ? unmapped reads can go into multi-ref containers...
-        // make unmapped reads don't get into multiref containers:
-        if (currentReferenceContext != ReferenceContext.UNMAPPED_UNPLACED_ID &&
-                nextReferenceContext == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            return true;
-        }
-
-        if (currentReferenceContext == nextReferenceContext || currentReferenceContext == ReferenceContext.MULTIPLE_REFERENCE_ID) {
-            return false;
-        }
-
-        // we're singleRef, but the reference context has changed
-        // Protection against too small containers: flush at least X single refs, switch to multiref otherwise.
-        if (samRecords.size() > MIN_SINGLE_REF_RECORDS) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if the reference has changed.
-     *
-     * @param samRecordReferenceIndex index of the new reference sequence
-     */
-    //TODO: old comment says...and create a new record factory using the new reference ????
-    private int getNewReferenceContext(final int samRecordReferenceIndex) {
-        if (currentReferenceContext == ReferenceContext.UNINITIALIZED_REFERENCE_ID) {
-            return samRecordReferenceIndex;
-        } else if (currentReferenceContext == ReferenceContext.MULTIPLE_REFERENCE_ID) {
-            return currentReferenceContext;
-        } else if (currentReferenceContext != samRecordReferenceIndex) {
-            return ReferenceContext.MULTIPLE_REFERENCE_ID;
-        } else {
-            return currentReferenceContext;
+            default:
+                return currentReferenceContext == nextSAMRecordReferenceIndex ?
+                        currentReferenceContext :
+                        ReferenceContext.MULTIPLE_REFERENCE_ID;
         }
     }
 
@@ -243,12 +208,67 @@ public class CRAMContainerStreamWriter {
     // The Unmapped (-1) sequence ID in the header is for slices containing only unplaced unmapped3 reads.
     // A slice containing data that does not use the external reference in any sequence may set the reference MD5 sum
     // to zero. This can happen because the data is unmapped or the sequence has been stored verbatim instead of via
-    // reference-differencing.
+    // reference-differencing. This latter scenario is recommended for unsorted or non-coordinate-sorted data.
     /**
      * Complete the current container and flush it to the output stream.
      */
-    protected void flushRecords() {
+    /**
+     * Decide if the current records should be flushed based on number of records and whether the reference
+     * sequence id has changed.
+     *
+     * @param nextSAMRecordReferenceIndex
+     * @return true if the current container should be flushed and the following records should go into a new
+     * container; false otherwise.
+     */
+    protected boolean shouldWriteContainer(final int nextSAMRecordReferenceIndex) {
+        switch (currentReferenceContext) {
+            case ReferenceContext.UNINITIALIZED_REFERENCE_ID:
+                return false;
 
+            case ReferenceContext.UNMAPPED_UNPLACED_ID:
+                if (nextSAMRecordReferenceIndex == currentReferenceContext) { // still unmapped...
+                    return samRecords.size() >= maxRecordsPerContainer;
+                } else if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
+                    return samRecords.size() >= maxRecordsPerContainer;
+                } else {
+                    // allow the mapped records into the same container as the unmapped ones, since there
+                    // is are no index query concerns because we're not coordinate sorted (though there is
+                    // probably no reference compression happening in this container)
+                    return samRecords.size() >= maxRecordsPerContainer;
+                }
+
+            case ReferenceContext.MULTIPLE_REFERENCE_ID:
+                if (nextSAMRecordReferenceIndex == currentReferenceContext) {
+                    return samRecords.size() >= maxRecordsPerContainer;
+                } else if (nextSAMRecordReferenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                    // TODO: special case to not allow unmapped records in with the multi-refs; this is mostly
+                    // to prevent index queries from failing
+                    return true;
+                }
+                // we've already switched to multi-ref, keep going until we hit maxRecordsPerContainer
+                return samRecords.size() >= maxRecordsPerContainer;
+
+            default:
+                // so far everything we'e accumulated is on a single reference
+                if (nextSAMRecordReferenceIndex == currentReferenceContext) {
+                    // still on the same (single) reference
+                    return samRecords.size() >= maxRecordsPerContainer;
+                } else {
+                    // switching to unmapped
+                    if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
+                        // TODO: we're coord-sorted, so ideally we'd emit a container unless its too small,
+                        // TODO: but emitting multi-ref containers on cord-sorted will break index queries for unmapped (??),
+                        // TODO: so just return true;
+                        return samRecords.size() >= maxRecordsPerContainer;
+                        //return true;
+                    }
+                    return samRecords.size() >= MIN_SINGLE_REF_RECORDS;
+                }
+        }
+    }
+
+    protected void writeContainer() {
+        //System.out.println(String.format("Current %d samRecord %d", currentReferenceContext, samRecords.size()));
         // get the reference bases for the current reference context (even though it might not match the first
         // record we're about to convert
         byte[] referenceBases = getReferenceBaseForRecords(samFileHeader, currentReferenceContext, cramReferenceSource);
@@ -305,33 +325,6 @@ public class CRAMContainerStreamWriter {
             }
         }
 
-        // TODO: Use this code (previously inline in CRAMContainerStreamWriter)
-        // as test for validation
-//    /**
-//     * The following passage is for paranoid mode only. When java is run with asserts on it will throw an {@link AssertionError} if
-//     * read bases or quality scores of a restored SAM record mismatch the original. This is effectively a runtime round trip test.
-//     */
-//    @SuppressWarnings("UnusedAssignment") boolean assertsEnabled = false;
-//    //noinspection AssertWithSideEffects,ConstantConditions
-//    assert assertsEnabled = true;
-//    //noinspection ConstantConditions
-//    if (assertsEnabled) {
-//        final Cram2SamRecordFactory f = new Cram2SamRecordFactory(samFileHeader);
-//        for (int i = 0; i < samRecords.size(); i++) {
-//            final SAMRecord restoredSamRecord = f.create(cramRecords.get(i));
-//            assert (restoredSamRecord.getAlignmentStart() == samRecords.get(i).getAlignmentStart());
-//            assert (restoredSamRecord.getReferenceName().equals(samRecords.get(i).getReferenceName()));
-//
-//            if (!restoredSamRecord.getReadString().equals(samRecords.get(i).getReadString())) {
-//                // try to fix the original read bases by normalizing them to BAM set:
-//                final byte[] originalReadBases = samRecords.get(i).getReadString().getBytes();
-//                final String originalReadBasesUpperCaseIupacNoDot = new String(SequenceUtil.toBamReadBasesInPlace(originalReadBases));
-//                assert (restoredSamRecord.getReadString().equals(originalReadBasesUpperCaseIupacNoDot));
-//            }
-//            assert (restoredSamRecord.getBaseQualityString().equals(samRecords.get(i).getBaseQualityString()));
-//        }
-//    }
-
         //TODO: these records need to be broken up into groups with like reference context types, since if there is
         //TODO: more than one type present, they need to be split across multiple containers
         //TODO: this should really accumulate records to a slice, not a container, and then submit the slices
@@ -342,12 +335,12 @@ public class CRAMContainerStreamWriter {
             //TODO: also, suppress this for embedded references...
             slice.setRefMD5(referenceBases);
         }
-        streamOffset += ContainerIO.writeContainer(CRAM_VERSION, container, outputStream);
-        if (indexer != null) {
+        streamOffset += container.writeContainer(CRAM_VERSION, outputStream);
+        if (cramIndexer != null) {
             // using silent validation here because the reads have been through validation already or
             // they have been generated somehow through the htsjdk
             //TODO: do we need this....?
-            indexer.processContainer(container, ValidationStringency.SILENT);
+            cramIndexer.processContainer(container, ValidationStringency.SILENT);
         }
     }
 

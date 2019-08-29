@@ -52,7 +52,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final Slice unmapped = getSlice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, mappedCount, unmappedCount, unplacedCount);
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexSingleRefSlice(unmapped));
-        Assert.assertEquals(index.getNoCoordinateCount().longValue(), unmapped.unplacedReadsCount);
+        Assert.assertEquals(index.getNoCoordinateCount().longValue(), unmapped.getUnplacedReadsCount());
     }
 
     @Test(expectedExceptions = SAMException.class)
@@ -66,16 +66,16 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Slice noByteOffsetFromContainer = new Slice(refContext);
-        noByteOffsetFromContainer.containerByteOffset = 123;
-        noByteOffsetFromContainer.index = 456;
+        noByteOffsetFromContainer.setContainerByteOffset(123);
+        noByteOffsetFromContainer.setIndex(456);
 
         final Slice noContainerByteOffset = new Slice(refContext);
-        noContainerByteOffset.byteOffsetFromCompressionHeaderStart = 789;
-        noContainerByteOffset.index = 456;
+        noContainerByteOffset.setByteOffsetFromCompressionHeaderStart(789);
+        noContainerByteOffset.setIndex(456);
 
         final Slice noIndex = new Slice(refContext);
-        noIndex.byteOffsetFromCompressionHeaderStart = 789;
-        noIndex.containerByteOffset = 123;
+        noIndex.setByteOffsetFromCompressionHeaderStart(789);
+        noIndex.setContainerByteOffset(123);
 
         return new Object[][] {
                 { noByteOffsetFromContainer },
@@ -223,13 +223,13 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
                            final int unmappedReadsCount,
                            final int unplacedReadsCount) {
         final Slice mapped = new Slice(refContext);
-        mapped.mappedReadsCount = mappedReadsCount;
-        mapped.unmappedReadsCount = unmappedReadsCount;
-        mapped.unplacedReadsCount = unplacedReadsCount;
+        mapped.setMappedReadsCount(mappedReadsCount);
+        mapped.setUnmappedReadsCount(unmappedReadsCount);
+        mapped.setUnplacedReadsCount(unplacedReadsCount);
         // arbitrary - need these for indexing
-        mapped.byteOffsetFromCompressionHeaderStart = 789;
-        mapped.containerByteOffset = 123;
-        mapped.index = 456;
+        mapped.setByteOffsetFromCompressionHeaderStart(789);
+        mapped.setContainerByteOffset(123);
+        mapped.setIndex(456);
         return mapped;
     }
 
@@ -248,7 +248,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
             for (final Container container : containers) {
                 // this sets up the Container's landmarks, required for indexing
                 // readContainer() also does this
-                ContainerIO.writeContainer(CramVersions.DEFAULT_CRAM_VERSION, container, new ByteArrayOutputStream());
+                container.writeContainer(CramVersions.DEFAULT_CRAM_VERSION, new ByteArrayOutputStream());
                 indexer.processContainer(container, ValidationStringency.STRICT);
             }
         });
@@ -259,8 +259,8 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
             for (final Container container : containers) {
                 // this sets up the Container's landmarks, required for indexing
                 // readContainer() also does this
-                ContainerIO.writeContainer(CramVersions.DEFAULT_CRAM_VERSION, container, new ByteArrayOutputStream());
-                indexer.processAsSingleReferenceSlice(container.getSlices()[0]);
+                container.writeContainer(CramVersions.DEFAULT_CRAM_VERSION, new ByteArrayOutputStream());
+                indexer.processAsSingleReferenceSlice(container.getSlices().get(0));
             }
         });
     }

@@ -22,7 +22,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMRecord;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class CramNormalizer {
     private final SAMFileHeader header;
@@ -38,7 +38,7 @@ public class CramNormalizer {
     }
 
     // Normalize a list of CramCompressionRecords that have been read in from a CRAM stream.
-    public void normalize(final ArrayList<CRAMRecord> records,
+    public void normalize(final List<CRAMRecord> records,
                           final byte[] ref,
                           final int refOffset_zeroBased,
                           final SubstitutionMatrix substitutionMatrix) {
@@ -87,7 +87,7 @@ public class CramNormalizer {
                 if ((ref == null || ref.length == 0) && referenceSource != null) {
                     refBases = referenceSource.getReferenceBases(header.getSequence(record.getReferenceIndex()), true);
                 }
-                record.establishReadBases(refBases, refOffset_zeroBased, substitutionMatrix);
+                record.restoreReadBases(refBases, refOffset_zeroBased, substitutionMatrix);
             }
         }
 

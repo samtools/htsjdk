@@ -44,15 +44,16 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -138,13 +139,13 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
         int sliceIndex = 0;
         for (final Slice slice : container.getSlices()) {
-            slice.index = sliceIndex++;
+            slice.setIndex(sliceIndex++);
             if (slice.getReferenceContext().isMultiRef()) {
                 final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(validationStringency);
 
                 // TODO why are we updating the original slice here?
 
-                slice.index = sliceIndex++;
+                slice.setIndex(sliceIndex++);
 
                 /**
                  * Unmapped span must be processed after mapped spans:
@@ -153,29 +154,29 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                 for (final ReferenceContext refContext : new TreeSet<>(spanMap.keySet())) {
                     final AlignmentSpan span = spanMap.get(refContext);
                     final Slice fakeSlice = new Slice(refContext);
-                    fakeSlice.containerByteOffset = slice.containerByteOffset;
-                    fakeSlice.byteOffsetFromCompressionHeaderStart = slice.byteOffsetFromCompressionHeaderStart;
-                    fakeSlice.index = slice.index;
+                    fakeSlice.setContainerByteOffset(slice.getContainerByteOffset());
+                    fakeSlice.setByteOffsetFromCompressionHeaderStart(slice.getByteOffsetFromCompressionHeaderStart());
+                    fakeSlice.setIndex(slice.getIndex());
 
-                    fakeSlice.alignmentStart = span.getStart();
-                    fakeSlice.alignmentSpan = span.getSpan();
-                    fakeSlice.mappedReadsCount = span.getMappedCount();
-                    fakeSlice.unmappedReadsCount = span.getUnmappedCount();
-                    fakeSlice.unplacedReadsCount = 0;
+                    fakeSlice.setAlignmentStart(span.getStart());
+                    fakeSlice.setAlignmentSpan(span.getSpan());
+                    fakeSlice.setMappedReadsCount(span.getMappedCount());
+                    fakeSlice.setUnmappedReadsCount(span.getUnmappedCount());
+                    fakeSlice.setUnplacedReadsCount(0);
                     processAsSingleReferenceSlice(fakeSlice);
                 }
 
                 if (unmappedSpan != null) {
                     final Slice fakeSlice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
-                    fakeSlice.containerByteOffset = slice.containerByteOffset;
-                    fakeSlice.byteOffsetFromCompressionHeaderStart = slice.byteOffsetFromCompressionHeaderStart;
-                    fakeSlice.index = slice.index;
+                    fakeSlice.setContainerByteOffset(slice.getContainerByteOffset());
+                    fakeSlice.setByteOffsetFromCompressionHeaderStart(slice.getByteOffsetFromCompressionHeaderStart());
+                    fakeSlice.setIndex(slice.getIndex());
 
-                    fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-                    fakeSlice.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
-                    fakeSlice.mappedReadsCount = 0;
-                    fakeSlice.unmappedReadsCount = 0;
-                    fakeSlice.unplacedReadsCount = slice.unplacedReadsCount;
+                    fakeSlice.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+                    fakeSlice.setAlignmentSpan(Slice.NO_ALIGNMENT_SPAN);
+                    fakeSlice.setMappedReadsCount(0);
+                    fakeSlice.setUnmappedReadsCount(0);
+                    fakeSlice.setUnplacedReadsCount(slice.getUnplacedReadsCount());
                     processAsSingleReferenceSlice(fakeSlice);
                 }
             } else {
@@ -268,7 +269,11 @@ public class CRAMBAIIndexer implements CRAMIndexer {
         Container container = null;
         ProgressLogger progressLogger = new ProgressLogger(log, 1, "indexed", "slices");
         do {
-            container = ContainerIO.readContainer(cramHeader.getVersion(), stream);
+            try {
+                container = new Container(cramHeader.getVersion(), stream, stream.position());
+            } catch (final IOException e) {
+                throw new RuntimeIOException("error getting stream position", e);
+            }
             if (container == null || container.isEOF()) {
                 break;
             }
@@ -348,8 +353,8 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
         private int computeIndexingBin(final Slice slice) {
             // regionToBin has zero-based, half-open API
-            final int alignmentStart = slice.alignmentStart - 1;
-            int alignmentEnd = slice.alignmentStart + slice.alignmentSpan - 1;
+            final int alignmentStart = slice.getAlignmentStart() - 1;
+            int alignmentEnd = slice.getAlignmentStart() + slice.getAlignmentSpan() - 1;
             if (alignmentEnd <= alignmentStart) {
                 // If alignment end cannot be determined (e.g. because this read is not really aligned),
                 // then treat this as a one base alignment for indexing purposes.
@@ -405,16 +410,17 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             // process chunks
 
-            final long chunkStart = (slice.containerByteOffset << 16) | slice.index;
-            final long chunkEnd = ((slice.containerByteOffset << 16) | slice.index) + 1;
+            final long chunkStart = (slice.getContainerByteOffset() << 16) | slice.getIndex();
+            final long chunkEnd = ((slice.getContainerByteOffset() << 16) | slice.getIndex()) + 1;
+
             final Chunk newChunk = new Chunk(chunkStart, chunkEnd);
             bin.addChunk(newChunk);
 
             // process linear index
 
             // the smallest file offset that appears in the 16k window for this bin
-            final int alignmentStart = slice.alignmentStart;
-            final int alignmentEnd = slice.alignmentStart + slice.alignmentSpan;
+            final int alignmentStart = slice.getAlignmentStart();
+            final int alignmentEnd = slice.getAlignmentStart() + slice.getAlignmentSpan();
             int startWindow = LinearIndex.convertToLinearIndexOffset(alignmentStart); // the 16k window
             final int endWindow;
 

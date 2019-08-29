@@ -99,7 +99,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends HtsjdkTest {
         // NOTE: multiref alignment spans are ony used for CRAI indexing, and only make sense when records are
         // coordinate sorted, so we only test with coordinateSorted = true;
         final CompressionHeader header = new CompressionHeaderFactory().build(cramRecords, true);
-        final Slice slice = Slice.buildSlice(cramRecords, header);
+        final Slice slice = new Slice(cramRecords, header);
         final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
 
         Assert.assertEquals(spans.size(), 3);
@@ -115,7 +115,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends HtsjdkTest {
         // NOTE: multiref alignment spans are ony used for CRAI indexing, and only make sense when records are
         // coordinate sorted, so test that we reject coordinateSorted = true;
         final CompressionHeader header = new CompressionHeaderFactory().build(cramRecords, false);
-        final Slice slice = Slice.buildSlice(cramRecords, header);
+        final Slice slice = new Slice(cramRecords, header);
 
         slice.getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
     }

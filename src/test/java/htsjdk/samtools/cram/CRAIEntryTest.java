@@ -78,16 +78,16 @@ public class CRAIEntryTest extends HtsjdkTest {
         }};
 
         final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(allRecords, true);
-        final Slice slice1 = Slice.buildSlice(records1, compressionHeader);
-        final Slice slice2 = Slice.buildSlice(records2, compressionHeader);
+        final Slice slice1 = new Slice(records1, compressionHeader);
+        final Slice slice2 = new Slice(records2, compressionHeader);
 
-        slice1.index = slice1Index;
-        slice1.byteSize = sliceByteSize;
-        slice1.byteOffsetFromCompressionHeaderStart = slice1ByteOffsetFromContainer;
+        slice1.setIndex(slice1Index);
+        slice1.setByteSize(sliceByteSize);
+        slice1.setByteOffsetFromCompressionHeaderStart(slice1ByteOffsetFromContainer);
 
-        slice2.index = slice2Index;
-        slice2.byteSize = sliceByteSize;
-        slice2.byteOffsetFromCompressionHeaderStart = slice2ByteOffsetFromContainer;
+        slice2.setIndex(slice2Index);
+        slice2.setByteSize(sliceByteSize);
+        slice2.setByteOffsetFromCompressionHeaderStart(slice2ByteOffsetFromContainer);
 
         final Container container = new Container(
                 COMPRESSION_HEADER,
@@ -271,11 +271,11 @@ public class CRAIEntryTest extends HtsjdkTest {
         int counter = RANDOM.nextInt(100);
 
         final Slice single = new Slice(refContext);
-        single.alignmentStart = counter++;
-        single.alignmentSpan = counter++;
-        single.containerByteOffset = counter++;
-        single.byteOffsetFromCompressionHeaderStart = counter++;
-        single.byteSize = counter++;
+        single.setAlignmentStart(counter++);
+        single.setAlignmentSpan(counter++);
+        single.setContainerByteOffset(counter++);
+        single.setByteOffsetFromCompressionHeaderStart(counter++);
+        single.setByteSize(counter++);
         return single;
     }
 
@@ -293,8 +293,8 @@ public class CRAIEntryTest extends HtsjdkTest {
 
     private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
         assertEntryForSlice(entry, slice.getReferenceContext().getSerializableId(),
-                slice.alignmentStart, slice.alignmentSpan, slice.containerByteOffset,
-                slice.byteOffsetFromCompressionHeaderStart, slice.byteSize);
+                slice.getAlignmentStart(), slice.getAlignmentSpan(), slice.getContainerByteOffset(),
+                slice.getByteOffsetFromCompressionHeaderStart(), slice.getByteSize());
      }
 
     private void assertEntryForSlice(final CRAIEntry entry,

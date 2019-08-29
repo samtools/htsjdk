@@ -398,7 +398,7 @@ public class CRAMRecord {
         return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;
     }
 
-    public void establishReadBases(
+    public void restoreReadBases(
             final byte[] refBases,
             final int refOffset_zeroBased,
             final SubstitutionMatrix substitutionMatrix) {
@@ -406,7 +406,9 @@ public class CRAMRecord {
             readBases = SAMRecord.NULL_SEQUENCE;
         } else {
             readBases = CRAMRecordReadFeatures.restoreReadBases(
-                    readFeatures == null ? Collections.EMPTY_LIST : readFeatures.getReadFeatures(),
+                    readFeatures == null ?
+                            Collections.EMPTY_LIST :
+                            readFeatures.getReadFeatures(),
                     isUnknownBases(),
                     alignmentStart,
                     readLength,
