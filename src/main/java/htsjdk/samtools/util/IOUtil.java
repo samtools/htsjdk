@@ -303,16 +303,33 @@ public class IOUtil {
     }
 
     public static void deletePaths(final Path... paths) {
-        deletePaths(Arrays.asList(paths));
+        for(Path path: paths){
+            deletePath(path);
+        }
     }
 
+    /**
+     * Iterate through Paths and delete each one.
+     * Note: Path is itself an Iterable<Path>.  This method special cases that and deletes the single Path rather than
+     * Iterating the Path for targets to delete.
+     * @param paths an iterable of Paths to delete
+     */
     public static void deletePaths(final Iterable<Path> paths) {
-        for (final Path p : paths) {
-            try {
-                Files.delete(p);
-            } catch (IOException e) {
-                System.err.println("Could not delete file " + p);
-            }
+        //Path is itself an Iterable<Path> which causes very confusing behavior if we don't explicitly check here.
+        if( paths instanceof Path){
+            deletePath((Path)paths);
+        }
+        paths.forEach(IOUtil::deletePath);
+    }
+
+    /**
+     * Attempt to delete a single path and log an error if it is not deleted.
+     */
+    public static void deletePath(Path path){
+        try {
+            Files.delete(path);
+        } catch (IOException e) {
+            System.err.println("Could not delete file " + path);
         }
     }
 
