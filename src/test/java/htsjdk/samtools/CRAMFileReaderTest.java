@@ -66,20 +66,20 @@ public class CRAMFileReaderTest extends HtsjdkTest {
 
     // constructor 1: CRAMFileReader(final File cramFile, final InputStream inputStream)
 
-    @Test(description = "Test CRAMReader 1 reference required", expectedExceptions = IllegalStateException.class)
-    public void testCRAMReader1_ReferenceRequired() {
-        InputStream bis = null;
-        // assumes that reference_fasta property is not set and the download service is not enabled
-        new CRAMFileReader(CRAM_WITH_CRAI, bis);
-    }
-
-    // constructor 2: CRAMFileReader(final File cramFile, final InputStream inputStream, final ReferenceSource referenceSource)
-
-    @Test(description = "Test CRAMReader 2 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader2ReferenceRequired() {
-        InputStream bis =  null;
-        new CRAMFileReader(CRAM_WITH_CRAI, bis, null);
-    }
+//    @Test(description = "Test CRAMReader 1 reference required", expectedExceptions = IllegalStateException.class)
+//    public void testCRAMReader1_ReferenceRequired() {
+//        InputStream bis = null;
+//        // assumes that reference_fasta property is not set and the download service is not enabled
+//        new CRAMFileReader(CRAM_WITH_CRAI, bis);
+//    }
+//
+//    // constructor 2: CRAMFileReader(final File cramFile, final InputStream inputStream, final ReferenceSource referenceSource)
+//
+//    @Test(description = "Test CRAMReader 2 reference required", expectedExceptions = IllegalArgumentException.class)
+//    public void testCRAMReader2ReferenceRequired() {
+//        InputStream bis =  null;
+//        new CRAMFileReader(CRAM_WITH_CRAI, bis, null);
+//    }
 
     @Test(description = "Test CRAMReader 2 input required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader2_InputRequired() {
@@ -103,14 +103,14 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         reader.getIndex();
     }
 
-    // constructor 3: CRAMFileReader(final File cramFile, final File indexFile, final ReferenceSource referenceSource)
-
-    @Test(description = "Test CRAMReader 3 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader3_RequiredReference() {
-        File indexFile = null;
-        ReferenceSource refSource = null;
-        new CRAMFileReader(CRAM_WITH_CRAI, indexFile, refSource);
-    }
+//    // constructor 3: CRAMFileReader(final File cramFile, final File indexFile, final ReferenceSource referenceSource)
+//
+//    @Test(description = "Test CRAMReader 3 reference required", expectedExceptions = IllegalArgumentException.class)
+//    public void testCRAMReader3_RequiredReference() {
+//        File indexFile = null;
+//        ReferenceSource refSource = null;
+//        new CRAMFileReader(CRAM_WITH_CRAI, indexFile, refSource);
+//    }
 
     @Test(description = "Test CRAMReader 3 input required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader3_InputRequired() {
@@ -142,13 +142,13 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         reader.getIndex();
     }
 
-    // constructor 4: CRAMFileReader(final File cramFile, final ReferenceSource referenceSource)
-
-    @Test(description = "Test CRAMReader 4 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader4_ReferenceRequired() {
-        ReferenceSource refSource = null;
-        new CRAMFileReader(CRAM_WITH_CRAI, refSource);
-    }
+//    // constructor 4: CRAMFileReader(final File cramFile, final ReferenceSource referenceSource)
+//
+//    @Test(description = "Test CRAMReader 4 reference required", expectedExceptions = IllegalArgumentException.class)
+//    public void testCRAMReader4_ReferenceRequired() {
+//        ReferenceSource refSource = null;
+//        new CRAMFileReader(CRAM_WITH_CRAI, refSource);
+//    }
 
     @Test(description = "Test CRAMReader 4 input required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader4_InputRequired() {
@@ -169,15 +169,15 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         reader.getIndex();
     }
 
-    // constructor 5: CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
-    //          final ReferenceSource referenceSource, final ValidationStringency validationStringency)
-    @Test(description = "Test CRAMReader 5 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader5_ReferenceRequired() throws IOException {
-        InputStream bis = new ByteArrayInputStream(new byte[0]);
-        SeekableFileStream sfs = null;
-        ReferenceSource refSource = null;
-        new CRAMFileReader(bis, sfs, refSource, ValidationStringency.STRICT);
-    }
+//    // constructor 5: CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
+//    //          final ReferenceSource referenceSource, final ValidationStringency validationStringency)
+//    @Test(description = "Test CRAMReader 5 reference required", expectedExceptions = IllegalArgumentException.class)
+//    public void testCRAMReader5_ReferenceRequired() throws IOException {
+//        InputStream bis = new ByteArrayInputStream(new byte[0]);
+//        SeekableFileStream sfs = null;
+//        ReferenceSource refSource = null;
+//        new CRAMFileReader(bis, sfs, refSource, ValidationStringency.STRICT);
+//    }
 
     @Test(description = "Test CRAMReader 5 input required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader5_InputRequired() throws IOException {
@@ -186,15 +186,15 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         new CRAMFileReader(bis, sfs, createReferenceSource(), ValidationStringency.STRICT);
     }
 
-    // constructor 6: CRAMFileReader(final InputStream stream, final File indexFile, final ReferenceSource referenceSource,
-    //                final ValidationStringency validationStringency)
-    @Test(description = "Test CRAMReader 6 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader6_ReferenceRequired() throws IOException {
-        InputStream bis = new ByteArrayInputStream(new byte[0]);
-        File file = null;
-        ReferenceSource refSource = null;
-        new CRAMFileReader(bis, file, refSource, ValidationStringency.STRICT);
-    }
+//    // constructor 6: CRAMFileReader(final InputStream stream, final File indexFile, final ReferenceSource referenceSource,
+//    //                final ValidationStringency validationStringency)
+//    @Test(description = "Test CRAMReader 6 reference required", expectedExceptions = IllegalArgumentException.class)
+//    public void testCRAMReader6_ReferenceRequired() throws IOException {
+//        InputStream bis = new ByteArrayInputStream(new byte[0]);
+//        File file = null;
+//        ReferenceSource refSource = null;
+//        new CRAMFileReader(bis, file, refSource, ValidationStringency.STRICT);
+//    }
 
     @Test(description = "Test CRAMReader 6 input required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader6_InputRequired() throws IOException {
@@ -203,13 +203,13 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         new CRAMFileReader(bis, file, createReferenceSource(), ValidationStringency.STRICT);
     }
 
-    // constructor 7: CRAMFileReader(final File cramFile, final File indexFile, final ReferenceSource referenceSource,
-    //                final ValidationStringency validationStringency)
-    @Test(description = "Test CRAMReader 7 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader7_ReferenceRequired() throws IOException {
-        ReferenceSource refSource = null;
-        new CRAMFileReader(CRAM_WITH_CRAI, CRAM_WITH_CRAI, refSource, ValidationStringency.STRICT);
-    }
+//    // constructor 7: CRAMFileReader(final File cramFile, final File indexFile, final ReferenceSource referenceSource,
+//    //                final ValidationStringency validationStringency)
+//    @Test(description = "Test CRAMReader 7 reference required", expectedExceptions = IllegalArgumentException.class)
+//    public void testCRAMReader7_ReferenceRequired() throws IOException {
+//        ReferenceSource refSource = null;
+//        new CRAMFileReader(CRAM_WITH_CRAI, CRAM_WITH_CRAI, refSource, ValidationStringency.STRICT);
+//    }
 
     @Test
     public void testCRAMReader7_ShouldAutomaticallyFindCRAMIndex()throws IOException {

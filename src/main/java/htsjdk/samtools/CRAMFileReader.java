@@ -27,6 +27,7 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -86,12 +87,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      */
     public CRAMFileReader(final File cramFile, final InputStream inputStream,
                           final CRAMReferenceSource referenceSource) {
-        if (cramFile == null && inputStream == null) {
-            throw new IllegalArgumentException("Either file or input stream is required.");
-        }
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
+        ValidationUtils.validateArg(cramFile != null || inputStream != null,
+                "Either file or input stream is required.");
 
         this.cramFile = cramFile;
         this.inputStream = inputStream;
@@ -112,13 +109,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *                        reference sequences. May not be null.
      * @throws IllegalArgumentException if the {@code cramFile} or the {@code CRAMReferenceSource} is null
      */
-    public CRAMFileReader(final File cramFile, final File indexFile,
-                          final CRAMReferenceSource referenceSource) {
-        if (cramFile == null)
-            throw new IllegalArgumentException("File is required.");
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
+    public CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource) {
+        ValidationUtils.nonNull(cramFile,"File is required.");
 
         this.cramFile = cramFile;
         mIndexFile = findIndexForFile(indexFile, cramFile);
@@ -136,11 +128,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @throws IllegalArgumentException if the {@code cramFile} or the {@code CRAMReferenceSource} is null
      */
     public CRAMFileReader(final File cramFile, final CRAMReferenceSource referenceSource) {
-        if (cramFile == null)
-            throw new IllegalArgumentException("CRAM file cannot be null.");
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
+        ValidationUtils.nonNull(cramFile,"File is required.");
 
         this.cramFile = cramFile;
         this.referenceSource = referenceSource;
@@ -163,12 +151,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      */
     public CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
                           final CRAMReferenceSource referenceSource, final ValidationStringency validationStringency) throws IOException {
-        if (inputStream == null) {
-            throw new IllegalArgumentException("Input stream can not be null for CRAM reader");
-        }
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
+        ValidationUtils.nonNull(inputStream, "Input stream can not be null for CRAM reader");
         this.referenceSource = referenceSource;
         initWithStreams(inputStream, indexInputStream, validationStringency);
     }
@@ -205,12 +188,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      */
     public CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource,
                           final ValidationStringency validationStringency) throws IOException {
-        if (cramFile == null) {
-            throw new IllegalArgumentException("Input file can not be null for CRAM reader");
-        }
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
+        ValidationUtils.nonNull(cramFile, "Input file can not be null for CRAM reader");
+
         this.cramFile = cramFile;
         this.referenceSource = referenceSource;
         this.mIndexFile = findIndexForFile(indexFile, cramFile);
