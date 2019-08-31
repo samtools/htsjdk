@@ -40,6 +40,8 @@ public class CRAMIterator implements SAMRecordIterator {
     private final CramNormalizer normalizer;
     private byte[] referenceBases;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+
+    //TODO: encapsulate this
     public Container container;
     private SamReader mReader;
     long firstContainerOffset = 0;
@@ -50,7 +52,6 @@ public class CRAMIterator implements SAMRecordIterator {
      */
     private long samRecordIndex;
     private List<CRAMRecord> cramRecords;
-
 
     private final CRAMReferenceSource referenceSource;
 
@@ -69,10 +70,6 @@ public class CRAMIterator implements SAMRecordIterator {
     public CRAMIterator(final InputStream inputStream,
                         final CRAMReferenceSource referenceSource,
                         final ValidationStringency validationStringency) {
-        if (null == referenceSource) {
-            throw new CRAMException("A reference source is required for CRAM files");
-        }
-
         this.countingInputStream = new CountingInputStream(inputStream);
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
@@ -90,10 +87,6 @@ public class CRAMIterator implements SAMRecordIterator {
                         final CRAMReferenceSource referenceSource,
                         final long[] coordinates,
                         final ValidationStringency validationStringency) {
-        if (null == referenceSource) {
-            throw new CRAMException("A reference source is required for CRAM files");
-        }
-
         this.countingInputStream = new CountingInputStream(seekableStream);
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
