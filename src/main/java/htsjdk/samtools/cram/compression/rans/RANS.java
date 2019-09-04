@@ -98,13 +98,13 @@ public class RANS {
         final RansEncSymbol[] syms = Frequencies.buildSymsOrder0(F);
 
         final ByteBuffer cp = outBuffer.slice();
-        final int frequencyTable_size = Frequencies.writeFrequenciesOrder0(cp, F);
+        final int frequencyTableSize = Frequencies.writeFrequenciesOrder0(cp, F);
 
         inBuffer.rewind();
-        final int compressedBlob_size = E04.compress(inBuffer, syms, cp);
+        final int compressedBlobSize = E04.compress(inBuffer, syms, cp);
 
         // rewind and write the prefix
-        writeCompressionPrefix(ORDER.ZERO, outBuffer, inSize, frequencyTable_size, compressedBlob_size);
+        writeCompressionPrefix(ORDER.ZERO, outBuffer, inSize, frequencyTableSize, compressedBlobSize);
         return outBuffer;
     }
 
@@ -145,6 +145,9 @@ public class RANS {
     private static ByteBuffer uncompressOrder1Way4(final ByteBuffer in, final ByteBuffer outBuffer) {
 
         final ArithmeticDecoder[] D = new ArithmeticDecoder[256];
+        for (int i = 0; i < 256; i++) {
+            D[i] = new ArithmeticDecoder();
+        }
         final RANSDecodingSymbol[][] syms = new RANSDecodingSymbol[256][256];
         for (int i = 0; i < syms.length; i++) {
             for (int j = 0; j < syms[i].length; j++) {

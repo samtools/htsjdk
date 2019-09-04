@@ -11,27 +11,21 @@ import java.util.Arrays;
 
 class Frequencies {
 
-    static void readStatsOrder0(final ByteBuffer cp, final ArithmeticDecoder decoder, final RANSDecodingSymbol[] syms) {
+    static void readStatsOrder0(final ByteBuffer cp, final ArithmeticDecoder decoder, final RANSDecodingSymbol[] decodingSymbols) {
         // Pre-compute reverse lookup of frequency.
         int rle = 0;
         int x = 0;
         int j = cp.get() & 0xFF;
         do {
-            if (decoder.fc[j] == null) {
-                decoder.fc[j] = new FC();
-            }
             if ((decoder.fc[j].F = (cp.get() & 0xFF)) >= 128) {
                 decoder.fc[j].F &= ~128;
                 decoder.fc[j].F = ((decoder.fc[j].F & 127) << 8) | (cp.get() & 0xFF);
             }
             decoder.fc[j].C = x;
 
-            Decoding.RansDecSymbolInit(syms[j], decoder.fc[j].C, decoder.fc[j].F);
+            decodingSymbols[j].set(decoder.fc[j].C, decoder.fc[j].F);
 
 			/* Build reverse lookup table */
-            if (decoder.R == null) {
-                decoder.R = new byte[Constants.TOTFREQ];
-            }
             Arrays.fill(decoder.R, x, x + decoder.fc[j].F, (byte) j);
 
             x += decoder.fc[j].F;
@@ -50,19 +44,14 @@ class Frequencies {
         assert (x < Constants.TOTFREQ);
     }
 
-    static void readStatsOrder1(final ByteBuffer cp, final ArithmeticDecoder[] D, final RANSDecodingSymbol[][] syms) {
+    static void readStatsOrder1(final ByteBuffer cp, final ArithmeticDecoder[] D, final RANSDecodingSymbol[][] decodingSymbols) {
         int rle_i = 0;
         int i = 0xFF & cp.get();
         do {
             int rle_j = 0;
             int x = 0;
             int j = 0xFF & cp.get();
-            if (D[i] == null)
-                D[i] = new ArithmeticDecoder();
             do {
-                if (D[i].fc[j] == null) {
-                    D[i].fc[j] = new FC();
-                }
                 if ((D[i].fc[j].F = (0xFF & cp.get())) >= 128) {
                     D[i].fc[j].F &= ~128;
                     D[i].fc[j].F = ((D[i].fc[j].F & 127) << 8) | (0xFF & cp.get());
@@ -73,16 +62,12 @@ class Frequencies {
                     D[i].fc[j].F = Constants.TOTFREQ;
                 }
 
-                if (syms[i][j] == null) {
-                    syms[i][j] = new RANSDecodingSymbol();
-                }
-
-                Decoding.RansDecSymbolInit(syms[i][j], D[i].fc[j].C, D[i].fc[j].F);
+                decodingSymbols[i][j].set(
+                        D[i].fc[j].C,
+                        D[i].fc[j].F
+                );
 
 				/* Build reverse lookup table */
-                if (D[i].R == null) {
-                    D[i].R = new byte[Constants.TOTFREQ];
-                }
                 Arrays.fill(D[i].R, x, x + D[i].fc[j].F, (byte) j);
 
                 x += D[i].fc[j].F;
@@ -112,12 +97,12 @@ class Frequencies {
     }
 
     static int[] calcFrequenciesOrder0(final ByteBuffer inBuffer) {
-        final int in_size = inBuffer.remaining();
+        final int inSize = inBuffer.remaining();
 
         // Compute statistics
         final int[] F = new int[256];
         int T = 0;
-        for (int i = 0; i < in_size; i++) {
+        for (int i = 0; i < inSize; i++) {
             F[0xFF & inBuffer.get()]++;
             T++;
         }
@@ -206,6 +191,7 @@ class Frequencies {
     }
 
     static RansEncSymbol[] buildSymsOrder0(final int[] F) {
+        //TODO: pass these in
         final int[] C = new int[256];
         final RansEncSymbol[] syms = new RansEncSymbol[256];
         for (int i = 0; i < syms.length; i++) {
@@ -257,6 +243,7 @@ class Frequencies {
     }
 
     static RansEncSymbol[][] buildSymsOrder1(final int[][] F) {
+        //TODO: pass these in
         final RansEncSymbol[][] syms = new RansEncSymbol[256][256];
         for (int i = 0; i < syms.length; i++) {
             for (int j = 0; j < syms[i].length; j++) {
