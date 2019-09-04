@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.samtools.cram.compression.rans.Encoding.RansEncSymbol;
 import htsjdk.utils.ValidationUtils;
 
 import java.nio.ByteBuffer;
@@ -95,7 +94,7 @@ public class RANS {
         outBuffer.position(PREFIX_BYTE_LENGTH); // start of frequency table
 
         final int[] F = Frequencies.calcFrequenciesOrder0(inBuffer);
-        final RansEncSymbol[] syms = Frequencies.buildSymsOrder0(F);
+        final RANSEncodingSymbol[] syms = Frequencies.buildSymsOrder0(F);
 
         final ByteBuffer cp = outBuffer.slice();
         final int frequencyTableSize = Frequencies.writeFrequenciesOrder0(cp, F);
@@ -115,7 +114,7 @@ public class RANS {
         outBuffer.position(PREFIX_BYTE_LENGTH);
 
         final int[][] F = Frequencies.calcFrequenciesOrder1(inBuffer);
-        final RansEncSymbol[][] syms = Frequencies.buildSymsOrder1(F);
+        final RANSEncodingSymbol[][] syms = Frequencies.buildSymsOrder1(F);
 
         final ByteBuffer cp = outBuffer.slice();
         final int frequencyTableSize = Frequencies.writeFrequenciesOrder1(cp, F);

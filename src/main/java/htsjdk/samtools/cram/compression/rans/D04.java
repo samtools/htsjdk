@@ -17,10 +17,10 @@ class D04 {
         final int out_sz = outBuffer.remaining();
         final int out_end = (out_sz & ~3);
         for (int i = 0; i < out_end; i += 4) {
-            final byte c0 = D.R[Decoding.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
-            final byte c1 = D.R[Decoding.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
-            final byte c2 = D.R[Decoding.RANSDecodeGet(rans2, Constants.TF_SHIFT)];
-            final byte c3 = D.R[Decoding.RANSDecodeGet(rans3, Constants.TF_SHIFT)];
+            final byte c0 = D.R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
+            final byte c1 = D.R[Utils.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
+            final byte c2 = D.R[Utils.RANSDecodeGet(rans2, Constants.TF_SHIFT)];
+            final byte c3 = D.R[Utils.RANSDecodeGet(rans3, Constants.TF_SHIFT)];
 
             outBuffer.put(i, c0);
             outBuffer.put(i + 1, c1);
@@ -32,10 +32,10 @@ class D04 {
             rans2 = syms[0xFF & c2].advanceSymbolStep(rans2, Constants.TF_SHIFT);
             rans3 = syms[0xFF & c3].advanceSymbolStep(rans3,  Constants.TF_SHIFT);
 
-            rans0 = Decoding.RANSDecodeRenormalize(rans0, inBuffer);
-            rans1 = Decoding.RANSDecodeRenormalize(rans1, inBuffer);
-            rans2 = Decoding.RANSDecodeRenormalize(rans2, inBuffer);
-            rans3 = Decoding.RANSDecodeRenormalize(rans3, inBuffer);
+            rans0 = Utils.RANSDecodeRenormalize(rans0, inBuffer);
+            rans1 = Utils.RANSDecodeRenormalize(rans1, inBuffer);
+            rans2 = Utils.RANSDecodeRenormalize(rans2, inBuffer);
+            rans3 = Utils.RANSDecodeRenormalize(rans3, inBuffer);
         }
 
         outBuffer.position(out_end);
@@ -45,31 +45,31 @@ class D04 {
                 break;
 
             case 1:
-                c = D.R[Decoding.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
+                c = D.R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
                 syms[0xFF & c].advanceSymbol(rans0, inBuffer, Constants.TF_SHIFT);
                 outBuffer.put(c);
                 break;
 
             case 2:
-                c = D.R[Decoding.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
+                c = D.R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
                 syms[0xFF & c].advanceSymbol(rans0, inBuffer, Constants.TF_SHIFT);
                 outBuffer.put(c);
 
-                c = D.R[Decoding.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
+                c = D.R[Utils.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
                 syms[0xFF & c].advanceSymbol(rans1, inBuffer, Constants.TF_SHIFT);
                 outBuffer.put(c);
                 break;
 
             case 3:
-                c = D.R[Decoding.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
+                c = D.R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
                 syms[0xFF & c].advanceSymbol(rans0, inBuffer,  Constants.TF_SHIFT);
                 outBuffer.put(c);
 
-                c = D.R[Decoding.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
+                c = D.R[Utils.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
                 syms[0xFF & c].advanceSymbol(rans1, inBuffer, Constants.TF_SHIFT);
                 outBuffer.put(c);
 
-                c = D.R[Decoding.RANSDecodeGet(rans2, Constants.TF_SHIFT)];
+                c = D.R[Utils.RANSDecodeGet(rans2, Constants.TF_SHIFT)];
                 syms[0xFF & c].advanceSymbol(rans2, inBuffer, Constants.TF_SHIFT);
                 outBuffer.put(c);
                 break;

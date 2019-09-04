@@ -1,13 +1,11 @@
 package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.samtools.cram.compression.rans.Encoding.RansEncSymbol;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 class E14 {
 
-    static int compress(final ByteBuffer inBuffer, final RansEncSymbol[][] syms, final ByteBuffer outBuffer) {
+    static int compress(final ByteBuffer inBuffer, final RANSEncodingSymbol[][] syms, final ByteBuffer outBuffer) {
         final int in_size = inBuffer.remaining();
         final int compressedBlobSize;
         int rans0, rans1, rans2, rans3;
@@ -45,7 +43,7 @@ class E14 {
         l3 = 0xFF & inBuffer.get(in_size - 1);
         for (i3 = in_size - 2; i3 > 4 * isz4 - 2 && i3 >= 0; i3--) {
             final int c3 = 0xFF & inBuffer.get(i3);
-            rans3 = Encoding.RansEncPutSymbol(rans3, ptr, syms[c3][l3]);
+            rans3 = syms[c3][l3].putSymbol(rans3, ptr);
             l3 = c3;
         }
 
@@ -55,10 +53,10 @@ class E14 {
             final int c2 = 0xFF & inBuffer.get(i2);
             final int c3 = 0xFF & inBuffer.get(i3);
 
-            rans3 = Encoding.RansEncPutSymbol(rans3, ptr, syms[c3][l3]);
-            rans2 = Encoding.RansEncPutSymbol(rans2, ptr, syms[c2][l2]);
-            rans1 = Encoding.RansEncPutSymbol(rans1, ptr, syms[c1][l1]);
-            rans0 = Encoding.RansEncPutSymbol(rans0, ptr, syms[c0][l0]);
+            rans3 = syms[c3][l3].putSymbol(rans3, ptr);
+            rans2 = syms[c2][l2].putSymbol(rans2, ptr);
+            rans1 = syms[c1][l1].putSymbol(rans1, ptr);
+            rans0 = syms[c0][l0].putSymbol(rans0, ptr);
 
             l0 = c0;
             l1 = c1;
@@ -66,10 +64,10 @@ class E14 {
             l3 = c3;
         }
 
-        rans3 = Encoding.RansEncPutSymbol(rans3, ptr, syms[0][l3]);
-        rans2 = Encoding.RansEncPutSymbol(rans2, ptr, syms[0][l2]);
-        rans1 = Encoding.RansEncPutSymbol(rans1, ptr, syms[0][l1]);
-        rans0 = Encoding.RansEncPutSymbol(rans0, ptr, syms[0][l0]);
+        rans3 = syms[0][l3].putSymbol(rans3, ptr);
+        rans2 = syms[0][l2].putSymbol(rans2, ptr);
+        rans1 = syms[0][l1].putSymbol(rans1, ptr);
+        rans0 = syms[0][l0].putSymbol(rans0, ptr);
 
         ptr.order(ByteOrder.BIG_ENDIAN);
         ptr.putInt(rans3);
