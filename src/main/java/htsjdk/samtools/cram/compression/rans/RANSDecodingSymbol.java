@@ -5,13 +5,8 @@ import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
 
 class RANSDecodingSymbol {
-    int start; // Start of range.
-    int freq; // Symbol frequency.
-
-    // probably don't actually need this...
-    public void reset() {
-        set(0, 0);
-    }
+    int start;  // Start of range.
+    int freq;   // Symbol frequency.
 
     public void set(final int start, final int freq) {
         ValidationUtils.validateArg(start <= (1 << 16), "invalid RANSDecodingSymbol start");
