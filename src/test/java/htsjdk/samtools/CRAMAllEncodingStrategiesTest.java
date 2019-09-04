@@ -9,6 +9,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.Tuple;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
@@ -17,25 +18,61 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+// TODO: add a samtools roundtripping test
+
 public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
-    // TODO: need a better test file; this has mate validation errors
-    // TODO: SAM validation error: ERROR: Read name20FUKAAXX100202:2:1:20271:61529,
-    // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
-    //final File cramSourceFile = new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
-    //final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta");
-    //final File cramSourceFile = new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.samtools.cram");
-    //final File referenceFile = new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta");
-    final File cramSourceFile = new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram");
-    final File referenceFile = new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta");
-    //final File cramSourceFile = new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram");
-    //final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+    @DataProvider(name="roundTripTestFiles")
+    public Object[][] roundTripTestFiles() {
+        return new Object[][] {
+                // TODO: need a better test file; this has mate validation errors
+                // TODO: SAM validation error: ERROR: Read name20FUKAAXX100202:2:1:20271:61529,
+                // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
+                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
+                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+//                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
+//                        new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta") },
+//                { new File(TEST_DATA_DIR, "/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.samtools.cram"),
+//                        new File(TEST_DATA_DIR, "/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta") },
+//                { new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram"),
+//                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta") }
+        };
+    }
+
+    @Test(dataProvider = "roundTripTestFiles")
+    public final void testRoundTripDefaultStrategy(final File cramSourceFile, final File referenceFile) throws IOException {
+        System.out.println(String.format("Test file size: %,d (%s)", Files.size(cramSourceFile.toPath()), cramSourceFile.toPath()));
+        final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
+        final File tempOutCRAM = File.createTempFile("readOnlyDefaultEncodingStrategyTest", ".cram");
+        System.out.println(String.format("Output file: %s", tempOutCRAM.toPath()));
+        final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
+        tempOutCRAM.delete();
+        System.out.println(String.format("Size: %,d Strategy %s", fileSize, testStrategy));
+    }
 
     @Test
-    public final void testBestEncodingStrategy() throws IOException {
-        System.out.println(String.format("Test file size: %,d", Files.size(cramSourceFile.toPath())));
+    public final void testReadOnlyDefaultStrategy() throws IOException {
+        final File cramSourceFile = new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram");
+        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+        //final File cramSourceFile =new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
+        //final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta");
+        System.out.println(String.format("Test file size: %,d (%s)", Files.size(cramSourceFile.toPath()), referenceFile.toPath()));
+        try (final SamReader reader = SamReaderFactory.makeDefault()
+            .referenceSequence(referenceFile)
+            .validationStringency((ValidationStringency.SILENT))
+            .open(cramSourceFile)) {
+            final SAMRecordIterator inputIterator = reader.iterator();
+            while (inputIterator.hasNext()) {
+                inputIterator.next();
+            }
+        }
+    }
+
+    @Test(dataProvider = "roundTripTestFiles")
+    public final void testBestEncodingStrategy(final File cramSourceFile, final File referenceFile) throws IOException {
+        System.out.println(String.format("Test file size: %,d (%s)", Files.size(cramSourceFile.toPath()), cramSourceFile.toPath()));
         // src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingMapProfileBEST.json has the encoding map used by this strategy
         final File encodingStrategyFile = new File("src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingStrategyTemplate.json");
         final CRAMEncodingStrategy testStrategy = CRAMEncodingStrategy.readFromPath(encodingStrategyFile.toPath());
@@ -47,8 +84,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         System.out.println(String.format("Size: %,d Strategy %s", fileSize, testStrategy));
     }
 
-    @Test
-    public final void testAllEncodingStrategyCombinations() throws IOException {
+    @Test(dataProvider = "roundTripTestFiles")
+    public final void testAllEncodingStrategyCombinations(final File cramSourceFile, final File referenceFile) throws IOException {
         final Map<Integer, CRAMEncodingStrategy> encodingStrategyByTest = new HashMap<>();
         final Map<Integer, String> encodingParamsByTest = new HashMap<>();
         final Map<Integer, Long> fileSizeByTest = new HashMap<>();
@@ -191,10 +228,11 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     }
 
     public List<ExternalCompressor> enumerateExternalCompressors(final int gzipCompressionLevel) {
+        final RANS rans = new RANS();
         return Arrays.asList(
                 new GZIPExternalCompressor(gzipCompressionLevel),
-                new RANSExternalCompressor(RANS.ORDER.ZERO),
-                new RANSExternalCompressor(RANS.ORDER.ONE),
+                new RANSExternalCompressor(RANS.ORDER.ZERO, rans),
+                new RANSExternalCompressor(RANS.ORDER.ONE, rans),
                 new LZMAExternalCompressor(),
                 new BZIP2ExternalCompressor()
         );
