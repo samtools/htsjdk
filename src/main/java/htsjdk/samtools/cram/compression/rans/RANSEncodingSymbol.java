@@ -5,13 +5,14 @@ import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
 
 public class RANSEncodingSymbol {
-    int xMax;       // (Exclusive) upper bound of pre-normalization interval
-    int rcpFreq;    // Fixed-point reciprocal frequency
-    int bias;       // Bias
-    int cmplFreq;   // Complement of frequency: (1 << scaleBits) - freq
-    int rcpShift;   // Reciprocal shift
+    private int xMax;       // (Exclusive) upper bound of pre-normalization interval
+    private int rcpFreq;    // Fixed-point reciprocal frequency
+    private int bias;       // Bias
+    private int cmplFreq;   // Complement of frequency: (1 << scaleBits) - freq
+    private int rcpShift;   // Reciprocal shift
 
-    public RANSEncodingSymbol() {
+    public void reset() {
+        xMax = rcpFreq = bias = cmplFreq = rcpFreq = 0;
     }
 
     public void set(final int start, final int freq, final int scaleBits) {

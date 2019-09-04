@@ -36,10 +36,63 @@ public class RANS {
     private static final int MINIMUM__ORDER_1_SIZE = 4;
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
-    public static ByteBuffer uncompress(final ByteBuffer inBuffer) {
+    public static int NUMBER_OF_SYMBOLS = 256;
+
+    // working variables used by the encoder and decoder; initialize them lazily since
+    // they consist of lots of small objects, and we don't want to instantiate them
+    // unteil we actually use them
+    private ArithmeticDecoder[] D;
+    private RANSDecodingSymbol[][] decodingSymbols;
+    private RANSEncodingSymbol[][] encodingSymbols;
+
+    // Lazy initialization of working memory for the encoder/decder
+    private void initializeRANSCoder() {
+        if (D == null) {
+            D = new ArithmeticDecoder[NUMBER_OF_SYMBOLS];
+            for (int i = 0; i < NUMBER_OF_SYMBOLS; i++) {
+                D[i] = new ArithmeticDecoder();
+            }
+        } else {
+            for (int i = 0; i < NUMBER_OF_SYMBOLS; i++) {
+                D[i].reset();
+            }
+        }
+        if (decodingSymbols == null) {
+            decodingSymbols = new RANSDecodingSymbol[NUMBER_OF_SYMBOLS][NUMBER_OF_SYMBOLS];
+            for (int i = 0; i < decodingSymbols.length; i++) {
+                for (int j = 0; j < decodingSymbols[i].length; j++) {
+                    decodingSymbols[i][j] = new RANSDecodingSymbol();
+                }
+            }
+        } else {
+            for (int i = 0; i < decodingSymbols.length; i++) {
+                for (int j = 0; j < decodingSymbols[i].length; j++) {
+                    decodingSymbols[i][j].set(0, 0);
+                }
+            }
+        }
+        if (encodingSymbols == null) {
+            encodingSymbols = new RANSEncodingSymbol[NUMBER_OF_SYMBOLS][NUMBER_OF_SYMBOLS];
+            for (int i = 0; i < encodingSymbols.length; i++) {
+                for (int j = 0; j < encodingSymbols[i].length; j++) {
+                    encodingSymbols[i][j] = new RANSEncodingSymbol();
+                }
+            }
+        } else {
+            for (int i = 0; i < encodingSymbols.length; i++) {
+                for (int j = 0; j < encodingSymbols[i].length; j++) {
+                    encodingSymbols[i][j].reset();
+                }
+            }
+        }
+    }
+
+    public ByteBuffer uncompress(final ByteBuffer inBuffer) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
+
+        initializeRANSCoder();
 
         final ORDER order = ORDER.fromInt(inBuffer.get());
 
@@ -63,10 +116,12 @@ public class RANS {
         }
     }
 
-    public static ByteBuffer compress(final ByteBuffer inBuffer, final ORDER order) {
+    public ByteBuffer compress(final ByteBuffer inBuffer, final ORDER order) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
+
+        initializeRANSCoder();
 
         if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE) {
             // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
@@ -85,7 +140,7 @@ public class RANS {
         }
     }
 
-    private static ByteBuffer compressOrder0Way4(final ByteBuffer inBuffer) {
+    private ByteBuffer compressOrder0Way4(final ByteBuffer inBuffer) {
         final int inSize = inBuffer.remaining();
         final ByteBuffer outBuffer = allocateOutputBuffer(inSize);
 
@@ -94,69 +149,52 @@ public class RANS {
         outBuffer.position(PREFIX_BYTE_LENGTH); // start of frequency table
 
         final int[] F = Frequencies.calcFrequenciesOrder0(inBuffer);
-        final RANSEncodingSymbol[] syms = Frequencies.buildSymsOrder0(F);
+        Frequencies.buildSymsOrder0(F, encodingSymbols[0]);
 
         final ByteBuffer cp = outBuffer.slice();
         final int frequencyTableSize = Frequencies.writeFrequenciesOrder0(cp, F);
 
         inBuffer.rewind();
-        final int compressedBlobSize = E04.compress(inBuffer, syms, cp);
+        final int compressedBlobSize = E04.compress(inBuffer, encodingSymbols[0], cp);
 
         // rewind and write the prefix
         writeCompressionPrefix(ORDER.ZERO, outBuffer, inSize, frequencyTableSize, compressedBlobSize);
         return outBuffer;
     }
 
-    private static ByteBuffer compressOrder1Way4(final ByteBuffer inBuffer) {
+    private ByteBuffer compressOrder1Way4(final ByteBuffer inBuffer) {
         final int inSize = inBuffer.remaining();
         final ByteBuffer outBuffer = allocateOutputBuffer(inSize);
+
         // move to start of frequency
         outBuffer.position(PREFIX_BYTE_LENGTH);
 
         final int[][] F = Frequencies.calcFrequenciesOrder1(inBuffer);
-        final RANSEncodingSymbol[][] syms = Frequencies.buildSymsOrder1(F);
+        final RANSEncodingSymbol[][] syms = Frequencies.buildSymsOrder1(F, encodingSymbols);
 
         final ByteBuffer cp = outBuffer.slice();
         final int frequencyTableSize = Frequencies.writeFrequenciesOrder1(cp, F);
 
         inBuffer.rewind();
-        final int compressedBlobSize = E14.compress(inBuffer, syms, cp);
+        final int compressedBlobSize = E14.compress(inBuffer, encodingSymbols, cp);
 
         // rewind and write the prefix
         writeCompressionPrefix(ORDER.ONE, outBuffer, inSize, frequencyTableSize, compressedBlobSize);
         return outBuffer;
     }
 
-    private static ByteBuffer uncompressOrder0Way4(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
+    private ByteBuffer uncompressOrder0Way4(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        final ArithmeticDecoder D = new ArithmeticDecoder();
-        final RANSDecodingSymbol[] syms = new RANSDecodingSymbol[256];
-        for (int i = 0; i < syms.length; i++) {
-            syms[i] = new RANSDecodingSymbol();
-        }
-
-        Frequencies.readStatsOrder0(inBuffer, D, syms);
-        D04.uncompress(inBuffer, D, syms, outBuffer);
+        Frequencies.readStatsOrder0(inBuffer, D[0], decodingSymbols[0]);
+        D04.uncompress(inBuffer, D[0], decodingSymbols[0], outBuffer);
 
         return outBuffer;
     }
 
-    private static ByteBuffer uncompressOrder1Way4(final ByteBuffer in, final ByteBuffer outBuffer) {
-
-        final ArithmeticDecoder[] D = new ArithmeticDecoder[256];
-        for (int i = 0; i < 256; i++) {
-            D[i] = new ArithmeticDecoder();
-        }
-        final RANSDecodingSymbol[][] syms = new RANSDecodingSymbol[256][256];
-        for (int i = 0; i < syms.length; i++) {
-            for (int j = 0; j < syms[i].length; j++) {
-                syms[i][j] = new RANSDecodingSymbol();
-            }
-        }
-        Frequencies.readStatsOrder1(in, D, syms);
-
-        D14.uncompress(in, outBuffer, D, syms);
-
+    private ByteBuffer uncompressOrder1Way4(final ByteBuffer in, final ByteBuffer outBuffer) {
+        //TODO: why does this not call inBuffer.order(ByteOrder.LITTLE_ENDIAN);, like uncompressOrder0Way4 does ?
+        Frequencies.readStatsOrder1(in, D, decodingSymbols);
+        D14.uncompress(in, outBuffer, D, decodingSymbols);
         return outBuffer;
     }
 

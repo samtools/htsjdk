@@ -98,8 +98,9 @@ public class RansTest extends HtsjdkTest {
     public void testBuffersMeetBoundaryExpectations() {
         final int size = 1001;
         final ByteBuffer raw = ByteBuffer.wrap(randomBytesFromGeometricDistribution(size, 0.01));
+        final RANS rans = new RANS();
         for (RANS.ORDER order : RANS.ORDER.values()) {
-            final ByteBuffer compressed = RANS.compress(raw, order);
+            final ByteBuffer compressed = rans.compress(raw, order);
             Assert.assertFalse(raw.hasRemaining());
             Assert.assertEquals(raw.limit(), size);
 
@@ -112,7 +113,7 @@ public class RansTest extends HtsjdkTest {
             Assert.assertEquals(compressed.getInt(), size);
             compressed.rewind();
 
-            final ByteBuffer uncompressed = RANS.uncompress(compressed);
+            final ByteBuffer uncompressed = rans.uncompress(compressed);
             Assert.assertFalse(compressed.hasRemaining());
             Assert.assertEquals(uncompressed.limit(), size);
             Assert.assertEquals(uncompressed.position(), 0);
@@ -153,8 +154,9 @@ public class RansTest extends HtsjdkTest {
     }
 
     private static void roundTripForOrder(final ByteBuffer data, final RANS.ORDER order) {
-        final ByteBuffer compressed = RANS.compress(data, order);
-        final ByteBuffer uncompressed = RANS.uncompress(compressed);
+        final RANS rans = new RANS();
+        final ByteBuffer compressed = rans.compress(data, order);
+        final ByteBuffer uncompressed = rans.uncompress(compressed);
         data.rewind();
         while (data.hasRemaining()) {
             if (!uncompressed.hasRemaining()) {
