@@ -27,10 +27,10 @@ class D14 {
         int l2 = 0;
         int l7 = 0;
         for (; i0 < isz4; i0++, i1++, i2++, i7++) {
-            final int c0 = 0xFF & D[l0].R[Decoding.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
-            final int c1 = 0xFF & D[l1].R[Decoding.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
-            final int c2 = 0xFF & D[l2].R[Decoding.RANSDecodeGet(rans2, Constants.TF_SHIFT)];
-            final int c7 = 0xFF & D[l7].R[Decoding.RANSDecodeGet(rans7, Constants.TF_SHIFT)];
+            final int c0 = 0xFF & D[l0].R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
+            final int c1 = 0xFF & D[l1].R[Utils.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
+            final int c2 = 0xFF & D[l2].R[Utils.RANSDecodeGet(rans2, Constants.TF_SHIFT)];
+            final int c7 = 0xFF & D[l7].R[Utils.RANSDecodeGet(rans7, Constants.TF_SHIFT)];
 
             outBuffer.put(i0, (byte) c0);
             outBuffer.put(i1, (byte) c1);
@@ -42,10 +42,10 @@ class D14 {
             rans2 = syms[l2][c2].advanceSymbolStep(rans2, Constants.TF_SHIFT);
             rans7 = syms[l7][c7].advanceSymbolStep(rans7,  Constants.TF_SHIFT);
 
-            rans0 = Decoding.RANSDecodeRenormalize(rans0, inBuffer);
-            rans1 = Decoding.RANSDecodeRenormalize(rans1, inBuffer);
-            rans2 = Decoding.RANSDecodeRenormalize(rans2, inBuffer);
-            rans7 = Decoding.RANSDecodeRenormalize(rans7, inBuffer);
+            rans0 = Utils.RANSDecodeRenormalize(rans0, inBuffer);
+            rans1 = Utils.RANSDecodeRenormalize(rans1, inBuffer);
+            rans2 = Utils.RANSDecodeRenormalize(rans2, inBuffer);
+            rans7 = Utils.RANSDecodeRenormalize(rans7, inBuffer);
 
             l0 = c0;
             l1 = c1;
@@ -55,7 +55,7 @@ class D14 {
 
         // Remainder
         for (; i7 < out_sz; i7++) {
-            final int c7 = 0xFF & D[l7].R[Decoding.RANSDecodeGet(rans7, Constants.TF_SHIFT)];
+            final int c7 = 0xFF & D[l7].R[Utils.RANSDecodeGet(rans7, Constants.TF_SHIFT)];
             outBuffer.put(i7, (byte) c7);
             rans7 = syms[l7][c7].advanceSymbol(rans7, inBuffer, Constants.TF_SHIFT);
             l7 = c7;

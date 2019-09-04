@@ -1,7 +1,5 @@
 package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.samtools.cram.compression.rans.Encoding.RansEncSymbol;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -190,12 +188,12 @@ class Frequencies {
         return F;
     }
 
-    static RansEncSymbol[] buildSymsOrder0(final int[] F) {
+    static RANSEncodingSymbol[] buildSymsOrder0(final int[] F) {
         //TODO: pass these in
         final int[] C = new int[256];
-        final RansEncSymbol[] syms = new RansEncSymbol[256];
+        final RANSEncodingSymbol[] syms = new RANSEncodingSymbol[256];
         for (int i = 0; i < syms.length; i++) {
-            syms[i] = new RansEncSymbol();
+            syms[i] = new RANSEncodingSymbol();
         }
 
         int T = 0;
@@ -203,7 +201,7 @@ class Frequencies {
             C[j] = T;
             T += F[j];
             if (F[j] != 0) {
-                Encoding.RansEncSymbolInit(syms[j], C[j], F[j], Constants.TF_SHIFT);
+                syms[j].set(C[j], F[j], Constants.TF_SHIFT);
             }
         }
         return syms;
@@ -242,12 +240,12 @@ class Frequencies {
         return cp.position() - start;
     }
 
-    static RansEncSymbol[][] buildSymsOrder1(final int[][] F) {
-        //TODO: pass these in
-        final RansEncSymbol[][] syms = new RansEncSymbol[256][256];
+    static RANSEncodingSymbol[][] buildSymsOrder1(final int[][] F) {
+        //TODO: pass these in ?
+        final RANSEncodingSymbol[][] syms = new RANSEncodingSymbol[256][256];
         for (int i = 0; i < syms.length; i++) {
             for (int j = 0; j < syms[i].length; j++) {
-                syms[i][j] = new RansEncSymbol();
+                syms[i][j] = new RANSEncodingSymbol();
             }
         }
 
@@ -256,7 +254,7 @@ class Frequencies {
             int x = 0;
             for (int j = 0; j < 256; j++) {
                 if (F_i_[j] != 0) {
-                    Encoding.RansEncSymbolInit(syms[i][j], x, F_i_[j], Constants.TF_SHIFT);
+                    syms[i][j].set(x, F_i_[j], Constants.TF_SHIFT);
                     x += F_i_[j];
                 }
             }
