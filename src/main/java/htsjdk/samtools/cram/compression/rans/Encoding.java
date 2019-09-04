@@ -50,13 +50,11 @@ class Encoding {
         int x = r;
         final int x_max = sym.xMax;
         if (x >= x_max) {
+            byteBuffer.put((byte) (x & 0xFF));
+            x >>= 8;
             if (x >= x_max) {
                 byteBuffer.put((byte) (x & 0xFF));
                 x >>= 8;
-                if (x >= x_max) {
-                    byteBuffer.put((byte) (x & 0xFF));
-                    x >>= 8;
-                }
             }
         }
 
