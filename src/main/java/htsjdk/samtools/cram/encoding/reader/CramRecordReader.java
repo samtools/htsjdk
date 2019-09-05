@@ -71,6 +71,7 @@ public class CramRecordReader {
 
     private final Slice slice;
     private final CompressionHeader compressionHeader;
+    private final CompressorCache compressorCache;
     private final SliceBlocksReadStreams sliceBlocksReadStreams;
     protected final ValidationStringency validationStringency;
 
@@ -83,11 +84,15 @@ public class CramRecordReader {
      * @param slice the slice into which the records should be reade
      * @param validationStringency how strict to be when reading this CRAM record
      */
-    public CramRecordReader(final Slice slice, final ValidationStringency validationStringency) {
+    public CramRecordReader(
+            final Slice slice,
+            final CompressorCache compressorCache,
+            final ValidationStringency validationStringency) {
         this.slice = slice;
         this.compressionHeader = slice.getCompressionHeader();
+        this.compressorCache = compressorCache;
         this.validationStringency = validationStringency;
-        this.sliceBlocksReadStreams = new SliceBlocksReadStreams(slice.getSliceBlocks());
+        this.sliceBlocksReadStreams = new SliceBlocksReadStreams(slice.getSliceBlocks(), compressorCache);
 
         bitFlagsCodec =                 createDataSeriesReader(DataSeries.BF_BitFlags);
         compressionBitFlagsCodec =      createDataSeriesReader(DataSeries.CF_CompressionBitFlags);

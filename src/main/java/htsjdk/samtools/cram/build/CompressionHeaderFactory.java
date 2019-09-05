@@ -53,8 +53,8 @@ public class CompressionHeaderFactory {
     // a parameter for Huffman encoding, so we don't have to re-construct on each call
     private static final int[] SINGLE_ZERO = new int[] { 0 };
 
-    private CRAMEncodingStrategy encodingStrategy;
-    private CompressionHeaderEncodingMap encodingMap;
+    private final CRAMEncodingStrategy encodingStrategy;
+    private final CompressionHeaderEncodingMap encodingMap;
 
     private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
     //TODO: fix this allocation
@@ -62,6 +62,7 @@ public class CompressionHeaderFactory {
     /**
      * Create a CompressionHeaderFactory using default CRAMEncodingStrategy.
      */
+    //TODO: this is used only by tests
     public CompressionHeaderFactory() {
         this(new CRAMEncodingStrategy());
     }
@@ -269,25 +270,8 @@ public class CompressionHeaderFactory {
         return (byte) (tagID & 0xFF);
     }
 
-    static ExternalCompressor getBestExternalCompressor(final CRAMEncodingStrategy encodingStrategy, final byte[] data) {
-        final ExternalCompressor gzip = new GZIPExternalCompressor(encodingStrategy.getGZIPCompressionLevel());
-        final int gzipLen = gzip.compress(data).length;
-
-        final ExternalCompressor rans0 = new RANSExternalCompressor(RANS.ORDER.ZERO);
-        final int rans0Len = rans0.compress(data).length;
-
-        final ExternalCompressor rans1 = new RANSExternalCompressor(RANS.ORDER.ONE);
-        final int rans1Len = rans1.compress(data).length;
-
-        // find the best of general purpose codecs:
-        final int minLen = Math.min(gzipLen, Math.min(rans0Len, rans1Len));
-        if (minLen == rans0Len) {
-            return rans0;
-        } else if (minLen == rans1Len) {
-            return rans1;
-        } else {
-            return gzip;
-        }
+    public ExternalCompressor getBestExternalCompressor(final byte[] data) {
+        return encodingMap.getBestExternalCompressor(data, encodingStrategy);
     }
 
     byte[] getDataForTag(final List<CRAMRecord> records, final int tagID) {
@@ -399,7 +383,7 @@ public class CompressionHeaderFactory {
         final EncodingDetails details = new EncodingDetails();
         final byte[] data = getDataForTag(records, tagID);
 
-        details.compressor = getBestExternalCompressor(encodingStrategy, data);
+        details.compressor = getBestExternalCompressor(data);
 
         final byte type = getTagType(tagID);
         switch (type) {

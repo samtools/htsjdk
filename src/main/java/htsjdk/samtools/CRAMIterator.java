@@ -33,7 +33,8 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator {
-    
+    long containerCount = 0l;
+
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
     private final ArrayList<SAMRecord> records;
@@ -46,6 +47,12 @@ public class CRAMIterator implements SAMRecordIterator {
     private SamReader mReader;
     long firstContainerOffset = 0;
     private final Iterator<Container> containerIterator;
+
+    // Keep a cache of re-usable compressor instances to reduce the need to repeatedly reallocate
+    // large numbers of small temporary objects, especially the the RANS compressor, which
+    // allocates ~256k small objects every time its instantiated.
+    private final CompressorCache compressorCache = new CompressorCache();
+
     /**
      * `samRecordIndex` only used when validation is not `SILENT`
      * (for identification by the validator which records are invalid)
@@ -133,7 +140,8 @@ public class CRAMIterator implements SAMRecordIterator {
         }
 
         records.clear();
-        cramRecords = container.getCRAMRecords(validationStringency);
+        containerCount++;
+        cramRecords = container.getCRAMRecords(validationStringency, compressorCache);
 
         final ReferenceContext containerContext = container.getReferenceContext();
         switch (containerContext.getType()) {
@@ -157,6 +165,9 @@ public class CRAMIterator implements SAMRecordIterator {
                 }
         }
 
+        if ((containerCount % 5000) == 0) {
+            System.out.println(String.format("Read container %,d (%s)", containerCount, containerContext));
+        }
         for (final Slice slice : container.getSlices()) {
             final ReferenceContext sliceContext = slice.getReferenceContext();
 

@@ -45,8 +45,9 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void testGetBestExternalCompressor() {
         final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy();
-        Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor(encodingStrategy, "".getBytes()));
-        Assert.assertNotNull(CompressionHeaderFactory.getBestExternalCompressor(encodingStrategy, "qwe".getBytes()));
+        final CompressionHeaderFactory compressionHeaderFactory = new CompressionHeaderFactory(encodingStrategy);
+        Assert.assertNotNull(compressionHeaderFactory.getBestExternalCompressor("".getBytes()));
+        Assert.assertNotNull(compressionHeaderFactory.getBestExternalCompressor("qwe".getBytes()));
     }
 
     @Test

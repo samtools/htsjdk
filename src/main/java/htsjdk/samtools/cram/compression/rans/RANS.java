@@ -40,7 +40,7 @@ public class RANS {
 
     // working variables used by the encoder and decoder; initialize them lazily since
     // they consist of lots of small objects, and we don't want to instantiate them
-    // unteil we actually use them
+    // until we actually use them
     private ArithmeticDecoder[] D;
     private RANSDecodingSymbol[][] decodingSymbols;
     private RANSEncodingSymbol[][] encodingSymbols;

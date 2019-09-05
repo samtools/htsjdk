@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -86,7 +85,8 @@ public class CompressionHeader {
         if (compressionHeaderBlock.getContentType() != BlockContentType.COMPRESSION_HEADER)
             throw new RuntimeIOException("Compression Header Block expected, found: " + compressionHeaderBlock.getContentType().name());
 
-        try (final ByteArrayInputStream internalStream = new ByteArrayInputStream(compressionHeaderBlock.getUncompressedContent())) {
+        // get raw content since compression headers are always raw...
+        try (final ByteArrayInputStream internalStream = new ByteArrayInputStream(compressionHeaderBlock.getRawContent())) {
             internalRead(internalStream);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
@@ -244,6 +244,7 @@ public class CompressionHeader {
     private void internalWrite(final OutputStream outputStream) throws IOException {
 
         { // preservation map:
+            //TODO: fix this buffer allocation...
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(5, mapBuffer);
 
@@ -277,7 +278,7 @@ public class CompressionHeader {
         encodingMap.write(outputStream);
 
         { // tag encoding map:
-            //TOTO: fix this static allocation size
+            //TODO: fix this static allocation size
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(tMap.size(), mapBuffer);
             for (final Integer dataSeries : tMap.keySet()) {

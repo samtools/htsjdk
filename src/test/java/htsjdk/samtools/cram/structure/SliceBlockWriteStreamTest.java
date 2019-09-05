@@ -43,16 +43,16 @@ public class SliceBlockWriteStreamTest extends HtsjdkTest {
         }
 
         // close the streams and write them to compressed slice blocks
-        sliceBlocksWriteStreams.writeStreamsToSliceBlocks();
+        sliceBlocksWriteStreams.flushStreamsToBlocks();
 
         // now verify that all the blocks in Slice
-        final byte[] coreRoundTripContent = sliceBlocks.getCoreBlock().getUncompressedContent();
+        final byte[] coreRoundTripContent = sliceBlocks.getCoreBlock().getUncompressedContent(new CompressorCache());
         Assert.assertEquals(coreRoundTripContent.length, 1);
         Assert.assertEquals(coreRoundTripContent[0], expectedCoreContent);
         sliceBlocks.getExternalContentIDs()
                 .stream()
                 .forEach(id -> Assert.assertEquals(
-                        new String(sliceBlocks.getExternalBlock(id).getUncompressedContent()),
+                        new String(sliceBlocks.getExternalBlock(id).getUncompressedContent(new CompressorCache())),
                         expectedExternalContent.get(id)));
     }
 }

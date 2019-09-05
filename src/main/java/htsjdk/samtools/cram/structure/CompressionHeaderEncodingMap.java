@@ -16,6 +16,7 @@ import htsjdk.samtools.cram.encoding.external.ExternalLongEncoding;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
@@ -64,6 +65,9 @@ public class CompressionHeaderEncodingMap {
     // TODO: written, but the externalCompressor list is a little different since it  varies
     // TODO: with the tags discovered for each container
     private final Map<Integer, ExternalCompressor> externalCompressors = new TreeMap<>();
+
+    // Keep a compressor cache for the lifetime of this encoding map
+    private final CompressorCache compressorCache = new CompressorCache();
 
     /**
      * Constructor used to create an encoding map for writing CRAMs
@@ -163,7 +167,7 @@ public class CompressionHeaderEncodingMap {
                 putExternalEncoding(
                         e.dataSeries,
                         e.encodingDescriptor,
-                        ExternalCompressor.getCompressorForMethod(e.compressionMethod, e.compressorSpecificArg));
+                        compressorCache.getCompressorForMethod(e.compressionMethod, e.compressorSpecificArg));
             } else {
                 putCoreEncoding(e.dataSeries, e.encodingDescriptor);
             }
@@ -301,10 +305,38 @@ public class CompressionHeaderEncodingMap {
         }
     }
 
+    public ExternalCompressor getBestExternalCompressor(final byte[] data, final CRAMEncodingStrategy encodingStrategy) {
+        final ExternalCompressor gzip = compressorCache.getCompressorForMethod(
+                BlockCompressionMethod.GZIP,
+                encodingStrategy.getGZIPCompressionLevel());
+        final int gzipLen = gzip.compress(data).length;
+
+        final ExternalCompressor rans0 = compressorCache.getCompressorForMethod(
+                BlockCompressionMethod.RANS,
+                RANS.ORDER.ZERO.ordinal());
+        final int rans0Len = rans0.compress(data).length;
+
+        final ExternalCompressor rans1 = compressorCache.getCompressorForMethod(
+                BlockCompressionMethod.RANS,
+                RANS.ORDER.ONE.ordinal());
+        final int rans1Len = rans1.compress(data).length;
+
+        // find the best of general purpose codecs:
+        final int minLen = Math.min(gzipLen, Math.min(rans0Len, rans1Len));
+        if (minLen == rans0Len) {
+            return rans0;
+        } else if (minLen == rans1Len) {
+            return rans1;
+        } else {
+            return gzip;
+        }
+    }
+
     // Visible for testing, because without this we have no way to unit test round-tripping an
     // encoding map that contains the handful of data series that htsjdk generally doesn't use
     // when writing, since there is no code to add those data series to the map as part of the
     // CRAM write implementation.
+    //TODO: make this private
     public void putExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
         // This spins up a CRAMEncoding temporarily in order to retrieve its EncodingDescriptor.
         // In reality, the encoding descriptor/parameters for each of these external encoding
@@ -339,6 +371,7 @@ public class CompressionHeaderEncodingMap {
      * @param dataSeries data series to add
      * @param encodingDescriptor encoding descriptor to use
      */
+    //TODO: make this private
     public void putCoreEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
         ValidationUtils.validateArg(!encodingDescriptor.getEncodingID().isExternalEncoding(),
                 "Attempt to use an external encoding as a core encoding");
@@ -356,11 +389,12 @@ public class CompressionHeaderEncodingMap {
      * @param dataSeries
      * @param encodingDescriptor
      */
-    public void putEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
+    private void putEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
         encodingMap.put(dataSeries, encodingDescriptor);
     }
 
     // add an external encoding and corresponding compressor
+    //TODO: make this private
     public void putExternalEncoding(final DataSeries dataSeries,
                                     final EncodingDescriptor encodingDescriptor,
                                     final ExternalCompressor compressor) {
@@ -375,22 +409,28 @@ public class CompressionHeaderEncodingMap {
     private void putExternalByteArrayStopTabGzipEncoding(final CRAMEncodingStrategy encodingStrategy, final DataSeries dataSeries) {
         putExternalEncoding(dataSeries,
                 new ByteArrayStopEncoding((byte) '\t', dataSeries.getExternalBlockContentId()).toEncodingDescriptor(),
-                new GZIPExternalCompressor(encodingStrategy.getGZIPCompressionLevel()));
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()));
     }
 
     // add an external encoding appropriate for the dataSeries value type, with a GZIP compressor
     private void putExternalGzipEncoding(final CRAMEncodingStrategy encodingStrategy, final DataSeries dataSeries) {
-        putExternalEncoding(dataSeries, new GZIPExternalCompressor(encodingStrategy.getGZIPCompressionLevel()));
+        putExternalEncoding(
+                dataSeries,
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()));
     }
 
     // add an external encoding appropriate for the dataSeries value type, with a RANS order 1 compressor
     private void putExternalRansOrderOneEncoding(final DataSeries dataSeries) {
-        putExternalEncoding(dataSeries, new RANSExternalCompressor(RANS.ORDER.ONE));
+        putExternalEncoding(
+                dataSeries,
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.RANS, RANS.ORDER.ONE.ordinal()));
     }
 
     // add an external encoding appropriate for the dataSeries value type, with a RANS order 0 compressor
     private void putExternalRansOrderZeroEncoding(final DataSeries dataSeries) {
-        putExternalEncoding(dataSeries, new RANSExternalCompressor(RANS.ORDER.ZERO));
+        putExternalEncoding(
+                dataSeries,
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.RANS, RANS.ORDER.ZERO.ordinal()));
     }
 
     @Override

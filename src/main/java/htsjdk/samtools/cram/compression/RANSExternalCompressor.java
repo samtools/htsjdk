@@ -8,19 +8,24 @@ import java.util.Objects;
 
 public class RANSExternalCompressor extends ExternalCompressor {
     private final RANS.ORDER order;
-    private final RANS rans = new RANS();
+    private final RANS rans;
 
-    public RANSExternalCompressor() {
-        this(RANS.ORDER.ZERO);
+    /**
+     * We use a shared RANS instance for all compressors.
+     * @param rans
+     */
+    public RANSExternalCompressor(final RANS rans) {
+        this(RANS.ORDER.ZERO, rans);
     }
 
-    public RANSExternalCompressor(final RANS.ORDER order) {
+    public RANSExternalCompressor(final int order, final RANS rans) {
+        this(RANS.ORDER.fromInt(order), rans);
+    }
+
+    public RANSExternalCompressor(final RANS.ORDER order, final RANS rans) {
         super(BlockCompressionMethod.RANS);
+        this.rans = rans;
         this.order = order;
-    }
-
-    public RANSExternalCompressor(final int order) {
-        this(RANS.ORDER.fromInt(order));
     }
 
     @Override

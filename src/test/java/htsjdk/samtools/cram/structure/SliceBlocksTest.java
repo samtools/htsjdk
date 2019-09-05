@@ -63,17 +63,17 @@ public class SliceBlocksTest  extends HtsjdkTest {
             }
         }
 
-        Assert.assertEquals(roundTrippedSliceBlocks.getCoreBlock().getUncompressedContent(), coreBlockContent);
+        Assert.assertEquals(roundTrippedSliceBlocks.getCoreBlock().getUncompressedContent(new CompressorCache()), coreBlockContent);
         Assert.assertEquals(roundTrippedSliceBlocks.getEmbeddedReferenceContentID(), embeddedRefBlockContentID);
         Assert.assertEquals(
-                roundTrippedSliceBlocks.getEmbeddedReferenceBlock().getUncompressedContent(),
+                roundTrippedSliceBlocks.getEmbeddedReferenceBlock().getUncompressedContent(new CompressorCache()),
                 embeddedRefBlockContent);
 
         // we expect one external block for each data series, plus one for the embedded reference block
         Assert.assertEquals(roundTrippedSliceBlocks.getNumberOfExternalBlocks(),expectedExternalContentStrings.size() + 1);
         expectedExternalContentStrings.forEach(
                 (id, content) -> Assert.assertEquals(
-                        new String(roundTrippedSliceBlocks.getExternalBlock(id).getUncompressedContent()),
+                        new String(roundTrippedSliceBlocks.getExternalBlock(id).getUncompressedContent(new CompressorCache())),
                         content)
         );
     }

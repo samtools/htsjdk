@@ -1,11 +1,12 @@
 package htsjdk.samtools.cram.compression;
 
+import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;
 
 public abstract class ExternalCompressor {
     final public static int NO_COMPRESSION_ARG = -1;
-    final static String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compression";
+    final private static String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compressor";
 
     private BlockCompressionMethod method;
 
@@ -70,8 +71,8 @@ public abstract class ExternalCompressor {
 
             case RANS:
                 return compressorSpecificArg == NO_COMPRESSION_ARG ?
-                        new RANSExternalCompressor() :
-                        new RANSExternalCompressor(compressorSpecificArg);
+                        new RANSExternalCompressor(new RANS()) :
+                        new RANSExternalCompressor(compressorSpecificArg, new RANS());
 
             case BZIP2:
                 ValidationUtils.validateArg(

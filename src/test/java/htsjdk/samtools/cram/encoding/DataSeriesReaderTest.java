@@ -20,6 +20,6 @@ public class DataSeriesReaderTest extends HtsjdkTest {
     @Test(dataProvider = "negativeConstructor", expectedExceptions = RuntimeException.class)
     public void negativeConstructorTest(final DataSeriesType valueType,
                                         final EncodingDescriptor params) {
-        new DataSeriesReader(valueType, params, new SliceBlocksReadStreams(new SliceBlocks()));
+        new DataSeriesReader(valueType, params, new SliceBlocksReadStreams(new SliceBlocks(), new CompressorCache()));
     }
 }

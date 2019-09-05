@@ -360,7 +360,7 @@ public class ContainerTest extends HtsjdkTest {
              final CountingInputStream inputStream = new CountingInputStream(bais)) {
             final Container container = new Container(version, inputStream, inputStream.getCount());
             Assert.assertTrue(container.isEOF());
-            Assert.assertTrue(container.getCRAMRecords(ValidationStringency.STRICT).isEmpty());
+            Assert.assertTrue(container.getCRAMRecords(ValidationStringency.STRICT, new CompressorCache()).isEmpty());
         }
     }
 
@@ -400,7 +400,7 @@ public class ContainerTest extends HtsjdkTest {
         final long dummyByteOffset = 0;
         final Container container = FACTORY.buildContainer(records, dummyByteOffset);
 
-        final List<CRAMRecord> roundTripRecords = container.getCRAMRecords(ValidationStringency.STRICT);
+        final List<CRAMRecord> roundTripRecords = container.getCRAMRecords(ValidationStringency.STRICT, new CompressorCache());
         // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
         //Assert.assertEquals(roundTripRecords, records);
         Assert.assertEquals(roundTripRecords.size(), TEST_RECORD_COUNT);
