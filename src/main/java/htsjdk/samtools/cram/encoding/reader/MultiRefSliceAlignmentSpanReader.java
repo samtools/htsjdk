@@ -46,7 +46,10 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final ValidationStringency validationStringency,
                                             final int initialAlignmentStart,
                                             final int recordCount) {
-        super(slice, validationStringency);
+        //TODO: is it ok to just new up a CompressorCache in this case ?
+        //TODO: its equivalent to creating one for eery record reader, which is more granular
+        //TODO: than the per-iterator case when using a CRAMIterator
+        super(slice, new CompressorCache(), validationStringency);
 
         if (!slice.getReferenceContext().isMultiRef()) {
             throw new IllegalStateException("can only create multiref span reader for multiref context slice");

@@ -29,7 +29,7 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
                 expectedExternalContentStrings
         );
 
-        final SliceBlocksReadStreams sliceBlocksReadStream = new SliceBlocksReadStreams(sliceBlocks);
+        final SliceBlocksReadStreams sliceBlocksReadStream = new SliceBlocksReadStreams(sliceBlocks, new CompressorCache());
 
         // "core" is a a bit stream, but interpret the bits as a 4 byte string for verification
         Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[0]);

@@ -26,7 +26,7 @@ public class SliceBlocks {
     // the external Blocks as a Map of content ID to block
     private Map<Integer, Block> externalBlocks = new HashMap<>();
 
-    // Modeling the contentID and embedded reference block seperately is redundant, since the
+    // Modeling the contentID and embedded reference block separately is redundant, since the
     // block can be retrieved from the external blocks list given the content id, but we retain
     // them both for validation purposes because they're both present in the serialized CRAM stream,
     // and on read these are provided separately when populating the slice.
@@ -39,8 +39,8 @@ public class SliceBlocks {
      */
     public void setCoreBlock(final Block coreBlock) {
         ValidationUtils.nonNull(coreBlock);
-        ValidationUtils.validateArg(coreBlock.getContentType() == BlockContentType.CORE, "Invalid core block");
-        ValidationUtils.validateArg(this.coreBlock == null, "Can't reset core block");
+        ValidationUtils.validateArg(coreBlock.getContentType() == BlockContentType.CORE, "Invalid slice core block");
+        ValidationUtils.validateArg(this.coreBlock == null, "Can't reset slice core block");
 
         this.coreBlock = coreBlock;
     }

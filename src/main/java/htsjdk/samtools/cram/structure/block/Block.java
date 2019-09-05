@@ -21,12 +21,13 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.*;
+import htsjdk.samtools.cram.structure.CompressorCache;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 
 /**
  * Class representing CRAM block concept and some methods to operate with block content. CRAM block is used to hold some (usually
@@ -57,7 +58,9 @@ public class Block {
     private final int contentId;
 
     /**
-     * The content stored in this block, in compressed form (if applicable)
+     * The content stored in this block, in compressed form (if applicable). For blocks with
+     * BlockCompressionMethod.RAW, this is the raw content, which is the same in compressed
+     * and uncompressed form.
      */
     private final byte[] compressedContent;
 
@@ -196,16 +199,28 @@ public class Block {
     }
 
     /**
+     * Return the raw (uncompressed) content from a block. The block must have {@code BlockCompressionMethod}
+     * {@link BlockCompressionMethod#RAW}.
+     *
+     * @return The raw, uncompressed block content.
+     * @throws IllegalArgumentException if the block is not {@link BlockCompressionMethod#RAW}.
+     */
+    public final byte[] getRawContent() {
+        ValidationUtils.validateArg(getCompressionMethod() == BlockCompressionMethod.RAW,
+                "getRawContent should only be called on blocks with RAW compression method");
+        return compressedContent;
+    }
+
+    /**
      * Uncompress the stored block content (if not RAW) and return the uncompressed content.
      *
      * @return The uncompressed block content.
      * @throws CRAMException The uncompressed length did not match what was expected.
+     * @param compressorCache
      */
-    public final byte[] getUncompressedContent() {
-        // when uncompressing, no compressor-specific args are required
-        final ExternalCompressor compressor = ExternalCompressor.getCompressorForMethod(
-                compressionMethod,
-                ExternalCompressor.NO_COMPRESSION_ARG);
+    public final byte[] getUncompressedContent(final CompressorCache compressorCache) {
+        // when uncompressing, no compressor-specific args are required since any variant of the compressor will do
+        final ExternalCompressor compressor = compressorCache.getCompressorForMethod(compressionMethod, ExternalCompressor.NO_COMPRESSION_ARG);
         final byte[] uncompressedContent = compressor.uncompress(compressedContent);
         if (uncompressedContent.length != uncompressedLength) {
             throw new CRAMException(String.format(
@@ -309,16 +324,12 @@ public class Block {
 
     @Override
     public String toString() {
-        final byte[] uncompressed = getUncompressedContent();
-        final String raw = Arrays.toString(Arrays.copyOf(uncompressed, Math.min(5, uncompressed.length)));
-
-        return String.format("compression method=%s, content type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s",
+        return String.format("compression method=%s, content type=%s, id=%d, raw size=%d, compressed size=%d",
                 getCompressionMethod().name(),
                 getContentType().name(),
                 getContentId(),
                 getUncompressedContentSize(),
-                getCompressedContentSize(),
-                raw);
+                getCompressedContentSize());
     }
 
 }

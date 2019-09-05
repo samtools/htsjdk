@@ -49,9 +49,11 @@ import java.util.stream.Collectors;
  */
 public class Slice {
     private static final Log log = Log.getInstance(Slice.class);
+
     public static final int NO_ALIGNMENT_START = -1;
     public static final int NO_ALIGNMENT_SPAN = 0;
     public static final int NO_ALIGNMENT_END = SAMRecord.NO_ALIGNMENT_START; // 0
+
     // for indexing purposes
     //TODO: this should be the same as CRAMRecord.SLICE_INDEX_DEFAULT when used for sliceIndex
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
@@ -76,10 +78,9 @@ public class Slice {
     // End slice header values
     ////////////////////////////////
 
+    private Block headerBlock;
     private CompressionHeader compressionHeader;
-    // content associated with ids:
-    //private Block headerBlock;
-    private SliceBlocks sliceBlocks = new SliceBlocks();
+    private final SliceBlocks sliceBlocks = new SliceBlocks();
 
     private int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
     private long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
@@ -90,18 +91,18 @@ public class Slice {
 
     // read counters per type, for BAMIndexMetaData.recordMetaData()
     // see also AlignmentSpan and CRAMBAIIndexer.processContainer()
-
     private int mappedReadsCount = 0;
     private int unmappedReadsCount = 0;
     private int unplacedReadsCount = 0;
 
-    public Slice (final int major, final CompressionHeader compressionHeader, final InputStream inputStream) {
-        final Block sliceHeaderBlock = Block.read(major, inputStream);
-        if (sliceHeaderBlock.getContentType() != BlockContentType.MAPPED_SLICE) {
-            throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
+    //TODO: this is the case where we're reading the slice from an input stream
+    public Slice(final int major, final CompressionHeader compressionHeader, final InputStream inputStream) {
+        headerBlock = Block.read(major, inputStream);
+        if (headerBlock.getContentType() != BlockContentType.MAPPED_SLICE) {
+            throw new RuntimeException("Slice Header Block expected, found:  " + headerBlock.getContentType().name());
         }
 
-        final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getUncompressedContent());
+        final InputStream parseInputStream = new ByteArrayInputStream(headerBlock.getRawContent());
 
         //TODO: validate that this matches the container
         // if MULTIPLE_REFERENCE_ID, enclosing container must also be MULTIPLE_REFERENCE_ID
@@ -147,7 +148,7 @@ public class Slice {
      * @param records input CRAM Compression Records
      * @param compressionHeader the enclosing {@link Container}'s Compression Header
      * @return a Slice corresponding to the given records
-     * //
+     *
      * Using a collection of {@link CRAMRecord}s,
      * determine whether the slice is single ref, unmapped or multi reference.
      * Derive alignment boundaries for the slice if single ref.
@@ -222,7 +223,6 @@ public class Slice {
                 this.referenceContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         }
 
-        //final Slice slice = new Slice(compressionHeader, sliceRefContext);
         if (this.referenceContext.isMappedSingleRef()) {
             alignmentStart = singleRefAlignmentStart;
             alignmentSpan = singleRefAlignmentEnd - singleRefAlignmentStart + 1;
@@ -233,8 +233,11 @@ public class Slice {
         nofRecords = records.size();
 
         final CramRecordWriter writer = new CramRecordWriter(this);
-        writer.writeCRAMCompressionRecords(records, this.alignmentStart);
+        writer.writeToSliceBlocks(records, this.alignmentStart);
     }
+
+    // May be null
+    public Block getHeaderBlock() { return headerBlock; }
 
     public SliceBlocks getSliceBlocks() { return sliceBlocks; }
 
@@ -396,8 +399,8 @@ public class Slice {
         return compressionHeader;
     }
 
-    public ArrayList<CRAMRecord> getRecords(final ValidationStringency validationStringency) {
-        final CramRecordReader reader = new CramRecordReader(this, validationStringency);
+    public ArrayList<CRAMRecord> getRecords(final CompressorCache compressorCache, final ValidationStringency validationStringency) {
+        final CramRecordReader reader = new CramRecordReader(this, compressorCache, validationStringency);
 
         final ArrayList<CRAMRecord> records = new ArrayList<>(nofRecords);
 
@@ -426,9 +429,10 @@ public class Slice {
         for (final int id : getSliceBlocks().getExternalContentIDs()) {
             getContentIDs()[i] = id;
         }
-
-        final Block sliceHeaderBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, this));
-        sliceHeaderBlock.write(major, outputStream);
+        // establish our header block before writing
+        headerBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, this));
+        headerBlock.write(major, outputStream);
+        // writes the core, and external blocks
         getSliceBlocks().writeBlocks(major, outputStream);
     }
 

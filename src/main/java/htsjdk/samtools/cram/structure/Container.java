@@ -250,13 +250,16 @@ public class Container {
         }
 
         byte[] bytes;
-        try (final InputStream blockStream = new ByteArrayInputStream(block.getUncompressedContent())) {
+        // SAMFileHeader block is prescribed by the spec to be gzip compressed
+        //TODO: this compressor cache is bogus
+        try (final InputStream blockStream = new ByteArrayInputStream(block.getUncompressedContent(new CompressorCache()))) {
 
             final ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++) {
                 buffer.put((byte) blockStream.read());
+            }
 
             buffer.flip();
             final int size = buffer.asIntBuffer().get();
@@ -321,14 +324,14 @@ public class Container {
     }
     public List<Slice> getSlices() { return slices; }
 
-    public List<CRAMRecord> getCRAMRecords(final ValidationStringency validationStringency) {
+    public List<CRAMRecord> getCRAMRecords(final ValidationStringency validationStringency, final CompressorCache compressorCache) {
         if (isEOF()) {
             return Collections.emptyList();
         }
 
         final ArrayList<CRAMRecord> records = new ArrayList<>(getContainerHeader().getRecordCount());
         for (final Slice slice : getSlices()) {
-            records.addAll(slice.getRecords(validationStringency));
+            records.addAll(slice.getRecords(compressorCache, validationStringency));
         }
         return records;
     }

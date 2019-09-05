@@ -26,19 +26,21 @@ public class SliceBlocksReadStreams {
     /**
      * @param sliceBlocks {@link SliceBlocks} that have been populated from a CRAM stream
      */
-    public SliceBlocksReadStreams(final SliceBlocks sliceBlocks) {
+    public SliceBlocksReadStreams(final SliceBlocks sliceBlocks, final CompressorCache compressorCache) {
         ValidationUtils.nonNull(sliceBlocks.getCoreBlock(), "sliceBlocks must have been initialized");
         ValidationUtils.nonNull(sliceBlocks.getNumberOfExternalBlocks() > 0, "sliceBlocks must have been initialized");
 
         if (sliceBlocks.getCoreBlock() == null || sliceBlocks.getNumberOfExternalBlocks() == 0) {
             throw new CRAMException("slice blocks must be initialized before being used with a reader");
         }
-        coreBlockInputStream = new DefaultBitInputStream(new ByteArrayInputStream(sliceBlocks.getCoreBlock().getUncompressedContent()));
+        coreBlockInputStream = new DefaultBitInputStream(
+                new ByteArrayInputStream(
+                        sliceBlocks.getCoreBlock().getUncompressedContent(compressorCache)));
 
         final List<Integer> externalContentIDs = sliceBlocks.getExternalContentIDs();
         for (final Integer contentID : externalContentIDs) {
             final Block block = sliceBlocks.getExternalBlock(contentID);
-            externalInputStreams.put(contentID, new ByteArrayInputStream(block.getUncompressedContent()));
+            externalInputStreams.put(contentID, new ByteArrayInputStream(block.getUncompressedContent(compressorCache)));
         }
     }
 

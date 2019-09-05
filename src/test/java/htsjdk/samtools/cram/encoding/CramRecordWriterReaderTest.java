@@ -8,6 +8,7 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.structure.CRAMRecord;
 import htsjdk.samtools.cram.structure.CompressionHeader;
+import htsjdk.samtools.cram.structure.CompressorCache;
 import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -41,7 +42,7 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
         final CompressionHeader header = new CompressionHeaderFactory().build(unmappedRecords, coordinateSorted);
 
         final Slice slice = new Slice(unmappedRecords, header);
-        final List<CRAMRecord> roundTripRecords = slice.getRecords(ValidationStringency.STRICT);
+        final List<CRAMRecord> roundTripRecords = slice.getRecords(new CompressorCache(), ValidationStringency.STRICT);
 
         Assert.assertEquals(roundTripRecords, unmappedRecords);
     }

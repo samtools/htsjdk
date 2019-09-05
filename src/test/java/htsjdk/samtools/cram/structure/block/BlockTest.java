@@ -7,6 +7,7 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
+import htsjdk.samtools.cram.structure.CompressorCache;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -24,7 +25,7 @@ public class BlockTest extends HtsjdkTest {
 
         // raw and compressed data are equal to what was given
 
-        Assert.assertEquals(actual.getUncompressedContent(), expectedRaw);
+        Assert.assertEquals(actual.getUncompressedContent(new CompressorCache()), expectedRaw);
         Assert.assertEquals(actual.getUncompressedContentSize(), expectedRaw.length);
         Assert.assertEquals(actual.getCompressedContent(), expectedCompressed);
         Assert.assertEquals(actual.getCompressedContentSize(), expectedCompressed.length);

@@ -58,9 +58,11 @@ public class SliceBlocksWriteStreams {
     public ByteArrayOutputStream getExternalOutputStream(final Integer contentID) { return externalOutputStreams.get(contentID); }
 
     /**
-     * Compress and write each block to a CRAM output stream.
+     * Compress and write each each stream to a corresponding Block (note that this does not write
+     * the blocks themselves to a container output stream - that can't happen until the slice is aggregated
+     * into a container.
      */
-    public void writeStreamsToSliceBlocks() {
+    public void flushStreamsToBlocks() {
          closeAllStreams();
 
          // core block is raw (no compression) and must be written first (prescribed by the spec)

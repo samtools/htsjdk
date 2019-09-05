@@ -72,7 +72,7 @@ public class ContainerFactory {
         }
 
         //TODO: blockCount and baseCount should be able to be derived from within the constructor based on the slices,
-        //TODO: so they can be removed from this constuctor's args
+        //TODO: so they can be removed from this constructor's args
         final Container container = new Container(
                 compressionHeader,
                 slices,
