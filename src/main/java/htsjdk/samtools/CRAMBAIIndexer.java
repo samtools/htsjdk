@@ -134,15 +134,11 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             return;
         }
 
-//        int landmarkIndex = 0;
         for (final Slice slice : container.getSlices()) {
-//            slice.setLandmarkIndex(sliceIndex++);
-            if (slice.getReferenceContext().isMultiRef()) {
+            if (slice.getAlignmentContext().getReferenceContext().isMultiRef()) {
                 final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(validationStringency);
 
-//                // TODO why are we updating the original slice here?
-//                slice.setLandmarkIndex(sliceIndex++);
-
+                //TODO: get rid of these fak slices so we can turn on AlignmentContext costructor validation/checking
                 /**
                  * Unmapped span must be processed after mapped spans:
                  */
@@ -169,7 +165,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                     fakeSlice.setLandmarkIndex(slice.getLandmarkIndex());
 
                     fakeSlice.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
-                    fakeSlice.setAlignmentSpan(Slice.NO_ALIGNMENT_SPAN);
+                    fakeSlice.setAlignmentSpan(AlignmentContext.NO_ALIGNMENT_SPAN);
                     fakeSlice.setMappedReadsCount(0);
                     fakeSlice.setUnmappedReadsCount(0);
                     fakeSlice.setUnplacedReadsCount(slice.getUnplacedReadsCount());
@@ -194,7 +190,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
         // validate that this Slice is ready to be indexed
         slice.baiIndexInitializationCheck();
 
-        final ReferenceContext sliceContext = slice.getReferenceContext();
+        final ReferenceContext sliceContext = slice.getAlignmentContext().getReferenceContext();
         if (sliceContext.isMultiRef()) {
             throw new SAMException("Expecting a single reference or unmapped slice.");
         }
@@ -278,8 +274,9 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             if (null != log) {
                 String sequenceName;
-                final ReferenceContext containerContext = container.getReferenceContext();
-                switch (containerContext.getType()) {
+                final AlignmentContext alignmentContext = container.getAlignmentContext();
+                final ReferenceContext containerReferenceContext = alignmentContext.getReferenceContext();
+                switch (containerReferenceContext.getType()) {
                     case UNMAPPED_UNPLACED_TYPE:
                         sequenceName = "?";
                         break;
@@ -287,10 +284,10 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                         sequenceName = "???";
                         break;
                     default:
-                        sequenceName = cramHeader.getSamFileHeader().getSequence(containerContext.getSequenceId()).getSequenceName();
+                        sequenceName = cramHeader.getSamFileHeader().getSequence(containerReferenceContext.getSequenceId()).getSequenceName();
                         break;
                 }
-                progressLogger.record(sequenceName, container.getContainerHeader().getAlignmentStart());
+                progressLogger.record(sequenceName, alignmentContext.getAlignmentStart());
             }
 
         } while (!container.isEOF());
@@ -349,8 +346,9 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
         private int computeIndexingBin(final Slice slice) {
             // regionToBin has zero-based, half-open API
-            final int alignmentStart = slice.getAlignmentStart() - 1;
-            int alignmentEnd = slice.getAlignmentStart() + slice.getAlignmentSpan() - 1;
+            final AlignmentContext sliceAlignmentContext = slice.getAlignmentContext();
+            final int alignmentStart = sliceAlignmentContext.getAlignmentStart() - 1;
+            int alignmentEnd = sliceAlignmentContext.getAlignmentStart() + sliceAlignmentContext.getAlignmentSpan() - 1;
             if (alignmentEnd <= alignmentStart) {
                 // If alignment end cannot be determined (e.g. because this read is not really aligned),
                 // then treat this as a one base alignment for indexing purposes.
@@ -368,7 +366,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
          * @param slice CRAM slice, single ref only.
          */
         private void processSingleReferenceSlice(final Slice slice) {
-            final ReferenceContext sliceContext = slice.getReferenceContext();
+            final ReferenceContext sliceContext = slice.getAlignmentContext().getReferenceContext();
             if (! sliceContext.isMappedSingleRef()) {
                 return; // do nothing for records without coordinates, but count them
             }
@@ -415,8 +413,8 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             // process linear index
 
             // the smallest file offset that appears in the 16k window for this bin
-            final int alignmentStart = slice.getAlignmentStart();
-            final int alignmentEnd = slice.getAlignmentStart() + slice.getAlignmentSpan();
+            final int alignmentStart = slice.getAlignmentContext().getAlignmentStart();
+            final int alignmentEnd = slice.getAlignmentContext().getAlignmentStart() + slice.getAlignmentContext().getAlignmentSpan();
             int startWindow = LinearIndex.convertToLinearIndexOffset(alignmentStart); // the 16k window
             final int endWindow;
 

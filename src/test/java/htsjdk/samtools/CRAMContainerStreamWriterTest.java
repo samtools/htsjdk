@@ -230,7 +230,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         final CloseableIterator<SAMRecord> iterator = reader.query(new QueryInterval[]{new QueryInterval(1, 10, 10)}, false);
         int count = 0;
         while (iterator.hasNext()) {
-            SAMRecord actualRecord = iterator.next();
+            iterator.next();
             count++;
         }
         Assert.assertEquals(count, 2);

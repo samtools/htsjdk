@@ -160,11 +160,11 @@ public class CramRecordReader {
         final int bamFlags = bitFlagsCodec.readData();
         final int cramFlags = compressionBitFlagsCodec.readData();
         int referenceIndex;
-        if (slice.getReferenceContext().isMultiRef()) {
+        if (slice.getAlignmentContext().getReferenceContext().isMultiRef()) {
             referenceIndex = refIdCodec.readData();
         } else {
             // either unmapped (-1) or a valid ref
-            referenceIndex = slice.getReferenceContext().getSerializableId();
+            referenceIndex = slice.getAlignmentContext().getReferenceContext().getSerializableId();
         }
 
         final int readLength = readLengthCodec.readData();

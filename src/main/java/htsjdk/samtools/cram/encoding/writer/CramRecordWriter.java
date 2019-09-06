@@ -176,7 +176,7 @@ public class CramRecordWriter {
         // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.
         bitFlagsC.writeData(r.getBAMFlags());
         compBitFlagsC.writeData(r.getCRAMFlags());
-        if (slice.getReferenceContext().isMultiRef()) {
+        if (slice.getAlignmentContext().getReferenceContext().isMultiRef()) {
             refIdCodec.writeData(r.getReferenceIndex());
         }
 

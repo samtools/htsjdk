@@ -157,7 +157,7 @@ public class BAMIndexMetaData {
      * @param slice
      */
     void recordMetaData(final Slice slice) {
-         if (slice.getReferenceContext().isUnmappedUnplaced()) {
+         if (slice.getAlignmentContext().getReferenceContext().isUnmappedUnplaced()) {
              //TODO: this needs to account for MULTI_REF slices, which can also contain unmapped/unplaced records ???
             noCoordinateRecords += slice.getUnplacedReadsCount();
             return;

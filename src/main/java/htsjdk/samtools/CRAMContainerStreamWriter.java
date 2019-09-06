@@ -195,7 +195,9 @@ public class CRAMContainerStreamWriter {
             default:
                 return currentReferenceContext == nextSAMRecordReferenceIndex ?
                         currentReferenceContext :
-                        ReferenceContext.MULTIPLE_REFERENCE_ID;
+                        samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate ?
+                                nextSAMRecordReferenceIndex :
+                                ReferenceContext.MULTIPLE_REFERENCE_ID;
         }
     }
 
@@ -254,13 +256,13 @@ public class CRAMContainerStreamWriter {
                     // still on the same (single) reference
                     return samRecords.size() >= maxRecordsPerContainer;
                 } else {
-                    // switching to unmapped
+                    // switching to a new reference contig, or to unmapped
                     if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
                         // TODO: we're coord-sorted, so ideally we'd emit a container unless its too small,
                         // TODO: but emitting multi-ref containers on cord-sorted will break index queries for unmapped (??),
                         // TODO: so just return true;
-                        return samRecords.size() >= maxRecordsPerContainer;
-                        //return true;
+                        //return samRecords.size() >= maxRecordsPerContainer;
+                        return true;
                     }
                     return samRecords.size() >= MIN_SINGLE_REF_RECORDS;
                 }

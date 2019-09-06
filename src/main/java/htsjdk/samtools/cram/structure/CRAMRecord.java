@@ -13,9 +13,6 @@ import htsjdk.utils.ValidationUtils;
 
 import java.util.*;
 
-//TODO: should this just hold a reference to the SAMRecord and only model the CRAM part ?
-//TODO: ...but that wont work correctly when reading these from a stream...
-//TODO rename to CRAMCompressionRecord
 public class CRAMRecord {
     private static final Log log = Log.getInstance(CRAMRecord.class);
 
@@ -120,6 +117,7 @@ public class CRAMRecord {
         readName = encodingStrategy.getPreserveReadNames() ? samRecord.getReadName() : null;
         referenceIndex = samRecord.getReferenceIndex();
 
+        //TODO:
         //TODO: These 3 values need to mutate together; if readLength, alignmentStart, or readFeatures change,
         // then alignmentEnd needs to be recalculated
         readLength = samRecord.getReadLength();
@@ -130,7 +128,7 @@ public class CRAMRecord {
             alignmentEnd = readFeatures.initializeAlignmentEnd(alignmentStart, readLength);
         } else {
             readFeatures = new CRAMRecordReadFeatures();
-            alignmentEnd = Slice.NO_ALIGNMENT_END;
+            alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
         }
 
         templateSize = samRecord.getInferredInsertSize();
@@ -257,7 +255,7 @@ public class CRAMRecord {
         // reference exactly
         alignmentEnd = isPlaced() ?
                 this.readFeatures.initializeAlignmentEnd(alignmentStart, readLength) :
-                Slice.NO_ALIGNMENT_END;
+                AlignmentContext.NO_ALIGNMENT_END;
     }
 
     /**

@@ -153,11 +153,14 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final long dummyByteOffset = 0;
         final Container container1 = FACTORY.buildContainer(records.subList(0, RECORDS_PER_SLICE), dummyByteOffset);
-        Assert.assertTrue(container1.getReferenceContext().isMultiRef());
+        Assert.assertTrue(container1.getAlignmentContext().getReferenceContext().isMultiRef());
 
         final Container container2 = FACTORY.buildContainer(records.subList(RECORDS_PER_SLICE, RECORDS_PER_SLICE * 2), dummyByteOffset);
-        Assert.assertTrue(container2.getReferenceContext().isMultiRef());
+        Assert.assertTrue(container2.getAlignmentContext().getReferenceContext().isMultiRef());
 
+        //TODO: thee containers are not properly initialized and not ready fot indexing (specifically, they
+        // don't use CRAMContainerStreamWriter, so the don't do everything currently in
+        // CRAMContainerStreamWriter::writeContainer, such as mate pair resolution
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(container1, container2));
 
         assertIndexMetadata(index, 0, expectedMapped0, expectedUnmapped0);
@@ -182,7 +185,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
     private void unplacedContainers(final IndexContainers indexMethod) {
         final long dummyByteOffset = 0;
         final Container unplacedContainer = FACTORY.buildContainer(CRAMStructureTestUtil.getUnplacedRecords(RECORDS_PER_SLICE), dummyByteOffset);
-        Assert.assertTrue(unplacedContainer.getReferenceContext().isUnmappedUnplaced());
+        Assert.assertTrue(unplacedContainer.getAlignmentContext().getReferenceContext().isUnmappedUnplaced());
 
         // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
         // but not both.  We normally treat these weird edge cases as unplaced, but for BAM indexing we only check start position
@@ -193,14 +196,14 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final Container halfUnplacedNoStartContainer = FACTORY.buildContainer(
                 CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(RECORDS_PER_SLICE, 0),
                 dummyByteOffset);
-        Assert.assertTrue(halfUnplacedNoStartContainer.getReferenceContext().isUnmappedUnplaced());
+        Assert.assertTrue(halfUnplacedNoStartContainer.getAlignmentContext().getReferenceContext().isUnmappedUnplaced());
 
         // these will NOT be considered unplaced by CRAMBAIIndexer
 
         final Container halfUnplacedNoRefContainer = FACTORY.buildContainer(
                 CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(RECORDS_PER_SLICE),
                 dummyByteOffset);
-        Assert.assertTrue(halfUnplacedNoRefContainer.getReferenceContext().isUnmappedUnplaced());
+        Assert.assertTrue(halfUnplacedNoRefContainer.getAlignmentContext().getReferenceContext().isUnmappedUnplaced());
 
         final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexMethod.index(
                 unplacedContainer, halfUnplacedNoStartContainer, halfUnplacedNoRefContainer));

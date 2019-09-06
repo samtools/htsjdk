@@ -50,9 +50,6 @@ import java.util.stream.Collectors;
 public class Slice {
     private static final Log log = Log.getInstance(Slice.class);
 
-    public static final int NO_ALIGNMENT_START = -1;
-    public static final int NO_ALIGNMENT_SPAN = 0;
-    public static final int NO_ALIGNMENT_END = SAMRecord.NO_ALIGNMENT_START; // 0
     private static final int MD5_BYTE_SIZE = 16;
 
     // for indexing purposes
@@ -61,32 +58,21 @@ public class Slice {
 
     ////////////////////////////////
     // Slice header values as defined in the spec
+    // TODO: only tests mutate this so fix tests and change to final
+    //private final AlignmentContext alignmentContext;
+    private AlignmentContext alignmentContext;
 
-    // NOTE: a CRAI Entry has:
-    //    private final int sequenceId;
-    //    private final int alignmentStart;
-    //    private final int alignmentSpan;
-    //    private final long containerStartByteOffset;
-    //    private final int sliceByteOffsetFromCompressionHeaderStart;
-    //    private final int sliceByteSize;
-
-    private final ReferenceContext referenceContext;
-
-    // AlignmentSpan
-    // minimum alignment start of the reads in this Slice using a 1-based coordinate system
-    private int alignmentStart = NO_ALIGNMENT_START;
-    private int alignmentSpan = NO_ALIGNMENT_SPAN;
     // read counters per type, for BAMIndexMetaData.recordMetaData()
     // see also AlignmentSpan and CRAMBAIIndexer.processContainer()
     private int mappedReadsCount = 0;
     private int unmappedReadsCount = 0;
     private int unplacedReadsCount = 0;
 
-
-    private final int nRecords;
     private final long globalRecordCounter;
+
     // total number of blocks in this slice, including the core block, but not counting the slice header block
     private final int nBlocks;
+    private final int nRecords;
     private int[] contentIDs;
     private byte[] refMD5 = new byte[MD5_BYTE_SIZE];
     private SAMBinaryTagAndValue sliceTags;
@@ -100,7 +86,6 @@ public class Slice {
     private int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
     private long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
     private int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
-
     //TODO: used to compute index chunks
     private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
 
@@ -114,13 +99,15 @@ public class Slice {
         }
 
         final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getRawContent());
+        this.compressionHeader = compressionHeader;
 
         //TODO: validate that this matches the container
         // if MULTIPLE_REFERENCE_ID, enclosing container must also be MULTIPLE_REFERENCE_ID
-        this.referenceContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
-        this.compressionHeader = compressionHeader;
-        setAlignmentStart(ITF8.readUnsignedITF8(parseInputStream));
-        setAlignmentSpan(ITF8.readUnsignedITF8(parseInputStream));
+        final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
+        final int alignmentStart = ITF8.readUnsignedITF8(parseInputStream);
+        final int alignmentSpan = (ITF8.readUnsignedITF8(parseInputStream));
+        this.alignmentContext = new AlignmentContext(refContext, alignmentStart, alignmentSpan);
+
         this.nRecords = ITF8.readUnsignedITF8(parseInputStream);
         this.globalRecordCounter = LTF8.readUnsignedLTF8(parseInputStream);
         this.nBlocks = ITF8.readUnsignedITF8(parseInputStream);
@@ -148,7 +135,8 @@ public class Slice {
     // TODO: where the comp header is irrelevant (ie. indexing) ? Unfortunately, this is the constructor thats
     // TODO: used all over the place...
     public Slice(final ReferenceContext refContext) {
-        this.referenceContext = refContext;
+        // TODO: dummy alignment context ??
+        this.alignmentContext = new AlignmentContext(refContext);
         this.nBlocks = 0;
         this.nRecords = 0;
         this.globalRecordCounter = 0;
@@ -223,23 +211,31 @@ public class Slice {
             }
         }
 
+        ReferenceContext referenceContext;
         switch (referenceContexts.size()) {
             case 0:
-                this.referenceContext = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
+                referenceContext = ReferenceContext.UNMAPPED_UNPLACED_CONTEXT;
                 break;
             case 1:
                 // SINGLE_REFERENCE_TYPE context: all reads placed on the same reference
                 // or UNMAPPED_UNPLACED_CONTEXT: all reads unplaced
-                this.referenceContext = referenceContexts.iterator().next();
+                referenceContext = referenceContexts.iterator().next();
                 break;
             default:
                 // placed reads on multiple references and/or a combination of placed and unplaced reads
-                this.referenceContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
+                referenceContext = ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         }
 
-        if (this.referenceContext.isMappedSingleRef()) {
-            alignmentStart = singleRefAlignmentStart;
-            alignmentSpan = singleRefAlignmentEnd - singleRefAlignmentStart + 1;
+        if (referenceContext.isMappedSingleRef()) {
+            this.alignmentContext = new AlignmentContext(
+                    referenceContext,
+                    singleRefAlignmentStart,
+                    singleRefAlignmentEnd - singleRefAlignmentStart + 1);
+        } else {
+            this.alignmentContext = new AlignmentContext(
+                    referenceContext,
+                    AlignmentContext.NO_ALIGNMENT_START,
+                    AlignmentContext.NO_ALIGNMENT_SPAN);
         }
 
         sliceTags = hasher.getAsTags();
@@ -248,28 +244,36 @@ public class Slice {
         this.globalRecordCounter = globalRecordCounter;
 
         final CramRecordWriter writer = new CramRecordWriter(this);
-        writer.writeToSliceBlocks(records, this.alignmentStart);
+        writer.writeToSliceBlocks(records, alignmentContext.getAlignmentStart());
 
-        // we can't calcualte the number o blocks unti after the record writer has written everything out
+        // we can't calculate the number of blocks until after the record writer has written everything out
         nBlocks = caclulateNumberOfBlocks();
     }
 
     // May be null
     public Block getSliceHeaderBlock() { return sliceHeaderBlock; }
 
-    public int getAlignmentStart() { return alignmentStart; }
+    public AlignmentContext getAlignmentContext() { return alignmentContext; }
+    //public ReferenceContext getReferenceContext() { return alignmentContext.getReferenceContext(); }
+    //public int getAlignmentStart() { return alignmentContext.getAlignmentStart(); }
+    //public int getAlignmentSpan() { return alignmentContext.getAlignmentSpan(); }
+
+    //TODO: these are test-only and cna go away and alignmentContext can be immutable
     public void setAlignmentStart(int alignmentStart) {
-        this.alignmentStart = alignmentStart;
-    }
-    public int getAlignmentSpan() {
-        return alignmentSpan;
+        alignmentContext = new AlignmentContext(
+                alignmentContext.getReferenceContext(),
+                alignmentStart,
+                alignmentContext.getAlignmentSpan());
+        //this.alignmentStart = alignmentStart;
     }
     public void setAlignmentSpan(int alignmentSpan) {
-        this.alignmentSpan = alignmentSpan;
+        alignmentContext = new AlignmentContext(
+                alignmentContext.getReferenceContext(),
+                alignmentContext.getAlignmentStart(),
+                alignmentSpan);
     }
 
     public SliceBlocks getSliceBlocks() { return sliceBlocks; }
-    public ReferenceContext getReferenceContext() { return referenceContext; }
     public int getNumberOfRecords() {
         return nRecords;
     }
@@ -399,7 +403,7 @@ public class Slice {
 
         final ArrayList<CRAMRecord> records = new ArrayList<>(nRecords);
 
-        int prevAlignmentStart = alignmentStart;
+        int prevAlignmentStart = alignmentContext.getAlignmentStart();
         for (int i = 0; i < nRecords; i++) {
             // read the new record and update the running prevAlignmentStart
             final CRAMRecord cramRecord = reader.read(landmarkIndex, i, prevAlignmentStart);
@@ -440,9 +444,9 @@ public class Slice {
 
     private static byte[] createSliceHeaderBlockContent(final int major, final Slice slice) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ITF8.writeUnsignedITF8(slice.getReferenceContext().getSerializableId(), byteArrayOutputStream);
-        ITF8.writeUnsignedITF8(slice.getAlignmentStart(), byteArrayOutputStream);
-        ITF8.writeUnsignedITF8(slice.getAlignmentSpan(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getAlignmentContext().getReferenceContext().getSerializableId(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getAlignmentContext().getAlignmentStart(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getAlignmentContext().getAlignmentSpan(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.getNumberOfRecords(), byteArrayOutputStream);
         LTF8.writeUnsignedLTF8(slice.getGlobalRecordCounter(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.getNumberOfBlocks(), byteArrayOutputStream);
@@ -527,52 +531,52 @@ public class Slice {
     }
 
     private void alignmentBordersSanityCheck(final byte[] ref) {
-        if (referenceContext.isUnmappedUnplaced()) {
+        if (alignmentContext.getReferenceContext().isUnmappedUnplaced()) {
             return;
         }
 
-        if (alignmentStart > 0 && referenceContext.isMappedSingleRef() && ref == null) {
+        if (alignmentContext.getAlignmentStart() > 0 && alignmentContext.getReferenceContext().isMappedSingleRef() && ref == null) {
             throw new IllegalArgumentException ("Mapped slice reference is null.");
         }
 
-        if (alignmentStart > ref.length) {
+        if (alignmentContext.getAlignmentStart() > ref.length) {
             log.error(String.format("Slice mapped outside of reference: seqID=%s, start=%d, counter=%d.",
-                    referenceContext, alignmentStart, globalRecordCounter));
+                    alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), globalRecordCounter));
             throw new RuntimeException("Slice mapped outside of the reference.");
         }
 
         //TODO: is it OK to proceed in this case ? why does this not throw ?
-        if (alignmentStart - 1 + alignmentSpan > ref.length) {
+        if (alignmentContext.getAlignmentStart() - 1 + alignmentContext.getAlignmentSpan() > ref.length) {
             log.warn(String.format("Slice partially mapped outside of reference: seqID=%s, start=%d, span=%d, counter=%d.",
-                    referenceContext, alignmentStart, alignmentSpan, globalRecordCounter));
+                    alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), globalRecordCounter));
         }
     }
 
     public boolean validateRefMD5(final byte[] ref) {
-        if (referenceContext.isMultiRef()) {
+        if (alignmentContext.getReferenceContext().isMultiRef()) {
             throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
         }
 
-        if (referenceContext.isUnmappedUnplaced()) {
+        if (alignmentContext.getReferenceContext().isUnmappedUnplaced()) {
             return true;
         }
 
         alignmentBordersSanityCheck(ref);
 
-        if (!validateRefMD5(ref, alignmentStart, alignmentSpan, refMD5)) {
+        if (!validateRefMD5(ref, alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), refMD5)) {
             final int shoulderLength = 10;
-            final String excerpt = getBrief(alignmentStart, alignmentSpan, ref, shoulderLength);
+            final String excerpt = getBrief(alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), ref, shoulderLength);
 
-            if (validateRefMD5(ref, alignmentStart, alignmentSpan - 1, refMD5)) {
+            if (validateRefMD5(ref, alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan() - 1, refMD5)) {
                 log.warn(String.format("Reference MD5 matches partially for slice %s:%d-%d, %s",
-                        referenceContext, alignmentStart,
-                        alignmentStart + alignmentSpan - 1, excerpt));
+                        alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(),
+                        alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1, excerpt));
                 return true;
             }
 
             log.error(String.format("Reference MD5 mismatch for slice %s:%d-%d, %s",
-                    referenceContext, alignmentStart, alignmentStart +
-                    alignmentSpan - 1, excerpt));
+                    alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentStart() +
+                            alignmentContext.getAlignmentSpan() - 1, excerpt));
             return false;
         }
 
@@ -585,6 +589,7 @@ public class Slice {
         return md5.equals(String.format("%032x", new BigInteger(1, expectedMD5)));
     }
 
+    //TODO: WTF - what the is "brief" ???
     private static String getBrief(final int startOneBased, final int span, final byte[] bases, final int shoulderLength) {
         if (span >= bases.length)
             return new String(bases);
@@ -608,32 +613,31 @@ public class Slice {
 
     @Override
     public String toString() {
-        return String.format("slice: seqID %s, start %d, span %d, records %d.",
-                referenceContext, alignmentStart, alignmentSpan, nRecords);
+        return String.format("slice: %s, records %d.", alignmentContext, nRecords);
     }
 
     // *calculate* the MD5 for this reference
     public void setRefMD5(final byte[] ref) {
-        if (referenceContext.isMultiRef()) {
+        if (alignmentContext.getReferenceContext().isMultiRef()) {
             //TODO: fix this
             //log.warn("Attempt to set MD5 on multiref slice");
             //throw new IllegalArgumentException("Attempt to set MD5 on multiref slice");
         }
         alignmentBordersSanityCheck(ref);
 
-        if (! referenceContext.isMappedSingleRef() && alignmentStart < 1) {
+        if (! alignmentContext.getReferenceContext().isMappedSingleRef() && alignmentContext.getAlignmentStart() < 1) {
             refMD5 = new byte[16];
             Arrays.fill(refMD5, (byte) 0);
 
             log.debug("Empty slice ref md5 is set.");
         } else {
 
-            final int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
+            final int span = Math.min(alignmentContext.getAlignmentSpan(), ref.length - alignmentContext.getAlignmentStart() + 1);
 
-            if (alignmentStart + span > ref.length + 1)
+            if (alignmentContext.getAlignmentStart() + span > ref.length + 1)
                 throw new RuntimeException("Invalid alignment boundaries.");
 
-            refMD5 = SequenceUtil.calculateMD5(ref, alignmentStart - 1, span);
+            refMD5 = SequenceUtil.calculateMD5(ref, alignmentContext.getAlignmentStart() - 1, span);
 
             if (log.isEnabled(Log.LogLevel.DEBUG)) {
                 final StringBuilder sb = new StringBuilder();
@@ -642,12 +646,12 @@ public class Slice {
                     sb.append(new String(ref));
                 else {
 
-                    sb.append(getBrief(alignmentStart, alignmentSpan, ref, shoulder));
+                    sb.append(getBrief(alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), ref, shoulder));
                 }
 
                 log.debug(String.format("Slice md5: %s for %s:%d-%d, %s",
                         String.format("%032x", new BigInteger(1, refMD5)),
-                        referenceContext, alignmentStart, alignmentStart + span - 1,
+                        alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentStart() + span - 1,
                         sb.toString()));
             }
         }
@@ -726,7 +730,7 @@ public class Slice {
         final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(
                 this,
                 validationStringency,
-                alignmentStart,
+                alignmentContext.getAlignmentStart(),
                 nRecords);
         return reader.getReferenceSpans();
     }
@@ -745,7 +749,7 @@ public class Slice {
 
         craiIndexInitializationCheck();
 
-        if (referenceContext.isMultiRef()) {
+        if (alignmentContext.getReferenceContext().isMultiRef()) {
             final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
 
             return spans.entrySet().stream()
@@ -759,11 +763,11 @@ public class Slice {
                     .collect(Collectors.toList());
         } else {
             // single ref or unmapped
-            final int sequenceId = referenceContext.getSerializableId();
+            final int sequenceId = alignmentContext.getReferenceContext().getSerializableId();
             return Collections.singletonList(new CRAIEntry(
                     sequenceId,
-                    alignmentStart,
-                    alignmentSpan,
+                    alignmentContext.getAlignmentStart(),
+                    alignmentContext.getAlignmentSpan(),
                     containerByteOffset,
                     byteOffsetFromCompressionHeaderStart,
                     byteSize));
