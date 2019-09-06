@@ -34,7 +34,7 @@ public class CRAIEntryTest extends HtsjdkTest {
         final long containerByteOffset = 12345;
         final Container container = new Container(
                 COMPRESSION_HEADER,
-                Arrays.asList(slice1, slice2), containerByteOffset, 0, 0, 0);
+                Arrays.asList(slice1, slice2), containerByteOffset, 0);
         final List<CRAIEntry> entries = container.getCRAIEntries();
 
         Assert.assertNotNull(entries);
@@ -78,20 +78,22 @@ public class CRAIEntryTest extends HtsjdkTest {
         }};
 
         final CompressionHeader compressionHeader = new CompressionHeaderFactory().build(allRecords, true);
-        final Slice slice1 = new Slice(records1, compressionHeader);
-        final Slice slice2 = new Slice(records2, compressionHeader);
+        final Slice slice1 = new Slice(records1, compressionHeader, 0L);
+        final Slice slice2 = new Slice(records2, compressionHeader, 0L);
 
-        slice1.setIndex(slice1Index);
+        slice1.setLandmarkIndex(slice1Index);
         slice1.setByteSize(sliceByteSize);
         slice1.setByteOffsetFromCompressionHeaderStart(slice1ByteOffsetFromContainer);
 
-        slice2.setIndex(slice2Index);
+        slice2.setLandmarkIndex(slice2Index);
         slice2.setByteSize(sliceByteSize);
         slice2.setByteOffsetFromCompressionHeaderStart(slice2ByteOffsetFromContainer);
 
         final Container container = new Container(
                 COMPRESSION_HEADER,
-                Arrays.asList(slice1, slice2), containerOffset, 0, 0, 0);
+                Arrays.asList(slice1, slice2),
+                containerOffset,
+                0);
 
         final List<CRAIEntry> entries = container.getCRAIEntries();
         Assert.assertNotNull(entries);

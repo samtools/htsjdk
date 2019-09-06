@@ -22,6 +22,9 @@ public class AlignmentSpan {
     private final int mappedCount;
     private final int unmappedCount;
 
+    // Slice also has:
+    // private int unplacedReadsCount = 0;
+
     /**
      * Create a new span with a multiple reads in it.
      *

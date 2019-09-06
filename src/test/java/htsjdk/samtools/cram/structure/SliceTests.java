@@ -129,7 +129,7 @@ public class SliceTests extends HtsjdkTest {
                                final int expectedAlignmentStart,
                                final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, coordinateSorted);
-        final Slice slice = new Slice(records, header);
+        final Slice slice = new Slice(records, header, 0L);
         final int expectedBaseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
         CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,
                 expectedAlignmentStart, expectedAlignmentSpan, TEST_RECORD_COUNT, expectedBaseCount);
@@ -204,7 +204,7 @@ public class SliceTests extends HtsjdkTest {
                                             final int expectedAlignmentStart,
                                             final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
-        final Slice slice = new Slice(records, header);
+        final Slice slice = new Slice(records, header, 0L);
         final int expectedBaseCount = records.size() * READ_LENGTH_FOR_TEST_RECORDS;
         CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,
                 expectedAlignmentStart, expectedAlignmentSpan, records.size(), expectedBaseCount);

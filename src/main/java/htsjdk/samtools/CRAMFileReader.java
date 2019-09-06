@@ -418,7 +418,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     @Override
     void setValidationStringency(final ValidationStringency validationStringency) {
         this.validationStringency = validationStringency;
-        if (iterator != null) iterator.setValidationStringency(validationStringency);
+        if (iterator != null) {
+            iterator.setValidationStringency(validationStringency);
+        }
     }
 
     @Override

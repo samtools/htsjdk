@@ -67,11 +67,11 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final Slice noByteOffsetFromContainer = new Slice(refContext);
         noByteOffsetFromContainer.setContainerByteOffset(123);
-        noByteOffsetFromContainer.setIndex(456);
+        noByteOffsetFromContainer.setLandmarkIndex(456);
 
         final Slice noContainerByteOffset = new Slice(refContext);
         noContainerByteOffset.setByteOffsetFromCompressionHeaderStart(789);
-        noContainerByteOffset.setIndex(456);
+        noContainerByteOffset.setLandmarkIndex(456);
 
         final Slice noIndex = new Slice(refContext);
         noIndex.setByteOffsetFromCompressionHeaderStart(789);
@@ -229,7 +229,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         // arbitrary - need these for indexing
         mapped.setByteOffsetFromCompressionHeaderStart(789);
         mapped.setContainerByteOffset(123);
-        mapped.setIndex(456);
+        mapped.setLandmarkIndex(456);
         return mapped;
     }
 

@@ -56,30 +56,21 @@ public class ContainerFactory {
         // break up the records into groups based on ref context, recodes/container, etc.
 
         final List<Slice> slices = new ArrayList<>();
-        int baseCount = 0;
         long lastGlobalRecordCounter = globalRecordCounter;
         for (int i = 0; i < records.size(); i += encodingStrategy.getRecordsPerSlice()) {
             final List<CRAMRecord> sliceRecords = records.subList(
                     i,
                     Math.min(records.size(),
                             i + encodingStrategy.getRecordsPerSlice()));
-            final Slice slice = new Slice(sliceRecords, compressionHeader);
-            // TODO: we might be building more than one container here...
-            slice.setGlobalRecordCounter(globalRecordCounter);
-            globalRecordCounter += slice.getNofRecords();
-            baseCount += slice.getBaseCount();
-            slices.add(slice);
+            slices.add(new Slice(sliceRecords, compressionHeader, globalRecordCounter));
+            globalRecordCounter += sliceRecords.size();
         }
 
-        //TODO: blockCount and baseCount should be able to be derived from within the constructor based on the slices,
-        //TODO: so they can be removed from this constructor's args
         final Container container = new Container(
                 compressionHeader,
                 slices,
                 containerByteOffset,
-                lastGlobalRecordCounter,
-                0,
-                baseCount);
+                lastGlobalRecordCounter);
 
         return container;
     }

@@ -101,7 +101,7 @@ public class CRAIIndex {
             slice.setMappedReadsCount(0);
             slice.setUnmappedReadsCount(0);
             slice.setUnplacedReadsCount(0);
-            slice.setIndex(0);
+            slice.setLandmarkIndex(0);
 
             indexer.processAsSingleReferenceSlice(slice);
         }

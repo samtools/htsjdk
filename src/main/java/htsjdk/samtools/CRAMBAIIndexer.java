@@ -134,15 +134,14 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             return;
         }
 
-        int sliceIndex = 0;
+//        int landmarkIndex = 0;
         for (final Slice slice : container.getSlices()) {
-            slice.setIndex(sliceIndex++);
+//            slice.setLandmarkIndex(sliceIndex++);
             if (slice.getReferenceContext().isMultiRef()) {
                 final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(validationStringency);
 
-                // TODO why are we updating the original slice here?
-
-                slice.setIndex(sliceIndex++);
+//                // TODO why are we updating the original slice here?
+//                slice.setLandmarkIndex(sliceIndex++);
 
                 /**
                  * Unmapped span must be processed after mapped spans:
@@ -153,7 +152,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                     final Slice fakeSlice = new Slice(refContext);
                     fakeSlice.setContainerByteOffset(slice.getContainerByteOffset());
                     fakeSlice.setByteOffsetFromCompressionHeaderStart(slice.getByteOffsetFromCompressionHeaderStart());
-                    fakeSlice.setIndex(slice.getIndex());
+                    fakeSlice.setLandmarkIndex(slice.getLandmarkIndex());
 
                     fakeSlice.setAlignmentStart(span.getStart());
                     fakeSlice.setAlignmentSpan(span.getSpan());
@@ -167,7 +166,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                     final Slice fakeSlice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
                     fakeSlice.setContainerByteOffset(slice.getContainerByteOffset());
                     fakeSlice.setByteOffsetFromCompressionHeaderStart(slice.getByteOffsetFromCompressionHeaderStart());
-                    fakeSlice.setIndex(slice.getIndex());
+                    fakeSlice.setLandmarkIndex(slice.getLandmarkIndex());
 
                     fakeSlice.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
                     fakeSlice.setAlignmentSpan(Slice.NO_ALIGNMENT_SPAN);
@@ -407,8 +406,8 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             // process chunks
 
-            final long chunkStart = (slice.getContainerByteOffset() << 16) | slice.getIndex();
-            final long chunkEnd = ((slice.getContainerByteOffset() << 16) | slice.getIndex()) + 1;
+            final long chunkStart = (slice.getContainerByteOffset() << 16) | slice.getLandmarkIndex();
+            final long chunkEnd = ((slice.getContainerByteOffset() << 16) | slice.getLandmarkIndex()) + 1;
 
             final Chunk newChunk = new Chunk(chunkStart, chunkEnd);
             bin.addChunk(newChunk);
