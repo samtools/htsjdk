@@ -33,23 +33,21 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator {
-    long containerCount = 0l;
-
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
     private final ArrayList<SAMRecord> records;
     private final CramNormalizer normalizer;
+
     private byte[] referenceBases;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
 
-    //TODO: encapsulate this
-    public Container container;
+    private Container container;
     private SamReader mReader;
     long firstContainerOffset = 0;
     private final Iterator<Container> containerIterator;
 
     // Keep a cache of re-usable compressor instances to reduce the need to repeatedly reallocate
-    // large numbers of small temporary objects, especially the the RANS compressor, which
+    // large numbers of small temporary objects, especially for the RANS compressor, which
     // allocates ~256k small objects every time its instantiated.
     private final CompressorCache compressorCache = new CompressorCache();
 
@@ -62,17 +60,9 @@ public class CRAMIterator implements SAMRecordIterator {
 
     private final CRAMReferenceSource referenceSource;
 
-    private Iterator<SAMRecord> iterator = Collections.<SAMRecord>emptyList().iterator();
+    private Iterator<SAMRecord> iterator = Collections.EMPTY_LIST.iterator();
 
     private ValidationStringency validationStringency = ValidationStringency.DEFAULT_STRINGENCY;
-
-    public ValidationStringency getValidationStringency() {
-        return validationStringency;
-    }
-
-    public void setValidationStringency(final ValidationStringency validationStringency) {
-        this.validationStringency = validationStringency;
-    }
 
     public CRAMIterator(final InputStream inputStream,
                         final CRAMReferenceSource referenceSource,
@@ -114,11 +104,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this(seekableStream, referenceSource, coordinates, ValidationStringency.DEFAULT_STRINGENCY);
     }
 
-    public CramHeader getCramHeader() {
-        return cramHeader;
-    }
-
-    void nextContainer() throws IllegalArgumentException, CRAMException {
+    private void nextContainer() throws IllegalArgumentException, CRAMException {
 
         if (containerIterator != null) {
             if (!containerIterator.hasNext()) {
@@ -140,7 +126,6 @@ public class CRAMIterator implements SAMRecordIterator {
         }
 
         records.clear();
-        containerCount++;
         cramRecords = container.getCRAMRecords(validationStringency, compressorCache);
 
         final ReferenceContext containerContext = container.getReferenceContext();
@@ -165,9 +150,6 @@ public class CRAMIterator implements SAMRecordIterator {
                 }
         }
 
-        if ((containerCount % 5000) == 0) {
-            System.out.println(String.format("Read container %,d (%s)", containerCount, containerContext));
-        }
         for (final Slice slice : container.getSlices()) {
             final ReferenceContext sliceContext = slice.getReferenceContext();
 
@@ -284,6 +266,18 @@ public class CRAMIterator implements SAMRecordIterator {
     @Override
     public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
         return SamReader.AssertingIterator.of(this).assertSorted(sortOrder);
+    }
+
+    public CramHeader getCramHeader() {
+        return cramHeader;
+    }
+
+    public ValidationStringency getValidationStringency() {
+        return validationStringency;
+    }
+
+    public void setValidationStringency(final ValidationStringency validationStringency) {
+        this.validationStringency = validationStringency;
     }
 
     public SamReader getFileSource() {

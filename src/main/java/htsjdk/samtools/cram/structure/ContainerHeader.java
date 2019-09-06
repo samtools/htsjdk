@@ -22,6 +22,7 @@ public class ContainerHeader {
     // uses a 1-based coordinate system
     private final int alignmentStart;
     private final int alignmentSpan;
+
     private final int recordCount;
     private final long globalRecordCounter;
     private final long baseCount;

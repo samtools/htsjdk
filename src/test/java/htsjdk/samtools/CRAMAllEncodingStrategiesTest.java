@@ -54,10 +54,10 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     @Test
     public final void testReadOnlyDefaultStrategy() throws IOException {
-        final File cramSourceFile = new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram");
-        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
-        //final File cramSourceFile =new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
-        //final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta");
+        //final File cramSourceFile = new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram");
+        //final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+        final File cramSourceFile =new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
+        final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta");
         System.out.println(String.format("Test file size: %,d (%s)", Files.size(cramSourceFile.toPath()), referenceFile.toPath()));
         try (final SamReader reader = SamReaderFactory.makeDefault()
             .referenceSequence(referenceFile)

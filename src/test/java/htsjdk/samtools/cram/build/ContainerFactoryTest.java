@@ -31,7 +31,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
         Assert.assertEquals(container.getContainerHeader().getRecordCount(), recordsPerSlice);
         Assert.assertEquals(container.getSlices().size(), 1);
-        Assert.assertEquals(container.getSlices().get(0).getNofRecords(), recordsPerSlice);
+        Assert.assertEquals(container.getSlices().get(0).getNumberOfRecords(), recordsPerSlice);
 
         // build a container with 1 too many records to fit into a slice
         // 2 slices: recordsPerSlice records and 1 record
@@ -41,8 +41,8 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
         Assert.assertEquals(container2.getContainerHeader().getRecordCount(), recordsPerSlice + 1);
         Assert.assertEquals(container2.getSlices().size(), 2);
-        Assert.assertEquals(container2.getSlices().get(0).getNofRecords(), recordsPerSlice);
-        Assert.assertEquals(container2.getSlices().get(1).getNofRecords(), 1);
+        Assert.assertEquals(container2.getSlices().get(0).getNumberOfRecords(), recordsPerSlice);
+        Assert.assertEquals(container2.getSlices().get(1).getNumberOfRecords(), 1);
     }
 
     @DataProvider(name = "containerStateTests")

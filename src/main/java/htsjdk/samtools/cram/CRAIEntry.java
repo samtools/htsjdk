@@ -18,6 +18,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     // this Slice's Container's offset in bytes from the beginning of the stream
     // equal to Slice.containerByteOffset and Container.byteOffset
     private final long containerStartByteOffset;
+
     // this Slice's offset in bytes from the beginning of its Container's Compression Header
     // equal to Slice.byteOffsetFromCompressionHeaderStart and Container.landmarks[Slice.index]
     private final int sliceByteOffsetFromCompressionHeaderStart;

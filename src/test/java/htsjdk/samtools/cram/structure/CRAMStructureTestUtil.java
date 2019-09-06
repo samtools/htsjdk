@@ -190,7 +190,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         slice.setByteOffsetFromCompressionHeaderStart(1);
         slice.setContainerByteOffset(1);
         slice.setByteSize(1);
-        slice.setIndex(1);
+        slice.setLandmarkIndex(1);
 
         return slice;
     }
@@ -215,7 +215,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
 
     private static Slice getNoIndexSlice() {
         final Slice noIndex = getIndexInitializedSlice();
-        noIndex.setIndex(Slice.UNINITIALIZED_INDEXING_PARAMETER);
+        noIndex.setLandmarkIndex(Slice.UNINITIALIZED_INDEXING_PARAMETER);
         return noIndex;
     }
 
@@ -250,7 +250,7 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         Assert.assertEquals(slice.getReferenceContext(), expectedReferenceContext);
         Assert.assertEquals(slice.getAlignmentStart(), expectedAlignmentStart);
         Assert.assertEquals(slice.getAlignmentSpan(), expectedAlignmentSpan);
-        Assert.assertEquals(slice.getNofRecords(), expectedRecordCount);
+        Assert.assertEquals(slice.getNumberOfRecords(), expectedRecordCount);
         Assert.assertEquals(slice.getBaseCount(), expectedBaseCount);
     }
 

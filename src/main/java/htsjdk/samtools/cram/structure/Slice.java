@@ -53,56 +53,67 @@ public class Slice {
     public static final int NO_ALIGNMENT_START = -1;
     public static final int NO_ALIGNMENT_SPAN = 0;
     public static final int NO_ALIGNMENT_END = SAMRecord.NO_ALIGNMENT_START; // 0
+    private static final int MD5_BYTE_SIZE = 16;
 
     // for indexing purposes
     //TODO: this should be the same as CRAMRecord.SLICE_INDEX_DEFAULT when used for sliceIndex
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
 
     ////////////////////////////////
-    // Start slice header values
-    // header values as defined in the specs, in addition to sequenceId from ReferenceContext
-    // int sequenceID
+    // Slice header values as defined in the spec
+
+    // NOTE: a CRAI Entry has:
+    //    private final int sequenceId;
+    //    private final int alignmentStart;
+    //    private final int alignmentSpan;
+    //    private final long containerStartByteOffset;
+    //    private final int sliceByteOffsetFromCompressionHeaderStart;
+    //    private final int sliceByteSize;
+
     private final ReferenceContext referenceContext;
-    // minimum alignment start of the reads in this Slice
-    // uses a 1-based coordinate system
+
+    // AlignmentSpan
+    // minimum alignment start of the reads in this Slice using a 1-based coordinate system
     private int alignmentStart = NO_ALIGNMENT_START;
     private int alignmentSpan = NO_ALIGNMENT_SPAN;
-    private int nofRecords = -1;
-    private long globalRecordCounter = -1;
-    // total number of blocks in this slice, including the core block
-    private int nofBlocks = -1;
-    private int[] contentIDs;
-    // embeddedReferenceContentID (stored in SliceBlocks)..
-    private byte[] refMD5 = new byte[16];
-    private SAMBinaryTagAndValue sliceTags;
-    // End slice header values
-    ////////////////////////////////
-
-    private Block headerBlock;
-    private CompressionHeader compressionHeader;
-    private final SliceBlocks sliceBlocks = new SliceBlocks();
-
-    private int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
-    private long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
-    private int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
-    private int index = UNINITIALIZED_INDEXING_PARAMETER;
-    // to pass this to the container:
-    private long baseCount;
-
     // read counters per type, for BAMIndexMetaData.recordMetaData()
     // see also AlignmentSpan and CRAMBAIIndexer.processContainer()
     private int mappedReadsCount = 0;
     private int unmappedReadsCount = 0;
     private int unplacedReadsCount = 0;
 
+
+    private final int nRecords;
+    private final long globalRecordCounter;
+    // total number of blocks in this slice, including the core block, but not counting the slice header block
+    private final int nBlocks;
+    private int[] contentIDs;
+    private byte[] refMD5 = new byte[MD5_BYTE_SIZE];
+    private SAMBinaryTagAndValue sliceTags;
+    // End slice header values
+    ////////////////////////////////
+
+    private Block sliceHeaderBlock;
+    private CompressionHeader compressionHeader;
+    private final SliceBlocks sliceBlocks = new SliceBlocks();
+
+    private int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
+    private long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
+    private int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
+
+    //TODO: used to compute index chunks
+    private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
+
+    private long baseCount;
+
     //TODO: this is the case where we're reading the slice from an input stream
     public Slice(final int major, final CompressionHeader compressionHeader, final InputStream inputStream) {
-        headerBlock = Block.read(major, inputStream);
-        if (headerBlock.getContentType() != BlockContentType.MAPPED_SLICE) {
-            throw new RuntimeException("Slice Header Block expected, found:  " + headerBlock.getContentType().name());
+        sliceHeaderBlock = Block.read(major, inputStream);
+        if (sliceHeaderBlock.getContentType() != BlockContentType.MAPPED_SLICE) {
+            throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
         }
 
-        final InputStream parseInputStream = new ByteArrayInputStream(headerBlock.getRawContent());
+        final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getRawContent());
 
         //TODO: validate that this matches the container
         // if MULTIPLE_REFERENCE_ID, enclosing container must also be MULTIPLE_REFERENCE_ID
@@ -110,23 +121,23 @@ public class Slice {
         this.compressionHeader = compressionHeader;
         setAlignmentStart(ITF8.readUnsignedITF8(parseInputStream));
         setAlignmentSpan(ITF8.readUnsignedITF8(parseInputStream));
-        setNofRecords(ITF8.readUnsignedITF8(parseInputStream));
-        setGlobalRecordCounter(LTF8.readUnsignedLTF8(parseInputStream));
-        setNofBlocks(ITF8.readUnsignedITF8(parseInputStream));
+        this.nRecords = ITF8.readUnsignedITF8(parseInputStream);
+        this.globalRecordCounter = LTF8.readUnsignedLTF8(parseInputStream);
+        this.nBlocks = ITF8.readUnsignedITF8(parseInputStream);
 
         setContentIDs(CramIntArray.array(parseInputStream));
         // embedded ref content id == -1 if embedded ref not present
         setEmbeddedReferenceContentID(ITF8.readUnsignedITF8(parseInputStream));
-        setReferenceMD5(new byte[16]);
-        InputStreamUtils.readFully(parseInputStream, getRefMD5(), 0, getRefMD5().length);
-
+        final byte[] sliceMD5 = new byte[MD5_BYTE_SIZE];
+        InputStreamUtils.readFully(parseInputStream, sliceMD5, 0, sliceMD5.length);
+        setReferenceMD5(sliceMD5);
         final byte[] bytes = InputStreamUtils.readFully(parseInputStream);
 
         if (major >= CramVersions.CRAM_v3.major) {
             setSliceTags(BinaryTagCodec.readTags(bytes, 0, bytes.length, ValidationStringency.DEFAULT_STRINGENCY));
         }
 
-        sliceBlocks.readBlocks(major, nofBlocks, inputStream);
+        sliceBlocks.readBlocks(major, nBlocks, inputStream);
     }
 
     /**
@@ -138,6 +149,9 @@ public class Slice {
     // TODO: used all over the place...
     public Slice(final ReferenceContext refContext) {
         this.referenceContext = refContext;
+        this.nBlocks = 0;
+        this.nRecords = 0;
+        this.globalRecordCounter = 0;
     }
 
     /**
@@ -170,7 +184,7 @@ public class Slice {
      * @param records the input records
      * @return the initialized Slice
      */
-    public Slice(final List<CRAMRecord> records, final CompressionHeader compressionHeader) {
+    public Slice(final List<CRAMRecord> records, final CompressionHeader compressionHeader, final long globalRecordCounter) {
         this.compressionHeader = compressionHeader;
 
         final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
@@ -230,28 +244,23 @@ public class Slice {
 
         sliceTags = hasher.getAsTags();
         this.baseCount = baseCount;
-        nofRecords = records.size();
+        nRecords = records.size();
+        this.globalRecordCounter = globalRecordCounter;
 
         final CramRecordWriter writer = new CramRecordWriter(this);
         writer.writeToSliceBlocks(records, this.alignmentStart);
+
+        // we can't calcualte the number o blocks unti after the record writer has written everything out
+        nBlocks = caclulateNumberOfBlocks();
     }
 
     // May be null
-    public Block getHeaderBlock() { return headerBlock; }
+    public Block getSliceHeaderBlock() { return sliceHeaderBlock; }
 
-    public SliceBlocks getSliceBlocks() { return sliceBlocks; }
-
-    public ReferenceContext getReferenceContext() {
-        return referenceContext;
-    }
-
-    public int getAlignmentStart() {
-        return alignmentStart;
-    }
+    public int getAlignmentStart() { return alignmentStart; }
     public void setAlignmentStart(int alignmentStart) {
         this.alignmentStart = alignmentStart;
     }
-
     public int getAlignmentSpan() {
         return alignmentSpan;
     }
@@ -259,37 +268,22 @@ public class Slice {
         this.alignmentSpan = alignmentSpan;
     }
 
-    public int getNofRecords() {
-        return nofRecords;
+    public SliceBlocks getSliceBlocks() { return sliceBlocks; }
+    public ReferenceContext getReferenceContext() { return referenceContext; }
+    public int getNumberOfRecords() {
+        return nRecords;
     }
-    private void setNofRecords(int nofRecords) {
-        this.nofRecords = nofRecords;
-    }
-
     public long getGlobalRecordCounter() {
         return globalRecordCounter;
     }
-    public void setGlobalRecordCounter(long globalRecordCounter) {
-        this.globalRecordCounter = globalRecordCounter;
-    }
-
-    public int getNofBlocks() {
-        return nofBlocks;
-    }
-    public void setNofBlocks(int nofBlocks) {
-        this.nofBlocks = nofBlocks;
-    }
-
+    public int getNumberOfBlocks() { return nBlocks; }
     public int[] getContentIDs() {
         return contentIDs;
     }
     public void setContentIDs(int[] contentIDs) {
         this.contentIDs = contentIDs;
     }
-
-    public byte[] getRefMD5() {
-        return refMD5;
-    }
+    public byte[] getRefMD5() { return refMD5; }
 
     /**
      * The Slice's offset in bytes from the beginning of the Container's Compression Header
@@ -337,12 +331,12 @@ public class Slice {
      *
      * Used by BAI indexing only
      */
-    public int getIndex() {
-        return index;
+    public int getLandmarkIndex() {
+        return landmarkIndex;
     }
 
-    public void setIndex(int index) {
-        this.index = index;
+    public void setLandmarkIndex(int landmarkIndex) {
+        this.landmarkIndex = landmarkIndex;
     }
 
     public long getBaseCount() {
@@ -384,6 +378,7 @@ public class Slice {
     public void setReferenceMD5(final byte[] ref) {
         refMD5 = ref;
     }
+
     public void setEmbeddedReferenceContentID(final int embeddedRefContentID) { sliceBlocks.setEmbeddedReferenceContentID(embeddedRefContentID); }
     public int getEmbeddedReferenceContentID() { return sliceBlocks.getEmbeddedReferenceContentID(); }
 
@@ -402,18 +397,25 @@ public class Slice {
     public ArrayList<CRAMRecord> getRecords(final CompressorCache compressorCache, final ValidationStringency validationStringency) {
         final CramRecordReader reader = new CramRecordReader(this, compressorCache, validationStringency);
 
-        final ArrayList<CRAMRecord> records = new ArrayList<>(nofRecords);
+        final ArrayList<CRAMRecord> records = new ArrayList<>(nRecords);
 
         int prevAlignmentStart = alignmentStart;
-        for (int i = 0; i < nofRecords; i++) {
+        for (int i = 0; i < nRecords; i++) {
             // read the new record and update the running prevAlignmentStart
-            final CRAMRecord cramRecord = reader.read(index, i, prevAlignmentStart);
+            final CRAMRecord cramRecord = reader.read(landmarkIndex, i, prevAlignmentStart);
             prevAlignmentStart = cramRecord.getAlignmentStart();
 
             records.add(cramRecord);
         }
 
         return records;
+    }
+
+    private int caclulateNumberOfBlocks() {
+        // Each Slice has 1 core data block, plus zero or more external data blocks.
+        // Since an embedded reference block is just stored as an external block, it is included in
+        // the external block count, and does not need to be counted separately.
+        return 1 + getSliceBlocks().getNumberOfExternalBlocks();
     }
 
     public void write(final int major, final OutputStream outputStream) {
@@ -423,15 +425,15 @@ public class Slice {
         // Each Slice has 1 core data block, plus zero or more external data blocks.
         // Since an embedded reference block is just stored as an external block, it is included in
         // the external block count, and does not need to be counted separately.
-        setNofBlocks(1 + getSliceBlocks().getNumberOfExternalBlocks());
+        //setNofBlocks(1 + getSliceBlocks().getNumberOfExternalBlocks());
         setContentIDs(new int[getSliceBlocks().getNumberOfExternalBlocks()]);
         final int i = 0;
         for (final int id : getSliceBlocks().getExternalContentIDs()) {
             getContentIDs()[i] = id;
         }
         // establish our header block before writing
-        headerBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, this));
-        headerBlock.write(major, outputStream);
+        sliceHeaderBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, this));
+        sliceHeaderBlock.write(major, outputStream);
         // writes the core, and external blocks
         getSliceBlocks().writeBlocks(major, outputStream);
     }
@@ -441,9 +443,9 @@ public class Slice {
         ITF8.writeUnsignedITF8(slice.getReferenceContext().getSerializableId(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.getAlignmentStart(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.getAlignmentSpan(), byteArrayOutputStream);
-        ITF8.writeUnsignedITF8(slice.getNofRecords(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getNumberOfRecords(), byteArrayOutputStream);
         LTF8.writeUnsignedLTF8(slice.getGlobalRecordCounter(), byteArrayOutputStream);
-        ITF8.writeUnsignedITF8(slice.getNofBlocks(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getNumberOfBlocks(), byteArrayOutputStream);
 
         slice.setContentIDs(new int[slice.getSliceBlocks().getNumberOfExternalBlocks()]);
         int i = 0;
@@ -491,7 +493,7 @@ public class Slice {
             error.append("Cannot index this Slice for BAI because its containerByteOffset is unknown.").append(System.lineSeparator());
         }
 
-        if (index == UNINITIALIZED_INDEXING_PARAMETER) {
+        if (landmarkIndex == UNINITIALIZED_INDEXING_PARAMETER) {
             error.append("Cannot index this Slice for BAI because its index is unknown.").append(System.lineSeparator());
         }
 
@@ -503,8 +505,6 @@ public class Slice {
     /**
      * Confirm that we have initialized the 3 CRAI index parameters:
      * byteOffsetFromCompressionHeaderStart, containerByteOffset, and byteSize
-     *
-     * NOTE: this is currently unused because we always use BAI
      */
     void craiIndexInitializationCheck() {
         final StringBuilder error = new StringBuilder();
@@ -609,7 +609,7 @@ public class Slice {
     @Override
     public String toString() {
         return String.format("slice: seqID %s, start %d, span %d, records %d.",
-                referenceContext, alignmentStart, alignmentSpan, nofRecords);
+                referenceContext, alignmentStart, alignmentSpan, nRecords);
     }
 
     // *calculate* the MD5 for this reference
@@ -727,7 +727,7 @@ public class Slice {
                 this,
                 validationStringency,
                 alignmentStart,
-                nofRecords);
+                nRecords);
         return reader.getReferenceSpans();
     }
 

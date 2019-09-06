@@ -73,14 +73,7 @@ public class ContainerTest extends HtsjdkTest {
                                          final int expectedAlignmentStart,
                                          final int expectedAlignmentSpan) {
         final long byteOffset = 536635;
-        //final Container container = new Container(slices, COMPRESSION_HEADER, byteOffset);
-        final Container container = new Container(
-                COMPRESSION_HEADER,
-                slices,
-                byteOffset,
-                0,
-                0,
-                0);
+        final Container container = new Container(COMPRESSION_HEADER, slices, byteOffset, 0);
         CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, byteOffset);
     }
 
@@ -109,14 +102,7 @@ public class ContainerTest extends HtsjdkTest {
     @Test(dataProvider = "illegalCombinationTestCases", expectedExceptions = CRAMException.class)
     public static void illegalCombinationsStateTest(final Slice one, final Slice another) {
         final long dummyByteOffset = 0;
-        new Container(
-                COMPRESSION_HEADER,
-                Arrays.asList(one, another),
-                dummyByteOffset,
-                0,
-                0,
-                0);
-        //new Container(Arrays.asList(one, another), COMPRESSION_HEADER, dummyByteOffset);
+        new Container(COMPRESSION_HEADER, Arrays.asList(one, another), dummyByteOffset, 0);
     }
 
     @DataProvider(name = "getSpansTestCases")
