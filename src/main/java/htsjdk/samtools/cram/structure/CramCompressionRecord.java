@@ -145,8 +145,8 @@ public class CramCompressionRecord {
 
     private void intializeAlignmentBoundaries() {
         if (!isPlaced()) {
-            alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
-            alignmentEnd = Slice.NO_ALIGNMENT_END;
+            alignmentSpan = AlignmentContext.NO_ALIGNMENT_SPAN;
+            alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
             return;
         }
 

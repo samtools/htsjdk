@@ -10,7 +10,7 @@ public class AlignmentSpan {
      * A constant to represent a span of unmapped-unplaced reads.
      */
     public static final AlignmentSpan UNPLACED_SPAN =
-            new AlignmentSpan(Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, 0, 0);
+            new AlignmentSpan(AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN, 0, 0);
 
     // minimum alignment start of the reads represented by this span
     // uses a 1-based coordinate system
@@ -24,6 +24,13 @@ public class AlignmentSpan {
 
     // Slice also has:
     // private int unplacedReadsCount = 0;
+
+    public AlignmentSpan(final AlignmentContext alignmentContext, final int mappedCount, final int unmappedCount) {
+        this.start = alignmentContext.getAlignmentStart();
+        this.span = alignmentContext.getAlignmentSpan();
+        this.mappedCount = mappedCount;
+        this.unmappedCount = unmappedCount;
+    }
 
     /**
      * Create a new span with a multiple reads in it.

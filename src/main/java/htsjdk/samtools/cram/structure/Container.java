@@ -94,8 +94,8 @@ public class Container {
             slice.setContainerByteOffset(containerByteOffset);
         }
 
-        int alignmentStart = Slice.NO_ALIGNMENT_START;
-        int alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+        int alignmentStart = AlignmentContext.NO_ALIGNMENT_START;
+        int alignmentSpan = AlignmentContext.NO_ALIGNMENT_SPAN;
 
         if (commonRefContext.isMappedSingleRef()) {
             int start = Integer.MAX_VALUE;
@@ -103,17 +103,15 @@ public class Container {
             int endPlusOne = Integer.MIN_VALUE;
 
             for (final Slice slice : containerSlices) {
-                start = Math.min(start, slice.getAlignmentStart());
-                endPlusOne = Math.max(endPlusOne, slice.getAlignmentStart() + slice.getAlignmentSpan());
+                start = Math.min(start, slice.getAlignmentContext().getAlignmentStart());
+                endPlusOne = Math.max(endPlusOne, slice.getAlignmentContext().getAlignmentStart() + slice.getAlignmentContext().getAlignmentSpan());
             }
             alignmentStart = start;
             alignmentSpan = endPlusOne - start;
         }
 
         this.containerHeader = new ContainerHeader(
-                commonRefContext,
-                alignmentStart,
-                alignmentSpan,
+                new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan),
                 globalRecordCounter,
                 blockCount,
                 recordCount,
@@ -274,13 +272,10 @@ public class Container {
             block.write(major, byteArrayOutputStream);
             int containerBlocksByteSize = byteArrayOutputStream.size();
             // TODO: make sure this container is initialized correctly/fully
-            //container.blockCount = 1;
-            //container.landmarks = new int[0];
             final ContainerHeader containerHeader = new ContainerHeader(
+                    // we're forced to create an alignment context for this bogus container...
+                    new AlignmentContext(new ReferenceContext(0), 0, 1),
                     containerBlocksByteSize,
-                    new ReferenceContext(0),
-                    0,
-                    0,
                     0,
                     0,
                     0,
@@ -309,10 +304,9 @@ public class Container {
 
     public ContainerHeader getContainerHeader() { return containerHeader; }
     public CompressionHeader getCompressionHeader() { return compressionHeader; }
-    public ReferenceContext getReferenceContext() { return containerHeader.getReferenceContext(); }
+    public AlignmentContext getAlignmentContext() { return containerHeader.getAlignmentContext(); }
     public long getContainerByteOffset() { return containerByteOffset; }
     public List<Slice> getSlices() { return slices; }
-
     public boolean isEOF() {
         return containerHeader.isEOF() && (getSlices() == null || getSlices().size() == 0);
     }
@@ -344,7 +338,7 @@ public class Container {
     public Map<ReferenceContext, AlignmentSpan> getSpans(final ValidationStringency validationStringency) {
         final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
         for (final Slice slice : getSlices()) {
-            switch (slice.getReferenceContext().getType()) {
+            switch (slice.getAlignmentContext().getReferenceContext().getType()) {
                 case UNMAPPED_UNPLACED_TYPE:
                     containerSpanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);
                     break;
@@ -356,11 +350,15 @@ public class Container {
                     break;
                 default:
                     final AlignmentSpan alignmentSpan = new AlignmentSpan(
-                            slice.getAlignmentStart(),
-                            slice.getAlignmentSpan(),
+                            slice.getAlignmentContext(),
                             slice.getMappedReadsCount(),
                             slice.getUnmappedReadsCount());
-                    containerSpanMap.merge(slice.getReferenceContext(), alignmentSpan, AlignmentSpan::combine);
+//                    final AlignmentSpan alignmentSpan = new AlignmentSpan(
+//                            slice.getAlignmentContext().getAlignmentStart(),
+//                            slice.getAlignmentContext().getAlignmentSpan(),
+//                            slice.getMappedReadsCount(),
+//                            slice.getUnmappedReadsCount());
+                    containerSpanMap.merge(slice.getAlignmentContext().getReferenceContext(), alignmentSpan, AlignmentSpan::combine);
                     break;
             }
         }
@@ -410,7 +408,7 @@ public class Container {
     // Compare the reference context declared by the container with the one dervied from the contained slices.
     private void validateContainerReferenceContext() {
         final ReferenceContext derivedSliceReferenceContext = getDerivedSliceReferenceContext(getSlices());
-        if (!derivedSliceReferenceContext.equals(getReferenceContext())) {
+        if (!derivedSliceReferenceContext.equals(getAlignmentContext().getReferenceContext())) {
             throw new CRAMException(String.format(
                     "Container (%s) has a reference context that doesn't match the reference context (%s) derived from it's slices.",
                     getContainerHeader(),toString(),
@@ -420,7 +418,7 @@ public class Container {
 
     private static ReferenceContext getDerivedSliceReferenceContext(final List<Slice> containerSlices) {
         final Set<ReferenceContext> sliceRefContexts = containerSlices.stream()
-                .map(Slice::getReferenceContext)
+                .map(s -> s.getAlignmentContext().getReferenceContext())
                 .collect(Collectors.toSet());
         if (sliceRefContexts.isEmpty()) {
             throw new CRAMException("Cannot construct a container without any slices");

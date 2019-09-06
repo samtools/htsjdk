@@ -10,19 +10,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+// TODO: if MULTIPLE_REFERENCE_ID, all slices in the container must also be MULTIPLE_REFERENCE_ID
+
 public class ContainerHeader {
+    // Container Header as defined in the specs, in addition to sequenceId from ReferenceContext
     // total length of all blocks in this container (total length of this container, minus the Container Header).
     public int containerBlocksByteSize;
-
-    // if MULTIPLE_REFERENCE_ID, all slices in the container must also be MULTIPLE_REFERENCE_ID
-    private final ReferenceContext referenceContext;
-
-    // Container Header as defined in the specs, in addition to sequenceId from ReferenceContext
-    // minimum alignment start of the reads in this Container
-    // uses a 1-based coordinate system
-    private final int alignmentStart;
-    private final int alignmentSpan;
-
+    private final AlignmentContext alignmentContext;
     private final int recordCount;
     private final long globalRecordCounter;
     private final long baseCount;
@@ -51,13 +45,17 @@ public class ContainerHeader {
     private int checksum = 0;
 
     // TODO: this is the case where the header is read in from a stream, or is a temporary holder for a SAMFileHeader
-    public ContainerHeader(int containerBlocksByteSize, ReferenceContext referenceContext, int alignmentStart,
-                           int alignmentSpan, int recordCount, long globalRecordCounter, long baseCount, int blockCount,
-                           int[] landmarks, int checksum) {
+    public ContainerHeader(
+            final AlignmentContext alignmentContext,
+            int containerBlocksByteSize,
+            int recordCount,
+            long globalRecordCounter,
+            long baseCount,
+            int blockCount,
+            int[] landmarks,
+            int checksum) {
+        this.alignmentContext = alignmentContext;
         this.containerBlocksByteSize = containerBlocksByteSize;
-        this.referenceContext = referenceContext;
-        this.alignmentStart = alignmentStart;
-        this.alignmentSpan = alignmentSpan;
         this.recordCount = recordCount;
         this.globalRecordCounter = globalRecordCounter;
         this.baseCount = baseCount;
@@ -68,16 +66,12 @@ public class ContainerHeader {
 
     // this is the case where we're writing a container from SAMRecords, but don't have all of the values yet (landmarks, etc)
     public ContainerHeader(
-            final ReferenceContext referenceContext,
-            final int alignmentStart,
-            final int alignmentSpan,
+            final AlignmentContext alignmentContext,
             final long globalRecordCounter,
             final int blockCount,
             final int noOfRecords,
             final int baseCount) {
-        this.referenceContext = referenceContext;
-        this.alignmentStart = alignmentStart;
-        this.alignmentSpan = alignmentSpan;
+        this.alignmentContext = alignmentContext;
         this.globalRecordCounter = globalRecordCounter;
         this.blockCount = blockCount;
         this.recordCount = noOfRecords;
@@ -93,17 +87,7 @@ public class ContainerHeader {
         this.containerBlocksByteSize = containerBlocksByteSize;
     }
 
-    public ReferenceContext getReferenceContext() {
-        return referenceContext;
-    }
-
-    public int getAlignmentStart() {
-        return alignmentStart;
-    }
-
-    public int getAlignmentSpan() {
-        return alignmentSpan;
-    }
+    public AlignmentContext getAlignmentContext() { return alignmentContext; }
 
     public int getRecordCount() {
         return recordCount;
@@ -177,10 +161,8 @@ public class ContainerHeader {
         final int checksum = major >= 3 ? CramInt.readInt32(inputStream) : 0;
 
         return new ContainerHeader(
+                new AlignmentContext(refContext, alignmentStart, alignmentSpan),
                 containerByteSize,
-                refContext,
-                alignmentStart,
-                alignmentSpan,
                 nofRecords,
                 globalRecordCounter,
                 bases,
@@ -199,9 +181,9 @@ public class ContainerHeader {
         final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
 
         int length = (CramInt.writeInt32(getContainerBlocksByteSize(), crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(getReferenceContext().getSerializableId(), crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(getAlignmentStart(), crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(getAlignmentSpan(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(alignmentContext.getReferenceContext().getSerializableId(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(alignmentContext.getAlignmentStart(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(alignmentContext.getAlignmentSpan(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(getRecordCount(), crc32OutputStream) + 7) / 8;
         length += (LTF8.writeUnsignedLTF8(getGlobalRecordCounter(), crc32OutputStream) + 7) / 8;
         length += (LTF8.writeUnsignedLTF8(getBaseCount(), crc32OutputStream) + 7) / 8;
@@ -223,17 +205,18 @@ public class ContainerHeader {
     @Override
     public String toString() {
         return String
-                .format("seqID=%s, start=%d, span=%d, nRecords=%d, nBlocks=%d",
-                        referenceContext, alignmentStart, alignmentSpan, recordCount, blockCount);
+                .format("%s, nRecords=%d, nBlocks=%d",
+                        alignmentContext, recordCount, blockCount);
     }
 
     public boolean isEOF() {
-        final boolean v3 = containerBlocksByteSize == 15 && referenceContext.isUnmappedUnplaced()
-                && alignmentStart == 4542278 && blockCount == 1
+        // TODO: add AlignmentContext.isEOF
+        final boolean v3 = containerBlocksByteSize == 15 && alignmentContext.getReferenceContext().isUnmappedUnplaced()
+                && alignmentContext.getAlignmentStart() == 4542278 && blockCount == 1
                 && recordCount == 0;
 
-        final boolean v2 = containerBlocksByteSize == 11 && referenceContext.isUnmappedUnplaced()
-                && alignmentStart == 4542278 && blockCount == 1
+        final boolean v2 = containerBlocksByteSize == 11 && alignmentContext.getReferenceContext().isUnmappedUnplaced()
+                && alignmentContext.getAlignmentStart() == 4542278 && blockCount == 1
                 && recordCount == 0;
 
         return v3 || v2;

@@ -46,7 +46,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
                 if (serializableSequenceId >= 0) {
                     this.type = ReferenceContextType.SINGLE_REFERENCE_TYPE;
                 } else {
-                    throw new CRAMException("Invalid Reference Sequence ID: " + serializableSequenceId);
+                    throw new CRAMException("Invalid reference wequence ID: " + serializableSequenceId);
                 }
         }
     }
@@ -66,6 +66,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * -2 for multiple reference
      * @return the sequence ID
      */
+    //TODO fix this name
     public int getSerializableId() {
         return serializableSequenceId;
     }

@@ -51,7 +51,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         //TODO: than the per-iterator case when using a CRAMIterator
         super(slice, new CompressorCache(), validationStringency);
 
-        if (!slice.getReferenceContext().isMultiRef()) {
+        if (!slice.getAlignmentContext().getReferenceContext().isMultiRef()) {
             throw new IllegalStateException("can only create multiref span reader for multiref context slice");
         }
         // Alignment start of the previous record, for delta-encoding if necessary

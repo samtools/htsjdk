@@ -57,12 +57,12 @@ public class ContainerTest extends HtsjdkTest {
                 {
                     Arrays.asList(new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT),
                             new Slice(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)),
-                    ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                    ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 },
                 {
                     Arrays.asList(new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT),
                             new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)),
-                    ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                    ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 },
         };
     }

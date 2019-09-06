@@ -39,8 +39,8 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         }
 
         final Slice slice = container.getSlices().get(0);
-        Assert.assertEquals(slice.getAlignmentStart(), 1);
-        Assert.assertEquals(slice.getAlignmentSpan(), test.referenceBases.length);
+        Assert.assertEquals(slice.getAlignmentContext().getAlignmentStart(), 1);
+        Assert.assertEquals(slice.getAlignmentContext().getAlignmentSpan(), test.referenceBases.length);
         // check the slice MD5 is the MD5 of upper-cased ref bases:
         final byte[] ucRefMD5 = SequenceUtil.calculateMD5(test.refBasesFromUCSource, 0, test.refBasesFromUCSource.length);
         Assert.assertEquals(slice.getRefMD5(), ucRefMD5);

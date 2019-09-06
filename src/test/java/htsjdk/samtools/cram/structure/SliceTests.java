@@ -91,13 +91,13 @@ public class SliceTests extends HtsjdkTest {
                 {
                         CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT),
                         coordSorted,
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 });
             retval.add(new Object[]
                 {
                         CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
                         coordSorted,
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 });
 
 
@@ -108,14 +108,14 @@ public class SliceTests extends HtsjdkTest {
                 {
                         CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
                         coordSorted,
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 });
 
             retval.add(new Object[]
                 {
                         CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
                         coordSorted,
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 });
         }
 
@@ -152,17 +152,17 @@ public class SliceTests extends HtsjdkTest {
         index++;
         final CRAMRecord record2 = CRAMStructureTestUtil.createMappedRecord(index, index, alignmentStart);
         records.add(record2);
-        buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN);
 
         index++;
         final CRAMRecord record3 = CRAMStructureTestUtil.createMappedRecord(index, index, alignmentStart);
         records.add(record3);
-        buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN);
 
         index++;
         final CRAMRecord unmapped = CRAMStructureTestUtil.createUnmappedUnplacedRecord(index);
         records.add(unmapped);
-        buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+        buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN);
     }
 
 //    @Test

@@ -10,6 +10,8 @@ import org.testng.annotations.DataProvider;
 import java.util.ArrayList;
 import java.util.List;
 
+//TODO: rewrite all this assertion checking in terms of AlignmentContext whereever possible
+
 public class CRAMStructureTestUtil extends HtsjdkTest {
     public static final int READ_LENGTH_FOR_TEST_RECORDS = 123;
 
@@ -247,9 +249,9 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
                                         final int expectedAlignmentSpan,
                                         final int expectedRecordCount,
                                         final int expectedBaseCount) {
-        Assert.assertEquals(slice.getReferenceContext(), expectedReferenceContext);
-        Assert.assertEquals(slice.getAlignmentStart(), expectedAlignmentStart);
-        Assert.assertEquals(slice.getAlignmentSpan(), expectedAlignmentSpan);
+        Assert.assertEquals(slice.getAlignmentContext().getReferenceContext(), expectedReferenceContext);
+        Assert.assertEquals(slice.getAlignmentContext().getAlignmentStart(), expectedAlignmentStart);
+        Assert.assertEquals(slice.getAlignmentContext().getAlignmentSpan(), expectedAlignmentSpan);
         Assert.assertEquals(slice.getNumberOfRecords(), expectedRecordCount);
         Assert.assertEquals(slice.getBaseCount(), expectedBaseCount);
     }
@@ -270,9 +272,9 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
                                             final int expectedAlignmentStart,
                                             final int expectedAlignmentSpan,
                                             final long expectedByteOffset) {
-        Assert.assertEquals(container.getReferenceContext(), expectedReferenceContext);
-        Assert.assertEquals(container.getContainerHeader().getAlignmentStart(), expectedAlignmentStart);
-        Assert.assertEquals(container.getContainerHeader().getAlignmentSpan(), expectedAlignmentSpan);
+        Assert.assertEquals(
+                container.getAlignmentContext(),
+                new AlignmentContext(expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan));
         Assert.assertEquals(container.getContainerByteOffset(), expectedByteOffset);
     }
 

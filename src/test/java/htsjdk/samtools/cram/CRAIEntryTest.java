@@ -294,9 +294,14 @@ public class CRAIEntryTest extends HtsjdkTest {
     }
 
     private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
-        assertEntryForSlice(entry, slice.getReferenceContext().getSerializableId(),
-                slice.getAlignmentStart(), slice.getAlignmentSpan(), slice.getContainerByteOffset(),
-                slice.getByteOffsetFromCompressionHeaderStart(), slice.getByteSize());
+        assertEntryForSlice(
+                entry,
+                slice.getAlignmentContext().getReferenceContext().getSerializableId(),
+                slice.getAlignmentContext().getAlignmentStart(),
+                slice.getAlignmentContext().getAlignmentSpan(),
+                slice.getContainerByteOffset(),
+                slice.getByteOffsetFromCompressionHeaderStart(),
+                slice.getByteSize());
      }
 
     private void assertEntryForSlice(final CRAIEntry entry,

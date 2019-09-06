@@ -63,11 +63,11 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 },
                 {
                         CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 },
                 {
                         CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 },
 
                 // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
@@ -75,25 +75,25 @@ public class ContainerFactoryTest extends HtsjdkTest {
 
                 {
                         CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 },
                 {
                         CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 },
 
                 // show that unmapped-unplaced reads cause a single ref slice/container to become multiref
 
                 {
                         CRAMStructureTestUtil.getSingleRefRecordsWithOneUnmapped(TEST_RECORD_COUNT, mappedSequenceId),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 },
 
                 // show that unmapped-unplaced reads don't change the state of a multi-ref slice/container
 
                 {
                         CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(TEST_RECORD_COUNT),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
                 },
         };
     }
@@ -138,13 +138,13 @@ public class ContainerFactoryTest extends HtsjdkTest {
         recordCount++;  // this container has 2 records
         globalRecordCount = containers.get(0).getContainerHeader().getRecordCount();   // we've seen 1 record before this container
         CRAMStructureTestUtil.assertContainerState(containers.get(1), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, recordCount,
+                AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN, recordCount,
                 READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 1);
 
         recordCount++;  // this container has 3 records
         globalRecordCount = containers.get(0).getContainerHeader().getRecordCount() + containers.get(1).getContainerHeader().getRecordCount();    // we've seen 3 records before this container
         CRAMStructureTestUtil.assertContainerState(containers.get(2), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, recordCount,
+                AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN, recordCount,
                 READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 2);
     }
 }
