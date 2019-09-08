@@ -279,7 +279,7 @@ public class Block {
                 final int actualChecksum = ((CRC32InputStream) inputStream).getCRC32();
                 final int checksum = CramInt.readInt32(inputStream);
                 if (checksum != actualChecksum) {
-                    throw new RuntimeException(String.format("Block CRC32 mismatch: %04x vs %04x", checksum, actualChecksum));
+                    throw new RuntimeException(String.format("Block CRC32 mismatch, actual: %04x expected: %04x", checksum, actualChecksum));
                 }
             }
 

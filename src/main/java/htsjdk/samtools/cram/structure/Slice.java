@@ -49,9 +49,7 @@ import java.util.stream.Collectors;
  */
 public class Slice {
     private static final Log log = Log.getInstance(Slice.class);
-
     private static final int MD5_BYTE_SIZE = 16;
-
     // for indexing purposes
     //TODO: this should be the same as CRAMRecord.SLICE_INDEX_DEFAULT when used for sliceIndex
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
@@ -59,21 +57,12 @@ public class Slice {
     ////////////////////////////////
     // Slice header values as defined in the spec
     // TODO: only tests mutate this so fix tests and change to final
-    //private final AlignmentContext alignmentContext;
-    private AlignmentContext alignmentContext;
-
-    // read counters per type, for BAMIndexMetaData.recordMetaData()
-    // see also AlignmentSpan and CRAMBAIIndexer.processContainer()
-    private int mappedReadsCount = 0;
-    private int unmappedReadsCount = 0;
-    private int unplacedReadsCount = 0;
-
-    private final long globalRecordCounter;
-
-    // total number of blocks in this slice, including the core block, but not counting the slice header block
-    private final int nBlocks;
+    private AlignmentContext alignmentContext; // ref sequence, alignment start and span
     private final int nRecords;
+    private final long globalRecordCounter;
+    private final int nBlocks;              // includes the core block, but not the slice header block
     private int[] contentIDs;
+    // embeddedReferenceContent id is stored SliceBlocks
     private byte[] refMD5 = new byte[MD5_BYTE_SIZE];
     private SAMBinaryTagAndValue sliceTags;
     // End slice header values
@@ -90,6 +79,12 @@ public class Slice {
     private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
 
     private long baseCount;
+
+    // read counters per type, for BAMIndexMetaData.recordMetaData()
+    // see also AlignmentSpan and CRAMBAIIndexer.processContainer()
+    private int mappedReadsCount = 0;
+    private int unmappedReadsCount = 0;
+    private int unplacedReadsCount = 0;
 
     //TODO: this is the case where we're reading the slice from an input stream
     public Slice(final int major, final CompressionHeader compressionHeader, final InputStream inputStream) {
@@ -383,7 +378,9 @@ public class Slice {
         refMD5 = ref;
     }
 
-    public void setEmbeddedReferenceContentID(final int embeddedRefContentID) { sliceBlocks.setEmbeddedReferenceContentID(embeddedRefContentID); }
+    public void setEmbeddedReferenceContentID(final int embeddedRefContentID) {
+        sliceBlocks.setEmbeddedReferenceContentID(embeddedRefContentID);
+    }
     public int getEmbeddedReferenceContentID() { return sliceBlocks.getEmbeddedReferenceContentID(); }
 
     // Unused because embedded reference isn't implemented for write
@@ -444,7 +441,7 @@ public class Slice {
 
     private static byte[] createSliceHeaderBlockContent(final int major, final Slice slice) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ITF8.writeUnsignedITF8(slice.getAlignmentContext().getReferenceContext().getSerializableId(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.getAlignmentContext().getReferenceContext().getReferenceContextID(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.getAlignmentContext().getAlignmentStart(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.getAlignmentContext().getAlignmentSpan(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.getNumberOfRecords(), byteArrayOutputStream);
@@ -753,7 +750,7 @@ public class Slice {
             final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(ValidationStringency.DEFAULT_STRINGENCY);
 
             return spans.entrySet().stream()
-                    .map(e -> new CRAIEntry(e.getKey().getSerializableId(),
+                    .map(e -> new CRAIEntry(e.getKey().getReferenceContextID(),
                             e.getValue().getStart(),
                             e.getValue().getSpan(),
                             containerByteOffset,
@@ -763,7 +760,7 @@ public class Slice {
                     .collect(Collectors.toList());
         } else {
             // single ref or unmapped
-            final int sequenceId = alignmentContext.getReferenceContext().getSerializableId();
+            final int sequenceId = alignmentContext.getReferenceContext().getReferenceContextID();
             return Collections.singletonList(new CRAIEntry(
                     sequenceId,
                     alignmentContext.getAlignmentStart(),

@@ -193,7 +193,7 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         reader.setValidationStringency(ValidationStringency.SILENT);
 
         final BAMIndex index = reader.getIndex();
-        final SAMFileSpan spanOfSecondContainer = index.getSpanOverlapping(referenceContext.getSequenceId(), alignmentSpan.getStart(), alignmentSpan.getStart()+ alignmentSpan.getSpan());
+        final SAMFileSpan spanOfSecondContainer = index.getSpanOverlapping(referenceContext.getReferenceSequenceID(), alignmentSpan.getStart(), alignmentSpan.getStart()+ alignmentSpan.getSpan());
         Assert.assertNotNull(spanOfSecondContainer);
         Assert.assertFalse(spanOfSecondContainer.isEmpty());
         Assert.assertTrue(spanOfSecondContainer instanceof BAMFileSpan);
@@ -204,7 +204,7 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         boolean matchFound = false;
         while (iterator.hasNext()) {
             final SAMRecord record = iterator.next();
-            if (record.getReferenceIndex() == referenceContext.getSequenceId()) {
+            if (record.getReferenceIndex() == referenceContext.getReferenceSequenceID()) {
                 boolean overlaps = CoordMath.overlaps(record.getAlignmentStart(), record.getAlignmentEnd(), alignmentSpan.getStart(), alignmentSpan.getStart()+ alignmentSpan.getSpan());
                 if (overlaps) matchFound = true;
             }

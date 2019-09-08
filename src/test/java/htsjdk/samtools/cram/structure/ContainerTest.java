@@ -186,11 +186,11 @@ public class ContainerTest extends HtsjdkTest {
 //
 //        final Container container = createOneSliceContainer(containerStreamByteOffset, sliceSize, compressionHeaderSize);
 //
-//        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, sliceSize, compressionHeaderSize);
+//        assertSliceIndexingParams(container.getSlices().get(0), 0, containerStreamByteOffset, sliceSize, compressionHeaderSize);
 //    }
-
-    // two slices
-
+//
+//    // two slices
+//
 //    @Test
 //    public static void distributeIndexingParametersToSlicesTwoSlices() {
 //        // this container starts 200,000 bytes into the CRAM stream
@@ -208,10 +208,10 @@ public class ContainerTest extends HtsjdkTest {
 //
 //        final Container container = createTwoSliceContainer(containerStreamByteOffset, slice0size, slice1size, compressionHeaderSize);
 //
-//        assertSliceIndexingParams(container.getSlices()[0], 0, containerStreamByteOffset, slice0size, compressionHeaderSize);
-//        assertSliceIndexingParams(container.getSlices()[1], 1, containerStreamByteOffset, slice1size, compressionHeaderSize + slice0size);
+//        assertSliceIndexingParams(container.getSlices().get(0), 0, containerStreamByteOffset, slice0size, compressionHeaderSize);
+//        assertSliceIndexingParams(container.getSlices().get(1), 1, containerStreamByteOffset, slice1size, compressionHeaderSize + slice0size);
 //    }
-
+//
 //    @DataProvider(name = "containerDistributeNegative")
 //    private Object[][] containerDistributeNegative() {
 //        final ReferenceContext refContext = new ReferenceContext(0);
@@ -314,17 +314,17 @@ public class ContainerTest extends HtsjdkTest {
 //        container.distributeIndexingParametersToSlices();
 //        return container;
 //    }
-//
-//    private static void assertSliceIndexingParams(final Slice slice,
-//                                                  final int expectedIndex,
-//                                                  final int expectedContainerOffset,
-//                                                  final int expectedSize,
-//                                                  final int expectedOffset) {
-//        Assert.assertEquals(slice.index, expectedIndex);
-//        Assert.assertEquals(slice.containerByteOffset, expectedContainerOffset);
-//        Assert.assertEquals(slice.byteSize, expectedSize);
-//        Assert.assertEquals(slice.byteOffsetFromCompressionHeaderStart, expectedOffset);
-//    }
+
+    private static void assertSliceIndexingParams(final Slice slice,
+                                                  final int expectedIndex,
+                                                  final int expectedContainerOffset,
+                                                  final int expectedSize,
+                                                  final int expectedOffset) {
+        Assert.assertEquals(slice.getLandmarkIndex(), expectedIndex);
+        Assert.assertEquals(slice.getContainerByteOffset(), expectedContainerOffset);
+        Assert.assertEquals(slice.getByteSize(), expectedSize);
+        Assert.assertEquals(slice.getByteOffsetFromCompressionHeaderStart(), expectedOffset);
+    }
 
     @DataProvider(name = "cramVersions")
     private Object[][] cramVersions() {

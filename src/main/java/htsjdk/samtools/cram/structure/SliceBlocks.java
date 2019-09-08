@@ -178,7 +178,7 @@ public class SliceBlocks {
                     break;
                 case EXTERNAL:
                     if (embeddedReferenceBlockContentID == block.getContentId()) {
-                        //also adds this block to the external list
+                        // also adds this block to the external list
                         setEmbeddedReferenceBlock(block);
                     } else {
                         addExternalBlock(block);

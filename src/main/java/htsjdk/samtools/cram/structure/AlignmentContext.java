@@ -139,7 +139,7 @@ public class AlignmentContext {
                 return "AlignmentContext{UNMAPPED_UNPLACED_CONTEXT}";
             default:
                 final String format = "AlignmentContext{referenceSequenceId=%s, alignmentStart=%d, alignmentSpan=%d}";
-                return String.format(format, referenceContext.getSequenceId(), alignmentStart, alignmentSpan);
+                return String.format(format, referenceContext.getReferenceSequenceID(), alignmentStart, alignmentSpan);
         }
     }
 

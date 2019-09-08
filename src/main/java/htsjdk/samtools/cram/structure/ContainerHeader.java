@@ -181,7 +181,7 @@ public class ContainerHeader {
         final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
 
         int length = (CramInt.writeInt32(getContainerBlocksByteSize(), crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(alignmentContext.getReferenceContext().getSerializableId(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(alignmentContext.getReferenceContext().getReferenceContextID(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(alignmentContext.getAlignmentStart(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(alignmentContext.getAlignmentSpan(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(getRecordCount(), crc32OutputStream) + 7) / 8;
