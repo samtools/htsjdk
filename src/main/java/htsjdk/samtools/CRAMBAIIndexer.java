@@ -196,7 +196,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
         }
 
         if (sliceContext.isMappedSingleRef()) {
-            final int reference = sliceContext.getSequenceId();
+            final int reference = sliceContext.getReferenceSequenceID();
             if (reference != currentReference) {
                 // process any completed references
                 advanceToReference(reference);
@@ -284,7 +284,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                         sequenceName = "???";
                         break;
                     default:
-                        sequenceName = cramHeader.getSamFileHeader().getSequence(containerReferenceContext.getSequenceId()).getSequenceName();
+                        sequenceName = cramHeader.getSamFileHeader().getSequence(containerReferenceContext.getReferenceSequenceID()).getSequenceName();
                         break;
                 }
                 progressLogger.record(sequenceName, alignmentContext.getAlignmentStart());
@@ -372,7 +372,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             }
 
             // various checks
-            final int reference = sliceContext.getSequenceId();
+            final int reference = sliceContext.getReferenceSequenceID();
             if (reference != currentReference) {
                 throw new SAMException("Unexpected reference " + reference +
                         " when constructing index for " + currentReference + " for record " + slice);

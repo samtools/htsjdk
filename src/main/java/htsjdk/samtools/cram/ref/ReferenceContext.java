@@ -4,14 +4,17 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.CRAMException;
 
 /**
- * Represents the current state of reference sequence processing.
+ * A reference context defines the backing reference sequence for a given record, slice or container.
+ * It is either a single-reference context, backed by a valid reference sequence ID; the sentinel value
+ * ({@link ReferenceContext#UNMAPPED_UNPLACED_ID}) indicating unmapped/unplaced
+ * ({@link ReferenceContextType#UNMAPPED_UNPLACED_TYPE}), or a multiple-reference context
+ * ({@link ReferenceContext#MULTIPLE_REFERENCE_ID}) indicating a multi reference context
+ * ({@link ReferenceContextType#MULTIPLE_REFERENCE_TYPE}).
  *
- * Are we handling MULTIPLE_REFERENCE_TYPE records (-2, from the CRAM spec)?
- *
+ * Are we handling {@link ReferenceContextType#MULTIPLE_REFERENCE_TYPE} records (-2,
+ * ({@link ReferenceContext#MULTIPLE_REFERENCE_ID}) from the CRAM spec)?
  * Are we handling UNMAPPED_UNPLACED_TYPE records (-1, from the CRAM spec)?
- *
  * Or are we handing a known SINGLE_REFERENCE_TYPE sequence (0 or higher, from the CRAM spec))?
- *
  */
 public class ReferenceContext implements Comparable<ReferenceContext> {
     public static final int UNMAPPED_UNPLACED_ID = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX; // -1
@@ -22,20 +25,25 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     public static final ReferenceContext UNMAPPED_UNPLACED_CONTEXT = new ReferenceContext(UNMAPPED_UNPLACED_ID);
 
     private final ReferenceContextType type;
-    private final int serializableSequenceId;
+
+    // the values for this are either a valid (>=0) reference sequence ID, or one of the sentinel values indicating
+    // unmapped/unplaced or multiple reference
+    private final int referenceContextID;
 
     /**
-     * Create a ReferenceContext from a serializable sequence ID
+     * Create a ReferenceContext from a value that is either a valid sequence ID, or a reference context
+     * sentinel value:
+     *
      * 0 or greater for single reference
      * -1 for unmapped-unplaced
      * -2 for multiple reference
      *
-     * @param serializableSequenceId the sequence ID or sentinel value for constructing this ReferenceContext
+     * @param referenceContextID the sequence ID or sentinel value for constructing this ReferenceContext
      */
-    public ReferenceContext(final int serializableSequenceId) {
-        this.serializableSequenceId = serializableSequenceId;
+    public ReferenceContext(final int referenceContextID) {
+        this.referenceContextID = referenceContextID;
 
-        switch (serializableSequenceId) {
+        switch (referenceContextID) {
             case MULTIPLE_REFERENCE_ID:
                 this.type = ReferenceContextType.MULTIPLE_REFERENCE_TYPE;
                 break;
@@ -43,10 +51,10 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
                 this.type = ReferenceContextType.UNMAPPED_UNPLACED_TYPE;
                 break;
             default:
-                if (serializableSequenceId >= 0) {
+                if (referenceContextID >= 0) {
                     this.type = ReferenceContextType.SINGLE_REFERENCE_TYPE;
                 } else {
-                    throw new CRAMException("Invalid reference wequence ID: " + serializableSequenceId);
+                    throw new CRAMException("Invalid reference wequence ID: " + referenceContextID);
                 }
         }
     }
@@ -60,30 +68,31 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     }
 
     /**
-     * Get the ReferenceContext sequence ID or sentinel value, suitable for serialization:
+     * Get the ReferenceContext sequence ID, or a sentinel value if unmapped or multiple, suitable for
+     * serialization:
+     *
      * 0 or greater for single reference
      * -1 for unmapped
      * -2 for multiple reference
      * @return the sequence ID
      */
-    //TODO fix this name
-    public int getSerializableId() {
-        return serializableSequenceId;
+    public int getReferenceContextID() {
+        return referenceContextID;
     }
 
     /**
-     * Get the valid sequence ID, if single-reference
-     * @throws CRAMException if this is not single-ref
+     * Get the valid reference sequence ID. May only be called if this is reference context of type single-reference.
+     * @throws CRAMException if this is not a single-ref reference context
      * @return the sequence ID
      */
-    public int getSequenceId() {
+    public int getReferenceSequenceID() {
         if (type != ReferenceContextType.SINGLE_REFERENCE_TYPE) {
             final String msg = "This ReferenceContext does not have a valid reference sequence ID because its type is " +
                     type.toString();
             throw new CRAMException(msg);
         }
 
-        return serializableSequenceId;
+        return referenceContextID;
     }
 
     /**
@@ -124,31 +133,31 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
 
         ReferenceContext that = (ReferenceContext) o;
 
-        if (serializableSequenceId != that.serializableSequenceId) return false;
+        if (referenceContextID != that.referenceContextID) return false;
         return type == that.type;
     }
 
     @Override
     public int hashCode() {
         int result = type.hashCode();
-        result = 31 * result + serializableSequenceId;
+        result = 31 * result + referenceContextID;
         return result;
     }
 
     @Override
     public int compareTo(final ReferenceContext o) {
-        return Integer.compare(this.serializableSequenceId, o.serializableSequenceId);
+        return Integer.compare(this.referenceContextID, o.referenceContextID);
     }
 
     @Override
     public String toString() {
-        switch (serializableSequenceId) {
+        switch (referenceContextID) {
             case MULTIPLE_REFERENCE_ID:
                 return "MULTIPLE_REFERENCE_CONTEXT";
             case UNMAPPED_UNPLACED_ID:
                 return "UNMAPPED_UNPLACED_CONTEXT";
             default:
-                return "SINGLE_REFERENCE_CONTEXT: " + serializableSequenceId;
+                return "SINGLE_REFERENCE_CONTEXT: " + referenceContextID;
         }
     }
 }

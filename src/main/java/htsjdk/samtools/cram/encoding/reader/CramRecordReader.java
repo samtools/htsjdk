@@ -164,7 +164,7 @@ public class CramRecordReader {
             referenceIndex = refIdCodec.readData();
         } else {
             // either unmapped (-1) or a valid ref
-            referenceIndex = slice.getAlignmentContext().getReferenceContext().getSerializableId();
+            referenceIndex = slice.getAlignmentContext().getReferenceContext().getReferenceContextID();
         }
 
         final int readLength = readLengthCodec.readData();

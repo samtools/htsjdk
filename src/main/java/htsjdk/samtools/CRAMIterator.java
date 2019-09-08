@@ -139,14 +139,14 @@ public class CRAMIterator implements SAMRecordIterator {
                 prevSeqId = ReferenceContext.MULTIPLE_REFERENCE_ID;
                 break;
             default:
-                if (prevSeqId != containerContext.getSequenceId()) {
+                if (prevSeqId != containerContext.getReferenceSequenceID()) {
                     final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
-                            .getSequence(containerContext.getSequenceId());
+                            .getSequence(containerContext.getReferenceSequenceID());
                     referenceBases = referenceSource.getReferenceBases(sequence, true);
                     if (referenceBases == null) {
                         throw new CRAMException(String.format("Contig %s not found in the reference file.", sequence.getSequenceName()));
                     }
-                    prevSeqId = containerContext.getSequenceId();
+                    prevSeqId = containerContext.getReferenceSequenceID();
                 }
         }
 

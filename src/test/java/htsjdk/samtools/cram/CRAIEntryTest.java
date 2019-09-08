@@ -296,7 +296,7 @@ public class CRAIEntryTest extends HtsjdkTest {
     private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
         assertEntryForSlice(
                 entry,
-                slice.getAlignmentContext().getReferenceContext().getSerializableId(),
+                slice.getAlignmentContext().getReferenceContext().getReferenceContextID(),
                 slice.getAlignmentContext().getAlignmentStart(),
                 slice.getAlignmentContext().getAlignmentSpan(),
                 slice.getContainerByteOffset(),

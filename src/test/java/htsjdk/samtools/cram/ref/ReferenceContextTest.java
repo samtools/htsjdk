@@ -59,7 +59,7 @@ public class ReferenceContextTest extends HtsjdkTest {
         Assert.assertEquals(refContext.isMappedSingleRef(), expectedSingle);
         Assert.assertEquals(refContext.isUnmappedUnplaced(), expectedUnplaced);
         Assert.assertEquals(refContext.isMultiRef(), expectedMulti);
-        Assert.assertEquals(refContext.getSerializableId(), expectedID);
+        Assert.assertEquals(refContext.getReferenceContextID(), expectedID);
     }
 
     @Test(expectedExceptions = CRAMException.class)
@@ -78,12 +78,12 @@ public class ReferenceContextTest extends HtsjdkTest {
     @Test(dataProvider = "sentinels")
     public void testSentinelsGetSerializableId(final int seqId) {
         final ReferenceContext context = new ReferenceContext(seqId);
-        Assert.assertEquals(context.getSerializableId(), seqId);
+        Assert.assertEquals(context.getReferenceContextID(), seqId);
     }
 
     @Test(dataProvider = "sentinels", expectedExceptions = CRAMException.class)
     public void testSentinelsGetSequenceId(final int seqId) {
         final ReferenceContext context = new ReferenceContext(seqId);
-        context.getSequenceId();
+        context.getReferenceSequenceID();
     }
 }
