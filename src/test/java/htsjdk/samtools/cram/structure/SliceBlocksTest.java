@@ -22,8 +22,6 @@ public class SliceBlocksTest  extends HtsjdkTest {
     public void testSliceBlocksDefaults() {
         final SliceBlocks sliceBlocks = new SliceBlocks();
         Assert.assertNull(sliceBlocks.getCoreBlock());
-        Assert.assertNull(sliceBlocks.getEmbeddedReferenceBlock());
-        Assert.assertEquals(sliceBlocks.getEmbeddedReferenceContentID(), SliceBlocks.EMBEDDED_REFERENCE_ABSENT_CONTENT_ID);
         Assert.assertEquals(sliceBlocks.getNumberOfExternalBlocks(), 0);
     }
 
@@ -51,11 +49,6 @@ public class SliceBlocksTest  extends HtsjdkTest {
             final byte[] roundTrippedBytes = baos.toByteArray();
             try (final InputStream is = new ByteArrayInputStream(roundTrippedBytes)) {
                 roundTrippedSliceBlocks = new SliceBlocks();
-                // simulate what happens when reading in a Slice from a CRAM stresm, which is that the
-                // content ID of the embedded reference block (if any)  is discovered while reading the
-                // slice header block, but before any other blocks are read, so tell the new SliceBLocks
-                // object which block is the embedded reference
-                roundTrippedSliceBlocks.setEmbeddedReferenceContentID(embeddedRefBlockContentID);
                 roundTrippedSliceBlocks.readBlocks(
                         CramVersions.CRAM_v3.major,
                         expectedTotalNumberOfBlocks,
@@ -64,9 +57,8 @@ public class SliceBlocksTest  extends HtsjdkTest {
         }
 
         Assert.assertEquals(roundTrippedSliceBlocks.getCoreBlock().getUncompressedContent(new CompressorCache()), coreBlockContent);
-        Assert.assertEquals(roundTrippedSliceBlocks.getEmbeddedReferenceContentID(), embeddedRefBlockContentID);
         Assert.assertEquals(
-                roundTrippedSliceBlocks.getEmbeddedReferenceBlock().getUncompressedContent(new CompressorCache()),
+                roundTrippedSliceBlocks.getExternalBlock(embeddedRefBlockContentID).getUncompressedContent(new CompressorCache()),
                 embeddedRefBlockContent);
 
         // we expect one external block for each data series, plus one for the embedded reference block
@@ -100,61 +92,6 @@ public class SliceBlocksTest  extends HtsjdkTest {
         sliceBlocks.setCoreBlock(block);
     }
 
-    // Embedded reference block tests
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testRejectEmbeddedReferenceBlockNoContentID() {
-        final SliceBlocks sliceBlocks = new SliceBlocks();
-        // this test is a little bogus in that, per the spec, it shouldn't even be possible to create an external block
-        // with contentID=0 in the first place, but we allow it due to  https://github.com/samtools/htsjdk/issues/1232,
-        // and because we have lots of CRAM files floating around that were generated this way
-        final Block block = Block.createExternalBlock(
-                BlockCompressionMethod.GZIP,
-                SliceBlocks.EMBEDDED_REFERENCE_ABSENT_CONTENT_ID,
-                new byte[2],
-                2);
-        sliceBlocks.setEmbeddedReferenceBlock(block);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testRejectNonExternalEmbeddedReferenceBlock() {
-        final SliceBlocks sliceBlocks = new SliceBlocks();
-        final Block block = Block.createRawCoreDataBlock(new byte[2]);
-        sliceBlocks.setEmbeddedReferenceBlock(block);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testRejectEmbeddedReferenceBlockConflictsWithID() {
-        final int embeddedReferenceBlockContentID = 27;
-        final SliceBlocks sliceBlocks = new SliceBlocks();
-        sliceBlocks.setEmbeddedReferenceContentID(embeddedReferenceBlockContentID);
-        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, embeddedReferenceBlockContentID + 1, new byte[2], 2);
-        sliceBlocks.setEmbeddedReferenceBlock(block);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testRejectResetEmbeddedReferenceBlock() {
-        final SliceBlocks sliceBlocks = new SliceBlocks();
-        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, 27, new byte[2], 2);
-        sliceBlocks.setEmbeddedReferenceBlock(block);
-        sliceBlocks.setEmbeddedReferenceBlock(block);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testRejectResetEmbeddedReferenceBlockContentID() {
-        final SliceBlocks sliceBlocks = new SliceBlocks();
-        sliceBlocks.setEmbeddedReferenceContentID(27);
-        sliceBlocks.setEmbeddedReferenceContentID(28);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testRejectConflictingEmbeddedReferenceBlockContentID() {
-        final SliceBlocks sliceBlocks = new SliceBlocks();
-        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, 27, new byte[2], 2);
-        sliceBlocks.setEmbeddedReferenceContentID(28);
-        sliceBlocks.setEmbeddedReferenceBlock(block);
-    }
-
     // populate a SliceBlocksObject with an external block for each DataSeries, plus
     // core and embedded reference block content, and update expectedExternalContent
     static SliceBlocks getSliceBlocksForAllDataSeries(
@@ -171,7 +108,7 @@ public class SliceBlocksTest  extends HtsjdkTest {
         sliceBlocks.setCoreBlock(Block.createRawCoreDataBlock(coreBlockContent));
 
         // add an embedded reference block
-        sliceBlocks.setEmbeddedReferenceBlock(
+        sliceBlocks.addExternalBlock(
                 Block.createExternalBlock(
                         compressionMethod,
                         embeddedRefBlockContentID,

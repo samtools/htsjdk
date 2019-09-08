@@ -8,6 +8,8 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -15,9 +17,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by vadim on 07/12/2015.
@@ -208,6 +208,62 @@ public class SliceTests extends HtsjdkTest {
         final int expectedBaseCount = records.size() * READ_LENGTH_FOR_TEST_RECORDS;
         CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,
                 expectedAlignmentStart, expectedAlignmentSpan, records.size(), expectedBaseCount);
+    }
+
+    // Embedded reference block tests
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRejectEmbeddedReferenceBlockNoContentID() {
+        final Slice slice = SliceTestHelper.getSingleRecordSlice();
+
+        // this test is a little bogus in that, per the spec, it shouldn't even be possible to create an external block
+        // with contentID=0 in the first place, but we allow it due to  https://github.com/samtools/htsjdk/issues/1232,
+        // and because we have lots of CRAM files floating around that were generated this way
+        final Block block = Block.createExternalBlock(
+                BlockCompressionMethod.GZIP,
+                Slice.EMBEDDED_REFERENCE_ABSENT_CONTENT_ID,
+                new byte[2],
+                2);
+        slice.setEmbeddedReferenceBlock(block);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRejectNonExternalEmbeddedReferenceBlock() {
+        final Slice slice = SliceTestHelper.getSingleRecordSlice();
+        final Block block = Block.createRawCoreDataBlock(new byte[2]);
+        slice.setEmbeddedReferenceBlock(block);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRejectEmbeddedReferenceBlockConflictsWithID() {
+        final Slice slice = SliceTestHelper.getSingleRecordSlice();
+        final int embeddedReferenceBlockContentID = 27;
+        slice.setEmbeddedReferenceContentID(embeddedReferenceBlockContentID);
+        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, embeddedReferenceBlockContentID + 1, new byte[2], 2);
+        slice.setEmbeddedReferenceBlock(block);
+    }
+
+    @Test(expectedExceptions = CRAMException.class)
+    public void testRejectResetEmbeddedReferenceBlock() {
+        final Slice slice = SliceTestHelper.getSingleRecordSlice();
+        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, 27, new byte[2], 2);
+        slice.setEmbeddedReferenceBlock(block);
+        slice.setEmbeddedReferenceBlock(block);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRejectResetEmbeddedReferenceBlockContentID() {
+        final Slice slice = SliceTestHelper.getSingleRecordSlice();
+        slice.setEmbeddedReferenceContentID(27);
+        slice.setEmbeddedReferenceContentID(28);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRejectConflictingEmbeddedReferenceBlockContentID() {
+        final Slice slice = SliceTestHelper.getSingleRecordSlice();
+        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, 27, new byte[2], 2);
+        slice.setEmbeddedReferenceContentID(28);
+        slice.setEmbeddedReferenceBlock(block);
     }
 
 }

@@ -37,6 +37,7 @@ import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -53,6 +54,8 @@ public class Slice {
     // for indexing purposes
     //TODO: this should be the same as CRAMRecord.SLICE_INDEX_DEFAULT when used for sliceIndex
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
+    // the spec defines a special sentinel to indicate the absence of an embedded reference block
+    public static int EMBEDDED_REFERENCE_ABSENT_CONTENT_ID = -1;
 
     ////////////////////////////////
     // Slice header values as defined in the spec
@@ -62,16 +65,20 @@ public class Slice {
     private final long globalRecordCounter;
     private final int nBlocks;              // includes the core block, but not the slice header block
     private int[] contentIDs;
-    // embeddedReferenceContent id is stored SliceBlocks
+    private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
     private byte[] refMD5 = new byte[MD5_BYTE_SIZE];
     private SAMBinaryTagAndValue sliceTags;
     // End slice header values
     ////////////////////////////////
 
-    private Block sliceHeaderBlock;
     private CompressionHeader compressionHeader;
+    private Block sliceHeaderBlock;
     private final SliceBlocks sliceBlocks = new SliceBlocks();
-
+    // Modeling the contentID and embedded reference block separately is redundant, since the
+    // block can be retrieved from the external blocks list given the content id, but we retain
+    // them both for validation purposes because they're both present in the serialized CRAM stream,
+    // and on read these are provided separately when populating the slice.
+    private Block embeddedReferenceBlock;
     private int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
     private long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
     private int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
@@ -109,7 +116,7 @@ public class Slice {
 
         setContentIDs(CramIntArray.array(parseInputStream));
         // embedded ref content id == -1 if embedded ref not present
-        setEmbeddedReferenceContentID(ITF8.readUnsignedITF8(parseInputStream));
+        embeddedReferenceBlockContentID = ITF8.readUnsignedITF8(parseInputStream);
         final byte[] sliceMD5 = new byte[MD5_BYTE_SIZE];
         InputStreamUtils.readFully(parseInputStream, sliceMD5, 0, sliceMD5.length);
         setReferenceMD5(sliceMD5);
@@ -120,6 +127,11 @@ public class Slice {
         }
 
         sliceBlocks.readBlocks(major, nBlocks, inputStream);
+
+        if (embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID) {
+            // also adds this block to the external list
+            setEmbeddedReferenceBlock(sliceBlocks.getExternalBlock(embeddedReferenceBlockContentID));
+        }
     }
 
     /**
@@ -378,13 +390,71 @@ public class Slice {
         refMD5 = ref;
     }
 
-    public void setEmbeddedReferenceContentID(final int embeddedRefContentID) {
-        sliceBlocks.setEmbeddedReferenceContentID(embeddedRefContentID);
-    }
-    public int getEmbeddedReferenceContentID() { return sliceBlocks.getEmbeddedReferenceContentID(); }
+    /**
+     * Set the content ID of the embedded reference block. Per the CRAM spec, the value can be
+     * -1 ({@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}) to indicate no embedded reference block is
+     * present. If the reference block content ID already has a non-{@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}
+     * value, it cannot be reset. If the embedded reference block has already been set, the provided
+     * reference block content ID must agree with the content ID of the existing block.
+     * @param embeddedReferenceBlockContentID
+     */
+    public void setEmbeddedReferenceContentID(final int embeddedReferenceBlockContentID) {
+        if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID &&
+                this.embeddedReferenceBlockContentID != embeddedReferenceBlockContentID) {
+            throw new IllegalArgumentException(
+                    String.format("Can't reset embedded reference content ID (old %d new %d)",
+                            this.embeddedReferenceBlockContentID, embeddedReferenceBlockContentID));
 
-    // Unused because embedded reference isn't implemented for write
-    public Block getEmbeddedReferenceBlock() { return sliceBlocks.getEmbeddedReferenceBlock(); }
+        }
+        if (this.embeddedReferenceBlock != null &&
+                this.embeddedReferenceBlock.getContentId() != embeddedReferenceBlockContentID) {
+            throw new IllegalArgumentException(
+                    String.format("Attempt to set embedded reference block content ID (%d) that is in conflict" +
+                                    "with the content ID (%d) of the existing reference block ID",
+                            embeddedReferenceBlockContentID,
+                            this.embeddedReferenceBlock.getContentId()));
+        }
+        this.embeddedReferenceBlockContentID = embeddedReferenceBlockContentID;
+    }
+
+    /**
+     * Get the content ID of the embedded reference block. Per the CRAM spec, the value
+     * can be {@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID} (-1) to indicate no embedded reference block is
+     * present.
+     * @return id of embedded reference block if present, otherwise {@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}
+     */
+    public int getEmbeddedReferenceContentID() {
+        return embeddedReferenceBlockContentID;
+    }
+
+    public void setEmbeddedReferenceBlock(final Block embeddedReferenceBlock) {
+        ValidationUtils.nonNull(embeddedReferenceBlock, "Embedded reference block must be non-null");
+        ValidationUtils.validateArg(embeddedReferenceBlock.getContentId() != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID,
+                String.format("Invalid content ID (%d) for embedded reference block", embeddedReferenceBlock.getContentId()));
+        ValidationUtils.validateArg(embeddedReferenceBlock.getContentType() == BlockContentType.EXTERNAL,
+                String.format("Invalid embedded reference block type (%s)", embeddedReferenceBlock.getContentType()));
+        if (this.embeddedReferenceBlock != null) {
+            throw new IllegalArgumentException("Can't reset embedded reference block");
+        } else if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID &&
+                embeddedReferenceBlock.getContentId() != this.embeddedReferenceBlockContentID) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Embedded reference block content id (%d) conflicts with existing block if (%d)",
+                            embeddedReferenceBlock.getContentId(),
+                            this.embeddedReferenceBlockContentID));
+        }
+
+        setEmbeddedReferenceContentID(embeddedReferenceBlock.getContentId());
+        this.embeddedReferenceBlock = embeddedReferenceBlock;
+        sliceBlocks.addExternalBlock(embeddedReferenceBlock);
+    }
+
+    /**
+     * Return the embedded reference block, if any.
+     * @return embedded reference block. May be null.
+     */
+    // TODO: Unused because embedded reference isn't implemented for write
+    public Block getEmbeddedReferenceBlock() { return embeddedReferenceBlock; }
 
     public CompressionHeader getCompressionHeader() {
         if (compressionHeader == null) {
