@@ -173,6 +173,7 @@ public class Block {
                                             final int contentId,
                                             final byte[] compressedContent,
                                             final int uncompressedLength) {
+        ValidationUtils.validateArg(contentId >= 0, "Invalid external block content id");
         return new Block(compressionMethod, BlockContentType.EXTERNAL,
                 contentId, compressedContent, uncompressedLength);
     }

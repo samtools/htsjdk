@@ -23,7 +23,7 @@ public class SliceBlocksTest  extends HtsjdkTest {
         final SliceBlocks sliceBlocks = new SliceBlocks();
         Assert.assertNull(sliceBlocks.getCoreBlock());
         Assert.assertNull(sliceBlocks.getEmbeddedReferenceBlock());
-        Assert.assertEquals(sliceBlocks.getEmbeddedReferenceContentID(), Block.NO_CONTENT_ID);
+        Assert.assertEquals(sliceBlocks.getEmbeddedReferenceContentID(), SliceBlocks.EMBEDDED_REFERENCE_ABSENT_CONTENT_ID);
         Assert.assertEquals(sliceBlocks.getNumberOfExternalBlocks(), 0);
     }
 
@@ -108,7 +108,11 @@ public class SliceBlocksTest  extends HtsjdkTest {
         // this test is a little bogus in that, per the spec, it shouldn't even be possible to create an external block
         // with contentID=0 in the first place, but we allow it due to  https://github.com/samtools/htsjdk/issues/1232,
         // and because we have lots of CRAM files floating around that were generated this way
-        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, Block.NO_CONTENT_ID, new byte[2], 2);
+        final Block block = Block.createExternalBlock(
+                BlockCompressionMethod.GZIP,
+                SliceBlocks.EMBEDDED_REFERENCE_ABSENT_CONTENT_ID,
+                new byte[2],
+                2);
         sliceBlocks.setEmbeddedReferenceBlock(block);
     }
 
