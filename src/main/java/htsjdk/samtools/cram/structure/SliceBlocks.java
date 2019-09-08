@@ -21,6 +21,9 @@ import java.util.Map;
  * being added.
  */
 public class SliceBlocks {
+    // the spec defines a special sentinel to indicate the absence of an embedded reference block
+    public static int EMBEDDED_REFERENCE_ABSENT_CONTENT_ID = -1;
+
     // the core block for this Slice
     private Block coreBlock;
     // the external Blocks as a Map of content ID to block
@@ -31,7 +34,7 @@ public class SliceBlocks {
     // them both for validation purposes because they're both present in the serialized CRAM stream,
     // and on read these are provided separately when populating the slice.
     private Block embeddedReferenceBlock;
-    private int embeddedReferenceBlockContentID = Block.NO_CONTENT_ID;
+    private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
 
     /**
      * Set the coreBlock for a Slice. Can only be called once.
@@ -79,14 +82,14 @@ public class SliceBlocks {
 
     /**
      * Set the content ID of the embedded reference block. Per the CRAM spec, the value can be
-     * -1 ({@link Block#NO_CONTENT_ID}) to indicate no embedded reference block is present. If
-     * the reference block content ID already has a non-{@link Block#NO_CONTENT_ID} value,
-     * it cannot be reset. If the embedded reference block has already been set, the provided
+     * -1 ({@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}) to indicate no embedded reference block is
+     * present. If the reference block content ID already has a non-{@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}
+     * value, it cannot be reset. If the embedded reference block has already been set, the provided
      * reference block content ID must agree with the content ID of the existing block.
      * @param embeddedReferenceBlockContentID
      */
     public void setEmbeddedReferenceContentID(final int embeddedReferenceBlockContentID) {
-        if (this.embeddedReferenceBlockContentID != Block.NO_CONTENT_ID &&
+        if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID &&
                 this.embeddedReferenceBlockContentID != embeddedReferenceBlockContentID) {
             throw new IllegalArgumentException(
                     String.format("Can't reset embedded reference content ID (old %d new %d)",
@@ -106,21 +109,23 @@ public class SliceBlocks {
 
     /**
      * Get the content ID of the embedded reference block. Per the CRAM spec, the value
-     * can be -1 ({@link Block#NO_CONTENT_ID}) to indicate no embedded reference block is
+     * can be {@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID} (-1) to indicate no embedded reference block is
      * present.
-     * @return id of embedded reference block if present, otherwise {@link Block#NO_CONTENT_ID}
+     * @return id of embedded reference block if present, otherwise {@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}
      */
-    public int getEmbeddedReferenceContentID() { return embeddedReferenceBlockContentID; }
+    public int getEmbeddedReferenceContentID() {
+        return embeddedReferenceBlockContentID;
+    }
 
     public void setEmbeddedReferenceBlock(final Block embeddedReferenceBlock) {
         ValidationUtils.nonNull(embeddedReferenceBlock, "Embedded reference block must be non-null");
-        ValidationUtils.validateArg(embeddedReferenceBlock.getContentId() != Block.NO_CONTENT_ID,
+        ValidationUtils.validateArg(embeddedReferenceBlock.getContentId() != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID,
                 String.format("Invalid content ID (%d) for embedded reference block", embeddedReferenceBlock.getContentId()));
         ValidationUtils.validateArg(embeddedReferenceBlock.getContentType() == BlockContentType.EXTERNAL,
                 String.format("Invalid embedded reference block type (%s)", embeddedReferenceBlock.getContentType()));
         if (this.embeddedReferenceBlock != null) {
             throw new IllegalArgumentException("Can't reset embedded reference block");
-        } else if (this.embeddedReferenceBlockContentID != Block.NO_CONTENT_ID &&
+        } else if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID &&
                 embeddedReferenceBlock.getContentId() != this.embeddedReferenceBlockContentID) {
             throw new IllegalArgumentException(
                     String.format(
