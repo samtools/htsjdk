@@ -566,7 +566,11 @@ public class CRAMRecord {
 
     public int getRecordsToNextFragment() { return recordsToNextFragment; }
 
-    public List<ReadFeature> getReadFeatures() { return this.readFeatures.getReadFeatures(); }
+    public List<ReadFeature> getReadFeatures() {
+        return readFeatures == null ?
+                null :
+                readFeatures.getReadFeatures();
+    }
 
     public int getReadGroupID() { return readGroupID; }
 

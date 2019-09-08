@@ -13,28 +13,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Manage the (logical) set of blocks that constitute a {@link Slice}. The Slice Header block is
- * not managed by this class.
+ * Manage the (logical) set of blocks that constitute a {@link Slice}, not including the Slice header block,
+ * which is managed by {@link Slice}.
  *
  * Prevents duplicate blocks (blocks with non-unique content ID) or illogical blocks (i.e., setting
  * a core block that is not of type core block, or an external block that is not an external block) from
  * being added.
  */
 public class SliceBlocks {
-    // the spec defines a special sentinel to indicate the absence of an embedded reference block
-    public static int EMBEDDED_REFERENCE_ABSENT_CONTENT_ID = -1;
-
     // the core block for this Slice
     private Block coreBlock;
     // the external Blocks as a Map of content ID to block
     private Map<Integer, Block> externalBlocks = new HashMap<>();
-
-    // Modeling the contentID and embedded reference block separately is redundant, since the
-    // block can be retrieved from the external blocks list given the content id, but we retain
-    // them both for validation purposes because they're both present in the serialized CRAM stream,
-    // and on read these are provided separately when populating the slice.
-    private Block embeddedReferenceBlock;
-    private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
 
     /**
      * Set the coreBlock for a Slice. Can only be called once.
@@ -81,71 +71,6 @@ public class SliceBlocks {
     }
 
     /**
-     * Set the content ID of the embedded reference block. Per the CRAM spec, the value can be
-     * -1 ({@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}) to indicate no embedded reference block is
-     * present. If the reference block content ID already has a non-{@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}
-     * value, it cannot be reset. If the embedded reference block has already been set, the provided
-     * reference block content ID must agree with the content ID of the existing block.
-     * @param embeddedReferenceBlockContentID
-     */
-    public void setEmbeddedReferenceContentID(final int embeddedReferenceBlockContentID) {
-        if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID &&
-                this.embeddedReferenceBlockContentID != embeddedReferenceBlockContentID) {
-            throw new IllegalArgumentException(
-                    String.format("Can't reset embedded reference content ID (old %d new %d)",
-                            this.embeddedReferenceBlockContentID, embeddedReferenceBlockContentID));
-
-        }
-        if (this.embeddedReferenceBlock != null &&
-                this.embeddedReferenceBlock.getContentId() != embeddedReferenceBlockContentID) {
-            throw new IllegalArgumentException(
-                    String.format("Attempt to set embedded reference block content ID (%d) that is in conflict" +
-                            "with the content ID (%d) of the existing reference block ID",
-                            embeddedReferenceBlockContentID,
-                            this.embeddedReferenceBlock.getContentId()));
-        }
-        this.embeddedReferenceBlockContentID = embeddedReferenceBlockContentID;
-    }
-
-    /**
-     * Get the content ID of the embedded reference block. Per the CRAM spec, the value
-     * can be {@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID} (-1) to indicate no embedded reference block is
-     * present.
-     * @return id of embedded reference block if present, otherwise {@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}
-     */
-    public int getEmbeddedReferenceContentID() {
-        return embeddedReferenceBlockContentID;
-    }
-
-    public void setEmbeddedReferenceBlock(final Block embeddedReferenceBlock) {
-        ValidationUtils.nonNull(embeddedReferenceBlock, "Embedded reference block must be non-null");
-        ValidationUtils.validateArg(embeddedReferenceBlock.getContentId() != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID,
-                String.format("Invalid content ID (%d) for embedded reference block", embeddedReferenceBlock.getContentId()));
-        ValidationUtils.validateArg(embeddedReferenceBlock.getContentType() == BlockContentType.EXTERNAL,
-                String.format("Invalid embedded reference block type (%s)", embeddedReferenceBlock.getContentType()));
-        if (this.embeddedReferenceBlock != null) {
-            throw new IllegalArgumentException("Can't reset embedded reference block");
-        } else if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID &&
-                embeddedReferenceBlock.getContentId() != this.embeddedReferenceBlockContentID) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Embedded reference block content id (%d) conflicts with existing block if (%d)",
-                            embeddedReferenceBlock.getContentId(),
-                            this.embeddedReferenceBlockContentID));
-        }
-
-        setEmbeddedReferenceContentID(embeddedReferenceBlock.getContentId());
-        this.embeddedReferenceBlock = embeddedReferenceBlock;
-        addExternalBlock(embeddedReferenceBlock);
-    }
-
-    /**
-     * Return the embedded reference block, if any.
-     * @return embedded reference block. May be null.
-     */
-    public Block getEmbeddedReferenceBlock() { return embeddedReferenceBlock; }
-
-    /**
      * Return a list of external content IDs. May be empty. For each content ID returned, the corresponding
      * external block can be obtained using {@link #getExternalBlock}.
      * @return list of external content IDs
@@ -177,12 +102,7 @@ public class SliceBlocks {
                     setCoreBlock(block);
                     break;
                 case EXTERNAL:
-                    if (embeddedReferenceBlockContentID == block.getContentId()) {
-                        // also adds this block to the external list
-                        setEmbeddedReferenceBlock(block);
-                    } else {
-                        addExternalBlock(block);
-                    }
+                    addExternalBlock(block);
                     break;
 
                 default:
