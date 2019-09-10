@@ -1,70 +1,101 @@
+/*
+ * The MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package htsjdk.samtools.reference;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.seekablestream.SeekableBufferedStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.RuntimeIOException;
 
+/**
+ * Implementation of {@link ReferenceSequenceFile} for UCSC '.2bit' format ( {@linkplain https://genome.ucsc.edu/goldenpath/help/twoBit.html}.
+ * 
+ * Fasta sequences are indexed to '.2bit' using ucsc's tool faToTwoBit: <code>faToTwoBit genome.fa genome.2bit</code>
+ * 
+ * @author Pierre Lindenbaum / yokofakun / Institut du Thorax France. Parts of this code were inspired from UCSC's https://github.com/ucscGenomeBrowser/kent/blob/master/src/lib/twoBit.c  https://github.com/ucscGenomeBrowser/kent/blob/master/src/inc/twoBit.h
+ *
+ */
 public class TwoBitSequenceFile implements ReferenceSequenceFile {
-    /** standard suffix of 2bit files */
-    public static final String SUFFIX = ".2bit";
-    // https://github.com/rpique/UCSC-Browser-code-add-ons/blob/ba859c047e46d8074b93700d34cb601fa9ba4288/src/lib/dnautil.c
+    private static final int DEFAULT_BUFFER_SIZE = 1_000_000;
+
+    
     private static final int MASKED_BASE_BIT = 8;
+
     // Numerical values for bases.
     private static final int T_BASE_VAL = 0;
-    // private static final int U_BASE_VAL =0;
     private static final int C_BASE_VAL = 1;
     private static final int A_BASE_VAL = 2;
     private static final int G_BASE_VAL = 3;
     private static final int N_BASE_VAL = 4;// Used in 1/2 byte representation.
 
     private static final byte valToNucl[] = new byte[(N_BASE_VAL | MASKED_BASE_BIT) + 1];
+        {{{
+        valToNucl[T_BASE_VAL] = valToNucl[T_BASE_VAL | MASKED_BASE_BIT] = 't';
+        valToNucl[C_BASE_VAL] = valToNucl[C_BASE_VAL | MASKED_BASE_BIT] = 'c';
+        valToNucl[A_BASE_VAL] = valToNucl[A_BASE_VAL | MASKED_BASE_BIT] = 'a';
+        valToNucl[G_BASE_VAL] = valToNucl[G_BASE_VAL | MASKED_BASE_BIT] = 'g';
+        valToNucl[N_BASE_VAL] = valToNucl[N_BASE_VAL | MASKED_BASE_BIT] = 'n';
+        }}}
 
-    {
-        {
-            {
-                valToNucl[T_BASE_VAL] = valToNucl[T_BASE_VAL | MASKED_BASE_BIT] = 't';
-                valToNucl[C_BASE_VAL] = valToNucl[C_BASE_VAL | MASKED_BASE_BIT] = 'c';
-                valToNucl[A_BASE_VAL] = valToNucl[A_BASE_VAL | MASKED_BASE_BIT] = 'a';
-                valToNucl[G_BASE_VAL] = valToNucl[G_BASE_VAL | MASKED_BASE_BIT] = 'g';
-                valToNucl[N_BASE_VAL] = valToNucl[N_BASE_VAL | MASKED_BASE_BIT] = 'n';
-            }
-        }
-    }
-
-    /*
+    /**
      * Signature into 2bit file (2 bits per nucleotide DNA file) plus information on N and masked
      * bases.
      */
     private final static int twoBitSig = 0x1A412743;
 
-    /* Signature of byte-swapped two-bit file. */
+    /** Signature of byte-swapped two-bit file. */
     private final static int twoBitSwapSig = 0x4327411A;
 
-    private final Path filePath;
-    private final SeekableByteChannel channel;
-    private final ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.BYTES);
+    /** read stream */
+    private final SeekableStream seekableStream;
+
+    /** endianness detected where reading the header */
     private final ByteOrder byteOrder;
+
+    /** map contig to TwoBitIndex */
     private Map<String, TwoBitIndex> seq2index;
-    private final SAMSequenceDictionary dict;
+
+    /** internal sequence dictionary. created if needed */
+    private SAMSequenceDictionary dictionary = null;
+
     /** iterator for {@link #nextSequence()} */
-    private Iterator<SAMSequenceRecord> entryIterator = null;
-    /*
+    private Iterator<String> entryIterator = null;
+    /**
      * Cache information about last sequence accessed, including nBlock and mask block. This doesn't
      * include the data. This speeds fragment reads.
      */
@@ -100,37 +131,57 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
         String name;
         int seqIndex;
         long offset;
+        // not in the original C-structure
+        int lengthCache = -1;
     }
 
+    /** TwoBitSequenceFile from a Path, truncating names at whitespace */
     public TwoBitSequenceFile(final Path path) throws IOException {
         this(path, true);
     }
 
+    /** TwoBitSequenceFile from a Path */
     public TwoBitSequenceFile(final Path path, final boolean truncateNamesAtWhitespace)
             throws IOException {
-        this.filePath = path;
-        this.channel = Files.newByteChannel(path);
-        byteBuffer.clear();
-        byteBuffer.limit(Integer.BYTES);
-        channel.read(byteBuffer);
-        byteBuffer.flip();
-        final int sig = byteBuffer.getInt();
+        this(path.toString(), truncateNamesAtWhitespace);
+    }
+    /** TwoBitSequenceFile from a Path or a URL */
+    public TwoBitSequenceFile(final String pathOrUrl, final boolean truncateNamesAtWhitespace)
+            throws IOException {
+        this(SeekableStreamFactory.getInstance().getStreamFor(pathOrUrl), truncateNamesAtWhitespace);
+    }
+
+    /** TwoBitSequenceFile from a seekableStream */
+   public TwoBitSequenceFile(final SeekableStream seekableStream, final boolean truncateNamesAtWhitespace) throws IOException {
+        this.seekableStream = seekableStream instanceof SeekableBufferedStream ?
+                seekableStream:
+                new SeekableBufferedStream(seekableStream, DEFAULT_BUFFER_SIZE);
+
+        // read the first integer to determine the endianness
+        final byte array[] = new byte[Integer.BYTES];
+        this.seekableStream.readFully(array);
+        final int sig = ByteBuffer.wrap(array).getInt();
         if (sig == twoBitSig) {
             this.byteOrder = ByteOrder.BIG_ENDIAN;
         } else if (sig == twoBitSwapSig) {
             this.byteOrder = ByteOrder.LITTLE_ENDIAN;
         } else {
-            throw new IOException("Cannot read header from " + path);
+            throw new IOException("The header doesn't look like a '.2bit' sequence: "
+                    + seekableStream.getSource());
         }
-        this.byteBuffer.order(this.byteOrder);
+
+        /* get the version */
         final int version = this.readInt();
         if (version != 0) {
             throw new IOException(
                     "Can only handle version 0 or version 1 of this file. This is version "
                             + version);
         }
+        /* read number of sequences */
         final int seqCount = this.readInt();
-        /* int reserved ignored */ this.readInt();
+        /* 'reserved' field is ignored */
+        this.readInt();
+
         this.seq2index = new HashMap<>(seqCount);
         for (int i = 0; i < seqCount; i++) {
             String seqName = this.readString();
@@ -143,28 +194,17 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
                 seqName = seqName.substring(0, ws);
             }
             if (this.seq2index.containsKey(seqName)) {
-                throw new IOException("duplicate sequence name \"" + seqName + "\" in " + path);
+                throw new IOException("duplicate sequence name \"" + seqName + "\" in "
+                        + seekableStream.getSource());
             }
             final TwoBitIndex twoBitIndex = new TwoBitIndex();
             twoBitIndex.name = seqName;
             twoBitIndex.seqIndex = this.seq2index.size();
-            twoBitIndex.offset = this.readInt();
+            twoBitIndex.offset = this.readInt();// it's an int32 for version==0
             this.seq2index.put(twoBitIndex.name, twoBitIndex);
         }
-
-        final List<SAMSequenceRecord> ssrs = new ArrayList<>(this.seq2index.size());
-
-        for (final Iterator<String> iter = this.seq2index.values().stream()
-                .sorted((A, B) -> Integer.compare(A.seqIndex, B.seqIndex)).map(R -> R.name)
-                .iterator(); iter.hasNext();) {
-            final String contig = iter.next();
-            final TwoBit tbi = getTwoBitSeqHeader(contig);
-            final int length = tbi.size;
-            ssrs.add(new SAMSequenceRecord(contig, length));
-        }
-        this.dict = new SAMSequenceDictionary(ssrs);
-        this.entryIterator = this.dict.getSequences().iterator();
-
+        
+        this.entryIterator = getContigNamesInOrder().iterator();
     }
 
     private byte[] query(final Locatable loc, boolean doMask) throws IOException {
@@ -191,25 +231,21 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
         int packedStart = (fragStart >> 2);
         int packedEnd = ((fragEnd + 3) >> 2);
         int packByteCount = packedEnd - packedStart;
-        this.channel.position(this.channel.position() + packedStart);
-        final ByteBuffer buf = ByteBuffer.allocate(packByteCount);
-        this.channel.read(buf);
-        buf.flip();
-        final byte packed[] = buf.array();
-        System.err.println("packed size=" + packed.length);
+        this.seekableStream.seek(this.seekableStream.position() + packedStart);
+        final byte packed[] = new byte[packByteCount];
+        this.seekableStream.readFully(packed);
         final byte dna[] = new byte[outSize];
         int dna_idx = 0;
         int packed_idx = 0;
 
         /* Handle case where everything is in one packed byte */
         if (packByteCount == 1) {
-            System.err.println("ICI-0");
             int pOff = (packedStart << 2);
             int pStart = fragStart - pOff;
             int pEnd = fragEnd - pOff;
             int partial = Byte.toUnsignedInt(packed[0]);
-            assert(pEnd <= 4);
-            assert(pStart >= 0);
+            assert (pEnd <= 4);
+            assert (pStart >= 0);
             for (int i = pStart; i < pEnd; ++i) {
                 dna[dna_idx++] = valToNt((partial >> (6 - i - i)) & 3);
             }
@@ -231,7 +267,7 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
             /* Handle middle bytes. */
             remainder = fragEnd & 3;
             midEnd = fragEnd - remainder;
-            System.err.println("ICI-D " + remainder + " " + dna_idx);
+
             for (int i = midStart; i < midEnd; i += 4) {
                 int b = Byte.toUnsignedInt(packed[packed_idx++]);
                 dna[dna_idx + 3] = valToNt(b & 3);
@@ -254,6 +290,7 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
             }
         }
 
+        /* loop = 0; read the 'N' block, loop ==1 read the mask block */
         for (int side = 0; side < 2; ++side) {
             final Block block = (side == 0 ? twoBit.nBlock : twoBit.maskBlock);
             if (block.count == 0)
@@ -261,7 +298,8 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
             if (side == 1) {
                 if (!doMask)
                     continue;
-                toUpperN(dna);
+                for (int i = 0; i < dna.length; i++)
+                    dna[i] = (byte) Character.toUpperCase(dna[i]);
             }
 
             int startIx = findGreatestLowerBound(block.count, block.starts, fragStart);
@@ -282,7 +320,7 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
                         // memset(seq->dna + s - fragStart, 'n', e - s);
                     } else {
                         for (int x = 0; x < arrayLen; ++x) {
-                            dna[arrayStart + x] =  (byte) Character.toLowerCase(dna[arrayStart + x]);
+                            dna[arrayStart + x] = (byte) Character.toLowerCase(dna[arrayStart + x]);
                         }
                     }
                 }
@@ -293,31 +331,55 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
 
     @Override
     public SAMSequenceDictionary getSequenceDictionary() {
-        return this.dict;
+        if (this.dictionary == null) {
+            try {
+                final List<SAMSequenceRecord> ssrs = new ArrayList<>(this.seq2index.size());
+
+                // create the SAMSequenceDictionary
+                for (final String contig : this.getContigNamesInOrder()) {
+                    final TwoBitIndex index = this.seq2index.get(contig);
+                    if (index.lengthCache == -1) {
+                        final TwoBit tbi = getTwoBitSeqHeader(contig);
+                        index.lengthCache = tbi.size;
+                    }
+                    ssrs.add(new SAMSequenceRecord(contig, index.lengthCache));
+                }
+                this.dictionary = new SAMSequenceDictionary(ssrs);
+            } catch (final IOException e) {
+                throw new SAMException(e);
+            }
+        }
+        return this.dictionary;
     }
 
     @Override
-    public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
+    public ReferenceSequence getSubsequenceAt(final String contig, long start, long stop) {
         if (start > Integer.MAX_VALUE)
             throw new SAMException("start is too large: " + stop);
         if (stop > Integer.MAX_VALUE)
             throw new SAMException("stop is too large: " + stop);
-        if (this.dict.getSequence(contig) == null)
+        if (!this.seq2index.containsKey(contig))
             return null;
         try {
             final byte bases[] = query(new Interval(contig, (int) start, (int) stop), false);
             return new ReferenceSequence(contig, (int) start - 1 /* 0-based */, bases);
-        } catch (IOException err) {
+        } catch (final IOException err) {
             throw new RuntimeIOException(err);
         }
     }
 
     @Override
     public ReferenceSequence getSequence(final String contig) {
-        final SAMSequenceRecord ssr = this.dict.getSequence(contig);
-        if (ssr == null)
-            return null;
-        return getSubsequenceAt(contig, 1, ssr.getSequenceLength());
+        if (!this.seq2index.containsKey(contig))  return null;
+        // get sequence length;
+        final TwoBit tbi;
+        try {
+            tbi = getTwoBitSeqHeader(contig);
+        } catch (final IOException err) {
+            throw new SAMException(err);
+        }
+        if (tbi == null) return null;
+        return getSubsequenceAt(contig, 1, tbi.size);
     }
 
     @Override
@@ -330,39 +392,32 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
         if (!this.entryIterator.hasNext()) {
             return null;
         }
-        return getSequence(this.entryIterator.next().getSequenceName());
+        return getSequence(this.entryIterator.next());
     }
 
+    /** return a list of contigs in the order they where found  in the file header. The method is faster than using the dictionary */
+    public List<String> getContigNamesInOrder() {
+        return this.seq2index.values()
+                .stream()
+                .sorted((A, B) -> Integer.compare(A.seqIndex, B.seqIndex))
+                .map(R -> R.name)
+                .collect(Collectors.toList());
+    }
+    
     @Override
     public void reset() {
-        this.entryIterator = this.dict.getSequences().iterator();
-    }
+        this.entryIterator = getContigNamesInOrder().iterator();
+        }
 
     private byte valToNt(int b) {
-        /*
-         * #define MASKED_BASE_BIT 8
-         * 
-         * Numerical values for bases. #define T_BASE_VAL 0 #define U_BASE_VAL 0 #define C_BASE_VAL
-         * 1 #define A_BASE_VAL 2 #define G_BASE_VAL 3 #define N_BASE_VAL 4 Used in 1/2 byte
-         * representation.
-         * 
-         * valToNt[T_BASE_VAL] = valToNt[T_BASE_VAL|MASKED_BASE_BIT] = 't'; valToNt[C_BASE_VAL] =
-         * valToNt[C_BASE_VAL|MASKED_BASE_BIT] = 'c'; valToNt[A_BASE_VAL] =
-         * valToNt[A_BASE_VAL|MASKED_BASE_BIT] = 'a'; valToNt[G_BASE_VAL] =
-         * valToNt[G_BASE_VAL|MASKED_BASE_BIT] = 'g'; valToNt[N_BASE_VAL] =
-         * valToNt[N_BASE_VAL|MASKED_BASE_BIT] = 'n';
-         */
         return valToNucl[b];
     }
 
+    /* used by readInt and readByte, allocate a ByteBuffer, fix the endianness */
     private ByteBuffer mustRead(int nBytes) throws IOException {
-        this.byteBuffer.clear();
-        this.byteBuffer.limit(nBytes);
-        final int nRead = this.channel.read(this.byteBuffer);
-        if (nRead != nBytes)
-            throw new IOException("cannot read " + nBytes + " byte(s) got " + nRead);
-        this.byteBuffer.flip();
-        return this.byteBuffer;
+        final byte array[] = new byte[nBytes];
+        this.seekableStream.readFully(array);
+        return ByteBuffer.wrap(array).order(this.byteOrder);
     }
 
     private int readInt() throws IOException {
@@ -375,28 +430,22 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
 
     private String readString() throws IOException {
         final int nchar = Byte.toUnsignedInt(this.readByte());
-        final ByteBuffer charbuf = ByteBuffer.allocate(nchar);
-        if (this.channel.read(charbuf) != nchar) {
-            throw new IOException("cannot read string(" + nchar + ")");
-        }
-        charbuf.flip();
-        final byte array[] = charbuf.array();
+        final byte array[] = new byte[nchar * Byte.BYTES];
+        this.seekableStream.readFully(array);
         return new String(array);
     }
 
     @Override
     public void close() throws IOException {
-        channel.close();
+        this.seekableStream.close();
     }
 
-
-    private TwoBit getTwoBitSeqHeader(final String name) throws IOException
-    /*
+    /**
      * get the sequence header information using the cache. Position file right at data.
      */
-    {
+    private TwoBit getTwoBitSeqHeader(final String name) throws IOException {
         if (this.seqCache != null && this.seqCache.name.equals(name)) {
-            this.channel.position(this.seqCache.dataOffsetCache);
+            this.seekableStream.seek(this.seqCache.dataOffsetCache);
         } else {
             // fetch new and cache
             this.seqCache = readTwoBitSeqHeader(name);
@@ -405,22 +454,21 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
     }
 
 
-
-    private TwoBit readTwoBitSeqHeader(final String name) throws IOException
-    /*
+    /**
      * read a sequence header, nBlocks and maskBlocks from a twoBit file, leaving file pointer at
      * data block
      */
-    {
+    private TwoBit readTwoBitSeqHeader(final String name) throws IOException  {
         final TwoBit twoBit = new TwoBit();
         twoBit.name = name;
 
 
         /* Find offset in index and seek to it */
-        twoBitSeekTo(name);
+        final TwoBitIndex index = twoBitSeekTo(name);
 
         /* Read in seqSize. */
         twoBit.size = readInt();
+        index.lengthCache = twoBit.size;
 
         /* Read in blocks of N. */
         twoBit.nBlock = readBlockCoords();
@@ -432,23 +480,16 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
         /* Reserved word. */
         twoBit.reserved = readInt();
 
-        twoBit.dataOffsetCache = this.channel.position();
+        twoBit.dataOffsetCache = this.seekableStream.position();
 
         return twoBit;
     }
 
-    private void toUpperN(byte array[]) {
-
-    }
-
-
-
-    private Block readBlockCoords() throws IOException
-    /*
+    /**
      * Read in blockCount, starts and sizes from file. (Same structure used for both blocks of N's
      * and masked blocks.)
      */
-    {
+    private Block readBlockCoords() throws IOException {
         final Block block = new Block();
         block.count = readInt();
         if (block.count == 0) {
@@ -457,35 +498,40 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
         } else {
             block.starts = new int[block.count];
             block.sizes = new int[block.count];
-            final ByteBuffer buf = ByteBuffer.allocate(block.count * Integer.BYTES);
-            buf.order(this.byteOrder);
-            this.channel.read(buf);
-            buf.flip();
-            block.starts = buf.asIntBuffer().array();
+            final byte array[] = new byte[block.count * Integer.BYTES];
 
-            buf.clear();
-            this.channel.read(buf);
-            buf.flip();
-            block.sizes = buf.asIntBuffer().array();
+            ByteBuffer buffer = ByteBuffer.wrap(array).order(this.byteOrder);
+            this.seekableStream.readFully(array);
+            block.starts = new int[block.count];
+            for (int i = 0; i < block.count; ++i) {
+                block.starts[i] = buffer.getInt();
+            }
+
+            buffer = ByteBuffer.wrap(array).order(this.byteOrder);
+            this.seekableStream.readFully(array);
+            block.sizes = new int[block.count];
+            for (int i = 0; i < block.count; ++i) {
+                block.sizes[i] = buffer.getInt();
+            }
         }
         return block;
     }
 
 
-    /* Seek to start of named record. Abort if can't find it. */
-    private void twoBitSeekTo(final String name) throws IOException {
+    /** Seek to start of named record. Abort if can't find it. return the index on success*/
+    private TwoBitIndex twoBitSeekTo(final String name) throws IOException {
         final TwoBitIndex index = this.seq2index.get(name);
         if (index == null)
-            throw new IllegalArgumentException("not int dict" + name);
-        this.channel.position(index.offset);
+            throw new IllegalArgumentException("sequence not int dictionary : " + name);
+        this.seekableStream.seek(index.offset);
+        return index;
     }
 
-    private int findGreatestLowerBound(int blockCount, int[] pos, int val)
-    /*
+    /**
      * Find index of greatest element in posArray that is less than or equal to val using a binary
      * search.
      */
-    {
+    private int findGreatestLowerBound(int blockCount, int[] pos, int val) {
         int startIx = 0, endIx = blockCount - 1, midIx;
         int posVal;
 
@@ -508,20 +554,6 @@ public class TwoBitSequenceFile implements ReferenceSequenceFile {
 
     @Override
     public String toString() {
-        return "TwoBitSequenceFile(" + this.filePath + ")";
-    }
-
-    public static void main(String[] args) {
-        try {
-            TwoBitSequenceFile r = new TwoBitSequenceFile(Paths
-                    .get("/home/lindenb/src/jvarkit-git/src/test/resources/rotavirus_rf.2bit"));
-            byte array[] = r.query(new Interval("RF01", 1, 20), false);
-            System.err.println(new String(array));
-            System.err.println(r.getSequence("RF11").getBaseString());
-            r.close();
-            System.err.println("done");
-        } catch (Exception err) {
-            err.printStackTrace();
-        }
+        return "TwoBitSequenceFile(" + this.seekableStream.getSource() + ")";
     }
 }

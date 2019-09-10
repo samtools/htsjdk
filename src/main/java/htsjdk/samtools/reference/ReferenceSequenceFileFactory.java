@@ -126,18 +126,18 @@ public class ReferenceSequenceFileFactory {
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
     public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
-        // this should thrown an exception if the fasta file is not supported
-        getFastaExtension(path);
-        
         // 2bit sequences
-        if (path.toString().endsWith(FileExtensions.TWOBIT)) {
+        if (path.getFileName().toString().endsWith(FileExtensions.TWOBIT)) {
             try {
                 return new TwoBitSequenceFile(path, truncateNamesAtWhitespace);
             } catch (final IOException e) {
                 throw new SAMException("Error opening .2bit : " + path, e);
             }
         }
-        
+
+        // this should thrown an exception if the fasta file is not supported
+        getFastaExtension(path);
+
         // Using faidx requires truncateNamesAtWhitespace
         if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
             try {
@@ -170,7 +170,7 @@ public class ReferenceSequenceFileFactory {
         if (!Files.exists(fastaFile)) return false;
         
         // 2bit file
-        if (fastaFile.toString().endsWith(FileExtensions.TWOBIT)) return true;
+        if (fastaFile.getFileName().toString().endsWith(FileExtensions.TWOBIT)) return true;
         
         // both the FASTA file should exists and the .fai index should exist
         if (Files.exists(getFastaIndexFileName(fastaFile))) {

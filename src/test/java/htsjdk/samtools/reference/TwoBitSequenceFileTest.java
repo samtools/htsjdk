@@ -12,6 +12,8 @@ import org.testng.annotations.Test;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceDictionaryTest;
+import htsjdk.samtools.SAMSequenceRecord;
 
 public class TwoBitSequenceFileTest  extends HtsjdkTest{
     private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools/reference");
@@ -59,4 +61,30 @@ public class TwoBitSequenceFileTest  extends HtsjdkTest{
         tbf.close();
     }
     
+    @Test
+    public void testOpenURL() throws IOException {
+        final String url = "http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/hg19.2bit";
+        try (TwoBitSequenceFile tbf = new TwoBitSequenceFile(url, true) ) {
+            final SAMSequenceDictionary dict= tbf.getSequenceDictionary();
+            Assert.assertNotNull(dict);
+            Assert.assertTrue(dict.size()>23);
+            
+            final SAMSequenceRecord ssr = dict.getSequence("chr2");
+            Assert.assertNotNull(ssr);
+            Assert.assertEquals(ssr.getSequenceName(), "chr2");
+            Assert.assertEquals(ssr.getSequenceLength(), 243_199_373);
+            
+            ReferenceSequence seq =tbf.getSubsequenceAt("chr2", 1000, 1010);
+            Assert.assertNotNull(seq);
+            Assert.assertEquals(seq.getName(), "chr2");
+            Assert.assertEquals(seq.length(), 11);
+            Assert.assertEquals(seq.getBaseString().toUpperCase(), "NNNNNNNNNNN");
+
+            seq =tbf.getSubsequenceAt("chr2", 111000, 111010);
+            Assert.assertNotNull(seq);
+            Assert.assertEquals(seq.getName(), "chr2");
+            Assert.assertEquals(seq.length(), 11);
+            Assert.assertEquals(seq.getBaseString().toUpperCase(), "TTTATTTTTCA");
+        }
+    }
 }
