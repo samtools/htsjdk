@@ -131,8 +131,12 @@ public class SliceTests extends HtsjdkTest {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, coordinateSorted);
         final Slice slice = new Slice(records, header, 0L);
         final int expectedBaseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
-        CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,
-                expectedAlignmentStart, expectedAlignmentSpan, TEST_RECORD_COUNT, expectedBaseCount);
+        CRAMStructureTestUtil.assertSliceState(
+                slice,
+                new AlignmentContext(expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan),
+                TEST_RECORD_COUNT,
+                expectedBaseCount,
+                0);
     }
 
     // show that a slice with a single ref will initially be built as single-ref
@@ -165,29 +169,31 @@ public class SliceTests extends HtsjdkTest {
         buildSliceAndAssert(records, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN);
     }
 
-//    @Test
-//    public void testSingleAndUnmappedBuild() {
-//        final List<CRAMRecord> records = new ArrayList<>();
-//
-//        final int mappedSequenceId = 0;  // arbitrary
-//        final int alignmentStart = 10;  // arbitrary
-//        int index = 0;
-//        final CRAMRecord single = CRAMStructureTestUtil.createMappedRecord(index, mappedSequenceId, alignmentStart);
-//        single.readLength = 20;
-//        records.add(single);
-//
-//        index++;
-//        final CRAMRecord unmapped = CRAMStructureTestUtil.createUnmappedUnplacedRecord(index);
-//        unmapped.readLength = 35;
-//        records.add(unmapped);
-//
-//        final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
-//
-//        final Slice slice = Slice.buildSlice(records, header);
-//        final int expectedBaseCount = single.getReadLength() + unmapped.getReadLength();
-//        CRAMStructureTestUtil.assertSliceState(slice, ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-//                Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, records.size(), expectedBaseCount);
-//    }
+    @Test
+    public void testSingleAndUnmappedBuild() {
+        final List<CRAMRecord> records = new ArrayList<>();
+
+        final int mappedSequenceId = 0;  // arbitrary
+        final int alignmentStart = 10;  // arbitrary
+        int index = 0;
+        final CRAMRecord single = CRAMStructureTestUtil.createMappedRecord(index, mappedSequenceId, alignmentStart);
+        records.add(single);
+
+        index++;
+        final CRAMRecord unmapped = CRAMStructureTestUtil.createUnmappedUnplacedRecord(index);
+        records.add(unmapped);
+
+        final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
+
+        final Slice slice = new Slice(records, header, 0);
+        final int expectedBaseCount = single.getReadLength() + unmapped.getReadLength();
+        CRAMStructureTestUtil.assertSliceState(
+                slice,
+                AlignmentContext.MULTIPLE_REFERENCE_CONTEXT,
+                records.size(),
+                expectedBaseCount,
+                0);
+    }
 
     @Test(dataProvider = "uninitializedBAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
     public void uninitializedBAIParameterTest(final Slice s) {
@@ -206,8 +212,12 @@ public class SliceTests extends HtsjdkTest {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
         final Slice slice = new Slice(records, header, 0L);
         final int expectedBaseCount = records.size() * READ_LENGTH_FOR_TEST_RECORDS;
-        CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,
-                expectedAlignmentStart, expectedAlignmentSpan, records.size(), expectedBaseCount);
+        CRAMStructureTestUtil.assertSliceState(
+                slice,
+                new AlignmentContext(expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan),
+                records.size(),
+                expectedBaseCount,
+                0L);
     }
 
     // Embedded reference block tests
@@ -253,16 +263,22 @@ public class SliceTests extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testRejectResetEmbeddedReferenceBlockContentID() {
+        final int originalBlockID = 27;
+        final int conflictingBlockID = 28;
+
         final Slice slice = SliceTestHelper.getSingleRecordSlice();
-        slice.setEmbeddedReferenceContentID(27);
-        slice.setEmbeddedReferenceContentID(28);
+        slice.setEmbeddedReferenceContentID(originalBlockID);
+        slice.setEmbeddedReferenceContentID(conflictingBlockID);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testRejectConflictingEmbeddedReferenceBlockContentID() {
+        final int originalBlockID = 27;
+        final int conflictingBlockID = 28;
+
         final Slice slice = SliceTestHelper.getSingleRecordSlice();
-        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, 27, new byte[2], 2);
-        slice.setEmbeddedReferenceContentID(28);
+        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, originalBlockID, new byte[2], 2);
+        slice.setEmbeddedReferenceContentID(conflictingBlockID);
         slice.setEmbeddedReferenceBlock(block);
     }
 

@@ -44,7 +44,7 @@ public class ContainerHeader {
     //TODO: where is the checksum validation code ?? where ?
     private int checksum = 0;
 
-    // TODO: this is the case where the header is read in from a stream, or is a temporary holder for a SAMFileHeader
+    // Note: this is the case where the header is read in from a stream, or is a temporary holder for a SAMFileHeader
     public ContainerHeader(
             final AlignmentContext alignmentContext,
             int containerBlocksByteSize,
@@ -64,7 +64,7 @@ public class ContainerHeader {
         this.checksum = checksum;
     }
 
-    // this is the case where we're writing a container from SAMRecords, but don't have all of the values yet (landmarks, etc)
+    // Note: this is the case where we're writing a container from SAMRecords, but don't have all of the values yet (landmarks, etc)
     public ContainerHeader(
             final AlignmentContext alignmentContext,
             final long globalRecordCounter,
@@ -89,7 +89,7 @@ public class ContainerHeader {
 
     public AlignmentContext getAlignmentContext() { return alignmentContext; }
 
-    public int getRecordCount() {
+    public int getNumberOfRecords() {
         return recordCount;
     }
 
@@ -184,7 +184,7 @@ public class ContainerHeader {
         length += (ITF8.writeUnsignedITF8(alignmentContext.getReferenceContext().getReferenceContextID(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(alignmentContext.getAlignmentStart(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(alignmentContext.getAlignmentSpan(), crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(getRecordCount(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(getNumberOfRecords(), crc32OutputStream) + 7) / 8;
         length += (LTF8.writeUnsignedLTF8(getGlobalRecordCounter(), crc32OutputStream) + 7) / 8;
         length += (LTF8.writeUnsignedLTF8(getBaseCount(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(getBlockCount(), crc32OutputStream) + 7) / 8;

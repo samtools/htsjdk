@@ -17,9 +17,7 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMTextHeaderCodec;
-import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CramIO;
@@ -31,7 +29,6 @@ import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.utils.ValidationUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -39,6 +36,11 @@ import java.nio.ByteOrder;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Notes: Container will construct a container out of as many cramRecords as it is handed, respecting only
+ * the maximum number of slices. The policy around how to break up lists of records into containers is enforced
+ * by ContainerFactory.
+ */
 public class Container {
     private final ContainerHeader containerHeader;
     private final CompressionHeader compressionHeader;
@@ -47,53 +49,65 @@ public class Container {
     // container's byte offset from the start of the containing stream, used for indexing
     private final long containerByteOffset;
 
-     /**
-      * Derive the container's {@link ReferenceContext} from its {@link Slice}s.
-      *
-      * A Single Reference Container contains only Single Reference Slices mapped to the same reference.
-      * - set the Container's ReferenceContext to be the same as those slices
-      * - set the Container's Alignment Start and Span to cover all slices
-      *
-      * A Multiple Reference Container contains only Multiple Reference Slices.
-      * - set the Container's ReferenceContext to MULTIPLE_REFERENCE_CONTEXT
-      * - unset the Container's Alignment Start and Span
-      *
-      * An Unmapped Container contains only Unmapped Slices.
-      * - set the Container's ReferenceContext to UNMAPPED_UNPLACED_CONTEXT
-      * - unset the Container's Alignment Start and Span
-      *
-      * Any other combination is invalid.
-      *
-      * @param compressionHeader the CRAM {@link CompressionHeader} to assign to the Container
-      * @param containerSlices the constituent Slices of the Container
-      * @param containerByteOffset the Container's byte offset from the start of the stream
-      * @param globalRecordCounter the global record count for the first record in this container
-      * @throws CRAMException for invalid Container states
-      * @return the initialized Container
-      */
-     // TODO: this is the case where we're writing a container from SAMRecords (CRAMContainerStreamWriter)
+    /**
+     * Derive the container's {@link ReferenceContext} from its {@link Slice}s.
+     *
+     * A Single Reference Container contains only Single Reference Slices mapped to the same reference.
+     * - set the Container's ReferenceContext to be the same as those slices
+     * - set the Container's Alignment Start and Span to cover all slices
+     *
+     * A Multiple Reference Container contains only Multiple Reference Slices.
+     * - set the Container's ReferenceContext to MULTIPLE_REFERENCE_CONTEXT
+     * - unset the Container's Alignment Start and Span
+     *
+     * An Unmapped Container contains only Unmapped Slices.
+     * - set the Container's ReferenceContext to UNMAPPED_UNPLACED_CONTEXT
+     * - unset the Container's Alignment Start and Span
+     *
+     * Any other combination is invalid.
+     *
+//     * @param compressionHeader the CRAM {@link CompressionHeader} to assign to the Container
+//     * @param containerSlices the constituent Slices of the Container
+     * @param containerByteOffset the Container's byte offset from the start of the stream
+     * @param globalRecordCounter the global record count for the first record in this container
+     * @throws CRAMException for invalid Container states
+     * @return the initialized Container
+     */
     public Container(
             final CompressionHeader compressionHeader,
-            final List<Slice> containerSlices,
+            final List<Slice> slices,
             final long containerByteOffset,
             final long globalRecordCounter) {
-        ValidationUtils.nonNull(containerSlices, "slice list must be non null");
-        ValidationUtils.validateArg(containerByteOffset >= 0, "containerByteOffset must be >= 0");
-        ValidationUtils.validateArg(globalRecordCounter >= 0, "globalRecordCounter must be >= 0");
 
-        final ReferenceContext commonRefContext = getDerivedSliceReferenceContext(containerSlices);
+        this.compressionHeader = compressionHeader;
+        this.slices = slices;
+        this.containerByteOffset = containerByteOffset;
+
+        final ReferenceContext commonRefContext = getDerivedReferenceContextFromSlices(slices);
+        final AlignmentContext alignmentContext = getDerivedAlignmentContext(commonRefContext);
 
         int baseCount = 0;
         int blockCount = 0;
         int recordCount = 0;
-        for (final Slice slice : containerSlices) {
+        for (final Slice slice : slices) {
+            slice.setContainerByteOffset(containerByteOffset);
             recordCount += slice.getNumberOfRecords();
-            // TODO: this count is incorrect...?
             blockCount += slice.getNumberOfBlocks();
             baseCount += slice.getBaseCount();
-            slice.setContainerByteOffset(containerByteOffset);
         }
 
+        this.containerHeader = new ContainerHeader(
+                alignmentContext,
+                globalRecordCounter,
+                blockCount,
+                recordCount,
+                baseCount);
+
+        validateContainerReferenceContext();
+        checkReferenceContexts(commonRefContext.getReferenceContextID());
+    }
+
+    private final AlignmentContext getDerivedAlignmentContext(final ReferenceContext commonRefContext) {
         int alignmentStart = AlignmentContext.NO_ALIGNMENT_START;
         int alignmentSpan = AlignmentContext.NO_ALIGNMENT_SPAN;
 
@@ -102,29 +116,19 @@ public class Container {
             // end is start + span - 1.  We can do slightly easier math instead.
             int endPlusOne = Integer.MIN_VALUE;
 
-            for (final Slice slice : containerSlices) {
-                start = Math.min(start, slice.getAlignmentContext().getAlignmentStart());
-                endPlusOne = Math.max(endPlusOne, slice.getAlignmentContext().getAlignmentStart() + slice.getAlignmentContext().getAlignmentSpan());
+            for (final Slice slice : slices) {
+                final AlignmentContext alignmentContext = slice.getAlignmentContext();
+                start = Math.min(start, alignmentContext.getAlignmentStart());
+                endPlusOne = Math.max(endPlusOne, alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan());
             }
             alignmentStart = start;
             alignmentSpan = endPlusOne - start;
         }
-
-        this.containerHeader = new ContainerHeader(
-                new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan),
-                globalRecordCounter,
-                blockCount,
-                recordCount,
-                baseCount);
-        this.compressionHeader = compressionHeader;
-        this.slices = containerSlices;
-        this.containerByteOffset = containerByteOffset;
-
-        validateContainerReferenceContext();
+        return new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan);
     }
 
-    //TODO: this is the degenerate case of the CramContainerHeaderIterator, which for disq really only
-    //TODO: cares about the byte offset...
+    // Note: this is the degenerate case of the CramContainerHeaderIterator, which for disq really only
+    // cares about the byte offset...
     public Container(final ContainerHeader containerHeader, final long containerByteOffset) {
         this.containerHeader = containerHeader;
         this.containerByteOffset = containerByteOffset;
@@ -132,7 +136,7 @@ public class Container {
         slices = Collections.EMPTY_LIST;
     }
 
-    //TODO: this is the case where we're reading a container from a stream
+    // Note: this is the case where we're reading a container from a stream
     public Container(final Version version, final InputStream inputStream, final long containerByteOffset) {
         containerHeader = ContainerHeader.readContainerHeader(version.major, inputStream);
         if (containerHeader.isEOF()) {
@@ -156,6 +160,8 @@ public class Container {
         distributeIndexingParametersToSlices();
 
         validateContainerReferenceContext();
+
+        checkSliceReferenceContexts(getAlignmentContext().getReferenceContext().getReferenceContextID());
     }
 
     /**
@@ -216,9 +222,9 @@ public class Container {
      * @param id
      * @return
      */
-    public static SAMFileHeader getSAMFileHeader(final Version version,
-                                                 final InputStream inputStream,
-                                                 final String id) {
+    public static SAMFileHeader getSAMFileHeaderFromContainer(final Version version,
+                                                              final InputStream inputStream,
+                                                              final String id) {
         final ContainerHeader containerHeader = ContainerHeader.readContainerHeader(version.major, inputStream);
         final Block block;
         if (version.compatibleWith(CramVersions.CRAM_v3)) {
@@ -271,7 +277,7 @@ public class Container {
         try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             block.write(major, byteArrayOutputStream);
             int containerBlocksByteSize = byteArrayOutputStream.size();
-            // TODO: make sure this container is initialized correctly/fully
+            // TODO: make sure this container is initialized correctly/fully (add a test for checksum ?)
             final ContainerHeader containerHeader = new ContainerHeader(
                     // we're forced to create an alignment context for this bogus container...
                     new AlignmentContext(new ReferenceContext(0), 0, 1),
@@ -290,12 +296,13 @@ public class Container {
         }
     }
 
+    // TODO: this unpacks all slices
     public List<CRAMRecord> getCRAMRecords(final ValidationStringency validationStringency, final CompressorCache compressorCache) {
         if (isEOF()) {
             return Collections.emptyList();
         }
 
-        final ArrayList<CRAMRecord> records = new ArrayList<>(getContainerHeader().getRecordCount());
+        final ArrayList<CRAMRecord> records = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
             records.addAll(slice.getRecords(compressorCache, validationStringency));
         }
@@ -353,11 +360,6 @@ public class Container {
                             slice.getAlignmentContext(),
                             slice.getMappedReadsCount(),
                             slice.getUnmappedReadsCount());
-//                    final AlignmentSpan alignmentSpan = new AlignmentSpan(
-//                            slice.getAlignmentContext().getAlignmentStart(),
-//                            slice.getAlignmentContext().getAlignmentSpan(),
-//                            slice.getMappedReadsCount(),
-//                            slice.getUnmappedReadsCount());
                     containerSpanMap.merge(slice.getAlignmentContext().getReferenceContext(), alignmentSpan, AlignmentSpan::combine);
                     break;
             }
@@ -405,9 +407,33 @@ public class Container {
         lastSlice.setByteSize(containerHeader.getContainerBlocksByteSize() - lastSlice.getByteOffsetFromCompressionHeaderStart());
     }
 
-    // Compare the reference context declared by the container with the one dervied from the contained slices.
+    private void checkReferenceContexts(final int aggregateReferenceContext) {
+        final int actualReferenceContextID = getAlignmentContext().getReferenceContext().getReferenceContextID();
+        if (actualReferenceContextID != aggregateReferenceContext) {
+            throw new CRAMException(
+                    String.format("actual container reference context (%d) doesn't match expected aggregate reference context (%d)",
+                            actualReferenceContextID,
+                            aggregateReferenceContext));
+        }
+
+        checkSliceReferenceContexts(actualReferenceContextID);
+    }
+
+    private void checkSliceReferenceContexts(final int actualReferenceContextID) {
+        if (actualReferenceContextID == ReferenceContext.MULTIPLE_REFERENCE_ID) {
+            for (final Slice slice : getSlices()) {
+                if (slice.getAlignmentContext().getReferenceContext().getReferenceContextID() != ReferenceContext.MULTIPLE_REFERENCE_ID) {
+                    throw new CRAMException(
+                            String.format("Found slice with reference context (%d). Multi-reference container can only contain multi-ref slices.",
+                                    slice.getAlignmentContext().getReferenceContext().getReferenceContextID()));
+                }
+            }
+        }
+    }
+
+    // Compare the reference context declared by the container with the one derived from the contained slices.
     private void validateContainerReferenceContext() {
-        final ReferenceContext derivedSliceReferenceContext = getDerivedSliceReferenceContext(getSlices());
+        final ReferenceContext derivedSliceReferenceContext = getDerivedReferenceContextFromSlices(getSlices());
         if (!derivedSliceReferenceContext.equals(getAlignmentContext().getReferenceContext())) {
             throw new CRAMException(String.format(
                     "Container (%s) has a reference context that doesn't match the reference context (%s) derived from it's slices.",
@@ -416,7 +442,7 @@ public class Container {
         }
     }
 
-    private static ReferenceContext getDerivedSliceReferenceContext(final List<Slice> containerSlices) {
+    private ReferenceContext getDerivedReferenceContextFromSlices(final List<Slice> containerSlices) {
         final Set<ReferenceContext> sliceRefContexts = containerSlices.stream()
                 .map(s -> s.getAlignmentContext().getReferenceContext())
                 .collect(Collectors.toSet());
@@ -424,12 +450,7 @@ public class Container {
             throw new CRAMException("Cannot construct a container without any slices");
         }
         else if (sliceRefContexts.size() > 1) {
-            final String msg = String.format(
-                    "Attempt to construct a container from slices with conflicting types or reference contexts: %s",
-                    sliceRefContexts.stream()
-                            .map(ReferenceContext::toString)
-                            .collect(Collectors.joining(", ")));
-            throw new CRAMException(msg);
+            return ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         }
 
         return sliceRefContexts.iterator().next();

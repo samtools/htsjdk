@@ -39,7 +39,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Container headerOnlyContainer = headerOnlyContainers.get(i);
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getContainerBlocksByteSize(), fullContainer.getContainerHeader().getContainerBlocksByteSize());
             Assert.assertEquals(headerOnlyContainer.getAlignmentContext(), fullContainer.getAlignmentContext());
-            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getRecordCount(), fullContainer.getContainerHeader().getRecordCount());
+            Assert.assertEquals(headerOnlyContainer.getContainerHeader().getNumberOfRecords(), fullContainer.getContainerHeader().getNumberOfRecords());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getGlobalRecordCounter(), fullContainer.getContainerHeader().getGlobalRecordCounter());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBaseCount(), fullContainer.getContainerHeader().getBaseCount());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBlockCount(), fullContainer.getContainerHeader().getBlockCount());
@@ -57,7 +57,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
                 Container container = new Container(actualHeader.getVersion(), seekableFileStream, byteOffset);
                 Assert.assertEquals(container.getAlignmentContext().getAlignmentStart(), fullContainer.getAlignmentContext().getAlignmentStart());
                 Assert.assertEquals(container.getAlignmentContext().getAlignmentSpan(), fullContainer.getAlignmentContext().getAlignmentSpan());
-                Assert.assertEquals(container.getContainerHeader().getRecordCount(), fullContainer.getContainerHeader().getRecordCount());
+                Assert.assertEquals(container.getContainerHeader().getNumberOfRecords(), fullContainer.getContainerHeader().getNumberOfRecords());
                 Assert.assertEquals(container.getContainerHeader().getChecksum(), fullContainer.getContainerHeader().getChecksum());
             }
         }

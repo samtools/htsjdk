@@ -56,6 +56,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //        if (SamtoolsTestUtils.isSamtoolsAvailable()) {
 //            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(tempOutCRAM, referenceFile);
 //            System.out.println(String.format("Samtools file size: %,d (%s)", Files.size(samtoolsOutFile.toPath()), samtoolsOutFile.toPath()));
+//            assertRoundTripFidelity(cramSourceFile, samtoolsOutFile, referenceFile);
 //        }
         tempOutCRAM.delete();
     }
@@ -87,7 +88,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         final File tempOutCRAM = File.createTempFile("bestEncodingStrategyTest", ".cram");
         System.out.println(String.format("Output file: %s", tempOutCRAM.toPath()));
         final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
-//        assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile);
+        assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile);
 //        if (SamtoolsTestUtils.isSamtoolsAvailable()) {
 //            // give the result to samtools and see if it can read it and wite another cra,...
 //            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(
@@ -119,6 +120,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                     for (final DataSeries dataSeries : enumerateDataSeries()) {
                         for (final EncodingDescriptor encodingDescriptor : enumerateEncodingDescriptorsFor(dataSeries)) {
                             for (final ExternalCompressor compressor : enumerateExternalCompressors(gzipCompressionLevel)) {
+                                final long startTime = System.currentTimeMillis();
                                 final CRAMEncodingStrategy testStrategy = createEncodingStrategyForParams(
                                         gzipCompressionLevel,
                                         readsPerSlice,
@@ -144,10 +146,12 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                                 final File mapPath = new File(testStrategy.getCustomCompressionMapPath());
                                 mapPath.delete();
 
+                                final long endTime = System.currentTimeMillis();
                                 final String testSummary = String.format(
-                                        "Size: %,d Test: %,d Series: %s Encoding: %s Compressor: %s %s",
+                                        "Size: %,d Test: %,d Seconds: %d, Series: %s Encoding: %s Compressor: %s %s",
                                         fileSize,
                                         testCount,
+                                        (endTime - startTime) / 1000,
                                         dataSeries,
                                         encodingDescriptor.getEncodingID(),
                                         compressor,

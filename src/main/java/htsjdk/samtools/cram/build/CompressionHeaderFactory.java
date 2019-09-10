@@ -98,13 +98,13 @@ public class CompressionHeaderFactory {
      * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} object
      *         describing the encoding chosen for the data
      */
+    //TODO: the compression header must be built from ALL of the records in all slices in this container
     public CompressionHeader build(final List<CRAMRecord> records, final boolean coordinateSorted) {
         final CompressionHeader compressionHeader = new CompressionHeader(encodingMap);
 
-        //TODO: this should be set by the caller since it should only be set once on the header so
-        //TODO: that all containers created by the factory use the same settings
         compressionHeader.setIsCoordinateSorted(coordinateSorted);
         compressionHeader.setTagIdDictionary(buildTagIdDictionary(records));
+        compressionHeader.readNamesIncluded = encodingStrategy.getPreserveReadNames();
 
         buildTagEncodings(records, compressionHeader);
 
@@ -114,6 +114,10 @@ public class CompressionHeaderFactory {
         compressionHeader.setSubstitutionMatrix(substitutionMatrix);
 
         return compressionHeader;
+    }
+
+    public CRAMEncodingStrategy getEncodingStrategy() {
+        return encodingStrategy;
     }
 
     /**

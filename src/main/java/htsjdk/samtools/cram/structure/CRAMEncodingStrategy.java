@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.Defaults;
+import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
@@ -10,12 +11,14 @@ import com.google.gson.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Parameters that can be set to control encoding strategy used on write.
  */
 public class CRAMEncodingStrategy {
     private final long version = 1L;
+    public static final int DEFAULT_READS_PER_SLICE = 10000;
     private final String strategyName = "default";
 
     // encoding strategies
@@ -23,7 +26,8 @@ public class CRAMEncodingStrategy {
 
     //TODO: should this have separate values for tags (separate from CRAMRecord data) ?
     private int gzipCompressionLevel = Defaults.COMPRESSION_LEVEL;
-    private int readsPerSlice = 10000;
+
+    private int readsPerSlice = DEFAULT_READS_PER_SLICE;
     private int slicesPerContainer = 1;
 
     // should these preservation policies be stored independently of encoding strategy ?
@@ -41,12 +45,15 @@ public class CRAMEncodingStrategy {
         return preserveReadNames;
     }
 
-    public void setPreserveReadNames(boolean preserveReadNames) {
+    public CRAMEncodingStrategy setPreserveReadNames(boolean preserveReadNames) {
         this.preserveReadNames = preserveReadNames;
+        return this;
+
     }
 
-    public void setEncodingMap(final Path encodingMap) {
+    public CRAMEncodingStrategy setEncodingMap(final Path encodingMap) {
         this.customCompressionMapPath = encodingMap.toAbsolutePath().toString();
+        return this;
     }
 
     /**
@@ -57,19 +64,23 @@ public class CRAMEncodingStrategy {
      * @return updated CRAMEncodingStrategy
      */
     public CRAMEncodingStrategy setRecordsPerSlice(final int readsPerSlice) {
-        ValidationUtils.validateArg(readsPerSlice > 0, "Reads per slice must be > 1");
+        //TODO: there are test case that use readsPerSlice of 10
+//        ValidationUtils.validateArg(readsPerSlice > 0 && readsPerSlice >= ContainerFactory.MIN_SINGLE_REF_RECORDS,
+//                String.format("Reads per slice must be > 1 and < %d", ContainerFactory.MIN_SINGLE_REF_RECORDS));
         this.readsPerSlice = readsPerSlice;
         return this;
     }
 
-    public void setGZIPCompressionLevel(final int compressionLevel) {
+    public CRAMEncodingStrategy setGZIPCompressionLevel(final int compressionLevel) {
         ValidationUtils.validateArg(compressionLevel >=0 && compressionLevel <= 10, "cram gzip compression level must be > 0 and <= 10");
         this.gzipCompressionLevel = compressionLevel;
+        return this;
     }
 
-    public void setSlicesPerContainer(final int slicesPerContainer) {
+    public CRAMEncodingStrategy setSlicesPerContainer(final int slicesPerContainer) {
         ValidationUtils.validateArg(slicesPerContainer >=0, "slicesPerContainer must be > 0");
         this.slicesPerContainer = slicesPerContainer;
+        return this;
     }
 
     public String getCustomCompressionMapPath() { return customCompressionMapPath; }

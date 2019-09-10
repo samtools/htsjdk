@@ -88,7 +88,7 @@ public class CRAMRecord {
         ValidationUtils.nonNull(encodingStrategy);
         ValidationUtils.nonNull(samRecord, "samRecord must have a valid header");
         ValidationUtils.nonNull(samRecord.getHeader(), "samRecord must have a valid header");
-        ValidationUtils.nonNull(refBases);
+        ValidationUtils.nonNull(refBases != null || samRecord.getReadUnmappedFlag() == false);
         ValidationUtils.validateArg(sequentialIndex > SEQUENTIAL_INDEX_DEFAULT, "must have a valid sequential index");
         ValidationUtils.nonNull(readGroupMap);
         ValidationUtils.validateArg(sequentialIndex >= 0, "index must be >= 0");
@@ -122,13 +122,14 @@ public class CRAMRecord {
         // then alignmentEnd needs to be recalculated
         readLength = samRecord.getReadLength();
         alignmentStart = samRecord.getAlignmentStart();
-        if (isPlaced()) {
+        //if (isPlaced()) {
+        if (samRecord.getReadUnmappedFlag() || (samRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START)) {
+            readFeatures = new CRAMRecordReadFeatures();
+            alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
+        } else {
             //TODO: previously conditional on samRecord.getReadUnmappedFlag() || (samRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START)
             readFeatures = new CRAMRecordReadFeatures(samRecord, refBases);
             alignmentEnd = readFeatures.initializeAlignmentEnd(alignmentStart, readLength);
-        } else {
-            readFeatures = new CRAMRecordReadFeatures();
-            alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
         }
 
         templateSize = samRecord.getInferredInsertSize();

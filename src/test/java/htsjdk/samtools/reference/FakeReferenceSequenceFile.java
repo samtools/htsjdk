@@ -1,9 +1,7 @@
 package htsjdk.samtools.reference;
 
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.cram.ref.ReferenceSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,6 +13,8 @@ import java.util.Map;
 /**
  * Created by vadim on 17/03/2015.
  */
+//TODO: get rid of this - its very slow on seq dicts with large sequences, such as those used in
+// CRAMFileBAIIndexTest, CRAMFileCRAIIndexTest, and CRAMCRAIIndexer
 public class FakeReferenceSequenceFile implements
         ReferenceSequenceFile {
     Map<String, SAMSequenceRecord> map = new HashMap<String, SAMSequenceRecord>();

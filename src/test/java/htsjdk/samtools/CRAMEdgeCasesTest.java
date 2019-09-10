@@ -68,8 +68,12 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
         testSingleRecord(record, record.getReadBases());
     }
 
+
+    // TODO: this specifically tests that reads that are mapped beyond the end of the reference
+    // is ok ??
     @Test
     public void testNullsAndBeyondRef() throws IOException {
+        // bases, scores, reference
         testSingleRecord("A".getBytes(), "!".getBytes(), "A".getBytes());
         testSingleRecord("A".getBytes(), SAMRecord.NULL_QUALS, "A".getBytes());
         testSingleRecord(SAMRecord.NULL_SEQUENCE, SAMRecord.NULL_QUALS, "A".getBytes());

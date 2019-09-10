@@ -1,150 +1,486 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-/**
- * Created by vadim on 15/12/2015.
- */
+// TODO: test that the RI series is used for MULTI_REF slices
+
 public class ContainerFactoryTest extends HtsjdkTest {
-    private static final int TEST_RECORD_COUNT = 10;
-    private static final int READ_LENGTH_FOR_TEST_RECORDS = CRAMStructureTestUtil.READ_LENGTH_FOR_TEST_RECORDS;
 
-    @Test
-    public void recordsPerSliceTest() {
-        final int recordsPerSlice = 100;
-        CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
-        cramEncodingStrategy.setRecordsPerSlice(recordsPerSlice);
-        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), cramEncodingStrategy);
+    // Coordinate sorted input, 1 slice/container
+    @DataProvider(name="shouldEmitSliceSingleContainerCoordinatePositive")
+    private Object[][] getShouldEmitSliceSingleContainerCoordinatePositive() {
+        final int MAPPED_REFERENCE_INDEX = 1;
 
-        // build a container with the max records per slice
+        return new Object[][] {
+                // currentRefContextID, nextRecordRefContextID, numberOfRecordsSeen, updatedRefContextID
 
-        final List<CRAMRecord> records = CRAMStructureTestUtil.getSingleRefRecords(recordsPerSlice, 0);
-        final long dummyByteOffset = 0;
-        final Container container = factory.buildContainer(records, dummyByteOffset);
+                // uninitialized state
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        0, ReferenceContext.UNMAPPED_UNPLACED_ID },
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID, MAPPED_REFERENCE_INDEX, 0, MAPPED_REFERENCE_INDEX },
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID, MAPPED_REFERENCE_INDEX + 1, 0, MAPPED_REFERENCE_INDEX + 1 },
 
-        Assert.assertEquals(container.getContainerHeader().getRecordCount(), recordsPerSlice);
-        Assert.assertEquals(container.getSlices().size(), 1);
-        Assert.assertEquals(container.getSlices().get(0).getNumberOfRecords(), recordsPerSlice);
+                // singled mapped reference state
 
-        // build a container with 1 too many records to fit into a slice
-        // 2 slices: recordsPerSlice records and 1 record
+                // 1 record seen, must be transition to either unmapped, or same mapped
+                //TODO: we currently force a container to be single ref in the coord-sorted case, since otherwise index queries fail
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 1, ReferenceContext.UNINITIALIZED_REFERENCE_ID },
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX, 1, MAPPED_REFERENCE_INDEX },
+                //TODO: we currently force a container to be single ref in the coord-sorted case, since otherwise index queries fail
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX + 1, 1, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
 
-        records.add(CRAMStructureTestUtil.createMappedRecord(recordsPerSlice, 0, 1));
-        final Container container2 = factory.buildContainer(records, dummyByteOffset);
+                // MIN_SINGLE_REF_RECORDS seen
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        MAPPED_REFERENCE_INDEX},
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1,
+                        MAPPED_REFERENCE_INDEX},
+                // once we're over the minimum, we emit a single-ref slice
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX + 1,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
 
-        Assert.assertEquals(container2.getContainerHeader().getRecordCount(), recordsPerSlice + 1);
-        Assert.assertEquals(container2.getSlices().size(), 2);
-        Assert.assertEquals(container2.getSlices().get(0).getNumberOfRecords(), recordsPerSlice);
-        Assert.assertEquals(container2.getSlices().get(1).getNumberOfRecords(), 1);
+                // > MIN_SINGLE_REF_RECORDS, but < DEFAULT_READS_PER_SLICE records seen
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, MAPPED_REFERENCE_INDEX},
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX + 1,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+
+                // DEFAULT_READS_PER_SLICE records seen
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX + 1,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE,ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+
+                // unmapped unplaced state - for coord sorted we really can only stay in unmapped unplaced state,
+                // or got to uninitialized
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        1, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD + 1, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE + 1, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+
+                // multiple reference state
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+        };
     }
 
-    @DataProvider(name = "containerStateTests")
-    private Object[][] containerStateTests() {
-        final int mappedSequenceId = 0;  // arbitrary
-        final ReferenceContext mappedRefContext = new ReferenceContext(mappedSequenceId);
-        final int mappedAlignmentStart = 1;
-        // record spans:
-        // [1 to READ_LENGTH_FOR_TEST_RECORDS]
-        // [2 to READ_LENGTH_FOR_TEST_RECORDS + 1]
-        // up to [TEST_RECORD_COUNT to READ_LENGTH_FOR_TEST_RECORDS + TEST_RECORD_COUNT - 1]
-        final int mappedAlignmentSpan = READ_LENGTH_FOR_TEST_RECORDS + TEST_RECORD_COUNT - 1;
+    @Test(dataProvider = "shouldEmitSliceSingleContainerCoordinatePositive")
+    private void testShouldEmitSliceSingleContainerCoordinatePositive(
+            final int currentReferenceContext,
+            final int nextReferenceContext,
+            final int nRecordsSeen,
+            final int expectedUpdatedReferenceContext) {
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        samFileHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        final ContainerFactory containerFactory = new ContainerFactory(
+                samFileHeader,
+                new CRAMEncodingStrategy(), CRAMStructureTestHelper.REFERENCE_SOURCE);
+        Assert.assertEquals(
+                containerFactory.shouldEmitSlice(currentReferenceContext, nextReferenceContext, nRecordsSeen),
+                expectedUpdatedReferenceContext
+        );
+    }
+
+    @DataProvider(name="shouldEmitSliceSingleContainerCoordinateNegative")
+    private Object[][] getShouldEmitSliceSingleContainerCoordinateNegative() {
+        // cases that throw because they represent illegal state that we expect to never see
+        return new Object[][] {
+                // numberOfRecordsSeen, currentRefContextID, nextRecordRefContextID
+
+                // cases where record count is non-zero and we're still uninitialized
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 1 },
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 100 },
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX },
+
+                // coord sorted, but mapped records show up after unmapped records
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1, 1 },
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1, ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD },
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1, CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE },
+        };
+    }
+
+    @Test(dataProvider = "shouldEmitSliceSingleContainerCoordinateNegative", expectedExceptions = CRAMException.class)
+    private void testShouldEmitSliceSingleContainerCoordinateNegative(
+            final int currentReferenceContext,
+            final int nextReferenceContext,
+            final int nRecordsSeen) {
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        samFileHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        final ContainerFactory containerFactory = new ContainerFactory(
+                samFileHeader,
+                new CRAMEncodingStrategy(),
+                CRAMStructureTestHelper.REFERENCE_SOURCE);
+        containerFactory.shouldEmitSlice(currentReferenceContext, nextReferenceContext, nRecordsSeen);
+    }
+
+    // Coordinate sorted input, 1 slice/container
+    @DataProvider(name="shouldEmitSliceSingleContainerQuerynamePositive")
+    private Object[][] getShouldEmitSliceSingleContainerQuerynamePositive() {
+        final int MAPPED_REFERENCE_INDEX = 1;
 
         return new Object[][]{
+                // currentRefContextID, nextRecordRefContextID, numberOfRecordsSeen, updatedRefContextID
+
+                // uninitialized state
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID,
+                        SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 0, ReferenceContext.UNMAPPED_UNPLACED_ID },
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID, MAPPED_REFERENCE_INDEX, 0, MAPPED_REFERENCE_INDEX },
+                { ReferenceContext.UNINITIALIZED_REFERENCE_ID, MAPPED_REFERENCE_INDEX + 1, 0, MAPPED_REFERENCE_INDEX + 1 },
+
+                // singled mapped reference state
+
+                // 1 record seen, must be transition to either unmapped, or same mapped
+                // this one differs from coord sorted, we go to multi-ref
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, 1, ReferenceContext.MULTIPLE_REFERENCE_ID },
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX, 1, MAPPED_REFERENCE_INDEX },
+                // this one differs from coord sorted, we go to multi-ref
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX + 1, 1, ReferenceContext.MULTIPLE_REFERENCE_ID}, // differs from coord
+
+                // MIN_SINGLE_REF_RECORDS seen
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        MAPPED_REFERENCE_INDEX},
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX + 1,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+
+                // > MIN_SINGLE_REF_RECORDS, but < DEFAULT_READS_PER_SLICE records seen
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, MAPPED_REFERENCE_INDEX},
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX + 1, CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE -1, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+
+                // DEFAULT_READS_PER_SLICE records seen
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX, CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX + 1,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { MAPPED_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE,ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+
+                // unmapped unplaced state - for coord sorted we really can only stay in unmapped unplaced state,
+                // or got to uninitialized
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        1, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD + 1, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, ReferenceContext.UNMAPPED_UNPLACED_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1,
+                        1, ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1, ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD, ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD + 1, ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.UNMAPPED_UNPLACED_ID, 1,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+
+                // multiple reference state
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1, ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1,
+                        ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
+                        ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        ContainerFactory.MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD + 1,
+                        ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE - 1,
+                        ReferenceContext.MULTIPLE_REFERENCE_ID},
+                { ReferenceContext.MULTIPLE_REFERENCE_ID, MAPPED_REFERENCE_INDEX,
+                        CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE + 1,
+                        ReferenceContext.UNINITIALIZED_REFERENCE_ID},
+        };
+    }
+
+    @Test(dataProvider = "shouldEmitSliceSingleContainerQuerynamePositive")
+    private void testShouldEmitSliceSingleContainerQuerynamePositive(
+            final int currentReferenceContext,
+            final int nextReferenceContext,
+            final int nRecordsSeen,
+            final int expectedUpdatedReferenceContext) {
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        samFileHeader.setSortOrder(SAMFileHeader.SortOrder.queryname);
+        final ContainerFactory containerFactory = new ContainerFactory(
+                samFileHeader,
+                new CRAMEncodingStrategy(), CRAMStructureTestHelper.REFERENCE_SOURCE);
+        Assert.assertEquals(
+                containerFactory.shouldEmitSlice(currentReferenceContext, nextReferenceContext, nRecordsSeen),
+                expectedUpdatedReferenceContext
+        );
+    }
+
+    @DataProvider(name="singleContainerSlicePartitioning")
+    private Object[][] getSingleContainerSlicePartitioning() {
+        final int RECORDS_PER_SLICE = 100;
+        return new Object[][] {
+                // List<SAMRecord>, records/slice, slices/container, expected slice count, expected record count for each slice
                 {
-                        CRAMStructureTestUtil.getSingleRefRecords(TEST_RECORD_COUNT, mappedSequenceId),
-                        mappedRefContext, mappedAlignmentStart, mappedAlignmentSpan
+                        // 1 full single-ref slice with 1 rec
+                        CRAMStructureTestHelper.createMappedSAMRecords(1, 0),
+                        RECORDS_PER_SLICE, 1,
+                        1, Arrays.asList(1)
                 },
                 {
-                        CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
+                        // 1 full single-ref slice with 1 rec, but allow > 1 slices/container
+                        CRAMStructureTestHelper.createMappedSAMRecords(1, 0),
+                        RECORDS_PER_SLICE, 2,
+                        1, Arrays.asList(1)
                 },
                 {
-                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
-                },
-
-                // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
-                // but not both.  We treat these weird edge cases as unplaced.
-
-                {
-                        CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
+                        // 1 full single-ref slice with RECORDS_PER_SLICE - 1 records
+                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE - 1, 0),
+                        RECORDS_PER_SLICE, 1,
+                        1, Arrays.asList(RECORDS_PER_SLICE - 1)
                 },
                 {
-                        CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
+                        // 1 full single-ref slice with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE, 0),
+                        RECORDS_PER_SLICE, 1,
+                        1, Arrays.asList(RECORDS_PER_SLICE)
+                },
+                {
+                        // 2 single-ref slices, one with RECORDS_PER_SLICE records, one with 1 record
+                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE + 1, 0),
+                        RECORDS_PER_SLICE, 2,
+                        2, Arrays.asList(RECORDS_PER_SLICE, 1)
+                },
+                {
+                        // 2 full single-ref slices, each with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 2, 0),
+                        RECORDS_PER_SLICE, 2, 2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
+                },
+                {
+                        // 3 full single-ref slices, each with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 3, 0),
+                        RECORDS_PER_SLICE, 3, 3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE)
                 },
 
-                // show that unmapped-unplaced reads cause a single ref slice/container to become multiref
-
+                // now repeat the tests, but using unmapped records
                 {
-                        CRAMStructureTestUtil.getSingleRefRecordsWithOneUnmapped(TEST_RECORD_COUNT, mappedSequenceId),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
+                        // 1 full single-ref slice with 1 rec
+                        CRAMStructureTestHelper.createUnmappedSAMRecords(1),
+                        RECORDS_PER_SLICE, 1,
+                        1, Arrays.asList(1)
                 },
-
-                // show that unmapped-unplaced reads don't change the state of a multi-ref slice/container
-
                 {
-                        CRAMStructureTestUtil.getMultiRefRecordsWithOneUnmapped(TEST_RECORD_COUNT),
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN
+                        // 1 full single-ref slice with 1 rec, but allow > 1 slices/container
+                        CRAMStructureTestHelper.createUnmappedSAMRecords(1),
+                        RECORDS_PER_SLICE, 2,
+                        1, Arrays.asList(1)
+                },
+                {
+                        // 1 full single-ref slice with RECORDS_PER_SLICE - 1 records
+                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE - 1),
+                        RECORDS_PER_SLICE, 1,
+                        1, Arrays.asList(RECORDS_PER_SLICE - 1)
+                },
+                {
+                        // 1 full single-ref slice with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE),
+                        RECORDS_PER_SLICE, 1,
+                        1, Arrays.asList(RECORDS_PER_SLICE)
+                },
+                {
+                        // 2 single-ref slices, one with RECORDS_PER_SLICE records, one with 1 record
+                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE + 1),
+                        RECORDS_PER_SLICE, 2,
+                        2, Arrays.asList(RECORDS_PER_SLICE, 1)
+                },
+                {
+                        // 2 full single-ref slices, each with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE * 2),
+                        RECORDS_PER_SLICE, 2, 2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
+                },
+                {
+                        // 3 full single-ref slices, each with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE * 3),
+                        RECORDS_PER_SLICE, 3, 3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE)
                 },
         };
     }
 
-    @Test(dataProvider = "containerStateTests")
-    public void testContainerState(final List<CRAMRecord> records,
-                                   final ReferenceContext expectedReferenceContext,
-                                   final int expectedAlignmentStart,
-                                   final int expectedAlignmentSpan) {
-        CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
-        cramEncodingStrategy.setRecordsPerSlice(TEST_RECORD_COUNT);
+    @Test(dataProvider = "singleContainerSlicePartitioning")
+    public void testSingleContainerSlicePartitioning(
+            final List<SAMRecord> samRecords,
+            final int recordsPerSlice,
+            final int slicesPerContainer,
+            final int expectedSliceCount,
+            final List<Integer> expectedSliceRecordCounts) {
+        final CRAMEncodingStrategy cramEncodingStrategy =
+                new CRAMEncodingStrategy().setRecordsPerSlice(recordsPerSlice).setSlicesPerContainer(slicesPerContainer);
+        final ContainerFactory containerFactory = new ContainerFactory(
+                CRAMStructureTestHelper.SAM_FILE_HEADER,
+                cramEncodingStrategy,
+                CRAMStructureTestHelper.REFERENCE_SOURCE);
 
-        final ContainerFactory factory = new ContainerFactory(CRAMStructureTestUtil.getSAMFileHeaderForTests(), cramEncodingStrategy);
-        final long byteOffset = 9999;
-        final Container container = factory.buildContainer(records, byteOffset);
-        final int globalRecordCounter = 0; // first Container
-        final int baseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
-
-        CRAMStructureTestUtil.assertContainerState(container, expectedReferenceContext,
-                expectedAlignmentStart, expectedAlignmentSpan,
-                TEST_RECORD_COUNT, baseCount, globalRecordCounter, byteOffset);
+        final Container container = CRAMStructureTestHelper.getSingleContainerFromRecords(containerFactory, samRecords, 0);
+        Assert.assertNotNull(container);
+        final List<Slice> slices = container.getSlices();
+        Assert.assertEquals(slices.size(), expectedSliceCount);
+        for (int i = 0; i < slices.size(); i++) {
+            Assert.assertEquals(
+                    (Integer) slices.get(i).getNumberOfRecords(),
+                    expectedSliceRecordCounts.get(i));
+        }
     }
 
-    @Test
-    public void testMultiRefWithStateTransitions() {
-        final long firstContainerByteOffset = 737735342;
-        final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest(firstContainerByteOffset);
-
-        // first container is single-ref
-
-        final ReferenceContext refContext = new ReferenceContext(0);
-        final int alignmentStart = 1;
-        final int alignmentSpan = READ_LENGTH_FOR_TEST_RECORDS;
-        int recordCount = 1;
-        int globalRecordCount = 0; // first container - no records yet
-        CRAMStructureTestUtil.assertContainerState(containers.get(0), refContext, alignmentStart, alignmentSpan,
-                recordCount, READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount,
-                firstContainerByteOffset);
-
-        // when other refs are added, subsequent containers are multiref
-
-        recordCount++;  // this container has 2 records
-        globalRecordCount = containers.get(0).getContainerHeader().getRecordCount();   // we've seen 1 record before this container
-        CRAMStructureTestUtil.assertContainerState(containers.get(1), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN, recordCount,
-                READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 1);
-
-        recordCount++;  // this container has 3 records
-        globalRecordCount = containers.get(0).getContainerHeader().getRecordCount() + containers.get(1).getContainerHeader().getRecordCount();    // we've seen 3 records before this container
-        CRAMStructureTestUtil.assertContainerState(containers.get(2), ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                AlignmentContext.NO_ALIGNMENT_START, AlignmentContext.NO_ALIGNMENT_SPAN, recordCount,
-                READ_LENGTH_FOR_TEST_RECORDS * recordCount, globalRecordCount, firstContainerByteOffset + 2);
+    @DataProvider(name="multipleContainerSlicePartitioning")
+    private Object[][] getMultipleContainerSlicePartitioning() {
+        final int RECORDS_PER_SLICE = 100;
+        return new Object[][]{
+                // List<SAMRecord>, records/slice, slices/container, expected container count, expected record count for each container
+                {
+                        // this generates two containers since it has two containers worth of records mapped to a single ref
+                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 2, 0),
+                        RECORDS_PER_SLICE, 1,
+                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
+                },
+                {
+                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 3 + 1, 0),
+                        RECORDS_PER_SLICE, 2,
+                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE+ 1)
+                },
+                {
+                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 4, 0),
+                        RECORDS_PER_SLICE, 2,
+                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE * 2)
+                },
+                {
+                        // this generates two containers since it has two mapped ref indexes
+                        Stream.of(
+                                CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE - 1, 0),
+                                CRAMStructureTestHelper.createMappedSAMRecords(1, 1))
+                                .flatMap(List::stream)
+                                .collect(Collectors.toList()),
+                        RECORDS_PER_SLICE, 1,
+                        2, Arrays.asList(RECORDS_PER_SLICE - 1, 1)
+                },
+                {
+                        // this generates two containers since it has some mapped and one unmapped
+                        Stream.of(
+                                CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE - 1, 0),
+                                CRAMStructureTestHelper.createUnmappedSAMRecords(1))
+                                .flatMap(List::stream)
+                                .collect(Collectors.toList()),
+                        RECORDS_PER_SLICE, 1,
+                        2, Arrays.asList(RECORDS_PER_SLICE - 1, 1)
+                },
+                {
+                        // this generates two containers since it has some mapped and one unmapped
+                        Stream.of(
+                                CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 2, 0),
+                                CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE))
+                                .flatMap(List::stream)
+                                .collect(Collectors.toList()),
+                        RECORDS_PER_SLICE, 2,
+                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE)
+                },
+                {
+                        // this generates two containers since it has some mapped and one unmapped
+                        Stream.of(
+                                CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE / 2, 0),
+                                CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE))
+                                .flatMap(List::stream)
+                                .collect(Collectors.toList()),
+                        RECORDS_PER_SLICE, 1,
+                        2, Arrays.asList(RECORDS_PER_SLICE / 2, RECORDS_PER_SLICE)
+                },
+        };
     }
+
+    @Test(dataProvider = "multipleContainerSlicePartitioning")
+    public void testMultipleContainerRecordsPerContainer(
+        final List<SAMRecord> samRecords,
+        final int recordsPerSlice,
+        final int slicesPerContainer,
+        final int expectedContainerCount,
+        final List<Integer> expectedContainerRecordCounts) {
+        final CRAMEncodingStrategy cramEncodingStrategy =
+                new CRAMEncodingStrategy().setRecordsPerSlice(recordsPerSlice).setSlicesPerContainer(slicesPerContainer);
+        final ContainerFactory containerFactory = new ContainerFactory(
+                CRAMStructureTestHelper.SAM_FILE_HEADER,
+                cramEncodingStrategy,
+                CRAMStructureTestHelper.REFERENCE_SOURCE);
+        final List<Container> containers = CRAMStructureTestHelper.getAllContainersFromRecords(containerFactory, samRecords);
+        Assert.assertEquals(containers.size(), expectedContainerCount);
+
+        for (int i = 0; i < containers.size(); i++) {
+            Assert.assertEquals(
+                    (Integer) containers.get(i).getContainerHeader().getNumberOfRecords(),
+                    expectedContainerRecordCounts.get(i));
+        }
+    }
+
 }
