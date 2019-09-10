@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
-import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -10,37 +9,35 @@ import org.testng.annotations.DataProvider;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: rewrite all this assertion checking in terms of AlignmentContext whereever possible
-
 public class CRAMStructureTestUtil extends HtsjdkTest {
     public static final int READ_LENGTH_FOR_TEST_RECORDS = 123;
 
-    private static final SAMFileHeader header = initializeSAMFileHeaderForTests();
-
-    private static SAMFileHeader initializeSAMFileHeaderForTests() {
-        // arbitrary names and length.  Just ensure we have 10 different valid refs.
-
-        final List<SAMSequenceRecord> sequenceRecords = new ArrayList<>();
-        sequenceRecords.add(new SAMSequenceRecord("0", 10));
-        sequenceRecords.add(new SAMSequenceRecord("1", 10));
-        sequenceRecords.add(new SAMSequenceRecord("2", 10));
-        sequenceRecords.add(new SAMSequenceRecord("3", 10));
-        sequenceRecords.add(new SAMSequenceRecord("4", 10));
-        sequenceRecords.add(new SAMSequenceRecord("5", 10));
-        sequenceRecords.add(new SAMSequenceRecord("6", 10));
-        sequenceRecords.add(new SAMSequenceRecord("7", 10));
-        sequenceRecords.add(new SAMSequenceRecord("8", 10));
-        sequenceRecords.add(new SAMSequenceRecord("9", 10));
-
-        final SAMFileHeader header = new SAMFileHeader(new SAMSequenceDictionary(sequenceRecords));
-        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-
-        return header;
-    }
-
-    public static SAMFileHeader getSAMFileHeaderForTests() {
-        return header;
-    }
+//    private static final SAMFileHeader header = initializeSAMFileHeaderForTests();
+//
+//    private static SAMFileHeader initializeSAMFileHeaderForTests() {
+//        // arbitrary names and length.  Just ensure we have 10 different valid refs.
+//
+//        final List<SAMSequenceRecord> sequenceRecords = new ArrayList<>();
+//        sequenceRecords.add(new SAMSequenceRecord("0", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("1", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("2", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("3", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("4", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("5", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("6", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("7", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("8", 10));
+//        sequenceRecords.add(new SAMSequenceRecord("9", 10));
+//
+//        final SAMFileHeader header = new SAMFileHeader(new SAMSequenceDictionary(sequenceRecords));
+//        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+//
+//        return header;
+//    }
+//
+//    public static SAMFileHeader getSAMFileHeaderForTests() {
+//        return header;
+//    }
 
     public static CRAMRecord createMappedRecord(final int index, final int referenceIndex, final int alignmentStart) {
         return new CRAMRecord(
@@ -147,44 +144,44 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         return records;
     }
 
-    public static List<CRAMRecord> getSingleRefRecordsWithOneUnmapped(final int testRecordCount, final int mappedReferenceIndex) {
-        final List<CRAMRecord> retval = getSingleRefRecords(testRecordCount - 1, mappedReferenceIndex);
-        retval.add(createUnmappedUnplacedRecord(testRecordCount - 1));
-        return retval;
-    }
-
-    public static List<CRAMRecord> getMultiRefRecordsWithOneUnmapped(final int testRecordCount) {
-        final List<CRAMRecord> retval = getMultiRefRecords(testRecordCount - 1);
-        retval.add(createUnmappedUnplacedRecord(testRecordCount - 1));
-        return retval;
-    }
-
-    public static List<Container> getMultiRefContainersForStateTest(final long firstContainerByteOffset) {
-        final ContainerFactory factory = new ContainerFactory(
-                getSAMFileHeaderForTests(),
-                new CRAMEncodingStrategy().setRecordsPerSlice(10));
-        final List<Container> testContainers = new ArrayList<>(3);
-
-        final List<CRAMRecord> records = new ArrayList<>();
-
-        int index = 0;
-        records.add(createMappedRecord(index, index, index + 1));
-        final Container container0 = factory.buildContainer(records, firstContainerByteOffset);
-
-        index++;
-        records.add(createMappedRecord(index, index, index + 1));
-        final Container container1 = factory.buildContainer(records, firstContainerByteOffset + 1);
-
-        index++;
-        records.add(createUnmappedUnplacedRecord(index));
-        final Container container2 = factory.buildContainer(records, firstContainerByteOffset + 2);
-
-        testContainers.add(container0);
-        testContainers.add(container1);
-        testContainers.add(container2);
-        return testContainers;
-    }
-
+//    public static List<CRAMRecord> getSingleRefRecordsWithOneUnmapped(final int testRecordCount, final int mappedReferenceIndex) {
+//        final List<CRAMRecord> retval = getSingleRefRecords(testRecordCount - 1, mappedReferenceIndex);
+//        retval.add(createUnmappedUnplacedRecord(testRecordCount - 1));
+//        return retval;
+//    }
+//
+//    public static List<CRAMRecord> getMultiRefRecordsWithOneUnmapped(final int testRecordCount) {
+//        final List<CRAMRecord> retval = getMultiRefRecords(testRecordCount - 1);
+//        retval.add(createUnmappedUnplacedRecord(testRecordCount - 1));
+//        return retval;
+//    }
+//
+//    public static List<Container> getMultiRefContainersForStateTest(final long firstContainerByteOffset) {
+//        final ContainerFactory factory = new ContainerFactory(
+//                getSAMFileHeaderForTests(),
+//                new CRAMEncodingStrategy().setRecordsPerSlice(10));
+//        final List<Container> testContainers = new ArrayList<>(3);
+//
+//        final List<CRAMRecord> records = new ArrayList<>();
+//
+//        int index = 0;
+//        records.add(createMappedRecord(index, index, index + 1));
+//        final Container container0 = factory.buildContainer(records, firstContainerByteOffset);
+//
+//        index++;
+//        records.add(createMappedRecord(index, index, index + 1));
+//        final Container container1 = factory.buildContainer(records, firstContainerByteOffset + 1);
+//
+//        index++;
+//        records.add(createUnmappedUnplacedRecord(index));
+//        final Container container2 = factory.buildContainer(records, firstContainerByteOffset + 2);
+//
+//        testContainers.add(container0);
+//        testContainers.add(container1);
+//        testContainers.add(container2);
+//        return testContainers;
+//    }
+//
     private static Slice getIndexInitializedSlice() {
         final ReferenceContext refContext = new ReferenceContext(0);
 
@@ -244,59 +241,44 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
     // assert that slices and containers have values equal to what the caller expects
 
     public static void assertSliceState(final Slice slice,
-                                        final ReferenceContext expectedReferenceContext,
-                                        final int expectedAlignmentStart,
-                                        final int expectedAlignmentSpan,
-                                        final int expectedRecordCount,
-                                        final int expectedBaseCount) {
-        Assert.assertEquals(slice.getAlignmentContext().getReferenceContext(), expectedReferenceContext);
-        Assert.assertEquals(slice.getAlignmentContext().getAlignmentStart(), expectedAlignmentStart);
-        Assert.assertEquals(slice.getAlignmentContext().getAlignmentSpan(), expectedAlignmentSpan);
-        Assert.assertEquals(slice.getNumberOfRecords(), expectedRecordCount);
-        Assert.assertEquals(slice.getBaseCount(), expectedBaseCount);
-    }
-
-    public static void assertSliceState(final Slice slice,
-                                        final ReferenceContext expectedReferenceContext,
-                                        final int expectedAlignmentStart,
-                                        final int expectedAlignmentSpan,
+                                        final AlignmentContext expectedAlignmentContext,
                                         final int expectedRecordCount,
                                         final int expectedBaseCount,
-                                        final int expectedGlobalRecordCounter) {
-        assertSliceState(slice, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, expectedRecordCount, expectedBaseCount);
+                                        final long expectedGlobalRecordCounter) {
+        Assert.assertEquals(slice.getAlignmentContext(), expectedAlignmentContext);
+        Assert.assertEquals(slice.getNumberOfRecords(), expectedRecordCount);
+        Assert.assertEquals(slice.getBaseCount(), expectedBaseCount);
         Assert.assertEquals(slice.getGlobalRecordCounter(), expectedGlobalRecordCounter);
     }
 
     public static void assertContainerState(final Container container,
-                                            final ReferenceContext expectedReferenceContext,
-                                            final int expectedAlignmentStart,
-                                            final int expectedAlignmentSpan,
+                                            final AlignmentContext expectedAlignmentContext,
                                             final long expectedByteOffset) {
-        Assert.assertEquals(
-                container.getAlignmentContext(),
-                new AlignmentContext(expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan));
+        Assert.assertEquals(container.getAlignmentContext(), expectedAlignmentContext);
         Assert.assertEquals(container.getContainerByteOffset(), expectedByteOffset);
     }
 
     public static void assertContainerState(final Container container,
-                                            final ReferenceContext expectedReferenceContext,
-                                            final int expectedAlignmentStart,
-                                            final int expectedAlignmentSpan,
+                                            final AlignmentContext expectedAlignmentContext,
                                             final int expectedRecordCount,
                                             final int expectedBaseCount,
-                                            final int expectedGlobalRecordCounter,
+                                            final long expectedGlobalRecordCounter,
                                             final long expectedByteOffset) {
-        assertContainerState(container, expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan, expectedByteOffset);
+        Assert.assertEquals(container.getAlignmentContext(), expectedAlignmentContext);
+        Assert.assertEquals(container.getContainerByteOffset(), expectedByteOffset);
 
-        Assert.assertEquals(container.getContainerHeader().getRecordCount(), expectedRecordCount);
+        Assert.assertEquals(container.getContainerHeader().getNumberOfRecords(), expectedRecordCount);
         Assert.assertEquals(container.getContainerHeader().getBaseCount(), expectedBaseCount);
         Assert.assertEquals(container.getContainerHeader().getGlobalRecordCounter(), expectedGlobalRecordCounter);
 
-        Assert.assertEquals(container.getSlices().size(), 1);
-
+        //TODO: this assumes a single slice
         // verify the underlying slice too
-
-        assertSliceState(container.getSlices().get(0), expectedReferenceContext, expectedAlignmentStart, expectedAlignmentSpan,
-                expectedRecordCount, expectedBaseCount, expectedGlobalRecordCounter);
+        Assert.assertEquals(container.getSlices().size(), 1);
+        assertSliceState(
+                container.getSlices().get(0),
+                expectedAlignmentContext,
+                expectedRecordCount,
+                expectedBaseCount,
+                expectedGlobalRecordCounter);
     }
 }

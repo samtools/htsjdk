@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+//TODO: move this into the CRAM structure package
 public class InMemoryReferenceSequenceFile implements
         ReferenceSequenceFile {
     Map<String, ReferenceSequence> map = new HashMap<String, ReferenceSequence>();

@@ -301,7 +301,8 @@ public class CRAMFileWriterTest extends HtsjdkTest {
 
         try (SAMFileWriter writer = new SAMFileWriterFactory().makeWriter(samRecordSetBuilder.getHeader(), true, output, newFasta)) {
 
-            for (int position = 1; position <= 10000; position += 1) {
+            // make sure we don't write reads that go off the end of the reference, which is 10,000 bases
+            for (int position = 1; position <= 9900; position += 1) {
                 samRecordSetBuilder.addFrag("read_" + position, 0, position, false);
             }
             samRecordSetBuilder.getRecords().forEach(r -> {

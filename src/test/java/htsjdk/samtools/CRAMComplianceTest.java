@@ -67,6 +67,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @DataProvider(name = "fullVerification")
     public Object[][] getFullVerificationData() {
         return new Object[][] {
+                // TODO: this file has reads that are mapped beyond the bounds of the reference length that
+                // is specified in the embedded sequence dictionary.
                 {"c1#bounds"},
                 {"c1#clip"},
                 {"c1#pad1"},
@@ -148,12 +150,12 @@ public class CRAMComplianceTest extends HtsjdkTest {
             final TriConsumer<Integer, SAMRecord, SAMRecord> assertFunction) throws IOException {
         TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
 
-        // 1) Read from SAM/BAM Round Trip thorugh CRAM
+        // 1) Read from SAM/BAM Round Trip through CRAM
         // retrieve all records from the original file
         List<SAMRecord> samRecords = getSAMRecordsFromFile(t.bamFile, t.refFile);
         SAMFileHeader samFileHeader = getFileHeader(t.bamFile, t.refFile);
 
-        // write them to cram stream
+        // write them to a cram stream
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ReferenceSource source = new ReferenceSource(t.refFile);
         CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, samFileHeader, name);

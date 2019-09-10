@@ -55,7 +55,7 @@ public class Slice {
     //TODO: this should be the same as CRAMRecord.SLICE_INDEX_DEFAULT when used for sliceIndex
     public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
     // the spec defines a special sentinel to indicate the absence of an embedded reference block
-    public static int EMBEDDED_REFERENCE_ABSENT_CONTENT_ID = -1;
+    public static final int EMBEDDED_REFERENCE_ABSENT_CONTENT_ID = -1;
 
     ////////////////////////////////
     // Slice header values as defined in the spec
@@ -66,6 +66,7 @@ public class Slice {
     private final int nBlocks;              // includes the core block, but not the slice header block
     private int[] contentIDs;
     private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
+    // TODO: only tests mutate this so fix tests and change to final
     private byte[] refMD5 = new byte[MD5_BYTE_SIZE];
     private SAMBinaryTagAndValue sliceTags;
     // End slice header values
@@ -261,11 +262,8 @@ public class Slice {
     public Block getSliceHeaderBlock() { return sliceHeaderBlock; }
 
     public AlignmentContext getAlignmentContext() { return alignmentContext; }
-    //public ReferenceContext getReferenceContext() { return alignmentContext.getReferenceContext(); }
-    //public int getAlignmentStart() { return alignmentContext.getAlignmentStart(); }
-    //public int getAlignmentSpan() { return alignmentContext.getAlignmentSpan(); }
 
-    //TODO: these are test-only and cna go away and alignmentContext can be immutable
+    //TODO: these are test-only and can go away and alignmentContext can be immutable
     public void setAlignmentStart(int alignmentStart) {
         alignmentContext = new AlignmentContext(
                 alignmentContext.getReferenceContext(),
@@ -606,16 +604,25 @@ public class Slice {
             throw new IllegalArgumentException ("Mapped slice reference is null.");
         }
 
+        //TODO: CRAMComplianceTest/c1#bounds triggers this (the reads are mapped beyond reference length),
+        // and CRAMEdgeCasesTest.testNullsAndBeyondRef seems to deliberately test that reads that extend
+        // beyond the reference length should be ok ?
         if (alignmentContext.getAlignmentStart() > ref.length) {
-            log.error(String.format("Slice mapped outside of reference: seqID=%s, start=%d, counter=%d.",
-                    alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), globalRecordCounter));
-            throw new RuntimeException("Slice mapped outside of the reference.");
+            log.warn(String.format(
+                    "Slice mapped outside of reference: seqID=%s, start=%d, record counter=%d.",
+                        alignmentContext.getReferenceContext(),
+                        alignmentContext.getAlignmentStart(),
+                        globalRecordCounter));
         }
 
-        //TODO: is it OK to proceed in this case ? why does this not throw ?
+        // Is there any case where being mapped outside of the reference span is legitimate ?
         if (alignmentContext.getAlignmentStart() - 1 + alignmentContext.getAlignmentSpan() > ref.length) {
-            log.warn(String.format("Slice partially mapped outside of reference: seqID=%s, start=%d, span=%d, counter=%d.",
-                    alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), globalRecordCounter));
+            log.warn(String.format(
+                    "Slice mapped outside of reference: seqID=%s, start=%d, span=%d, record counter=%d.",
+                        alignmentContext.getReferenceContext(),
+                        alignmentContext.getAlignmentStart(),
+                        alignmentContext.getAlignmentSpan(),
+                        globalRecordCounter));
         }
     }
 
