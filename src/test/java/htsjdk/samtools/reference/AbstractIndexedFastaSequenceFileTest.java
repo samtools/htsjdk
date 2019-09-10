@@ -65,7 +65,7 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     private final int CHR20_LENGTH = 1000000;
 
     @DataProvider(name="homosapiens")
-    public Object[][] provideSequenceFile() throws FileNotFoundException {
+    public Object[][] provideSequenceFile() throws IOException {
         return new Object[][] { new Object[]
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT) },
