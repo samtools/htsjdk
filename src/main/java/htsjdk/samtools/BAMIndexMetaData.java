@@ -157,15 +157,19 @@ public class BAMIndexMetaData {
      * @param slice
      */
     void recordMetaData(final Slice slice) {
-         if (slice.getAlignmentContext().getReferenceContext().isUnmappedUnplaced()) {
-             //TODO: this needs to account for MULTI_REF slices, which can also contain unmapped/unplaced records ???
-            noCoordinateRecords += slice.getUnplacedReadsCount();
-            return;
-        }
-        else {
-            alignedRecords += slice.getMappedReadsCount();
-            unAlignedRecords += slice.getUnmappedReadsCount();
-        }
+//         if (slice.getAlignmentContext().getReferenceContext().isUnmappedUnplaced()) {
+//             //TODO: this needs to account for MULTI_REF slices, which can also contain unmapped/unplaced records ???
+//            noCoordinateRecords += slice.getUnplacedReadsCount();
+//            return;
+//        }
+//        else {
+//            alignedRecords += slice.getMappedReadsCount();
+//            unAlignedRecords += slice.getUnmappedReadsCount();
+//        }
+
+        alignedRecords += slice.getMappedReadsCount();
+        noCoordinateRecords += slice.getUnplacedReadsCount();
+        unAlignedRecords += slice.getUnmappedReadsCount();
 
         final long start = slice.getByteOffsetFromCompressionHeaderStart();
 

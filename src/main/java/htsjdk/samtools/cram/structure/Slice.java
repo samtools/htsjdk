@@ -83,9 +83,10 @@ public class Slice {
     private int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
     private long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
     private int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
-    //TODO: used to compute index chunks
-    private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
 
+    // landmarks are computed and used for index access
+    private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
+    // base count is only recorded and used when creating a container header on write
     private long baseCount;
 
     // read counters per type, for BAMIndexMetaData.recordMetaData()
@@ -128,7 +129,6 @@ public class Slice {
         }
 
         sliceBlocks.readBlocks(major, nBlocks, inputStream);
-
         if (embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID) {
             // also adds this block to the external list
             setEmbeddedReferenceBlock(sliceBlocks.getExternalBlock(embeddedReferenceBlockContentID));

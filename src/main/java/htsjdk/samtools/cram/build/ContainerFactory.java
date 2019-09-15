@@ -34,8 +34,11 @@ import java.util.stream.Collectors;
 // TODO: this should be called ContainerBuilder
 // NOTE: we don't create more than one MULTI_REF slice in a given container, even if slices/container > 1
 // since it unnecessary
-// NOTE: MULTI_REF slices happen either when not coord-sorted, or else at the end of conti, when we want to fill
-// up the rest of a container or slice with records ?
+// We do not put more than one slice in a container even if requested unless all slices share the same reference
+// context.
+// Note: we only create a multi-ref container if there is a multi-ref slice, and multi-ref
+// slices only happen when there aren't enough (i.e., < MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD)
+// records to make a single ref slice, or if we're not coord sorted
 
 public class ContainerFactory {
     // the minimum number of records we need to see to emit a single reference slice (before
@@ -100,6 +103,9 @@ public class ContainerFactory {
             // save up our slice context and records, and determine if we should now write
             // a container. Only write multiple slices to a container if they share a referenceContext.
             sliceEntries.add(new SliceEntry(currentReferenceContextID, sliceSAMRecords));
+            // Note: we only create a multi-ref container if there is a multi-ref slice, and multi-ref
+            // slices only happen when there aren't enough (i.e., < MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD)
+            // records to make a single ref slice
             if (sliceEntries.size() == encodingStrategy.getSlicesPerContainer() ||
                     currentReferenceContextID != nextRecordIndex) {
                 container = makeContainerFromSliceEntries(containerByteOffset);

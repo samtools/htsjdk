@@ -23,7 +23,7 @@ public class CRAMStructureTestHelper {
     public static final SAMFileHeader SAM_FILE_HEADER = getSAMFileHeader();
     public static final CRAMReferenceSource REFERENCE_SOURCE = new ReferenceSource(getReferenceFile());
 
-    // create a SINGLE container, and throw if more than one is produced
+    // create a SINGLE container (throws if more than one container is produced)
     public static Container getSingleContainerFromRecords(
             final ContainerFactory containerFactory,
             final List<SAMRecord> samRecords,

@@ -349,18 +349,25 @@ public class Container {
                 case UNMAPPED_UNPLACED_TYPE:
                     containerSpanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);
                     break;
+
                 case MULTIPLE_REFERENCE_TYPE:
                     final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(validationStringency);
                     for (final Map.Entry<ReferenceContext, AlignmentSpan> entry : spans.entrySet()) {
                         containerSpanMap.merge(entry.getKey(), entry.getValue(), AlignmentSpan::combine);
                     }
                     break;
+
                 default:
+                    // mapped
                     final AlignmentSpan alignmentSpan = new AlignmentSpan(
                             slice.getAlignmentContext(),
                             slice.getMappedReadsCount(),
                             slice.getUnmappedReadsCount());
-                    containerSpanMap.merge(slice.getAlignmentContext().getReferenceContext(), alignmentSpan, AlignmentSpan::combine);
+
+                    containerSpanMap.merge(
+                            slice.getAlignmentContext().getReferenceContext(),
+                            alignmentSpan,
+                            AlignmentSpan::combine);
                     break;
             }
         }
