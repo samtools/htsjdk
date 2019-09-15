@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+//TODO: validate mapped/unmapped/nocoord record counts
 /**
  * Created by vadim on 07/12/2015.
  */

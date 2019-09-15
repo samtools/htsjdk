@@ -62,6 +62,7 @@ import java.util.TreeSet;
  * Class for both constructing BAM index content and writing it out.
  *
  * There are two usage patterns:
+ *
  * 1) Building a bam index (BAI) while building the CRAM file
  * 2) Building a bam index (BAI) from an existing CRAI file
  *
@@ -75,7 +76,6 @@ import java.util.TreeSet;
  *
  * NOTE: a third pattern of building a BAI from a CRAM file is also supported by this class,
  * but it is unused.  This would be accomplished via {@link #createIndex(SeekableStream, File, Log, ValidationStringency)}.
- *
  */
 public class CRAMBAIIndexer implements CRAMIndexer {
 
@@ -138,11 +138,8 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             if (slice.getAlignmentContext().getReferenceContext().isMultiRef()) {
                 final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(validationStringency);
 
-                //TODO: get rid of these fak slices so we can turn on AlignmentContext costructor validation/checking
-                /**
-                 * Unmapped span must be processed after mapped spans:
-                 */
-                AlignmentSpan unmappedSpan = spanMap.remove(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+                // Unmapped span must be processed after mapped spans:
+                final AlignmentSpan unmappedSpan = spanMap.remove(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
                 for (final ReferenceContext refContext : new TreeSet<>(spanMap.keySet())) {
                     final AlignmentSpan span = spanMap.get(refContext);
                     final Slice fakeSlice = new Slice(refContext);
@@ -204,8 +201,11 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             // check that it advanced properly
             if (reference != currentReference) {
-                throw new SAMException("Unexpected reference " + reference +
-                        " when constructing index for " + currentReference + " for record " + slice);
+                throw new SAMException(
+                        String.format("Unexpected reference %s when constructing index for reference %d for slice %s",
+                                reference,
+                                currentReference,
+                                slice));
             }
         }
 
@@ -374,8 +374,11 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             // various checks
             final int reference = sliceContext.getReferenceSequenceID();
             if (reference != currentReference) {
-                throw new SAMException("Unexpected reference " + reference +
-                        " when constructing index for " + currentReference + " for record " + slice);
+                throw new SAMException(
+                        String.format("Unexpected reference %s when constructing index for reference %d for slice %s",
+                                reference,
+                                currentReference,
+                                slice));
             }
 
             // process bins

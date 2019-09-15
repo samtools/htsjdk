@@ -35,6 +35,8 @@ import htsjdk.samtools.util.RuntimeIOException;
 public class CRAMIterator implements SAMRecordIterator {
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
+    private final Iterator<Container> containerIterator;
+
     private final ArrayList<SAMRecord> records;
     private final CramNormalizer normalizer;
 
@@ -43,8 +45,9 @@ public class CRAMIterator implements SAMRecordIterator {
 
     private Container container;
     private SamReader mReader;
-    long firstContainerOffset = 0;
-    private final Iterator<Container> containerIterator;
+
+    //TODO: make private
+    final long firstContainerOffset;
 
     // Keep a cache of re-usable compressor instances to reduce the need to repeatedly reallocate
     // large numbers of small temporary objects, especially for the RANS compressor, which

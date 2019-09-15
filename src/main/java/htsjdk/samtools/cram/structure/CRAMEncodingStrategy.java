@@ -77,6 +77,12 @@ public class CRAMEncodingStrategy {
         return this;
     }
 
+    /**
+     * Set the number of slices per container. If > 1, multiple slices will be placed in the same container
+     * if the slices share the same reference context (container records mapped to the same contig).
+     * @param slicesPerContainer
+     * @return CRAMEncodingStrategy
+     */
     public CRAMEncodingStrategy setSlicesPerContainer(final int slicesPerContainer) {
         ValidationUtils.validateArg(slicesPerContainer >=0, "slicesPerContainer must be > 0");
         this.slicesPerContainer = slicesPerContainer;
