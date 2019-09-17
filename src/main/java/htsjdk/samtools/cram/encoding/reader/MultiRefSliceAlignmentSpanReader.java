@@ -15,6 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding.reader;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
@@ -73,26 +74,38 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         // we don't need to combine entries for different records because
         // we count them elsewhere and span is irrelevant
 
-        if (! cramRecord.isPlaced()) {
-            spans.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);
-            return;
-        }
-
-        // for placed records we do need to combine the records' spans for counting and span calculation
-
-        AlignmentSpan span;
+        // we need to combine the records' spans for counting and span calculation
         if (cramRecord.isSegmentUnmapped()) {
-            final int mappedCount = 0;
-            final int unmappedCount = 1;
-            span = new AlignmentSpan(cramRecord.getAlignmentStart(), cramRecord.getReadLength(), mappedCount, unmappedCount);
+            //TODO: should we just change isPlaced to only check the alignment start, and then use that here ?
+            if (cramRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
+                // count it as both unmapped *and* unplaced, since for BAI we distinguish between them
+                final AlignmentSpan span = new AlignmentSpan(
+                        SAMRecord.NO_ALIGNMENT_START,
+                        cramRecord.getReadLength(),
+                        0,
+                        1,
+                        1);
+                spans.merge(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, span, AlignmentSpan::combine);
+            } else {
+                // merge it in with the reference context its mapped to
+                final AlignmentSpan span = new AlignmentSpan(
+                        cramRecord.getAlignmentStart(),
+                        cramRecord.getReadLength(),
+                        0,
+                        1,
+                        0);
+                spans.merge(new ReferenceContext(cramRecord.getReferenceIndex()), span, AlignmentSpan::combine);
+            }
+        } else {
+            // 1 mapped, 0 unmapped, 0 unplaced
+            final AlignmentSpan span = new AlignmentSpan(
+                    cramRecord.getAlignmentStart(),
+                    cramRecord.getReadLength(),
+                    1,
+                    0,
+                    0);
+            final ReferenceContext recordContext = new ReferenceContext(cramRecord.getReferenceIndex());
+            spans.merge(recordContext, span, AlignmentSpan::combine);
         }
-        else {
-            final int mappedCount = 1;
-            final int unmappedCount = 0;
-            span = new AlignmentSpan(cramRecord.getAlignmentStart(), cramRecord.getReadLength(), mappedCount, unmappedCount);
-        }
-
-        final ReferenceContext recordContext = new ReferenceContext(cramRecord.getReferenceIndex());
-        spans.merge(recordContext, span, AlignmentSpan::combine);
     }
 }

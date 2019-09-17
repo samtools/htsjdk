@@ -11,21 +11,21 @@ public class AlignmentSpanTest extends HtsjdkTest {
         return new Object[][] {
                 // same span, twice
                 {
-                        new AlignmentSpan(1, 10, 7, 9),
-                        new AlignmentSpan(1, 10, 7, 9),
-                        1, 10, 14, 18
+                        new AlignmentSpan(1, 10, 7, 9, 3),
+                        new AlignmentSpan(1, 10, 7, 9, 3),
+                        1, 10, 14, 18, 6
                 },
                 // overlapping spans: 1-5 and 3-9 -> 1-9
                 {
-                        new AlignmentSpan(1, 5, 100, 200),
-                        new AlignmentSpan(3, 7, 50, 70),
-                        1, 9, 150, 270
+                        new AlignmentSpan(1, 5, 100, 200, 4),
+                        new AlignmentSpan(3, 7, 50, 70, 5),
+                        1, 9, 150, 270, 9
                 },
                 // non-overlapping spans: 1-2 and 4-5 -> 1-5
                 {
-                        new AlignmentSpan(1, 2, 10, 20),
-                        new AlignmentSpan(4, 2, 5, 7),
-                        1, 5, 15, 27
+                        new AlignmentSpan(1, 2, 10, 20, 5),
+                        new AlignmentSpan(4, 2, 5, 7, 6),
+                        1, 5, 15, 27, 11
                 }
         };
     }
@@ -36,12 +36,14 @@ public class AlignmentSpanTest extends HtsjdkTest {
                         final int expectedStart,
                         final int expectedSpan,
                         final int expectedMapped,
-                        final int expectedUnmapped) {
+                        final int expectedUnmapped,
+                        final int expectedUnmappedUnplaced) {
         final AlignmentSpan combined = AlignmentSpan.combine(span1, span2);
-        Assert.assertEquals(combined.getStart(), expectedStart);
-        Assert.assertEquals(combined.getSpan(), expectedSpan);
+        Assert.assertEquals(combined.getAlignmentStart(), expectedStart);
+        Assert.assertEquals(combined.getAlignmentSpan(), expectedSpan);
         Assert.assertEquals(combined.getMappedCount(), expectedMapped);
         Assert.assertEquals(combined.getUnmappedCount(), expectedUnmapped);
+        Assert.assertEquals(combined.getUnmappedUnplacedCount(), expectedUnmappedUnplaced);
 
         final AlignmentSpan reverseCombined = AlignmentSpan.combine(span2, span1);
         Assert.assertEquals(reverseCombined, combined);

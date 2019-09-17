@@ -344,14 +344,6 @@ public class Container {
             return Collections.emptyList();
         }
 
-        // BAIEntry:
-//        sliceReferenceContext;
-//        alignedReads;
-//        unplacedReads;
-//        unaligned;
-//        sliceHeaderBlockByteOffset;
-//        landmarkIndex;
-
         //TODO: these might need to be merged, so that in the end there is only one entry per ref context ?
         return getSlices().stream()
                 .map(s -> s.getBAIEntries())
@@ -389,7 +381,8 @@ public class Container {
                     final AlignmentSpan alignmentSpan = new AlignmentSpan(
                             slice.getAlignmentContext(),
                             slice.getMappedReadsCount(),
-                            slice.getUnmappedReadsCount());
+                            slice.getUnmappedReadsCount(),
+                            slice.getUnplacedReadsCount());
 
                     containerSpanMap.merge(
                             slice.getAlignmentContext().getReferenceContext(),

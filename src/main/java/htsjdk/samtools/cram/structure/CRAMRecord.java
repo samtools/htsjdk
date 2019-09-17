@@ -532,6 +532,8 @@ public class CRAMRecord {
      * @see #isSegmentUnmapped()
      */
     public boolean isPlaced() {
+        //TODO: we should change this to be consistent with the rest of htsjdk, and with the BAM indexing code,
+        // which uses only the alignment start to determine if a record is placed or not
         // placement requires a valid sequence ID and alignment start coordinate
         boolean placed = referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
                 alignmentStart != SAMRecord.NO_ALIGNMENT_START;
