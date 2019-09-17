@@ -650,6 +650,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
     Iterator<Object[]> fastaExtensions() {
         return FileExtensions.FASTA.stream()
                 .filter(s -> !s.endsWith(".gz"))
+                .filter(s -> !s.endsWith(FileExtensions.TWOBIT))
                 .map(s -> new Object[]{s})
                 .collect(Collectors.toList())
                 .iterator();

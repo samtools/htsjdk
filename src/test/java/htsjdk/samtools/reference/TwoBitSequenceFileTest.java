@@ -37,7 +37,7 @@ public class TwoBitSequenceFileTest  extends HtsjdkTest{
         Assert.assertEquals(dict.getSequence(0).getSequenceName(), "chrM");
         Assert.assertEquals(dict.getSequence(0).getSequenceLength(), 16_571);
         Assert.assertEquals(dict.getSequence(1).getSequenceName(), "chr20");
-        Assert.assertEquals(dict.getSequence(0).getSequenceLength(), 1_000_000);
+        Assert.assertEquals(dict.getSequence(1).getSequenceLength(), 1_000_000);
         
         Assert.assertNull(tbf.getSequence("do_not_exists"));
         ReferenceSequence seq =tbf.getSequence("chrM");
