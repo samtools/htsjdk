@@ -12,33 +12,6 @@ import java.util.List;
 public class CRAMStructureTestUtil extends HtsjdkTest {
     public static final int READ_LENGTH_FOR_TEST_RECORDS = 123;
 
-//    private static final SAMFileHeader header = initializeSAMFileHeaderForTests();
-//
-//    private static SAMFileHeader initializeSAMFileHeaderForTests() {
-//        // arbitrary names and length.  Just ensure we have 10 different valid refs.
-//
-//        final List<SAMSequenceRecord> sequenceRecords = new ArrayList<>();
-//        sequenceRecords.add(new SAMSequenceRecord("0", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("1", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("2", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("3", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("4", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("5", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("6", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("7", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("8", 10));
-//        sequenceRecords.add(new SAMSequenceRecord("9", 10));
-//
-//        final SAMFileHeader header = new SAMFileHeader(new SAMSequenceDictionary(sequenceRecords));
-//        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-//
-//        return header;
-//    }
-//
-//    public static SAMFileHeader getSAMFileHeaderForTests() {
-//        return header;
-//    }
-
     public static CRAMRecord createMappedRecord(final int index, final int referenceIndex, final int alignmentStart) {
         return new CRAMRecord(
                 1,
@@ -186,9 +159,9 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
         final ReferenceContext refContext = new ReferenceContext(0);
 
         final Slice slice = new Slice(refContext);
-        slice.setByteOffsetFromCompressionHeaderStart(1);
-        slice.setContainerByteOffset(1);
-        slice.setByteSize(1);
+        slice.setByteOffsetOfSliceHeaderBlock(1);
+        slice.setByteOffsetOfContainer(1);
+        slice.setByteSizeOfSliceBlocks(1);
         slice.setLandmarkIndex(1);
 
         return slice;
@@ -196,19 +169,19 @@ public class CRAMStructureTestUtil extends HtsjdkTest {
 
     private static Slice getNoContainerOffsetSlice() {
         final Slice noContainerOffset = getIndexInitializedSlice();
-        noContainerOffset.setContainerByteOffset(Slice.UNINITIALIZED_INDEXING_PARAMETER);
+        noContainerOffset.setByteOffsetOfContainer(Slice.UNINITIALIZED_INDEXING_PARAMETER);
         return noContainerOffset;
     }
 
     private static Slice getNoOffsetFromContainerSlice() {
         final Slice noOffsetFromContainer = getIndexInitializedSlice();
-        noOffsetFromContainer.setByteOffsetFromCompressionHeaderStart(Slice.UNINITIALIZED_INDEXING_PARAMETER);
+        noOffsetFromContainer.setByteOffsetOfSliceHeaderBlock(Slice.UNINITIALIZED_INDEXING_PARAMETER);
         return noOffsetFromContainer;
     }
 
     private static Slice getNoSizeSlice() {
         final Slice noSize = getIndexInitializedSlice();
-        noSize.setByteSize(Slice.UNINITIALIZED_INDEXING_PARAMETER);
+        noSize.setByteSizeOfSliceBlocks(Slice.UNINITIALIZED_INDEXING_PARAMETER);
         return noSize;
     }
 

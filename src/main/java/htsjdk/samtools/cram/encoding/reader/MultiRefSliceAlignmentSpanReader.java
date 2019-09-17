@@ -47,7 +47,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
                                             final int initialAlignmentStart,
                                             final int recordCount) {
         //TODO: is it ok to just new up a CompressorCache in this case ?
-        //TODO: its equivalent to creating one for eery record reader, which is more granular
+        //TODO: its equivalent to creating one for every record reader, which is more granular
         //TODO: than the per-iterator case when using a CRAMIterator
         super(slice, new CompressorCache(), validationStringency);
 

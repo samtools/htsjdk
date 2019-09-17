@@ -27,27 +27,27 @@ public class SliceTests extends HtsjdkTest {
     private static final int TEST_RECORD_COUNT = 10;
     private static final int READ_LENGTH_FOR_TEST_RECORDS = CRAMStructureTestUtil.READ_LENGTH_FOR_TEST_RECORDS;
 
-    @Test
-    public void testUnmappedValidateRef() {
-        final Slice slice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
-
-        Assert.assertTrue(slice.validateRefMD5(null));
-        Assert.assertTrue(slice.validateRefMD5(new byte[0]));
-        Assert.assertTrue(slice.validateRefMD5(new byte[1024]));
-    }
-
-    @Test
-    public void test_validateRef() {
-        byte[] ref = "AAAAA".getBytes();
-        final byte[] md5 = SequenceUtil.calculateMD5(ref, 0, Math.min(5, ref.length));
-        final Slice slice = new Slice(new ReferenceContext(0));
-        slice.setAlignmentSpan(5);
-        slice.setAlignmentStart(1);
-        slice.setRefMD5(ref);
-
-        Assert.assertEquals(slice.getRefMD5(), md5);
-        Assert.assertTrue(slice.validateRefMD5(ref));
-    }
+//    @Test
+//    public void testUnmappedValidateRef() {
+//        final Slice slice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+//
+//        Assert.assertTrue(slice.validateRefMD5(null));
+//        Assert.assertTrue(slice.validateRefMD5(new byte[0]));
+//        Assert.assertTrue(slice.validateRefMD5(new byte[1024]));
+//    }
+//
+//    @Test
+//    public void test_validateRef() {
+//        byte[] ref = "AAAAA".getBytes();
+//        final byte[] md5 = SequenceUtil.calculateMD5(ref, 0, Math.min(5, ref.length));
+//        final Slice slice = new Slice(new ReferenceContext(0));
+//        slice.setAlignmentSpan(5);
+//        slice.setAlignmentStart(1);
+//        slice.setRefMD5(ref);
+//
+//        Assert.assertEquals(slice.getRefMD5(), md5);
+//        Assert.assertTrue(slice.validateRefMD5(ref));
+//    }
 
     @Test(expectedExceptions = CRAMException.class)
     public void testFailsMD5Check() throws IOException {

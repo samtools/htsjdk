@@ -33,6 +33,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
                 { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+//                { new File("/Users/cnorman/projects/references/NA12878.cram"),
+//                  new File("/Users/cnorman/projects/references/Homo_sapiens_assembly38.fasta")}
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
 //                        new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta") },
 //                { new File(TEST_DATA_DIR, "/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.samtools.cram"),

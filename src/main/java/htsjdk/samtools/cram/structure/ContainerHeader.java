@@ -27,7 +27,7 @@ public class ContainerHeader {
      * block), starting from the end of the Container header. Since the Container's compression header block is located
      * immediately after the container header, it has offset 0, so the first entry in the landmarks array will be
      * have the value sizeof(containerHeaderBlock). The same values are redundantly stored within the slices themselves,
-     * accessible as {@link Slice#getByteOffsetFromCompressionHeaderStart()}.
+     * accessible as {@link Slice#getByteOffsetOfSliceHeaderBlock()}.
      *
      * As an example, suppose we have:
      * - landmarks[0] = 9000

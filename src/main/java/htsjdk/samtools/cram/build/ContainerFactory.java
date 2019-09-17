@@ -166,7 +166,7 @@ public class ContainerFactory {
         final List<Slice> slices = new ArrayList<>(cramSliceEntries.size());
         for (final SliceEntry sliceEntry : cramSliceEntries) {
             final Slice slice = new Slice(sliceEntry.getRecords(), compressionHeader, sliceRecordCounter);
-            slice.setContainerByteOffset(containerByteOffset);
+            slice.setByteOffsetOfContainer(containerByteOffset);
             if (slice.getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
                 //TODO: are these the correct bases ? in the multi-ref case ....?
                 slice.setRefMD5(referenceBases);
