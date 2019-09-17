@@ -55,7 +55,7 @@ public class TwoBitSequenceFileTest  extends HtsjdkTest{
             Assert.assertEquals(seq.getName(), "chrM");
             Assert.assertEquals(seq.length(), i+1);
             Assert.assertEquals(seq.getContigIndex() , 99);
-            Assert.assertEquals(seq.getBaseString() , chrM_100_120.substring(0, i));
+            Assert.assertEquals(seq.getBaseString().toUpperCase() , chrM_100_120.substring(0, i+1));
         }
         
         tbf.close();
