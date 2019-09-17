@@ -44,7 +44,7 @@ public class TwoBitSequenceFileTest  extends HtsjdkTest{
         Assert.assertNotNull(seq);
         Assert.assertEquals(seq.getName(), "chrM");
         Assert.assertEquals(seq.length(), 16_571);
-        tbf.getSequence("chr20");
+        seq = tbf.getSequence("chr20");
         Assert.assertNotNull(seq);
         Assert.assertEquals(seq.getName(), "chr20");
         Assert.assertEquals(seq.length(), 1_000_000);
