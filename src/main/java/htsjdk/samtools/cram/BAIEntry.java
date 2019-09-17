@@ -32,10 +32,13 @@ public class BAIEntry {
         // Note: this should never be a multiple ref context
         if (sliceReferenceContext.equals(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)) {
             throw new CRAMException("Attempt to create BAI entry from a multi ref context");
-        } else if (sliceReferenceContext.equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT) &&
-                (alignmentStart != 0 || alignmentSpan != 0)) {
-            //TODO : put the start/span in this error message
-            throw new CRAMException("Attempt to unmapped with non zero alignment start or span");
+        } else if ((sliceReferenceContext.equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT) &&
+                //TODO: many tests fail if we don't allow alignmentStart == -1 or alignmentSpan == 1
+                ((alignmentStart != 0 && alignmentStart != -1) || (alignmentSpan != 0 && alignmentSpan != 1)))) {
+            throw new CRAMException(
+                    String.format("Attempt to unmapped with non zero alignment start (%d) or span (%d)",
+                            alignmentStart,
+                            alignmentSpan));
         }
         this.sliceReferenceContext = sliceReferenceContext;
         this.alignmentStart = alignmentStart;
@@ -46,6 +49,29 @@ public class BAIEntry {
         this.containerOffset = containerOffset;
         this.sliceHeaderBlockByteOffset = sliceHeaderBlockByteOffset;
         this.landmarkIndex = landmarkIndex;
+    }
+
+    /**
+     * Create a BAIEntry from a CRAIEntry (used to read a .crai as a .bai). Note that
+     * there are no mapped/unmapped/unplaced counts present in the crai, which makes
+     * BAIEntries created this way less full featured (i.e., wrong), but that is inherent
+     * in the idea of converting a CRAi to a BAI to satisfy an index query).
+     *
+     * HTSJDK needs a native implementation satifying queries using a CRAI directly.
+     * see https://github.com/samtools/htsjdk/issues/851
+     *
+     * @param craiEntry
+     */
+    public BAIEntry(final CRAIEntry craiEntry) {
+        this.sliceReferenceContext = new ReferenceContext(craiEntry.getSequenceId());
+        this.alignmentStart = craiEntry.getAlignmentStart();
+        this.alignmentSpan = craiEntry.getAlignmentSpan();
+        this.alignedReads = 0;
+        this.unplacedReads = 0;
+        this.unalignedReads = 0;
+        this.containerOffset = craiEntry.getContainerStartByteOffset();
+        this.sliceHeaderBlockByteOffset = craiEntry.getSliceByteOffsetFromCompressionHeaderStart();
+        this.landmarkIndex = 0;
     }
 
     public static BAIEntry combine(final BAIEntry a, final BAIEntry b) {

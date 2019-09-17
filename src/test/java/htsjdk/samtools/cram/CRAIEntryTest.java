@@ -270,41 +270,41 @@ public class CRAIEntryTest extends HtsjdkTest {
         Assert.assertEquals(testEntries, expected);
     }
 
-    private static Slice createSliceWithArbitraryValues(final ReferenceContext refContext) {
-        int counter = RANDOM.nextInt(100);
-
-        final Slice single = new Slice(refContext);
-        single.setAlignmentStart(counter++);
-        single.setAlignmentSpan(counter++);
-        single.setByteOffsetOfContainer(counter++);
-        single.setByteOffsetOfSliceHeaderBlock(counter++);
-        single.setByteSizeOfSliceBlocks(counter++);
-        return single;
-    }
-
-    private List<CRAMRecord> createMultiRefRecords(final int indexStart,
-                                                              final int alignmentStartOffset,
-                                                              final Integer... refs) {
-        int index = indexStart;
-        final List<CRAMRecord> records = new ArrayList<>();
-        for (final int ref : refs) {
-            records.add(CRAMStructureTestUtil.createMappedRecord(index, ref, alignmentStartOffset + index));
-            index++;
-        }
-        return records;
-    }
-
-    private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
-        assertEntryForSlice(
-                entry,
-                slice.getAlignmentContext().getReferenceContext().getReferenceContextID(),
-                slice.getAlignmentContext().getAlignmentStart(),
-                slice.getAlignmentContext().getAlignmentSpan(),
-                slice.getByteOffsetOfContainer(),
-                slice.getByteOffsetOfSliceHeaderBlock(),
-                slice.getByteSizeOfSliceBlocks());
-     }
-
+//    private static Slice createSliceWithArbitraryValues(final ReferenceContext refContext) {
+//        int counter = RANDOM.nextInt(100);
+//
+//        final Slice single = new Slice(refContext);
+//        single.setAlignmentStart(counter++);
+//        single.setAlignmentSpan(counter++);
+//        single.setByteOffsetOfContainer(counter++);
+//        single.setByteOffsetOfSliceHeaderBlock(counter++);
+//        single.setByteSizeOfSliceBlocks(counter++);
+//        return single;
+//    }
+//
+//    private List<CRAMRecord> createMultiRefRecords(final int indexStart,
+//                                                              final int alignmentStartOffset,
+//                                                              final Integer... refs) {
+//        int index = indexStart;
+//        final List<CRAMRecord> records = new ArrayList<>();
+//        for (final int ref : refs) {
+//            records.add(CRAMStructureTestUtil.createMappedRecord(index, ref, alignmentStartOffset + index));
+//            index++;
+//        }
+//        return records;
+//    }
+//
+//    private void assertEntryForSlice(final CRAIEntry entry, final Slice slice) {
+//        assertEntryForSlice(
+//                entry,
+//                slice.getAlignmentContext().getReferenceContext().getReferenceContextID(),
+//                slice.getAlignmentContext().getAlignmentStart(),
+//                slice.getAlignmentContext().getAlignmentSpan(),
+//                slice.getByteOffsetOfContainer(),
+//                slice.getByteOffsetOfSliceHeaderBlock(),
+//                slice.getByteSizeOfSliceBlocks());
+//     }
+//
     private void assertEntryForSlice(final CRAIEntry entry,
                                      final int sequenceId,
                                      final int alignmentStart,

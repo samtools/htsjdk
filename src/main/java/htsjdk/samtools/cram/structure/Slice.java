@@ -83,17 +83,19 @@ public class Slice {
     private Block embeddedReferenceBlock;
     private long baseCount;
 
-    // used for indexing
-    private long byteOffsetOfContainer = UNINITIALIZED_INDEXING_PARAMETER;
-    private int byteOffsetOfSliceHeaderBlock = UNINITIALIZED_INDEXING_PARAMETER;
-    private int byteSizeOfSliceBlocks = UNINITIALIZED_INDEXING_PARAMETER;
-    private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
-
+    // used for indexing - Even though AlignmentSpan could be used here, we don't use it in Slice
+    // because  the alignment context part of it is used in the SliceHeader, and it would be weird
+    // to include all of this stuff ther
     // read counters per type, for BAMIndexMetaData.recordMetaData()
     // see also AlignmentSpan and CRAMBAIIndexer.processContainer()
     private int mappedReadsCount = 0;   // mapped (rec.getReadUnmappedFlag() != true)
     private int unmappedReadsCount = 0; // unmapped (rec.getReadUnmappedFlag() == true)
     private int unplacedReadsCount = 0; // nocoord (alignmentStart == SAMRecord.NO_ALIGNMENT_START)
+
+    private long byteOffsetOfContainer = UNINITIALIZED_INDEXING_PARAMETER;
+    private int byteOffsetOfSliceHeaderBlock = UNINITIALIZED_INDEXING_PARAMETER;
+    private int byteSizeOfSliceBlocks = UNINITIALIZED_INDEXING_PARAMETER;
+    private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
 
     public Slice(final int major, final CompressionHeader compressionHeader, final InputStream inputStream) {
         sliceHeaderBlock = Block.read(major, inputStream);
@@ -846,8 +848,8 @@ public class Slice {
 
             return spans.entrySet().stream()
                     .map(e -> new CRAIEntry(e.getKey().getReferenceContextID(),
-                            e.getValue().getStart(),
-                            e.getValue().getSpan(),
+                            e.getValue().getAlignmentStart(),
+                            e.getValue().getAlignmentSpan(),
                             byteOffsetOfContainer,
                             byteOffsetOfSliceHeaderBlock,
                             byteSizeOfSliceBlocks))
@@ -910,8 +912,8 @@ public class Slice {
                         entry -> {
                             baiEntries.add(new BAIEntry(
                                     entry.getKey(),
-                                    entry.getValue().getStart(),
-                                    entry.getValue().getSpan(),
+                                    entry.getValue().getAlignmentStart(),
+                                    entry.getValue().getAlignmentSpan(),
                                     entry.getValue().getMappedCount(),
                                     getUnplacedReadsCount(), // this on slice, not alignment span ?
                                     entry.getValue().getUnmappedCount(),
