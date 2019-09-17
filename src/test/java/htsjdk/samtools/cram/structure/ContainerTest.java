@@ -3,7 +3,6 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
@@ -17,7 +16,6 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.sql.Ref;
 import java.util.*;
 
 // TODO: we need a test to verify that containerFactory rejects attempts lists of records that exceed the limit
@@ -338,9 +336,9 @@ public class ContainerTest extends HtsjdkTest {
                                                   final int expectedSize,
                                                   final int expectedOffset) {
         Assert.assertEquals(slice.getLandmarkIndex(), expectedIndex);
-        Assert.assertEquals(slice.getContainerByteOffset(), expectedContainerOffset);
-        Assert.assertEquals(slice.getByteSize(), expectedSize);
-        Assert.assertEquals(slice.getByteOffsetFromCompressionHeaderStart(), expectedOffset);
+        Assert.assertEquals(slice.getByteOffsetOfContainer(), expectedContainerOffset);
+        Assert.assertEquals(slice.getByteSizeOfSliceBlocks(), expectedSize);
+        Assert.assertEquals(slice.getByteOffsetOfSliceHeaderBlock(), expectedOffset);
     }
 
     @DataProvider(name = "cramVersions")

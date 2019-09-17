@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CramIO;
@@ -90,7 +91,7 @@ public class Container {
         int blockCount = 0;
         int recordCount = 0;
         for (final Slice slice : slices) {
-            slice.setContainerByteOffset(containerByteOffset);
+            slice.setByteOffsetOfContainer(containerByteOffset);
             recordCount += slice.getNumberOfRecords();
             blockCount += slice.getNumberOfBlocks();
             baseCount += slice.getBaseCount();
@@ -152,7 +153,7 @@ public class Container {
         this.slices = new ArrayList<>();
         for (int sliceCounter = 0; sliceCounter < containerHeader.getLandmarks().length; sliceCounter++) {
             final Slice slice = new Slice(version.major, compressionHeader, inputStream);
-            slice.setContainerByteOffset(containerByteOffset);
+            slice.setByteOffsetOfContainer(containerByteOffset);
             slices.add(slice);
         }
 
@@ -328,7 +329,32 @@ public class Container {
         }
 
         return getSlices().stream()
-                .map(s -> s.getCRAIEntries(compressionHeader))
+                .map(s -> s.getCRAIEntries())
+                .flatMap(List::stream)
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieve the list of BAIEntry Index entries corresponding to this Container
+     * @return the list of BAIEntry Index entries
+     */
+    public List<BAIEntry> getBAIEntries() {
+        if (isEOF()) {
+            return Collections.emptyList();
+        }
+
+        // BAIEntry:
+//        sliceReferenceContext;
+//        alignedReads;
+//        unplacedReads;
+//        unaligned;
+//        sliceHeaderBlockByteOffset;
+//        landmarkIndex;
+
+        //TODO: these might need to be merged, so that in the end there is only one entry per ref context ?
+        return getSlices().stream()
+                .map(s -> s.getBAIEntries())
                 .flatMap(List::stream)
                 .sorted()
                 .collect(Collectors.toList());
@@ -342,6 +368,7 @@ public class Container {
      * {@link Slice#getMultiRefAlignmentSpans(ValidationStringency)}
      * @return the map of map of reference sequence IDs to AlignmentSpans.
      */
+    //TODO: used for BAI indexing, obsolete once getBAIEntries is used
     public Map<ReferenceContext, AlignmentSpan> getSpans(final ValidationStringency validationStringency) {
         final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
         for (final Slice slice : getSlices()) {
@@ -403,15 +430,15 @@ public class Container {
         for (int i = 0; i < lastSliceIndex; i++) {
             final Slice slice = slices.get(i);
             slice.setLandmarkIndex(i);
-            slice.setByteOffsetFromCompressionHeaderStart(containerHeader.getLandmarks()[i]);
-            slice.setByteSize(containerHeader.getLandmarks()[i + 1] - slice.getByteOffsetFromCompressionHeaderStart());
+            slice.setByteOffsetOfSliceHeaderBlock(containerHeader.getLandmarks()[i]);
+            slice.setByteSizeOfSliceBlocks(containerHeader.getLandmarks()[i + 1] - slice.getByteOffsetOfSliceHeaderBlock());
         }
 
         // get the last slice in the list, and
         final Slice lastSlice = slices.get(lastSliceIndex);
         lastSlice.setLandmarkIndex(lastSliceIndex);
-        lastSlice.setByteOffsetFromCompressionHeaderStart(containerHeader.getLandmarks()[lastSliceIndex]);
-        lastSlice.setByteSize(containerHeader.getContainerBlocksByteSize() - lastSlice.getByteOffsetFromCompressionHeaderStart());
+        lastSlice.setByteOffsetOfSliceHeaderBlock(containerHeader.getLandmarks()[lastSliceIndex]);
+        lastSlice.setByteSizeOfSliceBlocks(containerHeader.getContainerBlocksByteSize() - lastSlice.getByteOffsetOfSliceHeaderBlock());
     }
 
     private void checkReferenceContexts(final int aggregateReferenceContext) {

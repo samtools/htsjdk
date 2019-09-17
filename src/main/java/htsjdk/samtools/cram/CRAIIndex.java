@@ -89,10 +89,10 @@ public class CRAIIndex {
 
         for (final CRAIEntry entry : full) {
             final Slice slice = new Slice(new ReferenceContext(entry.getSequenceId()));
-            slice.setContainerByteOffset(entry.getContainerStartByteOffset());
+            slice.setByteOffsetOfContainer(entry.getContainerStartByteOffset());
             slice.setAlignmentStart(entry.getAlignmentStart());
             slice.setAlignmentSpan(entry.getAlignmentSpan());
-            slice.setByteOffsetFromCompressionHeaderStart(entry.getSliceByteOffsetFromCompressionHeaderStart());
+            slice.setByteOffsetOfSliceHeaderBlock(entry.getSliceByteOffsetFromCompressionHeaderStart());
 
             // NOTE: the sliceIndex and read count fields can't be derived from the CRAM index
             // so we can only set them to zero

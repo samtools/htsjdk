@@ -17,6 +17,7 @@ import java.util.List;
 
 // TODO: add tests with half-placed records
 // TODO: add tests with multi-ref once thats enabled
+
 public class CRAMBAIIndexerTest extends HtsjdkTest {
     private static final int RECORDS_PER_SLICE = 3;
 

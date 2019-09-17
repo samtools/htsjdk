@@ -22,8 +22,22 @@ public class AlignmentSpan {
     private final int mappedCount;
     private final int unmappedCount;
 
-    // Slice also has:
-    // private int unplacedReadsCount = 0;
+// Slice has:
+// private AlignmentContext alignmentContext;
+// private int unplacedReadsCount = 0;
+
+// AlignmentContext has:
+//    private final ReferenceContext referenceContext;
+//    private final int alignmentStart;
+//    private final int alignmentSpan;
+
+// AlignmentSpan has:
+//  start: minimum alignment start of the reads represented by this span uses a 1-based coordinate system
+//  span: from minimum alignment start to maximum alignment end of reads represented by this span == max(end) - min(start) + 1
+//  private final int start;
+//  private final int span;
+//  private final int mappedCount;
+//  private final int unmappedCount;
 
     public AlignmentSpan(final AlignmentContext alignmentContext, final int mappedCount, final int unmappedCount) {
         this.start = alignmentContext.getAlignmentStart();

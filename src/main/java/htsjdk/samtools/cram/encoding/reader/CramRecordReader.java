@@ -150,7 +150,6 @@ public class CramRecordReader {
      * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
      * @return the newly-read CRAMRecord
      */
-    // sliceIndex, index, prevAlignmentStart,
     public CRAMRecord read(
             final int sliceIndex,
             final int sequentialIndex,

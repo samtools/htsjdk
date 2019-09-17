@@ -248,6 +248,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         it.hasNext();
         Container secondContainer = it.next();
         Assert.assertNotNull(secondContainer);
+        //TODO: why is this (CRAI test) code calling getSpans, which is used for BAI creation ?
         final Map<ReferenceContext, AlignmentSpan> references = secondContainer.getSpans(ValidationStringency.STRICT);
         it.close();
 

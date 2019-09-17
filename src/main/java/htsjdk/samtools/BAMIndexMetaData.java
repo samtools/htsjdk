@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
@@ -157,21 +158,26 @@ public class BAMIndexMetaData {
      * @param slice
      */
     void recordMetaData(final Slice slice) {
-//         if (slice.getAlignmentContext().getReferenceContext().isUnmappedUnplaced()) {
-//             //TODO: this needs to account for MULTI_REF slices, which can also contain unmapped/unplaced records ???
-//            noCoordinateRecords += slice.getUnplacedReadsCount();
-//            return;
-//        }
-//        else {
-//            alignedRecords += slice.getMappedReadsCount();
-//            unAlignedRecords += slice.getUnmappedReadsCount();
-//        }
-
         alignedRecords += slice.getMappedReadsCount();
         noCoordinateRecords += slice.getUnplacedReadsCount();
         unAlignedRecords += slice.getUnmappedReadsCount();
 
-        final long start = slice.getByteOffsetFromCompressionHeaderStart();
+        final long start = slice.getByteOffsetOfSliceHeaderBlock();
+
+        if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
+            this.firstOffset = start;
+            // not actually used, so set it to a dummy value (start)
+            // see https://github.com/samtools/htsjdk/issues/401
+            this.lastOffset = start;
+        }
+    }
+
+    void recordMetaData(final BAIEntry baiEntry) {
+        alignedRecords += baiEntry.getAlignedReads();
+        noCoordinateRecords += baiEntry.getUnplacedReads();
+        unAlignedRecords += baiEntry.getUnalignedReads();
+
+        final long start = baiEntry.getSliceHeaderBlockByteOffset();
 
         if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
             this.firstOffset = start;
