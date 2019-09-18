@@ -6,9 +6,10 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class AlignmentSpanTest extends HtsjdkTest {
-    @DataProvider(name = "addTests")
-    private Object[][] addTests() {
+    @DataProvider(name = "combineTests")
+    private Object[][] combineTests() {
         return new Object[][] {
+
                 // same span, twice
                 {
                         new AlignmentSpan(1, 10, 7, 9, 3),
@@ -30,8 +31,8 @@ public class AlignmentSpanTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "addTests")
-    public void addTest(final AlignmentSpan span1,
+    @Test(dataProvider = "combineTests")
+    public void testCombine(final AlignmentSpan span1,
                         final AlignmentSpan span2,
                         final int expectedStart,
                         final int expectedSpan,
@@ -39,6 +40,7 @@ public class AlignmentSpanTest extends HtsjdkTest {
                         final int expectedUnmapped,
                         final int expectedUnmappedUnplaced) {
         final AlignmentSpan combined = AlignmentSpan.combine(span1, span2);
+
         Assert.assertEquals(combined.getAlignmentStart(), expectedStart);
         Assert.assertEquals(combined.getAlignmentSpan(), expectedSpan);
         Assert.assertEquals(combined.getMappedCount(), expectedMapped);

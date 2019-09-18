@@ -25,7 +25,8 @@ public class CRAIIndex {
      */
     @Deprecated
     public static final String CRAI_INDEX_SUFFIX = FileExtensions.CRAM_INDEX;
-    final private List<CRAIEntry> entries = new ArrayList<>();
+    private final  List<CRAIEntry> entries = new ArrayList<>();
+    private final CompressorCache compressorCache = new CompressorCache();
 
     /**
      * Add a single entry to the CRAI index.
@@ -64,7 +65,7 @@ public class CRAIIndex {
      * @param container the container to index
      */
     public void processContainer(final Container container) {
-        addEntries(container.getCRAIEntries());
+        addEntries(container.getCRAIEntries(compressorCache));
     }
 
     public static SeekableStream openCraiFileAsBaiStream(final File cramIndexFile, final SAMSequenceDictionary dictionary) {

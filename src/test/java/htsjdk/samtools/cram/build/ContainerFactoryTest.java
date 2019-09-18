@@ -286,88 +286,106 @@ public class ContainerFactoryTest extends HtsjdkTest {
     private Object[][] getSingleContainerSlicePartitioning() {
         final int RECORDS_PER_SLICE = 100;
         return new Object[][] {
-                // List<SAMRecord>, records/slice, slices/container, expected slice count, expected record count for each slice
+                // List<SAMRecord>, records/slice, slices/container, expected reference context, expected slice count, expected record count for each slice
                 {
                         // 1 full single-ref slice with 1 rec
-                        CRAMStructureTestHelper.createMappedSAMRecords(1, 0),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(1, 0),
                         RECORDS_PER_SLICE, 1,
+                        new ReferenceContext(0),
                         1, Arrays.asList(1)
                 },
                 {
                         // 1 full single-ref slice with 1 rec, but allow > 1 slices/container
-                        CRAMStructureTestHelper.createMappedSAMRecords(1, 0),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(1, 0),
                         RECORDS_PER_SLICE, 2,
+                        new ReferenceContext(0),
                         1, Arrays.asList(1)
                 },
                 {
                         // 1 full single-ref slice with RECORDS_PER_SLICE - 1 records
-                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE - 1, 0),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0),
                         RECORDS_PER_SLICE, 1,
+                        new ReferenceContext(0),
                         1, Arrays.asList(RECORDS_PER_SLICE - 1)
                 },
                 {
                         // 1 full single-ref slice with RECORDS_PER_SLICE records
-                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE, 0),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE, 0),
                         RECORDS_PER_SLICE, 1,
+                        new ReferenceContext(0),
                         1, Arrays.asList(RECORDS_PER_SLICE)
                 },
                 {
                         // 2 single-ref slices, one with RECORDS_PER_SLICE records, one with 1 record
-                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE + 1, 0),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE + 1, 0),
                         RECORDS_PER_SLICE, 2,
+                        new ReferenceContext(0),
                         2, Arrays.asList(RECORDS_PER_SLICE, 1)
                 },
                 {
                         // 2 full single-ref slices, each with RECORDS_PER_SLICE records
-                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 2, 0),
-                        RECORDS_PER_SLICE, 2, 2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
+                        CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0),
+                        RECORDS_PER_SLICE, 2,
+                        new ReferenceContext(0),
+                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
                 },
                 {
                         // 3 full single-ref slices, each with RECORDS_PER_SLICE records
-                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 3, 0),
-                        RECORDS_PER_SLICE, 3, 3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE)
+                        CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 3, 0),
+                        RECORDS_PER_SLICE, 3,
+                        new ReferenceContext(0),
+                        3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE)
                 },
 
                 // now repeat the tests, but using unmapped records
                 {
-                        // 1 full single-ref slice with 1 rec
-                        CRAMStructureTestHelper.createUnmappedSAMRecords(1),
+                        // 1 full single-ref (unmapped) slice with 1 rec
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(1),
                         RECORDS_PER_SLICE, 1,
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         1, Arrays.asList(1)
                 },
                 {
-                        // 1 full single-ref slice with 1 rec, but allow > 1 slices/container
-                        CRAMStructureTestHelper.createUnmappedSAMRecords(1),
+                        // 1 full single-ref (unmapped) slice with 1 rec, but allow > 1 slices/container
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(1),
                         RECORDS_PER_SLICE, 2,
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         1, Arrays.asList(1)
                 },
                 {
-                        // 1 full single-ref slice with RECORDS_PER_SLICE - 1 records
-                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE - 1),
+                        // 1 full single-ref (unmapped) slice with RECORDS_PER_SLICE - 1 records
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE - 1),
                         RECORDS_PER_SLICE, 1,
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         1, Arrays.asList(RECORDS_PER_SLICE - 1)
                 },
                 {
-                        // 1 full single-ref slice with RECORDS_PER_SLICE records
-                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE),
+                        // 1 full single-ref (unmapped) slice with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE),
                         RECORDS_PER_SLICE, 1,
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         1, Arrays.asList(RECORDS_PER_SLICE)
                 },
                 {
-                        // 2 single-ref slices, one with RECORDS_PER_SLICE records, one with 1 record
-                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE + 1),
+                        // 2 single-ref (unmapped) slices, one with RECORDS_PER_SLICE records, one with 1 record
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE + 1),
                         RECORDS_PER_SLICE, 2,
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         2, Arrays.asList(RECORDS_PER_SLICE, 1)
                 },
                 {
-                        // 2 full single-ref slices, each with RECORDS_PER_SLICE records
-                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE * 2),
-                        RECORDS_PER_SLICE, 2, 2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
+                        // 2 full single-ref (unmapped) slices, each with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE * 2),
+                        RECORDS_PER_SLICE, 2,
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
                 },
                 {
-                        // 3 full single-ref slices, each with RECORDS_PER_SLICE records
-                        CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE * 3),
-                        RECORDS_PER_SLICE, 3, 3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE)
+                        // 3 full single-ref (unmapped) slices, each with RECORDS_PER_SLICE records
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE * 3),
+                        RECORDS_PER_SLICE, 3,
+                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                        3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE)
                 },
         };
     }
@@ -377,6 +395,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
             final List<SAMRecord> samRecords,
             final int recordsPerSlice,
             final int slicesPerContainer,
+            final ReferenceContext expectedContainerReferenceContext,
             final int expectedSliceCount,
             final List<Integer> expectedSliceRecordCounts) {
         final CRAMEncodingStrategy cramEncodingStrategy =
@@ -386,8 +405,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 cramEncodingStrategy,
                 CRAMStructureTestHelper.REFERENCE_SOURCE);
 
-        final Container container = CRAMStructureTestHelper.getSingleContainerFromRecords(containerFactory, samRecords, 0);
+        final Container container = CRAMStructureTestHelper.createContainer(containerFactory, samRecords, 0);
         Assert.assertNotNull(container);
+        Assert.assertEquals(container.getAlignmentContext().getReferenceContext(), expectedContainerReferenceContext);
+
         final List<Slice> slices = container.getSlices();
         Assert.assertEquals(slices.size(), expectedSliceCount);
         for (int i = 0; i < slices.size(); i++) {
@@ -400,29 +421,30 @@ public class ContainerFactoryTest extends HtsjdkTest {
     @DataProvider(name="multipleContainerSlicePartitioning")
     private Object[][] getMultipleContainerSlicePartitioning() {
         final int RECORDS_PER_SLICE = 100;
-        return new Object[][]{
+        return new Object[][] {
+                //TODO: add expected container reference contexts
                 // List<SAMRecord>, records/slice, slices/container, expected container count, expected record count for each container
                 {
                         // this generates two containers since it has two containers worth of records mapped to a single ref
-                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 2, 0),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0),
                         RECORDS_PER_SLICE, 1,
                         2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
                 },
                 {
-                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 3 + 1, 0),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 3 + 1, 0),
                         RECORDS_PER_SLICE, 2,
                         2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE+ 1)
                 },
                 {
-                        CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 4, 0),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 4, 0),
                         RECORDS_PER_SLICE, 2,
                         2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE * 2)
                 },
                 {
                         // this generates two containers since it has two mapped ref indexes
                         Stream.of(
-                                CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE - 1, 0),
-                                CRAMStructureTestHelper.createMappedSAMRecords(1, 1))
+                                CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0),
+                                CRAMStructureTestHelper.createSAMRecordsMapped(1, 1))
                                 .flatMap(List::stream)
                                 .collect(Collectors.toList()),
                         RECORDS_PER_SLICE, 1,
@@ -431,8 +453,8 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 {
                         // this generates two containers since it has some mapped and one unmapped
                         Stream.of(
-                                CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE - 1, 0),
-                                CRAMStructureTestHelper.createUnmappedSAMRecords(1))
+                                CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0),
+                                CRAMStructureTestHelper.createSAMRecordsUnmapped(1))
                                 .flatMap(List::stream)
                                 .collect(Collectors.toList()),
                         RECORDS_PER_SLICE, 1,
@@ -441,8 +463,8 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 {
                         // this generates two containers since it has some mapped and one unmapped
                         Stream.of(
-                                CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE * 2, 0),
-                                CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE))
+                                CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0),
+                                CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE))
                                 .flatMap(List::stream)
                                 .collect(Collectors.toList()),
                         RECORDS_PER_SLICE, 2,
@@ -451,8 +473,8 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 {
                         // this generates two containers since it has some mapped and one unmapped
                         Stream.of(
-                                CRAMStructureTestHelper.createMappedSAMRecords(RECORDS_PER_SLICE / 2, 0),
-                                CRAMStructureTestHelper.createUnmappedSAMRecords(RECORDS_PER_SLICE))
+                                CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE / 2, 0),
+                                CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE))
                                 .flatMap(List::stream)
                                 .collect(Collectors.toList()),
                         RECORDS_PER_SLICE, 1,
@@ -474,7 +496,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 cramEncodingStrategy,
                 CRAMStructureTestHelper.REFERENCE_SOURCE);
-        final List<Container> containers = CRAMStructureTestHelper.getAllContainersFromRecords(containerFactory, samRecords);
+        final List<Container> containers = CRAMStructureTestHelper.createContainers(containerFactory, samRecords);
         Assert.assertEquals(containers.size(), expectedContainerCount);
 
         for (int i = 0; i < containers.size(); i++) {

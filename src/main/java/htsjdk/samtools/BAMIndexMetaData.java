@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.cram.BAIEntry;
-import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
 import java.io.File;
@@ -154,28 +153,10 @@ public class BAMIndexMetaData {
         }
     }
 
-    /**
-     * @param slice
-     */
-    void recordMetaData(final Slice slice) {
-        alignedRecords += slice.getMappedReadsCount();
-        noCoordinateRecords += slice.getUnplacedReadsCount();
-        unAlignedRecords += slice.getUnmappedReadsCount();
-
-        final long start = slice.getByteOffsetOfSliceHeaderBlock();
-
-        if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
-            this.firstOffset = start;
-            // not actually used, so set it to a dummy value (start)
-            // see https://github.com/samtools/htsjdk/issues/401
-            this.lastOffset = start;
-        }
-    }
-
     void recordMetaData(final BAIEntry baiEntry) {
-        alignedRecords += baiEntry.getAlignedReads();
-        noCoordinateRecords += baiEntry.getUnplacedReads();
-        unAlignedRecords += baiEntry.getUnalignedReads();
+        alignedRecords += baiEntry.getMappedReadsCount();
+        noCoordinateRecords += baiEntry.getUnmappedUnplacedReadsCount();
+        unAlignedRecords += baiEntry.getUnmappedReadsCount();
 
         final long start = baiEntry.getSliceHeaderBlockByteOffset();
 

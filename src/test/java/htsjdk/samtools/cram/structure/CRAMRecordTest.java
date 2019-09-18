@@ -13,7 +13,10 @@ import java.util.*;
 
 public class CRAMRecordTest extends HtsjdkTest {
 
+
     //TODO: need round trip tests (CRAMRecord fromSAMRecord/toSAMRecord) based on SAMRecord cigar strings
+    // TODO: test for conversion of SAMRecord with SAMRecord.NULL_SEQUENCE (can leads to an alignment context span == 0)
+    // testSingleRecord(SAMRecord.NULL_SEQUENCE, SAMRecord.NULL_QUALS, "A".getBytes());
 
     @DataProvider(name="getAlignmentEndData")
     public Object[][] getAlignmentEndTestData() {

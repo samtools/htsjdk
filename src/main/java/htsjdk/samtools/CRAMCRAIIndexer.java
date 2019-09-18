@@ -30,6 +30,7 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
 
     final private CRAIIndex craiIndex = new CRAIIndex();
     final private GZIPOutputStream os;
+    final CompressorCache compressorCache = new CompressorCache();
 
     /**
      * Create a CRAMCRAIIndexer that writes to the given output stream.
@@ -73,7 +74,9 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
     }
 
     @Override
-    public void processContainer(final Container container, final ValidationStringency validationStringency) {
+    public void processContainer(
+            final Container container,
+            final ValidationStringency validationStringency) {
         processContainer(container);
     }
 

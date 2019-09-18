@@ -1,81 +1,11 @@
 package htsjdk.samtools.cram.structure;
 
-// AlignmentContext has (used in CompressionHeader, Slice, CRAMRecord):
-//    private final ReferenceContext referenceContext;
-//    private final int alignmentStart;
-//    private final int alignmentSpan;
-
-// Slice has:
-// private AlignmentContext alignmentContext;
-// private int mappedReadsCount = 0;   // mapped (rec.getReadUnmappedFlag() != true)
-// private int unmappedReadsCount = 0; // unmapped (rec.getReadUnmappedFlag() == true)
-// private int unplacedReadsCount = 0; // nocoord (alignmentStart == SAMRecord.NO_ALIGNMENT_START)
-
-// AlignmentSpan has:
-//  start: minimum alignment start of the reads represented by this span uses a 1-based coordinate system
-//  span: from minimum alignment start to maximum alignment end of reads represented by this span == max(end) - min(start) + 1
-//  private final int start;
-//  private final int span;
-//  private final int mappedCount;
-//  private final int unmappedCount;
-
-// BAIEntry has:
-//    final ReferenceContext sliceReferenceContext; // Note: this should never be a multiple ref context
-//    final int alignmentStart;
-//    final int alignmentSpan;
-//    final int alignedReads;     // mapped
-//    final int unplacedReads;    // nocoord
-//    final int unalignedReads;   // unmapped
-
-//    final long containerOffset;
-//    final long sliceHeaderBlockByteOffset;
-//    final int landmarkIndex;
-
-//************
-// Proposed:
-// AlignmentContext has:
-//    private final ReferenceContext referenceContext;
-//    private final int alignmentStart;
-//    private final int alignmentSpan;
-
-// AlignmentSpan has:
-//  final AlignmentContext alignmentContext
-//    final int mappedReadCount;     // mapped
-//    final int unplacedReadCount;   // nocoord
-//    final int unmappedReadCount;   // unmapped
-
-// Slice has:
-// private AlignmentContext alignmentContext;
-// private int mappedReadsCount = 0;   // mapped (rec.getReadUnmappedFlag() != true)
-// private int unmappedReadsCount = 0; // unmapped (rec.getReadUnmappedFlag() == true)
-// private int unplacedReadsCount = 0; // nocoord (alignmentStart == SAMRecord.NO_ALIGNMENT_START)
-
-// BAIEntry has:
-//    final ReferenceContext sliceReferenceContext; // Note: this should never be a multiple ref context
-//    final int alignmentStart;
-//    final int alignmentSpan;
-//    final int alignedReads;     // mapped
-//    final int unplacedReads;    // nocoord
-//    final int unalignedReads;   // unmapped
-
-//    final long containerOffset;
-//    final long sliceHeaderBlockByteOffset;
-//    final int landmarkIndex;
-
 /**
- * A span of reads on a single reference.  Immutable.
+ * A span of over a single reference. Immutable.
  *
- * Holds alignment start and span values as well as counts of how many are mapped vs. unmapped.
+ * Holds alignment start and span values as well as counts of how many are mapped vs. unmapped vs unmapped-unplaced.
  */
 public class AlignmentSpan {
-    /**
-     * A constant to represent a span of unmapped-unplaced reads.
-     */
-    public static final AlignmentSpan UNPLACED_SPAN =
-            new AlignmentSpan(
-                    AlignmentContext.NO_ALIGNMENT_START,
-                    AlignmentContext.NO_ALIGNMENT_SPAN,
-                    0, 0, 0);
 
     // minimum alignment start of the reads represented by this span
     // uses a 1-based coordinate system
@@ -86,10 +16,19 @@ public class AlignmentSpan {
 
     private final int mappedCount;
     private final int unmappedCount;
-    private final int unmappedUnplacedCount; // unmapped AND unplaced
+    private final int unmappedUnplacedCount; // unmapped AND unplaced (subset of unmapped)
 
+    /**
+     * This does not retain the alignmentContext referenceContext state (its just a shorthand for passing
+     * the rest of the alignmentContext values in).
+     *
+     * @param alignmentContext
+     * @param mappedCount
+     * @param unmappedCount
+     * @param unmappedUnplacedCount
+     */
     public AlignmentSpan(
-            final AlignmentContext alignmentContext,
+            final AlignmentContext alignmentContext, // does not retain the alignmentContext referenceContext
             final int mappedCount,
             final int unmappedCount,
             final int unmappedUnplacedCount) {
@@ -112,7 +51,7 @@ public class AlignmentSpan {
     public AlignmentSpan(
             final int alignmentStart,
             final int alignmentSpan,
-            final int mappedCount,
+            final int mappedCount, //TODO: this is really "placed", since it includes records that are unmapped/placed
             final int unmappedCount,
             final int unmappedUnplacedCount) {
         this.alignmentStart = alignmentStart;
@@ -137,14 +76,17 @@ public class AlignmentSpan {
             span = Math.max(a.getAlignmentSpan(), b.getAlignmentSpan());
         }
         else {
-            span = Math.max(a.getAlignmentStart() + a.getAlignmentSpan(), b.getAlignmentStart() + b.getAlignmentSpan()) - start;
+            span = Math.max(
+                    a.getAlignmentStart() + a.getAlignmentSpan(),
+                    b.getAlignmentStart() + b.getAlignmentSpan()
+            ) - start;
         }
 
         final int mappedCount = a.mappedCount + b.mappedCount;
         final int unmappedCount = a.unmappedCount + b.unmappedCount;
-        final int unplacedCount = a.unmappedUnplacedCount + b.unmappedUnplacedCount;
+        final int unmappedUnplacedCount = a.unmappedUnplacedCount + b.unmappedUnplacedCount;
 
-        return new AlignmentSpan(start, span, mappedCount, unmappedCount, unplacedCount);
+        return new AlignmentSpan(start, span, mappedCount, unmappedCount, unmappedUnplacedCount);
     }
 
     public int getAlignmentStart() {
