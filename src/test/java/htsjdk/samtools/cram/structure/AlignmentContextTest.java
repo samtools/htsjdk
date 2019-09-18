@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
@@ -29,7 +30,7 @@ public class AlignmentContextTest extends HtsjdkTest {
                 {
                         AlignmentContext.UNMAPPED_UNPLACED_CONTEXT,
                         ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
-                        AlignmentContext.NO_ALIGNMENT_START,
+                        0, // spec requires start==0
                         AlignmentContext.NO_ALIGNMENT_SPAN
                 },
 
@@ -51,6 +52,14 @@ public class AlignmentContextTest extends HtsjdkTest {
                         CramIO.EOF_ALIGNMENT_START,
                         CramIO.EOF_ALIGNMENT_SPAN
                 },
+                //TODO: fix this constant (-1) to be symbolic (should AlignmentContext.NO_ALIGNMENT_START change to be -1 ?)
+                { new AlignmentContext(
+                        new ReferenceContext(1), -1, 0),
+                ReferenceContextType.SINGLE_REFERENCE_TYPE, -1, 0},
+                { new AlignmentContext(
+                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, 7, 8),
+                        ReferenceContextType.MULTIPLE_REFERENCE_TYPE, 7, 8
+                }
         };
     }
 
@@ -65,22 +74,30 @@ public class AlignmentContextTest extends HtsjdkTest {
         Assert.assertEquals(alnContext.getAlignmentSpan(), expectedSpan);
     }
 
-    // TODO: for now, accept anything until CRAMBAIndexer fake slices are eliminated
-//    @DataProvider(name = "invalidAlignmentContexts")
-//    private static Object[][] invalidAlignmentContexts() {
-//        return new Object[][] {
-//                // referenceContext, start, span
-//                { ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 5, 6 },
-//                // does not actually check for span for EOF Containers
-//                // so we can use an arbitrary span value
-//                { ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, CramIO.EOF_ALIGNMENT_START, 10 },
-//                { ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, 7, 8 }
-//        };
-//    }
-//
-//    @Test(dataProvider = "invalidAlignmentContexts", expectedExceptions = IllegalArgumentException.class)
-//    public void invalidAlignmentContextTest(final ReferenceContext refContext, final int start, final int span) {
-//        new AlignmentContext(refContext, start, span);
-//    }
+    @DataProvider(name = "invalidAlignmentContexts")
+    private static Object[][] invalidAlignmentContexts() {
+        return new Object[][] {
+        };
+    }
+
+    @Test(dataProvider = "invalidAlignmentContexts", expectedExceptions = IllegalArgumentException.class)
+    public void invalidAlignmentContextTest(final ReferenceContext refContext, final int start, final int span) {
+        new AlignmentContext(refContext, start, span); // we allow creation of these, and only fail on validation
+        AlignmentContext.validateAlignmentContext(true, refContext, start, span);
+    }
+
+    @DataProvider(name = "invalidStrictAlignmentContexts")
+    private static Object[][] invalidStrictAlignmentContexts() {
+        return new Object[][] {
+                // referenceContext, start, span
+                { ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, 5, 6 },
+                { ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, CramIO.EOF_ALIGNMENT_START, 10 },
+        };
+    }
+
+    @Test(dataProvider = "invalidStrictAlignmentContexts", expectedExceptions = IllegalArgumentException.class)
+    public void invalidStrictAlignmentContextTest(final ReferenceContext refContext, final int start, final int span) {
+        AlignmentContext.validateAlignmentContext(true, refContext, start, span);
+    }
 
 }

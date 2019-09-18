@@ -4,12 +4,14 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
+import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.utils.ValidationUtils;
+import org.testng.Assert;
 
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class CRAMStructureTestHelper {
     public static final int REFERENCE_CONTIG_LENGTH = 10000;
@@ -23,8 +25,8 @@ public class CRAMStructureTestHelper {
     public static final SAMFileHeader SAM_FILE_HEADER = getSAMFileHeader();
     public static final CRAMReferenceSource REFERENCE_SOURCE = new ReferenceSource(getReferenceFile());
 
-    // create a SINGLE container (throws if more than one container is produced)
-    public static Container getSingleContainerFromRecords(
+    // create a SINGLE container (throws if less than or more than one container is produced)
+    public static Container createContainer(
             final ContainerFactory containerFactory,
             final List<SAMRecord> samRecords,
             final long byteOffset) {
@@ -41,11 +43,13 @@ public class CRAMStructureTestHelper {
                 }
             }
         }
-        return containerFactory.getFinalContainer(byteOffset);
+        final Container singleContainer = containerFactory.getFinalContainer(byteOffset);
+        Assert.assertNotNull(singleContainer);
+        return singleContainer;
     }
 
-    // create a SINGLE container, and throw if more than one is produced
-    public static List<Container> getAllContainersFromRecords(
+    // create one or more containers based on records
+    public static List<Container> createContainers(
             final ContainerFactory containerFactory,
             final List<SAMRecord> samRecords) {
         final List<Container> containers = new ArrayList<>();
@@ -62,7 +66,52 @@ public class CRAMStructureTestHelper {
         return containers;
     }
 
-    public static SAMRecord createMappedSAMRecord(final int referenceIndex, final int intForNameAndStart) {
+    public Slice createSingleReferenceSlice(final int recordCount, final int referenceIndex) {
+        ValidationUtils.validateArg(referenceIndex == REFERENCE_SEQUENCE_ZERO || referenceIndex == REFERENCE_SEQUENCE_ONE,
+                "invalid reference index");
+        final ContainerFactory containerFactory = new ContainerFactory(SAM_FILE_HEADER, new CRAMEncodingStrategy(), REFERENCE_SOURCE);
+        final Container container = createContainer(containerFactory, createSAMRecordsMapped(recordCount, referenceIndex), 10);
+        Assert.assertEquals(container.getSlices().size(), 1);
+        final Slice slice = container.getSlices().get(0);
+        Assert.assertEquals(
+                slice.getAlignmentContext().getReferenceContext(),
+                new ReferenceContext(referenceIndex),
+                "bad slice reference context");
+        return slice;
+    }
+
+    public Slice createMultiReferenceSlice() {
+        final CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
+        final ContainerFactory containerFactory = new ContainerFactory(SAM_FILE_HEADER, cramEncodingStrategy, REFERENCE_SOURCE);
+        final List<SAMRecord> samRecords = new ArrayList<>();
+        // create a small number of mapped, and one unmapped
+        Stream.of(
+                createSAMRecordsMapped(1, REFERENCE_SEQUENCE_ZERO),
+                createSAMRecordsUnmapped(1));
+        final Container container = createContainer(containerFactory, samRecords, 10);
+        Assert.assertEquals(container.getSlices().size(), 1);
+        final Slice slice = container.getSlices().get(0);
+        Assert.assertEquals(
+                slice.getAlignmentContext().getReferenceContext(),
+                ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
+                "slice should have a multi reference context");
+        return slice;
+
+    }
+
+    public static Slice createSliceWithSingleMappedRecord() {
+        return new Slice(
+                Collections.singletonList(new CRAMRecord(
+                        CramVersions.CRAM_v3,
+                        new CRAMEncodingStrategy(),
+                        createSAMRecordMapped(REFERENCE_SEQUENCE_ZERO,1),
+                        new byte[1],
+                        1,
+                        new HashMap<>())),
+                new CompressionHeader(), 0);
+    }
+
+    public static SAMRecord createSAMRecordMapped(final int referenceIndex, final int intForNameAndStart) {
         // reference index must be valid for out header
         ValidationUtils.validateArg(referenceIndex == REFERENCE_SEQUENCE_ZERO || referenceIndex == REFERENCE_SEQUENCE_ONE,
                 "invalid reference index");
@@ -73,87 +122,88 @@ public class CRAMStructureTestHelper {
         samRecord.setReadName(Integer.toString(intForNameAndStart));
         addBasesAndQualities(samRecord);
 
-        ValidationUtils.validateArg(samRecord.getReadUnmappedFlag() == false, "read should be mapped");
+        Assert.assertFalse(samRecord.getReadUnmappedFlag(), "read should be mapped");
+        Assert.assertTrue(samRecord.getReferenceIndex() >= 0, "read should have valid ref index");
+        Assert.assertTrue(samRecord.getAlignmentStart() >= 0, "read should have a valid alignment start");
+
         return samRecord;
     }
 
-    public static List<SAMRecord> createMappedSAMRecords(final int count, final int referenceIndex) {
+    public static List<SAMRecord> createSAMRecordsMapped(final int count, final int referenceIndex) {
         // reference index must be valid for out header
         ValidationUtils.validateArg(referenceIndex == REFERENCE_SEQUENCE_ZERO || referenceIndex == REFERENCE_SEQUENCE_ONE,
                 "invalid reference index");
 
         final List<SAMRecord> samRecords = new ArrayList<>(count);
         for (int i = 1; i <= count; i++) {
-            samRecords.add(createMappedSAMRecord(referenceIndex, i));
+            samRecords.add(createSAMRecordMapped(referenceIndex, i));
         }
         return samRecords;
     }
 
-    public static List<SAMRecord> createMappedMultiRefSAMRecords(final int count) {
-        final List<SAMRecord> samRecords = new ArrayList<>(count);
-        for (int i = 1; i <= count/2; i++) {
-            samRecords.add(createMappedSAMRecord(0, i));
-        }
-        for (int i = 1; i <= count/2; i++) {
-            samRecords.add(createMappedSAMRecord(1, i));
-        }
-        return samRecords;
-    }
-
-    public static SAMRecord createUnmappedSAMRecord(final int intForNameAndStart) {
+    public static SAMRecord createSAMRecordUnmapped(final int intForNameAndStart) {
         final SAMRecord samRecord = new SAMRecord(SAM_FILE_HEADER);
         samRecord.setReadName(Integer.toString(intForNameAndStart));
         samRecord.setReadUnmappedFlag(true);
         addBasesAndQualities(samRecord);
 
-        ValidationUtils.validateArg(samRecord.getReadUnmappedFlag() == true, "read should be unmapped");
+        Assert.assertTrue(samRecord.getReadUnmappedFlag(), "read should be unmapped");
+        Assert.assertFalse(samRecord.getReferenceIndex() >= 0, "read should have valid ref index");
+        Assert.assertFalse(samRecord.getAlignmentStart() >= 1, "read should not have an alignment start");
+
         return samRecord;
     }
 
-    public static List<SAMRecord> createUnmappedSAMRecords(final int recordCount) {
+    public static List<SAMRecord> createSAMRecordsUnmapped(final int recordCount) {
         final List<SAMRecord> samRecords = new ArrayList<>(recordCount);
         for (int i = 1; i <= recordCount; i++) {
-            samRecords.add(createUnmappedSAMRecord(i));
+            samRecords.add(createSAMRecordUnmapped(i));
         }
         return samRecords;
     }
 
     // this record is not quite valid - its only half placed
-    public static SAMRecord createUnmappedWithAlignmentStartSAMRecord(final int intForNameAndStart) {
+    public static SAMRecord createSAMRecordUnmappedWithAlignmentStart(final int intForNameAndStart) {
         // create an unmapped record with no reference index, but with an alignment start
-        final SAMRecord samRecord = createUnmappedSAMRecord(intForNameAndStart);
+        final SAMRecord samRecord = createSAMRecordUnmapped(intForNameAndStart);
         samRecord.setAlignmentStart(intForNameAndStart);
-        ValidationUtils.validateArg(samRecord.getReadUnmappedFlag() == true, "read should be unmapped");
+
+        Assert.assertTrue(samRecord.getReadUnmappedFlag(), "read should be unmapped");
+        Assert.assertTrue(samRecord.getReferenceIndex()== SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, "read should have no ref index");
+        Assert.assertTrue(samRecord.getAlignmentStart() >= 0, "read should have a valid alignment start");
 
         return samRecord;
     }
 
     // these records are not quite valid - they're only half placed
-    public static List<SAMRecord> createUnmappedWithAlignmentStartSAMRecords(final int recordCount) {
+    public static List<SAMRecord> createSAMRecordsUnmappedWithAlignmentStart(final int recordCount) {
         final List<SAMRecord> records = new ArrayList<>(recordCount);
         for (int i = 1; i <= recordCount; i++) {
             // create an unmapped record with no reference index, but with an alignment start
-            records.add(createUnmappedWithAlignmentStartSAMRecord(i));
+            records.add(createSAMRecordUnmappedWithAlignmentStart(i));
         }
         return records;
     }
 
     // this record is not quite valid - its only half placed
-    public static SAMRecord createUnmappedWithReferenceIndexRecord(final int referenceIndex, final int intForNameAndStart) {
+    public static SAMRecord createSAMRecordUnmappedWithReferenceIndex(final int referenceIndex, final int intForNameAndStart) {
         // reference index must be valid for out header
         ValidationUtils.validateArg(referenceIndex == REFERENCE_SEQUENCE_ZERO || referenceIndex == REFERENCE_SEQUENCE_ONE,
                 "invalid reference index");
 
         // create an unmapped record with a reference index, but no alignment start
-        final SAMRecord samRecord = createUnmappedSAMRecord(intForNameAndStart);
+        final SAMRecord samRecord = createSAMRecordUnmapped(intForNameAndStart);
         samRecord.setReferenceIndex(referenceIndex);
-        ValidationUtils.validateArg(samRecord.getReadUnmappedFlag() == true, "read should be unmapped");
-        ValidationUtils.validateArg(samRecord.getReferenceIndex() == referenceIndex, "read should have a ref index");
+
+        Assert.assertTrue(samRecord.getReadUnmappedFlag(), "read should be unmapped");
+        Assert.assertTrue(samRecord.getReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, "read should have no ref index");
+        Assert.assertTrue(samRecord.getAlignmentStart()== 0, "read should have no alignment start");
+
         return samRecord;
     }
 
     // these records are not quite valid - they're only half placed
-    public static List<SAMRecord> createUnmappedWithReferenceIndexRecords(final int recordCount, final int referenceIndex) {
+    public static List<SAMRecord> createSAMRecordsUnmappedWithReferenceIndex(final int recordCount, final int referenceIndex) {
         // reference index must be valid for out header
         ValidationUtils.validateArg(referenceIndex == REFERENCE_SEQUENCE_ZERO || referenceIndex == REFERENCE_SEQUENCE_ONE,
                 "invalid reference index");
@@ -161,58 +211,166 @@ public class CRAMStructureTestHelper {
         // create unmapped records with a reference index, but no alignment start
         final List<SAMRecord> samRecords = new ArrayList<>(recordCount);
         for (int i = 1; i <= recordCount; i++) {
-            samRecords.add(createUnmappedWithReferenceIndexRecord(referenceIndex, i));
+            samRecords.add(createSAMRecordUnmappedWithReferenceIndex(referenceIndex, i));
         }
         return samRecords;
     }
 
-    public static List<SAMRecord> createMappedPlusOneUnmappedSAMRecords(final int recordCount, final int referenceIndex) {
-        // reference index must be valid for out header
+    public static List<CRAMRecord> createCRAMRecordsMapped(
+            final int count,
+            final int referenceIndex) {
         ValidationUtils.validateArg(referenceIndex == REFERENCE_SEQUENCE_ZERO || referenceIndex == REFERENCE_SEQUENCE_ONE,
                 "invalid reference index");
-        final List<SAMRecord> samRecords = new ArrayList<>(recordCount);
-        for (int i = 1; i <= recordCount - 1; i++) {
-            samRecords.add(createUnmappedWithReferenceIndexRecord(referenceIndex, i));
-        }
-        samRecords.add(createUnmappedSAMRecord(recordCount ));
-        return samRecords;
-    }
 
-    public static List<SAMRecord> createMappedMultiRefPlusOneUnmappedSAMRecords(final int recordCount) {
-        final List<SAMRecord> samRecords = createMappedMultiRefSAMRecords(recordCount);
-        samRecords.add(createUnmappedSAMRecord(recordCount ));
-        return samRecords;
-    }
-
-    // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
-    // but not both.  We treat these weird edge cases as unplaced.
-    public static List<CRAMRecord> createMappedCRAMRecords(
-            final int count,
-            final int referenceIndex,
-            final Consumer<SAMRecord> samRecordMutator) {
         final List<CRAMRecord> cramRecords = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            final SAMRecord samRecord = createMappedSAMRecord(referenceIndex, i);
-            // give the caller a chance to transform the SAMRecord before we use it to create the CRAMRecord
-            samRecordMutator.accept(samRecord);
-            cramRecords.add(toMappedCRAMRecord(samRecord, i, referenceIndex));
+        for (int i = 1; i <= count; i++) {
+            final SAMRecord samRecord = createSAMRecordMapped(referenceIndex, i);
+            final CRAMRecord cramRecord = toMappedCRAMRecord(samRecord, referenceIndex, i);
+
+            Assert.assertEquals(
+                    cramRecord.getBAMFlags() & SAMFlag.READ_UNMAPPED.intValue(),
+                    0, "read should be mapped");
+            Assert.assertTrue(cramRecord.getReferenceIndex() >= 0, "read should have valid ref index");
+            Assert.assertTrue(cramRecord.getAlignmentStart() >= 0, "read should have a valid alignment start");
+
+            cramRecords.add(cramRecord);
         }
 
         return cramRecords;
     }
 
-    public static List<CRAMRecord> createUnmappedCRAMRecords(
-            final int count,
-            final Consumer<SAMRecord> samRecordMutator) {
+    public static List<CRAMRecord> createCRAMRecordsUnmapped(final int count) {
         final List<CRAMRecord> cramRecords = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            final SAMRecord samRecord = createUnmappedSAMRecord(i);
-            // give the caller a chance to transform the SAMRecord before we use it to create the CRAMRecord
-            samRecordMutator.accept(samRecord);
+            final SAMRecord samRecord = createSAMRecordUnmapped(i);
             cramRecords.add(toUnmappedCRAMRecord(samRecord, i));
         }
 
         return cramRecords;
+    }
+
+    public static CRAMRecord createCRAMRecordUnmappedPlaced(
+            final int referenceIndex,
+            final int alignmentStart) {
+       final CRAMRecord cramRecord = createCRAMRecord(1, referenceIndex, alignmentStart, SAMFlag.READ_UNMAPPED.intValue());
+        Assert.assertEquals(
+                cramRecord.getBAMFlags() & SAMFlag.READ_UNMAPPED.intValue(),
+                SAMFlag.READ_UNMAPPED.intValue(), "read should be unmapped");
+       return cramRecord;
+    }
+
+    public static List<CRAMRecord> createCRAMRecordsMappedThenUnmapped(final int recordCount) {
+        Assert.assertTrue(recordCount > 2);
+        final List<CRAMRecord> records = new ArrayList<>();
+        records.addAll(createCRAMRecordsMapped(recordCount/2, REFERENCE_SEQUENCE_ZERO));
+        records.addAll(createCRAMRecordsUnmapped(recordCount/2));
+        return records;
+    }
+
+    // this is unmapped/"half placed"
+    public static List<CRAMRecord> createCRAMRecordsUnmappedWithAlignmentStart(
+            final int count,
+            final int alignmentStart) {
+        final List<CRAMRecord> cramRecords = new ArrayList(count);
+        for (int i = 0; i < count; i++) {
+            final CRAMRecord cramRecord = createCRAMRecord(i, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, alignmentStart, SAMFlag.READ_UNMAPPED.intValue());
+
+            Assert.assertEquals(
+                    cramRecord.getBAMFlags() & SAMFlag.READ_UNMAPPED.intValue(),
+                    SAMFlag.READ_UNMAPPED.intValue(), "read should be unmapped");
+            Assert.assertFalse(cramRecord.getReferenceIndex() >= 0, "read should have valid ref index");
+            Assert.assertTrue(cramRecord.getAlignmentStart() >= 0, "read should have a valid alignment start");
+
+            cramRecords.add(cramRecord);
+        }
+        return cramRecords;
+    }
+
+    // this is unmapped/"half placed"
+    public static List<CRAMRecord> createCRAMRecordsUnmappedWithReferenceIndex(final int count, final int referenceIndex) {
+        ValidationUtils.validateArg(referenceIndex == REFERENCE_SEQUENCE_ZERO || referenceIndex == REFERENCE_SEQUENCE_ONE,
+                "invalid reference index");
+        final List<CRAMRecord> cramRecords = new ArrayList(count);
+        for (int i = 0; i < count; i++) {
+            cramRecords.add(createCRAMRecord(i, referenceIndex, SAMRecord.NO_ALIGNMENT_START, SAMFlag.READ_UNMAPPED.intValue()));
+        }
+        return cramRecords;
+    }
+
+    public static CRAMRecord createCRAMRecord(
+            final int index,
+            final int referenceIndex,
+            final int alignmentStart,
+            final int samFlag) {
+        ValidationUtils.validateArg(
+                referenceIndex == REFERENCE_SEQUENCE_ZERO ||
+                        referenceIndex == REFERENCE_SEQUENCE_ONE ||
+                referenceIndex == ReferenceContext.UNMAPPED_UNPLACED_ID,
+                "invalid reference index");
+        return new CRAMRecord(
+                1,
+                index,
+                samFlag,
+                0,
+                "A READ NAME",
+                READ_LENGTH,
+                referenceIndex,
+                alignmentStart,
+                0,
+                30,
+                "!!!".getBytes(),
+                "AAA".getBytes(),
+                null,
+                null,
+                1,
+                0,
+                //TODO: are these the correct states for mates ?
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1);
+    }
+
+   // assert that slices and containers have values equal to what the caller expects
+    public static void assertSliceState(final Slice slice,
+                                        final AlignmentContext expectedAlignmentContext,
+                                        final int expectedRecordCount,
+                                        final int expectedBaseCount,
+                                        final long expectedGlobalRecordCounter) {
+        Assert.assertEquals(slice.getAlignmentContext(), expectedAlignmentContext);
+        Assert.assertEquals(slice.getNumberOfRecords(), expectedRecordCount);
+        Assert.assertEquals(slice.getBaseCount(), expectedBaseCount);
+        Assert.assertEquals(slice.getGlobalRecordCounter(), expectedGlobalRecordCounter);
+    }
+
+    public static void assertContainerState(final Container container,
+                                            final AlignmentContext expectedAlignmentContext,
+                                            final long expectedByteOffset) {
+        Assert.assertEquals(container.getAlignmentContext(), expectedAlignmentContext);
+        Assert.assertEquals(container.getContainerByteOffset(), expectedByteOffset);
+    }
+
+    public static void assertContainerState(final Container container,
+                                            final AlignmentContext expectedAlignmentContext,
+                                            final int expectedRecordCount,
+                                            final int expectedBaseCount,
+                                            final long expectedGlobalRecordCounter,
+                                            final long expectedByteOffset) {
+        Assert.assertEquals(container.getAlignmentContext(), expectedAlignmentContext);
+        Assert.assertEquals(container.getContainerByteOffset(), expectedByteOffset);
+
+        Assert.assertEquals(container.getContainerHeader().getNumberOfRecords(), expectedRecordCount);
+        Assert.assertEquals(container.getContainerHeader().getBaseCount(), expectedBaseCount);
+        Assert.assertEquals(container.getContainerHeader().getGlobalRecordCounter(), expectedGlobalRecordCounter);
+
+        //TODO: this assumes a single slice
+        // verify the underlying slice too
+        Assert.assertEquals(container.getSlices().size(), 1);
+        assertSliceState(
+                container.getSlices().get(0),
+                expectedAlignmentContext,
+                expectedRecordCount,
+                expectedBaseCount,
+                expectedGlobalRecordCounter);
     }
 
     private static SAMFileHeader getSAMFileHeader() {
@@ -259,13 +417,6 @@ public class CRAMStructureTestHelper {
                 null, // TODO: is null bases correct here ?
                 intForNameAndIndex,
                 READ_GROUP_MAP);
-    }
-
-
-    public static SAMRecord createUnmappedPlacedSAMRecord(final int referenceIndex, final int intForNameAndIndex) {
-        final SAMRecord samRecord = createMappedSAMRecord(referenceIndex, intForNameAndIndex);
-        samRecord.setReadUnmappedFlag(true);
-        return samRecord;
     }
 
     private static SAMRecord addBasesAndQualities(final SAMRecord samRecord) {

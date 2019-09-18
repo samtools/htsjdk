@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFlag;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
@@ -42,7 +41,7 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
         final CompressionHeader header = new CompressionHeaderFactory().build(unmappedRecords, coordinateSorted);
 
         final Slice slice = new Slice(unmappedRecords, header, 0L);
-        final List<CRAMRecord> roundTripRecords = slice.getRecords(new CompressorCache(), ValidationStringency.STRICT);
+        final List<CRAMRecord> roundTripRecords = slice.getCRAMRecords(new CompressorCache(), ValidationStringency.STRICT);
 
         Assert.assertEquals(roundTripRecords, unmappedRecords);
     }

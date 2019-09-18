@@ -34,7 +34,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
 //                { new File("/Users/cnorman/projects/references/NA12878.cram"),
-//                  new File("/Users/cnorman/projects/references/Homo_sapiens_assembly38.fasta")}
+//                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
 //                        new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta") },
 //                { new File(TEST_DATA_DIR, "/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.samtools.cram"),
@@ -50,8 +50,12 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
         final File tempOutCRAM = File.createTempFile("readOnlyDefaultEncodingStrategyTest", ".cram");
         System.out.println(String.format("Output file size: %s", tempOutCRAM.toPath()));
+        final long start = System.currentTimeMillis();
+        System.out.println(String.format("Output file size: %s", tempOutCRAM.toPath()));
         final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
         System.out.println(String.format("Size: %,d Strategy %s", fileSize, testStrategy));
+        final long end = System.currentTimeMillis();
+        System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
 
         assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile);
 
@@ -60,7 +64,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //            System.out.println(String.format("Samtools file size: %,d (%s)", Files.size(samtoolsOutFile.toPath()), samtoolsOutFile.toPath()));
 //            assertRoundTripFidelity(cramSourceFile, samtoolsOutFile, referenceFile);
 //        }
-        tempOutCRAM.delete();
+//        tempOutCRAM.delete();
     }
 
     @Test

@@ -54,7 +54,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
                 if (referenceContextID >= 0) {
                     this.type = ReferenceContextType.SINGLE_REFERENCE_TYPE;
                 } else {
-                    throw new CRAMException("Invalid reference wequence ID: " + referenceContextID);
+                    throw new CRAMException("Invalid reference sequence ID: " + referenceContextID);
                 }
         }
     }

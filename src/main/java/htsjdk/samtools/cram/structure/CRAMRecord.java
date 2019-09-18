@@ -122,6 +122,7 @@ public class CRAMRecord {
         // then alignmentEnd needs to be recalculated
         readLength = samRecord.getReadLength();
         alignmentStart = samRecord.getAlignmentStart();
+        //TODO: should this call isPlaced ?
         //if (isPlaced()) {
         if (samRecord.getReadUnmappedFlag() || (samRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START)) {
             readFeatures = new CRAMRecordReadFeatures();

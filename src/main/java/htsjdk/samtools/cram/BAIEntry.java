@@ -1,51 +1,43 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.samtools.cram.ref.ReferenceContext;
+import htsjdk.samtools.cram.structure.AlignmentSpan;
 
-// values used to construct BAI index for a CRAM
+/**
+ * Class used to construct a BAI index for a CRAM file. Each BAIEntry represents a Slice or a subset
+ * of a Slice (since MULTI_REF slices can contain records for more than one reference context), as these
+ * need to be separated for BAI index creation).
+ */
 public class BAIEntry {
-    //TODO: replace with alignmentContext/alignmntSpan
-    final ReferenceContext sliceReferenceContext; // Note: this should never be a multiple ref context
-
-    final int alignmentStart;
-    final int alignmentSpan;
-
-    final int alignedReads;     // mapped
-    final int unplacedReads;    // nocoord
-    final int unalignedReads;   // unmapped
-
+    final ReferenceContext referenceContext;
+    final AlignmentSpan alignmentSpan;
     final long containerOffset;
     final long sliceHeaderBlockByteOffset;
     final int landmarkIndex;
 
     public BAIEntry(
-            final ReferenceContext sliceReferenceContext,
-            final int alignmentStart,
-            final int alignmentSpan,
-            final int alignedReads,     // mapped (rec.getReadUnmappedFlag() != true)
-            final int unplacedReads,    // nocoord alignmentStart == SAMRecord.NO_ALIGNMENT_START
-            final int unaligned,        // unmapped (rec.getReadUnmappedFlag() == true)
+            final ReferenceContext referenceContext,
+            final AlignmentSpan alignmentSpan,
             final long containerOffset,
             final long sliceHeaderBlockByteOffset,
             final int landmarkIndex
     ) {
-        // Note: this should never be a multiple ref context
-        if (sliceReferenceContext.equals(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)) {
+        // Note: a BAIEntry should never be made from a MULTI_REF reference context, because for a BAI index
+        // MUTLI_REF slices need to be resolved down to constituent BAIEntry for each reference context, including
+        // unmapped
+        if (referenceContext.equals(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)) {
             throw new CRAMException("Attempt to create BAI entry from a multi ref context");
-        } else if ((sliceReferenceContext.equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT) &&
+        } else if ((referenceContext.equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT) &&
                 //TODO: many tests fail if we don't allow alignmentStart == -1 or alignmentSpan == 1
-                ((alignmentStart != 0 && alignmentStart != -1) || (alignmentSpan != 0 && alignmentSpan != 1)))) {
+                ((alignmentSpan.getAlignmentStart() != 0 && alignmentSpan.getAlignmentStart() != -1) ||
+                        (alignmentSpan.getAlignmentSpan() != 0 && alignmentSpan.getAlignmentSpan() != 1)))) {
             throw new CRAMException(
                     String.format("Attempt to unmapped with non zero alignment start (%d) or span (%d)",
-                            alignmentStart,
-                            alignmentSpan));
+                            alignmentSpan.getAlignmentStart(),
+                            alignmentSpan.getAlignmentSpan()));
         }
-        this.sliceReferenceContext = sliceReferenceContext;
-        this.alignmentStart = alignmentStart;
+        this.referenceContext = referenceContext;
         this.alignmentSpan = alignmentSpan;
-        this.alignedReads = alignedReads;
-        this.unplacedReads = unplacedReads;
-        this.unalignedReads = unaligned;
         this.containerOffset = containerOffset;
         this.sliceHeaderBlockByteOffset = sliceHeaderBlockByteOffset;
         this.landmarkIndex = landmarkIndex;
@@ -63,76 +55,78 @@ public class BAIEntry {
      * @param craiEntry
      */
     public BAIEntry(final CRAIEntry craiEntry) {
-        this.sliceReferenceContext = new ReferenceContext(craiEntry.getSequenceId());
-        this.alignmentStart = craiEntry.getAlignmentStart();
-        this.alignmentSpan = craiEntry.getAlignmentSpan();
-        this.alignedReads = 0;
-        this.unplacedReads = 0;
-        this.unalignedReads = 0;
-        this.containerOffset = craiEntry.getContainerStartByteOffset();
-        this.sliceHeaderBlockByteOffset = craiEntry.getSliceByteOffsetFromCompressionHeaderStart();
-        this.landmarkIndex = 0;
+        this(new ReferenceContext(craiEntry.getSequenceId()),
+                new AlignmentSpan(
+                    craiEntry.getAlignmentStart(),
+                    craiEntry.getAlignmentSpan(),
+                    0,
+                    0,
+                    0),
+                craiEntry.getContainerStartByteOffset(),
+                craiEntry.getSliceByteOffsetFromCompressionHeaderStart(),
+                0);
     }
 
-    public static BAIEntry combine(final BAIEntry a, final BAIEntry b) {
-        if (!a.getEntryReferenceContext().equals(b.getEntryReferenceContext()) ||
-                (a.getSliceHeaderBlockByteOffset() != b.getSliceHeaderBlockByteOffset()) ||
-                (a.getLandmarkIndex() != b.getLandmarkIndex()) ||
-                (a.getContainerOffset() == b.getContainerOffset())) {
-            throw new CRAMException(String.format(
-                    "Can't combine BAIEntries from different ref contexts (%s/%s)",
-                    a.getEntryReferenceContext(),
-                    b.getEntryReferenceContext()));
-        }
-        final int start = Math.min(a.getAlignmentStart(), b.getAlignmentStart());
-
-        int span;
-        if (a.getAlignmentStart() == b.getAlignmentStart()) {
-            span = Math.max(a.getAlignmentSpan(), b.getAlignmentSpan());
-        }
-        else {
-            span = Math.max(a.getAlignmentStart() + a.getAlignmentSpan(), b.getAlignmentStart() + b.getAlignmentSpan()) - start;
-        }
-
-        final int mappedCount = a.getAlignedReads() + b.getAlignedReads();
-        final int unmappedCount = a.getUnalignedReads() + b.getUnalignedReads();
-        final int unplacedCount = a.getUnplacedReads() + b.getUnplacedReads();
-
-        return new BAIEntry(
-                a.getEntryReferenceContext(),
-                start,
-                span,
-                mappedCount,
-                unplacedCount,
-                unmappedCount,
-                a.getContainerOffset(),
-                a.getSliceHeaderBlockByteOffset(),
-                a.getLandmarkIndex());
-    }
+//    //TODO: unused!
+//    public static BAIEntry combine(final BAIEntry a, final BAIEntry b) {
+//        if (!a.getEntryReferenceContext().equals(b.getEntryReferenceContext()) ||
+//                (a.getSliceHeaderBlockByteOffset() != b.getSliceHeaderBlockByteOffset()) ||
+//                (a.getLandmarkIndex() != b.getLandmarkIndex()) ||
+//                (a.getContainerOffset() == b.getContainerOffset())) {
+//            throw new CRAMException(String.format(
+//                    "Can't combine BAIEntries from different ref contexts (%s/%s)",
+//                    a.getEntryReferenceContext(),
+//                    b.getEntryReferenceContext()));
+//        }
+//        final int start = Math.min(a.getAlignmentStart(), b.getAlignmentStart());
+//
+//        int span;
+//        if (a.getAlignmentStart() == b.getAlignmentStart()) {
+//            span = Math.max(a.getAlignmentSpan(), b.getAlignmentSpan());
+//        }
+//        else {
+//            span = Math.max(a.getAlignmentStart() + a.getAlignmentSpan(), b.getAlignmentStart() + b.getAlignmentSpan()) - start;
+//        }
+//
+//        final int mappedCount = a.getMappedReadsCount() + b.getMappedReadsCount();
+//        final int unmappedCount = a.getUnmappedReadsCount() + b.getUnmappedReadsCount();
+//        final int unmappedUunplacedCount = a.getUnmappedUnplacedReadsCount() + b.getUnmappedUnplacedReadsCount();
+//
+//        return new BAIEntry(
+//                a.getEntryReferenceContext(),
+//                new AlignmentSpan(
+//                        start,
+//                        span,
+//                        mappedCount,
+//                        unmappedCount,
+//                        unmappedUunplacedCount),
+//                a.getContainerOffset(),
+//                a.getSliceHeaderBlockByteOffset(),
+//                a.getLandmarkIndex());
+//    }
 
     // Note: this should never be a multiple ref context
     public ReferenceContext getEntryReferenceContext() {
-        return sliceReferenceContext;
+        return referenceContext;
     }
 
     public int getAlignmentStart() {
-        return alignmentStart;
+        return alignmentSpan.getAlignmentStart();
     }
 
     public int getAlignmentSpan() {
-        return alignmentSpan;
+        return alignmentSpan.getAlignmentSpan();
     }
 
-    public int getAlignedReads() {
-        return alignedReads;
+    public int getMappedReadsCount() {
+        return alignmentSpan.getMappedCount();
     }
 
-    public int getUnplacedReads() {
-        return unplacedReads;
+    public int getUnmappedReadsCount() {
+        return alignmentSpan.getUnmappedCount();
     }
-
-    public int getUnalignedReads() {
-        return unalignedReads;
+    public int getUnmappedUnplacedReadsCount() {
+        return alignmentSpan.getUnmappedUnplacedCount();
     }
 
     public long getContainerOffset() {

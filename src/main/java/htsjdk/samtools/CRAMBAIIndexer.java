@@ -87,6 +87,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
     // content is built up from the input bam file using this
     private final CRAMBAIIndexBuilder indexBuilder;
+    private final CompressorCache compressorCache = new CompressorCache();
 
     /**
      * Create a CRAM indexer that writes BAI to a file.
@@ -111,7 +112,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
      */
     public CRAMBAIIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
         if (fileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
-            throw new SAMException("CRAM file must be coordinate-sorted for indexing.");
+            throw new SAMException("CRAM file mut be coordinate-sorted for indexing.");
         }
         numReferences = fileHeader.getSequenceDictionary().size();
         indexBuilder = new CRAMBAIIndexBuilder(fileHeader);
@@ -128,13 +129,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
      */
     @Override
     public void processContainer(final Container container, final ValidationStringency validationStringency) {
-        if (container != null && !container.isEOF()) {
-            for (final Slice slice : container.getSlices()) {
-                for (final BAIEntry baiEntry : slice.getBAIEntries()) {
-                    processBAIEntry(baiEntry);
-                }
-            }
-        }
+        container.getBAIEntries(compressorCache).forEach(b -> processBAIEntry(b));
     }
 
     public final void processBAIEntry(final BAIEntry baiEntry) {
@@ -211,6 +206,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
         }
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, cramHeader.getSamFileHeader());
 
+        final CompressorCache compressorCache = new CompressorCache();
         Container container = null;
         final ProgressLogger progressLogger = new ProgressLogger(log, 1, "indexed", "slices");
         do {

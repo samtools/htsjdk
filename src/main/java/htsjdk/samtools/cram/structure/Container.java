@@ -124,8 +124,15 @@ public class Container {
             }
             alignmentStart = start;
             alignmentSpan = endPlusOne - start;
+        } else if (commonRefContext.isUnmappedUnplaced()) {
+            return AlignmentContext.UNMAPPED_UNPLACED_CONTEXT;
+        } else if (commonRefContext.isMultiRef()) {
+            return AlignmentContext.MULTIPLE_REFERENCE_CONTEXT;
         }
-        return new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan);
+
+        AlignmentContext.validateAlignmentContext(true, commonRefContext, alignmentStart, alignmentSpan);
+        final AlignmentContext derivedAlignmentContext = new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan);
+        return derivedAlignmentContext;
     }
 
     // Note: this is the degenerate case of the CramContainerHeaderIterator, which for disq really only
@@ -159,9 +166,7 @@ public class Container {
 
         // sets index, byteOffset and byte size for each slice...
         distributeIndexingParametersToSlices();
-
         validateContainerReferenceContext();
-
         checkSliceReferenceContexts(getAlignmentContext().getReferenceContext().getReferenceContextID());
     }
 
@@ -281,7 +286,7 @@ public class Container {
             // TODO: make sure this container is initialized correctly/fully (add a test for checksum ?)
             final ContainerHeader containerHeader = new ContainerHeader(
                     // we're forced to create an alignment context for this bogus container...
-                    new AlignmentContext(new ReferenceContext(0), 0, 1),
+                    AlignmentContext.UNMAPPED_UNPLACED_CONTEXT,
                     containerBlocksByteSize,
                     0,
                     0,
@@ -305,7 +310,7 @@ public class Container {
 
         final ArrayList<CRAMRecord> records = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
-            records.addAll(slice.getRecords(compressorCache, validationStringency));
+            records.addAll(slice.getCRAMRecords(compressorCache, validationStringency));
         }
         return records;
     }
@@ -323,13 +328,13 @@ public class Container {
      * Retrieve the list of CRAI Index entries corresponding to this Container
      * @return the list of CRAI Index entries
      */
-    public List<CRAIEntry> getCRAIEntries() {
+    public List<CRAIEntry> getCRAIEntries(final CompressorCache compressorCache) {
         if (isEOF()) {
             return Collections.emptyList();
         }
 
         return getSlices().stream()
-                .map(s -> s.getCRAIEntries())
+                .map(s -> s.getCRAIEntries(compressorCache))
                 .flatMap(List::stream)
                 .sorted()
                 .collect(Collectors.toList());
@@ -339,14 +344,15 @@ public class Container {
      * Retrieve the list of BAIEntry Index entries corresponding to this Container
      * @return the list of BAIEntry Index entries
      */
-    public List<BAIEntry> getBAIEntries() {
+    //TODO: replace calls to getSpans with this
+    public List<BAIEntry> getBAIEntries(final CompressorCache compressorCache) {
         if (isEOF()) {
             return Collections.emptyList();
         }
 
         //TODO: these might need to be merged, so that in the end there is only one entry per ref context ?
         return getSlices().stream()
-                .map(s -> s.getBAIEntries())
+                .map(s -> s.getBAIEntries(compressorCache))
                 .flatMap(List::stream)
                 .sorted()
                 .collect(Collectors.toList());
@@ -357,20 +363,28 @@ public class Container {
      * to {@link AlignmentSpan}s.  Used to create BAI Indexes.
      *
      * @param validationStringency stringency for validating records, passed to
-     * {@link Slice#getMultiRefAlignmentSpans(ValidationStringency)}
      * @return the map of map of reference sequence IDs to AlignmentSpans.
      */
-    //TODO: used for BAI indexing, obsolete once getBAIEntries is used
+    //TODO: used for BAI indexing tests, obsolete once getBAIEntries is used
     public Map<ReferenceContext, AlignmentSpan> getSpans(final ValidationStringency validationStringency) {
         final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
+        final CompressorCache compressorCache = new CompressorCache();
         for (final Slice slice : getSlices()) {
             switch (slice.getAlignmentContext().getReferenceContext().getType()) {
                 case UNMAPPED_UNPLACED_TYPE:
-                    containerSpanMap.put(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, AlignmentSpan.UNPLACED_SPAN);
+                    // it is possible to have multiple unmapped/unplaced slices in a container
+                    containerSpanMap.merge(
+                            ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                            new AlignmentSpan(
+                                slice.getAlignmentContext(),
+                                slice.getMappedReadsCount(),
+                                slice.getUnmappedReadsCount(),
+                                slice.getUnplacedReadsCount()),
+                            AlignmentSpan::combine);
                     break;
 
                 case MULTIPLE_REFERENCE_TYPE:
-                    final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(validationStringency);
+                    final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(compressorCache, validationStringency);
                     for (final Map.Entry<ReferenceContext, AlignmentSpan> entry : spans.entrySet()) {
                         containerSpanMap.merge(entry.getKey(), entry.getValue(), AlignmentSpan::combine);
                     }

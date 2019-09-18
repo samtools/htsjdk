@@ -28,7 +28,7 @@ public class ContainerTest extends HtsjdkTest {
     private Object[][] singleContainerAlignmentContextData() {
         return new Object[][]{
                 {
-                        CRAMStructureTestHelper.createMappedSAMRecords(
+                        CRAMStructureTestHelper.createSAMRecordsMapped(
                                 TEST_RECORD_COUNT,
                                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
                         new AlignmentContext(
@@ -36,7 +36,7 @@ public class ContainerTest extends HtsjdkTest {
                                 TEST_RECORD_COUNT + CRAMStructureTestHelper.READ_LENGTH - 1)
                 },
                 {
-                        CRAMStructureTestHelper.createMappedSAMRecords(
+                        CRAMStructureTestHelper.createSAMRecordsMapped(
                                 TEST_RECORD_COUNT,
                                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE),
                         new AlignmentContext(
@@ -44,7 +44,7 @@ public class ContainerTest extends HtsjdkTest {
                                 TEST_RECORD_COUNT + CRAMStructureTestHelper.READ_LENGTH - 1)
                 },
                 {
-                        CRAMStructureTestHelper.createUnmappedSAMRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT),
                         AlignmentContext.UNMAPPED_UNPLACED_CONTEXT
                 },
         };
@@ -59,8 +59,8 @@ public class ContainerTest extends HtsjdkTest {
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 encodingStrategy,
                 CRAMStructureTestHelper.REFERENCE_SOURCE);
-        final Container container = CRAMStructureTestHelper.getSingleContainerFromRecords(containerFactory, samRecords, CONTAINER_BYTE_OFFSET);
-        CRAMStructureTestUtil.assertContainerState(container, expectedAlignmentContext, CONTAINER_BYTE_OFFSET);
+        final Container container = CRAMStructureTestHelper.createContainer(containerFactory, samRecords, CONTAINER_BYTE_OFFSET);
+        CRAMStructureTestHelper.assertContainerState(container, expectedAlignmentContext, CONTAINER_BYTE_OFFSET);
     }
 
     @DataProvider(name = "multiContainerAlignmentContextData")
@@ -68,19 +68,19 @@ public class ContainerTest extends HtsjdkTest {
 
         final List<SAMRecord> bothReferenceSequenceRecords = new ArrayList<>();
         bothReferenceSequenceRecords.addAll(
-                CRAMStructureTestHelper.createMappedSAMRecords(
+                CRAMStructureTestHelper.createSAMRecordsMapped(
                         TEST_RECORD_COUNT,
                         CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO)
         );
         bothReferenceSequenceRecords.addAll(
-                CRAMStructureTestHelper.createMappedSAMRecords(
+                CRAMStructureTestHelper.createSAMRecordsMapped(
                         TEST_RECORD_COUNT,
                         CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE)
         );
 
         final List<SAMRecord> allRecords = new ArrayList<>();
         allRecords.addAll(bothReferenceSequenceRecords);
-        allRecords.addAll(CRAMStructureTestHelper.createUnmappedSAMRecords(TEST_RECORD_COUNT));
+        allRecords.addAll(CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT));
 
         return new Object[][]{
                 { bothReferenceSequenceRecords,
@@ -106,7 +106,7 @@ public class ContainerTest extends HtsjdkTest {
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 encodingStrategy,
                 CRAMStructureTestHelper.REFERENCE_SOURCE);
-        final List<Container> containers = CRAMStructureTestHelper.getAllContainersFromRecords(containerFactory, samRecords);
+        final List<Container> containers = CRAMStructureTestHelper.createContainers(containerFactory, samRecords);
         Assert.assertEquals(containers.size(), referenceContexts.size());
         for (int i = 0; i < referenceContexts.size(); i++) {
             Assert.assertEquals(
@@ -371,42 +371,45 @@ public class ContainerTest extends HtsjdkTest {
 
         return new Object[][]{
                 {
-                        CRAMStructureTestUtil.getSingleRefRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(TEST_RECORD_COUNT, mappedSequenceId),
                 },
                 {
-                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
-                },
-
-                // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
-                // but not both.  We treat these weird edge cases as unplaced.
-
-                {
-                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT),
                 },
 
                 // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
                 // but not both.  We treat these weird edge cases as unplaced.
 
                 {
-                        CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
+                        CRAMStructureTestHelper.createSAMRecordsUnmappedWithReferenceIndex(
+                                TEST_RECORD_COUNT,
+                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
                 },
                 {
-                        CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
+                        CRAMStructureTestHelper.createSAMRecordsUnmappedWithAlignmentStart(TEST_RECORD_COUNT),
                 },
         };
     }
 
-//    @Test(dataProvider = "getRecordsTestCases")
-//    public void getRecordsTest(final List<CRAMRecord> records) {
-//        final long dummyByteOffset = 0;
-//        final Container container = FACTORY.buildContainer(records, dummyByteOffset);
-//
-//        final List<CRAMRecord> roundTripRecords = container.getCRAMRecords(ValidationStringency.STRICT, new CompressorCache());
-//        // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
-//        //Assert.assertEquals(roundTripRecords, records);
-//        Assert.assertEquals(roundTripRecords.size(), TEST_RECORD_COUNT);
-//    }
-//
+    @Test(dataProvider = "getRecordsTestCases")
+    public void getRecordsTest(final List<SAMRecord> records) {
+        final long dummyByteOffset = 0;
+        final ContainerFactory containerFactory = new ContainerFactory(
+                CRAMStructureTestHelper.SAM_FILE_HEADER,
+                new CRAMEncodingStrategy(),
+                CRAMStructureTestHelper.REFERENCE_SOURCE);
+
+        final Container container = CRAMStructureTestHelper.createContainer(containerFactory, records, dummyByteOffset);
+
+        final List<CRAMRecord> roundTripRecords = container.getCRAMRecords(ValidationStringency.STRICT, new CompressorCache());
+        Assert.assertEquals(roundTripRecords.size(), TEST_RECORD_COUNT);
+
+        // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
+        // Container round-trips CRAM records,so perhaps these tests should use CRAM records, and
+        // there should be a CRAMormalizer test for round-tripping SAMRecords
+        // Assert.assertEquals(roundTripRecords, records);
+    }
+
 //    @Test
 //    public void testMultirefContainer() {
 //        final Map<ReferenceContext, AlignmentSpan> expectedSpans = new HashMap<>();

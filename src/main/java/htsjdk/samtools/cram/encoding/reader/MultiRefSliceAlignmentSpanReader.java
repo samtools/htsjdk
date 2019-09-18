@@ -22,9 +22,10 @@ import htsjdk.samtools.cram.structure.*;
 
 import java.util.*;
 
+//TODO: this should really be replaced with code that simply reads the RI series,
 /**
  * A reader that only keeps track of alignment spans.
- * The intended use is for CRAI indexing.
+ * The intended use is for CRAM indexing (BAI/CRAI generation).
  *
  * @author vadim
  */
@@ -55,6 +56,7 @@ public class MultiRefSliceAlignmentSpanReader extends CramRecordReader {
         if (!slice.getAlignmentContext().getReferenceContext().isMultiRef()) {
             throw new IllegalStateException("can only create multiref span reader for multiref context slice");
         }
+
         // Alignment start of the previous record, for delta-encoding if necessary
         int prevAlignmentStart = initialAlignmentStart;
 
