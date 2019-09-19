@@ -13,7 +13,7 @@ import java.io.File;
 public class ReferenceSequenceFileFactoryTests extends HtsjdkTest {
     public static final File hg18 = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
     public static final File hg18bgzip = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz");
-    public static final File hg18_2bit = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.2bit");
+    public static final File hg18_2bit = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.masked.2bit");
 
     @Test public void testPositivePath() {
         final ReferenceSequenceFile f = ReferenceSequenceFileFactory.getReferenceSequenceFile(hg18);
