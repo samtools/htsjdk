@@ -76,9 +76,14 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
         return contigIndex;
     }
 
+    /**
+     * Get the SAMSequenceRecord that corresponds to this VCF header line.
+     * @return The SAMSequenceRecord containing the ID, length, assembly, and index of this contig. Returns null if the
+     * contig header line does not have a length.
+     */
 	public SAMSequenceRecord getSAMSequenceRecord() {
 		final String lengthString = this.getGenericFieldValue("length");
-		if (lengthString == null) throw new TribbleException("Contig " + this.getID() + " does not have a length field.");
+		if (lengthString == null) return null;
 		final SAMSequenceRecord record = new SAMSequenceRecord(this.getID(), Integer.parseInt(lengthString));
         record.setAssembly(this.getGenericFieldValue("assembly"));
 		record.setSequenceIndex(this.contigIndex);

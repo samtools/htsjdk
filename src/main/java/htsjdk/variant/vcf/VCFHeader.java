@@ -261,7 +261,7 @@ public class VCFHeader implements Serializable {
 
     /**
      * Returns the contigs in this VCF file as a SAMSequenceDictionary. Returns null if contigs lines are
-     * not present in the header. Throws SAMException if one or more contig lines do not have length
+     * not present in the header. Returns null if one or more contig lines do not have length
      * information.
      */
     public SAMSequenceDictionary getSequenceDictionary() {
@@ -270,7 +270,9 @@ public class VCFHeader implements Serializable {
 
         final List<SAMSequenceRecord> sequenceRecords = new ArrayList<SAMSequenceRecord>(contigHeaderLines.size());
         for (final VCFContigHeaderLine contigHeaderLine : contigHeaderLines) {
-            sequenceRecords.add(contigHeaderLine.getSAMSequenceRecord());
+            final SAMSequenceRecord samSequenceRecord = contigHeaderLine.getSAMSequenceRecord();
+            if (samSequenceRecord == null) return null;
+            sequenceRecords.add(samSequenceRecord);
         }
 
         return new SAMSequenceDictionary(sequenceRecords);
