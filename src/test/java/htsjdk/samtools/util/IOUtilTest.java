@@ -114,6 +114,10 @@ public class IOUtilTest extends HtsjdkTest {
         String randomizedTestString = TEST_STRING + System.currentTimeMillis();
         for (String ext : TEST_FILE_EXTENSIONS) {
             File f = File.createTempFile(TEST_FILE_PREFIX, ext);
+            IOUtil.assertFileIsReadable(f);
+
+            CodeUtil.applyIfNotNull(f,IOUtil::assertFileIsReadable);
+
             f.deleteOnExit();
 
             OutputStream os = IOUtil.openFileForWriting(f);

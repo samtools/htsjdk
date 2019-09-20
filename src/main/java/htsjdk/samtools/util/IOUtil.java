@@ -30,7 +30,6 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.nio.DeleteOnExitPathHook;
-import htsjdk.tribble.Tribble;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -68,7 +67,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
