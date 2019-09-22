@@ -50,11 +50,6 @@ import java.util.List;
 
 public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
-    @BeforeClass
-    public void initClass() {
-        Log.setGlobalLogLevel(LogLevel.ERROR);
-    }
-
     private List<SAMRecord> createRecords(int count) {
         final List<SAMRecord> list = new ArrayList<>(count);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();

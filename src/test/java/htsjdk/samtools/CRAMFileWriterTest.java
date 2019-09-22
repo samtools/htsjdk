@@ -50,17 +50,6 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     LogLevel globalLogLevel;
     final File SAM_TOOLS_TEST_DIR = new File("src/test/resources/htsjdk/samtools");
 
-    @BeforeClass
-    public void initClass() {
-        globalLogLevel = Log.getGlobalLogLevel();
-        Log.setGlobalLogLevel(LogLevel.ERROR);
-    }
-
-    @AfterClass
-    public void finitClass() {
-        Log.setGlobalLogLevel(globalLogLevel);
-    }
-
     @Test(description = "Test for lossy CRAM compression invariants.")
     public void lossyCramInvariantsTest() {
         doTest(createRecords(1000));

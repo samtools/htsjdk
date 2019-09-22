@@ -20,11 +20,6 @@ import java.util.Iterator;
  */
 public class CRAMEdgeCasesTest extends HtsjdkTest {
 
-    @BeforeTest
-    public void beforeTest() {
-        Log.setGlobalLogLevel(Log.LogLevel.ERROR);
-    }
-
     @Test
     public void testUnsorted() throws IOException {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted);
