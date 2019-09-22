@@ -25,6 +25,7 @@ import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableStream;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.*;
@@ -32,9 +33,12 @@ import java.util.*;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.RuntimeIOException;
 
-public class CRAMIterator implements SAMRecordIterator {
+//TODO: we need a CRAMIterator that normalizes, and one that DOESN'T normalize
+public class CRAMIterator implements SAMRecordIterator, Closeable {
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
+
+    //TODO: this should have a better (common) type (ContainerIterator??)
     private final Iterator<Container> containerIterator;
 
     private final ArrayList<SAMRecord> records;
@@ -46,8 +50,7 @@ public class CRAMIterator implements SAMRecordIterator {
     private Container container;
     private SamReader mReader;
 
-    //TODO: make private
-    final long firstContainerOffset;
+    private final long firstContainerOffset;
 
     // Keep a cache of re-usable compressor instances to reduce the need to repeatedly reallocate
     // large numbers of small temporary objects, especially for the RANS compressor, which
@@ -79,7 +82,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
         firstContainerOffset = this.countingInputStream.getCount();
         //TODO: this needs a smarter initializer param (don't need encoding strategy here)
-        records = new ArrayList<>(new CRAMEncodingStrategy().getRecordsPerSlice());
+        records = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(), referenceSource);
     }
 
@@ -96,7 +99,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
         //TODO: this needs a smarter initializer param (don't need encoding strategy here)
-        records = new ArrayList<>(new CRAMEncodingStrategy().getRecordsPerSlice());
+        records = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(), referenceSource);
     }
 
@@ -129,6 +132,8 @@ public class CRAMIterator implements SAMRecordIterator {
         }
 
         records.clear();
+
+        // TODO: This should all be moved into getCRAMRecords so that normalization ALWAYS happens
         cramRecords = container.getCRAMRecords(validationStringency, compressorCache);
 
         final ReferenceContext containerContext = container.getAlignmentContext().getReferenceContext();
@@ -179,12 +184,12 @@ public class CRAMIterator implements SAMRecordIterator {
 
             samRecord.setValidationStringency(validationStringency);
 
-            //TODO:
-            if (mReader != null) {
-                final long chunkStart = (container.getContainerByteOffset() << 16) | cramRecord.getSliceIndex();
-                final long chunkEnd = ((container.getContainerByteOffset() << 16) | cramRecord.getSliceIndex()) + 1;
-                samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
-            }
+            // TODO: this is unnecessary as its only used when creating a BAM index
+            //if (mReader != null) {
+            //    final long chunkStart = (container.getContainerByteOffset() << 16) | cramRecord.getLandmarkIndex();
+            //    final long chunkEnd = ((container.getContainerByteOffset() << 16) | cramRecord.getLandmarkIndex()) + 1;
+            //    samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
+            //}
             
             records.add(samRecord);
         }
@@ -256,12 +261,15 @@ public class CRAMIterator implements SAMRecordIterator {
     @Override
     public void close() {
         records.clear();
-        //noinspection EmptyCatchBlock
         try {
             if (countingInputStream != null) {
                 countingInputStream.close();
             }
         } catch (final RuntimeIOException e) { }
+    }
+
+    public long getFirstContainerOffset() {
+        return firstContainerOffset;
     }
 
     @Override

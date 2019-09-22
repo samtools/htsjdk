@@ -8,17 +8,18 @@ import htsjdk.samtools.cram.structure.AlignmentSpan;
  * of a Slice (since MULTI_REF slices can contain records for more than one reference context), as these
  * need to be separated for BAI index creation).
  */
-public class BAIEntry {
+//TODO: Change the name of this to CRAMBAIEntry
+public class BAIEntry implements Comparable<BAIEntry> {
     final ReferenceContext referenceContext;
     final AlignmentSpan alignmentSpan;
-    final long containerOffset;
-    final long sliceHeaderBlockByteOffset;
+    final long containerStartByteOffset;
+    final long sliceByteOffsetFromCompressionHeaderStart;
     final int landmarkIndex;
 
     public BAIEntry(
             final ReferenceContext referenceContext,
             final AlignmentSpan alignmentSpan,
-            final long containerOffset,
+            final long containerStartByteOffset,
             final long sliceHeaderBlockByteOffset,
             final int landmarkIndex
     ) {
@@ -38,8 +39,8 @@ public class BAIEntry {
         }
         this.referenceContext = referenceContext;
         this.alignmentSpan = alignmentSpan;
-        this.containerOffset = containerOffset;
-        this.sliceHeaderBlockByteOffset = sliceHeaderBlockByteOffset;
+        this.containerStartByteOffset = containerStartByteOffset;
+        this.sliceByteOffsetFromCompressionHeaderStart = sliceHeaderBlockByteOffset;
         this.landmarkIndex = landmarkIndex;
     }
 
@@ -105,8 +106,49 @@ public class BAIEntry {
 //                a.getLandmarkIndex());
 //    }
 
+    /**
+     * Sort by numerical order of reference sequence ID, except that unmapped-unplaced reads come last
+     *
+     * For valid reference sequence ID (placed reads):
+     * - sort by alignment start
+     * - if alignment start is equal, sort by container offset
+     * - if alignment start and container offset are equal, sort by slice offset
+     *
+     * For unmapped-unplaced reads:
+     * - ignore (invalid) alignment start value
+     * - sort by container offset
+     * - if container offset is equal, sort by slice offset
+     *
+     * @param other the CRAIEntry to compare against
+     * @return int representing the comparison result, suitable for ordering
+     */
+    @Override
+    public int compareTo(final BAIEntry other) {
+        // we need to call getReferenceContextID here since we might be unmapped
+        if (getReferenceContext().getReferenceContextID() != other.getReferenceContext().getReferenceContextID()) {
+            if (getReferenceContext().getReferenceContextID() == ReferenceContext.UNMAPPED_UNPLACED_ID)
+                return 1;
+            if (other.getReferenceContext().getReferenceContextID() == ReferenceContext.UNMAPPED_UNPLACED_ID)
+                return -1;
+            return Integer.compare(getReferenceContext().getReferenceSequenceID(), other.getReferenceContext().getReferenceSequenceID());
+        }
+
+        // only sort by alignment start values for placed entries
+        // we need to call getReferenceContextID here since we might be unmapped
+        if (getReferenceContext().getReferenceContextID() != ReferenceContext.UNMAPPED_UNPLACED_ID &&
+                getAlignmentStart() != other.getAlignmentStart()) {
+            return Integer.compare(getAlignmentStart(), other.getAlignmentStart());
+        }
+
+        if (getContainerStartByteOffset() != other.getContainerStartByteOffset()) {
+            return Long.compare(getContainerStartByteOffset(), other.getContainerStartByteOffset());
+        }
+
+        return Long.compare(getSliceByteOffsetFromCompressionHeaderStart(), other.getSliceByteOffsetFromCompressionHeaderStart());
+    };
+
     // Note: this should never be a multiple ref context
-    public ReferenceContext getEntryReferenceContext() {
+    public ReferenceContext getReferenceContext() {
         return referenceContext;
     }
 
@@ -129,12 +171,12 @@ public class BAIEntry {
         return alignmentSpan.getUnmappedUnplacedCount();
     }
 
-    public long getContainerOffset() {
-        return containerOffset;
+    public long getContainerStartByteOffset() {
+        return containerStartByteOffset;
     }
 
-    public long getSliceHeaderBlockByteOffset() {
-        return sliceHeaderBlockByteOffset;
+    public long getSliceByteOffsetFromCompressionHeaderStart() {
+        return sliceByteOffsetFromCompressionHeaderStart;
     }
 
     public int getLandmarkIndex() {

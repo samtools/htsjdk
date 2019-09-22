@@ -7,7 +7,6 @@ import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
@@ -175,7 +174,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         CRAMFileWriter writer = new CRAMFileWriter(os, indexOS, source, header, null);
 
         // use the defaults
-        int readPairsPerSequence = new CRAMEncodingStrategy().getRecordsPerSlice();
+        int readPairsPerSequence = new CRAMEncodingStrategy().getReadsPerSlice();
 
         for (SAMSequenceRecord sequenceRecord : header.getSequenceDictionary().getSequences()) {
             int alignmentStart = 1;

@@ -54,7 +54,10 @@ public class ContainerTest extends HtsjdkTest {
     public void testSingleContainerAlignmentContext(
             final List<SAMRecord> samRecords,
             final AlignmentContext expectedAlignmentContext) {
-        final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy().setRecordsPerSlice(samRecords.size());
+        final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy()
+                // in order to set reads/slice to a small number, we must so the same for minimumSingleReferenceSliceSize
+                .setMinimumSingleReferenceSliceSize(samRecords.size())
+                .setReadsPerSlice(samRecords.size());
         final ContainerFactory containerFactory = new ContainerFactory(
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 encodingStrategy,
@@ -101,7 +104,7 @@ public class ContainerTest extends HtsjdkTest {
             final List<ReferenceContext> referenceContexts) {
         final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy()
                 .setSlicesPerContainer(1)
-                .setRecordsPerSlice(samRecords.size());
+                .setReadsPerSlice(samRecords.size());
         final ContainerFactory containerFactory = new ContainerFactory(
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 encodingStrategy,
@@ -330,17 +333,17 @@ public class ContainerTest extends HtsjdkTest {
 //        return container;
 //    }
 
-    private static void assertSliceIndexingParams(final Slice slice,
-                                                  final int expectedIndex,
-                                                  final int expectedContainerOffset,
-                                                  final int expectedSize,
-                                                  final int expectedOffset) {
-        Assert.assertEquals(slice.getLandmarkIndex(), expectedIndex);
-        Assert.assertEquals(slice.getByteOffsetOfContainer(), expectedContainerOffset);
-        Assert.assertEquals(slice.getByteSizeOfSliceBlocks(), expectedSize);
-        Assert.assertEquals(slice.getByteOffsetOfSliceHeaderBlock(), expectedOffset);
-    }
-
+//    private static void assertSliceIndexingParams(final Slice slice,
+//                                                  final int expectedIndex,
+//                                                  final int expectedContainerOffset,
+//                                                  final int expectedSize,
+//                                                  final int expectedOffset) {
+//        Assert.assertEquals(slice.getLandmarkIndex(), expectedIndex);
+//        Assert.assertEquals(slice.getByteOffsetOfContainer(), expectedContainerOffset);
+//        Assert.assertEquals(slice.getByteSizeOfSliceBlocks(), expectedSize);
+//        Assert.assertEquals(slice.getByteOffsetOfSliceHeaderBlock(), expectedOffset);
+//    }
+//
     @DataProvider(name = "cramVersions")
     private Object[][] cramVersions() {
         return new Object[][] {

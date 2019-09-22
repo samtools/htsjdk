@@ -51,11 +51,9 @@ public class CramNormalizer {
 
         // restore pairing first:
         for (final CRAMRecord record : records) {
-            if (!record.isMultiFragment() || record.isDetached()) {
-                continue;
-            }
-
-            if (record.isHasMateDownStream()) {
+            if (record.isMultiFragment() &&
+                    !record.isDetached() &&
+                    record.isHasMateDownStream()) {
                 final CRAMRecord downMate = records.get(record.getSequentialIndex() + record.getRecordsToNextFragment() - startCounter);
                 record.setNextSegment(downMate);
                 downMate.setPreviousSegment(record);
@@ -63,13 +61,16 @@ public class CramNormalizer {
         }
 
         for (final CRAMRecord record : records) {
-            if (record.getPreviousSegment() != null) {
-                continue;
+//            if (record.getPreviousSegment() != null) {
+//                continue;
+//            }
+//            if (record.getNextSegment() == null) {
+//                continue;
+//            }
+//            record.restoreMateInfo();
+            if (record.getPreviousSegment() == null && record.getNextSegment() != null) {
+                record.restoreMateInfo();
             }
-            if (record.getNextSegment() == null) {
-                continue;
-            }
-            record.restoreMateInfo();
         }
 
         // assign some read names if needed:

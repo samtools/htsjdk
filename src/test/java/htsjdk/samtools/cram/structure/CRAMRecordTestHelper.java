@@ -40,7 +40,6 @@ public class CRAMRecordTestHelper {
         ValidationUtils.validateArg(readBases != null && readBases.length > 0, "must have read bases");
         return new CRAMRecord(
                 1,
-                1,
                 0, //mapped
                 CRAMRecord.CF_FORCE_PRESERVE_QS,
                 readName,
@@ -72,7 +71,6 @@ public class CRAMRecordTestHelper {
             List<ReadTag> tagList) {
         ValidationUtils.validateArg(readBases != null && readBases.length > 0, "must have read bases");
         return new CRAMRecord(
-                1,
                 1,
                 0,
                 CRAMRecord.CF_FORCE_PRESERVE_QS,
@@ -106,7 +104,6 @@ public class CRAMRecordTestHelper {
             List<ReadFeature> readFeatureList) {
         ValidationUtils.validateArg(readBases != null && readBases.length > 0, "must have read bases");
         return new CRAMRecord(
-                1,
                 1,
                 bamFlags,
                 CRAMRecord.CF_FORCE_PRESERVE_QS,

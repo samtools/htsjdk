@@ -134,7 +134,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
     public final void processBAIEntry(final BAIEntry baiEntry) {
 
-        final ReferenceContext entryContext = baiEntry.getEntryReferenceContext();
+        final ReferenceContext entryContext = baiEntry.getReferenceContext();
         if (entryContext.isMultiRef()) {
             throw new SAMException("Expecting a single reference or unmapped slice.");
         }
@@ -195,6 +195,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
      * @param log    optional {@link htsjdk.samtools.util.Log} to output progress
      */
     //TODO: CRAMFileBAIIndexTest test only ?
+    //TODO: why does this need to be a seekable stream - it can just be a stream ???
     public static void createIndex(final SeekableStream stream,
                                    final File output,
                                    final Log log,
@@ -206,7 +207,6 @@ public class CRAMBAIIndexer implements CRAMIndexer {
         }
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, cramHeader.getSamFileHeader());
 
-        final CompressorCache compressorCache = new CompressorCache();
         Container container = null;
         final ProgressLogger progressLogger = new ProgressLogger(log, 1, "indexed", "slices");
         do {
@@ -305,7 +305,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
          //* @param slice CRAM slice, single ref only.
          */
         private void processBAIEntry(final BAIEntry baiEntry) {
-            final ReferenceContext sliceContext = baiEntry.getEntryReferenceContext();
+            final ReferenceContext sliceContext = baiEntry.getReferenceContext();
             if (! sliceContext.isMappedSingleRef()) {
                 return; // do nothing for records without coordinates, but count them
             }
@@ -345,8 +345,8 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             // process chunks
 
-            final long chunkStart = (baiEntry.getContainerOffset() << 16) | baiEntry.getLandmarkIndex();
-            final long chunkEnd = ((baiEntry.getContainerOffset() << 16) | baiEntry.getLandmarkIndex()) + 1;
+            final long chunkStart = (baiEntry.getContainerStartByteOffset() << 16) | baiEntry.getLandmarkIndex();
+            final long chunkEnd = ((baiEntry.getContainerStartByteOffset() << 16) | baiEntry.getLandmarkIndex()) + 1;
 
             final Chunk newChunk = new Chunk(chunkStart, chunkEnd);
 

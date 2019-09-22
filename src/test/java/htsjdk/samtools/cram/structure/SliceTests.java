@@ -159,7 +159,7 @@ public class SliceTests extends HtsjdkTest {
                                final int expectedAlignmentStart,
                                final int expectedAlignmentSpan) {
         final CompressionHeader header = new CompressionHeaderFactory().build(records, coordinateSorted);
-        final Slice slice = new Slice(records, header, 0L);
+        final Slice slice = new Slice(records, header, 0L, 0L);
         final int expectedBaseCount = TEST_RECORD_COUNT * CRAMStructureTestHelper.READ_LENGTH;
         CRAMStructureTestHelper.assertSliceState(
                 slice,
@@ -180,7 +180,7 @@ public class SliceTests extends HtsjdkTest {
 
         final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
 
-        final Slice slice = new Slice(records, header, 0);
+        final Slice slice = new Slice(records, header, 0L, 0L);
         final int expectedBaseCount = single.getReadLength() + unmapped.getReadLength();
         CRAMStructureTestHelper.assertSliceState(
                 slice,
@@ -216,7 +216,7 @@ public class SliceTests extends HtsjdkTest {
         // NOTE: multiref alignment spans are used for CRAI/BAI indexing, and only make sense when records are
         // coordinate sorted, so we only test with coordinateSorted = true;
         final CompressionHeader header = new CompressionHeaderFactory().build(cramRecords, true);
-        final Slice slice = new Slice(cramRecords, header, 0L);
+        final Slice slice = new Slice(cramRecords, header, 0L, 0L);
         final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(
                 new CompressorCache(),
                 ValidationStringency.DEFAULT_STRINGENCY);
@@ -250,7 +250,7 @@ public class SliceTests extends HtsjdkTest {
         // NOTE: multiref alignment spans are used for CRAI/BAI indexing, and only make sense when records are
         // coordinate sorted, so test that we reject coordinateSorted = false;
         final CompressionHeader header = new CompressionHeaderFactory().build(cramRecords, false);
-        final Slice slice = new Slice(cramRecords, header, 0L);
+        final Slice slice = new Slice(cramRecords, header, 0L, 0L);
         slice.getMultiRefAlignmentSpans(new CompressorCache(), ValidationStringency.DEFAULT_STRINGENCY);
     }
 

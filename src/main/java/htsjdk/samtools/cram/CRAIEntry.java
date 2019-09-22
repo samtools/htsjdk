@@ -10,6 +10,7 @@ import java.io.OutputStream;
  * A class representing CRAI index entry: file and alignment offsets for each slice.
  * Created by vadim on 10/08/2015.
  */
+//TODO: align the names of these fields/methods with BAIEntry
 public class CRAIEntry implements Comparable<CRAIEntry> {
     private final int sequenceId;
     private final int alignmentStart;

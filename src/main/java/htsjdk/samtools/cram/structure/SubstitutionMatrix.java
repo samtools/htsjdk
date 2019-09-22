@@ -44,7 +44,9 @@ import java.util.List;
     // substitution bases, in the order in which they're stored in the substitution matrix
     private static List<SubstitutionBase> BASES = Arrays.asList(SubstitutionBase.values());
 
-    private static final int BASES_SIZE = BASES.size();
+    // Cache this value eliminate the need to repeatedly retrieve the SubstitutionBase enum's
+    // values array just to determine it's size.
+    public static final int BASES_SIZE = BASES.size();
 
     private static final byte NO_BASE = 0;
 

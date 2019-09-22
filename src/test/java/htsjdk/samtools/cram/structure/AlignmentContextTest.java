@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
@@ -74,18 +75,6 @@ public class AlignmentContextTest extends HtsjdkTest {
         Assert.assertEquals(alnContext.getAlignmentSpan(), expectedSpan);
     }
 
-    @DataProvider(name = "invalidAlignmentContexts")
-    private static Object[][] invalidAlignmentContexts() {
-        return new Object[][] {
-        };
-    }
-
-    @Test(dataProvider = "invalidAlignmentContexts", expectedExceptions = IllegalArgumentException.class)
-    public void invalidAlignmentContextTest(final ReferenceContext refContext, final int start, final int span) {
-        new AlignmentContext(refContext, start, span); // we allow creation of these, and only fail on validation
-        AlignmentContext.validateAlignmentContext(true, refContext, start, span);
-    }
-
     @DataProvider(name = "invalidStrictAlignmentContexts")
     private static Object[][] invalidStrictAlignmentContexts() {
         return new Object[][] {
@@ -95,7 +84,7 @@ public class AlignmentContextTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "invalidStrictAlignmentContexts", expectedExceptions = IllegalArgumentException.class)
+    @Test(dataProvider = "invalidStrictAlignmentContexts", expectedExceptions = CRAMException.class)
     public void invalidStrictAlignmentContextTest(final ReferenceContext refContext, final int start, final int span) {
         AlignmentContext.validateAlignmentContext(true, refContext, start, span);
     }

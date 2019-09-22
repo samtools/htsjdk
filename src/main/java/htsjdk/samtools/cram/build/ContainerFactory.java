@@ -32,18 +32,22 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 // TODO: this should be called ContainerBuilder
-// NOTE: we don't create more than one MULTI_REF slice in a given container, even if slices/container > 1
-// since it unnecessary
-// We do not put more than one slice in a container even if requested unless all slices share the same reference
-// context.
-// Note: we only create a multi-ref container if there is a multi-ref slice, and multi-ref
-// slices only happen when there aren't enough (i.e., < MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD)
-// records to make a single ref slice, or if we're not coord sorted
+
+// NOTE: we don't ever put more than one MULTI_REF slice into a MULTI_REF container, even if the requested
+// slices/container > 1, since it unnecessary and can be inefficient if the next slice is actually single-ref,
+// which is common in coord-sorted. We only put multiple slices into a container if the all share the same
+// (mapped) reference context.
+//
+// For coordinate sorted inputs, we only create a multi-ref slice if there are not enough reads mapped to a
+// given reference sequence that we can't reach the MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD. For coordinate
+// sorted, this usually happens after emitting several full containers of reads mapped to a given sequence,
+// and only a few reads remain that are mapped to that sequence, followed by some reads that are mapped to a
+// new sequence, or are unmapped. At that point we emit the small multi-ref slice that includes the remaining
+// reads mapped to the previous sequence, plus some  of the new ones. Once we hit the
+// MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD is hit, we the multi-ref slice into it's own container, and then
+// resume, returning to single ref state.
 
 public class ContainerFactory {
-    // the minimum number of records we need to see to emit a single reference slice (before
-    // switching to a multi reference slice)
-    public static final int MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD = 1000;
 
     private final CRAMEncodingStrategy encodingStrategy;
     private final CompressionHeaderFactory compressionHeaderFactory;
@@ -51,7 +55,9 @@ public class ContainerFactory {
     private final SAMFileHeader samFileHeader;
     private final Map<String, Integer> readGroupMap = new HashMap<>();
     private final boolean coordinateSorted;
+
     private final int maxRecordsPerSlice;
+    private final int minimumSingleReferenceSliceThreshold;
 
     private final List<SAMRecord> sliceSAMRecords;
     private final List<SliceEntry<SAMRecord>> sliceEntries;
@@ -77,7 +83,8 @@ public class ContainerFactory {
         this.coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
 
         compressionHeaderFactory = new CompressionHeaderFactory(encodingStrategy);
-        maxRecordsPerSlice = this.encodingStrategy.getRecordsPerSlice();
+        minimumSingleReferenceSliceThreshold = encodingStrategy.getMinimumSingleReferenceSliceSize();
+        maxRecordsPerSlice = this.encodingStrategy.getReadsPerSlice();
         sliceSAMRecords = new ArrayList<>(maxRecordsPerSlice);
         sliceEntries = new ArrayList<>(this.encodingStrategy.getSlicesPerContainer());
 
@@ -97,16 +104,23 @@ public class ContainerFactory {
         }
         final int nextRecordIndex = samRecord.getReferenceIndex();
 
-        // determine if we should start a new slice...
+        // determine if we should emit a new slice...
         final int updatedReferenceContextID = shouldEmitSlice(currentReferenceContextID, nextRecordIndex, sliceSAMRecords.size());
         if (updatedReferenceContextID == ReferenceContext.UNINITIALIZED_REFERENCE_ID) {
-            // save up our slice context and records, and determine if we should now write
+            // save up our slice context and it's records, and then determine if we should emit
             // a container. Only write multiple slices to a container if they share a referenceContext.
             sliceEntries.add(new SliceEntry(currentReferenceContextID, sliceSAMRecords));
-            // Note: we only create a multi-ref container if there is a multi-ref slice, and multi-ref
-            // slices only happen when there aren't enough (i.e., < MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD)
-            // records to make a single ref slice
+            // We emit a container if:
+            //  - we've reached the requested number of slices per container, or
+            //  - we've accumulated a multi-reference slice (we always emit a multi-ref slice into it's own
+            //    container as soon as it's  generated, since we dont want to confer multi-ref-ness on the
+            //    next slice, which might otherwise be single-ref), or
+            // - we haven't reached the requested number of slices, but we're changing reference
+            //   contexts and we don't want to create a MULTI-REF container out of two or more SINGLE_REF
+            //   slices with different contexts, since by the spec we'd be forced to call that container MULTI-REF,
+            //   and thus the slices would have to be multi-ref. so instead we emit a single ref container
             if (sliceEntries.size() == encodingStrategy.getSlicesPerContainer() ||
+                    currentReferenceContextID == ReferenceContext.MULTIPLE_REFERENCE_ID ||
                     currentReferenceContextID != nextRecordIndex) {
                 container = makeContainerFromSliceEntries(containerByteOffset);
             }
@@ -153,8 +167,8 @@ public class ContainerFactory {
 
         // Create the compression header. The compression header  must be presented with ALL
         // records that will be included in the container, no matter how they may be distributed
-        // across slices, so if there is more than one slice requested, we'll need to stream all
-        // records into a list temporarily.
+        // across slices, so if there is more than one slice requested, we need to temporarily
+        // stream all the records into a single list to present to compressionHeaderFactory.
         final CompressionHeader compressionHeader = compressionHeaderFactory.build(
                 cramSliceEntries.size() > 1 ?
                     cramSliceEntries.stream().flatMap(e -> e.records.stream()).collect(Collectors.toList()) :
@@ -165,8 +179,7 @@ public class ContainerFactory {
         long sliceRecordCounter = globalRecordCounter;
         final List<Slice> slices = new ArrayList<>(cramSliceEntries.size());
         for (final SliceEntry sliceEntry : cramSliceEntries) {
-            final Slice slice = new Slice(sliceEntry.getRecords(), compressionHeader, sliceRecordCounter);
-            slice.setByteOffsetOfContainer(containerByteOffset);
+            final Slice slice = new Slice(sliceEntry.getRecords(), compressionHeader, containerByteOffset, sliceRecordCounter);
             if (slice.getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
                 //TODO: are these the correct bases ? in the multi-ref case ....?
                 slice.setRefMD5(referenceBases);
@@ -245,6 +258,7 @@ public class ContainerFactory {
      * @return ReferenceContext.UNINITIALIZED_REFERENCE_ID if a current container should be flushed and
      * subsequent records should go into a new container; otherwise the updated reference context.
      */
+    //Assumes readsPerSlice >= minimumSingleReferenceSliceSize
     // Visible for testing
     int shouldEmitSlice(
             final int currentReferenceContext,
@@ -262,9 +276,9 @@ public class ContainerFactory {
             case ReferenceContext.UNMAPPED_UNPLACED_ID:
                 if (nextReferenceIndex == currentReferenceContext) {
                     // still unmapped...
-                    return numberOfSAMRecords >= maxRecordsPerSlice ?
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                            ReferenceContext.UNMAPPED_UNPLACED_ID;
+                    return numberOfSAMRecords < maxRecordsPerSlice ?
+                            ReferenceContext.UNMAPPED_UNPLACED_ID :
+                            ReferenceContext.UNINITIALIZED_REFERENCE_ID;
                 } else if (coordinateSorted) {
                     // coordinate sorted, and we're going from unmapped to mapped ??
                     throw new CRAMException("Invalid coord-sorted input - unmapped records must be last");
@@ -275,21 +289,22 @@ public class ContainerFactory {
                     // happening in this container).
                     return numberOfSAMRecords >= maxRecordsPerSlice ?
                             ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                            ReferenceContext.MULTIPLE_REFERENCE_ID; //TODO??
+                            ReferenceContext.MULTIPLE_REFERENCE_ID;
                 }
 
             case ReferenceContext.MULTIPLE_REFERENCE_ID:
+                // This always accumulates a full multi-ref slice, but maybe it would be more efficient
+                // to emit smaller multi-ref slices on the theory that the stream will get back on track
+                // for single ref, at least for coord-sorted.
                 if (coordinateSorted) {
-                    return numberOfSAMRecords >= MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD ?
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                            ReferenceContext.MULTIPLE_REFERENCE_ID;
-                } else if (nextReferenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                    //TODO: special case to not allow unmapped records in with the multi-refs; this is
-                    // to prevent index queries from failing
-                    //return ReferenceContext.UNINITIALIZED_REFERENCE_ID;
-                    return numberOfSAMRecords >= maxRecordsPerSlice ?
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                            ReferenceContext.MULTIPLE_REFERENCE_ID;
+                    return numberOfSAMRecords < minimumSingleReferenceSliceThreshold ?
+                            ReferenceContext.MULTIPLE_REFERENCE_ID :
+                            ReferenceContext.UNINITIALIZED_REFERENCE_ID; // emit a small mutli-ref
+//                }
+//                else if (nextReferenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+//                    return numberOfSAMRecords >= maxRecordsPerSlice ?
+//                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
+//                            ReferenceContext.MULTIPLE_REFERENCE_ID;
                 } else {
                     // multi-ref, not coord sorted
                     return numberOfSAMRecords >= maxRecordsPerSlice ?
@@ -298,7 +313,7 @@ public class ContainerFactory {
                 }
 
             default:
-                // so far everything we've seen is on a single reference contig
+                // We're single-reference; so far everything we've seen is on a single reference contig
                 if (nextReferenceIndex == currentReferenceContext) {
                     // still on the same reference contig
                     return numberOfSAMRecords >= maxRecordsPerSlice ?
@@ -306,21 +321,9 @@ public class ContainerFactory {
                             nextReferenceIndex;
                 } else {
                     // switching to either a new reference contig, or to unmapped
-                    if (coordinateSorted) {
-                        //TODO: we're coord-sorted, so ideally we'd emit a slice as long as we've seen
-                        // >= MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD, but emitting multi-ref
-                        // slices/containers on coord-sorted will break index queries for unmapped (??),
-                        // so instead force a container flush and just return true;
-                        //return numberOfSAMRecords >= MIN_SINGLE_REF_RECORDS ?
-                        //        nextReferenceIndex :
-                        //        ReferenceContext.UNINITIALIZED_REFERENCE_ID;
-                        return ReferenceContext.UNINITIALIZED_REFERENCE_ID;
-                    } else {
-                        // not coord sorted, switching to a new mapped contig or unmapped
-                        return numberOfSAMRecords >= MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD ?
-                                ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                                ReferenceContext.MULTIPLE_REFERENCE_ID;
-                    }
+                   return numberOfSAMRecords < minimumSingleReferenceSliceThreshold ?
+                            ReferenceContext.MULTIPLE_REFERENCE_ID :
+                            ReferenceContext.UNINITIALIZED_REFERENCE_ID;
                 }
         }
     }

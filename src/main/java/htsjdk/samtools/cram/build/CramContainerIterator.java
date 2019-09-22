@@ -4,13 +4,14 @@ import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.util.Iterator;
 
 /**
  * An iterator of CRAM containers read from an {@link java.io.InputStream}.
  */
-public class CramContainerIterator implements Iterator<Container> {
+public class CramContainerIterator implements Iterator<Container>, Closeable {
     private CramHeader cramHeader;
     private CountingInputStream countingInputStream;
     private Container nextContainer;
@@ -73,6 +74,7 @@ public class CramContainerIterator implements Iterator<Container> {
         return cramHeader;
     }
 
+    @Override
     public void close() {
         nextContainer = null;
         cramHeader = null;

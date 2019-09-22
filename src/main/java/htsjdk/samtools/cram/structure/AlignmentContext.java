@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.util.Log;
@@ -17,22 +18,20 @@ import java.util.Objects;
 public class AlignmentContext {
     private static final Log log = Log.getInstance(AlignmentContext.class);
 
-    public static final int NO_ALIGNMENT_START = -1;
+    public static final int NO_ALIGNMENT_START = 0;
     public static final int NO_ALIGNMENT_SPAN = 0;
-
     public static final int NO_ALIGNMENT_END = SAMRecord.NO_ALIGNMENT_START; // SAMRecord uses this for alignmentEnd...
 
     public static final AlignmentContext MULTIPLE_REFERENCE_CONTEXT =
             new AlignmentContext(
                 ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                    //TODO: replace all these 0s with a constant
-                    0,
+                    NO_ALIGNMENT_START,
                     NO_ALIGNMENT_SPAN);
 
     public static final AlignmentContext UNMAPPED_UNPLACED_CONTEXT =
             new AlignmentContext(
                     ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-                    0,
+                    NO_ALIGNMENT_START,
                     NO_ALIGNMENT_SPAN);
 
     public static final AlignmentContext EOF_CONTAINER_CONTEXT =
@@ -50,10 +49,11 @@ public class AlignmentContext {
     public AlignmentContext(final ReferenceContext referenceContext,
                             final int alignmentStart,
                             final int alignmentSpan) {
-        // TODO: We can't validate here because there are too many files floating around with containers
-        // with non-spec conforming values (ie., unmapped with 0, 1, multi with -1/0
-        // so instead we validate only on writer
-        validateAlignmentContext(false, referenceContext, alignmentStart, alignmentSpan);
+        // We can't enforce valid alignment contexts, or even warn about them here, because there are too many
+        // files floating around that were created with implementations based on versions of the spec that didn't
+        // prescribe the valid start/span values for multi ref or unmapped slices, and SAMFileHeader containers.
+        // So skip this ssince it results in lots of warnings.
+        //validateAlignmentContext(false, referenceContext, alignmentStart, alignmentSpan);
         this.referenceContext = referenceContext;
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;
@@ -71,7 +71,12 @@ public class AlignmentContext {
         return alignmentSpan;
     }
 
-    // Determine if these values result in a good alignment context
+    // Determine if these values result would in a valid alignment context
+    //if isString = true, throws if not
+    //Note: The spec does not prescribe what the alignment start/span for a SAMFileHeader container
+    // should be, and only recently prescribed what they should be for multi-ref slices, so there are
+    // many files out their with random values for those. There we can't really throw since there are
+    // many files out their with random values in these places.
     public static void validateAlignmentContext(
             final boolean isStrict,
             final ReferenceContext referenceContext,
@@ -79,35 +84,34 @@ public class AlignmentContext {
             final int alignmentSpan) {
         switch (referenceContext.getType()) {
             case SINGLE_REFERENCE_TYPE:
-                if (alignmentStart == NO_ALIGNMENT_START) {
-                    log.warn(
-                            String.format(
-                                    "Attempt to create a single-reference alignment context with an invalid start (index %d/start %d/span %d)",
-                                    referenceContext.getReferenceSequenceID(),
-                                    alignmentStart,
-                                    alignmentSpan));
-                } else if (alignmentSpan == NO_ALIGNMENT_SPAN) {
-                    // it is possible to have an alignment span == 0, i.e., a slice with a single record where
-                    // the sequence is SAMRecord.NULL_SEQUENCE
-                    log.warn(String.format(
-                            "Attempt to create a single-reference alignment context with an invalid span (index %d/start %d/span %d)",
+                // note that it is technically possible to have an alignment span == 0, i.e., for a slice
+                // with a single record where the sequence is SAMRecord.NULL_SEQUENCE, so we only check
+                // alignment start
+                if (alignmentStart < 0) {
+                    final String errorString = String.format(
+                            "Single-reference alignment context with an invalid start detected (index %d/start %d/span %d)",
                             referenceContext.getReferenceSequenceID(),
                             alignmentStart,
-                            alignmentSpan));
+                            alignmentSpan);
+                    if (isStrict) {
+                        throw new CRAMException(errorString);
+                    } else {
+                        log.warn(errorString);
+                    }
                 }
                 break;
 
             case UNMAPPED_UNPLACED_TYPE:
                 // the spec requires start==0 and span==0 for unmapped, but also make a special exception
                 // for EOF Containers, as required by the spec
-                if (!(alignmentStart == 0 && alignmentSpan == NO_ALIGNMENT_SPAN) &&
+                if (!(alignmentStart == NO_ALIGNMENT_START && alignmentSpan == NO_ALIGNMENT_SPAN) &&
                         !(alignmentStart == CramIO.EOF_ALIGNMENT_START && alignmentSpan == CramIO.EOF_ALIGNMENT_SPAN)) {
                     final String errorString = String.format(
-                            "Attempt to create an unmapped/unplaced alignment context with invalid start/span (%d/%d)",
+                            "Unmapped/unplaced alignment context with invalid start/span detected (%d/%d)",
                             alignmentStart,
                             alignmentSpan);
                     if (isStrict) {
-                        throw new IllegalArgumentException(errorString);
+                        throw new CRAMException(errorString);
                     } else {
                         log.warn(errorString);
                     }
@@ -115,35 +119,33 @@ public class AlignmentContext {
                 break;
 
             case MULTIPLE_REFERENCE_TYPE:
-                if (alignmentStart != 0 || alignmentSpan != NO_ALIGNMENT_SPAN) {
-                    // THE spec does not prescribe what the alignment span for a SAMFIleHeader container
-                    // should be, so there are many files out their with random values
-                    log.warn(String.format(
-                                    "Attempt to create a multi-reference alignment context with invalid start/span (%d/%d)",
-                                    alignmentStart,
-                                    alignmentSpan));
+                if (alignmentStart != NO_ALIGNMENT_START || alignmentSpan != NO_ALIGNMENT_SPAN) {
+                    final String errorString = String.format(
+                            "Multi-reference alignment context with invalid start/span detected (%d/%d)",
+                            alignmentStart,
+                            alignmentSpan);
+                    if (isStrict) {
+                        throw new CRAMException(errorString);
+                    } else {
+                        log.warn(errorString);
+                    }
                 }
                 break;
 
             default:
                 throw new IllegalArgumentException(
                         String.format(
-                                "Attempt to create an alignment context with unknown reference context type: %s",
+                                "Alignment context with unknown reference context type: %s",
                                 referenceContext.getType()));
         }
     }
 
     @Override
     public String toString() {
-        switch (referenceContext.getType()) {
-            case MULTIPLE_REFERENCE_TYPE:
-                return "AlignmentContext{MULTIPLE_REFERENCE_CONTEXT}";
-            case UNMAPPED_UNPLACED_TYPE:
-                return "AlignmentContext{UNMAPPED_UNPLACED_CONTEXT}";
-            default:
-                final String format = "AlignmentContext{referenceSequenceId=%s, alignmentStart=%d, alignmentSpan=%d}";
-                return String.format(format, referenceContext.getReferenceSequenceID(), alignmentStart, alignmentSpan);
-        }
+            return String.format(
+                    "ReferenceSequenceId=%s, alignmentStart=%d, alignmentSpan=%d",
+                    referenceContext.getReferenceContextID(),
+                    alignmentStart, alignmentSpan);
     }
 
     @Override
