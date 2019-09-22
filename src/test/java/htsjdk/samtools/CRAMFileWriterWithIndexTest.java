@@ -153,8 +153,6 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
 
     @BeforeTest
     public void beforeTest() {
-        Log.setGlobalLogLevel(Log.LogLevel.ERROR);
-
         header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord("1");

@@ -330,7 +330,6 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
     @BeforeTest
     public void prepare() throws IOException {
-        Log.setGlobalLogLevel(Log.LogLevel.ERROR);
         source = new ReferenceSource(new FakeReferenceSequenceFile(
                 SamReaderFactory.makeDefault().getFileHeader(BAM_FILE).getSequenceDictionary().getSequences()));
 
@@ -338,7 +337,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         tmpCramFile.deleteOnExit();
         tmpCraiFile = new File (tmpCramFile.getAbsolutePath() + ".crai");
         tmpCraiFile.deleteOnExit();
-        cramBytes = cramFromBAM(BAM_FILE, source);
+        cramBytes = cramBytesFromBAMFile(BAM_FILE, source);
 
         FileOutputStream fos = new FileOutputStream(tmpCramFile);
         fos.write(cramBytes);
@@ -356,7 +355,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         return baos.toByteArray();
     }
 
-    private byte[] cramFromBAM(File bamFile, ReferenceSource source) throws IOException {
+    private byte[] cramBytesFromBAMFile(File bamFile, ReferenceSource source) throws IOException {
 
         try (final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
              final SAMRecordIterator iterator = reader.iterator();

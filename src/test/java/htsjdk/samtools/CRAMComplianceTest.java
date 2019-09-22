@@ -126,11 +126,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
                 );
     }
 
-    @BeforeTest
-    public void beforeTest() {
-        Log.setGlobalLogLevel(Log.LogLevel.ERROR);
-    }
-
     private static class TestCase {
         File bamFile;
         File refFile;

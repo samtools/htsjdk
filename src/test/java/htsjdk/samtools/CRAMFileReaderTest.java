@@ -51,11 +51,6 @@ public class CRAMFileReaderTest extends HtsjdkTest {
     private static final File INDEX_FILE = new File(TEST_DATA_DIR, "cram_with_crai_index.cram.crai");
 
 
-    @BeforeClass
-    public void initClass() {
-        Log.setGlobalLogLevel(Log.LogLevel.ERROR);
-    }
-
     private static ReferenceSource createReferenceSource() {
         byte[] refBases = new byte[10 * 10];
         Arrays.fill(refBases, (byte) 'A');
