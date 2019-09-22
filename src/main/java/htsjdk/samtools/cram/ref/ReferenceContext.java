@@ -68,12 +68,12 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     }
 
     /**
-     * Get the ReferenceContext sequence ID, or a sentinel value if unmapped or multiple, suitable for
+     * Get the ReferenceContext sequence ID, or, for unmapped or multiple context, a sentinel value suitable for
      * serialization:
      *
      * 0 or greater for single reference
-     * -1 for unmapped
-     * -2 for multiple reference
+     *  -1 for unmapped
+     *  -2 for multiple reference
      * @return the sequence ID
      */
     public int getReferenceContextID() {
@@ -87,9 +87,9 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      */
     public int getReferenceSequenceID() {
         if (type != ReferenceContextType.SINGLE_REFERENCE_TYPE) {
-            final String msg = "This ReferenceContext does not have a valid reference sequence ID because its type is " +
-                    type.toString();
-            throw new CRAMException(msg);
+            throw new CRAMException(
+                    String.format("This ReferenceContext does not have a valid reference sequence ID because its type is %s",
+                            type.toString()));
         }
 
         return referenceContextID;

@@ -108,7 +108,9 @@ public class CRAMStructureTestHelper {
                         new byte[1],
                         1,
                         new HashMap<>())),
-                new CompressionHeader(), 0);
+                new CompressionHeader(),
+                0L,
+                0L);
     }
 
     public static SAMRecord createSAMRecordMapped(final int referenceIndex, final int intForNameAndStart) {
@@ -308,7 +310,6 @@ public class CRAMStructureTestHelper {
                 referenceIndex == ReferenceContext.UNMAPPED_UNPLACED_ID,
                 "invalid reference index");
         return new CRAMRecord(
-                1,
                 index,
                 samFlag,
                 0,

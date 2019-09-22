@@ -95,6 +95,7 @@ public class CRAIIndex {
         return new SeekableMemoryStream(baos.toByteArray(), "CRAI to BAI converter");
     }
 
+    //TODO: test-only ?
     public static List<CRAIEntry> find(final List<CRAIEntry> list, final int seqId, final int start, final int span) {
         final boolean matchEntireSequence = start < 1 || span < 1;
         final int dummyValue = 1;
@@ -107,6 +108,7 @@ public class CRAIIndex {
                 .collect(Collectors.toList());
     }
 
+    //TODO: test-only ?
     public static CRAIEntry getLeftmost(final List<CRAIEntry> list) {
         if (list == null || list.isEmpty()) {
             return null;
@@ -125,6 +127,7 @@ public class CRAIIndex {
      * @param list a list of CRAI entries
      * @return integer index of the last entry with sequence id not equal to -1
      */
+    //TODO: test-only ?
     public static int findLastAlignedEntry(final List<CRAIEntry> list) {
         if (list.isEmpty()) {
             return -1;
@@ -151,6 +154,7 @@ public class CRAIIndex {
         return low;
     }
 
+    //TODO WTF ?
     public static class CRAIIndexException extends RuntimeException {
 
         public CRAIIndexException(final String s) {

@@ -190,7 +190,7 @@ public class CompressionHeader {
                     dictionary = parseDictionary(dictionaryBytes);
                 } else if (SM_substitutionMatrix.equals(key)) {
                     // parse subs matrix here:
-                    final byte[] matrixBytes = new byte[5];
+                    final byte[] matrixBytes = new byte[SubstitutionMatrix.BASES_SIZE];
                     buffer.get(matrixBytes);
                     substitutionMatrix = new SubstitutionMatrix(matrixBytes);
                 } else
@@ -261,11 +261,9 @@ public class CompressionHeader {
             mapBuffer.put(substitutionMatrix.getEncodedMatrix());
 
             mapBuffer.put(TD_tagIdsDictionary.getBytes());
-            {
-                final byte[] dictionaryBytes = dictionaryToByteArray();
-                ITF8.writeUnsignedITF8(dictionaryBytes.length, mapBuffer);
-                mapBuffer.put(dictionaryBytes);
-            }
+            final byte[] dictionaryBytes = dictionaryToByteArray();
+            ITF8.writeUnsignedITF8(dictionaryBytes.length, mapBuffer);
+            mapBuffer.put(dictionaryBytes);
 
             mapBuffer.flip();
             final byte[] mapBytes = new byte[mapBuffer.limit()];
@@ -302,6 +300,5 @@ public class CompressionHeader {
         encodingMap.putTagBlockCompression(tagId, compressor);
         tMap.put(tagId, params);
     }
-
 
 }

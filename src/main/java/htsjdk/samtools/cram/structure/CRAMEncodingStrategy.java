@@ -18,6 +18,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class CRAMEncodingStrategy {
     private final long version = 1L;
+    // Default value for the minimum number of reads we need to have seen to emit a single-reference slice.
+    // If we've see fewer than this number, and we have more reads from a different reference context, we prefer to
+    // switch to, and subsequently emit, a multiple reference slice, rather than a small single-reference
+    // that contains fewer than this number of records.
+    public static final int DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD = 1000;
+
+    // This number must be >= DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD (required by ContainerFactory).
     public static final int DEFAULT_READS_PER_SLICE = 10000;
     private final String strategyName = "default";
 
@@ -27,6 +34,11 @@ public class CRAMEncodingStrategy {
     //TODO: should this have separate values for tags (separate from CRAMRecord data) ?
     private int gzipCompressionLevel = Defaults.COMPRESSION_LEVEL;
 
+   // The minimum number of reads we need to have seen to emit a single-reference slice. If we've seen
+    // fewer than this number, and we have more reads from a different reference context, we prefer to
+    // switch to, and subsequently emit, a multiple reference slice, rather than a small single-reference
+    // that contains fewer than this number of records. This number must be < readsPerSlice.
+    private int minimumSingleReferenceSliceSize = DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD;
     private int readsPerSlice = DEFAULT_READS_PER_SLICE;
     private int slicesPerContainer = 1;
 
@@ -48,7 +60,6 @@ public class CRAMEncodingStrategy {
     public CRAMEncodingStrategy setPreserveReadNames(boolean preserveReadNames) {
         this.preserveReadNames = preserveReadNames;
         return this;
-
     }
 
     public CRAMEncodingStrategy setEncodingMap(final Path encodingMap) {
@@ -60,15 +71,38 @@ public class CRAMEncodingStrategy {
      * Set number of slices per container. In some cases, a container containing fewer slices than the
      * requested value will be produced in order to honor the specification rule that all slices in a
      * container must have the same {@link ReferenceContextType}.
+     * Note that this value must be >= {@link #getMinimumSingleReferenceSliceSize}.
      * @param readsPerSlice number of slices written per container
      * @return updated CRAMEncodingStrategy
      */
-    public CRAMEncodingStrategy setRecordsPerSlice(final int readsPerSlice) {
-        //TODO: there are test case that use readsPerSlice of 10
-//        ValidationUtils.validateArg(readsPerSlice > 0 && readsPerSlice >= ContainerFactory.MIN_SINGLE_REF_RECORDS,
-//                String.format("Reads per slice must be > 1 and < %d", ContainerFactory.MIN_SINGLE_REF_RECORDS));
+    public CRAMEncodingStrategy setReadsPerSlice(final int readsPerSlice) {
+        ValidationUtils.validateArg(
+                readsPerSlice > 0 && readsPerSlice >= minimumSingleReferenceSliceSize,
+                String.format("Reads per slice must be > 0 and < minimum single reference slice size (%d)",
+                        minimumSingleReferenceSliceSize));
         this.readsPerSlice = readsPerSlice;
         return this;
+    }
+
+   /**
+    * The minimum number of reads we need to have seen to emit a single-reference slice. If we've seen
+    * fewer than this number, and we have more reads from a different reference context, we prefer to
+    * switch to, and subsequently emit, a multiple reference slice, rather than a small single-reference
+    * that contains fewer than this number of records.
+    *
+    * This number must be < the value for {@link #getReadsPerSlice}
+    * @param minimumSingleReferenceSliceSize
+    */
+    public CRAMEncodingStrategy setMinimumSingleReferenceSliceSize(int minimumSingleReferenceSliceSize) {
+        ValidationUtils.validateArg(
+                minimumSingleReferenceSliceSize <= readsPerSlice,
+                String.format("Minimm single reference slice size must be < the reads per slice size (%d)", readsPerSlice));
+        this.minimumSingleReferenceSliceSize = minimumSingleReferenceSliceSize;
+        return this;
+    }
+
+    public int getMinimumSingleReferenceSliceSize() {
+        return minimumSingleReferenceSliceSize;
     }
 
     public CRAMEncodingStrategy setGZIPCompressionLevel(final int compressionLevel) {
@@ -79,8 +113,10 @@ public class CRAMEncodingStrategy {
 
     /**
      * Set the number of slices per container. If > 1, multiple slices will be placed in the same container
-     * if the slices share the same reference context (container records mapped to the same contig).
-     * @param slicesPerContainer
+     * if the slices share the same reference context (container records mapped to the same contig). MULTI-REF
+     * slices are always emitted as a single contain to avoid conferring MULTI-REF on the next slice, which
+     * might otherwise be single-ref; the spec requires a MULTI_REF container to only contain multi-ref slices).
+     * @param slicesPerContainer - requested number of slices per container
      * @return CRAMEncodingStrategy
      */
     public CRAMEncodingStrategy setSlicesPerContainer(final int slicesPerContainer) {
@@ -91,7 +127,7 @@ public class CRAMEncodingStrategy {
 
     public String getCustomCompressionMapPath() { return customCompressionMapPath; }
     public int getGZIPCompressionLevel() { return gzipCompressionLevel; }
-    public int getRecordsPerSlice() { return readsPerSlice; }
+    public int getReadsPerSlice() { return readsPerSlice; }
     public int getSlicesPerContainer() { return slicesPerContainer; }
 
     public void writeToPath(final Path outputPath) {

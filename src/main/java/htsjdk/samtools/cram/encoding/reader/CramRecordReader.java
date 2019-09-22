@@ -151,7 +151,6 @@ public class CramRecordReader {
      * @return the newly-read CRAMRecord
      */
     public CRAMRecord read(
-            final int sliceIndex,
             final int sequentialIndex,
             final int prevAlignmentStart) {
         // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,
@@ -304,12 +303,9 @@ public class CramRecordReader {
                 }
             }
         }
-
         //recordCounter++;
 
-        //return cramRecord.alignmentStart;
         return new CRAMRecord(
-                sliceIndex,
                 sequentialIndex,
                 bamFlags,
                 cramFlags,

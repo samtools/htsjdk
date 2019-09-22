@@ -30,7 +30,6 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
 
     final private CRAIIndex craiIndex = new CRAIIndex();
     final private GZIPOutputStream os;
-    final CompressorCache compressorCache = new CompressorCache();
 
     /**
      * Create a CRAMCRAIIndexer that writes to the given output stream.
@@ -101,6 +100,9 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
      * @param cramStream CRAM stream to index; must be coordinate sorted
      * @param craiStream stream for output index
      */
+    //TODO: why does this need a seekable stream to read the file just to index it
+    // Note: since we're only indexing, we don't need a reference since we're not going to
+    // normalize any contained records, only establish the alignment start and spans.
     public static void writeIndex(final SeekableStream cramStream, OutputStream craiStream) {
         final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
         final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, cramHeader.getSamFileHeader());

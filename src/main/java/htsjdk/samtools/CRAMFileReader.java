@@ -19,7 +19,6 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SamReader.Type;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.ContainerHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
@@ -84,7 +83,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @throws IllegalArgumentException if the {@code cramFile} and the {@code inputStream} are both null
      * or if the {@code CRAMReferenceSource} is null
      */
-    public CRAMFileReader(final File cramFile, final InputStream inputStream,
+    //TODO: TEST only
+    public CRAMFileReader(final File cramFile,
+                          final InputStream inputStream,
                           final CRAMReferenceSource referenceSource) {
         ValidationUtils.validateArg(cramFile != null || inputStream != null,
                 "Either file or input stream is required.");
@@ -108,7 +109,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *                        reference sequences. May not be null.
      * @throws IllegalArgumentException if the {@code cramFile} or the {@code CRAMReferenceSource} is null
      */
-    public CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource) {
+    //TODO: test only
+    public CRAMFileReader(final File cramFile,
+                          final File indexFile,
+                          final CRAMReferenceSource referenceSource) {
         ValidationUtils.nonNull(cramFile,"File is required.");
 
         this.cramFile = cramFile;
@@ -126,6 +130,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *                        reference sequences. May not be null.
      * @throws IllegalArgumentException if the {@code cramFile} or the {@code CRAMReferenceSource} is null
      */
+    //TODO: test only
     public CRAMFileReader(final File cramFile, final CRAMReferenceSource referenceSource) {
         ValidationUtils.nonNull(cramFile,"File is required.");
 
@@ -148,8 +153,11 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *
      * @throws IllegalArgumentException if the {@code inputStream} or the {@code CRAMReferenceSource} is null
      */
-    public CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
-                          final CRAMReferenceSource referenceSource, final ValidationStringency validationStringency) throws IOException {
+    //TODO: SAMReaderFactory
+    public CRAMFileReader(final InputStream inputStream,
+                          final SeekableStream indexInputStream,
+                          final CRAMReferenceSource referenceSource,
+                          final ValidationStringency validationStringency) throws IOException {
         ValidationUtils.nonNull(inputStream, "Input stream can not be null for CRAM reader");
         this.referenceSource = referenceSource;
         initWithStreams(inputStream, indexInputStream, validationStringency);
@@ -167,8 +175,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *
      * @throws IllegalArgumentException if the {@code inputStream} or the {@code CRAMReferenceSource} is null
      */
+    //TODO: SAMReaderFactory
     public CRAMFileReader(final InputStream stream,
-                          final File indexFile, final CRAMReferenceSource referenceSource,
+                          final File indexFile,
+                          final CRAMReferenceSource referenceSource,
                           final ValidationStringency validationStringency) throws IOException {
         this(stream, indexFile == null ? null : new SeekableFileStream(indexFile), referenceSource, validationStringency);
     }
@@ -185,6 +195,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *
      * @throws IllegalArgumentException if the {@code cramFile} or the {@code CRAMReferenceSource} is null
      */
+    //TODO: SAMReaderFactory
     public CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource,
                           final ValidationStringency validationStringency) throws IOException {
         ValidationUtils.nonNull(cramFile, "Input file can not be null for CRAM reader");
@@ -323,13 +334,15 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     }
 
     @Override
+    //TODO: the resolution of this iterator is the Slice, so the records returned are all of the records
+    // in the slices that overlap these spans ?
     public CloseableIterator<SAMRecord> getIterator(final SAMFileSpan fileSpan) {
         return iterator(fileSpan);
     }
 
     @Override
     public SAMFileSpan getFilePointerSpanningReads() {
-        return new BAMFileSpan(new Chunk(iterator.firstContainerOffset << 16, Long.MAX_VALUE));
+        return new BAMFileSpan(new Chunk(iterator.getFirstContainerOffset() << 16, Long.MAX_VALUE));
     }
 
     private static final SAMRecordIterator emptyIterator = new SAMRecordIterator() {
@@ -374,14 +387,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
 
         final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
-        final CRAMIterator newIterator;
         try {
             seekableStream.seek(0);
-            newIterator = new CRAMIterator(seekableStream, referenceSource, validationStringency);
+            iterator = new CRAMIterator(seekableStream, referenceSource, validationStringency);
             seekableStream.seek(startOfLastLinearBin >>> 16);
-            final ContainerHeader containerHeader = ContainerHeader.readContainerHeader(newIterator.getCramHeader().getVersion().major, seekableStream);
-            seekableStream.seek(seekableStream.position() + containerHeader.getContainerBlocksByteSize());
-            iterator = newIterator;
             boolean atAlignments;
             do {
                 atAlignments = iterator.advanceToAlignmentInContainer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);

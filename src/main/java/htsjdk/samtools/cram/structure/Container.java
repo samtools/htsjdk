@@ -91,7 +91,6 @@ public class Container {
         int blockCount = 0;
         int recordCount = 0;
         for (final Slice slice : slices) {
-            slice.setByteOffsetOfContainer(containerByteOffset);
             recordCount += slice.getNumberOfRecords();
             blockCount += slice.getNumberOfBlocks();
             baseCount += slice.getBaseCount();
@@ -109,7 +108,7 @@ public class Container {
     }
 
     private final AlignmentContext getDerivedAlignmentContext(final ReferenceContext commonRefContext) {
-        int alignmentStart = AlignmentContext.NO_ALIGNMENT_START;
+        int alignmentStart = SAMRecord.NO_ALIGNMENT_START;
         int alignmentSpan = AlignmentContext.NO_ALIGNMENT_SPAN;
 
         if (commonRefContext.isMappedSingleRef()) {
@@ -130,9 +129,9 @@ public class Container {
             return AlignmentContext.MULTIPLE_REFERENCE_CONTEXT;
         }
 
+        // since we're creating this container, ensure that it has a valid alignment context
         AlignmentContext.validateAlignmentContext(true, commonRefContext, alignmentStart, alignmentSpan);
-        final AlignmentContext derivedAlignmentContext = new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan);
-        return derivedAlignmentContext;
+        return new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan);
     }
 
     // Note: this is the degenerate case of the CramContainerHeaderIterator, which for disq really only
@@ -144,7 +143,9 @@ public class Container {
         slices = Collections.EMPTY_LIST;
     }
 
-    // Note: this is the case where we're reading a container from a stream
+    // Note: this is the case where we're reading a container from a stream. This reads in the container
+    // header, and all slice blocks, but does not resolve the blocks into CRAMRecords, since we don't want
+    // to do that until its necessary (and it might not be if, for example, we're indexing the container).
     public Container(final Version version, final InputStream inputStream, final long containerByteOffset) {
         containerHeader = ContainerHeader.readContainerHeader(version.major, inputStream);
         if (containerHeader.isEOF()) {
@@ -159,8 +160,11 @@ public class Container {
 
         this.slices = new ArrayList<>();
         for (int sliceCounter = 0; sliceCounter < containerHeader.getLandmarks().length; sliceCounter++) {
-            final Slice slice = new Slice(version.major, compressionHeader, inputStream);
-            slice.setByteOffsetOfContainer(containerByteOffset);
+            final Slice slice = new Slice(
+                    version.major,
+                    compressionHeader,
+                    inputStream,
+                    containerByteOffset);
             slices.add(slice);
         }
 
@@ -185,7 +189,9 @@ public class Container {
         // written out. So we first write the
         try (final ByteArrayOutputStream tempOutputStream = new ByteArrayOutputStream()) {
 
-            // write the compression header out to the temporary stream...
+            // Before we can write out the container header, we need to update it with the length of the
+            // compression header that follows, as well as with the landmark (slice offsets), so write the
+            // compression header out to a temporary stream first to get it's length.
             getCompressionHeader().write(version, tempOutputStream);
 
             // ...then write out the slice blocks, computing the landmarks along the way
@@ -196,7 +202,6 @@ public class Container {
                 landmarks.add(tempOutputStream.size());
                 slice.write(version.major, tempOutputStream);
             }
-
             getContainerHeader().setLandmarks(landmarks.stream().mapToInt(Integer::intValue).toArray());
 
             // compression header plus all slices, if any (EOF Containers do not; File Header Containers are handled above)
@@ -247,7 +252,8 @@ public class Container {
         }
 
         // SAMFileHeader block is prescribed by the spec to be gzip compressed
-        //TODO: this compressor cache is bogus
+        // Use a temporary, single-use compressor cache for this block, since its
+        // prescribed by the spec to be gzipped only and thus not perf sensitive.
         try (final InputStream blockStream = new ByteArrayInputStream(block.getUncompressedContent(new CompressorCache()))) {
             final ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -292,6 +298,7 @@ public class Container {
                     0,
                     0,
                     1,
+                    //TODO: should the landmarks be specified ?
                     new int[]{},
                     0);
             final int containerHeaderByteSize = containerHeader.writeContainerHeader(major, os);
@@ -302,7 +309,9 @@ public class Container {
         }
     }
 
-    // TODO: this unpacks all slices
+    //TODO: this unpacks all slices
+    //TODO: note that this does not require a reference, which is good, since we need to be able to use it to
+    // get raw CRAM records during indexing, and we don;t want that to require a reference
     public List<CRAMRecord> getCRAMRecords(final ValidationStringency validationStringency, final CompressorCache compressorCache) {
         if (isEOF()) {
             return Collections.emptyList();
@@ -333,6 +342,9 @@ public class Container {
             return Collections.emptyList();
         }
 
+        //TODO: these might need to be merged, so that in the end there is only one entry per ref context ?
+        // these should NOT need to be sorted ?? we need one per slice, several for multi-ref slices,
+        // so no merging should be required
         return getSlices().stream()
                 .map(s -> s.getCRAIEntries(compressorCache))
                 .flatMap(List::stream)
@@ -344,68 +356,18 @@ public class Container {
      * Retrieve the list of BAIEntry Index entries corresponding to this Container
      * @return the list of BAIEntry Index entries
      */
-    //TODO: replace calls to getSpans with this
     public List<BAIEntry> getBAIEntries(final CompressorCache compressorCache) {
         if (isEOF()) {
             return Collections.emptyList();
         }
 
         //TODO: these might need to be merged, so that in the end there is only one entry per ref context ?
+        // these should NOT need to be sorted ??
         return getSlices().stream()
                 .map(s -> s.getBAIEntries(compressorCache))
                 .flatMap(List::stream)
                 .sorted()
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * Iterate through all of this container's {@link Slice}s to derive a map of reference sequence IDs
-     * to {@link AlignmentSpan}s.  Used to create BAI Indexes.
-     *
-     * @param validationStringency stringency for validating records, passed to
-     * @return the map of map of reference sequence IDs to AlignmentSpans.
-     */
-    //TODO: used for BAI indexing tests, obsolete once getBAIEntries is used
-    public Map<ReferenceContext, AlignmentSpan> getSpans(final ValidationStringency validationStringency) {
-        final Map<ReferenceContext, AlignmentSpan> containerSpanMap  = new HashMap<>();
-        final CompressorCache compressorCache = new CompressorCache();
-        for (final Slice slice : getSlices()) {
-            switch (slice.getAlignmentContext().getReferenceContext().getType()) {
-                case UNMAPPED_UNPLACED_TYPE:
-                    // it is possible to have multiple unmapped/unplaced slices in a container
-                    containerSpanMap.merge(
-                            ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-                            new AlignmentSpan(
-                                slice.getAlignmentContext(),
-                                slice.getMappedReadsCount(),
-                                slice.getUnmappedReadsCount(),
-                                slice.getUnplacedReadsCount()),
-                            AlignmentSpan::combine);
-                    break;
-
-                case MULTIPLE_REFERENCE_TYPE:
-                    final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(compressorCache, validationStringency);
-                    for (final Map.Entry<ReferenceContext, AlignmentSpan> entry : spans.entrySet()) {
-                        containerSpanMap.merge(entry.getKey(), entry.getValue(), AlignmentSpan::combine);
-                    }
-                    break;
-
-                default:
-                    // mapped
-                    final AlignmentSpan alignmentSpan = new AlignmentSpan(
-                            slice.getAlignmentContext(),
-                            slice.getMappedReadsCount(),
-                            slice.getUnmappedReadsCount(),
-                            slice.getUnplacedReadsCount());
-
-                    containerSpanMap.merge(
-                            slice.getAlignmentContext().getReferenceContext(),
-                            alignmentSpan,
-                            AlignmentSpan::combine);
-                    break;
-            }
-        }
-        return containerSpanMap;
     }
 
     /**

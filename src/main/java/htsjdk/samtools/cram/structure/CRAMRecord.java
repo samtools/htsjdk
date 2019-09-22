@@ -40,10 +40,10 @@ public class CRAMRecord {
     private final int readGroupID;
     private final List<ReadTag> tags;
 
-    //TODO: used when indexing records being read from a CRAM stream ?
-    public final static int SLICE_INDEX_DEFAULT = -1;
-    //TODO: is this zero-based or 1 based ?
-    private final int sliceIndex;
+    public final static int LANDMARK_INDEX_NOT_SET = -1;
+    //TODO: this is only used to create values to call setFileSource on the SAMRecord resulting from this
+    // cramRecord, but that is only used when indexing SAM records that have been written to a BAMFileWriter ?
+    //private final int landmarkIndex; // zero-based index into container slice landmarks index
 
     // sequential index of the record in a stream:
     public final static int SEQUENTIAL_INDEX_DEFAULT = -1;
@@ -91,11 +91,11 @@ public class CRAMRecord {
         ValidationUtils.nonNull(refBases != null || samRecord.getReadUnmappedFlag() == false);
         ValidationUtils.validateArg(sequentialIndex > SEQUENTIAL_INDEX_DEFAULT, "must have a valid sequential index");
         ValidationUtils.nonNull(readGroupMap);
-        ValidationUtils.validateArg(sequentialIndex >= 0, "index must be >= 0");
 
-        //TODO: delegate to the other constructor ?
+        //TODO: can/should this constructor delegate to the other constructor ?
+
+        //landmarkIndex = LANDMARK_INDEX_NOT_SET;
         //TODO: is sliceIndex correct ? does it get reset later?
-        sliceIndex = SLICE_INDEX_DEFAULT;
         this.sequentialIndex = sequentialIndex;
 
         // default to detached state until the actual mate information state is resolved during mate
@@ -117,7 +117,6 @@ public class CRAMRecord {
         readName = encodingStrategy.getPreserveReadNames() ? samRecord.getReadName() : null;
         referenceIndex = samRecord.getReferenceIndex();
 
-        //TODO:
         //TODO: These 3 values need to mutate together; if readLength, alignmentStart, or readFeatures change,
         // then alignmentEnd needs to be recalculated
         readLength = samRecord.getReadLength();
@@ -185,7 +184,7 @@ public class CRAMRecord {
     /**
      * Create a CRAMRecord from a set of values retrieved from a serialized Slice's data series streams.
      *
-     * @param sliceIndex
+     //* @param landmarkIndex
      * @param sequentialIndex
      * @param bamFlags
      * @param cramFlags
@@ -206,7 +205,6 @@ public class CRAMRecord {
      * @param recordsToNextFragment
      */
     public CRAMRecord(
-            final int sliceIndex,
             final int sequentialIndex,
             final int bamFlags,
             final int cramFlags,
@@ -225,14 +223,13 @@ public class CRAMRecord {
             final int mateReferenceIndex,
             final int mateAlignmentStart,
             final int recordsToNextFragment) {
-        //ValidationUtils.validateArg(sliceIndex > SLICE_INDEX_DEFAULT, "must have a valid slice index");
         ValidationUtils.nonNull( qualityScores,"quality scores argument must be null or nonzero length");
         ValidationUtils.nonNull(readBases,"read bases argument cannot be null");
         ValidationUtils.validateArg(readTags == null || readTags.size() > 0, "invalid read tag argument");
         ValidationUtils.validateArg(readFeatures == null || readFeatures.size() > 0, "invalid read features argument");
         ValidationUtils.validateArg(sequentialIndex >= 0, "index must be >= 0");
 
-        this.sliceIndex = sliceIndex;
+        //this.landmarkIndex = landmarkIndex;
         this.sequentialIndex = sequentialIndex;
         this.bamFlags = bamFlags;
         this.cramFlags = cramFlags;
@@ -614,7 +611,7 @@ public class CRAMRecord {
         return sequentialIndex;
     }
 
-    public int getSliceIndex() { return sliceIndex; }
+    //public int getLandmarkIndex() { return landmarkIndex; }
 
     public CRAMRecord getNextSegment() {
         return nextSegment;
@@ -855,7 +852,7 @@ public class CRAMRecord {
         result = 31 * result + getMappingQuality();
         result = 31 * result + getReadGroupID();
         result = 31 * result + (getTags() != null ? getTags().hashCode() : 0);
-        result = 31 * result + getSliceIndex();
+        //result = 31 * result + getLandmarkIndex();
         result = 31 * result + getSequentialIndex();
         result = 31 * result + getBAMFlags();
         result = 31 * result + cramFlags;

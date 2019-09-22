@@ -40,7 +40,7 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
 
         final CompressionHeader header = new CompressionHeaderFactory().build(unmappedRecords, coordinateSorted);
 
-        final Slice slice = new Slice(unmappedRecords, header, 0L);
+        final Slice slice = new Slice(unmappedRecords, header, 0L, 0L);
         final List<CRAMRecord> roundTripRecords = slice.getCRAMRecords(new CompressorCache(), ValidationStringency.STRICT);
 
         Assert.assertEquals(roundTripRecords, unmappedRecords);
@@ -55,7 +55,6 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
         // which would otherwise be null
 
         cramRecords.add(new CRAMRecord(
-                1,
                 2,
                 SAMFlag.READ_UNMAPPED.intValue(),
                 0,
@@ -76,7 +75,6 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
                 -1));
 
         cramRecords.add(new CRAMRecord(
-                1,
                 2,
                 SAMFlag.READ_UNMAPPED.intValue(),
                 0,
@@ -97,7 +95,6 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
                 -1));
 
         cramRecords.add(new CRAMRecord(
-                1,
                 2,
                 SAMFlag.READ_UNMAPPED.intValue(),
                 0,
@@ -118,7 +115,6 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
                 -1));
 
         cramRecords.add(new CRAMRecord(
-                1,
                 2,
                 SAMFlag.READ_UNMAPPED.intValue(),
                 0,
