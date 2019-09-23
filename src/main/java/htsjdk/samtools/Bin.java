@@ -131,6 +131,32 @@ public class Bin implements Comparable<Bin> {
     }
 
     /**
+     * Adds a chunk to the bin (may be the first chunk or a later one).
+     * @param newChunk the chunk to add
+     */
+    public void addChunk(final Chunk newChunk) {
+        if (!containsChunks()) {
+            addInitialChunk(newChunk);
+        } else {
+            final long chunkStart = newChunk.getChunkStart();
+            final long chunkEnd = newChunk.getChunkEnd();
+
+            final Chunk lastChunk = getLastChunk();
+
+            // Coalesce chunks that are in the same or adjacent file blocks.
+            // Similar to AbstractBAMFileIndex.optimizeChunkList,
+            // but no need to copy the list, no minimumOffset, and maintain bin.lastChunk
+            if (BlockCompressedFilePointerUtil.areInSameOrAdjacentBlocks(
+                    lastChunk.getChunkEnd(), chunkStart)) {
+                lastChunk.setChunkEnd(chunkEnd); // coalesced
+            } else {
+                chunkList.add(newChunk);
+                setLastChunk(newChunk);
+            }
+        }
+    }
+
+    /**
      * Sets the chunks associated with this bin
      */
     public void setChunkList(final List<Chunk> list){

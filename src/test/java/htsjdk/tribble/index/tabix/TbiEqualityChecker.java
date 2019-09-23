@@ -43,6 +43,15 @@ public class TbiEqualityChecker {
 
     private BlockCompressedInputStream blockStream;
 
+    /**
+     * Assert that two tabix files for a given VCF file are equal.
+     * @param vcfFile path to the VCF file
+     * @param tbiFile1 path to the first tabix index
+     * @param tbiFile2 path to the second tabix index
+     * @param identical if true, virtual file pointers must be identical, if false, then they can be equivalent
+     *                  since two virtual file pointers can point to the same physical location in a file
+     * @throws IOException
+     */
     public static void assertEquals(Path vcfFile, Path tbiFile1, Path tbiFile2, boolean identical)
             throws IOException {
         new TbiEqualityChecker(vcfFile, tbiFile1, tbiFile2).assertEquals(identical);

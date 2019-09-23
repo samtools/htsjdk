@@ -84,7 +84,9 @@ public class BAMIndexer {
      *
      * @param output     Index will be written here.  output will be closed when finish() method is called.
      * @param fileHeader header for the corresponding bam file.
-     * @param fillInUninitializedValues TODO
+     * @param fillInUninitializedValues if true, set uninitialized values (-1) to the last non-zero offset;
+     *                                  if false, leave uninitialized values as -1, which is required when merging index files
+     *                                  (see {@link BAMIndexMerger})
      */
     public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader, final boolean fillInUninitializedValues) {
         this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), fillInUninitializedValues);

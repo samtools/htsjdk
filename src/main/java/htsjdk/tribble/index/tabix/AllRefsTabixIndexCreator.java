@@ -37,13 +37,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// This is a copy of htsjdk.tribble.index.tabix.TabixIndexCreator, except sequence
-// names are populated from the header, not from the ones that are seen. This
-// change is needed to support index merging.
-
 /**
- * IndexCreator for Tabix.
- * Features are expected to be 1-based, inclusive.
+ * This is a copy of {@link TabixIndexCreator}, except sequence
+ * names are populated from the header, not from the ones that are seen. This
+ * change is needed to support index merging.
  */
 public class AllRefsTabixIndexCreator implements IndexCreator {
     private final TabixFormat formatSpec;

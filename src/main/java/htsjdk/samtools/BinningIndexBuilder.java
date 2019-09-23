@@ -50,7 +50,9 @@ public class BinningIndexBuilder {
      *
      * @param referenceSequence
      * @param sequenceLength 0 implies unknown length.  Known length will reduce memory use.
-     * @param fillInUninitializedValues TODO
+     * @param fillInUninitializedValues if true, set uninitialized values (-1) to the last non-zero offset;
+     *                                  if false, leave uninitialized values as -1, which is required when merging index files
+     *                                  (see {@link BAMIndexMerger})
      */
     public BinningIndexBuilder(final int referenceSequence, final int sequenceLength, final boolean fillInUninitializedValues) {
         this.referenceSequence = referenceSequence;
@@ -109,25 +111,7 @@ public class BinningIndexBuilder {
 
         final Chunk newChunk = feature.getChunk();
         final long chunkStart = newChunk.getChunkStart();
-        final long chunkEnd = newChunk.getChunkEnd();
-
-        final List<Chunk> oldChunks = bin.getChunkList();
-        if (!bin.containsChunks()) {
-            bin.addInitialChunk(newChunk);
-
-        } else {
-            final Chunk lastChunk = bin.getLastChunk();
-
-            // Coalesce chunks that are in the same or adjacent file blocks.
-            // Similar to AbstractBAMFileIndex.optimizeChunkList,
-            // but no need to copy the list, no minimumOffset, and maintain bin.lastChunk
-            if (BlockCompressedFilePointerUtil.areInSameOrAdjacentBlocks(lastChunk.getChunkEnd(), chunkStart)) {
-                lastChunk.setChunkEnd(chunkEnd);  // coalesced
-            } else {
-                oldChunks.add(newChunk);
-                bin.setLastChunk(newChunk);
-            }
-        }
+        bin.addChunk(newChunk);
 
         // process linear index
 
@@ -185,7 +169,7 @@ public class BinningIndexBuilder {
                 if (fillInUninitializedValues) {
                     index[i] = lastNonZeroOffset; // not necessary, but C (samtools index) does this
                 }
-                // note, if fillInUninitializedValues is false BAMIndexWriterTest.compareTextual and compareBinary will have to change
+                // note, if fillInUninitializedValues is false BAMIndexWriterTest will have to change
             } else {
                 lastNonZeroOffset = index[i];
             }

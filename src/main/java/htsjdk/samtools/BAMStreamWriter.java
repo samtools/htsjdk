@@ -44,6 +44,15 @@ public class BAMStreamWriter {
     private SAMRecord previousSamRecord;
     private Chunk previousSamRecordChunk;
 
+    /**
+     * Create a BAMStreamWriter for writing. All output streams should be uncompressed streams, since this class
+     * performs the necessary compression. All output streams are closed by this class after {@link #finish(boolean)} returns.
+     * @param outputStream an output stream for the main BAM output
+     * @param indexStream an output stream for the BAI index, or null if no index is required
+     * @param sbiStream an output stream for the SBI index, or null if no index is required
+     * @param sbiGranularity the granularity of the SBI index (reads per entry)
+     * @param header the SAM header
+     */
     public BAMStreamWriter(OutputStream outputStream, OutputStream indexStream, OutputStream sbiStream, long sbiGranularity, SAMFileHeader header) {
         countingOut = new CountingOutputStream(outputStream);
         compressedOut = new BlockCompressedOutputStream(countingOut, (Path) null);
@@ -89,6 +98,10 @@ public class BAMStreamWriter {
         previousSamRecordChunk = new Chunk(startOffset, stopOffset);
     }
 
+    /**
+     * Finish writing and close all the streams.
+     * @param writeTerminatorBlock whether to write a BAM terminator block to the main output stream
+     */
     public void finish(final boolean writeTerminatorBlock) {
         try {
             compressedOut.close(writeTerminatorBlock);

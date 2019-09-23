@@ -36,13 +36,33 @@ import java.util.stream.Collectors;
 
 /**
  * Merges BAM index files for (headerless) parts of a BAM file into a single
- * index file. The index files must have been produced using an uninitialized window (TODO).
+ * index file. The index files must have been produced using {@link BAMIndexer} with {@code fillInUninitializedValues}
+ * set to false.
+ *
+ * A partitioned BAM is a directory containing the following files:
+ * <ol>
+ *     <li>A file named <i>header</i> containing all header bytes in BAM format.</li>
+ *     <li>Zero or more files named <i>part-00000</i>, <i>part-00001</i>, ... etc, containing a list of alignments in BAM format.</li>
+ *     <li>A file named <i>terminator</i> containing a BGZF end-of-file marker block.</li>
+ * </ol>
+ *
+ * If an index is required, a BAM index can be generated for each (headerless) part file. These files
+ * should be named <i>.part-00000.bai</i>, <i>.part-00001.bai</i>, ... etc. Note the leading <i>.</i> to make the files hidden.
+ *
+ * This format has the following properties:
+ *
+ * <ul>
+ *     <li>Parts and their indexes may be written in parallel, since one part file can be written independently of the others.</li>
+ *     <li>A BAM file can be created from a partitioned BAM file by concatenating all the non-hidden files (<i>header</i>, <i>part-00000</i>, <i>part-00001</i>, ..., <i>terminator</i>).</li>
+ *     <li>A BAM index can be created from a partitioned BAM file by merging all of the hidden files with a <i>.bai</i> suffix. Note that this is <i>not</i> a simple file concatenation operation. See {@link BAMIndexMerger}.</li>
+ * </ul>
  */
-public class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
+public final class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
 
     private static final int UNINITIALIZED_WINDOW = -1;
 
     private int numReferences = -1;
+    private SAMSequenceDictionary sequenceDictionary;
     private final List<AbstractBAMFileIndex> indexes = new ArrayList<>();
     private long noCoordinateCount;
 
@@ -55,11 +75,13 @@ public class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
         this.partLengths.add(partLength);
         if (numReferences == -1) {
             numReferences = index.getNumberOfReferences();
+            sequenceDictionary = index.getBamDictionary();
         }
         if (index.getNumberOfReferences() != numReferences) {
             throw new IllegalArgumentException(
                     String.format("Cannot merge BAI files with different number of references, %s and %s.", numReferences, index.getNumberOfReferences()));
         }
+        index.getBamDictionary().assertSameDictionary(sequenceDictionary);
         // just store the indexes rather than computing the BAMIndexContent for each ref,
         // since there may be thousands of refs and indexes, each with thousands of bins
         indexes.add(index);
@@ -72,10 +94,9 @@ public class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
             throw new IllegalArgumentException("Cannot merge zero BAI files");
         }
         final long[] offsets = partLengths.stream().mapToLong(i -> i).toArray();
-        Arrays.parallelPrefix(offsets, (a, b) -> a + b); // cumulative offsets
+        Arrays.parallelPrefix(offsets, Long::sum); // cumulative offsets
 
-        try (BinaryBAMIndexWriter writer =
-                         new BinaryBAMIndexWriter(numReferences, out)) {
+        try (BinaryBAMIndexWriter writer = new BinaryBAMIndexWriter(numReferences, out)) {
             for (int ref = 0; ref < numReferences; ref++) {
                 final int r = ref;
                 List<BAMIndexContent> bamIndexContentList = indexes.stream().map(index -> index.getQueryResults(r)).collect(Collectors.toList());
@@ -87,7 +108,7 @@ public class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
     }
 
     public static AbstractBAMFileIndex openIndex(SeekableStream stream, SAMSequenceDictionary dictionary) {
-        return new CachingBAMFileIndexOptimized(stream, dictionary);
+        return new CachingBamFileIndexOptimizedForMerging(stream, dictionary);
     }
 
     private static BAMIndexContent mergeBAMIndexContent(final int referenceSequence,
@@ -157,37 +178,17 @@ public class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
         final List<Chunk> allChunks = new ArrayList<>();
         for (Bin b : bins) {
             if (b.getReferenceSequence() != referenceSequence) {
-                throw new IllegalArgumentException("Bins have different reference sequences");
+                throw new IllegalArgumentException(String.format("Bins have different reference sequences, %s and %s.", b.getReferenceSequence(), referenceSequence));
             }
             if (b.getBinNumber() != binNumber) {
-                throw new IllegalArgumentException("Bins have different numbers");
+                throw new IllegalArgumentException(String.format("Bins have different numbers, %s and %s.", b.getBinNumber(), binNumber));
             }
             allChunks.addAll(b.getChunkList());
         }
         Collections.sort(allChunks);
         final Bin bin = new Bin(referenceSequence, binNumber);
         for (Chunk newChunk : allChunks) {
-            // logic is from BinningIndexBuilder#processFeature
-            final long chunkStart = newChunk.getChunkStart();
-            final long chunkEnd = newChunk.getChunkEnd();
-
-            final List<Chunk> oldChunks = bin.getChunkList();
-            if (!bin.containsChunks()) {
-                bin.addInitialChunk(newChunk);
-            } else {
-                final Chunk lastChunk = bin.getLastChunk();
-
-                // Coalesce chunks that are in the same or adjacent file blocks.
-                // Similar to AbstractBAMFileIndex.optimizeChunkList,
-                // but no need to copy the list, no minimumOffset, and maintain bin.lastChunk
-                if (BlockCompressedFilePointerUtil.areInSameOrAdjacentBlocks(
-                        lastChunk.getChunkEnd(), chunkStart)) {
-                    lastChunk.setChunkEnd(chunkEnd); // coalesced
-                } else {
-                    oldChunks.add(newChunk);
-                    bin.setLastChunk(newChunk);
-                }
-            }
+            bin.addChunk(newChunk);
         }
         return bin;
     }

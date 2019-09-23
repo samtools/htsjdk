@@ -39,7 +39,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Merges tabix files for parts of a file that have been concatenated.
+ * Merges tabix files for parts of a VCF file that have been concatenated.
+ *
+ * A partitioned VCF is a directory containing the following files:
+ * <ol>
+ *     <li>A file named <i>header</i> containing all header bytes in VCF format.</li>
+ *     <li>Zero or more files named <i>part-00000</i>, <i>part-00001</i>, ... etc, containing a list of VCF records.</li>
+ *     <li>A file named <i>terminator</i> containing a BGZF end-of-file marker block (only if the VCF is bgzip-compressed).</li>
+ * </ol>
+ *
+ * If the VCF is bgzip-compressed then the header and part files must be all bgzip-compressed.
+ *
+ * For a compressed VCF, if an index is required, then a tabix index can be generated for each (headerless) part file. These files
+ * should be named <i>.part-00000.tbi</i>, <i>.part-00001.tbi</i>, ... etc. Note the leading <i>.</i> to make the files hidden.
+ *
+ * This format has the following properties:
+ *
+ * <ul>
+ *     <li>Parts and their indexes may be written in parallel, since one part file can be written independently of the others.</li>
+ *     <li>A VCF file can be created from a partitioned VCF file by concatenating all the non-hidden files (<i>header</i>, <i>part-00000</i>, <i>part-00001</i>, ..., <i>terminator</i>).</li>
+ *     <li>A VCF index can be created from a partitioned VCF file by merging all of the hidden files with a <i>.tbi</i> suffix. Note that this is <i>not</i> a simple file concatenation operation. See {@link TabixIndexMerger}.</li>
+ * </ul>
  */
 public class TabixIndexMerger extends IndexMerger<TabixIndex> {
 

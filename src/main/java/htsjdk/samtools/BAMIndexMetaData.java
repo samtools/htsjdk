@@ -88,7 +88,7 @@ public class BAMIndexMetaData {
         }
     }
 
-    BAMIndexMetaData(final long firstOffset, final long lastOffset, final int alignedRecords, final int unAlignedRecords) {
+    private BAMIndexMetaData(final long firstOffset, final long lastOffset, final int alignedRecords, final int unAlignedRecords) {
         this.firstOffset = firstOffset;
         this.lastOffset = lastOffset;
         this.alignedRecords = alignedRecords;
