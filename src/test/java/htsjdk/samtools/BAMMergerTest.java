@@ -28,6 +28,7 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -90,8 +91,8 @@ public class BAMMergerTest extends HtsjdkTest {
                     partNumber++;
                     String partName = String.format("part-%05d", partNumber);
                     OutputStream out = Files.newOutputStream(outputDir.resolve(partName));
-                    OutputStream indexOut = Files.newOutputStream(outputDir.resolve("." + partName + BAMIndex.BAI_INDEX_SUFFIX));
-                    OutputStream sbiOut = Files.newOutputStream(outputDir.resolve("." + partName + SBIIndex.FILE_EXTENSION));
+                    OutputStream indexOut = Files.newOutputStream(outputDir.resolve("." + partName + FileExtensions.BAI_INDEX));
+                    OutputStream sbiOut = Files.newOutputStream(outputDir.resolve("." + partName + FileExtensions.SBI));
                     long sbiGranularity = 1; // set to one so we can test merging
                     samStreamWriter = new BAMStreamWriter(out, indexOut, sbiOut, sbiGranularity, header);
                 } catch (IOException e) {
@@ -136,17 +137,19 @@ public class BAMMergerTest extends HtsjdkTest {
         public void merge(Path dir, Path outputBam, Path outputBai, Path outputSbi) throws IOException {
             Path headerPath = dir.resolve("header");
             List<Path> bamParts = Files.list(dir)
-                    .filter(path -> !path.toString().endsWith(BAMIndex.BAI_INDEX_SUFFIX) && !path.toString().endsWith(SBIIndex.FILE_EXTENSION)) // include header and terminator
+                    .filter(path -> !path.toString().endsWith(FileExtensions.BAI_INDEX) && !path.toString().endsWith(FileExtensions.SBI)) // include header and terminator
                     .sorted()
                     .collect(Collectors.toList());
             List<Path> baiParts = Files.list(dir)
-                    .filter(path -> path.toString().endsWith(BAMIndex.BAI_INDEX_SUFFIX))
+                    .filter(path -> path.toString().endsWith(FileExtensions.BAI_INDEX))
                     .sorted()
                     .collect(Collectors.toList());
             List<Path> sbiParts = Files.list(dir)
-                    .filter(path -> path.toString().endsWith(SBIIndex.FILE_EXTENSION))
+                    .filter(path -> path.toString().endsWith(FileExtensions.SBI))
                     .sorted()
                     .collect(Collectors.toList());
+
+            Assert.assertTrue(baiParts.size() > 1);
 
             ValidationUtils.validateArg(bamParts.size() - 2 == baiParts.size(), "Number of BAM part files does not match number of BAI files (" + baiParts.size() + ")");
 
@@ -225,16 +228,16 @@ public class BAMMergerTest extends HtsjdkTest {
         final Path outputBam = File.createTempFile(this.getClass().getSimpleName() + ".", ".bam").toPath();
         IOUtil.deleteOnExit(outputBam);
 
-        final Path outputBai = IOUtil.addExtension(outputBam, BAMIndex.BAI_INDEX_SUFFIX);
+        final Path outputBai = IOUtil.addExtension(outputBam, FileExtensions.BAI_INDEX);
         IOUtil.deleteOnExit(outputBai);
 
-        final Path outputSbi = IOUtil.addExtension(outputBam, SBIIndex.FILE_EXTENSION);
+        final Path outputSbi = IOUtil.addExtension(outputBam, FileExtensions.SBI);
         IOUtil.deleteOnExit(outputSbi);
 
-        final Path outputBaiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", BAMIndex.BAI_INDEX_SUFFIX).toPath();
+        final Path outputBaiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.BAI_INDEX).toPath();
         IOUtil.deleteOnExit(outputBaiMerged);
 
-        final Path outputSbiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", SBIIndex.FILE_EXTENSION).toPath();
+        final Path outputSbiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.SBI).toPath();
         IOUtil.deleteOnExit(outputBaiMerged);
 
         // 1. Read an input BAM and write it out in partitioned form (header, parts, terminator)

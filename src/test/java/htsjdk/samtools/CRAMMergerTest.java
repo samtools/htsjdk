@@ -32,6 +32,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -103,7 +104,7 @@ public class CRAMMergerTest extends HtsjdkTest {
                     partNumber++;
                     String partName = String.format("part-%05d", partNumber);
                     OutputStream out = Files.newOutputStream(outputDir.resolve(partName));
-                    OutputStream indexOut = Files.newOutputStream(outputDir.resolve("." + partName + CRAIIndex.CRAI_INDEX_SUFFIX));
+                    OutputStream indexOut = Files.newOutputStream(outputDir.resolve("." + partName + FileExtensions.CRAM_INDEX));
                     CRAMCRAIIndexer indexer = indexOut == null ? null : new CRAMCRAIIndexer(indexOut, header);
                     samStreamWriter = new CRAMContainerStreamWriter(out, referenceSource, header, partName, indexer);
                 } catch (IOException e) {
@@ -148,13 +149,15 @@ public class CRAMMergerTest extends HtsjdkTest {
         public void merge(Path dir, Path outputCram, Path outputCrai) throws IOException {
             Path headerPath = dir.resolve("header");
             List<Path> cramParts = Files.list(dir)
-                    .filter(path -> !path.toString().endsWith(CRAIIndex.CRAI_INDEX_SUFFIX)) // include header and terminator
+                    .filter(path -> !path.toString().endsWith(FileExtensions.CRAM_INDEX)) // include header and terminator
                     .sorted()
                     .collect(Collectors.toList());
             List<Path> craiParts = Files.list(dir)
-                    .filter(path -> path.toString().endsWith(CRAIIndex.CRAI_INDEX_SUFFIX))
+                    .filter(path -> path.toString().endsWith(FileExtensions.CRAM_INDEX))
                     .sorted()
                     .collect(Collectors.toList());
+
+            Assert.assertTrue(craiParts.size() > 1);
 
             ValidationUtils.validateArg(cramParts.size() - 2 == craiParts.size(), "Number of CRAM part files does not match number of CRAI files (" + craiParts.size() + ")");
 
@@ -193,13 +196,13 @@ public class CRAMMergerTest extends HtsjdkTest {
         final Path outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".", ".tmp").toPath();
         IOUtil.deleteOnExit(outputDir);
 
-        final Path outputCram = File.createTempFile(this.getClass().getSimpleName() + ".", CramIO.CRAM_FILE_EXTENSION).toPath();
+        final Path outputCram = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.CRAM).toPath();
         IOUtil.deleteOnExit(outputCram);
 
-        final Path outputCrai = IOUtil.addExtension(outputCram, CRAIIndex.CRAI_INDEX_SUFFIX);
+        final Path outputCrai = IOUtil.addExtension(outputCram, FileExtensions.CRAM_INDEX);
         IOUtil.deleteOnExit(outputCrai);
 
-        final Path outputCraiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", CRAIIndex.CRAI_INDEX_SUFFIX).toPath();
+        final Path outputCraiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.CRAM_INDEX).toPath();
         IOUtil.deleteOnExit(outputCraiMerged);
 
         // 1. Read an input CRAM and write it out in partitioned form (header, parts, terminator)
