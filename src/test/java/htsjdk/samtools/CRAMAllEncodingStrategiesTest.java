@@ -8,6 +8,7 @@ import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.Tuple;
+import htsjdk.utils.SamtoolsTestUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -65,7 +66,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //            System.out.println(String.format("Samtools file size: %,d (%s)", Files.size(samtoolsOutFile.toPath()), samtoolsOutFile.toPath()));
 //            assertRoundTripFidelity(cramSourceFile, samtoolsOutFile, referenceFile);
 //        }
-//        tempOutCRAM.delete();
+        tempOutCRAM.delete();
     }
 
     @Test

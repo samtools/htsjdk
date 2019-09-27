@@ -38,6 +38,8 @@ public class CramNormalizer {
     }
 
     // Normalize a list of CramCompressionRecords that have been read in from a CRAM stream.
+    // The records in this list should be an entire slice, not a container, since the relative positions
+    // of mate records are determined relative to the slice (downstream) offsets.
     public void normalize(final List<CRAMRecord> records,
                           final byte[] ref,
                           final int refOffset_zeroBased,

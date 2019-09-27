@@ -29,18 +29,17 @@ public class CRAMRecord {
 
     // SAMRecord fields
     // (TODO: is this consistently 1-based ?) start position of this read, using a 1-based coordinate system
-    // TODO: these 4 fields are immutable (fixes
     private final int alignmentStart;
     private final int readLength;
     private final CRAMRecordReadFeatures readFeatures;
-    private final int alignmentEnd; // derived alignmentStart, readFeatures, and readLength by initializeAlignmentEnd
+    private final int alignmentEnd;
 
     private final int referenceIndex;
     private final int mappingQuality;
     private final int readGroupID;
     private final List<ReadTag> tags;
 
-    public final static int LANDMARK_INDEX_NOT_SET = -1;
+    //public final static int LANDMARK_INDEX_NOT_SET = -1;
     //TODO: this is only used to create values to call setFileSource on the SAMRecord resulting from this
     // cramRecord, but that is only used when indexing SAM records that have been written to a BAMFileWriter ?
     //private final int landmarkIndex; // zero-based index into container slice landmarks index
@@ -94,8 +93,7 @@ public class CRAMRecord {
 
         //TODO: can/should this constructor delegate to the other constructor ?
 
-        //landmarkIndex = LANDMARK_INDEX_NOT_SET;
-        //TODO: is sliceIndex correct ? does it get reset later?
+        //TODO: is sequentialIndex correct ? does it get reset later?
         this.sequentialIndex = sequentialIndex;
 
         // default to detached state until the actual mate information state is resolved during mate
@@ -117,8 +115,6 @@ public class CRAMRecord {
         readName = encodingStrategy.getPreserveReadNames() ? samRecord.getReadName() : null;
         referenceIndex = samRecord.getReferenceIndex();
 
-        //TODO: These 3 values need to mutate together; if readLength, alignmentStart, or readFeatures change,
-        // then alignmentEnd needs to be recalculated
         readLength = samRecord.getReadLength();
         alignmentStart = samRecord.getAlignmentStart();
         //TODO: should this call isPlaced ?
@@ -463,6 +459,7 @@ public class CRAMRecord {
         // cur points to the last segment now:
         final CRAMRecord last = cur;
         last.setNextMate(this);
+        //TODO: remove these leftover comments...once we figure confirm that the code really shouldn't be here
         //record.setFirstSegment(true);
         //last.setLastSegment(true);
 
@@ -795,10 +792,6 @@ public class CRAMRecord {
         samRecord.setSupplementaryAlignmentFlag(cramRecord.isSupplementary());
     }
 
-    //TODO: should sliceIndex be required to match ?
-    //if (getSliceIndex() != that.getSliceIndex()) return false;
-    //TODO: should sequentialIndex be required to match ?
-    //if (getSequentialIndex() != that.getSequentialIndex()) return false;
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -812,8 +805,6 @@ public class CRAMRecord {
         if (getReferenceIndex() != that.getReferenceIndex()) return false;
         if (getMappingQuality() != that.getMappingQuality()) return false;
         if (getReadGroupID() != that.getReadGroupID()) return false;
-        //TODO: should sliceIndex be required to match ?
-        //if (getSliceIndex() != that.getSliceIndex()) return false;
         //TODO: should sequentialIndex be required to match ?
         //if (getSequentialIndex() != that.getSequentialIndex()) return false;
         if (getBAMFlags() != that.getBAMFlags()) return false;

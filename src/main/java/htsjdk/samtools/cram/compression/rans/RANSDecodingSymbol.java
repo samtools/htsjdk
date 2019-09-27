@@ -9,8 +9,9 @@ class RANSDecodingSymbol {
     int freq;   // Symbol frequency.
 
     public void set(final int start, final int freq) {
-        ValidationUtils.validateArg(start <= (1 << 16), "invalid RANSDecodingSymbol start");
-        ValidationUtils.validateArg(freq <= (1 << 16) - start, "invalid RANSDecodingSymbol frequency");
+        // This method gets called a LOT so this is too expensive to leave in.
+        //ValidationUtils.validateArg(start <= (1 << 16), "invalid RANSDecodingSymbol start");
+        //ValidationUtils.validateArg(freq <= (1 << 16) - start, "invalid RANSDecodingSymbol frequency");
         this.start = start;
         this.freq = freq;
     }
