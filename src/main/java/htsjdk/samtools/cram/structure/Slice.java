@@ -182,7 +182,9 @@ public class Slice {
             final List<CRAMRecord> records,
             final CompressionHeader compressionHeader,
             final long containerByteOffset,
-            final long globalRecordCounter) {
+            final long globalRecordCounter
+            //,final byte[] referenceBases
+    ) {
         this.compressionHeader = compressionHeader;
         this.byteOffsetOfContainer = containerByteOffset;
 
@@ -225,6 +227,10 @@ public class Slice {
                 referenceContexts,
                 singleRefAlignmentStart,
                 singleRefAlignmentEnd);
+
+//        if (getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
+//            setRefMD5(referenceBases);
+//        }
 
         sliceTags = hasher.getAsTags();
         this.baseCount = baseCount;
@@ -306,19 +312,19 @@ public class Slice {
         return sliceTags;
     }
 
-    public void setSliceTags(SAMBinaryTagAndValue sliceTags) {
+    private void setSliceTags(SAMBinaryTagAndValue sliceTags) {
         this.sliceTags = sliceTags;
     }
 
-    public int getMappedReadsCount() {
+    private int getMappedReadsCount() {
         return mappedReadsCount;
     }
 
-    public int getUnmappedReadsCount() {
+    private int getUnmappedReadsCount() {
         return unmappedReadsCount;
     }
 
-    public int getUnplacedReadsCount() {
+    private int getUnplacedReadsCount() {
         return unplacedReadsCount;
     }
 
@@ -355,7 +361,7 @@ public class Slice {
      * present.
      * @return id of embedded reference block if present, otherwise {@link #EMBEDDED_REFERENCE_ABSENT_CONTENT_ID}
      */
-    public int getEmbeddedReferenceContentID() {
+    private int getEmbeddedReferenceContentID() {
         return embeddedReferenceBlockContentID;
     }
 
@@ -637,7 +643,7 @@ public class Slice {
         return md5.equals(String.format("%032x", new BigInteger(1, expectedMD5)));
     }
 
-    //TODO: WTF - what the is "brief" ???
+    //TODO: WTF - what the #$%^ is "brief" ???
     private static String getBrief(final int startOneBased, final int span, final byte[] bases, final int shoulderLength) {
         if (span >= bases.length)
             return new String(bases);
@@ -666,42 +672,32 @@ public class Slice {
 
     // *calculate* the MD5 for this reference
     public void setRefMD5(final byte[] ref) {
-        if (alignmentContext.getReferenceContext().isMultiRef()) {
-            //TODO: fix this
-            //log.warn("Attempt to set MD5 on multiref slice");
-            //throw new IllegalArgumentException("Attempt to set MD5 on multiref slice");
-        }
         alignmentBordersSanityCheck(ref);
 
         if (! alignmentContext.getReferenceContext().isMappedSingleRef() && alignmentContext.getAlignmentStart() < 1) {
             refMD5 = new byte[16];
             Arrays.fill(refMD5, (byte) 0);
-
-            log.debug("Empty slice ref md5 is set.");
         } else {
-
             final int span = Math.min(alignmentContext.getAlignmentSpan(), ref.length - alignmentContext.getAlignmentStart() + 1);
-
-            if (alignmentContext.getAlignmentStart() + span > ref.length + 1)
-                throw new RuntimeException("Invalid alignment boundaries.");
-
+            if (alignmentContext.getAlignmentStart() + span > ref.length + 1) {
+                throw new CRAMException("Invalid alignment boundaries.");
+            }
             refMD5 = SequenceUtil.calculateMD5(ref, alignmentContext.getAlignmentStart() - 1, span);
 
-            if (log.isEnabled(Log.LogLevel.DEBUG)) {
-                final StringBuilder sb = new StringBuilder();
-                final int shoulder = 10;
-                if (ref.length <= shoulder * 2)
-                    sb.append(new String(ref));
-                else {
-
-                    sb.append(getBrief(alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), ref, shoulder));
-                }
-
-                log.debug(String.format("Slice md5: %s for %s:%d-%d, %s",
-                        String.format("%032x", new BigInteger(1, refMD5)),
-                        alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentStart() + span - 1,
-                        sb.toString()));
-            }
+//            if (log.isEnabled(Log.LogLevel.DEBUG)) {
+//                final StringBuilder sb = new StringBuilder();
+//                final int shoulder = 10;
+//                if (ref.length <= shoulder * 2)
+//                    sb.append(new String(ref));
+//                else {
+//                    sb.append(getBrief(alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), ref, shoulder));
+//                }
+//
+//                log.debug(String.format("Slice md5: %s for %s:%d-%d, %s",
+//                        String.format("%032x", new BigInteger(1, refMD5)),
+//                        alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentStart() + span - 1,
+//                        sb.toString()));
+//            }
         }
     }
 
