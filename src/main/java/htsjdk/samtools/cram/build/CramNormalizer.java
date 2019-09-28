@@ -17,32 +17,28 @@
  */
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMRecord;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
 import java.util.List;
 
+//TODO: this should just move to Slice
 public class CramNormalizer {
-    private final SAMFileHeader header;
-    private CRAMReferenceSource referenceSource;
     private int readCounter = 0;
 
-    public CramNormalizer(final SAMFileHeader header, final CRAMReferenceSource referenceSource) {
+    public CramNormalizer(final CRAMReferenceSource referenceSource) {
         if (referenceSource == null) {
             throw new IllegalArgumentException("A reference is required.");
         }
-        this.header = header;
-        this.referenceSource = referenceSource;
     }
 
     // Normalize a list of CramCompressionRecords that have been read in from a CRAM stream.
     // The records in this list should be an entire slice, not a container, since the relative positions
     // of mate records are determined relative to the slice (downstream) offsets.
     public void normalize(final List<CRAMRecord> records,
-                          final byte[] ref,
-                          final int refOffset_zeroBased,
+                          CRAMReferenceState cramReferenceState,
+                          final int refOffset_zeroBased,  //TODO: WTF is this - its always 0
                           final SubstitutionMatrix substitutionMatrix) {
         final int startCounter = readCounter;
 
@@ -56,20 +52,15 @@ public class CramNormalizer {
             if (record.isMultiFragment() &&
                     !record.isDetached() &&
                     record.isHasMateDownStream()) {
-                final CRAMRecord downMate = records.get(record.getSequentialIndex() + record.getRecordsToNextFragment() - startCounter);
+                final CRAMRecord downMate = records.get(
+                        record.getSequentialIndex() + record.getRecordsToNextFragment() - startCounter
+                );
                 record.setNextSegment(downMate);
                 downMate.setPreviousSegment(record);
             }
         }
 
         for (final CRAMRecord record : records) {
-//            if (record.getPreviousSegment() != null) {
-//                continue;
-//            }
-//            if (record.getNextSegment() == null) {
-//                continue;
-//            }
-//            record.restoreMateInfo();
             if (record.getPreviousSegment() == null && record.getNextSegment() != null) {
                 record.restoreMateInfo();
             }
@@ -84,18 +75,14 @@ public class CramNormalizer {
         // resolve bases:
         for (final CRAMRecord record : records) {
             if (!record.isSegmentUnmapped()) {
-                byte[] refBases = ref;
-                // ref could be supplied (aka forced) already or needs looking up:
-                // ref.length=0 is a special case of seqId=-2 (multiref)
-                if ((ref == null || ref.length == 0) && referenceSource != null) {
-                    refBases = referenceSource.getReferenceBases(header.getSequence(record.getReferenceIndex()), true);
-                }
+                byte[] refBases = cramReferenceState.getReferenceBases(record.getReferenceIndex());
                 record.restoreReadBases(refBases, refOffset_zeroBased, substitutionMatrix);
             }
         }
 
         // restore quality scores:
         final byte defaultQualityScore = '?' - '!';
+        //TODO: this should be a CRAMRecord instance method
         CRAMRecord.restoreQualityScores(defaultQualityScore, records);
     }
     

@@ -81,7 +81,7 @@ public class CramRecordReader {
     /**
      * Initialize a Cram Record Reader
      *
-     * @param slice the slice into which the records should be reade
+     * @param slice the slice into which the records should be read
      * @param validationStringency how strict to be when reading this CRAM record
      */
     public CramRecordReader(

@@ -33,8 +33,6 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
                 { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
-//                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
-//                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
 //                { new File("/Users/cnorman/projects/references/NA12878.cram"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
@@ -44,6 +42,48 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //                { new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta") }
         };
+    }
+
+    @Test
+    public final void testMateResolution() throws IOException {
+        final File inputFile = new File("/Users/cnorman/projects/cramstuff/mateResolution.sam");
+        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+
+        final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
+        final File tempOutCRAM = File.createTempFile("testMateResolution", ".cram");
+        testWithEncodingStrategy(testStrategy, inputFile, tempOutCRAM, referenceFile);
+
+        try (final SamReader origReader = SamReaderFactory.makeDefault()
+                .referenceSequence(referenceFile)
+                .validationStringency((ValidationStringency.SILENT))
+                .open(inputFile);
+             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
+            final SAMRecordIterator origIterator = origReader.iterator();
+            final SAMRecordIterator copyIterator = copyReader.getIterator();
+            final List<SAMRecord> origSamRecords  = new ArrayList<>();
+            final List<SAMRecord> cramRecords  = new ArrayList<>();
+            while (origIterator.hasNext() && copyIterator.hasNext()) {
+                origSamRecords.add(origIterator.next());
+                cramRecords.add(copyIterator.next());
+            }
+            for (int i = 0; i < origSamRecords.size(); i++) {
+                if (!origSamRecords.get(i).equals(cramRecords.get(i))) {
+                    int it = 37;
+                    origSamRecords.get(i).equals(cramRecords.get(i));
+                }
+                Assert.assertEquals(cramRecords.get(i), origSamRecords.get(i));
+            }
+
+//                final SAMRecord rec1 = origIterator.next();
+//                final SAMRecord rec2 = copyIterator.next();
+//                if (!rec1.equals(rec2)) {
+//                    int it = 37;
+//                    rec1.equals(rec2);
+//                }
+//                Assert.assertEquals(rec2, rec1);
+//            }
+//            Assert.assertEquals(origIterator.hasNext(), copyIterator.hasNext());
+        }
     }
 
     @Test(dataProvider = "roundTripTestFiles")
@@ -70,7 +110,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     }
 
     @Test
-    public final void testReadOnlyDefaultStrategy() throws IOException {
+    public final void testReadOnly() throws IOException {
         //final File cramSourceFile = new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram");
         //final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
         final File cramSourceFile = new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
@@ -210,6 +250,22 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         }
     }
 
+    public void cramCompare(final File cramSourceFile, final File tempOutCRAM, final File referenceFile) {
+        try (final CRAMFileReader origReader = new CRAMFileReader(cramSourceFile, new ReferenceSource(referenceFile));
+             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
+            final SAMRecordIterator origIterator = origReader.getIterator();
+            final SAMRecordIterator copyIterator = copyReader.getIterator();
+            while (origIterator.hasNext() && copyIterator.hasNext()) {
+                final SAMRecord rec1 = origIterator.next();
+                final SAMRecord rec2 = copyIterator.next();
+                if (!rec1.equals(rec2)) {
+                    int it = 37;
+                    rec1.equals(rec2);
+                }
+            }
+        }
+    }
+
     public final CRAMEncodingStrategy createEncodingStrategyForParams(
            final int  gzipCompressionLevel,
            final int readsPerSlice,
@@ -240,7 +296,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     // write with encoding params and return the size of the generated file
     private long testWithEncodingStrategy(
             final CRAMEncodingStrategy cramEncodingStrategy,
-            final File inputCRAM,
+            final File inputFile,
             final File tempOutputCRAM,
             final File referenceFile) throws IOException {
         final File tempOutFile = File.createTempFile("encodingStrategiesTest", ".cram");
@@ -248,7 +304,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         try (final SamReader reader = SamReaderFactory.makeDefault()
                 .referenceSequence(referenceFile)
                 .validationStringency((ValidationStringency.SILENT))
-                .open(inputCRAM);
+                .open(inputFile);
              final FileOutputStream fos = new FileOutputStream(tempOutputCRAM)) {
             final CRAMFileWriter cramWriter = new CRAMFileWriter(
                     cramEncodingStrategy,

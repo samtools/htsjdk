@@ -172,6 +172,7 @@ public class CRAMRecordReadFeatures {
         int oneBasedPositionInRead = fromPosInRead + 1;
         int refIndex = alignmentStart + alignmentStartOffset - 1;
 
+        //TODO: NPE surfaces here if no ref bases (or ref mismatch) ?
         byte refBase;
         for (int i = 0; i < nofReadBases; i++, oneBasedPositionInRead++, refIndex++) {
             if (refIndex >= refBases.length) refBase = 'N';

@@ -23,9 +23,16 @@ public class CRAMRecord {
     // sequence is unknown; encoded reference differences are present only to recreate the CIGAR string
     public static final int CF_UNKNOWN_BASES       = 0x8;
 
+    //NOTE: "mate unmapped" and "mate negative strand" (MF_MATE_UNMAPPED and MF_MATE_NEG_STRAND, but aka
+    // MATE_REVERSE_STRAND and MATE_UNMAPPED in SAMRecord flag space - note that the flag values are different
+    // in mateFlags space and samFlags space) are modeled redundantly in the bamFlags and mateFlags fields.
+    // The spec is ambiguous about whether the serialized bamFlags field must match the bamFlags field for the
+    // underlying record (in particular, the spec says these flags need not be written, and that they can be
+    // derived, which implies that the need not be included in the serialized bamFlags field, but that puts
+    // the onus on a read implementation to propagate them manually).
     // MF data series flags (defined by the CRAM spec)
-    private static final int MF_MATE_NEG_STRAND = 0x1;
-    private static final int MF_MATE_UNMAPPED   = 0x2;    // same as SAMFlag.MATE_UNMAPPED, but different value
+    private static final int MF_MATE_NEG_STRAND = 0x1;  // same meaning as SAMFlag.MATE_REVERSE_STRAND, but different value
+    private static final int MF_MATE_UNMAPPED   = 0x2;  // same meaning as SAMFlag.MATE_UNMAPPED, but different value
 
     // SAMRecord fields
     // (TODO: is this consistently 1-based ?) start position of this read, using a 1-based coordinate system
@@ -483,7 +490,7 @@ public class CRAMRecord {
         r.previousSegment.setDetached(false);
     }
 
-    private void setToDetachedState() {
+    public void setToDetachedState() {
         setDetached(true);
         setHasMateDownStream(false);
         recordsToNextFragment = -1;
@@ -684,7 +691,6 @@ public class CRAMRecord {
 
     public static boolean isSegmentUnmapped(final int bamFlags) { return (bamFlags & SAMFlag.READ_UNMAPPED.intValue()) != 0; }
 
-    //TODO: this should reset alignment start and
     private void setSegmentUnmapped(final boolean segmentUnmapped) {
         bamFlags = segmentUnmapped ? bamFlags | SAMFlag.READ_UNMAPPED.intValue() : bamFlags & ~SAMFlag.READ_UNMAPPED.intValue();
     }
@@ -737,20 +743,37 @@ public class CRAMRecord {
         bamFlags = negativeStrand ? bamFlags | SAMFlag.READ_REVERSE_STRAND.intValue() : bamFlags & ~SAMFlag.READ_REVERSE_STRAND.intValue();
     }
 
+    //NOTE: "mate unmapped" and "mate negative strand" (MF_MATE_UNMAPPED and MF_MATE_NEG_STRAND, but aka
+    // MATE_REVERSE_STRAND and MATE_UNMAPPED in SAMRecord flag space - note that the flag values are different
+    // in mateFlags space and samFlags space) are modeled redundantly in the bamFlags and mateFlags fields.
+    // The spec is ambiguous about whether the serialized bamFlags field must match the bamFlags field for the
+    // underlying record (in particular, the spec says these flags need not be written, and that they can be
+    // derived, which implies that the need not be included in the serialized bamFlags field, but that puts
+    // the onus on a read implementation to propagate them manually).
+    // MF data series flags (defined by the CRAM spec)
     private boolean isMateUnmapped() {
         return (mateFlags & MF_MATE_UNMAPPED) != 0;
     }
-
     private void setMateUnmapped(final boolean mateUnmapped) {
-        mateFlags = mateUnmapped ? mateFlags | MF_MATE_UNMAPPED : mateFlags & ~MF_MATE_UNMAPPED;
+        mateFlags = mateUnmapped ?
+                mateFlags | MF_MATE_UNMAPPED :
+                mateFlags & ~MF_MATE_UNMAPPED;
+        bamFlags = mateUnmapped ?
+                bamFlags | SAMFlag.MATE_UNMAPPED.intValue() :
+                bamFlags & ~SAMFlag.MATE_UNMAPPED.intValue();
     }
-
+    // Note that this flag is maintained in both the bamFlags and mateFlags; we only test the
     private boolean isMateNegativeStrand() {
         return (mateFlags & MF_MATE_NEG_STRAND) != 0;
     }
-
+    // Note that this flag is maintained in both the bamFlags and mateFlags
     private void setMateNegativeStrand(final boolean mateNegativeStrand) {
-        mateFlags = mateNegativeStrand ? mateFlags | MF_MATE_NEG_STRAND : mateFlags & ~MF_MATE_NEG_STRAND;
+        mateFlags = mateNegativeStrand ?
+                mateFlags | MF_MATE_NEG_STRAND :
+                mateFlags & ~MF_MATE_NEG_STRAND;
+        bamFlags = mateNegativeStrand ?
+                bamFlags | SAMFlag.MATE_REVERSE_STRAND.intValue() :
+                bamFlags & ~SAMFlag.MATE_REVERSE_STRAND.intValue();
     }
 
     private void setHasMateDownStream(final boolean hasMateDownStream) {
@@ -843,7 +866,6 @@ public class CRAMRecord {
         result = 31 * result + getMappingQuality();
         result = 31 * result + getReadGroupID();
         result = 31 * result + (getTags() != null ? getTags().hashCode() : 0);
-        //result = 31 * result + getLandmarkIndex();
         result = 31 * result + getSequentialIndex();
         result = 31 * result + getBAMFlags();
         result = 31 * result + cramFlags;

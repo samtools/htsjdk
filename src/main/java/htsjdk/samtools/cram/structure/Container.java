@@ -21,10 +21,13 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.build.CRAMReferenceState;
 import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.BufferedLineReader;
@@ -32,6 +35,7 @@ import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -322,6 +326,43 @@ public class Container {
             records.addAll(slice.getCRAMRecords(compressorCache, validationStringency));
         }
         return records;
+    }
+
+    public List<SAMRecord> getSAMRecords(
+            final ValidationStringency validationStringency,
+            final CramNormalizer cramNormalizer,
+            final CRAMReferenceState cramReferenceState,
+            final CompressorCache compressorCache,
+            final SAMFileHeader samFileHeader) {
+        final List<CRAMRecord> cramRecords = getCRAMRecords(validationStringency, compressorCache);
+        final List<SAMRecord> samRecords = new ArrayList<>(cramRecords.size());
+
+        for (final Slice slice : getSlices()) {
+            if (slice.getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
+                final byte[] referenceBases = cramReferenceState.getReferenceBases(
+                        slice.getAlignmentContext().getReferenceContext().getReferenceSequenceID()
+                );
+
+                if (!slice.validateReferenceMD5(referenceBases)) {
+                    final String msg = String.format(
+                            "Reference sequence MD5 mismatch for slice: %s, expected MD5 %s",
+                            slice.getAlignmentContext(),
+                            String.format("%032x", new BigInteger(1, slice.getRefMD5())));
+                    throw new CRAMException(msg);
+                }
+            }
+
+            cramNormalizer.normalize(cramRecords, cramReferenceState, 0, getCompressionHeader().substitutionMatrix);
+
+            for (final CRAMRecord cramRecord : cramRecords) {
+                final SAMRecord samRecord = cramRecord.toSAMRecord(samFileHeader);
+                samRecord.setValidationStringency(validationStringency);
+                samRecords.add(samRecord);
+            }
+        }
+
+        cramRecords.clear();
+        return samRecords;
     }
 
     public ContainerHeader getContainerHeader() { return containerHeader; }

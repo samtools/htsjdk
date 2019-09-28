@@ -573,20 +573,22 @@ public class Slice {
         }
     }
 
-    private void alignmentBordersSanityCheck(final byte[] ref) {
+    private void validateAlignmentSpanForReference(final byte[] referenceBases) {
         if (alignmentContext.getReferenceContext().isUnmappedUnplaced()) {
             return;
         }
 
-        if (alignmentContext.getAlignmentStart() > 0 && alignmentContext.getReferenceContext().isMappedSingleRef() && ref == null) {
-            throw new IllegalArgumentException ("Mapped slice reference is null.");
+        if (referenceBases == null &&
+                alignmentContext.getAlignmentStart() > 0 &&
+                alignmentContext.getReferenceContext().isMappedSingleRef()) {
+            throw new CRAMException ("No reference bases found for mapped slice .");
         }
 
         //TODO: CRAMComplianceTest/c1#bounds triggers this (the reads are mapped beyond reference length),
         // and CRAMEdgeCasesTest.testNullsAndBeyondRef seems to deliberately test that reads that extend
         // beyond the reference length should be ok ?
         // Is there any case where being mapped outside of the reference span is legitimate ?
-        if (alignmentContext.getAlignmentStart() > ref.length) {
+        if (alignmentContext.getAlignmentStart() > referenceBases.length) {
             log.warn(String.format(
                     "Slice mapped outside of reference: seqID=%s, start=%d, record counter=%d.",
                     alignmentContext.getReferenceContext(),
@@ -594,9 +596,7 @@ public class Slice {
                     globalRecordCounter));
         }
 
-        if (alignmentContext.getAlignmentStart() - 1 + alignmentContext.getAlignmentSpan() > ref.length) {
-            //TODO: should this throw ?
-            //throw new CRAMException(String.format("Slice mapped outside of reference: seqID=%s, start=%d, span=%d, counter=%d.",
+        if (alignmentContext.getAlignmentStart() - 1 + alignmentContext.getAlignmentSpan() > referenceBases.length) {
             log.warn(String.format("Slice mapped outside of reference: seqID=%s, start=%d, span=%d, counter=%d.",
                     alignmentContext.getReferenceContext(),
                     alignmentContext.getAlignmentStart(),
@@ -605,48 +605,71 @@ public class Slice {
         }
     }
 
-    //TODO: this is only used by CRAMIterator - can it be delegated here?
-    public boolean validateRefMD5(final byte[] ref) {
+    public boolean validateReferenceMD5(final byte[] referenceBases) {
         if (alignmentContext.getReferenceContext().isMultiRef()) {
             throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
         }
-
         if (alignmentContext.getReferenceContext().isUnmappedUnplaced()) {
             return true;
         }
 
-        alignmentBordersSanityCheck(ref);
+        validateAlignmentSpanForReference(referenceBases);
 
-        if (!validateRefMD5(ref, alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), refMD5)) {
+        if (!validateReferenceMD5(
+                referenceBases,
+                alignmentContext.getAlignmentStart(),
+                alignmentContext.getAlignmentSpan(),
+                refMD5)) {
+            System.out.println("Failed MD5 check on full slice span - trying narrower span");
+            //TODO: does the spec allow matching on partial reference like this ?
             final int shoulderLength = 10;
-            final String excerpt = getBrief(alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), ref, shoulderLength);
-
-            if (validateRefMD5(ref, alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan() - 1, refMD5)) {
+            final String excerpt = getReferenceBaseExcerpt(alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), referenceBases, shoulderLength);
+            if (validateReferenceMD5(
+                    referenceBases,
+                    alignmentContext.getAlignmentStart(),
+                    alignmentContext.getAlignmentSpan() - 1,
+                    refMD5)) {
                 log.warn(String.format("Reference MD5 matches partially for slice %s:%d-%d, %s",
-                        alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(),
-                        alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1, excerpt));
+                        alignmentContext.getReferenceContext(),
+                        alignmentContext.getAlignmentStart(),
+                        alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
+                        excerpt));
                 return true;
             }
 
             log.error(String.format("Reference MD5 mismatch for slice %s:%d-%d, %s",
                     alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentStart() +
                             alignmentContext.getAlignmentSpan() - 1, excerpt));
+            log.error(String.format(
+                    "Reference MD5 mismatch for slice %s:%d-%d, %s",
+                    alignmentContext.getReferenceContext(),
+                    alignmentContext.getAlignmentStart(),
+                    alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
+                    excerpt));
             return false;
         }
 
         return true;
     }
 
-    private static boolean validateRefMD5(final byte[] ref, final int alignmentStart, final int alignmentSpan, final byte[] expectedMD5) {
-        final int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
-        final String md5 = SequenceUtil.calculateMD5String(ref, alignmentStart - 1, span);
+    private static boolean validateReferenceMD5(
+            final byte[] referenceBases,
+            final int alignmentStart,
+            final int alignmentSpan,
+            final byte[] expectedMD5) {
+        final int span = Math.min(alignmentSpan, referenceBases.length - alignmentStart + 1);
+        final String md5 = SequenceUtil.calculateMD5String(referenceBases, alignmentStart - 1, span);
         return md5.equals(String.format("%032x", new BigInteger(1, expectedMD5)));
     }
 
-    //TODO: WTF - what the #$%^ is "brief" ???
-    private static String getBrief(final int startOneBased, final int span, final byte[] bases, final int shoulderLength) {
-        if (span >= bases.length)
+    private static String getReferenceBaseExcerpt(
+            final int startOneBased,
+            final int span,
+            final byte[] bases,
+            final int shoulderLength) {
+        if (span >= bases.length) {
             return new String(bases);
+        }
 
         final StringBuilder sb = new StringBuilder();
         final int fromInc = startOneBased - 1;
@@ -672,7 +695,7 @@ public class Slice {
 
     // *calculate* the MD5 for this reference
     public void setRefMD5(final byte[] ref) {
-        alignmentBordersSanityCheck(ref);
+        validateAlignmentSpanForReference(ref);
 
         if (! alignmentContext.getReferenceContext().isMappedSingleRef() && alignmentContext.getAlignmentStart() < 1) {
             refMD5 = new byte[16];
@@ -684,20 +707,6 @@ public class Slice {
             }
             refMD5 = SequenceUtil.calculateMD5(ref, alignmentContext.getAlignmentStart() - 1, span);
 
-//            if (log.isEnabled(Log.LogLevel.DEBUG)) {
-//                final StringBuilder sb = new StringBuilder();
-//                final int shoulder = 10;
-//                if (ref.length <= shoulder * 2)
-//                    sb.append(new String(ref));
-//                else {
-//                    sb.append(getBrief(alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), ref, shoulder));
-//                }
-//
-//                log.debug(String.format("Slice md5: %s for %s:%d-%d, %s",
-//                        String.format("%032x", new BigInteger(1, refMD5)),
-//                        alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentStart() + span - 1,
-//                        sb.toString()));
-//            }
         }
     }
 
@@ -778,10 +787,12 @@ public class Slice {
             throw new IllegalStateException("can only create multiref span reader for multiref context slice");
         }
 
-        // Ideally, we wouldn't have to completely decode the records just to get the slice spans; multi-ref
+        // Ideally, we wouldn't have to decode the records just to get the slice spans; multi-ref
         // slices use the RI series for the reference index so in theory we could just decode that; but we also
         // need the alignment start and span for indexing. Is it possible to do this more efficiently ?
         // See https://github.com/samtools/htsjdk/issues/1347.
+        // Note that this doesn't normalize the CRAMRecords, which saves actually resolving the bases
+        // against the reference.
         final List<CRAMRecord> cramRecords = getCRAMRecords(compressorCache, validationStringency);
 
         final Map<ReferenceContext, AlignmentSpan> spans = new HashMap<>();

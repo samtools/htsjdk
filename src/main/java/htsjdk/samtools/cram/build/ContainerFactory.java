@@ -93,7 +93,7 @@ public class ContainerFactory {
             if (shouldEmitContainer(
                     currentReferenceContextID,
                     nextRecordIndex,
-                    sliceFactory.getNumberOfSLiceEntries())) {
+                    sliceFactory.getNumberOfSliceEntries())) {
                 container = makeContainer(containerByteOffset);
             }
             currentReferenceContextID = nextRecordIndex;
@@ -129,7 +129,7 @@ public class ContainerFactory {
             sliceFactory.addSliceEntry(currentReferenceContextID, sliceSAMRecords);
             sliceSAMRecords.clear();
         }
-        if (sliceFactory.getNumberOfSLiceEntries() != 0) {
+        if (sliceFactory.getNumberOfSliceEntries() != 0) {
             final Container container = makeContainer(streamOffset);
             currentReferenceContextID = ReferenceContext.UNINITIALIZED_REFERENCE_ID;
             return container;
@@ -150,7 +150,7 @@ public class ContainerFactory {
      */
     private final Container makeContainer(final long containerByteOffset) {
         ValidationUtils.validateArg(
-                sliceFactory.getNumberOfSLiceEntries() != 0,
+                sliceFactory.getNumberOfSliceEntries() != 0,
                 "must have slice entries to create a container");
 
         // Create the compression header, then convert to slices. The compression header  must
