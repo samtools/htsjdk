@@ -352,7 +352,7 @@ public class Container {
                 }
             }
 
-            slice.normalize(cramRecords, cramReferenceState, 0, getCompressionHeader().substitutionMatrix);
+            slice.normalize(cramRecords, cramReferenceState, 0, getCompressionHeader().getSubstitutionMatrix());
 
             for (final CRAMRecord cramRecord : cramRecords) {
                 final SAMRecord samRecord = cramRecord.toSAMRecord(samFileHeader);

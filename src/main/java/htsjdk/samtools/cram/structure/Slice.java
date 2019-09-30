@@ -825,7 +825,7 @@ public class Slice {
     public Map<ReferenceContext, AlignmentSpan> getMultiRefAlignmentSpans(
             final CompressorCache compressorCache,
             final ValidationStringency validationStringency) {
-        if (!compressionHeader.isCoordinateSorted()) {
+        if (!compressionHeader.isAPDelta()) {
             throw new IllegalStateException("Can't get multiref alignment spans for non-coordinate sorted inputs");
         }
         if (!getAlignmentContext().getReferenceContext().isMultiRef()) {
@@ -900,7 +900,7 @@ public class Slice {
     // Slices containing solely unmapped unplaced data (reference ID -1) still require values for all columns,
     // although the alignment start and span will be ignored. It is recommended that they are both set to zero.
     public List<CRAIEntry> getCRAIEntries(final CompressorCache compressorCache) {
-        if (! compressionHeader.isCoordinateSorted()) {
+        if (! compressionHeader.isAPDelta()) {
             throw new CRAMException("Cannot construct index if the CRAM is not coordinate Sorted");
         }
 
@@ -944,7 +944,7 @@ public class Slice {
      * @return a list of BAIEntry Index Entries derived from this Slice
      */
     public List<BAIEntry> getBAIEntries(final CompressorCache compressorCache) {
-        if (!compressionHeader.isCoordinateSorted()) {
+        if (!compressionHeader.isAPDelta()) {
             throw new CRAMException("Cannot construct index if the CRAM is not coordinate sorted");
         }
 

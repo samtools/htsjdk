@@ -32,7 +32,7 @@ public class CRAMReferenceState {
                     referenceIndex != referenceBasesContextID) {
                 final SAMSequenceRecord sequence = samFileHeader.getSequence(referenceIndex);
                 //TODO remove me
-                System.out.println(String.format("Retrieving reference sequence for index %d", referenceIndex));
+                //System.out.println(String.format("Retrieving reference sequence for index %d", referenceIndex));
                 referenceBases = referenceSource.getReferenceBases(sequence, true);
                 referenceBasesContextID = referenceIndex;
             }
