@@ -23,11 +23,9 @@ import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CRAMReferenceState;
 import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.InputStreamUtils;
-import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.BufferedLineReader;
@@ -316,6 +314,7 @@ public class Container {
     //TODO: this unpacks all slices
     //TODO: note that this does not require a reference, which is good, since we need to be able to use it to
     // get raw CRAM records during indexing, and we don;t want that to require a reference
+    //Visible for testing
     public List<CRAMRecord> getCRAMRecords(final ValidationStringency validationStringency, final CompressorCache compressorCache) {
         if (isEOF()) {
             return Collections.emptyList();
@@ -328,9 +327,10 @@ public class Container {
         return records;
     }
 
+    // This public method should hand out slices, and let the caller get the SAMRecords out of the slice, for
+    // symmetry with the constructor (which takes Slices).
     public List<SAMRecord> getSAMRecords(
             final ValidationStringency validationStringency,
-            final CramNormalizer cramNormalizer,
             final CRAMReferenceState cramReferenceState,
             final CompressorCache compressorCache,
             final SAMFileHeader samFileHeader) {
@@ -352,7 +352,7 @@ public class Container {
                 }
             }
 
-            cramNormalizer.normalize(cramRecords, cramReferenceState, 0, getCompressionHeader().substitutionMatrix);
+            slice.normalize(cramRecords, cramReferenceState, 0, getCompressionHeader().substitutionMatrix);
 
             for (final CRAMRecord cramRecord : cramRecords) {
                 final SAMRecord samRecord = cramRecord.toSAMRecord(samFileHeader);

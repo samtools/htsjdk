@@ -151,7 +151,7 @@ public class CramRecordReader {
      * @return the newly-read CRAMRecord
      */
     public CRAMRecord read(
-            final int sequentialIndex,
+            final long sequentialIndex,
             final int prevAlignmentStart) {
         // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,
         // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.

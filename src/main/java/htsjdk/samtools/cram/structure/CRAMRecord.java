@@ -53,8 +53,7 @@ public class CRAMRecord {
 
     // sequential index of the record in a stream:
     public final static int SEQUENTIAL_INDEX_DEFAULT = -1;
-    //TODO: is this zero-based or 1 based ?
-    private int sequentialIndex;
+    private final long sequentialIndex; // 1 based sequential index of this record in the cram stream
 
     private int bamFlags;
     private int cramFlags;
@@ -88,7 +87,7 @@ public class CRAMRecord {
             final CRAMEncodingStrategy encodingStrategy,
             final SAMRecord samRecord,
             final byte[] refBases,
-            final int sequentialIndex,
+            final long sequentialIndex,
             final Map<String, Integer> readGroupMap) {
         ValidationUtils.nonNull(cramVersion);
         ValidationUtils.nonNull(encodingStrategy);
@@ -208,7 +207,7 @@ public class CRAMRecord {
      * @param recordsToNextFragment
      */
     public CRAMRecord(
-            final int sequentialIndex,
+            final long sequentialIndex,
             final int bamFlags,
             final int cramFlags,
             final String readName,
@@ -481,7 +480,7 @@ public class CRAMRecord {
         while (prev.nextSegment != null) {
             prev = prev.nextSegment;
         }
-        prev.recordsToNextFragment = r.sequentialIndex - prev.sequentialIndex - 1;
+        prev.recordsToNextFragment = (int) (r.sequentialIndex - prev.sequentialIndex - 1);
         prev.nextSegment = r;
         r.previousSegment = prev;
         r.previousSegment.setHasMateDownStream(true);
@@ -601,17 +600,8 @@ public class CRAMRecord {
      */
     public int getAlignmentEnd() { return alignmentEnd; }
 
-    public void setSequentialIndex(int sequentialIndex) {
-        if (this.sequentialIndex != sequentialIndex) {
-            // TODO: if this ever gets hit then we do need to reset the index in CRAMNormalizer
-            // happens all the time...
-            //throw new IllegalArgumentException("Note to self: setting sequential index to a new value");
-        }
-        this.sequentialIndex = sequentialIndex;
-    }
-
     //TODO: used in read name generation and mate restoration
-    public int getSequentialIndex() {
+    public long getSequentialIndex() {
         return sequentialIndex;
     }
 
@@ -638,7 +628,9 @@ public class CRAMRecord {
     }
 
     private void setSecondaryAlignment(final boolean secondaryAlignment) {
-        bamFlags = secondaryAlignment ? bamFlags | SAMFlag.SECONDARY_ALIGNMENT.intValue() : bamFlags & ~SAMFlag.SECONDARY_ALIGNMENT.intValue();
+        bamFlags = secondaryAlignment ?
+                bamFlags | SAMFlag.SECONDARY_ALIGNMENT.intValue() :
+                bamFlags & ~SAMFlag.SECONDARY_ALIGNMENT.intValue();
     }
 
     public boolean isHasMateDownStream() {
@@ -695,7 +687,7 @@ public class CRAMRecord {
         bamFlags = segmentUnmapped ? bamFlags | SAMFlag.READ_UNMAPPED.intValue() : bamFlags & ~SAMFlag.READ_UNMAPPED.intValue();
     }
 
-    private boolean isFirstSegment() {
+    public boolean isFirstSegment() {
         return (bamFlags & SAMFlag.FIRST_OF_PAIR.intValue()) != 0;
     }
 
@@ -703,7 +695,7 @@ public class CRAMRecord {
         bamFlags = firstSegment ? bamFlags | SAMFlag.FIRST_OF_PAIR.intValue() : bamFlags & ~SAMFlag.FIRST_OF_PAIR.intValue();
     }
 
-    private boolean isLastSegment() {
+    public boolean isLastSegment() {
         return (bamFlags & SAMFlag.SECOND_OF_PAIR.intValue()) != 0;
     }
 
@@ -780,7 +772,7 @@ public class CRAMRecord {
         cramFlags = hasMateDownStream ? cramFlags | CF_HAS_MATE_DOWNSTREAM : cramFlags & ~CF_HAS_MATE_DOWNSTREAM;
     }
 
-    private void setDetached(final boolean detached) {
+    public void setDetached(final boolean detached) {
         cramFlags = detached ? cramFlags | CF_DETACHED : cramFlags & ~CF_DETACHED;
     }
 
@@ -866,7 +858,7 @@ public class CRAMRecord {
         result = 31 * result + getMappingQuality();
         result = 31 * result + getReadGroupID();
         result = 31 * result + (getTags() != null ? getTags().hashCode() : 0);
-        result = 31 * result + getSequentialIndex();
+        result = 31 * result + Long.hashCode(getSequentialIndex());
         result = 31 * result + getBAMFlags();
         result = 31 * result + cramFlags;
         result = 31 * result + getTemplateSize();

@@ -116,7 +116,10 @@ public class SliceFactoryTest  extends HtsjdkTest {
             final int nextReferenceContext,
             final int expectedUpdatedReferenceContext) {
         final SliceFactory sliceFactory = new SliceFactory(
-                new CRAMEncodingStrategy(), CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER);
+                new CRAMEncodingStrategy(),
+                CRAMStructureTestHelper.REFERENCE_SOURCE,
+                CRAMStructureTestHelper.SAM_FILE_HEADER,
+                0L);
         Assert.assertEquals(
                 sliceFactory.shouldEmitSlice(currentReferenceContext, nextReferenceContext, nRecordsSeen),
                 expectedUpdatedReferenceContext
@@ -150,7 +153,8 @@ public class SliceFactoryTest  extends HtsjdkTest {
         final SliceFactory sliceFactory = new SliceFactory(
                 new CRAMEncodingStrategy(),
                 CRAMStructureTestHelper.REFERENCE_SOURCE,
-                CRAMStructureTestHelper.SAM_FILE_HEADER);
+                CRAMStructureTestHelper.SAM_FILE_HEADER,
+                0L);
         sliceFactory.shouldEmitSlice(currentReferenceContext, nextReferenceContext, nRecordsSeen);
     }
 
@@ -193,7 +197,8 @@ public class SliceFactoryTest  extends HtsjdkTest {
         final SliceFactory sliceFactory = new SliceFactory(
                 new CRAMEncodingStrategy(),
                 CRAMStructureTestHelper.REFERENCE_SOURCE,
-                querySortedSAMFileHeader);
+                querySortedSAMFileHeader,
+                0L);
         Assert.assertEquals(
                 sliceFactory.shouldEmitSlice(currentReferenceContext, nextReferenceContext, nRecordsSeen),
                 expectedUpdatedReferenceContext

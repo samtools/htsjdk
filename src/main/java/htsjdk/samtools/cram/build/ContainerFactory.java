@@ -68,7 +68,7 @@ public class ContainerFactory {
 
         this.coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
         compressionHeaderFactory = new CompressionHeaderFactory(encodingStrategy);
-        sliceFactory = new SliceFactory(encodingStrategy, referenceSource, samFileHeader);
+        sliceFactory = new SliceFactory(encodingStrategy, referenceSource, samFileHeader, globalRecordCounter);
         sliceSAMRecords = new ArrayList<>(this.encodingStrategy.getReadsPerSlice());
     }
 
@@ -161,7 +161,7 @@ public class ContainerFactory {
                 coordinateSorted);
         final Container container = new Container(
                 compressionHeader,
-                sliceFactory.getSlices(compressionHeader, containerByteOffset, globalRecordCounter),
+                sliceFactory.getSlices(compressionHeader, containerByteOffset),
                 containerByteOffset,
                 globalRecordCounter);
         globalRecordCounter += container.getContainerHeader().getNumberOfRecords();
