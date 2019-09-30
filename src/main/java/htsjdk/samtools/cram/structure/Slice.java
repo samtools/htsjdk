@@ -21,6 +21,7 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.build.CRAMReferenceState;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.digest.ContentDigests;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
@@ -182,9 +183,7 @@ public class Slice {
             final List<CRAMRecord> records,
             final CompressionHeader compressionHeader,
             final long containerByteOffset,
-            final long globalRecordCounter
-            //,final byte[] referenceBases
-    ) {
+            final long globalRecordCounter) {
         this.compressionHeader = compressionHeader;
         this.byteOffsetOfContainer = containerByteOffset;
 
@@ -403,6 +402,7 @@ public class Slice {
         return compressionHeader;
     }
 
+    //TODO: Note that this is what ACTUALLY decodes the underlying blocks
     public ArrayList<CRAMRecord> getCRAMRecords(final CompressorCache compressorCache, final ValidationStringency validationStringency) {
         final CramRecordReader reader = new CramRecordReader(this, compressorCache, validationStringency);
         final ArrayList<CRAMRecord> records = new ArrayList<>(nRecords);
@@ -410,13 +410,58 @@ public class Slice {
         int prevAlignmentStart = alignmentContext.getAlignmentStart();
         for (int i = 0; i < nRecords; i++) {
             // read the new record and update the running prevAlignmentStart
-            //TODO: this should use globalrecordCounter+i rather than i
-            final CRAMRecord cramRecord = reader.read(i, prevAlignmentStart);
+            final CRAMRecord cramRecord = reader.read(globalRecordCounter + i, prevAlignmentStart);
             prevAlignmentStart = cramRecord.getAlignmentStart();
             records.add(cramRecord);
         }
 
         return records;
+    }
+
+    // Normalize a list of CramCompressionRecords that have been read in from a CRAM stream.
+    // The records in this list should be an entire slice, not a container, since the relative positions
+    // of mate records are determined relative to the slice (downstream) offsets.
+    public void normalize(final List<CRAMRecord> records,
+                          CRAMReferenceState cramReferenceState,
+                          final int refOffset_zeroBased,  //TODO: WTF is this - its always 0
+                          final SubstitutionMatrix substitutionMatrix) {
+        // restore pairing first:
+        for (final CRAMRecord record : records) {
+            if (record.isMultiFragment() &&
+                    !record.isDetached() &&
+                    record.isHasMateDownStream()) {
+                final CRAMRecord downMate = records.get(
+                        //TODO: add a mehtod to do this calc
+                        (int) (record.getSequentialIndex() + record.getRecordsToNextFragment() + 1L - globalRecordCounter));
+                record.setNextSegment(downMate);
+                downMate.setPreviousSegment(record);
+            }
+        }
+
+        for (final CRAMRecord record : records) {
+            if (record.getPreviousSegment() == null && record.getNextSegment() != null) {
+                record.restoreMateInfo();
+            }
+        }
+
+        // assign some read names if needed:
+        for (final CRAMRecord record : records) {
+            // TODO: need encodingStrategy for read name prefix
+            record.assignReadName();
+        }
+
+        // resolve bases:
+        for (final CRAMRecord record : records) {
+            if (!record.isSegmentUnmapped()) {
+                byte[] refBases = cramReferenceState.getReferenceBases(record.getReferenceIndex());
+                record.restoreReadBases(refBases, refOffset_zeroBased, substitutionMatrix);
+            }
+        }
+
+        // restore quality scores:
+        final byte defaultQualityScore = '?' - '!';
+        //TODO: this should be a CRAMRecord instance method
+        CRAMRecord.restoreQualityScores(defaultQualityScore, records);
     }
 
     private int caclulateNumberOfBlocks() {

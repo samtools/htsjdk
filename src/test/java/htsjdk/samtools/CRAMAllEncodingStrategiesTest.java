@@ -73,16 +73,6 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 }
                 Assert.assertEquals(cramRecords.get(i), origSamRecords.get(i));
             }
-
-//                final SAMRecord rec1 = origIterator.next();
-//                final SAMRecord rec2 = copyIterator.next();
-//                if (!rec1.equals(rec2)) {
-//                    int it = 37;
-//                    rec1.equals(rec2);
-//                }
-//                Assert.assertEquals(rec2, rec1);
-//            }
-//            Assert.assertEquals(origIterator.hasNext(), copyIterator.hasNext());
         }
     }
 

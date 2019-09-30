@@ -18,7 +18,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.build.CRAMReferenceState;
 import htsjdk.samtools.cram.build.CramContainerIterator;
-import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.build.CramSpanContainerIterator;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
@@ -36,8 +35,6 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
 
-    //TODO: its redundant to have both of these
-    private final CramNormalizer cramNormalizer;
     private final CRAMReferenceState cramReferenceState;
 
     //TODO: this should have a better (common) type (ContainerIterator??)
@@ -73,8 +70,6 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
         firstContainerOffset = this.countingInputStream.getCount();
         //TODO: this needs a smarter initializer param (don't need encoding strategy here)
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
-        //TODO: make thes have the same ar order
-        cramNormalizer = new CramNormalizer(referenceSource);
         cramReferenceState = new CRAMReferenceState(referenceSource, cramHeader.getSamFileHeader());
     }
 
@@ -92,7 +87,6 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
         //TODO: this needs a smarter initializer param (don't need encoding strategy here)
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
         cramReferenceState = new CRAMReferenceState(referenceSource, cramHeader.getSamFileHeader());
-        cramNormalizer = new CramNormalizer(referenceSource);
     }
 
     @Deprecated
@@ -123,11 +117,8 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
             }
         }
 
-        //TODO: its not clear we need to retain the normalizer across containers - its more important
-        // to retain the (caching) reference source
         samRecords = container.getSAMRecords(
                 validationStringency,
-                cramNormalizer,
                 cramReferenceState,
                 compressorCache,
                 getSAMFileHeader());

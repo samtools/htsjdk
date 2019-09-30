@@ -40,7 +40,7 @@ public class CramRecordWriter {
     private final DataSeriesWriter<Integer> alStartC;
     private final DataSeriesWriter<Integer> readGroupC;
     private final DataSeriesWriter<byte[]> readNameC;
-    private final DataSeriesWriter<Integer> distanceC;
+    private final DataSeriesWriter<Integer> distanceC; // TODO: recordsToNextFragment!
     private final Map<Integer, DataSeriesWriter<byte[]>> tagValueCodecs;
     private final DataSeriesWriter<Integer> numberOfReadFeaturesCodec;
     private final DataSeriesWriter<Integer> featurePositionCodec;

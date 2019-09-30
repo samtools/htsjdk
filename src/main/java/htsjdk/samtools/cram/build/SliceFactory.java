@@ -19,6 +19,7 @@ public class SliceFactory {
     private final List<SliceEntry> cramRecordSliceEntries;
     private final CRAMReferenceState cramReferenceState;
 
+    private long sliceRecordCounter;
     private final int maxRecordsPerSlice;
     private final int minimumSingleReferenceSliceThreshold;
     private final boolean coordinateSorted;
@@ -28,7 +29,8 @@ public class SliceFactory {
     public SliceFactory(
             final CRAMEncodingStrategy cramEncodingStrategy,
             final CRAMReferenceSource cramReferenceSource,
-            final SAMFileHeader samFileHeader) {
+            final SAMFileHeader samFileHeader,
+            final long globalRecordCounter) {
         this.encodingStrategy = cramEncodingStrategy;
         this.cramReferenceState = new CRAMReferenceState(cramReferenceSource, samFileHeader);
 
@@ -36,6 +38,7 @@ public class SliceFactory {
         maxRecordsPerSlice = this.encodingStrategy.getReadsPerSlice();
         this.coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
 
+        this.sliceRecordCounter = globalRecordCounter;
         cramRecordSliceEntries = new ArrayList<>(this.encodingStrategy.getSlicesPerContainer());
 
         // create our read group id map
@@ -53,13 +56,13 @@ public class SliceFactory {
      * @param sliceSAMRecords
      * @return
      */
-    public void addSliceEntry(final int currentReferenceContextID, final List<SAMRecord> sliceSAMRecords) {
+    public long addSliceEntry(final int currentReferenceContextID, final List<SAMRecord> sliceSAMRecords) {
         cramRecordSliceEntries.add(
                 new SliceEntry(
                         currentReferenceContextID,
-                        convertToCRAMRecords(sliceSAMRecords),
-                        cramReferenceState.getCurrentReferenceBases())
-        );
+                        convertToCRAMRecords(sliceSAMRecords, sliceRecordCounter),
+                        sliceRecordCounter));
+        return sliceRecordCounter + sliceSAMRecords.size();
     }
 
     //convert the SAMRecords to CRAMRecords, and return as a list
@@ -80,27 +83,24 @@ public class SliceFactory {
 
     public List<Slice> getSlices(
             final CompressionHeader compressionHeader,
-            final long containerByteOffset,
-            final long globalRecordCounter) {
-        long sliceRecordCounter = globalRecordCounter;
+            final long containerByteOffset) {
         final List<Slice> slices = new ArrayList<>(cramRecordSliceEntries.size());
         for (final SliceEntry sliceEntry : cramRecordSliceEntries) {
             final Slice slice = new Slice(
                     sliceEntry.getRecords(),
                     compressionHeader,
                     containerByteOffset,
-                    sliceRecordCounter
+                    sliceEntry.getGlobalRecordCounter()
             );
             slice.setRefMD5(cramReferenceState.getCurrentReferenceBases());
             slices.add(slice);
-            sliceRecordCounter += sliceEntry.getRecords().size();
         }
         cramRecordSliceEntries.clear();
         return slices;
     }
 
-    private final List<CRAMRecord> convertToCRAMRecords(final List<SAMRecord> samRecords) {
-        int recordIndex = 0;
+    private final List<CRAMRecord> convertToCRAMRecords(final List<SAMRecord> samRecords, final long sliceRecordCounter) {
+        long recordIndex = sliceRecordCounter;
         final List<CRAMRecord> cramRecords = new ArrayList<>();
         for (final SAMRecord samRecord : samRecords) {
             int referenceIndex = samRecord.getReferenceIndex();
@@ -109,7 +109,7 @@ public class SliceFactory {
                     encodingStrategy,
                     samRecord,
                     cramReferenceState.getReferenceBases(referenceIndex),
-                    ++recordIndex,
+                    recordIndex++,
                     readGroupNameToID);
             cramRecords.add(cramRecord);
         }
@@ -119,12 +119,21 @@ public class SliceFactory {
 
     // Note: this mate processing assumes that all of these records wind up in the same slice!!
     private void resolveMatesForSlice(final List<CRAMRecord> cramRecords) {
-        if (coordinateSorted) {
+        if (!coordinateSorted) {
+            for (final CRAMRecord r : cramRecords) {
+                r.setDetached(true);
+            }
+        } else {
+            //TODO: these maps are flawed in that while there should only be one primary record
+            // for a given read name, there can be multiple secondary reads, and they are not
+            // required to be encountered in order for coord-sorted, so its possible that we need
+            // to accumulate more than one read of a given name in the
             final Map<String, CRAMRecord> primaryMateMap = new TreeMap<>();
             final Map<String, CRAMRecord> secondaryMateMap = new TreeMap<>();
             for (final CRAMRecord r : cramRecords) {
                 if (r.isMultiFragment()) {
                     final Map<String, CRAMRecord> mateMap =
+                            //TODO: should these test for isFirstSegment rather than isSecondary?
                             r.isSecondaryAlignment() ?
                                     primaryMateMap :
                                     secondaryMateMap;
@@ -265,10 +274,12 @@ public class SliceFactory {
     public class SliceEntry {
         private final List<CRAMRecord> records;
         private final ReferenceContext referenceContext;
+        private final long sliceRecordCounter;
 
-        public SliceEntry(final int referenceContextID, final List<CRAMRecord> sourceRecords, final byte[] refMD5) {
+        public SliceEntry(final int referenceContextID, final List<CRAMRecord> sourceRecords, final long sliceRecordCounter) {
             this.records = new ArrayList<>(sourceRecords);
             this.referenceContext = new ReferenceContext(referenceContextID);
+            this.sliceRecordCounter = sliceRecordCounter;
         }
         public ReferenceContext getReferenceContext() {
             return referenceContext;
@@ -276,5 +287,6 @@ public class SliceFactory {
         public List<CRAMRecord> getRecords() {
             return records;
         }
+        public long getGlobalRecordCounter() { return sliceRecordCounter; }
     }
 }
