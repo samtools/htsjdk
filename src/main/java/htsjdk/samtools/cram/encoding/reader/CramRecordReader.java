@@ -133,7 +133,7 @@ public class CramRecordReader {
                 compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksReadStreams);
 
-        tagValueCodecs = compressionHeader.tMap.entrySet()
+        tagValueCodecs = compressionHeader.gettMap().entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         mapEntry -> new DataSeriesReader<>(
@@ -167,7 +167,7 @@ public class CramRecordReader {
 
         final int readLength = readLengthCodec.readData();
         int alignmentStart;
-        if (compressionHeader.isCoordinateSorted()) {
+        if (compressionHeader.isAPDelta()) {
             alignmentStart = prevAlignmentStart + alignmentStartCodec.readData();
         } else {
             alignmentStart = alignmentStartCodec.readData();
@@ -176,7 +176,7 @@ public class CramRecordReader {
         int readGroupID = readGroupCodec.readData();
 
         String readName = null;
-        if (compressionHeader.readNamesIncluded) {
+        if (compressionHeader.isPreserveReadNames()) {
             readName = new String(readNameCodec.readData(), charset);
         }
 
@@ -189,7 +189,7 @@ public class CramRecordReader {
         if (CRAMRecord.isDetached(cramFlags)) {
             mateFlags = mateBitFlagCodec.readData();
             //TODO: why is readName consumed here for detached case ???
-            if (!compressionHeader.readNamesIncluded) {
+            if (!compressionHeader.isPreserveReadNames()) {
                 readName = new String(readNameCodec.readData(), charset);
             }
 
@@ -202,7 +202,7 @@ public class CramRecordReader {
 
         List<ReadTag> readTags = null;
         final Integer tagIdList = tagIdListCodec.readData();
-        final byte[][] ids = compressionHeader.dictionary[tagIdList];
+        final byte[][] ids = compressionHeader.getTagIDDictionary()[tagIdList];
         if (ids.length > 0) {
             readTags = new ArrayList<>(ids.length);
             for (int i = 0; i < ids.length; i++) {

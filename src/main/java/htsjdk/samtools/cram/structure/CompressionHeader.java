@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
@@ -35,26 +34,23 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 public class CompressionHeader {
-    private static final Log log = Log.getInstance(CompressionHeader.class);
-
     private static final String RN_readNamesIncluded = "RN";
     private static final String AP_alignmentPositionIsDelta = "AP";
     private static final String RR_referenceRequired = "RR";
     private static final String TD_tagIdsDictionary = "TD";
     private static final String SM_substitutionMatrix = "SM";
 
-    //TODO: add public methods for readNamesIncluded and referenceRequired
-    //TODO: CompressionHeader can just get this value from the EncodingStrategy
-    public boolean readNamesIncluded = true;
+    private CompressionHeaderEncodingMap encodingMap;
+    private boolean preserveReadNames = true;
     private boolean APDelta = true;
     private boolean referenceRequired = true;
 
-    private CompressionHeaderEncodingMap encodingMap;
-
     //TODO: Move the tMap into CompressionHeaderEncodingMap ?
-    public Map<Integer, EncodingDescriptor> tMap;
-    public SubstitutionMatrix substitutionMatrix;
-    public byte[][][] dictionary;
+    private Map<Integer, EncodingDescriptor> tMap;
+    //TODO: substitutionMatrix is optional!
+    private SubstitutionMatrix substitutionMatrix;
+    //TODO: dictionary is optional!
+    private byte[][][] tagIDDictionary;
 
     /**
      * Create a CompressionHeader using the default {@link CRAMEncodingStrategy}
@@ -62,6 +58,18 @@ public class CompressionHeader {
     public CompressionHeader() {
         encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
         tMap = new TreeMap<>();
+    }
+
+    public CompressionHeader(
+            final CompressionHeaderEncodingMap encodingMap,
+            final boolean isAPDelta,
+            final boolean isPreserveReadNames,
+            final boolean isReferenceRequired) {
+        tMap = new TreeMap<>();
+        this.encodingMap = encodingMap;
+        this.APDelta = isAPDelta;
+        this.preserveReadNames = isPreserveReadNames;
+        this.referenceRequired = isReferenceRequired;
     }
 
     /**
@@ -82,8 +90,11 @@ public class CompressionHeader {
      */
     public CompressionHeader(final int cramVersion, final InputStream blockStream) {
         final Block compressionHeaderBlock = Block.read(cramVersion, blockStream);
-        if (compressionHeaderBlock.getContentType() != BlockContentType.COMPRESSION_HEADER)
-            throw new RuntimeIOException("Compression Header Block expected, found: " + compressionHeaderBlock.getContentType().name());
+        if (compressionHeaderBlock.getContentType() != BlockContentType.COMPRESSION_HEADER) {
+            throw new RuntimeIOException(
+                    String.format("Compression header block expected, found: %s",
+                            compressionHeaderBlock.getContentType().name()));
+        }
 
         // get raw content since compression headers are always raw...
         try (final ByteArrayInputStream internalStream = new ByteArrayInputStream(compressionHeaderBlock.getRawContent())) {
@@ -95,26 +106,60 @@ public class CompressionHeader {
 
     public CompressionHeaderEncodingMap getEncodingMap() { return encodingMap; }
 
-    public void setIsCoordinateSorted(final boolean coordinateSorted) {
-        APDelta = coordinateSorted;
+    /**
+     * Write this CompressionHeader out to an internal OutputStream, wrap it in a Block, and write that
+     * Block out to the passed-in OutputStream.
+     *
+     * @param cramVersion the CRAM major version number
+     * @param blockStream the stream to write to
+     */
+    public void write(final Version cramVersion, final OutputStream blockStream) {
+        try (final ByteArrayOutputStream internalOutputStream = new ByteArrayOutputStream()) {
+            internalWrite(internalOutputStream);
+            final Block block = Block.createRawCompressionHeaderBlock(internalOutputStream.toByteArray());
+            block.write(cramVersion.major, blockStream);
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     /**
-    * Return true if the header is for a coordinate-sorted CRAM stream.
-    * As required by the spec, we set the AP Delta flag according to that criterion,
-    * so checking that flag is equivalent.
-    * @return the value of the APDelta flag
-    */
-    public boolean isCoordinateSorted() {
+     * Return true if the header has APDelta set. Coordinate sorted input will use APDelta=true, but
+     * it is also permitted for other sort orders to use APDelta=true.
+     * @return the value of the APDelta flag
+     */
+    public boolean isAPDelta() {
         return APDelta;
     }
 
+    public boolean isPreserveReadNames() {
+        return preserveReadNames;
+    }
+
+    public Map<Integer, EncodingDescriptor> gettMap() {
+        return tMap;
+    }
+
+    public SubstitutionMatrix getSubstitutionMatrix() {
+        return substitutionMatrix;
+    }
+
+    public byte[][][] getTagIDDictionary() {
+        return tagIDDictionary;
+    }
+
     public  void setTagIdDictionary(final byte[][][] dictionary) {
-        this.dictionary = dictionary;
+        this.tagIDDictionary = dictionary;
     }
 
     public void setSubstitutionMatrix(final SubstitutionMatrix substitutionMatrix) {
         this.substitutionMatrix = substitutionMatrix;
+    }
+
+    public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingDescriptor params) {
+        encodingMap.putTagBlockCompression(tagId, compressor);
+        tMap.put(tagId, params);
     }
 
     private byte[][][] parseDictionary(final byte[] bytes) {
@@ -147,24 +192,19 @@ public class CompressionHeader {
 
     private byte[] dictionaryToByteArray() {
         int size = 0;
-        for (final byte[][] dictionaryArrayArray : dictionary) {
+        for (final byte[][] dictionaryArrayArray : tagIDDictionary) {
             for (final byte[] dictionaryArray : dictionaryArrayArray) size += dictionaryArray.length;
             size++;
         }
 
         final byte[] bytes = new byte[size];
         final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        for (final byte[][] dictionaryArrayArray : dictionary) {
+        for (final byte[][] dictionaryArrayArray : tagIDDictionary) {
             for (final byte[] dictionaryArray : dictionaryArrayArray) buffer.put(dictionaryArray);
             buffer.put((byte) 0);
         }
 
         return bytes;
-    }
-
-    //TODO Unused ?
-    public byte[][] getTagIds(final int id) {
-        return dictionary[id];
     }
 
     private void internalRead(final InputStream is) {
@@ -178,7 +218,7 @@ public class CompressionHeader {
             for (int i = 0; i < mapSize; i++) {
                 final String key = new String(new byte[]{buffer.get(), buffer.get()});
                 if (RN_readNamesIncluded.equals(key))
-                    readNamesIncluded = buffer.get() == 1;
+                    preserveReadNames = buffer.get() == 1;
                 else if (AP_alignmentPositionIsDelta.equals(key))
                     APDelta = buffer.get() == 1;
                 else if (RR_referenceRequired.equals(key))
@@ -187,7 +227,7 @@ public class CompressionHeader {
                     final int size = ITF8.readUnsignedITF8(buffer);
                     final byte[] dictionaryBytes = new byte[size];
                     buffer.get(dictionaryBytes);
-                    dictionary = parseDictionary(dictionaryBytes);
+                    tagIDDictionary = parseDictionary(dictionaryBytes);
                 } else if (SM_substitutionMatrix.equals(key)) {
                     // parse subs matrix here:
                     final byte[] matrixBytes = new byte[SubstitutionMatrix.BASES_SIZE];
@@ -223,24 +263,6 @@ public class CompressionHeader {
         }
     }
 
-    /**
-     * Write this CompressionHeader out to an internal OutputStream, wrap it in a Block, and write that
-     * Block out to the passed-in OutputStream.
-     *
-     * @param cramVersion the CRAM major version number
-     * @param blockStream the stream to write to
-     */
-    public void write(final Version cramVersion, final OutputStream blockStream) {
-        try (final ByteArrayOutputStream internalOutputStream = new ByteArrayOutputStream()) {
-            internalWrite(internalOutputStream);
-            final Block block = Block.createRawCompressionHeaderBlock(internalOutputStream.toByteArray());
-            block.write(cramVersion.major, blockStream);
-        }
-        catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-    }
-
     private void internalWrite(final OutputStream outputStream) throws IOException {
 
         { // preservation map:
@@ -249,7 +271,7 @@ public class CompressionHeader {
             ITF8.writeUnsignedITF8(5, mapBuffer);
 
             mapBuffer.put(RN_readNamesIncluded.getBytes());
-            mapBuffer.put((byte) (readNamesIncluded ? 1 : 0));
+            mapBuffer.put((byte) (preserveReadNames ? 1 : 0));
 
             mapBuffer.put(AP_alignmentPositionIsDelta.getBytes());
             mapBuffer.put((byte) (APDelta ? 1 : 0));
@@ -294,11 +316,6 @@ public class CompressionHeader {
             ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
             outputStream.write(mapBytes);
         }
-    }
-
-    public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingDescriptor params) {
-        encodingMap.putTagBlockCompression(tagId, compressor);
-        tMap.put(tagId, params);
     }
 
 }

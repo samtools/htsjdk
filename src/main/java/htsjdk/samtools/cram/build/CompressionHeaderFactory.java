@@ -19,12 +19,9 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
-import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
-import htsjdk.samtools.cram.compression.RANSExternalCompressor;
 import htsjdk.samtools.cram.encoding.*;
 import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.external.*;
-import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.*;
@@ -33,7 +30,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,27 +86,25 @@ public class CompressionHeaderFactory {
     /**
      * Decides on compression methods to use for the given records.
      *
-     * @param records
-     *            the data to be compressed
+     * @param containerCRAMRecords
+     *            all CRAMRecords that will be stored in the container
      * @param coordinateSorted
      *            if true the records are assumed to be sorted by alignment
      *            position
      * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} object
      *         describing the encoding chosen for the data
      */
-    //TODO: the compression header must be built from ALL of the records in all slices in this container
-    public CompressionHeader build(final List<CRAMRecord> records, final boolean coordinateSorted) {
-        final CompressionHeader compressionHeader = new CompressionHeader(encodingMap);
+    public CompressionHeader build(final List<CRAMRecord> containerCRAMRecords, final boolean coordinateSorted) {
+        final CompressionHeader compressionHeader = new CompressionHeader(
+                encodingMap,
+                coordinateSorted,
+                encodingStrategy.getPreserveReadNames(),
+                true);
 
-        compressionHeader.setIsCoordinateSorted(coordinateSorted);
-        compressionHeader.setTagIdDictionary(buildTagIdDictionary(records));
-        compressionHeader.readNamesIncluded = encodingStrategy.getPreserveReadNames();
-
-        buildTagEncodings(records, compressionHeader);
-
-        // TODO: these next three lines should move into CompressionHeader
-        final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(records);
-        updateSubstitutionCodes(records, substitutionMatrix);
+        compressionHeader.setTagIdDictionary(buildTagIdDictionary(containerCRAMRecords));
+        buildTagEncodings(containerCRAMRecords, compressionHeader);
+        final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(containerCRAMRecords);
+        updateSubstitutionCodes(containerCRAMRecords, substitutionMatrix);
         compressionHeader.setSubstitutionMatrix(substitutionMatrix);
 
         return compressionHeader;

@@ -119,7 +119,7 @@ public class CramRecordWriter {
                 compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksWriteStreams);
 
-        tagValueCodecs = compressionHeader.tMap.entrySet()
+        tagValueCodecs = compressionHeader.gettMap().entrySet()
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -182,7 +182,7 @@ public class CramRecordWriter {
 
         readLengthC.writeData(r.getReadLength());
 
-        if (compressionHeader.isCoordinateSorted()) {
+        if (compressionHeader.isAPDelta()) {
             final int alignmentDelta = r.getAlignmentStart() - prevAlignmentStart;
             alStartC.writeData(alignmentDelta);
         } else {
@@ -191,14 +191,14 @@ public class CramRecordWriter {
 
         readGroupC.writeData(r.getReadGroupID());
 
-        if (compressionHeader.readNamesIncluded) {
+        if (compressionHeader.isPreserveReadNames()) {
             readNameC.writeData(r.getReadName().getBytes(charset));
         }
 
         // mate record:
         if (r.isDetached()) {
             mateBitFlagsCodec.writeData(r.getMateFlags());
-            if (!compressionHeader.readNamesIncluded) {
+            if (!compressionHeader.isPreserveReadNames()) {
                 readNameC.writeData(r.getReadName().getBytes(charset));
             }
 
@@ -239,7 +239,7 @@ public class CramRecordWriter {
                         case Substitution.operator:
                             final Substitution sv = (Substitution) f;
                             if (sv.getCode() < 0)
-                                baseSubstitutionCodeCodec.writeData(compressionHeader.substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
+                                baseSubstitutionCodeCodec.writeData(compressionHeader.getSubstitutionMatrix().code(sv.getReferenceBase(), sv.getBase()));
                             else
                                 baseSubstitutionCodeCodec.writeData(sv.getCode());
                             // baseSubstitutionCodec.writeData((byte) sv.getBaseChange().getChange());

@@ -9,7 +9,6 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by vadim on 07/01/2016.
@@ -20,11 +19,11 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     public void testAP_delta() {
         boolean sorted = true;
         CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
-        Assert.assertEquals(header.isCoordinateSorted(), sorted);
+        Assert.assertEquals(header.isAPDelta(), sorted);
 
         sorted = false;
         header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
-        Assert.assertEquals(header.isCoordinateSorted(), sorted);
+        Assert.assertEquals(header.isAPDelta(), sorted);
     }
 
     @Test
