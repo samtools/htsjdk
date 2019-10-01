@@ -25,6 +25,8 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -247,7 +249,10 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertTrue(header.getContigLines().contains(contigLine), "Test contig line not found in contig header lines");
         Assert.assertTrue(header.getMetaDataInInputOrder().contains(contigLine), "Test contig line not found in set of all header lines");
 
-        Assert.assertNull(header.getSequenceDictionary());
+        final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
+        Assert.assertNotNull(sequenceDictionary);
+        Assert.assertEquals(sequenceDictionary.getSequence("chr1").getSequenceLength(), SAMSequenceRecord.UNKNOWN_SEQUENCE_LENGTH);
+
     }
 
         @Test
