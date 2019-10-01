@@ -92,7 +92,7 @@ public class SliceFactory {
                     containerByteOffset,
                     sliceEntry.getGlobalRecordCounter()
             );
-            slice.setRefMD5(cramReferenceState.getCurrentReferenceBases());
+            slice.setReferenceMD5(cramReferenceState.getCurrentReferenceBases());
             slices.add(slice);
         }
         cramRecordSliceEntries.clear();

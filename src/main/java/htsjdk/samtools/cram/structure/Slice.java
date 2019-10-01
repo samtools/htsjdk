@@ -70,8 +70,7 @@ public class Slice {
     private final int nBlocks;              // includes the core block, but not the slice header block
     private int[] contentIDs;
     private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
-    // TODO: only tests mutate this so fix tests and change to final
-    private byte[] refMD5 = new byte[MD5_BYTE_SIZE];
+    private byte[] referenceMD5 = new byte[MD5_BYTE_SIZE];
     private SAMBinaryTagAndValue sliceTags;
     // End slice header values
     ////////////////////////////////
@@ -118,8 +117,6 @@ public class Slice {
         this.compressionHeader = compressionHeader;
         this.byteOffsetOfContainer = containerByteOffset;
 
-        //TODO: validate that this matches the container
-        // if MULTIPLE_REFERENCE_ID, enclosing container must also be MULTIPLE_REFERENCE_ID
         final ReferenceContext refContext = new ReferenceContext(ITF8.readUnsignedITF8(parseInputStream));
         final int alignmentStart = ITF8.readUnsignedITF8(parseInputStream);
         final int alignmentSpan = (ITF8.readUnsignedITF8(parseInputStream));
@@ -132,15 +129,19 @@ public class Slice {
         setContentIDs(CramIntArray.array(parseInputStream));
         // embedded ref content id == -1 if embedded ref not present
         embeddedReferenceBlockContentID = ITF8.readUnsignedITF8(parseInputStream);
-        final byte[] sliceMD5 = new byte[MD5_BYTE_SIZE];
-        InputStreamUtils.readFully(parseInputStream, sliceMD5, 0, sliceMD5.length);
-        refMD5 = sliceMD5;
-        final byte[] bytes = InputStreamUtils.readFully(parseInputStream);
+        referenceMD5 = new byte[MD5_BYTE_SIZE];
+        InputStreamUtils.readFully(parseInputStream, referenceMD5, 0, referenceMD5.length);
 
+        final byte[] readTagBytes = InputStreamUtils.readFully(parseInputStream);
         if (major >= CramVersions.CRAM_v3.major) {
-            setSliceTags(BinaryTagCodec.readTags(bytes, 0, bytes.length, ValidationStringency.DEFAULT_STRINGENCY));
+            setSliceTags(BinaryTagCodec.readTags(
+                    readTagBytes, 0, readTagBytes.length, ValidationStringency.DEFAULT_STRINGENCY));
         }
 
+        //NOTE: this reads the underlying blocks from the stream, but doesn't decode them because we don't want
+        // to do this automatically since there are case where we want to iterate through containers or slices
+        // (i.e., during indexing, or when satisfying index queries) when we want to consume the underlying blocks,
+        // but not actually decode them
         sliceBlocks.readBlocks(major, nBlocks, inputStream);
 
         if (embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID) {
@@ -227,13 +228,9 @@ public class Slice {
                 singleRefAlignmentStart,
                 singleRefAlignmentEnd);
 
-//        if (getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
-//            setRefMD5(referenceBases);
-//        }
-
         sliceTags = hasher.getAsTags();
-        this.baseCount = baseCount;
         nRecords = records.size();
+        this.baseCount = baseCount;
         this.globalRecordCounter = globalRecordCounter;
 
         final CramRecordWriter writer = new CramRecordWriter(this);
@@ -261,7 +258,7 @@ public class Slice {
     private void setContentIDs(int[] contentIDs) {
         this.contentIDs = contentIDs;
     }
-    public byte[] getRefMD5() { return refMD5; }
+    public byte[] getReferenceMD5() { return referenceMD5; }
 
     /**
      * The Slice's offset in bytes from the beginning of the Container's Compression Header
@@ -390,7 +387,7 @@ public class Slice {
      * Return the embedded reference block, if any.
      * @return embedded reference block. May be null.
      */
-    // TODO: Unused because embedded reference isn't implemented for write
+    // Unused because embedded reference isn't implemented for write
     public Block getEmbeddedReferenceBlock() { return embeddedReferenceBlock; }
 
     public CompressionHeader getCompressionHeader() {
@@ -402,36 +399,63 @@ public class Slice {
         return compressionHeader;
     }
 
-    //TODO: Note that this is what ACTUALLY decodes the underlying blocks
-    public ArrayList<CRAMRecord> getCRAMRecords(final CompressorCache compressorCache, final ValidationStringency validationStringency) {
+    //NOTE: this is what ACTUALLY decodes the underlying blocks. We don't do this automatically when initially
+    // reading the blocks from the underlying stream since there are case where we want to iterate through
+    // containers or slices (i.e., during indexing, or when satisfying index queries) where we want to consume
+    // the underlying blocks, but not actually pay the price to decode them
+    //
+    // The CRAMRecords returned from this are not normalized (read bases, quality scores and mates have not
+    // been resolved).
+    public ArrayList<CRAMRecord> getRawCRAMRecords(
+            final CompressorCache compressorCache,
+            final ValidationStringency validationStringency) {
         final CramRecordReader reader = new CramRecordReader(this, compressorCache, validationStringency);
-        final ArrayList<CRAMRecord> records = new ArrayList<>(nRecords);
+        final ArrayList<CRAMRecord> cramRecords = new ArrayList<>(nRecords);
 
         int prevAlignmentStart = alignmentContext.getAlignmentStart();
         for (int i = 0; i < nRecords; i++) {
             // read the new record and update the running prevAlignmentStart
             final CRAMRecord cramRecord = reader.read(globalRecordCounter + i, prevAlignmentStart);
             prevAlignmentStart = cramRecord.getAlignmentStart();
-            records.add(cramRecord);
+            cramRecords.add(cramRecord);
         }
 
-        return records;
+        return cramRecords;
     }
 
+    // Resolves read bases against a reference, and resolves quality scores and mates.
+    //
     // Normalize a list of CramCompressionRecords that have been read in from a CRAM stream.
-    // The records in this list should be an entire slice, not a container, since the relative positions
-    // of mate records are determined relative to the slice (downstream) offsets.
-    public void normalize(final List<CRAMRecord> records,
-                          CRAMReferenceState cramReferenceState,
-                          final int refOffset_zeroBased,  //TODO: WTF is this - its always 0
-                          final SubstitutionMatrix substitutionMatrix) {
+    // The records in this list should be the records from this slice, not the entire container,
+    // since the relative positions of mate records are determined relative to the slice (downstream)
+    // offsets.
+    //
+    //This has a side effect of updating the CRAM records in place.
+    public void normalizeCRAMRecords(final List<CRAMRecord> records,
+                                     CRAMReferenceState cramReferenceState,
+                                     final int zeroBasedReferenceOffset,  //TODO: unused - always 0
+                                     final SubstitutionMatrix substitutionMatrix) {
+        // first, validate or reference MD5 now that we have access to the reference bases
+        if (getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
+            final byte[] referenceBases = cramReferenceState.getReferenceBases(
+                    getAlignmentContext().getReferenceContext().getReferenceSequenceID()
+            );
+
+            if (!validateReferenceMD5(referenceBases)) {
+                throw new CRAMException(String.format(
+                        "Reference sequence MD5 mismatch for slice: %s, expected MD5 %s",
+                        getAlignmentContext(),
+                        String.format("%032x", new BigInteger(1, getReferenceMD5()))));
+            }
+        }
+
         // restore pairing first:
         for (final CRAMRecord record : records) {
             if (record.isMultiFragment() &&
                     !record.isDetached() &&
                     record.isHasMateDownStream()) {
                 final CRAMRecord downMate = records.get(
-                        //TODO: add a mehtod to do this calc
+                        //TODO: add a method to do this calc
                         (int) (record.getSequentialIndex() + record.getRecordsToNextFragment() + 1L - globalRecordCounter));
                 record.setNextSegment(downMate);
                 downMate.setPreviousSegment(record);
@@ -444,9 +468,8 @@ public class Slice {
             }
         }
 
-        // assign some read names if needed:
+        // assign read names if needed:
         for (final CRAMRecord record : records) {
-            // TODO: need encodingStrategy for read name prefix
             record.assignReadName();
         }
 
@@ -454,7 +477,7 @@ public class Slice {
         for (final CRAMRecord record : records) {
             if (!record.isSegmentUnmapped()) {
                 byte[] refBases = cramReferenceState.getReferenceBases(record.getReferenceIndex());
-                record.restoreReadBases(refBases, refOffset_zeroBased, substitutionMatrix);
+                record.restoreReadBases(refBases, zeroBasedReferenceOffset, substitutionMatrix);
             }
         }
 
@@ -508,7 +531,7 @@ public class Slice {
         CramIntArray.write(slice.getContentIDs(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.getEmbeddedReferenceContentID(), byteArrayOutputStream);
         try {
-            byteArrayOutputStream.write(slice.getRefMD5() == null ? new byte[16] : slice.getRefMD5());
+            byteArrayOutputStream.write(slice.getReferenceMD5() == null ? new byte[16] : slice.getReferenceMD5());
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
@@ -650,48 +673,44 @@ public class Slice {
         }
     }
 
-    public boolean validateReferenceMD5(final byte[] referenceBases) {
-        if (alignmentContext.getReferenceContext().isMultiRef()) {
-            throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
-        }
-        if (alignmentContext.getReferenceContext().isUnmappedUnplaced()) {
-            return true;
-        }
-
-        validateAlignmentSpanForReference(referenceBases);
-
-        if (!validateReferenceMD5(
-                referenceBases,
-                alignmentContext.getAlignmentStart(),
-                alignmentContext.getAlignmentSpan(),
-                refMD5)) {
-            System.out.println("Failed MD5 check on full slice span - trying narrower span");
-            //TODO: does the spec allow matching on partial reference like this ?
-            final int shoulderLength = 10;
-            final String excerpt = getReferenceBaseExcerpt(alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentSpan(), referenceBases, shoulderLength);
-            if (validateReferenceMD5(
+    //VisibleForTesting
+    boolean validateReferenceMD5(final byte[] referenceBases) {
+        if (alignmentContext.getReferenceContext().isMappedSingleRef()) {
+            validateAlignmentSpanForReference(referenceBases);
+            if (!validateReferenceMD5(
                     referenceBases,
                     alignmentContext.getAlignmentStart(),
-                    alignmentContext.getAlignmentSpan() - 1,
-                    refMD5)) {
-                log.warn(String.format("Reference MD5 matches partially for slice %s:%d-%d, %s",
+                    alignmentContext.getAlignmentSpan(),
+                    referenceMD5)) {
+                //TODO: does the spec allow matching on partial reference like this ?
+                //System.out.println("Failed MD5 check on full slice span - trying narrower span");
+                final int shoulderLength = 10;
+                final String excerpt = getReferenceBaseExcerpt(
+                        alignmentContext.getAlignmentStart(),
+                        alignmentContext.getAlignmentSpan()
+                        , referenceBases,
+                        shoulderLength);
+                if (validateReferenceMD5(
+                        referenceBases,
+                        alignmentContext.getAlignmentStart(),
+                        alignmentContext.getAlignmentSpan() - 1,
+                        referenceMD5)) {
+                    log.warn(String.format("Reference MD5 matches partially for slice %s:%d-%d, %s",
+                            alignmentContext.getReferenceContext(),
+                            alignmentContext.getAlignmentStart(),
+                            alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
+                            excerpt));
+                    return true;
+                }
+
+                log.error(String.format(
+                        "Reference MD5 mismatch for slice %s:%d-%d, %s",
                         alignmentContext.getReferenceContext(),
                         alignmentContext.getAlignmentStart(),
                         alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
                         excerpt));
-                return true;
+                return false;
             }
-
-            log.error(String.format("Reference MD5 mismatch for slice %s:%d-%d, %s",
-                    alignmentContext.getReferenceContext(), alignmentContext.getAlignmentStart(), alignmentContext.getAlignmentStart() +
-                            alignmentContext.getAlignmentSpan() - 1, excerpt));
-            log.error(String.format(
-                    "Reference MD5 mismatch for slice %s:%d-%d, %s",
-                    alignmentContext.getReferenceContext(),
-                    alignmentContext.getAlignmentStart(),
-                    alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
-                    excerpt));
-            return false;
         }
 
         return true;
@@ -707,6 +726,7 @@ public class Slice {
         return md5.equals(String.format("%032x", new BigInteger(1, expectedMD5)));
     }
 
+    //TODO:get rid of this if partial matching isn't accepted
     private static String getReferenceBaseExcerpt(
             final int startOneBased,
             final int span,
@@ -739,18 +759,18 @@ public class Slice {
     }
 
     // *calculate* the MD5 for this reference
-    public void setRefMD5(final byte[] ref) {
+    public void setReferenceMD5(final byte[] ref) {
         validateAlignmentSpanForReference(ref);
 
         if (! alignmentContext.getReferenceContext().isMappedSingleRef() && alignmentContext.getAlignmentStart() < 1) {
-            refMD5 = new byte[16];
-            Arrays.fill(refMD5, (byte) 0);
+            referenceMD5 = new byte[MD5_BYTE_SIZE];
+            Arrays.fill(referenceMD5, (byte) 0);
         } else {
             final int span = Math.min(alignmentContext.getAlignmentSpan(), ref.length - alignmentContext.getAlignmentStart() + 1);
             if (alignmentContext.getAlignmentStart() + span > ref.length + 1) {
                 throw new CRAMException("Invalid alignment boundaries.");
             }
-            refMD5 = SequenceUtil.calculateMD5(ref, alignmentContext.getAlignmentStart() - 1, span);
+            referenceMD5 = SequenceUtil.calculateMD5(ref, alignmentContext.getAlignmentStart() - 1, span);
 
         }
     }
@@ -838,7 +858,7 @@ public class Slice {
         // See https://github.com/samtools/htsjdk/issues/1347.
         // Note that this doesn't normalize the CRAMRecords, which saves actually resolving the bases
         // against the reference.
-        final List<CRAMRecord> cramRecords = getCRAMRecords(compressorCache, validationStringency);
+        final List<CRAMRecord> cramRecords = getRawCRAMRecords(compressorCache, validationStringency);
 
         final Map<ReferenceContext, AlignmentSpan> spans = new HashMap<>();
         cramRecords.forEach(r -> mergeRecordSpan(r, spans));

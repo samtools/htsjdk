@@ -6,10 +6,12 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
+import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
+import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -24,31 +26,62 @@ import java.util.*;
 public class SliceTests extends HtsjdkTest {
     private static final int TEST_RECORD_COUNT = 10;
 
-//    @Test
-//    public void testUnmappedValidateRef() {
-//        final Slice slice = new Slice(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
-//
-//        Assert.assertTrue(slice.validateRefMD5(null));
-//        Assert.assertTrue(slice.validateRefMD5(new byte[0]));
-//        Assert.assertTrue(slice.validateRefMD5(new byte[1024]));
-//    }
-//
-//    @Test
-//    public void test_validateRef() {
-//        byte[] ref = "AAAAA".getBytes();
-//        final byte[] md5 = SequenceUtil.calculateMD5(ref, 0, Math.min(5, ref.length));
-//        final Slice slice = new Slice(new ReferenceContext(0));
-//        slice.setAlignmentSpan(5);
-//        slice.setAlignmentStart(1);
-//        slice.setRefMD5(ref);
-//
-//        Assert.assertEquals(slice.getRefMD5(), md5);
-//        Assert.assertTrue(slice.validateRefMD5(ref));
-//    }
+    @Test
+    public void testValidateReferenceMD5Unmapped() {
+        final Container container = CRAMStructureTestHelper.createContainer(
+                new ContainerFactory(
+                        CRAMStructureTestHelper.SAM_FILE_HEADER,
+                        new CRAMEncodingStrategy(),
+                        CRAMStructureTestHelper.REFERENCE_SOURCE),
+                CRAMStructureTestHelper.createSAMRecordsUnmapped(10),
+                0L);
 
-    //TODO: this test should live at a higher level, although there should be slice-level test as well
+        Assert.assertEquals(container.getSlices().size(), 1);
+        final Slice slice = container.getSlices().get(0);
+        Assert.assertEquals(slice.getAlignmentContext().getReferenceContext(), ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
+
+        Assert.assertTrue(slice.validateReferenceMD5(null));
+        Assert.assertTrue(slice.validateReferenceMD5(new byte[0]));
+        Assert.assertTrue(slice.validateReferenceMD5(new byte[1024]));
+    }
+
+    @Test
+    public void testValidateReferenceMD5Mapped() {
+        final SAMRecord samRecord = CRAMStructureTestHelper.createSAMRecordMapped(
+                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
+                10);
+        final Container container = CRAMStructureTestHelper.createContainer(
+                new ContainerFactory(
+                        CRAMStructureTestHelper.SAM_FILE_HEADER,
+                        new CRAMEncodingStrategy(),
+                        CRAMStructureTestHelper.REFERENCE_SOURCE),
+                Collections.singletonList(samRecord),
+                0L);
+
+        Assert.assertEquals(container.getSlices().size(), 1);
+        Assert.assertEquals(
+                container.getAlignmentContext().getReferenceContext(),
+                new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO));
+        final Slice slice = container.getSlices().get(0);
+        Assert.assertEquals(
+                slice.getAlignmentContext().getReferenceContext(),
+                new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO));
+        Assert.assertEquals(
+                slice.getAlignmentContext().getReferenceContext(),
+                new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO));
+
+        Assert.assertEquals(
+                slice.getReferenceMD5(),
+                SequenceUtil.calculateMD5(
+                        CRAMStructureTestHelper.REFERENCE_SOURCE.getReferenceBases(
+                                CRAMStructureTestHelper.SAM_FILE_HEADER.getSequence(
+                                        CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),false),
+                        samRecord.getAlignmentStart(),
+                        samRecord.getReadLength()));
+    }
+
     @Test(expectedExceptions = CRAMException.class)
-    public void testFailsMD5Check() throws IOException {
+    public void testValidateReferenceMD5Fails() throws IOException {
         // auxf.alteredForMD5test.fa has been altered slightly from the original reference
         // to cause the CRAM md5 check to fail
         final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
@@ -294,7 +327,8 @@ public class SliceTests extends HtsjdkTest {
         final Slice slice = CRAMStructureTestHelper.createSliceWithSingleMappedRecord();
         final int embeddedReferenceBlockContentID = 27;
         slice.setEmbeddedReferenceContentID(embeddedReferenceBlockContentID);
-        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP, embeddedReferenceBlockContentID + 1, new byte[2], 2);
+        final Block block = Block.createExternalBlock(BlockCompressionMethod.GZIP,
+                embeddedReferenceBlockContentID + 1, new byte[2], 2);
         slice.setEmbeddedReferenceBlock(block);
     }
 

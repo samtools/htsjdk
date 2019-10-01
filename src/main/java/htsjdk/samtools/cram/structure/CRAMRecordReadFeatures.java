@@ -105,10 +105,6 @@ public class CRAMRecordReadFeatures {
                 alignmentStartOffset += cigarElementLength;
             }
         }
-
-        //was used in Sam2CramRecordFactory for sequentialIndex error reporting
-        //this.baseCount += bases.length;
-        //this.featureCount += features.size();
     }
 
     public final List<ReadFeature> getReadFeatures() { return readFeatures; }
@@ -339,7 +335,7 @@ public class CRAMRecordReadFeatures {
      * @param alignStart
      * @param readLength
      * @param ref
-     * @param refOffsetZeroBased
+     * @param zeroBasedReferenceOffset
      * @param substitutionMatrix
      * @return
      */
@@ -349,7 +345,7 @@ public class CRAMRecordReadFeatures {
             final int alignStart,
             final int readLength,
             final byte[] ref,
-            final int refOffsetZeroBased,
+            final int zeroBasedReferenceOffset, //TODO: unused - always 0
             final SubstitutionMatrix substitutionMatrix) {
         if (isUnknownBases || readLength == 0) {
             return SAMRecord.NULL_SEQUENCE;
@@ -362,18 +358,18 @@ public class CRAMRecordReadFeatures {
 
         int posInSeq = 0;
         if (readFeatures == null) {
-            if (ref.length + refOffsetZeroBased < alignmentStart
+            if (ref.length + zeroBasedReferenceOffset < alignmentStart
                     + bases.length) {
                 Arrays.fill(bases, (byte) 'N');
                 System.arraycopy(
                         ref,
-                        alignmentStart - refOffsetZeroBased,
+                        alignmentStart - zeroBasedReferenceOffset,
                         bases,
                         0,
-                        Math.min(bases.length, ref.length + refOffsetZeroBased
+                        Math.min(bases.length, ref.length + zeroBasedReferenceOffset
                                 - alignmentStart));
             } else
-                System.arraycopy(ref, alignmentStart - refOffsetZeroBased,
+                System.arraycopy(ref, alignmentStart - zeroBasedReferenceOffset,
                         bases, 0, bases.length);
 
             return SequenceUtil.toBamReadBasesInPlace(bases);
@@ -382,7 +378,7 @@ public class CRAMRecordReadFeatures {
         final List<ReadFeature> variations = readFeatures;
         for (final ReadFeature variation : variations) {
             for (; posInRead < variation.getPosition(); posInRead++) {
-                final int rp = alignmentStart + posInSeq++ - refOffsetZeroBased;
+                final int rp = alignmentStart + posInSeq++ - zeroBasedReferenceOffset;
                 bases[posInRead - 1] = getByteOrDefault(ref, rp, (byte) 'N');
             }
 
@@ -390,7 +386,7 @@ public class CRAMRecordReadFeatures {
                 case Substitution.operator:
                     final Substitution substitution = (Substitution) variation;
                     byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq
-                            - refOffsetZeroBased, (byte) 'N');
+                            - zeroBasedReferenceOffset, (byte) 'N');
                     // substitution requires ACGTN only:
                     refBase = Utils.normalizeBase(refBase);
                     final byte base = substitutionMatrix.base(refBase, substitution.getCode());
@@ -424,9 +420,9 @@ public class CRAMRecordReadFeatures {
         }
 
         for (; posInRead <= readLength
-                && alignmentStart + posInSeq - refOffsetZeroBased < ref.length; posInRead++, posInSeq++) {
+                && alignmentStart + posInSeq - zeroBasedReferenceOffset < ref.length; posInRead++, posInSeq++) {
             bases[posInRead - 1] = ref[alignmentStart + posInSeq
-                    - refOffsetZeroBased];
+                    - zeroBasedReferenceOffset];
         }
 
         // ReadBase overwrites bases:

@@ -227,17 +227,17 @@ public class Container {
     }
 
     /**
-     * Reads the special container that contains the SAMFileHeader from a CRAM stream, and return just
+     * Reads the special container that contains the SAMFileHeader from a CRAM stream, and returns just
      * the SAMFileHeader (we don't want to hand out the container since its not really a container in that
-     * while it has a container header, it has compression header block, no slices, etc).
+     * while it has a container header, it has no compression header block, slices, etc).
      * @param version
      * @param inputStream
      * @param id
      * @return
      */
-    public static SAMFileHeader getSAMFileHeaderFromContainer(final Version version,
-                                                              final InputStream inputStream,
-                                                              final String id) {
+    public static SAMFileHeader getSAMFileHeaderContainer(final Version version,
+                                                          final InputStream inputStream,
+                                                          final String id) {
         final ContainerHeader containerHeader = ContainerHeader.readContainerHeader(version.major, inputStream);
         final Block block;
         if (version.compatibleWith(CramVersions.CRAM_v3)) {
@@ -312,56 +312,40 @@ public class Container {
     }
 
     //TODO: this unpacks all slices
-    //TODO: note that this does not require a reference, which is good, since we need to be able to use it to
-    // get raw CRAM records during indexing, and we don;t want that to require a reference
+    //TODO: note that this does not require a reference, since we need to be able to use it to
+    // get raw CRAM records during indexing, and we don't want that to require a reference
     //Visible for testing
-    public List<CRAMRecord> getCRAMRecords(final ValidationStringency validationStringency, final CompressorCache compressorCache) {
+    List<CRAMRecord> getCRAMRecords(final ValidationStringency validationStringency, final CompressorCache compressorCache) {
         if (isEOF()) {
             return Collections.emptyList();
         }
 
         final ArrayList<CRAMRecord> records = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
-            records.addAll(slice.getCRAMRecords(compressorCache, validationStringency));
+            records.addAll(slice.getRawCRAMRecords(compressorCache, validationStringency));
         }
         return records;
     }
 
-    // This public method should hand out slices, and let the caller get the SAMRecords out of the slice, for
-    // symmetry with the constructor (which takes Slices).
     public List<SAMRecord> getSAMRecords(
             final ValidationStringency validationStringency,
             final CRAMReferenceState cramReferenceState,
             final CompressorCache compressorCache,
             final SAMFileHeader samFileHeader) {
-        final List<CRAMRecord> cramRecords = getCRAMRecords(validationStringency, compressorCache);
-        final List<SAMRecord> samRecords = new ArrayList<>(cramRecords.size());
-
+        final List<SAMRecord> samRecords = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
-            if (slice.getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
-                final byte[] referenceBases = cramReferenceState.getReferenceBases(
-                        slice.getAlignmentContext().getReferenceContext().getReferenceSequenceID()
-                );
-
-                if (!slice.validateReferenceMD5(referenceBases)) {
-                    final String msg = String.format(
-                            "Reference sequence MD5 mismatch for slice: %s, expected MD5 %s",
-                            slice.getAlignmentContext(),
-                            String.format("%032x", new BigInteger(1, slice.getRefMD5())));
-                    throw new CRAMException(msg);
-                }
-            }
-
-            slice.normalize(cramRecords, cramReferenceState, 0, getCompressionHeader().getSubstitutionMatrix());
-
-            for (final CRAMRecord cramRecord : cramRecords) {
+            final List<CRAMRecord> rawCRAMRecords = slice.getRawCRAMRecords(compressorCache, validationStringency);
+            slice.normalizeCRAMRecords(
+                    rawCRAMRecords,
+                    cramReferenceState,
+                    0,
+                    getCompressionHeader().getSubstitutionMatrix());
+            for (final CRAMRecord cramRecord : rawCRAMRecords) {
                 final SAMRecord samRecord = cramRecord.toSAMRecord(samFileHeader);
                 samRecord.setValidationStringency(validationStringency);
                 samRecords.add(samRecord);
             }
         }
-
-        cramRecords.clear();
         return samRecords;
     }
 
@@ -419,23 +403,23 @@ public class Container {
      * @throws CRAMException when the Container is in an invalid state
      */
     private void distributeIndexingParametersToSlices() {
-        if (slices.size() == 0) {
-            return;
-        }
-
-        if (containerHeader.getLandmarks() == null) {
-            throw new CRAMException("Cannot set Slice indexing parameters if this Container does not have landmarks");
-        }
-
-        if (containerHeader.getLandmarks().length != slices.size()) {
-            final String format = "This Container's landmark and slice counts do not match: %d landmarks and %d slices";
-            throw new CRAMException(String.format(format, containerHeader.getLandmarks().length, slices.size()));
-        }
-
-        if (containerHeader.getContainerBlocksByteSize() == 0) {
-            throw new CRAMException("Cannot set Slice indexing parameters if the byte size of this Container's blocks is unknown");
-        }
-
+//        if (slices.size() == 0) {
+//            return;
+//        }
+//
+//        if (containerHeader.getLandmarks() == null) {
+//            throw new CRAMException("Cannot set Slice indexing parameters if this Container does not have landmarks");
+//        }
+//
+//        if (containerHeader.getLandmarks().length != slices.size()) {
+//            final String format = "This Container's landmark and slice counts do not match: %d landmarks and %d slices";
+//            throw new CRAMException(String.format(format, containerHeader.getLandmarks().length, slices.size()));
+//        }
+//
+//        if (containerHeader.getContainerBlocksByteSize() == 0) {
+//            throw new CRAMException("Cannot set Slice indexing parameters if the byte size of this Container's blocks is unknown");
+//        }
+//
         final int lastSliceIndex = slices.size() - 1;
         for (int i = 0; i < lastSliceIndex; i++) {
             final Slice slice = slices.get(i);
