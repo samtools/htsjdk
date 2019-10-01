@@ -188,9 +188,7 @@ public class CRAMRecordReadFeatures {
         }
     }
 
-    // https://github.com/samtools/htsjdk/issues/1301
-    // does not update alignmentSpan/alignmentEnd when the record changes
-    public int initializeAlignmentEnd(int alignmentStart, int readLength) {
+    public int getAlignmentEnd(int alignmentStart, int readLength) {
         int alignmentSpan = readLength;
         if (readFeatures != null) {
             for (final ReadFeature readFeature : readFeatures) {
