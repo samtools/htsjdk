@@ -96,31 +96,29 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     }
 
     /**
-     * Does this ReferenceContext refer to only unmapped-unplaced reads?
+     * Determine if this ReferenceContext represents unmapped-unplaced ?
      *
-     * Note: not a guarantee that the unmapped flag is set for all records
-     * @see htsjdk.samtools.cram.structure.CRAMRecord#isPlaced()
-     *
-     * @return true if the ReferenceContext refers only to unmapped-unplaced reads
+     * @return true if the ReferenceContext is ReferenceContextTypeUNMAPPED_UNPLACED_TYPE.
      */
     public boolean isUnmappedUnplaced() {
         return type == ReferenceContextType.UNMAPPED_UNPLACED_TYPE;
     }
 
     /**
-     * Does this ReferenceContext refer to:
+     * Determine if this ReferenceContext represents:
      * - reads placed on multiple references
      * - or a combination of placed and unplaced reads?
-     * @return true if the ReferenceContext relates to reads placed on multiple references
-     * or a combination of placed and unplaced reads
+     *
+     * @return true if the ReferenceContext is {@line #ReferenceContextType.MULTIPLE_REFERENCE_TYPE}
      */
     public boolean isMultiRef() {
         return type == ReferenceContextType.MULTIPLE_REFERENCE_TYPE;
     }
 
     /**
-     * Does this ReferenceContext refer to reads placed on a single reference (whether their unmapped flags are set or not)?
-     * @return true if all reads referred to by this ReferenceContext are placed on a single reference
+     * Determine if this ReferenceContext represents a single reference.
+     *
+     * @return true if this ReferenceContext represents {@line #ReferenceContextType.SINGLE_REFERENCE_TYPE}
      */
     public boolean isMappedSingleRef() {
         return type == ReferenceContextType.SINGLE_REFERENCE_TYPE;

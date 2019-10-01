@@ -115,14 +115,12 @@ public class CRAMRecord {
 
         readLength = samRecord.getReadLength();
         alignmentStart = samRecord.getAlignmentStart();
-        //TODO: should this call isPlaced ?
-        //if (isPlaced()) {
-        if (samRecord.getReadUnmappedFlag() || (samRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START)) {
+        if (samRecord.getReadUnmappedFlag()) {
             readFeatures = new CRAMRecordReadFeatures();
             alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
         } else {
             readFeatures = new CRAMRecordReadFeatures(samRecord, refBases);
-            alignmentEnd = readFeatures.initializeAlignmentEnd(alignmentStart, readLength);
+            alignmentEnd = readFeatures.getAlignmentEnd(alignmentStart, readLength);
         }
 
         templateSize = samRecord.getInferredInsertSize();
@@ -247,7 +245,7 @@ public class CRAMRecord {
         // its acceptable to have a mapped, placed read, but no read features, if the read matches the
         // reference exactly
         alignmentEnd = isPlaced() ?
-                this.readFeatures.initializeAlignmentEnd(alignmentStart, readLength) :
+                this.readFeatures.getAlignmentEnd(alignmentStart, readLength) :
                 AlignmentContext.NO_ALIGNMENT_END;
     }
 
@@ -514,28 +512,29 @@ public class CRAMRecord {
     //////////////////////////////////////
 
     /**
-     * Does this record have a valid placement/alignment location?
+     * Determine is read is "placed". For consistency with the rest of htsjdk, this only consults the
+     * alignmentStart (placed reads should also have a valid reference index, and unplaced reads should
+     * be unmapped; those two abberant conditions are logged as warnings).
      * <p>
-     * It must have a valid reference sequence ID and a valid alignment start position
-     * to be considered placed.
-     * <p>
-     * Normally we expect to see that the unmapped flag is set for unplaced reads,
-     * so we log a WARNING here if the read is unplaced yet somehow mapped.
      *
      * @return true if the record is placed
      * @see #isSegmentUnmapped()
      */
     public boolean isPlaced() {
-        //TODO: we should change this to be consistent with the rest of htsjdk, and with the BAM indexing code,
-        // which uses only the alignment start to determine if a record is placed or not
-        // placement requires a valid sequence ID and alignment start coordinate
-        boolean placed = referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX &&
-                alignmentStart != SAMRecord.NO_ALIGNMENT_START;
-
-        if (!placed && !isSegmentUnmapped()) {
+        // to be consistent with the rest of htsjdk, and with the BAM indexing code,
+        // we use only the alignmentStart to determine if a record is placed or not,
+        // though technically it is possible the read does not have a valid reference index
+        boolean placed = alignmentStart != SAMRecord.NO_ALIGNMENT_START;
+        if (placed) {
+            if (referenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                final String warning = String.format(
+                        "CRAMRecord [%s] has an valid alignment start but not a valid reference index.",
+                        this.toString());
+                log.warn(warning);
+            }
+        } else if (!isSegmentUnmapped()) {
             final String warning = String.format(
-                    "Cram Compression Record [%s] does not have the unmapped flag set, " +
-                            "but also does not have a valid placement on a reference sequence.",
+                    "CRAMRecord [%s] appears to be mapped but does not have a valid alignment start.",
                     this.toString());
             log.warn(warning);
         }
