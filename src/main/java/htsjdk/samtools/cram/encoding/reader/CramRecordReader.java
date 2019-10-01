@@ -303,7 +303,6 @@ public class CramRecordReader {
                 }
             }
         }
-        //recordCounter++;
 
         return new CRAMRecord(
                 sequentialIndex,

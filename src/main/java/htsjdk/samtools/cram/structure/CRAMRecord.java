@@ -23,13 +23,16 @@ public class CRAMRecord {
     // sequence is unknown; encoded reference differences are present only to recreate the CIGAR string
     public static final int CF_UNKNOWN_BASES       = 0x8;
 
+    // sequential index of the record in a stream:
+    public final static int SEQUENTIAL_INDEX_DEFAULT = -1;
+    public final static int NO_READGROUP_ID = -1;
+
     //NOTE: "mate unmapped" and "mate negative strand" (MF_MATE_UNMAPPED and MF_MATE_NEG_STRAND, but aka
     // MATE_REVERSE_STRAND and MATE_UNMAPPED in SAMRecord flag space - note that the flag values are different
     // in mateFlags space and samFlags space) are modeled redundantly in the bamFlags and mateFlags fields.
-    // The spec is ambiguous about whether the serialized bamFlags field must match the bamFlags field for the
-    // underlying record (in particular, the spec says these flags need not be written, and that they can be
-    // derived, which implies that the need not be included in the serialized bamFlags field, but that puts
-    // the onus on a read implementation to propagate them manually).
+    // The spec implies that the serialized bamFlags field don't need to match the bamFlags field for the
+    // underlying record (in particular, the spec says these mate flags need not be written as part of bamFlags,
+    // and that they can be derived, which puts the onus on a read implementation to propagate them manually).
     // MF data series flags (defined by the CRAM spec)
     private static final int MF_MATE_NEG_STRAND = 0x1;  // same meaning as SAMFlag.MATE_REVERSE_STRAND, but different value
     private static final int MF_MATE_UNMAPPED   = 0x2;  // same meaning as SAMFlag.MATE_UNMAPPED, but different value
@@ -45,26 +48,18 @@ public class CRAMRecord {
     private final int mappingQuality;
     private final int readGroupID;
     private final List<ReadTag> tags;
-
-    //public final static int LANDMARK_INDEX_NOT_SET = -1;
-    //TODO: this is only used to create values to call setFileSource on the SAMRecord resulting from this
-    // cramRecord, but that is only used when indexing SAM records that have been written to a BAMFileWriter ?
-    //private final int landmarkIndex; // zero-based index into container slice landmarks index
-
-    // sequential index of the record in a stream:
-    public final static int SEQUENTIAL_INDEX_DEFAULT = -1;
     private final long sequentialIndex; // 1 based sequential index of this record in the cram stream
 
     private int bamFlags;
     private int cramFlags;
     private int templateSize;
     private String readName;
-    //readBases is never null since the contents hasher doesnt handle nulls; its always at least SAMRecord.NULL_SEQUENCE (byte[0])
+    //readBases is never null since the contents hasher doesn't handle nulls; its always at least SAMRecord.NULL_SEQUENCE (byte[0])
     private byte[] readBases;
     private byte[] qualityScores;
     private MutableInt tagIdsIndex = new MutableInt(0);
 
-    //TODO: abstract into mate info
+    //mate info
     private int mateFlags;
     private int mateAlignmentStart;
     private int mateReferenceIndex;
@@ -97,9 +92,6 @@ public class CRAMRecord {
         ValidationUtils.validateArg(sequentialIndex > SEQUENTIAL_INDEX_DEFAULT, "must have a valid sequential index");
         ValidationUtils.nonNull(readGroupMap);
 
-        //TODO: can/should this constructor delegate to the other constructor ?
-
-        //TODO: is sequentialIndex correct ? does it get reset later?
         this.sequentialIndex = sequentialIndex;
 
         // default to detached state until the actual mate information state is resolved during mate
@@ -129,7 +121,6 @@ public class CRAMRecord {
             readFeatures = new CRAMRecordReadFeatures();
             alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
         } else {
-            //TODO: previously conditional on samRecord.getReadUnmappedFlag() || (samRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START)
             readFeatures = new CRAMRecordReadFeatures(samRecord, refBases);
             alignmentEnd = readFeatures.initializeAlignmentEnd(alignmentStart, readLength);
         }
@@ -155,7 +146,7 @@ public class CRAMRecord {
         readBases = bases == null ?
                     SAMRecord.NULL_SEQUENCE :
                     SequenceUtil.toBamReadBasesInPlace(Arrays.copyOf(bases, samRecord.getReadLength()));
-        //TODO: do we need to retain this if (drop writing 2.1 /
+        //TODO: do we need to retain this if (drop writing 2.1)
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
             setUnknownBases(samRecord.getReadBases().equals(SAMRecord.NULL_SEQUENCE));
         }
@@ -167,7 +158,9 @@ public class CRAMRecord {
         }
 
         final SAMReadGroupRecord readGroup = samRecord.getReadGroup();
-        readGroupID = readGroup == null ? -1 : readGroupMap.get(readGroup.getId());
+        readGroupID = readGroup == null ?
+                NO_READGROUP_ID :
+                readGroupMap.get(readGroup.getId());
 
         if (samRecord.getAttributes().size() > 0) {
             tags = new ArrayList();
@@ -231,7 +224,6 @@ public class CRAMRecord {
         ValidationUtils.validateArg(readFeatures == null || readFeatures.size() > 0, "invalid read features argument");
         ValidationUtils.validateArg(sequentialIndex >= 0, "index must be >= 0");
 
-        //this.landmarkIndex = landmarkIndex;
         this.sequentialIndex = sequentialIndex;
         this.bamFlags = bamFlags;
         this.cramFlags = cramFlags;
@@ -261,11 +253,12 @@ public class CRAMRecord {
 
     /**
      * Create a SAMRecord from the CRAMRecord.
-     * @param header SAMFileHeader
+     * @param samFileHeader SAMFileHeader
      * @return a SAMRecord
      */
-    public SAMRecord toSAMRecord(final SAMFileHeader header) {
-        final SAMRecord samRecord = new SAMRecord(header);
+    public SAMRecord toSAMRecord(final SAMFileHeader samFileHeader) {
+        ValidationUtils.nonNull( samFileHeader,"a valid sam header is required");
+        final SAMRecord samRecord = new SAMRecord(samFileHeader);
 
         samRecord.setReadName(readName);
         copyFlags(this, samRecord);
@@ -307,8 +300,8 @@ public class CRAMRecord {
             }
         }
 
-        if (readGroupID > -1) {
-            final SAMReadGroupRecord readGroupRecord = header.getReadGroups().get(readGroupID);
+        if (readGroupID != NO_READGROUP_ID) {
+            final SAMReadGroupRecord readGroupRecord = samFileHeader.getReadGroups().get(readGroupID);
             samRecord.setAttribute("RG", readGroupRecord.getId());
         }
 
@@ -399,7 +392,7 @@ public class CRAMRecord {
 
     public void restoreReadBases(
             final byte[] refBases,
-            final int refOffset_zeroBased,
+            final int zeroBasedReferenceOffset, //TODO: unused - always 0
             final SubstitutionMatrix substitutionMatrix) {
         if (isUnknownBases()) {
             readBases = SAMRecord.NULL_SEQUENCE;
@@ -412,7 +405,7 @@ public class CRAMRecord {
                     alignmentStart,
                     readLength,
                     refBases,
-                    refOffset_zeroBased,
+                    zeroBasedReferenceOffset,
                     substitutionMatrix);
         }
     }
@@ -576,6 +569,9 @@ public class CRAMRecord {
                 readFeatures.getReadFeatures();
     }
 
+    /**
+     * @return read group id, or {@link #NO_READGROUP_ID} if no read group assigned
+     */
     public int getReadGroupID() { return readGroupID; }
 
     public int getBAMFlags() { return bamFlags; }
@@ -600,12 +596,10 @@ public class CRAMRecord {
      */
     public int getAlignmentEnd() { return alignmentEnd; }
 
-    //TODO: used in read name generation and mate restoration
+    // used in read name generation and mate restoration
     public long getSequentialIndex() {
         return sequentialIndex;
     }
-
-    //public int getLandmarkIndex() { return landmarkIndex; }
 
     public CRAMRecord getNextSegment() {
         return nextSegment;

@@ -198,7 +198,7 @@ public class CramIO {
             // the location of the stream pointer after the CramHeader has been read
             final long containerByteOffset = CramIO.DEFINITION_LENGTH;
 
-            final SAMFileHeader samFileHeader = Container.getSAMFileHeaderFromContainer(
+            final SAMFileHeader samFileHeader = Container.getSAMFileHeaderContainer(
                     header.getVersion(),
                     inputStream,
                     new String(header.getId()));

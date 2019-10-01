@@ -43,7 +43,7 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         Assert.assertEquals(slice.getAlignmentContext().getAlignmentSpan(), test.referenceBases.length);
         // check the slice MD5 is the MD5 of upper-cased ref bases:
         final byte[] ucRefMD5 = SequenceUtil.calculateMD5(test.refBasesFromUCSource, 0, test.refBasesFromUCSource.length);
-        Assert.assertEquals(slice.getRefMD5(), ucRefMD5);
+        Assert.assertEquals(slice.getReferenceMD5(), ucRefMD5);
 
         // check the CRAM file reads:
         final CRAMFileReader reader = new CRAMFileReader(new ByteArrayInputStream(test.cramData), (File) null, test.referenceSourceUpperCased, ValidationStringency.STRICT);

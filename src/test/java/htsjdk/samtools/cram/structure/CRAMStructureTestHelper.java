@@ -117,6 +117,8 @@ public class CRAMStructureTestHelper {
         // reference index must be valid for out header
         ValidationUtils.validateArg(referenceIndex == REFERENCE_SEQUENCE_ZERO || referenceIndex == REFERENCE_SEQUENCE_ONE,
                 "invalid reference index");
+        ValidationUtils.validateArg(intForNameAndStart > 0,
+                "invalid alignment start for a mapped record");
 
         final SAMRecord samRecord = new SAMRecord(SAM_FILE_HEADER);
         samRecord.setReferenceIndex(referenceIndex);
@@ -126,7 +128,7 @@ public class CRAMStructureTestHelper {
 
         Assert.assertFalse(samRecord.getReadUnmappedFlag(), "read should be mapped");
         Assert.assertTrue(samRecord.getReferenceIndex() >= 0, "read should have valid ref index");
-        Assert.assertTrue(samRecord.getAlignmentStart() >= 0, "read should have a valid alignment start");
+        Assert.assertTrue(samRecord.getAlignmentStart() > 0, "read should have a valid alignment start");
 
         return samRecord;
     }
