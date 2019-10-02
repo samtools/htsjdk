@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.build.CRAMReferenceState;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
@@ -55,7 +56,7 @@ public class ContainerTest extends HtsjdkTest {
             final List<SAMRecord> samRecords,
             final AlignmentContext expectedAlignmentContext) {
         final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy()
-                // in order to set reads/slice to a small number, we must so the same for minimumSingleReferenceSliceSize
+                // in order to set reads/slice to a small number, we must do the same for minimumSingleReferenceSliceSize
                 .setMinimumSingleReferenceSliceSize(samRecords.size())
                 .setReadsPerSlice(samRecords.size());
         final ContainerFactory containerFactory = new ContainerFactory(
@@ -117,77 +118,6 @@ public class ContainerTest extends HtsjdkTest {
                     referenceContexts.get(i));
         }
     }
-
-//    @DataProvider(name = "getSpansTestCases")
-//    private Object[][] getSpansTestCases() {
-//        final ReferenceContext mappedRefContext = new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE);
-//
-//        //final int expectedMappedSpan = READ_LENGTH_FOR_TEST_RECORDS + TEST_RECORD_COUNT - 1;
-//
-//        // getSingleRefRecords() sets half of its records to mapped, half to unmapped
-//        //final int halfOfRecordCount = TEST_RECORD_COUNT / 2;
-//
-//        return new Object[][]{
-//                {
-//                        CRAMStructureTestHelper.createMappedSAMRecords(
-//                                TEST_RECORD_COUNT,
-//                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE),
-//                        mappedRefContext,
-//                        new AlignmentSpan(
-//                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE,
-//                                expectedMappedSpan, halfOfRecordCount, halfOfRecordCount)
-//                },
-//                {
-//                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
-//                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-//                        AlignmentSpan.UNPLACED_SPAN
-//                },
-//
-//                // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
-//                // but not both.  We treat these weird edge cases as unplaced.
-//                {
-//                        CRAMStructureTestUtil.getUnplacedRecords(TEST_RECORD_COUNT),
-//                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-//                        AlignmentSpan.UNPLACED_SPAN
-//                },
-//
-//                // these two sets of records are "half" unplaced: they have either a valid reference index or start position,
-//                // but not both.  We treat these weird edge cases as unplaced.
-//                {
-//                        CRAMStructureTestUtil.getHalfUnplacedNoRefRecords(TEST_RECORD_COUNT),
-//                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-//                        AlignmentSpan.UNPLACED_SPAN
-//                },
-//                {
-//                        CRAMStructureTestUtil.getHalfUnplacedNoStartRecords(TEST_RECORD_COUNT, mappedSequenceId),
-//                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-//                        AlignmentSpan.UNPLACED_SPAN
-//                },
-//        };
-//    }
-//
-//    @Test(dataProvider = "getSpansTestCases")
-//    public void getSpansTest(final List<SAMRecord> samRecords,
-//                             final ReferenceContext expectedReferenceContext,
-//                             final AlignmentSpan expectedAlignmentSpan) {
-//        final Container container = containerFactory.buildContainer(
-//                samRecords,
-//                CRAMStructureTestHelper.REFERENCE_SOURCE,
-//                CONTAINER_BYTE_OFFSET,
-//                10);
-//
-//        final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(ValidationStringency.STRICT);
-//        Assert.assertEquals(spanMap.size(), 1);
-//        Assert.assertTrue(spanMap.containsKey(expectedReferenceContext));
-//        Assert.assertEquals(spanMap.get(expectedReferenceContext), expectedAlignmentSpan);
-//    }
-
-    // show that we can populate all of the slice indexing fields from the
-    // values in the container's header
-
-    // this is part of the serialization/deserialization process, and supports index creation
-
-    // single slice
 
 //    @Test
 //    public static void distributeIndexingParametersToSlicesOneSlice() {
@@ -356,7 +286,7 @@ public class ContainerTest extends HtsjdkTest {
     public void testEOF(final Version version) throws IOException {
         byte[] eofBytes;
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            CramIO.issueEOF(version, baos);
+            CramIO.writeCRAMEOF(version, baos);
             eofBytes = baos.toByteArray();
         }
 
@@ -370,11 +300,11 @@ public class ContainerTest extends HtsjdkTest {
 
     @DataProvider(name = "getRecordsTestCases")
     private Object[][] getRecordsTestCases() {
-        final int mappedSequenceId = 0;  // arbitrary
 
         return new Object[][]{
                 {
-                        CRAMStructureTestHelper.createSAMRecordsMapped(TEST_RECORD_COUNT, mappedSequenceId),
+                        CRAMStructureTestHelper.createSAMRecordsMapped(TEST_RECORD_COUNT,
+                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
                 },
                 {
                         CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT),
@@ -404,71 +334,18 @@ public class ContainerTest extends HtsjdkTest {
 
         final Container container = CRAMStructureTestHelper.createContainer(containerFactory, records, dummyByteOffset);
 
-        final List<CRAMRecord> roundTripRecords = container.getCRAMRecords(ValidationStringency.STRICT, new CompressorCache());
+        final List<SAMRecord> roundTripRecords = container.getSAMRecords(
+                ValidationStringency.STRICT,
+                new CRAMReferenceState(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER),
+                new CompressorCache(),
+                CRAMStructureTestHelper.SAM_FILE_HEADER
+        );
         Assert.assertEquals(roundTripRecords.size(), TEST_RECORD_COUNT);
 
         // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
         // Container round-trips CRAM records,so perhaps these tests should use CRAM records, and
-        // there should be a CRAMormalizer test for round-tripping SAMRecords
-        // Assert.assertEquals(roundTripRecords, records);
+        // there should be a CRAMNormalizer test for round-tripping SAMRecords
+        Assert.assertEquals(roundTripRecords, records);
     }
 
-//    @Test
-//    public void testMultirefContainer() {
-//        final Map<ReferenceContext, AlignmentSpan> expectedSpans = new HashMap<>();
-//        for (int i = 0; i < TEST_RECORD_COUNT; i++) {
-//            if (i % 2 == 0) {
-//                expectedSpans.put(new ReferenceContext(i), new AlignmentSpan(i + 1, READ_LENGTH_FOR_TEST_RECORDS, 0, 1));
-//            } else {
-//                expectedSpans.put(new ReferenceContext(i), new AlignmentSpan(i + 1, READ_LENGTH_FOR_TEST_RECORDS, 1, 0));
-//            }
-//        }
-//
-//        final long dummyByteOffset = 0;
-//        final Container container = FACTORY.buildContainer(CRAMStructureTestUtil.getMultiRefRecords(TEST_RECORD_COUNT), dummyByteOffset);
-//
-//        final Map<ReferenceContext, AlignmentSpan> spanMap = container.getSpans(ValidationStringency.STRICT);
-//        Assert.assertEquals(spanMap, expectedSpans);
-//    }
-//
-//    @Test
-//    public void testMultirefContainerWithUnmapped() {
-//        final List<AlignmentSpan> expectedSpans = new ArrayList<>();
-//        expectedSpans.add(new AlignmentSpan(1, READ_LENGTH_FOR_TEST_RECORDS, 1, 0));
-//        expectedSpans.add(new AlignmentSpan(2, READ_LENGTH_FOR_TEST_RECORDS, 1, 0));
-//
-//        final long firstContainerByteOffset = 999;
-//        final List<Container> containers = CRAMStructureTestUtil.getMultiRefContainersForStateTest(firstContainerByteOffset);
-//
-//        // first container is single-ref
-//
-//        final Map<ReferenceContext, AlignmentSpan> spanMap0 = containers.get(0).getSpans(ValidationStringency.STRICT);
-//        Assert.assertNotNull(spanMap0);
-//        Assert.assertEquals(spanMap0.size(), 1);
-//
-//        Assert.assertEquals(spanMap0.get(new ReferenceContext(0)), expectedSpans.get(0));
-//
-//        // when other refs are added, subsequent containers are multiref
-//
-//        final Map<ReferenceContext, AlignmentSpan> spanMap1 = containers.get(1).getSpans(ValidationStringency.STRICT);
-//        Assert.assertNotNull(spanMap1);
-//        Assert.assertEquals(spanMap1.size(), 2);
-//
-//        // contains the span we checked earlier
-//        Assert.assertEquals(spanMap1.get(new ReferenceContext(0)), expectedSpans.get(0));
-//        Assert.assertEquals(spanMap1.get(new ReferenceContext(1)), expectedSpans.get(1));
-//
-//
-//        final Map<ReferenceContext, AlignmentSpan> spanMap2 = containers.get(2).getSpans(ValidationStringency.STRICT);
-//        Assert.assertNotNull(spanMap2);
-//        Assert.assertEquals(spanMap2.size(), 3);
-//
-//        // contains the spans we checked earlier
-//        Assert.assertEquals(spanMap2.get(new ReferenceContext(0)), expectedSpans.get(0));
-//        Assert.assertEquals(spanMap2.get(new ReferenceContext(1)), expectedSpans.get(1));
-//
-//        Assert.assertTrue(spanMap2.containsKey(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT));
-//        final AlignmentSpan unmappedSpan = spanMap2.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
-//        Assert.assertEquals(unmappedSpan, AlignmentSpan.UNPLACED_SPAN);
-//    }
 }

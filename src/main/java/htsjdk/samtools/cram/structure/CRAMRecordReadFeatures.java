@@ -26,7 +26,7 @@ public class CRAMRecordReadFeatures {
     }
 
     /**
-     * Create a CRAMRecordReadFeatures froma list of read features consumed from a stream.
+     * Create a CRAMRecordReadFeatures from a list of read features consumed from a stream.
      * @param readFeatures
      */
     public CRAMRecordReadFeatures(final List<ReadFeature> readFeatures) {
@@ -107,7 +107,7 @@ public class CRAMRecordReadFeatures {
         }
     }
 
-    public final List<ReadFeature> getReadFeatures() { return readFeatures; }
+    public final List<ReadFeature> getReadFeaturesList() { return readFeatures; }
 
     private void addSoftClip(
             final int zeroBasedPositionInRead,
@@ -155,7 +155,7 @@ public class CRAMRecordReadFeatures {
      * @param bases                the read bases array
      * @param qualityScore         the quality score array
      */
-    //TODO: static/protected for tests
+    //Visible for testing
     static void addMismatchReadFeatures(
             final byte[] refBases,
             final int alignmentStart,
@@ -451,11 +451,13 @@ public class CRAMRecordReadFeatures {
 
         CRAMRecordReadFeatures that = (CRAMRecordReadFeatures) o;
 
-        return getReadFeatures() != null ? getReadFeatures().equals(that.getReadFeatures()) : that.getReadFeatures() == null;
+        return getReadFeaturesList() != null ?
+                getReadFeaturesList().equals(that.getReadFeaturesList()) :
+                that.getReadFeaturesList() == null;
     }
 
     @Override
     public int hashCode() {
-        return getReadFeatures() != null ? getReadFeatures().hashCode() : 0;
+        return getReadFeaturesList() != null ? getReadFeaturesList().hashCode() : 0;
     }
 }

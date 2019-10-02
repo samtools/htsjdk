@@ -78,10 +78,6 @@ public class CramContainerIterator implements Iterator<Container>, Closeable {
     public void close() {
         nextContainer = null;
         cramHeader = null;
-        //noinspection EmptyCatchBlock
-        try {
-            countingInputStream.close();
-        } catch (final Exception e) {
-        }
+        countingInputStream.close();
     }
 }
