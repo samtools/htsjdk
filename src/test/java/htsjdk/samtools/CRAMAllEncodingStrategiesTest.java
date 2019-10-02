@@ -44,7 +44,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "roundTripTestFiles")
+    //@Test(dataProvider = "roundTripTestFiles")
     public final void testRoundTrip(final File cramSourceFile, final File referenceFile) throws IOException {
         System.out.println(String.format("Test file size: %,d (%s)", Files.size(cramSourceFile.toPath()), cramSourceFile.toPath()));
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();

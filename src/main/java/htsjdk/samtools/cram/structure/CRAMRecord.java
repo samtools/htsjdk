@@ -144,7 +144,6 @@ public class CRAMRecord {
         readBases = bases == null ?
                     SAMRecord.NULL_SEQUENCE :
                     SequenceUtil.toBamReadBasesInPlace(Arrays.copyOf(bases, samRecord.getReadLength()));
-        //TODO: do we need to retain this if (drop writing 2.1)
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
             setUnknownBases(samRecord.getReadBases().equals(SAMRecord.NULL_SEQUENCE));
         }
@@ -168,8 +167,7 @@ public class CRAMRecord {
                     tags.add(ReadTag.deriveTypeFromValue(tagAndValue.tag, tagAndValue.value));
                 }
             }
-        }
-        else {
+        } else {
             tags = null;
         }
     }
@@ -242,6 +240,7 @@ public class CRAMRecord {
         this.mateReferenceIndex = mateReferenceIndex;
         this.mateAlignmentStart = mateAlignmentStart;
         this.recordsToNextFragment = recordsToNextFragment;
+        //TODO: add a test for this case
         // its acceptable to have a mapped, placed read, but no read features, if the read matches the
         // reference exactly
         alignmentEnd = isPlaced() ?
@@ -271,7 +270,7 @@ public class CRAMRecord {
             samRecord.setMappingQuality(mappingQuality);
         }
 
-        if (isSegmentUnmapped())
+        if (readFeatures == null)
             samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         else
             samRecord.setCigar(readFeatures.getCigarForReadFeatures(readLength));
@@ -398,7 +397,7 @@ public class CRAMRecord {
             readBases = CRAMRecordReadFeatures.restoreReadBases(
                     readFeatures == null ?
                             Collections.EMPTY_LIST :
-                            readFeatures.getReadFeatures(),
+                            readFeatures.getReadFeaturesList(),
                     isUnknownBases(),
                     alignmentStart,
                     readLength,
@@ -565,7 +564,7 @@ public class CRAMRecord {
     public List<ReadFeature> getReadFeatures() {
         return readFeatures == null ?
                 null :
-                readFeatures.getReadFeatures();
+                readFeatures.getReadFeaturesList();
     }
 
     /**

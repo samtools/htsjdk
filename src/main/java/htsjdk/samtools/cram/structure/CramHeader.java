@@ -24,51 +24,36 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * A starting object when dealing with CRAM files. A {@link CramHeader} holds 2 things: 1. File format definition, including content id and
- * version information 2. SAM file header
+ * A CRAM file header, including the file format definition (including CRAM version and content id),
+ * and the SAMFileHeader.
  */
 public final class CramHeader {
     public static final byte[] MAGIC = "CRAM".getBytes();
 
+    public static final int CRAM_MAGIC_LENGTH = MAGIC.length;
+    public static final int CRAM_ID_LENGTH = 20;
+    public static final int CRAM_VERSION_LENGTH = 2;
+    public static final int CRAM_HEADER_LENGTH = CRAM_MAGIC_LENGTH + CRAM_VERSION_LENGTH + CRAM_ID_LENGTH;
+
     private Version version;
-    private final byte[] id = new byte[20];
-
-    {
-        Arrays.fill(id, (byte) 0);
-    }
-
+    private final byte[] id;
     private SAMFileHeader samFileHeader;
 
     /**
-     * Create a new {@link CramHeader} empty object.
-     */
-    private CramHeader() {
-    }
-
-    /**
-     * Create a new {@link CramHeader} object with the specified version, id and SAM file header.
+     * Create a new {@link CramHeader} object with the specified version and id.
      * The id field by default is guaranteed to be byte[20].
      *
      * @param version       the CRAM version to assume
      * @param id            an identifier of the content associated with this header
-     * @param samFileHeader the SAM file header
      */
     public CramHeader(final Version version, final String id, final SAMFileHeader samFileHeader) {
         this.version = version;
+        this.id = new byte[CRAM_ID_LENGTH];
+        Arrays.fill(this.id, (byte) 0);
         if (id != null) {
             System.arraycopy(id.getBytes(),0, this.id, 0, Math.min(id.length(), this.id.length));
         }
         this.samFileHeader = samFileHeader;
-    }
-
-    /**
-     * Set the id of the header. A typical use is for example file name to be used when streaming or a checksum of the data contained in the
-     * file.
-     *
-     * @param stringID a new id; only first 20 bytes from byte representation of java {@link String} will be used.
-     */
-    public void setID(final String stringID) {
-        System.arraycopy(stringID.getBytes(), 0, this.id, 0, Math.min(this.id.length, stringID.length()));
     }
 
     /**
@@ -86,8 +71,6 @@ public final class CramHeader {
     public Version getVersion() {
         return version;
     }
-
-    public void setVersion(final Version version) { this.version = version; }
 
     @Override
     public boolean equals(Object o) {

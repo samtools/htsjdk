@@ -449,8 +449,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     @Override
     void enableFileSource(final SamReader reader, final boolean enabled) {
-        if (iterator != null)
+        if (iterator != null) {
             iterator.setFileSource(enabled ? reader : null);
+        }
     }
 
     /**

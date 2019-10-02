@@ -28,7 +28,6 @@ public class CRAMReferenceState {
         // for non-coord sorted this could cause a lot of thrashing
         if (referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             if (referenceBases == null ||
-                    //referenceBasesContextID == ReferenceContext.UNINITIALIZED_REFERENCE_ID ||
                     referenceIndex != referenceBasesContextID) {
                 final SAMSequenceRecord sequence = samFileHeader.getSequence(referenceIndex);
                 //TODO remove me

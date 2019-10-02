@@ -33,7 +33,6 @@ import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -246,6 +245,7 @@ public class Container {
             block = Block.read(version.major, new ByteArrayInputStream(bytes));
             // ignore the rest of the container
         } else {
+            //TODO: is this still an issue ?
             /*
              * pending issue: container.containerBlocksByteSize inputStream 2 bytes shorter
              * than needed in the v21 test cram files.
@@ -281,7 +281,7 @@ public class Container {
     }
 
     public static long writeSAMFileHeaderContainer(final int major, final SAMFileHeader samFileHeader, final OutputStream os) {
-        final byte[] data = CramIO.toByteArray(samFileHeader);
+        final byte[] data = CramIO.samHeaderToByteArray(samFileHeader);
         // The spec recommends "reserving" 50% more space than is required by the header.
         final int length = Math.max(1024, data.length + data.length / 2);
         final byte[] blockContent = new byte[length];
