@@ -49,6 +49,7 @@ public class ParsingUtils {
     // HTML 4.1 color table,  + orange and magenta
     static Map<String, String> colorSymbols = new HashMap();
 
+    private static URLHelperFactory urlHelperFactory;
     private static final Class defaultUrlHelperClass = RemoteURLHelper.class;
     public static Class urlHelperClass = defaultUrlHelperClass;
 
@@ -429,10 +430,16 @@ public class ParsingUtils {
      * @return
      */
     public static URLHelper getURLHelper(URL url) {
-        try {
-            return getURLHelper(urlHelperClass, url);
-        } catch (Exception e) {
-            return getURLHelper(defaultUrlHelperClass, url);
+
+        if(urlHelperFactory != null) {
+            return urlHelperFactory.getHelper(url);
+        }
+        else {
+            try {
+                return getURLHelper(urlHelperClass, url);
+            } catch (Exception e) {
+                return getURLHelper(defaultUrlHelperClass, url);
+            }
         }
     }
 
@@ -454,6 +461,7 @@ public class ParsingUtils {
      * The default helper class is {@link RemoteURLHelper}, which delegates to FTP/HTTP
      * helpers as appropriate.
      *
+     * @deprecated use {@code registerHelperFactory}
      * @see URLHelper
      * @param helperClass Class which implements {@link URLHelper}, and have a constructor
      *                    which takes a URL as it's only argument.
@@ -464,6 +472,11 @@ public class ParsingUtils {
             //TODO check that it has 1 arg constructor of proper type
         }
         urlHelperClass = helperClass;
+    }
+
+
+    public static void registerHelperFactory(URLHelperFactory factory) {
+        urlHelperFactory = factory;
     }
 
     /**
