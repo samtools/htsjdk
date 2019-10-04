@@ -126,6 +126,8 @@ public class CRAMStructureTestHelper {
         samRecord.setReadName(Integer.toString(intForNameAndStart));
         addBasesAndQualities(samRecord);
 
+        samRecord.setCigarString(String.format("%dM", READ_LENGTH));
+
         Assert.assertFalse(samRecord.getReadUnmappedFlag(), "read should be mapped");
         Assert.assertTrue(samRecord.getReferenceIndex() >= 0, "read should have valid ref index");
         Assert.assertTrue(samRecord.getAlignmentStart() > 0, "read should have a valid alignment start");
@@ -150,6 +152,8 @@ public class CRAMStructureTestHelper {
         samRecord.setReadName(Integer.toString(intForNameAndStart));
         samRecord.setReadUnmappedFlag(true);
         addBasesAndQualities(samRecord);
+
+        samRecord.setCigarString("*");
 
         Assert.assertTrue(samRecord.getReadUnmappedFlag(), "read should be unmapped");
         Assert.assertFalse(samRecord.getReferenceIndex() >= 0, "read should have valid ref index");

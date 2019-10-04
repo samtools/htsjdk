@@ -249,7 +249,6 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
     }
 
-
     /**
      * Do not modify the value returned by this method.  If you want to change the bases, create a new
      * byte[] and call setReadBases() or call setReadString().
