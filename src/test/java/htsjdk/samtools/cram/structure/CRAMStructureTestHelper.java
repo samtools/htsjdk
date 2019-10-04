@@ -100,17 +100,15 @@ public class CRAMStructureTestHelper {
     }
 
     public static Slice createSliceWithSingleMappedRecord() {
-        return new Slice(
-                Collections.singletonList(new CRAMRecord(
-                        CramVersions.CRAM_v3,
-                        new CRAMEncodingStrategy(),
-                        createSAMRecordMapped(REFERENCE_SEQUENCE_ZERO,1),
-                        new byte[1],
-                        1,
-                        new HashMap<>())),
-                new CompressionHeader(),
-                0L,
-                0L);
+        //to get a fully rendered slice containing valid CRAMRecords, it must be created in the
+        // context of a container with a valid compression header, so...
+        final ContainerFactory containerFactory = new ContainerFactory(SAM_FILE_HEADER, new CRAMEncodingStrategy(), REFERENCE_SOURCE);
+        Container container = containerFactory.getNextContainer(
+                createSAMRecordMapped(REFERENCE_SEQUENCE_ZERO,1), 0);
+        Assert.assertNull(container, "shouldn't get a container from one record");
+        container = containerFactory.getFinalContainer(0);
+        Assert.assertEquals(container.getSlices().size(), 1);
+        return container.getSlices().get(0);
     }
 
     public static SAMRecord createSAMRecordMapped(final int referenceIndex, final int intForNameAndStart) {

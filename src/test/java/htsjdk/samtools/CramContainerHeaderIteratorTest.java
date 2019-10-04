@@ -16,7 +16,7 @@ import java.util.List;
 
 public class CramContainerHeaderIteratorTest extends HtsjdkTest {
     @Test
-    public void test() throws IOException {
+    public void testContainerHeaderIterator() throws IOException {
         final File cramFile = new File("src/test/resources/htsjdk/samtools/cram/NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
         CramHeader expectedHeader;
         List<Container> fullContainers;
@@ -43,7 +43,6 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getGlobalRecordCounter(), fullContainer.getContainerHeader().getGlobalRecordCounter());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBaseCount(), fullContainer.getContainerHeader().getBaseCount());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getBlockCount(), fullContainer.getContainerHeader().getBlockCount());
-            //TODO:this needs to be Arrays.equals ?
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getLandmarks(), fullContainer.getContainerHeader().getLandmarks());
             Assert.assertEquals(headerOnlyContainer.getContainerHeader().getChecksum(), fullContainer.getContainerHeader().getChecksum());
             Assert.assertEquals(headerOnlyContainer.getContainerByteOffset(), fullContainer.getContainerByteOffset());
