@@ -35,9 +35,6 @@ public class BlockTest extends HtsjdkTest {
     public void uncompressedTest() {
         final byte[] testData = "TEST STRING".getBytes();
 
-        final Block fhBlock = Block.createRawFileHeaderBlock(testData);
-        contentCheck(fhBlock, testData, testData);
-
         final Block chBlock = Block.createRawCompressionHeaderBlock(testData);
         contentCheck(chBlock, testData, testData);
 
@@ -70,9 +67,9 @@ public class BlockTest extends HtsjdkTest {
 
     @Test(dataProvider = "RoundTripTest")
     public void testFileHeaderBlockRoundTrips(final byte[] testData, final Version version) throws IOException {
-        final Block fhBlock = Block.createRawFileHeaderBlock(testData);
+        final Block fhBlock = Block.createGZIPFileHeaderBlock(testData);
         final Block rtBlock = roundTrip(fhBlock, version);
-        contentCheck(rtBlock, testData, testData);
+        contentCheck(rtBlock, testData, (new GZIPExternalCompressor()).compress(testData));
     }
 
     @Test(dataProvider = "RoundTripTest")

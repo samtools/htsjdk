@@ -136,7 +136,9 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
         if (!hasNext()) return false;
         int i = 0;
         for (final SAMRecord record : samRecords) {
-            if (refIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && record.getReferenceIndex() != refIndex) continue;
+            if (refIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && record.getReferenceIndex() != refIndex) {
+                continue;
+            }
 
             if (pos <= 0) {
                 if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
