@@ -272,9 +272,9 @@ public class CRAMRecord {
         copyFlags(this, samRecord);
 
         if (referenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+            samRecord.setReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
             samRecord.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
             samRecord.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
-            samRecord.setReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
         } else {
             samRecord.setReferenceIndex(referenceIndex);
             samRecord.setAlignmentStart(alignmentStart);
