@@ -105,7 +105,13 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
     // normalize any contained records, only establish the alignment start and spans.
     public static void writeIndex(final SeekableStream cramStream, OutputStream craiStream) {
         final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
-        final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, cramHeader.getSamFileHeader());
+        final SAMFileHeader samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), cramStream, null);
+        if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
+            throw new SAMException(String.format(
+                    "Input must be coordinate sorted (found %s) to create an index.",
+                    samFileHeader.getSortOrder()));
+        }
+        final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, samFileHeader);
         final Version cramVersion = cramHeader.getVersion();
 
         // get the first container

@@ -34,6 +34,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 public class CRAMIterator implements SAMRecordIterator, Closeable {
     private final CountingInputStream countingInputStream;
     private final CramHeader cramHeader;
+    private final SAMFileHeader samFileHeader;
 
     private final CRAMReferenceState cramReferenceState;
 
@@ -63,14 +64,16 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
                         final ValidationStringency validationStringency) {
         this.countingInputStream = new CountingInputStream(inputStream);
         this.validationStringency = validationStringency;
+        //TODO fix the type of the containerIterator member so we don't need this intermediate
         final CramContainerIterator containerIterator = new CramContainerIterator(this.countingInputStream);
         cramHeader = containerIterator.getCramHeader();
+        samFileHeader = containerIterator.getSamFileHeader();
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
         //TODO: this needs a smarter initializer param (don't need encoding strategy here)
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
-        cramReferenceState = new CRAMReferenceState(referenceSource, cramHeader.getSamFileHeader());
+        cramReferenceState = new CRAMReferenceState(referenceSource, samFileHeader);
     }
 
     public CRAMIterator(final SeekableStream seekableStream,
@@ -81,12 +84,13 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
         this.validationStringency = validationStringency;
         final CramSpanContainerIterator containerIterator = CramSpanContainerIterator.fromFileSpan(seekableStream, coordinates);
         cramHeader = containerIterator.getCramHeader();
+        samFileHeader = containerIterator.getSamFileHeader();
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
         //TODO: this needs a smarter initializer param (don't need encoding strategy here)
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
-        cramReferenceState = new CRAMReferenceState(referenceSource, cramHeader.getSamFileHeader());
+        cramReferenceState = new CRAMReferenceState(referenceSource, samFileHeader);
     }
 
     @Deprecated
@@ -225,7 +229,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
     }
 
     public SAMFileHeader getSAMFileHeader() {
-        return cramHeader.getSamFileHeader();
+        return samFileHeader;
     }
 
 }

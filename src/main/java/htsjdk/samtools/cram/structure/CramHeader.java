@@ -37,7 +37,6 @@ public final class CramHeader {
 
     private Version version;
     private final byte[] id;
-    private SAMFileHeader samFileHeader;
 
     /**
      * Create a new {@link CramHeader} object with the specified version and id.
@@ -46,22 +45,13 @@ public final class CramHeader {
      * @param version       the CRAM version to assume
      * @param id            an identifier of the content associated with this header
      */
-    public CramHeader(final Version version, final String id, final SAMFileHeader samFileHeader) {
+    public CramHeader(final Version version, final String id) {
         this.version = version;
         this.id = new byte[CRAM_ID_LENGTH];
         Arrays.fill(this.id, (byte) 0);
         if (id != null) {
             System.arraycopy(id.getBytes(),0, this.id, 0, Math.min(id.length(), this.id.length));
         }
-        this.samFileHeader = samFileHeader;
-    }
-
-    /**
-     * Get the {@link SAMFileHeader} object associated with this CRAM file header.
-     * @return the SAM file header
-     */
-    public SAMFileHeader getSamFileHeader() {
-        return samFileHeader;
     }
 
     public byte[] getId() {
@@ -78,13 +68,12 @@ public final class CramHeader {
         if (o == null || getClass() != o.getClass()) return false;
         final CramHeader that = (CramHeader) o;
         return Objects.equals(version, that.version) &&
-                Arrays.equals(id, that.id) &&
-                Objects.equals(samFileHeader, that.samFileHeader);
+                Arrays.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(version, samFileHeader);
+        int result = version.hashCode();
         result = 31 * result + Arrays.hashCode(id);
         return result;
     }

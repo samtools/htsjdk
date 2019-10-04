@@ -57,6 +57,7 @@ public class VersionTest extends HtsjdkTest {
 
         SeekableStream cramSeekableStream = new SeekableMemoryStream(cramBytes, null);
         CramHeader cramHeader = CramIO.readCramHeader(cramSeekableStream);
+        Container.getSAMFileHeaderContainer(cramHeader.getVersion(), cramSeekableStream, null);
         Assert.assertEquals(version, cramHeader.getVersion());
 
         // read whole container:

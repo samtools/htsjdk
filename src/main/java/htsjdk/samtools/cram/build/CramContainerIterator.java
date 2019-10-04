@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.build;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -13,6 +14,8 @@ import java.util.Iterator;
  */
 public class CramContainerIterator implements Iterator<Container>, Closeable {
     private CramHeader cramHeader;
+
+    private final SAMFileHeader samFileHeader;
     private CountingInputStream countingInputStream;
     private Container nextContainer;
     private boolean eof = false;
@@ -20,6 +23,7 @@ public class CramContainerIterator implements Iterator<Container>, Closeable {
     public CramContainerIterator(final InputStream inputStream) {
         this.countingInputStream = new CountingInputStream(inputStream);
         cramHeader = CramIO.readCramHeader(countingInputStream);
+        samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), inputStream, null);
     }
 
     private void readNextContainer() {
@@ -72,6 +76,10 @@ public class CramContainerIterator implements Iterator<Container>, Closeable {
 
     public CramHeader getCramHeader() {
         return cramHeader;
+    }
+
+    public SAMFileHeader getSamFileHeader() {
+        return samFileHeader;
     }
 
     @Override

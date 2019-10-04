@@ -242,8 +242,9 @@ public class Container {
         if (version.compatibleWith(CramVersions.CRAM_v3)) {
             final byte[] bytes = new byte[containerHeader.getContainerBlocksByteSize()];
             InputStreamUtils.readFully(inputStream, bytes, 0, bytes.length);
-            block = Block.read(version.major, new ByteArrayInputStream(bytes));
-            // ignore the rest of the container
+            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            block = Block.read(version.major, bais);
+            // ignore any remaining blocks in the container (samtools adds a second 10,000 byte (raw) block of 0s) ?
         } else {
             //TODO: is this still an issue ?
             /*
@@ -280,16 +281,15 @@ public class Container {
         }
     }
 
-    public static long writeSAMFileHeaderContainer(final int major, final SAMFileHeader samFileHeader, final OutputStream os) {
-        final byte[] data = CramIO.samHeaderToByteArray(samFileHeader);
-        // The spec recommends "reserving" 50% more space than is required by the header.
-        final int length = Math.max(1024, data.length + data.length / 2);
-        final byte[] blockContent = new byte[length];
-        System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
-        final Block block = Block.createGZIPFileHeaderBlock(blockContent);
+    public static long writeSAMFileHeaderContainer(final Version version, final SAMFileHeader samFileHeader, final OutputStream os) {
+        final byte[] samFileHeaderBytes = CramIO.samHeaderToByteArray(samFileHeader);
+        // The spec recommends "reserving" 50% more space than is required by the header, buts not
+        // clear how to do that if you compress the block. Samtools appears to add a second empty
+        // block (of 10,0000 0's) to the first contianer, but its not clear if thats spec-conforming.
+        final Block block = Block.createGZIPFileHeaderBlock(samFileHeaderBytes);
 
         try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-            block.write(major, byteArrayOutputStream);
+            block.write(version.major, byteArrayOutputStream);
             int containerBlocksByteSize = byteArrayOutputStream.size();
             // TODO: make sure this container is initialized correctly/fully (add a test for checksum ?)
             final ContainerHeader containerHeader = new ContainerHeader(
@@ -303,7 +303,7 @@ public class Container {
                     //TODO: should the landmarks be specified ?
                     new int[]{},
                     0);
-            final int containerHeaderByteSize = containerHeader.writeContainerHeader(major, os);
+            final int containerHeaderByteSize = containerHeader.writeContainerHeader(version.major, os);
             os.write(byteArrayOutputStream.toByteArray(), 0, containerBlocksByteSize);
             return containerHeaderByteSize + containerHeader.getContainerBlocksByteSize();
         } catch (final IOException e) {
