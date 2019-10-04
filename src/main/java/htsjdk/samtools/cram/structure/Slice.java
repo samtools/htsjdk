@@ -287,15 +287,6 @@ public class Slice {
         this.byteSizeOfSliceBlocks = byteSizeOfSliceBlocks;
     }
 
-    /**
-     * The Slice's index number within its Container
-     *
-     * Used by BAI indexing only
-     */
-    public int getLandmarkIndex() {
-        return landmarkIndex;
-    }
-
     public void setLandmarkIndex(int landmarkIndex) {
         this.landmarkIndex = landmarkIndex;
     }

@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.structure.block;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
 import htsjdk.samtools.cram.io.*;
 import htsjdk.samtools.cram.structure.CompressorCache;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -118,13 +119,17 @@ public class Block {
 
     /**
      * Create a new file header block with the given uncompressed content.
-     * The block will have RAW (no) compression and FILE_HEADER content type.
+     * The block will have GZIP compression and FILE_HEADER content type.
      *
      * @param rawContent the uncompressed content of the block
      * @return a new {@link Block} object
      */
-    public static Block createRawFileHeaderBlock(final byte[] rawContent) {
-        return createRawNonExternalBlock(BlockContentType.FILE_HEADER, rawContent);
+    public static Block createGZIPFileHeaderBlock(final byte[] rawContent) {
+        return new Block(
+                BlockCompressionMethod.GZIP,
+                BlockContentType.FILE_HEADER, NO_CONTENT_ID,
+                (new GZIPExternalCompressor()).compress(rawContent),
+                rawContent.length);
     }
 
     /**

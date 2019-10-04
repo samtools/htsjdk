@@ -286,7 +286,7 @@ public class Container {
         final int length = Math.max(1024, data.length + data.length / 2);
         final byte[] blockContent = new byte[length];
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, length));
-        final Block block = Block.createRawFileHeaderBlock(blockContent);
+        final Block block = Block.createGZIPFileHeaderBlock(blockContent);
 
         try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             block.write(major, byteArrayOutputStream);
@@ -403,23 +403,6 @@ public class Container {
      * @throws CRAMException when the Container is in an invalid state
      */
     private void distributeIndexingParametersToSlices() {
-//        if (slices.size() == 0) {
-//            return;
-//        }
-//
-//        if (containerHeader.getLandmarks() == null) {
-//            throw new CRAMException("Cannot set Slice indexing parameters if this Container does not have landmarks");
-//        }
-//
-//        if (containerHeader.getLandmarks().length != slices.size()) {
-//            final String format = "This Container's landmark and slice counts do not match: %d landmarks and %d slices";
-//            throw new CRAMException(String.format(format, containerHeader.getLandmarks().length, slices.size()));
-//        }
-//
-//        if (containerHeader.getContainerBlocksByteSize() == 0) {
-//            throw new CRAMException("Cannot set Slice indexing parameters if the byte size of this Container's blocks is unknown");
-//        }
-//
         final int lastSliceIndex = slices.size() - 1;
         for (int i = 0; i < lastSliceIndex; i++) {
             final Slice slice = slices.get(i);

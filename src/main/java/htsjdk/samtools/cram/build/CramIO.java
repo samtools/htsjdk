@@ -174,8 +174,7 @@ public class CramIO {
             final long pos = countingInputStream.getCount();
             countingInputStream.close();
 
-            //TODO: does this work correctly now ?
-            final Block block = Block.createRawFileHeaderBlock(samHeaderToByteArray(newHeader.getSamFileHeader()));
+            final Block block = Block.createGZIPFileHeaderBlock(samHeaderToByteArray(newHeader.getSamFileHeader()));
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             block.write(newHeader.getVersion().major, byteArrayOutputStream);
             if (byteArrayOutputStream.size() > c.getContainerBlocksByteSize()) {

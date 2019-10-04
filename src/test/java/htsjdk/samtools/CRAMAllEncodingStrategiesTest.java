@@ -31,8 +31,10 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 // TODO: need a better test file; this has mate validation errors
                 // TODO: SAM validation error: ERROR: Read name20FUKAAXX100202:2:1:20271:61529,
                 // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
-                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+//                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+//                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+                { new File("/Users/cnorman/projects/references/m64020_190208_213731-88146610-all.bam"),
+                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
 //                { new File("/Users/cnorman/projects/references/NA12878.cram"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
@@ -44,7 +46,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         };
     }
 
-    //@Test(dataProvider = "roundTripTestFiles")
+    @Test(dataProvider = "roundTripTestFiles")
     public final void testRoundTrip(final File cramSourceFile, final File referenceFile) throws IOException {
         System.out.println(String.format("Test file size: %,d (%s)", Files.size(cramSourceFile.toPath()), cramSourceFile.toPath()));
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
@@ -251,13 +253,16 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     }
 
     public void assertRoundTripFidelity(
-            final File cramSourceFile,
+            final File sourceFile,
             final File tempOutCRAM,
             final File referenceFile,
-            final boolean emitDetail) {
-        try (final CRAMFileReader origReader = new CRAMFileReader(cramSourceFile, new ReferenceSource(referenceFile));
+            final boolean emitDetail) throws IOException {
+        try (final SamReader origReader = SamReaderFactory.makeDefault()
+                .referenceSequence(referenceFile)
+                .validationStringency((ValidationStringency.SILENT))
+                .open(sourceFile);
              final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
-            final SAMRecordIterator origIterator = origReader.getIterator();
+            final SAMRecordIterator origIterator = origReader.iterator();
             final SAMRecordIterator copyIterator = copyReader.getIterator();
             while (origIterator.hasNext() && copyIterator.hasNext()) {
                 if (emitDetail) {
