@@ -23,7 +23,7 @@ public class CramContainerIterator implements Iterator<Container>, Closeable {
     public CramContainerIterator(final InputStream inputStream) {
         this.countingInputStream = new CountingInputStream(inputStream);
         cramHeader = CramIO.readCramHeader(countingInputStream);
-        samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), inputStream, null);
+        samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), countingInputStream, null);
     }
 
     private void readNextContainer() {
