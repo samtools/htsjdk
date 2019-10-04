@@ -171,8 +171,12 @@ public class CRAMRecordReadFeatures {
         //TODO: NPE surfaces here if no ref bases (or ref mismatch) ?
         byte refBase;
         for (int i = 0; i < nofReadBases; i++, oneBasedPositionInRead++, refIndex++) {
-            if (refIndex >= refBases.length) refBase = 'N';
-            else refBase = refBases[refIndex];
+            if (refIndex >= refBases.length) {
+                refBase = 'N';
+            }
+            else {
+                refBase = refBases[refIndex];
+            }
 
             final byte readBase = bases[i + fromPosInRead];
 

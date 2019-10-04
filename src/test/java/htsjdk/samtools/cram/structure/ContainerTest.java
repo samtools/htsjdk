@@ -342,6 +342,13 @@ public class ContainerTest extends HtsjdkTest {
         );
         Assert.assertEquals(roundTripRecords.size(), TEST_RECORD_COUNT);
 
+        for (final SAMRecord samRecord: roundTripRecords) {
+            samRecord.setMateReferenceIndex(samRecord.getMateReferenceIndex());
+        }
+        for (final SAMRecord samRecord: records) {
+            samRecord.setMateReferenceIndex(samRecord.getMateReferenceIndex());
+        }
+
         // TODO this fails.  return to this when refactoring Container and CramCompressionRecord
         // Container round-trips CRAM records,so perhaps these tests should use CRAM records, and
         // there should be a CRAMNormalizer test for round-tripping SAMRecords

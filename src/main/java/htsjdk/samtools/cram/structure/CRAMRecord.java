@@ -117,6 +117,7 @@ public class CRAMRecord {
         alignmentStart = samRecord.getAlignmentStart();
         if (samRecord.getReadUnmappedFlag()) {
             readFeatures = new CRAMRecordReadFeatures();
+            //readFeatures = null;
             alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
         } else {
             readFeatures = new CRAMRecordReadFeatures(samRecord, refBases);
@@ -188,7 +189,7 @@ public class CRAMRecord {
      * @param qualityScores
      * @param readBases
      * @param readTags
-     * @param readFeatures
+     * @param readFeaturesList
      * @param readGroupID
      * @param mateFlags
      * @param mateReferenceIndex
@@ -208,7 +209,7 @@ public class CRAMRecord {
             final byte[] qualityScores,
             final byte[] readBases,
             final List<ReadTag> readTags,
-            final List<ReadFeature>readFeatures,
+            final List<ReadFeature>readFeaturesList,
             final int readGroupID,
             final int mateFlags,
             final int mateReferenceIndex,
@@ -217,7 +218,7 @@ public class CRAMRecord {
         ValidationUtils.nonNull( qualityScores,"quality scores argument must be null or nonzero length");
         ValidationUtils.nonNull(readBases,"read bases argument cannot be null");
         ValidationUtils.validateArg(readTags == null || readTags.size() > 0, "invalid read tag argument");
-        ValidationUtils.validateArg(readFeatures == null || readFeatures.size() > 0, "invalid read features argument");
+        ValidationUtils.validateArg(readFeaturesList == null || readFeaturesList.size() > 0, "invalid read features argument");
         ValidationUtils.validateArg(sequentialIndex >= 0, "index must be >= 0");
 
         this.sequentialIndex = sequentialIndex;
@@ -232,9 +233,9 @@ public class CRAMRecord {
         this.qualityScores = qualityScores;
         this.readBases = readBases;
         this.tags = readTags;
-        this.readFeatures = readFeatures == null ?
+        this.readFeatures = readFeaturesList == null ?
                 new CRAMRecordReadFeatures() :
-                new CRAMRecordReadFeatures(readFeatures);
+                new CRAMRecordReadFeatures(readFeaturesList);
         this.readGroupID = readGroupID;
         this.mateFlags = mateFlags;
         this.mateReferenceIndex = mateReferenceIndex;
@@ -246,6 +247,16 @@ public class CRAMRecord {
         alignmentEnd = isPlaced() ?
                 this.readFeatures.getAlignmentEnd(alignmentStart, readLength) :
                 AlignmentContext.NO_ALIGNMENT_END;
+//        if (readFeaturesList == null) {
+//            if (!CRAMRecord.isSegmentUnmapped(bamFlags)) {
+//                throw new CRAMException("Mapped read missing read features");
+//            }
+//            this.readFeatures = null;
+//            alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
+//        } else {
+//            this.readFeatures = new CRAMRecordReadFeatures(readFeaturesList);
+//            alignmentEnd = this.readFeatures.getAlignmentEnd(alignmentStart, readLength);
+//        }
     }
 
     /**
@@ -270,7 +281,8 @@ public class CRAMRecord {
             samRecord.setMappingQuality(mappingQuality);
         }
 
-        if (readFeatures == null)
+//        if (readFeatures == null)
+        if (isSegmentUnmapped())
             samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         else
             samRecord.setCigar(readFeatures.getCigarForReadFeatures(readLength));
