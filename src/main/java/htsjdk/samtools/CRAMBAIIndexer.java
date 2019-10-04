@@ -202,10 +202,13 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                                    final ValidationStringency validationStringency) {
 
         final CramHeader cramHeader = CramIO.readCramHeader(stream);
-        if (cramHeader.getSamFileHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
-            throw new SAMException("Expecting a coordinate sorted file.");
+        final SAMFileHeader samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), stream, null);
+        if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
+            throw new SAMException(String.format(
+                    "Input must be coordinate sorted (found %s) to create an index.",
+                    samFileHeader.getSortOrder()));
         }
-        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, cramHeader.getSamFileHeader());
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, samFileHeader);
 
         Container container = null;
         final ProgressLogger progressLogger = new ProgressLogger(log, 1, "indexed", "slices");
@@ -233,7 +236,8 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                         sequenceName = "???";
                         break;
                     default:
-                        sequenceName = cramHeader.getSamFileHeader().getSequence(containerReferenceContext.getReferenceSequenceID()).getSequenceName();
+                        sequenceName = samFileHeader.getSequence(
+                                containerReferenceContext.getReferenceSequenceID()).getSequenceName();
                         break;
                 }
                 progressLogger.record(sequenceName, alignmentContext.getAlignmentStart());

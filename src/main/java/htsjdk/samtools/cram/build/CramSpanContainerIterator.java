@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.build;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -16,6 +17,7 @@ import java.util.List;
  */
 public class CramSpanContainerIterator implements Iterator<Container> {
     private final CramHeader cramHeader;
+    private final SAMFileHeader samFileHeader;
     private final SeekableStream seekableStream;
     private Iterator<Boundary> containerBoundaries;
     private Boundary currentBoundary;
@@ -25,6 +27,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
         this.seekableStream = seekableStream;
         seekableStream.seek(0);
         this.cramHeader = CramIO.readCramHeader(seekableStream);
+        samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), seekableStream, null);
         firstContainerOffset = seekableStream.position();
 
         final List<Boundary> boundaries = new ArrayList<Boundary>();
@@ -64,6 +67,10 @@ public class CramSpanContainerIterator implements Iterator<Container> {
 
     public CramHeader getCramHeader() {
         return cramHeader;
+    }
+
+    public SAMFileHeader getSamFileHeader() {
+        return samFileHeader;
     }
 
     private class Boundary implements Iterator<Container> {

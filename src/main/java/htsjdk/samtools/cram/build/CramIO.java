@@ -109,33 +109,10 @@ public class CramIO {
             for (int i = cramHeader.getId().length; i < CramHeader.CRAM_ID_LENGTH; i++) {
                 outputStream.write(0);
             }
-
-            final long samHeaderLength = Container.writeSAMFileHeaderContainer(
-                    cramHeader.getVersion().major,
-                    cramHeader.getSamFileHeader(), outputStream);
-            return CramHeader.CRAM_HEADER_LENGTH + samHeaderLength;
+            return CramHeader.CRAM_HEADER_LENGTH;
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
-    }
-
-    private static CramHeader readFormatDefinition(final InputStream inputStream) throws IOException {
-        for (final byte magicByte : CramHeader.MAGIC) {
-            if (magicByte != inputStream.read()) {
-                throw new RuntimeException("Input does not have a valid CRAM header.");
-            }
-        }
-
-        final Version version = new Version(inputStream.read(), inputStream.read());
-        if (!CramVersions.isSupportedVersion(version)) {
-            throw new RuntimeException(String.format("CRAM version %s is not supported", version));
-        }
-
-        final CramHeader header = new CramHeader(version, null, null);
-        final DataInputStream dataInputStream = new DataInputStream(inputStream);
-        dataInputStream.readFully(header.getId());
-
-        return header;
     }
 
     /**
@@ -146,46 +123,22 @@ public class CramIO {
      */
     public static CramHeader readCramHeader(final InputStream inputStream) {
         try {
-            final CramHeader header = readFormatDefinition(inputStream);
-            final SAMFileHeader samFileHeader = Container.getSAMFileHeaderContainer(
-                    header.getVersion(),
-                    inputStream,
-                    new String(header.getId()));
-            return new CramHeader(header.getVersion(), new String(header.getId()), samFileHeader);
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-    }
-
-    /**
-     * Attempt to replace the SAM file header in the CRAM file. This will succeed only if there is sufficient space reserved in the existing
-     * CRAM header. The implementation re-writes the first FILE_HEADER block in the first container of the CRAM file using random file
-     * access.
-     *
-     * @param file      the CRAM file
-     * @param newHeader the new CramHeader container a new SAM file header
-     * @return true if successfully replaced the header, false otherwise
-     */
-    public static boolean replaceCramHeader(final File file, final CramHeader newHeader) {
-        try (final CountingInputStream countingInputStream = new CountingInputStream(new FileInputStream(file));
-             final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw")) {
-            final CramHeader cramHeader = readFormatDefinition(countingInputStream);
-            final ContainerHeader c = ContainerHeader.readContainerHeader(cramHeader.getVersion().major, countingInputStream);
-            final long pos = countingInputStream.getCount();
-            countingInputStream.close();
-
-            final Block block = Block.createGZIPFileHeaderBlock(samHeaderToByteArray(newHeader.getSamFileHeader()));
-            final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            block.write(newHeader.getVersion().major, byteArrayOutputStream);
-            if (byteArrayOutputStream.size() > c.getContainerBlocksByteSize()) {
-                log.error("CRAM header replacement failed because the new header does not fit in the pre-allocated space.");
-                return false;
+            for (final byte magicByte : CramHeader.MAGIC) {
+                if (magicByte != inputStream.read()) {
+                    throw new RuntimeException("Input does not have a valid CRAM header.");
+                }
             }
 
-            randomAccessFile.seek(pos);
-            randomAccessFile.write(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
-            randomAccessFile.close();
-            return true;
+            final Version version = new Version(inputStream.read(), inputStream.read());
+            if (!CramVersions.isSupportedVersion(version)) {
+                throw new RuntimeException(String.format("CRAM version %s is not supported", version));
+            }
+
+            final CramHeader header = new CramHeader(version, null);
+            final DataInputStream dataInputStream = new DataInputStream(inputStream);
+            dataInputStream.readFully(header.getId());
+
+            return header;
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }

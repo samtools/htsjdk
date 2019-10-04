@@ -31,10 +31,12 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 // TODO: need a better test file; this has mate validation errors
                 // TODO: SAM validation error: ERROR: Read name20FUKAAXX100202:2:1:20271:61529,
                 // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
-//                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-//                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
-                { new File("/Users/cnorman/projects/references/m64020_190208_213731-88146610-all.bam"),
-                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
+//                { new File("/Users/cnorman/projects/SAMDescribe/jonn.samtools.cram"),
+//                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
+                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+//                { new File("/Users/cnorman/projects/references/m64020_190208_213731-88146610-all.bam"),
+//                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
 //                { new File("/Users/cnorman/projects/references/NA12878.cram"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),

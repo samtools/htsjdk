@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -32,7 +33,7 @@ public class CramIOTest extends HtsjdkTest {
 
     @Test(dataProvider="cramHeaderAndEOF")
     public void testCheckHeaderAndEOF(final Version cramVersion) throws IOException {
-        final CramHeader cramHeader = new CramHeader(cramVersion, testID, new SAMFileHeader());
+        final CramHeader cramHeader = new CramHeader(cramVersion, testID);
         final File file = File.createTempFile("test", ".cram");
         file.deleteOnExit();
         try (final FileOutputStream fos = new FileOutputStream(file)) {
@@ -54,49 +55,13 @@ public class CramIOTest extends HtsjdkTest {
 
     @Test(dataProvider = "unsupportedCRAMVersions", expectedExceptions = RuntimeException.class)
     public void testRejectUnknownCRAMVersion(final Version badCRAMVersion) throws IOException {
-        final CramHeader badCRAMHeader = new CramHeader(badCRAMVersion, testID, new SAMFileHeader());
+        final CramHeader badCRAMHeader = new CramHeader(badCRAMVersion, testID);
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             CramIO.writeCramHeader(badCRAMHeader, baos);
             try (final ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray())) {
                 CramIO.readCramHeader(bais);
             }
         }
-    }
-
-    @Test
-    public void testReplaceCramHeader() throws IOException {
-        final CramHeader cramHeader = new CramHeader(CramVersions.CRAM_v3, testID, new SAMFileHeader());
-        Assert.assertTrue(cramHeader.getSamFileHeader().getSequenceDictionary().isEmpty());
-
-        final File tempCramfile = File.createTempFile("test", ".cram");
-        tempCramfile.deleteOnExit();
-
-        try (final FileOutputStream fos = new FileOutputStream(tempCramfile)) {
-            CramIO.writeCramHeader(cramHeader, fos);
-            CramIO.writeCRAMEOF(cramHeader.getVersion(), fos);
-        }
-
-        final long length = tempCramfile.length();
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
-        final SAMSequenceRecord sequenceRecord = new SAMSequenceRecord("1", 123);
-        samFileHeader.addSequence(sequenceRecord);
-
-        final String id2 = "testid2";
-        final CramHeader cramHeader2 = new CramHeader(CramVersions.CRAM_v3, id2, samFileHeader);
-        final boolean replaced = CramIO.replaceCramHeader(tempCramfile, cramHeader2);
-
-        Assert.assertTrue(replaced);
-        Assert.assertEquals(tempCramfile.length(), length);
-        Assert.assertTrue(checkHeaderAndEOF(tempCramfile));
-
-        final CramHeader cramHeader3 = readCramHeader(new FileInputStream(tempCramfile));
-        Assert.assertEquals(cramHeader3.getVersion(), CramVersions.CRAM_v3);
-        Assert.assertFalse(cramHeader3.getSamFileHeader().getSequenceDictionary().isEmpty());
-        Assert.assertNotNull(cramHeader3.getSamFileHeader().getSequenceDictionary().getSequence(0));
-        Assert.assertEquals(
-                cramHeader3.getSamFileHeader().getSequence(sequenceRecord.getSequenceName()).getSequenceLength(),
-                sequenceRecord.getSequenceLength()
-        );
     }
 
     /**

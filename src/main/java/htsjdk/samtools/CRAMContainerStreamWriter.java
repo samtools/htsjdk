@@ -116,16 +116,16 @@ public class CRAMContainerStreamWriter {
      */
     // TODO: retained for backward compatibility for disq in order to run GATK tests (remove before merging this branch)
     public void writeHeader(final SAMFileHeader requestedSAMFileHeader) {
-        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, outputStreamIdentifier, requestedSAMFileHeader);
+        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, outputStreamIdentifier);
         streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
+        streamOffset += Container.writeSAMFileHeaderContainer(cramHeader.getVersion(), requestedSAMFileHeader, outputStream);
     }
 
     /**
      * Write a CRAM file header and the previously provided SAM header to the stream.
      */
     public void writeHeader() {
-        final CramHeader cramHeader = new CramHeader(CRAM_VERSION, outputStreamIdentifier, samFileHeader);
-        streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
+        writeHeader(samFileHeader);
     }
 
     /**
