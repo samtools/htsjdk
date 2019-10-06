@@ -42,6 +42,8 @@ public class CRAMRecord {
     private final int alignmentStart;
     private final int readLength;
     private final CRAMRecordReadFeatures readFeatures;
+
+    // point on the reference where this alignment ends
     private final int alignmentEnd;
 
     private final int referenceIndex;

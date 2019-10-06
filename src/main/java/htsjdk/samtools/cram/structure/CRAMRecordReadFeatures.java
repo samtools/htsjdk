@@ -42,18 +42,13 @@ public class CRAMRecordReadFeatures {
     public CRAMRecordReadFeatures(final SAMRecord samRecord, final byte[] refBases) {
         readFeatures = new ArrayList<>();
         final List<CigarElement> cigarElements = samRecord.getCigar().getCigarElements();
+        int cigarLen = Cigar.getReadLength(cigarElements);
 
-        int cigarLen = 0;
-        for (final CigarElement cigarElement : cigarElements) {
-            if (cigarElement.getOperator().consumesReadBases()) {
-                cigarLen += cigarElement.getLength();
-            }
-        }
-
-        byte[] bases = samRecord.getReadBases();
-        if (bases.length == 0) {
-            bases = new byte[cigarLen];
-            Arrays.fill(bases, (byte) 'N');
+        byte[] readBases = samRecord.getReadBases();
+        if (readBases.length == 0) {
+            //for SAMRecords with SEQ="*", manufacture 'N's
+            readBases = new byte[cigarLen];
+            Arrays.fill(readBases, (byte) 'N');
         }
 
         final byte[] qualityScore = samRecord.getBaseQualities();
@@ -61,8 +56,8 @@ public class CRAMRecordReadFeatures {
         int alignmentStartOffset = 0;
         for (final CigarElement cigarElement : cigarElements) {
             final int cigarElementLength = cigarElement.getLength();
-            final CigarOperator operator = cigarElement.getOperator();
-            switch (operator) {
+            final CigarOperator cigarOperator = cigarElement.getOperator();
+            switch (cigarOperator) {
                 case D:
                     readFeatures.add(new Deletion(zeroBasedPositionInRead + 1, cigarElementLength));
                     break;
@@ -74,12 +69,12 @@ public class CRAMRecordReadFeatures {
                     break;
                 case H:
                     readFeatures.add(new HardClip(zeroBasedPositionInRead + 1, cigarElementLength));
-                break;
+                    break;
                 case S:
-                    addSoftClip(zeroBasedPositionInRead, cigarElementLength, bases);
+                    addSoftClip(zeroBasedPositionInRead, cigarElementLength, readBases);
                     break;
                 case I:
-                    addInsertion(zeroBasedPositionInRead, cigarElementLength, bases);
+                    addInsertion(zeroBasedPositionInRead, cigarElementLength, readBases);
                     break;
                 case M:
                 case X:
@@ -91,17 +86,17 @@ public class CRAMRecordReadFeatures {
                             zeroBasedPositionInRead,
                             alignmentStartOffset,
                             cigarElementLength,
-                            bases,
+                            readBases,
                             qualityScore);
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported cigar operator: " + cigarElement.getOperator());
             }
 
-            if (cigarElement.getOperator().consumesReadBases()) {
+            if (cigarOperator.consumesReadBases()) {
                 zeroBasedPositionInRead += cigarElementLength;
             }
-            if (cigarElement.getOperator().consumesReferenceBases()) {
+            if (cigarOperator.consumesReferenceBases()) {
                 alignmentStartOffset += cigarElementLength;
             }
         }
@@ -112,9 +107,9 @@ public class CRAMRecordReadFeatures {
     private void addSoftClip(
             final int zeroBasedPositionInRead,
             final int cigarElementLength,
-            final byte[] bases) {
+            final byte[] readBases) {
         final byte[] insertedBases = Arrays.copyOfRange(
-                bases,
+                readBases,
                 zeroBasedPositionInRead,
                 zeroBasedPositionInRead + cigarElementLength);
         readFeatures.add(new SoftClip(zeroBasedPositionInRead + 1, insertedBases));
@@ -123,13 +118,13 @@ public class CRAMRecordReadFeatures {
     private void addInsertion(
             final int zeroBasedPositionInRead,
             final int cigarElementLength,
-            final byte[] bases) {
+            final byte[] readBases) {
         final byte[] insertedBases = Arrays.copyOfRange(
-                bases,
+                readBases,
                 zeroBasedPositionInRead,
                 zeroBasedPositionInRead + cigarElementLength);
         for (int i = 0; i < insertedBases.length; i++) {
-            //TODO: why does this use N InsertBase features instead of a single
+            //TODO: why does this use N InsertBase features, instead of a single Insertion (which inserts multiple bases)
             // single base insertion:
             final InsertBase insertBase = new InsertBase();
             insertBase.setPosition(zeroBasedPositionInRead + 1 + i);
@@ -171,12 +166,9 @@ public class CRAMRecordReadFeatures {
         //TODO: NPE surfaces here if no ref bases (or ref mismatch) ?
         byte refBase;
         for (int i = 0; i < nofReadBases; i++, oneBasedPositionInRead++, refIndex++) {
-            if (refIndex >= refBases.length) {
-                refBase = 'N';
-            }
-            else {
-                refBase = refBases[refIndex];
-            }
+            refBase = refIndex >= refBases.length ?
+                    (byte) 'N' :
+                    refBases[refIndex];
 
             final byte readBase = bases[i + fromPosInRead];
 
@@ -196,6 +188,7 @@ public class CRAMRecordReadFeatures {
         int alignmentSpan = readLength;
         if (readFeatures != null) {
             for (final ReadFeature readFeature : readFeatures) {
+                //TODO: there are lots of operators missing here...
                 switch (readFeature.getOperator()) {
                     case InsertBase.operator:
                         alignmentSpan--;
@@ -298,27 +291,28 @@ public class CRAMRecordReadFeatures {
                 lastOperator = cigarOperator;
                 lastOpLen = readFeatureLength;
                 lastOpPos = feature.getPosition();
-            } else
+            } else {
                 lastOpLen += readFeatureLength;
+            }
 
-            if (!cigarOperator.consumesReadBases())
+            if (!cigarOperator.consumesReadBases()) {
                 lastOpPos -= readFeatureLength;
+            }
         }
 
         if (lastOperator != null) {
             if (lastOperator != CigarOperator.M) {
                 list.add(new CigarElement(lastOpLen, lastOperator));
                 if (readLength >= lastOpPos + lastOpLen) {
-                    cigarElement = new CigarElement(readLength - (lastOpLen + lastOpPos)
-                            + 1, CigarOperator.M);
+                    cigarElement = new CigarElement(readLength - (lastOpLen + lastOpPos) + 1, CigarOperator.M);
                     list.add(cigarElement);
                 }
             } else if (readLength == 0 || readLength > lastOpPos - 1) {
-                if (readLength == 0)
+                if (readLength == 0) {
                     cigarElement = new CigarElement(lastOpLen, CigarOperator.M);
-                else
-                    cigarElement = new CigarElement(readLength - lastOpPos + 1,
-                            CigarOperator.M);
+                } else {
+                    cigarElement = new CigarElement(readLength - lastOpPos + 1, CigarOperator.M);
+                }
                 list.add(cigarElement);
             }
         }
@@ -360,20 +354,22 @@ public class CRAMRecordReadFeatures {
 
         int posInSeq = 0;
         if (readFeatures == null) {
-            if (ref.length + zeroBasedReferenceOffset < alignmentStart
-                    + bases.length) {
+            if (ref.length + zeroBasedReferenceOffset < alignmentStart + bases.length) {
                 Arrays.fill(bases, (byte) 'N');
                 System.arraycopy(
                         ref,
                         alignmentStart - zeroBasedReferenceOffset,
                         bases,
                         0,
-                        Math.min(bases.length, ref.length + zeroBasedReferenceOffset
-                                - alignmentStart));
-            } else
-                System.arraycopy(ref, alignmentStart - zeroBasedReferenceOffset,
-                        bases, 0, bases.length);
-
+                        Math.min(bases.length, ref.length + zeroBasedReferenceOffset - alignmentStart));
+            } else {
+                System.arraycopy(
+                        ref,
+                        alignmentStart - zeroBasedReferenceOffset,
+                        bases,
+                        0,
+                        bases.length);
+            }
             return SequenceUtil.toBamReadBasesInPlace(bases);
         }
 
@@ -387,8 +383,7 @@ public class CRAMRecordReadFeatures {
             switch (variation.getOperator()) {
                 case Substitution.operator:
                     final Substitution substitution = (Substitution) variation;
-                    byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq
-                            - zeroBasedReferenceOffset, (byte) 'N');
+                    byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq - zeroBasedReferenceOffset, (byte) 'N');
                     // substitution requires ACGTN only:
                     refBase = Utils.normalizeBase(refBase);
                     final byte base = substitutionMatrix.base(refBase, substitution.getCode());
@@ -423,8 +418,7 @@ public class CRAMRecordReadFeatures {
 
         for (; posInRead <= readLength
                 && alignmentStart + posInSeq - zeroBasedReferenceOffset < ref.length; posInRead++, posInSeq++) {
-            bases[posInRead - 1] = ref[alignmentStart + posInSeq
-                    - zeroBasedReferenceOffset];
+            bases[posInRead - 1] = ref[alignmentStart + posInSeq - zeroBasedReferenceOffset];
         }
 
         // ReadBase overwrites bases:
