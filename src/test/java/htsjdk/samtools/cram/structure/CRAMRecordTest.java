@@ -13,27 +13,26 @@ import java.util.*;
 
 public class CRAMRecordTest extends HtsjdkTest {
 
-
     //TODO: need round trip tests (CRAMRecord fromSAMRecord/toSAMRecord) based on SAMRecord cigar strings
-    // TODO: test for conversion of SAMRecord with SAMRecord.NULL_SEQUENCE (can leads to an alignment context span == 0)
+    // TODO: test for conversion of SAMRecord with SAMRecord.NULL_SEQUENCE (can lead to an alignment context span == 0)
     // testSingleRecord(SAMRecord.NULL_SEQUENCE, SAMRecord.NULL_QUALS, "A".getBytes());
 
-    @DataProvider(name="getAlignmentEndData")
+    @DataProvider(name="alignmentEndData")
     public Object[][] getAlignmentEndTestData() {
         return new Object[][] {
                 // readLength, alignmentStart, isMapped, readFeatures, expected alignmentEnd
                 { 100, 5, true, null, 104},
-                { 100, 10, true, Collections.singletonList(new SoftClip(1, "AAA".getBytes())), 100-1+10-3},
+                { 100, 10, true, Collections.singletonList(new SoftClip(1, "AAA".getBytes())), 100+10-1 -3},
                 //TODO: why does a Deletion result in +5
-                { 100, 10, true, Collections.singletonList(new Deletion(1, 5)), 100-1+10+5},
+                { 100, 10, true, Collections.singletonList(new Deletion(1, 5)), 100+10-1 +5},
                 //TODO: why does an Insertion result in -10
-                { 100, 30, true, Collections.singletonList(new Insertion(1, "CCCCCCCCCC".getBytes())), 100-1+30-10},
+                { 100, 30, true, Collections.singletonList(new Insertion(1, "CCCCCCCCCC".getBytes())), 100+30-1 -10},
                 //TODO: why does an InsertBase result in -10
-                { 100, 40, true, Collections.singletonList(new InsertBase(1, (byte) 'A')), 100-1+40-1}
+                { 100, 40, true, Collections.singletonList(new InsertBase(1, (byte) 'A')), 100+40-1 -1}
         };
     }
 
-    @Test(dataProvider="getAlignmentEndData")
+    @Test(dataProvider="alignmentEndData")
     public void testAlignmentEnd(
             final int readLength,
             final int alignmentStart,
