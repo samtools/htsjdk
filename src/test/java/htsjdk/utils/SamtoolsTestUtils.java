@@ -34,13 +34,17 @@ public class SamtoolsTestUtils {
         return samtoolsPath == null ? "/usr/local/bin" : samtoolsPath;
     }
 
-    public static final File getWriteToTemporaryCRAM(final File inputSAMBAMCRAMFile, final File referenceFile) {
+    public static final File getWriteToTemporaryCRAM(
+            final File inputSAMBAMCRAMFile,
+            final File referenceFile,
+            final String commandLineOptions) {
         try {
             final File tempCRAMFile = File.createTempFile("getWriteToTemporaryCRAM", FileExtensions.CRAM);
             tempCRAMFile.deleteOnExit();
             final ProcessExecutor pe = new ProcessExecutor();
-            final String commandString = String.format("%s/samtools view -h -C -T %s %s -o %s",
+            final String commandString = String.format("%s/samtools view -h -C %s -T %s %s -o %s",
                     getSamtoolsBin(),
+                    commandLineOptions == null ? "" : commandLineOptions,
                     referenceFile.getAbsolutePath(),
                     inputSAMBAMCRAMFile.getAbsolutePath(),
                     tempCRAMFile.getAbsolutePath());

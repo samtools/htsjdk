@@ -31,8 +31,6 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 // TODO: need a better test file; this has mate validation errors
                 // TODO: SAM validation error: ERROR: Read name20FUKAAXX100202:2:1:20271:61529,
                 // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
-//                { new File("/Users/cnorman/projects/SAMDescribe/jonn.samtools.cram"),
-//                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
                 { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
 //                { new File("/Users/cnorman/projects/references/m64020_190208_213731-88146610-all.bam"),
@@ -49,23 +47,29 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "roundTripTestFiles")
-    public final void testRoundTrip(final File cramSourceFile, final File referenceFile) throws IOException {
-        System.out.println(String.format("Test file size: %,d (%s)", Files.size(cramSourceFile.toPath()), cramSourceFile.toPath()));
+    public final void testRoundTrip(final File sourceFile, final File referenceFile) throws IOException {
+        System.out.println(String.format("Test file size: %,d (%s)", Files.size(sourceFile.toPath()), sourceFile.toPath()));
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
         final File tempOutCRAM = File.createTempFile("readOnlyDefaultEncodingStrategyTest", ".cram");
         System.out.println(String.format("Output file size: %s", tempOutCRAM.toPath()));
-        final long start = System.currentTimeMillis();
-        final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
-        final long end = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
+        final long fileSize = testWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
+        long end = System.currentTimeMillis();
         System.out.println(String.format("Size: %,d Strategy %s", fileSize, testStrategy));
         System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
 
-        assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, true);
+        assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, true);
 
         if (SamtoolsTestUtils.isSamtoolsAvailable()) {
-            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(tempOutCRAM, referenceFile);
+            start = System.currentTimeMillis();
+            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(
+                    tempOutCRAM,
+                    referenceFile,
+                    "--output-fmt-option store_md=0 --output-fmt-option store_nm=0");
+            end = System.currentTimeMillis();
+            System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
             System.out.println(String.format("Samtools file size: %,d (%s)", Files.size(samtoolsOutFile.toPath()), samtoolsOutFile.toPath()));
-            assertRoundTripFidelity(cramSourceFile, samtoolsOutFile, referenceFile, true);
+            assertRoundTripFidelity(tempOutCRAM, samtoolsOutFile, referenceFile, true);
             //samtoolsOutFile.delete();
         }
         //tempOutCRAM.delete();
@@ -88,7 +92,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //        if (SamtoolsTestUtils.isSamtoolsAvailable()) {
 //            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(tempOutCRAM, referenceFile);
 //            System.out.println(String.format("Samtools file size: %,d (%s)", Files.size(samtoolsOutFile.toPath()), samtoolsOutFile.toPath()));
-//            assertRoundTripFidelity(cramSourceFile, samtoolsOutFile, referenceFile);
+//            assertRoundTripFidelity(cramSourceFile, samtoolsOutFile, referenceFile, "--output-fmt-option store_md=0 --output-fmt-option store_nm=0");
 //            samtoolsOutFile.delete();
 //        }
         tempOutCRAM.delete();
@@ -157,7 +161,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //            // give the result to samtools and see if it can read it and wite another cra,...
 //            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(
 //                    tempOutCRAM,
-//                    referenceFile);
+//                    referenceFile,
+//                    "--output-fmt-option store_md=0 --output-fmt-option store_nm=0");
 //            System.out.println(String.format("Samtools file size: %,d (%s)",
 //                    Files.size(samtoolsOutFile.toPath()),
 //                    samtoolsOutFile.toPath()));
@@ -201,7 +206,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //                                    // give the result to samtools and see if it can read it and wite another cra,...
 //                                    final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(
 //                                            tempOutCRAM,
-//                                            referenceFile);
+//                                            referenceFile,
+//                                            "--output-fmt-option store_md=0 --output-fmt-option store_nm=0");
 //                                    System.out.println(String.format("Samtools file size: %,d (%s)",
 //                                            Files.size(samtoolsOutFile.toPath()),
 //                                            samtoolsOutFile.toPath()));
@@ -256,46 +262,31 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     public void assertRoundTripFidelity(
             final File sourceFile,
-            final File tempOutCRAM,
+            final File targetCRAMFile,
             final File referenceFile,
             final boolean emitDetail) throws IOException {
-        try (final SamReader origReader = SamReaderFactory.makeDefault()
+        try (final SamReader sourceReader = SamReaderFactory.makeDefault()
                 .referenceSequence(referenceFile)
                 .validationStringency((ValidationStringency.SILENT))
                 .open(sourceFile);
-             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
-            final SAMRecordIterator origIterator = origReader.iterator();
-            final SAMRecordIterator copyIterator = copyReader.getIterator();
-            while (origIterator.hasNext() && copyIterator.hasNext()) {
+             final CRAMFileReader copyReader = new CRAMFileReader(targetCRAMFile, new ReferenceSource(referenceFile))) {
+            final SAMRecordIterator sourceIterator = sourceReader.iterator();
+            final SAMRecordIterator targetIterator = copyReader.getIterator();
+            while (sourceIterator.hasNext() && targetIterator.hasNext()) {
                 if (emitDetail) {
-                    final SAMRecord origRec = origIterator.next();
-                    final SAMRecord copyRec = copyIterator.next();
-                    if (!origRec.equals(copyRec)) {
+                    final SAMRecord sourceRec = sourceIterator.next();
+                    final SAMRecord targetRec = targetIterator.next();
+                    if (!sourceRec.equals(targetRec)) {
                         System.out.println("Diff found:");
-                        System.out.println(origRec.getSAMString());
-                        System.out.println(copyRec.getSAMString());
+                        System.out.println(sourceRec.getSAMString());
+                        System.out.println(targetRec.getSAMString());
                     }
-                    Assert.assertEquals(copyRec, origRec);
+                    Assert.assertEquals(targetRec, sourceRec);
                 } else {
-                    Assert.assertEquals(copyIterator.next(), origIterator.next());
+                    Assert.assertEquals(targetIterator.next(), sourceIterator.next());
                 }
             }
-            Assert.assertEquals(origIterator.hasNext(), copyIterator.hasNext());
-        }
-    }
-
-    public void cramCompare(final File cramSourceFile, final File tempOutCRAM, final File referenceFile) {
-        try (final CRAMFileReader origReader = new CRAMFileReader(cramSourceFile, new ReferenceSource(referenceFile));
-             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
-            final SAMRecordIterator origIterator = origReader.getIterator();
-            final SAMRecordIterator copyIterator = copyReader.getIterator();
-            while (origIterator.hasNext() && copyIterator.hasNext()) {
-                final SAMRecord rec1 = origIterator.next();
-                final SAMRecord rec2 = copyIterator.next();
-                if (!rec1.equals(rec2)) {
-                    rec1.equals(rec2);
-                }
-            }
+            Assert.assertEquals(sourceIterator.hasNext(), targetIterator.hasNext());
         }
     }
 
