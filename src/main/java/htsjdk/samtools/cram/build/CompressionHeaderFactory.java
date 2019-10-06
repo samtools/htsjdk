@@ -52,7 +52,7 @@ public class CompressionHeaderFactory {
     private final CRAMEncodingStrategy encodingStrategy;
     private final CompressionHeaderEncodingMap encodingMap;
 
-    private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<>();
+    private final Map<Integer, EncodingDetails> bestTagEncodings = new HashMap<>();
     //TODO: fix this allocation
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
     /**
@@ -84,7 +84,8 @@ public class CompressionHeaderFactory {
     }
 
     /**
-     * Decides on compression methods to use for the given records.
+     * Creates the compression header based on accumulated statee and resets the tag
+     * encoding map state as perparation for the next compression header.
      *
      * @param containerCRAMRecords
      *            all CRAMRecords that will be stored in the container
@@ -106,6 +107,10 @@ public class CompressionHeaderFactory {
         final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(containerCRAMRecords);
         updateSubstitutionCodes(containerCRAMRecords, substitutionMatrix);
         compressionHeader.setSubstitutionMatrix(substitutionMatrix);
+
+        //reset the bestTagEncodings map state since there is no guarantee that the tag encodings accumulated
+        // for the current container will be appropriate for the tag value distributions in subsequent containers
+        bestTagEncodings.clear();
 
         return compressionHeader;
     }
@@ -137,12 +142,12 @@ public class CompressionHeaderFactory {
         }
 
         for (final int tagId : tagIdSet) {
-            if (bestEncodings.containsKey(tagId)) {
-                compressionHeader.addTagEncoding(tagId, bestEncodings.get(tagId).compressor, bestEncodings.get(tagId).params);
+            if (bestTagEncodings.containsKey(tagId)) {
+                compressionHeader.addTagEncoding(tagId, bestTagEncodings.get(tagId).compressor, bestTagEncodings.get(tagId).params);
             } else {
                 final EncodingDetails e = buildEncodingForTag(records, tagId);
                 compressionHeader.addTagEncoding(tagId, e.compressor, e.params);
-                bestEncodings.put(tagId, e);
+                bestTagEncodings.put(tagId, e);
             }
         }
     }
