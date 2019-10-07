@@ -25,6 +25,8 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -239,6 +241,21 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void testVCFHeaderContigLineMissingLength() {
+        final VCFHeader header = getHiSeqVCFHeader();
+        final VCFContigHeaderLine contigLine = new VCFContigHeaderLine(
+                "<ID=chr1>", VCFHeaderVersion.VCF4_0, VCFHeader.CONTIG_KEY, 0);
+        header.addMetaDataLine(contigLine);
+        Assert.assertTrue(header.getContigLines().contains(contigLine), "Test contig line not found in contig header lines");
+        Assert.assertTrue(header.getMetaDataInInputOrder().contains(contigLine), "Test contig line not found in set of all header lines");
+
+        final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
+        Assert.assertNotNull(sequenceDictionary);
+        Assert.assertEquals(sequenceDictionary.getSequence("chr1").getSequenceLength(), SAMSequenceRecord.UNKNOWN_SEQUENCE_LENGTH);
+
+    }
+
+        @Test
     public void testVCFHeaderHonorContigLineOrder() throws IOException {
         try (final VCFFileReader vcfReader = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
             // start with a header with a bunch of contig lines
