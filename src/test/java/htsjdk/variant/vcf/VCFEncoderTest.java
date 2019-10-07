@@ -35,9 +35,9 @@ public class VCFEncoderTest extends HtsjdkTest {
                 {0.001, "0.001"},
                 {0.0001, "0.0001"},
                 {0.00001, "0.00001"},
-                {0.000001, "1.00000e-06"},
+                {0.000001, "1.0e-06"},
                 {0.50000001, "0.5"},
-                {0.012345, "1.23450e-02"},
+                {0.012345, "1.234e-02"},
                 {0.0033333333, "3.33333e-03"},
                 {1.0, "1.0"},
                 {10.1, "10.1"},
@@ -52,15 +52,52 @@ public class VCFEncoderTest extends HtsjdkTest {
                 {0.1, "0.1"},
                 {0.050, "0.05"},
                 {0.010, "0.01"},
-                {0.012, "1.20000e-02"},
-                {0.0012, "1.20000e-03"},
-                {1.2e-4, "1.20000e-04"},
-                {1.21e-4, "1.21000e-04"},
-                {1.212e-5, "1.21200e-05"},
-                {1.2123e-6, "1.21230e-06"},
+                {0.012, "1.2e-02"},
+                {0.0012, "1.2e-03"},
+                {1.2e-4, "1.2e-04"}, // 0.00012 should
+                {1.21e-4, "1.21e-04"},
+                {1.212e-5, "1.212e-05"},
+                {1.2123e-6, "1.2123e-06"},
+                {-0.0, "0.0"},
+                {-1.0, "-1.0"},
+                {-1.12345, "-1.12345"},
+                {-1.33333333333, "-1.33333"},
+                {-0.1, "-0.1"},
+                {-0.01, "-0.01"},
+                {-0.001, "-0.001"},
+                {-0.0001, "-0.0001"},
+                {-0.00001, "-0.00001"},
+                {-0.000001, "-1.0e-06"},
+                {-0.50000001, "-0.5"},
+                {-0.012345, "-1.23450e-02"},
+                {-0.0033333333, "-3.33333e-03"},
+                {-1.0, "-1.0"},
+                {-10.1, "-10.1"},
+                {-10.01, "-10.01"},
+                {-10.012, "-10.012"},
+                {-10.015, "-10.015"},
+                {-0.0, "-0.0"},
+                {-0.5, "-0.5"},
+                {-0.55, "-0.55"},
+                {-0.555, "-0.555"},
+                {-0.5555, "-0.5555"},
+                {-0.1, "-0.1"},
+                {-0.050, "-0.05"},
+                {-0.010, "-0.01"},
+                {-0.012, "-1.2e-02"},
+                {-0.0012, "-1.2e-03"},
+                {-1.2e-4,"-1.2e-04"},
+                {-1.21e-4,"-1.21e-04"},
+                {-1.212e-5,"-1.212e-05"},
+                {-1.2123e-6,"-1.2123e-06"},
                 {Double.POSITIVE_INFINITY, "Infinity"},
                 {Double.NEGATIVE_INFINITY, "-Infinity"},
-                {Double.NaN, "NaN"}};
+                {Double.NaN, "NaN"},
+                {Double.longBitsToDouble(0x7ff8000000000001L), "NaN"},
+                {Double.longBitsToDouble(0x7ff8000000000001L), "NaN"},
+                {Double.longBitsToDouble(0xfff8000010000000L), "NaN"},
+                {Double.longBitsToDouble(0xfff8000000000000L), "NaN"},
+        };
         return tests;
     }
 
@@ -77,13 +114,13 @@ public class VCFEncoderTest extends HtsjdkTest {
         final VCFEncoder keepMissing = new VCFEncoder(header, false, true);
         final VariantContextBuilder baseVC = new VariantContextBuilder().chr("1").start(1).stop(1).noID().passFilters().log10PError(1).alleles("A", "C");
         final GenotypeBuilder baseGT = new GenotypeBuilder("Sample1").alleles(Arrays.asList(Allele.NO_CALL, Allele.NO_CALL));
-        final Map<Allele, String> alleleMap = new HashMap<Allele, String>(3);
+        final Map<Allele, String> alleleMap = new HashMap<>(3);
         final List<String> formatKeys = Arrays.asList("GT", "AA", "BB");
         alleleMap.put(Allele.NO_CALL, VCFConstants.EMPTY_ALLELE);
         alleleMap.put(Allele.create("A", true), "0");
         alleleMap.put(Allele.create("C", false), "1");
 
-        final List<Object[]> tests = new ArrayList<Object[]>();
+        final List<Object[]> tests = new ArrayList<>();
 
         VariantContext vc = baseVC.genotypes(baseGT.attribute("AA", "a").make()).make();
         tests.add(new Object[]{dropMissing, vc, "./.:a", alleleMap, formatKeys});
@@ -119,7 +156,7 @@ public class VCFEncoderTest extends HtsjdkTest {
     }
 
     private Set<VCFHeaderLine> createSyntheticMetadata() {
-        final Set<VCFHeaderLine> metaData = new TreeSet<VCFHeaderLine>();
+        final Set<VCFHeaderLine> metaData = new TreeSet<>();
 
         metaData.add(new VCFContigHeaderLine(Collections.singletonMap("ID", "1"), 0));
 
