@@ -46,12 +46,10 @@ public class ParsingUtils {
 
     public static final Map<Object, Color> colorCache = new WeakHashMap<>(100);
 
-    // HTML 4.1 color table,  + orange and magenta
-    static Map<String, String> colorSymbols = new HashMap();
+    private static URLHelperFactory urlHelperFactory = new URLHelperFactory() {};
 
-    private static URLHelperFactory urlHelperFactory;
-    private static final Class defaultUrlHelperClass = RemoteURLHelper.class;
-    public static Class urlHelperClass = defaultUrlHelperClass;
+    // HTML 4.1 color table,  + orange and magenta
+    private static Map<String, String> colorSymbols = new HashMap();
 
     static {
         colorSymbols.put("white", "FFFFFF");
@@ -424,62 +422,30 @@ public class ParsingUtils {
     }
 
     /**
-     * Return the registered URLHelper, constructed with the provided URL
-     * @see #registerHelperClass(Class)
+     * Return a URLHelper from the current URLHelperFactory
+     *
      * @param url
      * @return
      */
     public static URLHelper getURLHelper(URL url) {
-
-        if(urlHelperFactory != null) {
             return urlHelperFactory.getHelper(url);
-        }
-        else {
-            try {
-                return getURLHelper(urlHelperClass, url);
-            } catch (Exception e) {
-                return getURLHelper(defaultUrlHelperClass, url);
-            }
-        }
-    }
-
-    private static URLHelper getURLHelper(Class helperClass, URL url) {
-        try {
-            Constructor constr = helperClass.getConstructor(URL.class);
-            return (URLHelper) constr.newInstance(url);
-        } catch (Exception e) {
-            String errMsg = "Error instantiating url helper for class: " + helperClass;
-            throw new IllegalStateException(errMsg, e);
-        }
     }
 
     /**
-     * Register a {@code URLHelper} class to be used for URL operations. The helper
-     * may be used for both FTP and HTTP operations, so if any FTP URLs are used
-     * the {@code URLHelper} must support it.
+     * Set the factory object for providing URLHelpers.  {@see URLHelperFactory}.
      *
-     * The default helper class is {@link RemoteURLHelper}, which delegates to FTP/HTTP
-     * helpers as appropriate.
-     *
-     * @deprecated use {@code registerHelperFactory}
-     * @see URLHelper
-     * @param helperClass Class which implements {@link URLHelper}, and have a constructor
-     *                    which takes a URL as it's only argument.
+     * @param factory
      */
-    public static void registerHelperClass(Class helperClass) {
-        if (!URLHelper.class.isAssignableFrom(helperClass)) {
-            throw new IllegalArgumentException("helperClass must implement URLHelper");
-            //TODO check that it has 1 arg constructor of proper type
-        }
-        urlHelperClass = helperClass;
-    }
-
-
-    public static void registerHelperFactory(URLHelperFactory factory) {
+    public static void setURLHelperFactory(URLHelperFactory factory) {
         urlHelperFactory = factory;
     }
 
+    public static URLHelperFactory getURLHelperFactory() {
+        return urlHelperFactory;
+    }
+
     /**
+     *
      * Add the {@code indexExtension} to the {@code filepath}, preserving
      * query string elements if present. Intended for use where {@code filepath}
      * is a URL. Will behave correctly on regular file paths (just add the extension
