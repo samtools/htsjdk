@@ -243,7 +243,7 @@ public class VCFEncoder {
      * </table>
      */
     public static String formatVCFDouble(final double d) {
-        final int numSignificant = 5;
+        final int numSignificant = 4;
         final double lowerLimit = Math.pow(10, -numSignificant);
         if (d == 0.0) {
             return "0.0";
@@ -263,7 +263,7 @@ public class VCFEncoder {
             final double finalValue = roundedValue * denominator;
             // if the rounded value when casted to into int and back to double is the same (ex. 1.0 or 6.0) and greater
             // or equal to the lower limit, then return (roundedValue / denominator), otherwise use "e" format
-            final String string1 = String.format("%." + denominatorCount + "f", finalValue);
+            final String string1 = String.format("%." + (numSignificant+denominatorCount) + "f", finalValue);
             final String string2 = String.format("%." + numSignificant + "e", finalValue);
             return string1.length() <= string2.length() ? string1 : string2;
         }
