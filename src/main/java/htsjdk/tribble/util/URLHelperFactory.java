@@ -11,10 +11,7 @@ public interface URLHelperFactory {
     /**
      * @param url
      * @return a {@link URLHelper} object for the given URL
-     * @throws
      */
-    default URLHelper getHelper(URL url)   {
-        return new RemoteURLHelper(url);
-    }
+    URLHelper getHelper(URL url);
 
 }

@@ -57,8 +57,6 @@ public interface URLHelper {
      * Open an InputStream to stream a slice (range)  of the resource.
      *
      * May throw an OperationUnsupportedException
-     * @deprecated Will be removed in a future release, as is somewhat fragile
-     * and not used.
      * @param start
      * @param end
      * @return

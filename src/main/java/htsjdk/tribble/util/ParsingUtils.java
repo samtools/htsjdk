@@ -46,7 +46,7 @@ public class ParsingUtils {
 
     public static final Map<Object, Color> colorCache = new WeakHashMap<>(100);
 
-    private static URLHelperFactory urlHelperFactory = new URLHelperFactory() {};
+    private static URLHelperFactory urlHelperFactory = RemoteURLHelper::new;
 
     // HTML 4.1 color table,  + orange and magenta
     private static Map<String, String> colorSymbols = new HashMap();
@@ -438,6 +438,9 @@ public class ParsingUtils {
      * @param factory
      */
     public static void setURLHelperFactory(URLHelperFactory factory) {
+        if(factory == null) {
+            throw new NullPointerException("Null URLHelperFactory");
+        }
         urlHelperFactory = factory;
     }
 
