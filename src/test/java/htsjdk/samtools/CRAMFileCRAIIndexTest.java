@@ -192,21 +192,9 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         long[] boundaries = new long[] {0, (CRAMFile.length() - 1) << 16};
         try (final CRAMIterator iterator = new CRAMIterator(
                 new SeekableFileStream(CRAMFile),
-                refSource, boundaries,
-                ValidationStringency.STRICT)) {
-            long count = getIteratorCount(iterator);
-            Assert.assertEquals(count, 2);
-        }
-    }
-
-    @Test
-    public void testNoStringencyIteratorConstructor() throws IOException {
-        final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
-        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.fa");
-        ReferenceSource refSource = new ReferenceSource(refFile);
-
-        long[] boundaries = new long[] {0, (CRAMFile.length() - 1) << 16};
-        try (final CRAMIterator iterator = new CRAMIterator(new SeekableFileStream(CRAMFile), refSource, boundaries)) {
+                refSource,
+                ValidationStringency.STRICT,
+                boundaries)) {
             long count = getIteratorCount(iterator);
             Assert.assertEquals(count, 2);
         }

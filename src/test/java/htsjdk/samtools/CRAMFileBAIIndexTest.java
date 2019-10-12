@@ -69,11 +69,15 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     public Object[][] getFilesWithContainerAndSlicePartitioningVariations() throws IOException {
         return new Object[][] {
                 // in order to set reads/slice to a small number, we must do the same for minimumSingleReferenceSliceSize
-                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy()) },
-                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(100).setReadsPerSlice(100)) },
-                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(150).setReadsPerSlice(150)) },
-                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(200).setReadsPerSlice(200)) },
-                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(300).setReadsPerSlice(300)) },
+                //{ getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy()) },
+                { getCRAMFileForBAMFile(BAM_FILE, referenceSource,
+                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(100).setReadsPerSlice(100)) },
+                { getCRAMFileForBAMFile(BAM_FILE, referenceSource,
+                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(150).setReadsPerSlice(150)) },
+                { getCRAMFileForBAMFile(BAM_FILE, referenceSource,
+                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(200).setReadsPerSlice(200)) },
+                { getCRAMFileForBAMFile(BAM_FILE, referenceSource,
+                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(300).setReadsPerSlice(300)) },
         };
     }
 
@@ -81,36 +85,17 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     public Object[][] getBytesWithContainerAndSlicePartitioningVariations() throws IOException {
         return new Object[][] {
                 // in order to set reads/slice to a small number, we must do the same for minimumSingleReferenceSliceSize
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy()) },
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(100).setReadsPerSlice(100)) },
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(150).setReadsPerSlice(150)) },
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(200).setReadsPerSlice(200)) },
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(300).setReadsPerSlice(300)) },
+                //{ getCRAMBytesForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy()) },
+                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
+                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(100).setReadsPerSlice(100)) },
+                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
+                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(150).setReadsPerSlice(150)) },
+                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
+                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(200).setReadsPerSlice(200)) },
+                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
+                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(300).setReadsPerSlice(300)) },
         };
     }
-
-//    @DataProvider(name="partitionData")
-//    public Object[][] getPartitionData() throws IOException {
-//        return new Object[][] {
-//                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setRecordsPerSlice(100)), Integer.valueOf(100) },
-//                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setRecordsPerSlice(150)), Integer.valueOf(150) },
-//                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setRecordsPerSlice(200)), Integer.valueOf(200) },
-//                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy().setRecordsPerSlice(300)), Integer.valueOf(300) },
-//                { getCRAMFileForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy()), Integer.valueOf(10000) },
-//        };
-//    }
-//
-//    @Test(dataProvider = "partitionData")
-//    public void getPartitions(final File cramFile,final Integer sliceSize) throws IOException {
-//        final File saveFile = new File(String.format("cramBytesSliceSize%d.cram", sliceSize));
-//        try (final FileInputStream fis = new FileInputStream(cramFile);
-//             final FileOutputStream fos = new FileOutputStream(saveFile)) {
-//            int b;
-//            while ((b = fis.read()) != -1) {
-//                fos.write(b);
-//            }
-//        }
-//    }
 
     // Mixes testing queryAlignmentStart with each CRAMFileReaderConstructor
     // Separate into individual tests
@@ -222,25 +207,6 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         }
     }
 
-    @Test
-    public void testNoStringencyConstructor() throws IOException {
-        final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
-        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.fa");
-        final ReferenceSource refSource = new ReferenceSource(refFile);
-
-        long start = 0;
-        long end = CRAMFile.length();
-        long[] boundaries = new long[] {start << 16, (end - 1) << 16};
-        try (final CRAMIterator iterator = new CRAMIterator(new SeekableFileStream(CRAMFile), refSource, boundaries)) {
-            long count = 0;
-            while (iterator.hasNext()) {
-                count++;
-                iterator.next();
-            }
-            Assert.assertEquals(count, 2);
-        }
-    }
-
     @Test(dataProvider = "bytesWithContainerAndSlicePartitioningVariations")
     public void testIteratorFromEntireFileSpans(final byte[] cramBytes) throws IOException {
         try (final CRAMFileReader cramFileReader = new CRAMFileReader(
@@ -257,12 +223,6 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
                 Assert.assertEquals(counter, NUMBER_OF_READS);
             }
         }
-    }
-
-    final byte[] getCRAIBytesForCRAMBytes(byte[] cramBytes) {
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        CRAMCRAIIndexer.writeIndex(new ByteArraySeekableStream(cramBytes), baos);
-        return baos.toByteArray();
     }
 
     @Test

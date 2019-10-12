@@ -50,7 +50,7 @@ public class BAIEntry implements Comparable<BAIEntry> {
      * BAIEntries created this way less full featured (i.e., wrong), but that is inherent
      * in the idea of converting a CRAi to a BAI to satisfy an index query).
      *
-     * HTSJDK needs a native implementation satifying queries using a CRAI directly.
+     * HTSJDK needs a native implementation satisfying queries using a CRAI directly.
      * see https://github.com/samtools/htsjdk/issues/851
      *
      * @param craiEntry
@@ -67,44 +67,6 @@ public class BAIEntry implements Comparable<BAIEntry> {
                 craiEntry.getSliceByteOffsetFromCompressionHeaderStart(),
                 0);
     }
-
-//    //TODO: unused!
-//    public static BAIEntry combine(final BAIEntry a, final BAIEntry b) {
-//        if (!a.getEntryReferenceContext().equals(b.getEntryReferenceContext()) ||
-//                (a.getSliceHeaderBlockByteOffset() != b.getSliceHeaderBlockByteOffset()) ||
-//                (a.getLandmarkIndex() != b.getLandmarkIndex()) ||
-//                (a.getContainerOffset() == b.getContainerOffset())) {
-//            throw new CRAMException(String.format(
-//                    "Can't combine BAIEntries from different ref contexts (%s/%s)",
-//                    a.getEntryReferenceContext(),
-//                    b.getEntryReferenceContext()));
-//        }
-//        final int start = Math.min(a.getAlignmentStart(), b.getAlignmentStart());
-//
-//        int span;
-//        if (a.getAlignmentStart() == b.getAlignmentStart()) {
-//            span = Math.max(a.getAlignmentSpan(), b.getAlignmentSpan());
-//        }
-//        else {
-//            span = Math.max(a.getAlignmentStart() + a.getAlignmentSpan(), b.getAlignmentStart() + b.getAlignmentSpan()) - start;
-//        }
-//
-//        final int mappedCount = a.getMappedReadsCount() + b.getMappedReadsCount();
-//        final int unmappedCount = a.getUnmappedReadsCount() + b.getUnmappedReadsCount();
-//        final int unmappedUunplacedCount = a.getUnmappedUnplacedReadsCount() + b.getUnmappedUnplacedReadsCount();
-//
-//        return new BAIEntry(
-//                a.getEntryReferenceContext(),
-//                new AlignmentSpan(
-//                        start,
-//                        span,
-//                        mappedCount,
-//                        unmappedCount,
-//                        unmappedUunplacedCount),
-//                a.getContainerOffset(),
-//                a.getSliceHeaderBlockByteOffset(),
-//                a.getLandmarkIndex());
-//    }
 
     /**
      * Sort by numerical order of reference sequence ID, except that unmapped-unplaced reads come last
@@ -126,10 +88,12 @@ public class BAIEntry implements Comparable<BAIEntry> {
     public int compareTo(final BAIEntry other) {
         // we need to call getReferenceContextID here since we might be unmapped
         if (getReferenceContext().getReferenceContextID() != other.getReferenceContext().getReferenceContextID()) {
-            if (getReferenceContext().getReferenceContextID() == ReferenceContext.UNMAPPED_UNPLACED_ID)
+            if (getReferenceContext().getReferenceContextID() == ReferenceContext.UNMAPPED_UNPLACED_ID) {
                 return 1;
-            if (other.getReferenceContext().getReferenceContextID() == ReferenceContext.UNMAPPED_UNPLACED_ID)
+            }
+            if (other.getReferenceContext().getReferenceContextID() == ReferenceContext.UNMAPPED_UNPLACED_ID) {
                 return -1;
+            }
             return Integer.compare(getReferenceContext().getReferenceSequenceID(), other.getReferenceContext().getReferenceSequenceID());
         }
 

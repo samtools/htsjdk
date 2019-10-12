@@ -252,7 +252,7 @@ public class SliceFactory {
                 }
 
             default:
-                // We're single-reference; so far everything we've seen is on a single reference contig
+                // So far everything we've accumulated for the next slice is on a single reference contig
                 if (nextReferenceIndex == currentReferenceContext) {
                     // still on the same reference contig
                     return numberOfSAMRecords >= maxRecordsPerSlice ?
@@ -261,7 +261,13 @@ public class SliceFactory {
                 } else {
                     // switching to either a new reference contig, or to unmapped
                     return numberOfSAMRecords < minimumSingleReferenceSliceThreshold ?
-                            ReferenceContext.MULTIPLE_REFERENCE_ID :
+                            // if we already have accumulated at least one slice, then we emit it rather than
+                            // switch to multi-ref so we can prevent a multi-ref slice from being packed into
+                            // a container with a single-ref slice (which violates the spec, so to do so
+                            // would require making both slices multi-ref)
+                            getNumberOfSliceEntries() > 0 ?
+                                    ReferenceContext.UNINITIALIZED_REFERENCE_ID:
+                                    ReferenceContext.MULTIPLE_REFERENCE_ID :
                             ReferenceContext.UNINITIALIZED_REFERENCE_ID;
                 }
         }

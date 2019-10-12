@@ -14,8 +14,8 @@ import java.util.Iterator;
  */
 public class CramContainerIterator implements Iterator<Container>, Closeable {
     private CramHeader cramHeader;
-
     private final SAMFileHeader samFileHeader;
+
     private CountingInputStream countingInputStream;
     private Container nextContainer;
     private boolean eof = false;

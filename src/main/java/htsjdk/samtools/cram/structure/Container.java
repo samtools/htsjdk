@@ -469,8 +469,9 @@ public class Container {
 
     @Override
     public String toString() {
-        return String.format("%s slices=%d",
+        return String.format("%s offset %d nSlices %d",
                 containerHeader.toString(),
+                getContainerByteOffset(),
                 getSlices() == null ?
                         -1 :
                         getSlices().size());

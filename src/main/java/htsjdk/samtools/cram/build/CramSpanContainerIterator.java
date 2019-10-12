@@ -12,25 +12,19 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * An iterator of CRAM containers read from locations in {@link htsjdk.samtools.seekablestream.SeekableStream}. The locations are specified with
- * pairs of coordinates, they are basically file pointers as returned for example by {@link htsjdk.samtools.SamReader.Indexing#getFilePointerSpanningReads()}
+ * An iterator of CRAM containers read from locations in {@link htsjdk.samtools.seekablestream.SeekableStream}.
+ * The locations are specified with pairs of coordinates, they are basically file pointers as returned for example
+ * by {@link htsjdk.samtools.SamReader.Indexing#getFilePointerSpanningReads()}
  */
-public class CramSpanContainerIterator implements Iterator<Container> {
-    private final CramHeader cramHeader;
-    private final SAMFileHeader samFileHeader;
+public class CramSpanContainerIterator extends CramContainerIterator {
     private final SeekableStream seekableStream;
     private Iterator<Boundary> containerBoundaries;
     private Boundary currentBoundary;
-    private long firstContainerOffset;
 
     private CramSpanContainerIterator(final SeekableStream seekableStream, final long[] coordinates) throws IOException {
+        super(seekableStream);
         this.seekableStream = seekableStream;
-        seekableStream.seek(0);
-        this.cramHeader = CramIO.readCramHeader(seekableStream);
-        samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), seekableStream, null);
-        firstContainerOffset = seekableStream.position();
-
-        final List<Boundary> boundaries = new ArrayList<Boundary>();
+        final List<Boundary> boundaries = new ArrayList<>();
         for (int i = 0; i < coordinates.length; i += 2) {
             boundaries.add(new Boundary(coordinates[i], coordinates[i + 1]));
         }
@@ -41,6 +35,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
 
     public static CramSpanContainerIterator fromFileSpan(final SeekableStream seekableStream, final long[] coordinates) {
         try {
+            seekableStream.seek(0);
             return new CramSpanContainerIterator(seekableStream, coordinates);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
@@ -49,8 +44,12 @@ public class CramSpanContainerIterator implements Iterator<Container> {
 
     @Override
     public boolean hasNext() {
-        if (currentBoundary.hasNext()) return true;
-        if (!containerBoundaries.hasNext()) return false;
+        if (currentBoundary.hasNext()) {
+            return true;
+        }
+        if (!containerBoundaries.hasNext()) {
+            return false;
+        }
         currentBoundary = containerBoundaries.next();
         return currentBoundary.hasNext();
     }
@@ -63,14 +62,6 @@ public class CramSpanContainerIterator implements Iterator<Container> {
     @Override
     public void remove() {
         throw new RuntimeException("Not allowed.");
-    }
-
-    public CramHeader getCramHeader() {
-        return cramHeader;
-    }
-
-    public SAMFileHeader getSamFileHeader() {
-        return samFileHeader;
     }
 
     private class Boundary implements Iterator<Container> {
@@ -105,14 +96,10 @@ public class CramSpanContainerIterator implements Iterator<Container> {
                     throw new RuntimeException("No more containers in this boundary.");
                 }
                 
-                return new Container(cramHeader.getVersion(), seekableStream, seekableStream.position());
+                return new Container(getCramHeader().getVersion(), seekableStream, seekableStream.position());
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);
             }
         }
-    }
-
-    public long getFirstContainerOffset() {
-        return firstContainerOffset;
     }
 }

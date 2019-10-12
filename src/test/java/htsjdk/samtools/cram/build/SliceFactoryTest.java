@@ -12,6 +12,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SliceFactoryTest  extends HtsjdkTest {
+
     @DataProvider(name="emitSliceCoordinateSortedPositive")
     private Object[][] getEmitSliceCoordinateSortedPositive() {
         final int MAPPED_REFERENCE_INDEX = 1;
@@ -35,6 +36,9 @@ public class SliceFactoryTest  extends HtsjdkTest {
 
                 { MAPPED_REFERENCE_INDEX, CRAMEncodingStrategy.DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1,
                         MAPPED_REFERENCE_INDEX, MAPPED_REFERENCE_INDEX },
+                // see the alternative variant for the below case in #testEmitSliceMultiSlice, which test the
+                // different outcome for this case when the slice being emitted isn't the first slice in the container
+                //(rather than switching to MULTIPLE_REFERENCE_ID, we emit the slice first)
                 { MAPPED_REFERENCE_INDEX, CRAMEncodingStrategy.DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1,
                         MAPPED_REFERENCE_INDEX + 1, ReferenceContext.MULTIPLE_REFERENCE_ID },
                 { MAPPED_REFERENCE_INDEX, CRAMEncodingStrategy.DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1,
@@ -72,7 +76,7 @@ public class SliceFactoryTest  extends HtsjdkTest {
                 // reference-compression. So for coordinate-sorted inputs, the current policy emits a MULTI_REF
                 // slice once we've accumulated MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD reads, in order to keep
                 // the size of multi-ref slices to a minimum, on the optimistic theory that for coord-sorted,
-                // most likely doing so will put the next slice back on track for single-ref(mapped or unmapped).
+                // doing so will most likely put the next slice back on track for single-ref(mapped or unmapped).
                 // These next six test cases validate that policy.
                 { ReferenceContext.MULTIPLE_REFERENCE_ID, CRAMEncodingStrategy.DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD,
                         MAPPED_REFERENCE_INDEX, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
@@ -107,6 +111,33 @@ public class SliceFactoryTest  extends HtsjdkTest {
                 { ReferenceContext.UNMAPPED_UNPLACED_ID, CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE,
                         SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
         };
+    }
+
+
+    @Test
+    private void testEmitSliceMultiSliceContainer() {
+        // In most cases, emitSlice is indifferent as to whether the slice being emitted is the first slice in a
+        // container, or the Nth slice. But there is a special short-circuit case for Nth slice (any slice other than
+        // the first) when we're about to switch to multi-ref because we're changing reference contexts, and haven't
+        // yet accumulated enough records to emit a single ref slice. Since we generally want multi-ref slices to be
+        // in their own container (because any container that contains a multi-ref slice must contain ONLY multi-ref
+        // slices), we special-case for this and prefer to emit the small single-ref slice even if has only a few
+        // reads, rather than confer MULTI-REF on the entire container, which would include the already-existing
+        // single-ref slice.
+        //
+        // This test is separate from the other test cases because it requires priming the SliceFactory state
+        // with an existing SliceEntry.
+        //
+        final SliceFactory sliceFactory = new SliceFactory(
+                new CRAMEncodingStrategy(),
+                CRAMStructureTestHelper.REFERENCE_SOURCE,
+                CRAMStructureTestHelper.SAM_FILE_HEADER,
+                0L);
+        sliceFactory.addSliceEntry(0, CRAMStructureTestHelper.createSAMRecordsMapped(10, 0));
+        Assert.assertEquals(
+                sliceFactory.shouldEmitSlice(0, 1, 1),
+                ReferenceContext.UNINITIALIZED_REFERENCE_ID
+        );
     }
 
     @Test(dataProvider = "emitSliceCoordinateSortedPositive")
