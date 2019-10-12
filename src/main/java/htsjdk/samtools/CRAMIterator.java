@@ -33,14 +33,12 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator, Closeable {
     private final CountingInputStream countingInputStream;
+    private final CramContainerIterator containerIterator;
     private final CramHeader cramHeader;
     private final SAMFileHeader samFileHeader;
-
     private final CRAMReferenceState cramReferenceState;
 
-    //TODO: this should have a better (common) type (ContainerIterator??)
-    private final Iterator<Container> containerIterator;
-
+    private ValidationStringency validationStringency;
     private List<SAMRecord> samRecords;
     private Container container;
     private SamReader mReader;
@@ -56,48 +54,35 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
      * (for identification by the validator which records are invalid)
      */
     private long samRecordIndex;
-    private Iterator<SAMRecord> iterator = Collections.EMPTY_LIST.iterator();
-    private ValidationStringency validationStringency = ValidationStringency.DEFAULT_STRINGENCY;
+    private Iterator<SAMRecord> iterator = Collections.EMPTY_LIST.iterator();;
 
     public CRAMIterator(final InputStream inputStream,
                         final CRAMReferenceSource referenceSource,
                         final ValidationStringency validationStringency) {
         this.countingInputStream = new CountingInputStream(inputStream);
-        this.validationStringency = validationStringency;
-        //TODO fix the type of the containerIterator member so we don't need this intermediate
-        final CramContainerIterator containerIterator = new CramContainerIterator(this.countingInputStream);
-        cramHeader = containerIterator.getCramHeader();
-        samFileHeader = containerIterator.getSamFileHeader();
-        this.containerIterator = containerIterator;
+        this.containerIterator = new CramContainerIterator(this.countingInputStream);
 
+        this.validationStringency = validationStringency;
+        samFileHeader = containerIterator.getSamFileHeader();
+        cramReferenceState = new CRAMReferenceState(referenceSource, samFileHeader);
+        cramHeader = containerIterator.getCramHeader();
         firstContainerOffset = this.countingInputStream.getCount();
-        //TODO: this needs a smarter initializer param (don't need encoding strategy here)
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
-        cramReferenceState = new CRAMReferenceState(referenceSource, samFileHeader);
     }
 
     public CRAMIterator(final SeekableStream seekableStream,
                         final CRAMReferenceSource referenceSource,
-                        final long[] coordinates,
-                        final ValidationStringency validationStringency) {
-        this.countingInputStream = new CountingInputStream(seekableStream);
-        this.validationStringency = validationStringency;
-        final CramSpanContainerIterator containerIterator = CramSpanContainerIterator.fromFileSpan(seekableStream, coordinates);
-        cramHeader = containerIterator.getCramHeader();
-        samFileHeader = containerIterator.getSamFileHeader();
-        this.containerIterator = containerIterator;
-
-        firstContainerOffset = containerIterator.getFirstContainerOffset();
-        //TODO: this needs a smarter initializer param (don't need encoding strategy here)
-        samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
-        cramReferenceState = new CRAMReferenceState(referenceSource, samFileHeader);
-    }
-
-    @Deprecated
-    public CRAMIterator(final SeekableStream seekableStream,
-                        final CRAMReferenceSource referenceSource,
+                        final ValidationStringency validationStringency,
                         final long[] coordinates) {
-        this(seekableStream, referenceSource, coordinates, ValidationStringency.DEFAULT_STRINGENCY);
+        this.countingInputStream = new CountingInputStream(seekableStream);
+        this.containerIterator = CramSpanContainerIterator.fromFileSpan(seekableStream, coordinates);
+
+        this.validationStringency = validationStringency;
+        samFileHeader = containerIterator.getSamFileHeader();
+        cramReferenceState = new CRAMReferenceState(referenceSource, samFileHeader);
+        cramHeader = containerIterator.getCramHeader();
+        firstContainerOffset = this.countingInputStream.getCount();
+        samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
     }
 
     private void nextContainer() throws IllegalArgumentException, CRAMException {

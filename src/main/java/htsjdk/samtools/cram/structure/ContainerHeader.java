@@ -204,9 +204,9 @@ public class ContainerHeader {
 
     @Override
     public String toString() {
-        return String
-                .format("%s, nRecords=%d, nBlocks=%d",
-                        alignmentContext, recordCount, blockCount);
+        return String.format(
+                "%s, nRecords=%d, nBlocks=%d, nBases=%d, gloablCounter=%d",
+                        alignmentContext, recordCount, blockCount, baseCount, globalRecordCounter);
     }
 
     public boolean isEOF() {

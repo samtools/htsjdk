@@ -302,11 +302,13 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     public SAMRecordIterator iterator(final SAMFileSpan fileSpan) {
         // get the file coordinates for the span:
         final long[] coordinateArray = ((BAMFileSpan) fileSpan).toCoordinateArray();
-        if (coordinateArray == null || coordinateArray.length == 0) return emptyIterator;
+        if (coordinateArray == null || coordinateArray.length == 0) {
+            return emptyIterator;
+        }
 
         // create an input stream that reads the source cram stream only within the coordinate pairs:
         final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
-        return new CRAMIterator(seekableStream, referenceSource, coordinateArray, validationStringency);
+        return new CRAMIterator(seekableStream, referenceSource, validationStringency, coordinateArray);
     }
 
     @Override
@@ -470,6 +472,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     // convert queries -> merged BAMFileSpan -> coordinate array
     private static long[] coordinatesFromQueryIntervals(BAMIndex index, QueryInterval[] queries) {
+        //Arrays.asList(queries).forEach(qi -> System.out.println(String.format("%d %d:%d", qi.referenceIndex, qi.start, qi.end)));
         ArrayList<BAMFileSpan> spanList = new ArrayList<>(1);
         Arrays.asList(queries).forEach(qi -> spanList.add(index.getSpanOverlapping(qi.referenceIndex, qi.start, qi.end)));
         BAMFileSpan spanArray[] = new BAMFileSpan[spanList.size()];
@@ -511,8 +514,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 unfilteredIterator = new CRAMIterator(
                         getSeekableStreamOrFailWithRTE(),
                         referenceSource,
-                        coordinates,
-                        validationStringency
+                        validationStringency,
+                        coordinates
                 );
                 
                 getNextRecord(); // advance to the first record that matches the filter criteria
