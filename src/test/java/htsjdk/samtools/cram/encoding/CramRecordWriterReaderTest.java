@@ -5,10 +5,7 @@ import htsjdk.samtools.SAMFlag;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
-import htsjdk.samtools.cram.structure.CRAMRecord;
-import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.CompressorCache;
-import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -38,7 +35,8 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
         // which is the only way to set a record's tagIdsIndex
         // which would otherwise be null
 
-        final CompressionHeader header = new CompressionHeaderFactory().build(unmappedRecords, coordinateSorted);
+        final CompressionHeader header = new CompressionHeaderFactory(
+                new CRAMEncodingStrategy()).build(unmappedRecords, coordinateSorted);
 
         final Slice slice = new Slice(unmappedRecords, header, 0L, 0L);
         final List<CRAMRecord> roundTripRecords = slice.getRawCRAMRecords(new CompressorCache(), ValidationStringency.STRICT);

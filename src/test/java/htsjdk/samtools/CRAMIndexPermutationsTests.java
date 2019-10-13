@@ -216,26 +216,38 @@ public class CRAMIndexPermutationsTests extends HtsjdkTest {
         Assert.assertEquals(cramResults, truthResults);
     }
 
-//    //////////////////////////////
-//    TODO: remove me
-//    @Test
-//    public void testLargeRAMIndexPerf() throws IOException {
-//        final File largeCRAM = new File("/Users/cnorman/projects/references/NA12878.cram");
-//        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
-//
-//        final List<String> cramResults = CRAMIndexTestHelper.getCRAMResultsForQueryIntervals(
-//                largeCRAM,
-//                SamFiles.findIndex(largeCRAM),
-//                new ReferenceSource(referenceFile),
-//                // 1
-//                new QueryInterval[]{
-//                        // 1, Read container at 11101534316
-//                        new QueryInterval(10, 60014, 60100),
-//                        //2, Read container at 12707266531
-//                        new QueryInterval(12, 16067510, 16067700)
-//                });
-//        System.out.println(cramResults.size());
-//    }
-//    //////////////////////////////
+    //////////////////////////////
+    //TODO: remove me
+    @Test
+    public void testLargeCRAMIndexPerf() throws IOException {
+        final File largeCRAM = new File("/Users/cnorman/projects/references/NA12878.cram");
+        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+
+        final List<String> cramResults = CRAMIndexTestHelper.getCRAMResultsForQueryIntervals(
+                largeCRAM,
+                SamFiles.findIndex(largeCRAM),
+                new ReferenceSource(referenceFile),
+                // 1
+                new QueryInterval[]{
+                        // 1, Read container at 11101534316
+                        new QueryInterval(10, 60014, 60100),
+                        //2, Read container at 12707266531
+                        new QueryInterval(12, 16067510, 16067700)
+                });
+        Assert.assertEquals(cramResults.size(), 3);
+    }
+    @Test
+    public void testLargeCRAMIndexUnmapped() throws IOException {
+        final File largeCRAM = new File("/Users/cnorman/projects/references/NA12878.cram");
+        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+
+        final List<String> cramResults = CRAMIndexTestHelper.getCRAMResultsForUnmapped(
+                largeCRAM,
+                SamFiles.findIndex(largeCRAM),
+                new ReferenceSource(referenceFile));
+        System.out.println(cramResults.size());
+        Assert.assertEquals(cramResults.size(), 2589246);
+    }
+    //////////////////////////////
 
 }

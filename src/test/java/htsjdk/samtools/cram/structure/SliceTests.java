@@ -191,7 +191,7 @@ public class SliceTests extends HtsjdkTest {
                                final ReferenceContext expectedReferenceContext,
                                final int expectedAlignmentStart,
                                final int expectedAlignmentSpan) {
-        final CompressionHeader header = new CompressionHeaderFactory().build(records, coordinateSorted);
+        final CompressionHeader header = new CompressionHeaderFactory(new CRAMEncodingStrategy()).build(records, coordinateSorted);
         final Slice slice = new Slice(records, header, 0L, 0L);
         final int expectedBaseCount = TEST_RECORD_COUNT * CRAMStructureTestHelper.READ_LENGTH;
         CRAMStructureTestHelper.assertSliceState(
@@ -211,7 +211,7 @@ public class SliceTests extends HtsjdkTest {
         final CRAMRecord unmapped = CRAMStructureTestHelper.createCRAMRecordsUnmapped(1).get(0);
         records.add(unmapped);
 
-        final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
+        final CompressionHeader header = new CompressionHeaderFactory(new CRAMEncodingStrategy()).build(records, true);
 
         final Slice slice = new Slice(records, header, 0L, 0L);
         final int expectedBaseCount = single.getReadLength() + unmapped.getReadLength();
@@ -248,7 +248,7 @@ public class SliceTests extends HtsjdkTest {
 
         // NOTE: multiref alignment spans are used for CRAI/BAI indexing, and only make sense when records are
         // coordinate sorted, so we only test with coordinateSorted = true;
-        final CompressionHeader header = new CompressionHeaderFactory().build(cramRecords, true);
+        final CompressionHeader header = new CompressionHeaderFactory(new CRAMEncodingStrategy()).build(cramRecords, true);
         final Slice slice = new Slice(cramRecords, header, 0L, 0L);
         final Map<ReferenceContext, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(
                 new CompressorCache(),
@@ -282,7 +282,7 @@ public class SliceTests extends HtsjdkTest {
 
         // NOTE: multiref alignment spans are used for CRAI/BAI indexing, and only make sense when records are
         // coordinate sorted, so test that we reject coordinateSorted = false;
-        final CompressionHeader header = new CompressionHeaderFactory().build(cramRecords, false);
+        final CompressionHeader header = new CompressionHeaderFactory(new CRAMEncodingStrategy()).build(cramRecords, false);
         final Slice slice = new Slice(cramRecords, header, 0L, 0L);
         slice.getMultiRefAlignmentSpans(new CompressorCache(), ValidationStringency.DEFAULT_STRINGENCY);
     }

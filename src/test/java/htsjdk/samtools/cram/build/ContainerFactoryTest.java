@@ -235,9 +235,9 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE / 2)
                 },
                 {
-                        // this generates two containers since it has some mapped and one unmapped
-                        // TODO: even though we allow 2 slices/container; because we won't emit a second
-                        // single-ref slice into the first container once we've emitted the multi-ref slice!
+                        // even though we allow 2 slices/container, this generates two containers since it has
+                        // some mapped and one unmapped, and we won't emit a second single-ref slice into the
+                        // first container once we've emitted the multi-ref slice!
                         Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE / 2, 0),
                                 CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE))

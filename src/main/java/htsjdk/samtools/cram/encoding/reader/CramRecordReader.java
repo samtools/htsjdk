@@ -75,9 +75,6 @@ public class CramRecordReader {
     private final SliceBlocksReadStreams sliceBlocksReadStreams;
     protected final ValidationStringency validationStringency;
 
-    //TODO: unused!
-    //private int recordCounter = 0;
-
     /**
      * Initialize a Cram Record Reader
      *
@@ -137,7 +134,6 @@ public class CramRecordReader {
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         mapEntry -> new DataSeriesReader<>(
-                                // TODO: why are tags always BYTE_ARRAY ? is that in the spec, or just a logical
                                 // consequence/choice for tags
                                 DataSeriesType.BYTE_ARRAY,
                                 mapEntry.getValue(),

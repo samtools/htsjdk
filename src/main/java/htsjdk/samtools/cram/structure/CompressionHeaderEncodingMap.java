@@ -336,8 +336,8 @@ public class CompressionHeaderEncodingMap {
     // encoding map that contains the handful of data series that htsjdk generally doesn't use
     // when writing, since there is no code to add those data series to the map as part of the
     // CRAM write implementation.
-    //TODO: make this private
-    public void putExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
+    //VisibleForTesting
+    void putExternalEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
         // This spins up a CRAMEncoding temporarily in order to retrieve its EncodingDescriptor.
         // In reality, the encoding descriptor/parameters for each of these external encoding
         // classes happens to be identical and are all interchangeable (they only contain the
@@ -371,8 +371,8 @@ public class CompressionHeaderEncodingMap {
      * @param dataSeries data series to add
      * @param encodingDescriptor encoding descriptor to use
      */
-    //TODO: make this private
-    public void putCoreEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
+    //VisibleForTesting
+    void putCoreEncoding(final DataSeries dataSeries, final EncodingDescriptor encodingDescriptor) {
         ValidationUtils.validateArg(!encodingDescriptor.getEncodingID().isExternalEncoding(),
                 "Attempt to use an external encoding as a core encoding");
         if (externalCompressors.containsKey(dataSeries.getExternalBlockContentId())) {
@@ -394,7 +394,6 @@ public class CompressionHeaderEncodingMap {
     }
 
     // add an external encoding and corresponding compressor
-    //TODO: make this private
     public void putExternalEncoding(final DataSeries dataSeries,
                                     final EncodingDescriptor encodingDescriptor,
                                     final ExternalCompressor compressor) {

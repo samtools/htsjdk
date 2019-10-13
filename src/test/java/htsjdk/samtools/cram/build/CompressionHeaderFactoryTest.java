@@ -18,11 +18,11 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void testAP_delta() {
         boolean sorted = true;
-        CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
+        CompressionHeader header = new CompressionHeaderFactory(new CRAMEncodingStrategy()).build(new ArrayList<>(), sorted);
         Assert.assertEquals(header.isAPDelta(), sorted);
 
         sorted = false;
-        header = new CompressionHeaderFactory().build(new ArrayList<>(), sorted);
+        header = new CompressionHeaderFactory(new CRAMEncodingStrategy()).build(new ArrayList<>(), sorted);
         Assert.assertEquals(header.isAPDelta(), sorted);
     }
 
@@ -35,7 +35,7 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
                 "rname", 10, 1, 1, 10, new byte[]{'a', 'c', 'g', 't'},2,
                 Collections.singletonList(new ReadTag(tagID, data, ValidationStringency.STRICT)));
 
-        final CompressionHeaderFactory factory = new CompressionHeaderFactory();
+        final CompressionHeaderFactory factory = new CompressionHeaderFactory(new CRAMEncodingStrategy());
 
         final byte[] dataForTag = factory.getDataForTag(Collections.singletonList(cramRecord), tagID);
         Assert.assertEquals(dataForTag, data);

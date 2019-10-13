@@ -330,7 +330,7 @@ public class Block {
 
     @Override
     public String toString() {
-        return String.format("compression method=%s, content type=%s, id=%d, raw size=%d, compressed size=%d",
+        return String.format("method=%s, type=%s, id=%d, raw size=%d, compressed size=%d",
                 getCompressionMethod().name(),
                 getContentType().name(),
                 getContentId(),

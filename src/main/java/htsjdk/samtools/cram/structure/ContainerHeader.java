@@ -205,7 +205,7 @@ public class ContainerHeader {
     @Override
     public String toString() {
         return String.format(
-                "%s, nRecords=%d, nBlocks=%d, nBases=%d, gloablCounter=%d",
+                "%s, nRecords=%d, nBlocks=%d, nBases=%d, globalCounter=%d",
                         alignmentContext, recordCount, blockCount, baseCount, globalRecordCounter);
     }
 

@@ -194,6 +194,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 new SeekableFileStream(CRAMFile),
                 refSource,
                 ValidationStringency.STRICT,
+                null,
                 boundaries)) {
             long count = getIteratorCount(iterator);
             Assert.assertEquals(count, 2);

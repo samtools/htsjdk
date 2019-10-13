@@ -18,7 +18,7 @@ public class CRAIEntryTest extends HtsjdkTest {
     private static final Random RANDOM = new Random(TestUtil.RANDOM_SEED);
 
     private static final CompressionHeader COMPRESSION_HEADER =
-            new CompressionHeaderFactory().build(Collections.EMPTY_LIST, true);
+            new CompressionHeaderFactory(new CRAMEncodingStrategy()).build(Collections.EMPTY_LIST, true);
 
     //TODO: this belongs in slice tests...?
 //    @Test(dataProvider = "uninitializedCRAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)

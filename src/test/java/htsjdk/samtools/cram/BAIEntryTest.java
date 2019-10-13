@@ -12,7 +12,7 @@ public class BAIEntryTest extends HtsjdkTest {
     @Test(expectedExceptions = CRAMException.class)
     public void testRejectMultiRefBAIEntry() {
         // A BAIEntry should never be made from a MULTI_REF reference context, because for a BAI index
-        // MUTLI_REF slices need to be resolved down to constituent BAIEntrys, one for each reference
+        // MUTLI_REF slices need to be resolved down to constituent BAIEntry(s), one for each reference
         // container reference context, including unmapped
         new BAIEntry(
                 ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
