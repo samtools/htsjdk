@@ -10,7 +10,6 @@ import java.io.OutputStream;
  * A class representing CRAI index entry: file and alignment offsets for each slice.
  * Created by vadim on 10/08/2015.
  */
-//TODO: align the names of these fields/methods with BAIEntry
 public class CRAIEntry implements Comparable<CRAIEntry> {
     private final int sequenceId;
     private final int alignmentStart;
@@ -50,12 +49,11 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * Create a CRAI Entry from a serialized CRAI index line.
      *
      * @param line string formatted as a CRAI index entry
-     * @throws CRAIIndex.CRAIIndexException
      */
     public CRAIEntry(final String line) {
         final String[] chunks = line.split("\t");
         if (chunks.length != CRAI_INDEX_COLUMNS) {
-            throw new CRAIIndex.CRAIIndexException(
+            throw new CRAMException(
                     "Malformed CRAI index entry: expecting " + CRAI_INDEX_COLUMNS + " columns but got " + chunks.length);
         }
 
@@ -67,7 +65,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
             sliceByteOffsetFromCompressionHeaderStart = Integer.parseInt(chunks[4]);
             sliceByteSize = Integer.parseInt(chunks[5]);
         } catch (final NumberFormatException e) {
-            throw new CRAIIndex.CRAIIndexException(e);
+            throw new CRAMException(e);
         }
     }
 

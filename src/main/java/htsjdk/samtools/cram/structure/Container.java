@@ -386,8 +386,6 @@ public class Container {
             return Collections.emptyList();
         }
 
-        //TODO: these might need to be merged, so that in the end there is only one entry per ref context ?
-        // these should NOT need to be sorted ??
         return getSlices().stream()
                 .map(s -> s.getBAIEntries(compressorCache))
                 .flatMap(List::stream)

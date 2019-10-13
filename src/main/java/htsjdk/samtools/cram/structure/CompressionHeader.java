@@ -164,27 +164,26 @@ public class CompressionHeader {
 
     private byte[][][] parseDictionary(final byte[] bytes) {
         final List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();
-        {
-            int i = 0;
-            while (i < bytes.length) {
-                final List<byte[]> list = new ArrayList<byte[]>();
-                while (bytes[i] != 0) {
-                    list.add(Arrays.copyOfRange(bytes, i, i + 3));
-                    i += 3;
-                }
-                i++;
-                dictionary.add(list);
+        int i = 0;
+        while (i < bytes.length) {
+            final List<byte[]> list = new ArrayList<byte[]>();
+            while (bytes[i] != 0) {
+                list.add(Arrays.copyOfRange(bytes, i, i + 3));
+                i += 3;
             }
+            i++;
+            dictionary.add(list);
         }
 
         int maxWidth = 0;
-        for (final List<byte[]> list : dictionary)
+        for (final List<byte[]> list : dictionary) {
             maxWidth = Math.max(maxWidth, list.size());
+        }
 
         final byte[][][] array = new byte[dictionary.size()][][];
-        for (int i = 0; i < dictionary.size(); i++) {
-            final List<byte[]> list = dictionary.get(i);
-            array[i] = list.toArray(new byte[list.size()][]);
+        for (int j = 0; j < dictionary.size(); j++) {
+            final List<byte[]> list = dictionary.get(j);
+            array[j] = list.toArray(new byte[list.size()][]);
         }
 
         return array;
@@ -193,14 +192,18 @@ public class CompressionHeader {
     private byte[] dictionaryToByteArray() {
         int size = 0;
         for (final byte[][] dictionaryArrayArray : tagIDDictionary) {
-            for (final byte[] dictionaryArray : dictionaryArrayArray) size += dictionaryArray.length;
+            for (final byte[] dictionaryArray : dictionaryArrayArray) {
+                size += dictionaryArray.length;
+            }
             size++;
         }
 
         final byte[] bytes = new byte[size];
         final ByteBuffer buffer = ByteBuffer.wrap(bytes);
         for (final byte[][] dictionaryArrayArray : tagIDDictionary) {
-            for (final byte[] dictionaryArray : dictionaryArrayArray) buffer.put(dictionaryArray);
+            for (final byte[] dictionaryArray : dictionaryArrayArray) {
+                buffer.put(dictionaryArray);
+            }
             buffer.put((byte) 0);
         }
 
@@ -234,8 +237,7 @@ public class CompressionHeader {
                     buffer.get(matrixBytes);
                     substitutionMatrix = new SubstitutionMatrix(matrixBytes);
                 } else
-                    throw new RuntimeException("Unknown preservation map key: "
-                            + key);
+                    throw new RuntimeException("Unknown preservation map key: " + key);
             }
         }
 
@@ -264,7 +266,6 @@ public class CompressionHeader {
     }
 
     private void internalWrite(final OutputStream outputStream) throws IOException {
-
         { // preservation map:
             //TODO: fix this buffer allocation...
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);

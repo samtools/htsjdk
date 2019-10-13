@@ -55,13 +55,6 @@ public class CompressionHeaderFactory {
     private final Map<Integer, EncodingDetails> bestTagEncodings = new HashMap<>();
     //TODO: fix this allocation
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
-    /**
-     * Create a CompressionHeaderFactory using default CRAMEncodingStrategy.
-     */
-    //TODO: this is used only by tests
-    public CompressionHeaderFactory() {
-        this(new CRAMEncodingStrategy());
-    }
 
     /**
      * Create a CompressionHeaderFactory using the provided CRAMEncodingStrategy.
@@ -111,7 +104,6 @@ public class CompressionHeaderFactory {
         //reset the bestTagEncodings map state since there is no guarantee that the tag encodings accumulated
         // for the current container will be appropriate for the tag value distributions in subsequent containers
         bestTagEncodings.clear();
-
         return compressionHeader;
     }
 
@@ -187,7 +179,6 @@ public class CompressionHeaderFactory {
      */
     private static byte[][][] buildTagIdDictionary(final List<CRAMRecord> records) {
         final Comparator<ReadTag> comparator = new Comparator<ReadTag>() {
-
             @Override
             public int compare(final ReadTag o1, final ReadTag o2) {
                 return o1.keyType3BytesAsInt - o2.keyType3BytesAsInt;
@@ -195,19 +186,16 @@ public class CompressionHeaderFactory {
         };
 
         final Comparator<byte[]> baComparator = new Comparator<byte[]>() {
-
             @Override
             public int compare(final byte[] o1, final byte[] o2) {
                 if (o1.length - o2.length != 0) {
                     return o1.length - o2.length;
                 }
-
                 for (int i = 0; i < o1.length; i++) {
                     if (o1[i] != o2[i]) {
                         return o1[i] - o2[i];
                     }
                 }
-
                 return 0;
             }
         };
@@ -281,19 +269,16 @@ public class CompressionHeaderFactory {
         baosForTagValues.reset();
 
         for (final CRAMRecord record : records) {
-            if (record.getTags() == null) {
-                continue;
-            }
-
-            for (final ReadTag tag : record.getTags()) {
-                if (tag.keyType3BytesAsInt != tagID) {
-                    continue;
-                }
-                final byte[] valueBytes = tag.getValueAsByteArray();
-                try {
-                    baosForTagValues.write(valueBytes);
-                } catch (final IOException e) {
-                    throw new RuntimeIOException(e);
+            if (record.getTags() != null) {
+                for (final ReadTag tag : record.getTags()) {
+                    if (tag.keyType3BytesAsInt == tagID) {
+                        final byte[] valueBytes = tag.getValueAsByteArray();
+                        try {
+                            baosForTagValues.write(valueBytes);
+                        } catch (final IOException e) {
+                            throw new RuntimeIOException(e);
+                        }
+                    }
                 }
             }
         }
@@ -301,23 +286,22 @@ public class CompressionHeaderFactory {
         return baosForTagValues.toByteArray();
     }
 
-    static ByteSizeRange getByteSizeRangeOfTagValues(final List<CRAMRecord> records, final int tagID) {
+    public static ByteSizeRange getByteSizeRangeOfTagValues(final List<CRAMRecord> records, final int tagID) {
         final byte type = getTagType(tagID);
         final ByteSizeRange stats = new ByteSizeRange();
         for (final CRAMRecord record : records) {
-            if (record.getTags() == null) {
-                continue;
-            }
-
-            for (final ReadTag tag : record.getTags()) {
-                if (tag.keyType3BytesAsInt != tagID) {
-                    continue;
+            if (record.getTags() != null) {
+                for (final ReadTag tag : record.getTags()) {
+                    if (tag.keyType3BytesAsInt == tagID) {
+                        final int size = getTagValueByteSize(type, tag.getValue());
+                        if (stats.min > size) {
+                            stats.min = size;
+                        }
+                        if (stats.max < size) {
+                            stats.max = size;
+                        }
+                    }
                 }
-                final int size = getTagValueByteSize(type, tag.getValue());
-                if (stats.min > size)
-                    stats.min = size;
-                if (stats.max < size)
-                    stats.max = size;
             }
         }
         return stats;
@@ -335,12 +319,14 @@ public class CompressionHeaderFactory {
         }
 
         for (int i = 0; i < usage.length; i++) {
-            if (usage[i] == 0)
+            if (usage[i] == 0) {
                 return i;
+            }
         }
         return ALL_BYTES_USED;
     }
 
+    // TODO: used in testing
     static class ByteSizeRange {
         int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
     }
@@ -349,7 +335,6 @@ public class CompressionHeaderFactory {
      * A combination of external compressor and encoding params. This is all
      * that is needed to encode a data series.
      */
-    //TODO: can this go away ?
     private static class EncodingDetails {
         ExternalCompressor compressor;
         EncodingDescriptor params; // EncodingID + byte array of params
@@ -469,17 +454,21 @@ public class CompressionHeaderFactory {
             case 'Z':
                 return ((String) value).length()+1;
             case 'B':
-                if (value instanceof byte[])
-                    return 1+ 4+ ((byte[]) value).length;
-                if (value instanceof short[])
-                    return 1+ 4+ ((short[]) value).length * 2;
-                if (value instanceof int[])
-                    return 1+ 4+ ((int[]) value).length * 4;
-                if (value instanceof float[])
-                    return 1+ 4+ ((float[]) value).length * 4;
-                if (value instanceof long[])
-                    return 1+ 4+ ((long[]) value).length * 4;
-
+                if (value instanceof byte[]) {
+                    return 1 + 4 + ((byte[]) value).length;
+                }
+                if (value instanceof short[]) {
+                    return 1 + 4 + ((short[]) value).length * 2;
+                }
+                if (value instanceof int[]) {
+                    return 1 + 4 + ((int[]) value).length * 4;
+                }
+                if (value instanceof float[]) {
+                    return 1 + 4 + ((float[]) value).length * 4;
+                }
+                if (value instanceof long[]) {
+                    return 1 + 4 + ((long[]) value).length * 4;
+                }
                 throw new RuntimeException("Unknown tag array class: " + value.getClass());
             default:
                 throw new RuntimeException("Unknown tag type: " + (char) type);

@@ -151,11 +151,11 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     public String toString() {
         switch (referenceContextID) {
             case MULTIPLE_REFERENCE_ID:
-                return "MULTIPLE_REFERENCE_CONTEXT";
+                return "MULTIPLE_REFERENCE";
             case UNMAPPED_UNPLACED_ID:
-                return "UNMAPPED_UNPLACED_CONTEXT";
+                return "UNMAPPED_UNPLACED";
             default:
-                return "SINGLE_REFERENCE_CONTEXT: " + referenceContextID;
+                return "SINGLE_REFERENCE: " + referenceContextID;
         }
     }
 }

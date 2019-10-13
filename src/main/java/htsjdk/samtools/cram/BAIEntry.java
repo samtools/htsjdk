@@ -8,7 +8,6 @@ import htsjdk.samtools.cram.structure.AlignmentSpan;
  * of a Slice (since MULTI_REF slices can contain records for more than one reference context), as these
  * need to be separated for BAI index creation).
  */
-//TODO: Change the name of this to CRAMBAIEntry
 public class BAIEntry implements Comparable<BAIEntry> {
     final ReferenceContext referenceContext;
     final AlignmentSpan alignmentSpan;
@@ -29,7 +28,8 @@ public class BAIEntry implements Comparable<BAIEntry> {
         if (referenceContext.equals(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)) {
             throw new CRAMException("Attempt to create BAI entry from a multi ref context");
         } else if ((referenceContext.equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT) &&
-                //TODO: many tests fail if we don't allow alignmentStart == -1 or alignmentSpan == 1
+                //unfortunately, many tests fail if we don't allow alignmentStart == -1 or alignmentSpan == 1
+                //because there are files out there with these (non-epc conforming) values
                 ((alignmentSpan.getAlignmentStart() != 0 && alignmentSpan.getAlignmentStart() != -1) ||
                         (alignmentSpan.getAlignmentSpan() != 0 && alignmentSpan.getAlignmentSpan() != 1)))) {
             throw new CRAMException(

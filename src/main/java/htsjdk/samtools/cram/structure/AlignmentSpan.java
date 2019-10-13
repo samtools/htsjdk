@@ -51,7 +51,7 @@ public class AlignmentSpan {
     public AlignmentSpan(
             final int alignmentStart,
             final int alignmentSpan,
-            final int mappedCount, //TODO: this is really "placed", since it includes records that are unmapped/placed
+            final int mappedCount, // this is really "placed" reads, since it includes records that are unmapped/placed
             final int unmappedCount,
             final int unmappedUnplacedCount) {
         this.alignmentStart = alignmentStart;

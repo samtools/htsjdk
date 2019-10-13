@@ -143,9 +143,10 @@ public class AlignmentContext {
     @Override
     public String toString() {
             return String.format(
-                    "ReferenceSequenceId=%s, alignmentStart=%d, alignmentSpan=%d",
-                    referenceContext.getReferenceContextID(),
-                    alignmentStart, alignmentSpan);
+                    "sequenceId=%s, start=%d, span=%d",
+                    referenceContext,
+                    alignmentStart,
+                    alignmentSpan);
     }
 
     @Override

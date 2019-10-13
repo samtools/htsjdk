@@ -1,8 +1,6 @@
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -95,7 +93,7 @@ public class CramSpanContainerIterator extends CramContainerIterator {
                 if (!hasNext()) {
                     throw new RuntimeException("No more containers in this boundary.");
                 }
-                
+
                 return new Container(getCramHeader().getVersion(), seekableStream, seekableStream.position());
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);

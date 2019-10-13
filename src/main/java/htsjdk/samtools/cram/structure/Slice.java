@@ -213,8 +213,6 @@ public class Slice {
                 referenceContexts.add(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
             }
 
-            // TODO: either update isPlaced() to match this logic (i.e. don't check the reference ID)
-            // or update BAMIndexMetadata.recordMetaData(SAMRecord) to have a similar notion of placement
             // This matches the logic of BAMIndexMetadata.recordMetaData(SAMRecord) and counts all reads
             // that are not placed, which will be a subset of reads that are included in unmappedReadsCount,
             // which counts all unmapped reads, whether placed or not.
@@ -381,14 +379,7 @@ public class Slice {
     // Unused because embedded reference isn't implemented for write
     public Block getEmbeddedReferenceBlock() { return embeddedReferenceBlock; }
 
-    public CompressionHeader getCompressionHeader() {
-        if (compressionHeader == null) {
-            //TODO: do we need this guard....
-            // temporary guard until the Slice(refContext) constructor is expunged
-            throw new IllegalStateException("null compression header");
-        }
-        return compressionHeader;
-    }
+    public CompressionHeader getCompressionHeader() { return compressionHeader; }
 
     //NOTE: this is what ACTUALLY decodes the underlying blocks. We don't do this automatically when initially
     // reading the blocks from the underlying stream since there are case where we want to iterate through
@@ -747,16 +738,16 @@ public class Slice {
     @Override
     public String toString() {
         return String.format(
-                "slice: %s records=%d, sliceHeaderOffset=%d, sizeOfBlocks=%d, landmarkIndex=%d, md5=%s, (mapped/unmapped/unplaced): %d/%d/%d",
+                "slice: %s nRecords=%d, sliceHeaderOffset=%d, sizeOfBlocks=%d, landmark=%d, mapped/unmapped/unplaced: %d/%d/%d, md5=%s",
                 alignmentContext,
                 nRecords,
                 getByteOffsetOfSliceHeaderBlock(),
                 getByteSizeOfSliceBlocks(),
                 landmarkIndex,
-                getReferenceMD5(),
                 mappedReadsCount,
                 unmappedReadsCount,
-                unmappedReadsCount);
+                unmappedReadsCount,
+                String.format("%032x", new BigInteger(1, getReferenceMD5())));
     }
 
     // *calculate* the MD5 for this reference
@@ -772,7 +763,6 @@ public class Slice {
                 throw new CRAMException("Invalid alignment boundaries.");
             }
             referenceMD5 = SequenceUtil.calculateMD5(ref, alignmentContext.getAlignmentStart() - 1, span);
-
         }
     }
 
@@ -870,7 +860,6 @@ public class Slice {
 
         // we need to combine the records' spans for counting and span calculation
         if (cramRecord.isSegmentUnmapped()) {
-            //TODO: should we just change isPlaced to only check the alignment start, and then use that here ?
             if (cramRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
                 // count it as both unmapped *and* unplaced, since for BAI we distinguish between them
                 final AlignmentSpan span = new AlignmentSpan(
@@ -1034,35 +1023,7 @@ public class Slice {
                 break;
         }
 
-        //TODO: remove validation
-        //TODO: slice mapped/unmapped/unplaced counts are only updated when reading the container from a stream
-        //validateBAIEntries(baiEntries);
         return baiEntries;
-    }
-
-    private void validateBAIEntries(final List<BAIEntry> baiEntries) {
-        // make sure we're not double counting
-        int mappedReadsCount = 0;   // mapped (rec.getReadUnmappedFlag() != true)
-        int unmappedReadsCount = 0; // unmapped (rec.getReadUnmappedFlag() == true)
-        int unplacedReadsCount = 0; // nocoord (alignmentStart == SAMRecord.NO_ALIGNMENT_START)
-        for (final BAIEntry baiEntry : baiEntries) {
-            unmappedReadsCount += baiEntry.getUnmappedReadsCount();
-            mappedReadsCount += baiEntry.getMappedReadsCount();
-            unplacedReadsCount += baiEntry.getUnmappedUnplacedReadsCount();
-        }
-
-        if (mappedReadsCount != getMappedReadsCount() ||
-            unmappedReadsCount != getUnmappedReadsCount() ||
-            unplacedReadsCount != getUnplacedReadsCount()) {
-            throw new CRAMException(String.format(
-                    "Expected (mapped %d unmapped %d unplaced %d) but got (mapped %d unmapped %d unplaced %d)",
-                    getMappedReadsCount(),
-                    getUnmappedReadsCount(),
-                    getUnplacedReadsCount(),
-                    mappedReadsCount,
-                    unmappedReadsCount,
-                    unplacedReadsCount));
-        }
     }
 
 }
