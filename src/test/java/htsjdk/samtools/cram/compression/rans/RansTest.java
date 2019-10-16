@@ -33,23 +33,23 @@ public class RansTest extends HtsjdkTest {
     public Object[][] getRansTestData() {
         return new Object[][] {
                 //TODO: temp test for debugging
-                { new TestContainer(randomBytesFromGeometricDistribution(3, 0.1)) },
+//                { new TestContainer(randomBytesFromGeometricDistribution(3, 0.1)) },
 
-                { new TestContainer(new byte[]{}) },
-                { new TestContainer(new byte[] {0}) },
-                { new TestContainer(new byte[] {0, 1}) },
-                { new TestContainer(new byte[] {0, 1, 2}) },
+//                { new TestContainer(new byte[]{}) },
+//                { new TestContainer(new byte[] {0}) },
+//                { new TestContainer(new byte[] {0, 1}) },
+//                { new TestContainer(new byte[] {0, 1, 2}) },
                 { new TestContainer(new byte[] {0, 1, 2, 3}) },
-                { new TestContainer(new byte[1000]) },
-                { new TestContainer(getNBytesWithValues(1000, (n, index) -> (byte) 1)) },
-                { new TestContainer(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)) },
-                { new TestContainer(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)) },
-                { new TestContainer(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())) },
-                { new TestContainer(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)) },
-                { new TestContainer(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)) },
-                { new TestContainer(randomBytesFromGeometricDistribution(1000, 0.1)) },
-                { new TestContainer(randomBytesFromGeometricDistribution(1000, 0.01)) },
-                { new TestContainer(randomBytesFromGeometricDistribution(10 * 1000 * 1000 + 1, 0.01)) }
+//                { new TestContainer(new byte[1000]) },
+//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> (byte) 1)) },
+//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)) },
+//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)) },
+//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())) },
+//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)) },
+//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)) },
+//                { new TestContainer(randomBytesFromGeometricDistribution(1000, 0.1)) },
+//                { new TestContainer(randomBytesFromGeometricDistribution(1000, 0.01)) },
+//                { new TestContainer(randomBytesFromGeometricDistribution(10 * 1000 * 1000 + 1, 0.01)) }
         };
     }
 

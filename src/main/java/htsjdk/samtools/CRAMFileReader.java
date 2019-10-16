@@ -24,11 +24,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.utils.ValidationUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -200,7 +196,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         this.referenceSource = referenceSource;
         this.mIndexFile = findIndexForFile(indexFile, cramFile);
         final SeekableFileStream indexStream = this.mIndexFile == null ? null : new SeekableFileStream(this.mIndexFile);
-        initWithStreams(new FileInputStream(cramFile), indexStream, validationStringency);
+        initWithStreams(new BufferedInputStream(new FileInputStream(cramFile)), indexStream, validationStringency);
     }
 
     private void initWithStreams(final InputStream inputStream, final SeekableStream indexInputStream,

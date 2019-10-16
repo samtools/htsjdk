@@ -31,12 +31,12 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 // TODO: need a better test file; this has mate validation errors
                 // TODO: SAM validation error: ERROR: Read name20FUKAAXX100202:2:1:20271:61529,
                 // TODO: Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
-                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+//                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+//                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
 //                { new File("/Users/cnorman/projects/references/m64020_190208_213731-88146610-all.bam"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
-//                { new File("/Users/cnorman/projects/references/NA12878.cram"),
-//                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
+                { new File("/Users/cnorman/projects/references/NA12878.cram"),
+                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta")}
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
 //                        new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta") },
 //                { new File(TEST_DATA_DIR, "/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.samtools.cram"),
@@ -145,7 +145,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //                inputIterator.next();
 //            }
 //        }
-//    }
+//    }`
 
     @Test(dataProvider = "roundTripTestFiles")
     public final void testBestEncodingStrategy(final File cramSourceFile, final File referenceFile) throws IOException {
@@ -155,7 +155,11 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         final CRAMEncodingStrategy testStrategy = CRAMEncodingStrategy.readFromPath(encodingStrategyFile.toPath());
         final File tempOutCRAM = File.createTempFile("bestEncodingStrategyTest", ".cram");
         System.out.println(String.format("Output file: %s", tempOutCRAM.toPath()));
+        final long start = System.currentTimeMillis();
         final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
+        long end = System.currentTimeMillis();
+        System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
+        System.out.println(String.format("Size: %,d Strategy %s", fileSize, testStrategy));
         assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, false);
 //        if (SamtoolsTestUtils.isSamtoolsAvailable()) {
 //            // give the result to samtools and see if it can read it and wite another cra,...
@@ -168,7 +172,6 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 //                    samtoolsOutFile.toPath()));
 //        }
         tempOutCRAM.delete();
-        System.out.println(String.format("Size: %,d Strategy %s", fileSize, testStrategy));
     }
 
     @Test(dataProvider = "roundTripTestFiles")

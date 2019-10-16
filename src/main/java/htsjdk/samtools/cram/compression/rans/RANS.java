@@ -170,7 +170,7 @@ public class RANS {
         outBuffer.position(PREFIX_BYTE_LENGTH);
 
         final int[][] F = Frequencies.calcFrequenciesOrder1(inBuffer);
-        final RANSEncodingSymbol[][] syms = Frequencies.buildSymsOrder1(F, encodingSymbols);
+        Frequencies.buildSymsOrder1(F, encodingSymbols);
 
         final ByteBuffer cp = outBuffer.slice();
         final int frequencyTableSize = Frequencies.writeFrequenciesOrder1(cp, F);
@@ -184,7 +184,6 @@ public class RANS {
     }
 
     private ByteBuffer uncompressOrder0Way4(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
-        inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         Frequencies.readStatsOrder0(inBuffer, D[0], decodingSymbols[0]);
         D04.uncompress(inBuffer, D[0], decodingSymbols[0], outBuffer);
 
@@ -192,7 +191,6 @@ public class RANS {
     }
 
     private ByteBuffer uncompressOrder1Way4(final ByteBuffer in, final ByteBuffer outBuffer) {
-        //TODO: why does this not call inBuffer.order(ByteOrder.LITTLE_ENDIAN);, like uncompressOrder0Way4 does ?
         Frequencies.readStatsOrder1(in, D, decodingSymbols);
         D14.uncompress(in, outBuffer, D, decodingSymbols);
         return outBuffer;
@@ -221,7 +219,7 @@ public class RANS {
         outBuffer.limit(PREFIX_BYTE_LENGTH + frequencyTableSize + compressedBlobSize);
 
         // go back to the beginning of the stream and write the prefix values
-        // write the (ORDER as a single byte at offset 0
+        // write the (ORDER as a single byte at offset 0)
         outBuffer.put(0, (byte) (order == ORDER.ZERO ? 0 : 1));
         outBuffer.order(ByteOrder.LITTLE_ENDIAN);
         // move past the ORDER and write the compressed size
