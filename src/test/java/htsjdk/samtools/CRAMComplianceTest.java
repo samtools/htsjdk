@@ -53,7 +53,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
                 {"xx#tlen2"},       // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
                 {"xx#triplet"},     // the version 2.1 variant of this file has a bad insertSize, which is
                                     // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
-                //{"md#1"},           // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
+                {"md#1"},           // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
         };
     }
 

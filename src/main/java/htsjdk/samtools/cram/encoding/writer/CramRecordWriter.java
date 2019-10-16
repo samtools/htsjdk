@@ -119,7 +119,7 @@ public class CramRecordWriter {
                 compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksWriteStreams);
 
-        tagValueCodecs = compressionHeader.gettMap().entrySet()
+        tagValueCodecs = compressionHeader.getTagEncodingMap().entrySet()
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,

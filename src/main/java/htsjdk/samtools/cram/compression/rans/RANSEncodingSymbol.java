@@ -44,7 +44,7 @@ public class RANSEncodingSymbol {
         rcpShift += 32; // Avoid the extra >>32 in RansEncPutSymbol
     }
 
-     public int putSymbol(int r, final ByteBuffer byteBuffer) {
+    public int putSymbol(int r, final ByteBuffer byteBuffer) {
         ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
 
         // re-normalize

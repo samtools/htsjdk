@@ -130,7 +130,7 @@ public class CramRecordReader {
                 compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksReadStreams);
 
-        tagValueCodecs = compressionHeader.gettMap().entrySet()
+        tagValueCodecs = compressionHeader.getTagEncodingMap().entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         mapEntry -> new DataSeriesReader<>(

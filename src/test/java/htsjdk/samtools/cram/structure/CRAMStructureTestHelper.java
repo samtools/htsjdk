@@ -424,7 +424,7 @@ public class CRAMStructureTestHelper {
                 READ_GROUP_MAP);
     }
 
-    private static SAMRecord addBasesAndQualities(final SAMRecord samRecord) {
+    public static SAMRecord addBasesAndQualities(final SAMRecord samRecord) {
         final byte bases[] = new byte[READ_LENGTH];
         Arrays.fill(bases, (byte) 'A');
         samRecord.setReadBases(bases);

@@ -666,32 +666,33 @@ public class Slice {
                     referenceMD5)) {
                 //TODO: does the spec allow matching on partial reference like this ?
                 //System.out.println("Failed MD5 check on full slice span - trying narrower span");
-                final int shoulderLength = 10;
-                final String excerpt = getReferenceBaseExcerpt(
-                        alignmentContext.getAlignmentStart(),
-                        alignmentContext.getAlignmentSpan()
-                        , referenceBases,
-                        shoulderLength);
-                if (validateReferenceMD5(
-                        referenceBases,
-                        alignmentContext.getAlignmentStart(),
-                        alignmentContext.getAlignmentSpan() - 1,
-                        referenceMD5)) {
-                    log.warn(String.format("Reference MD5 matches partially for slice %s:%d-%d, %s",
-                            alignmentContext.getReferenceContext(),
-                            alignmentContext.getAlignmentStart(),
-                            alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
-                            excerpt));
-                    return true;
-                }
-
-                log.error(String.format(
-                        "Reference MD5 mismatch for slice %s:%d-%d, %s",
-                        alignmentContext.getReferenceContext(),
-                        alignmentContext.getAlignmentStart(),
-                        alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
-                        excerpt));
-                return false;
+                throw new CRAMException("Failed MD5 check on full slice span - trying narrower span");
+//                final int shoulderLength = 10;
+//                final String excerpt = getReferenceBaseExcerpt(
+//                        alignmentContext.getAlignmentStart(),
+//                        alignmentContext.getAlignmentSpan(),
+//                        referenceBases,
+//                        shoulderLength);
+//                if (validateReferenceMD5(
+//                        referenceBases,
+//                        alignmentContext.getAlignmentStart(),
+//                        alignmentContext.getAlignmentSpan() - 1,
+//                        referenceMD5)) {
+//                    log.warn(String.format("Reference MD5 matches partially for slice %s:%d-%d, %s",
+//                            alignmentContext.getReferenceContext(),
+//                            alignmentContext.getAlignmentStart(),
+//                            alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
+//                            excerpt));
+//                    return true;
+//                }
+//
+//                log.error(String.format(
+//                        "Reference MD5 mismatch for slice %s:%d-%d, %s",
+//                        alignmentContext.getReferenceContext(),
+//                        alignmentContext.getAlignmentStart(),
+//                        alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1,
+//                        excerpt));
+//                return false;
             }
         }
 

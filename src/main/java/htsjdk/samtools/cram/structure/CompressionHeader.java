@@ -17,6 +17,7 @@
  */
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.io.ITF8;
@@ -41,15 +42,14 @@ public class CompressionHeader {
     private static final String SM_substitutionMatrix = "SM";
 
     private CompressionHeaderEncodingMap encodingMap;
-    private boolean preserveReadNames = true;
+    // these all default to true, per the spec
     private boolean APDelta = true;
+    private boolean preserveReadNames = true;
     private boolean referenceRequired = true;
 
-    //TODO: Move the tMap into CompressionHeaderEncodingMap ?
-    private Map<Integer, EncodingDescriptor> tMap;
-    //TODO: substitutionMatrix is optional!
+    //TODO: Move the tagEncodingMap into CompressionHeaderEncodingMap, or into a separate class ?
+    private final Map<Integer, EncodingDescriptor> tagEncodingMap = new TreeMap<>();
     private SubstitutionMatrix substitutionMatrix;
-    //TODO: dictionary is optional!
     private byte[][][] tagIDDictionary;
 
     /**
@@ -57,7 +57,6 @@ public class CompressionHeader {
      */
     public CompressionHeader() {
         encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
-        tMap = new TreeMap<>();
     }
 
     public CompressionHeader(
@@ -65,7 +64,6 @@ public class CompressionHeader {
             final boolean isAPDelta,
             final boolean isPreserveReadNames,
             final boolean isReferenceRequired) {
-        tMap = new TreeMap<>();
         this.encodingMap = encodingMap;
         this.APDelta = isAPDelta;
         this.preserveReadNames = isPreserveReadNames;
@@ -78,7 +76,6 @@ public class CompressionHeader {
      */
     public CompressionHeader(final CompressionHeaderEncodingMap encodingMap) {
         this.encodingMap = encodingMap;
-        tMap = new TreeMap<>();
     }
 
     /**
@@ -137,8 +134,8 @@ public class CompressionHeader {
         return preserveReadNames;
     }
 
-    public Map<Integer, EncodingDescriptor> gettMap() {
-        return tMap;
+    public Map<Integer, EncodingDescriptor> getTagEncodingMap() {
+        return tagEncodingMap;
     }
 
     public SubstitutionMatrix getSubstitutionMatrix() {
@@ -159,7 +156,7 @@ public class CompressionHeader {
 
     public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingDescriptor params) {
         encodingMap.putTagBlockCompression(tagId, compressor);
-        tMap.put(tagId, params);
+        tagEncodingMap.put(tagId, params);
     }
 
     private byte[][][] parseDictionary(final byte[] bytes) {
@@ -236,8 +233,13 @@ public class CompressionHeader {
                     final byte[] matrixBytes = new byte[SubstitutionMatrix.BASES_SIZE];
                     buffer.get(matrixBytes);
                     substitutionMatrix = new SubstitutionMatrix(matrixBytes);
-                } else
+                } else {
                     throw new RuntimeException("Unknown preservation map key: " + key);
+                }
+            }
+            if (substitutionMatrix == null || tagIDDictionary == null) {
+                throw new CRAMException(
+                        "substitution matrix and tag ID dictionary must be present in the compression header");
             }
         }
 
@@ -251,7 +253,6 @@ public class CompressionHeader {
             final ByteBuffer buf = ByteBuffer.wrap(bytes);
 
             final int mapSize = ITF8.readUnsignedITF8(buf);
-            tMap = new TreeMap<>();
             for (int i = 0; i < mapSize; i++) {
                 final int key = ITF8.readUnsignedITF8(buf);
 
@@ -260,7 +261,7 @@ public class CompressionHeader {
                 final byte[] paramBytes = new byte[paramLen];
                 buf.get(paramBytes);
 
-                tMap.put(key, new EncodingDescriptor(id, paramBytes));
+                tagEncodingMap.put(key, new EncodingDescriptor(id, paramBytes));
             }
         }
     }
@@ -301,11 +302,11 @@ public class CompressionHeader {
         { // tag encoding map:
             //TODO: fix this static allocation size
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
-            ITF8.writeUnsignedITF8(tMap.size(), mapBuffer);
-            for (final Integer dataSeries : tMap.keySet()) {
+            ITF8.writeUnsignedITF8(tagEncodingMap.size(), mapBuffer);
+            for (final Integer dataSeries : tagEncodingMap.keySet()) {
                 ITF8.writeUnsignedITF8(dataSeries, mapBuffer);
 
-                final EncodingDescriptor params = tMap.get(dataSeries);
+                final EncodingDescriptor params = tagEncodingMap.get(dataSeries);
                 mapBuffer.put((byte) (0xFF & params.getEncodingID().getId()));
                 ITF8.writeUnsignedITF8(params.getEncodingParameters().length, mapBuffer);
                 mapBuffer.put(params.getEncodingParameters());

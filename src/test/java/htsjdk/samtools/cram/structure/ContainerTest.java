@@ -119,6 +119,29 @@ public class ContainerTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void testExtentsForNCigarOperator() {
+        final SAMRecord samRecord = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
+        samRecord.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        samRecord.setAlignmentStart(5);
+        samRecord.setReadName("testRead");
+        CRAMStructureTestHelper.addBasesAndQualities(samRecord);
+        samRecord.setCigarString("10M1N10M");
+
+        final int alignmentEnd = samRecord.getAlignmentEnd();
+        final ContainerFactory containerFactory = new ContainerFactory(
+                CRAMStructureTestHelper.SAM_FILE_HEADER,
+                new CRAMEncodingStrategy(),
+                CRAMStructureTestHelper.REFERENCE_SOURCE);
+        final Container container = CRAMStructureTestHelper.createContainer(containerFactory, Collections.singletonList(samRecord), 10);
+        Assert.assertEquals(
+                container.getAlignmentContext(),
+                new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        5,
+                        21));
+    }
+
 //    @Test
 //    public static void distributeIndexingParametersToSlicesOneSlice() {
 //        // this container starts 100,000 bytes into the CRAM stream

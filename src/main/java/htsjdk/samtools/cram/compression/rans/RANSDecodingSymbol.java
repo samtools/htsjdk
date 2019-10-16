@@ -1,7 +1,5 @@
 package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.utils.ValidationUtils;
-
 import java.nio.ByteBuffer;
 
 class RANSDecodingSymbol {
@@ -9,7 +7,7 @@ class RANSDecodingSymbol {
     int freq;   // Symbol frequency.
 
     public void set(final int start, final int freq) {
-        // This method gets called a LOT so this is too expensive to leave in.
+        // This method gets called a LOT so this validation is too expensive to leave in.
         //ValidationUtils.validateArg(start <= (1 << 16), "invalid RANSDecodingSymbol start");
         //ValidationUtils.validateArg(freq <= (1 << 16) - start, "invalid RANSDecodingSymbol frequency");
         this.start = start;
@@ -45,7 +43,6 @@ class RANSDecodingSymbol {
                 final int b = 0xFF & byteBuffer.get();
                 r = (r << 8) | b;
             } while (r < Constants.RANS_BYTE_L);
-
         }
 
         return r;
