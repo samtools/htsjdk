@@ -54,7 +54,7 @@ import java.util.*;
 public class LinearIndex extends AbstractIndex {
 
     // NOTE: To debug uncomment the System.getProperty and recompile.
-    public static final double MAX_FEATURES_PER_BIN = Double.valueOf(System.getProperty("MAX_FEATURES_PER_BIN", "100"));
+    public static final double MAX_FEATURES_PER_BIN = Double.parseDouble(System.getProperty("MAX_FEATURES_PER_BIN", "100"));
     public static final int INDEX_TYPE = IndexType.LINEAR.fileHeaderTypeIdentifier;
 
     private final static int MAX_BIN_WIDTH = 1 * 1000 * 1000 * 1000; //  widths must be less than 1 billion
@@ -135,8 +135,8 @@ public class LinearIndex extends AbstractIndex {
 
     @Override
     public List<String> getSequenceNames() {
-        return (chrIndices == null ? Collections.EMPTY_LIST :
-                Collections.unmodifiableList(new ArrayList<String>(chrIndices.keySet())));
+        return (chrIndices == null ? Collections.emptyList() :
+                Collections.unmodifiableList(new ArrayList<>(chrIndices.keySet())));
     }
 
     @Override
@@ -229,10 +229,10 @@ public class LinearIndex extends AbstractIndex {
                     final long endPos = blocks.get(endBinNumber).getStartPosition() + blocks.get(endBinNumber).getSize();
                     final long size = endPos - startPos;
                     if (size == 0) {
-                        return Collections.EMPTY_LIST;
+                        return Collections.emptyList();
                     } else {
                         final Block mergedBlock = new Block(startPos, size);
-                        return Arrays.asList(mergedBlock);
+                        return Collections.singletonList(mergedBlock);
                     }
                 }
             }
