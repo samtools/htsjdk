@@ -48,6 +48,8 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 
@@ -66,7 +68,7 @@ public class IndexFactoryTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "bedDataProvider")
-    public void testCreateLinearIndexFromBED(final File inputBEDFIle) throws Exception {
+    public void testCreateLinearIndexFromBED(final File inputBEDFIle) {
         Index index = IndexFactory.createLinearIndex(inputBEDFIle, new BEDCodec());
         String chr = "chr2";
 
@@ -81,7 +83,7 @@ public class IndexFactoryTest extends HtsjdkTest {
     }
 
     @Test(expectedExceptions = TribbleException.MalformedFeatureFile.class, dataProvider = "indexFactoryProvider")
-    public void testCreateIndexUnsorted(IndexFactory.IndexType type) throws Exception{
+    public void testCreateIndexUnsorted(IndexFactory.IndexType type) {
         final File unsortedBedFile = new File(TestUtils.DATA_DIR, "bed/unsorted.bed");
         IndexFactory.createIndex(unsortedBedFile, new BEDCodec(), type);
     }
@@ -104,15 +106,14 @@ public class IndexFactoryTest extends HtsjdkTest {
     @Test
     public void testCreateTabixIndexOnBlockCompressed() {
         // index a VCF
-        final File inputFileVcf = new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf");
+        final Path inputFileVcf = Paths.get("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf");
         final VCFFileReader readerVcf = new VCFFileReader(inputFileVcf, false);
         final SAMSequenceDictionary vcfDict = readerVcf.getFileHeader().getSequenceDictionary();
         final TabixIndex tabixIndexVcf =
-                IndexFactory.createTabixIndex(inputFileVcf, new VCFCodec(), TabixFormat.VCF,
-                        vcfDict);
+                IndexFactory.createTabixIndex(inputFileVcf, new VCFCodec(), TabixFormat.VCF, vcfDict);
 
         // index the same bgzipped VCF
-        final File inputFileVcfGz = new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz");
+        final Path inputFileVcfGz = Paths.get("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz");
         final VCFFileReader readerVcfGz = new VCFFileReader(inputFileVcfGz, false);
         final TabixIndex tabixIndexVcfGz =
                 IndexFactory.createTabixIndex(inputFileVcfGz, new VCFCodec(), TabixFormat.VCF,
