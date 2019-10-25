@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.utils.ValidationUtils;
+
 import java.util.BitSet;
 
 /**
@@ -51,6 +53,53 @@ public class GenomicIndexUtil {
      * E.g. for a SAMRecord with no genomic coordinate.
      */
     public static final int UNSET_GENOMIC_LOCATION = 0;
+
+    /**
+     * Return the binning index level for the given bin. Assumes a .bai/.tbi binning scheme (not for use with .csi).
+     * @param bin the bin to analyze
+     * @return the binning index level for the given bin
+     */
+    public static int binTolevel(int bin) {
+        ValidationUtils.validateArg(bin >=0 && bin <= MAX_BINS, "Bin number must be >=0 and <= 37450");
+        // As described in Tabix: fast retrieval of sequence features from generic TAB-delimited files.
+        // doi: 10.1093/bioinformatics/btq671
+        return (int) Math.floor(((Math.log((7*bin) + 1) / Math.log(2)) / 3));
+    }
+
+    /**
+     * Return the binning index bin size for bins in the given bin. Assumes a .bai/.tbi binning scheme (not for use
+     * with .csi).
+     * @param level the level to analyze
+     * @return the size for a bin at the given level
+     */
+    public static int levelToSize(int level) {
+        ValidationUtils.validateArg(level >=0 && level <= 5, "Level number must be >=0 and <= 5");
+        // As described in Tabix: fast retrieval of sequence features from generic TAB-delimited files.
+        // doi: 10.1093/bioinformatics/btq671
+        return (int) Math.pow(2, 29-(3*level));
+    }
+
+    /**
+     * Return a summary string describing the bin level, level size, and genomic territory covered by the
+     * bin. For use as debug output.
+     *
+     * @param bin input bin
+     * @return A summary string describing the bin. The intended use is for debug output - the string is not
+     * intended to be machine readable/parsed and is subject to change.
+     */
+    public static String getBinSummaryString(int bin) {
+        final int level = binTolevel(bin);
+        final int levelStart = LEVEL_STARTS[level];
+        final int binSize = levelToSize(level);
+        final int binStart = (bin-levelStart) * binSize;
+        return String.format("bin=%d, level=%d, first bin=%d, bin size=%,d bin range=(%,d-%,d)",
+                bin,
+                level,
+                levelStart,
+                binSize,
+                binStart,
+                binStart + binSize);
+    }
 
     /**
      * calculate the bin given an alignment in [beg,end)

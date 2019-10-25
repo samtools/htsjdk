@@ -24,6 +24,8 @@
 
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -108,7 +110,7 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
                 pw.println("  Ref " + reference + " bin " + bin.getBinNumber() + " has no chunkList");
                 continue;
             }
-            pw.print("  Ref " + reference + " bin " + bin.getBinNumber() + " has n_chunk= " + chunkList.size());
+            pw.println("  Ref " + reference + " bin " + bin.getBinNumber() + " (" + GenomicIndexUtil.getBinSummaryString(bin.getBinNumber()) + ") has n_chunk= " + chunkList.size());
             if (chunkList.isEmpty()) {
                  pw.println();
             }
@@ -134,7 +136,8 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
         pw.println("Reference " + reference + " has n_intv= " + n_intv);
         for (int k = 0; k < entries.length; k++) {
             if (entries[k] != 0) {
-                pw.println("  Ref " + reference + " ioffset for " + (k + indexStart) + " is " + Long.toString(entries[k]));
+                pw.println("  Ref " + reference + " ioffset for " + (k + indexStart) + " is " +
+                        BlockCompressedFilePointerUtil.asAddressOffsetString(entries[k]));
             }
         }
         pw.flush ();  // write each reference to disk as it's being created
@@ -147,7 +150,7 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
      */
     private void writeChunkMetaData(final int reference, final BAMIndexMetaData metaData) {
         final int nChunks = metaData == null ? 0 : 2;
-        pw.print("  Ref " + reference + " bin 37450 has n_chunk= " + nChunks);
+        pw.println("  Ref " + reference + " bin 37450 has n_chunk= " + nChunks);
         if (nChunks == 0) {
             pw.println();
         } else {
