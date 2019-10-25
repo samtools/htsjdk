@@ -484,11 +484,6 @@ public class VariantContextWriterBuilder {
                 writer = createBCFWriter(outPath, outStreamFromFile);
                 break;
             case VCF_STREAM:
-                if (options.contains(Options.INDEX_ON_THE_FLY)) {
-                    log.warn("VCF index creation not supported for stream output, index will not be created");
-                    options.remove(Options.INDEX_ON_THE_FLY);
-                }
-
                 writer = createVCFWriter(null, outStreamFromFile);
                 break;
             case BCF_STREAM:

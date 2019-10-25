@@ -407,26 +407,8 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             final long chunkStart = (slice.containerByteOffset << 16) | slice.index;
             final long chunkEnd = ((slice.containerByteOffset << 16) | slice.index) + 1;
-
             final Chunk newChunk = new Chunk(chunkStart, chunkEnd);
-
-            final List<Chunk> oldChunks = bin.getChunkList();
-            if (!bin.containsChunks()) {
-                bin.addInitialChunk(newChunk);
-
-            } else {
-                final Chunk lastChunk = bin.getLastChunk();
-
-                // Coalesce chunks that are in the same or adjacent file blocks.
-                // Similar to AbstractBAMFileIndex.optimizeChunkList,
-                // but no need to copy the list, no minimumOffset, and maintain bin.lastChunk
-                if (BlockCompressedFilePointerUtil.areInSameOrAdjacentBlocks(lastChunk.getChunkEnd(), chunkStart)) {
-                    lastChunk.setChunkEnd(chunkEnd);  // coalesced
-                } else {
-                    oldChunks.add(newChunk);
-                    bin.setLastChunk(newChunk);
-                }
-            }
+            bin.addChunk(newChunk);
 
             // process linear index
 

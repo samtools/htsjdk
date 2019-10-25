@@ -6,7 +6,7 @@
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sub-license, and/or sell
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -15,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -58,7 +58,7 @@ public class BAMIndexer {
      * @param fileHeader header for the corresponding bam file
      */
     public BAMIndexer(final Path output, final SAMFileHeader fileHeader) {
-        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output));
+        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), true);
     }
 
     /**
@@ -76,7 +76,20 @@ public class BAMIndexer {
      * @param fileHeader header for the corresponding bam file.
      */
     public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
-        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output));
+        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), true);
+    }
+
+    /**
+     * Prepare to index a BAM.
+     *
+     * @param output     Index will be written here.  output will be closed when finish() method is called.
+     * @param fileHeader header for the corresponding bam file.
+     * @param fillInUninitializedValues if true, set uninitialized values (-1) to the last non-zero offset;
+     *                                  if false, leave uninitialized values as -1, which is required when merging index files
+     *                                  (see {@link BAMIndexMerger})
+     */
+    public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader, final boolean fillInUninitializedValues) {
+        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), fillInUninitializedValues);
     }
 
     /*
@@ -86,7 +99,7 @@ public class BAMIndexer {
      * @param  createWrite a lambda that, given an Integer numReferences value, will create a BinaryBAMIndexWriter
      *                     with that value and an appropriate output.
       */
-    private BAMIndexer(final SAMFileHeader fileHeader, Function<Integer, BinaryBAMIndexWriter> createWriter) {
+    private BAMIndexer(final SAMFileHeader fileHeader, Function<Integer, BinaryBAMIndexWriter> createWriter, final boolean fillInUninitializedValues) {
         if (fileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             if (fileHeader.getSortOrder() == SAMFileHeader.SortOrder.unsorted) {
                 log.warn("For indexing, the BAM file is required to be coordinate sorted. Attempting to index \"unsorted\" BAM file.");
@@ -96,7 +109,7 @@ public class BAMIndexer {
             }
         }
         numReferences = fileHeader.getSequenceDictionary().size();
-        indexBuilder = new BAMIndexBuilder(fileHeader.getSequenceDictionary());
+        indexBuilder = new BAMIndexBuilder(fileHeader.getSequenceDictionary(), fillInUninitializedValues);
         outputWriter = createWriter.apply(numReferences);
     }
 
@@ -186,6 +199,8 @@ public class BAMIndexer {
 
         private final SAMSequenceDictionary sequenceDictionary;
 
+        private final boolean fillInUninitializedValues;
+
         private BinningIndexBuilder binningIndexBuilder;
 
         private int currentReference = -1;
@@ -193,8 +208,9 @@ public class BAMIndexer {
         // information in meta data
         private final BAMIndexMetaData indexStats = new BAMIndexMetaData();
 
-        BAMIndexBuilder(final SAMSequenceDictionary sequenceDictionary) {
+        BAMIndexBuilder(final SAMSequenceDictionary sequenceDictionary, final boolean fillInUninitializedValues) {
             this.sequenceDictionary = sequenceDictionary;
+            this.fillInUninitializedValues = fillInUninitializedValues;
             if (!sequenceDictionary.isEmpty()) startNewReference();
         }
 
@@ -280,7 +296,7 @@ public class BAMIndexer {
             // it helps keep track of no-coordinate read count (which shouldn't be stored in this class anyway).
             indexStats.newReference();
             binningIndexBuilder = new BinningIndexBuilder(currentReference,
-                    sequenceDictionary.getSequence(currentReference).getSequenceLength());
+                    sequenceDictionary.getSequence(currentReference).getSequenceLength(), fillInUninitializedValues);
         }
     }
 
