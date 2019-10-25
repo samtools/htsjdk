@@ -28,7 +28,11 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
-import htsjdk.samtools.util.*;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
@@ -44,7 +48,13 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.ParsingUtils;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -77,7 +87,7 @@ public class IndexFactory {
         private final Integer tribbleIndexType;
         private final int defaultBinSize;
         private final boolean canCreate;
-        private final IOFunction<InputStream, Index> createFromInputStream;
+        private final IndexFromStreamFunction createFromInputStream;
 
         public int getDefaultBinSize() {
             return defaultBinSize;
@@ -87,9 +97,11 @@ public class IndexFactory {
             return canCreate;
         }
 
-        private interface IOFunction<T,R>{ R apply(T t) throws IOException;}
+        private interface IndexFromStreamFunction {
+            Index apply(InputStream t) throws IOException;
+        }
 
-        IndexType(final int magicNumber, final Integer tribbleIndexType, boolean canCreate, IOFunction<InputStream, Index> createFromInputStream, final int defaultBinSize) {
+        IndexType(final int magicNumber, final Integer tribbleIndexType, boolean canCreate, IndexFromStreamFunction createFromInputStream, final int defaultBinSize) {
             this.magicNumber = magicNumber;
             this.tribbleIndexType = tribbleIndexType;
             this.canCreate = canCreate;
@@ -102,7 +114,7 @@ public class IndexFactory {
         }
 
         public Index createIndex(InputStream in) throws IOException{
-           return this.createFromInputStream.apply(in);
+           return createFromInputStream.apply(in);
         }
 
         public int getMagicNumber() { return magicNumber; }
@@ -182,7 +194,7 @@ public class IndexFactory {
         } catch (final EOFException ex) {
                 throw new TribbleException.CorruptedIndexFile("Index file is corrupted", source, ex);
         } catch (final IOException ex) {
-            throw new RuntimeIOException("Failed to read index file: " + source, ex);
+            throw new TribbleException.UnableToReadIndexFile("Failed to read index file", source, ex);
         }
     }
 
