@@ -28,8 +28,14 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
-import htsjdk.samtools.util.*;
-import htsjdk.tribble.*;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.LocationAware;
+import htsjdk.tribble.CloseableTribbleIterator;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.FeatureCodec;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.interval.IntervalIndexCreator;
 import htsjdk.tribble.index.interval.IntervalTreeIndex;
 import htsjdk.tribble.index.linear.LinearIndex;
@@ -37,19 +43,17 @@ import htsjdk.tribble.index.linear.LinearIndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
-import htsjdk.tribble.readers.*;
+import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.BufferedInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.EOFException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.channels.SeekableByteChannel;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -73,38 +77,34 @@ public class IndexFactory {
      * an enum that contains all of the information about the index types, and how to create them
      */
     public enum IndexType {
-        LINEAR(LinearIndex.MAGIC_NUMBER, LinearIndex.INDEX_TYPE, LinearIndexCreator.class, LinearIndex.class, LinearIndexCreator.DEFAULT_BIN_WIDTH),
-        INTERVAL_TREE(IntervalTreeIndex.MAGIC_NUMBER, IntervalTreeIndex.INDEX_TYPE, IntervalIndexCreator.class, IntervalTreeIndex.class, IntervalIndexCreator.DEFAULT_FEATURE_COUNT),
+        LINEAR(AbstractIndex.MAGIC_NUMBER, LinearIndex.INDEX_TYPE, true, LinearIndex::new, LinearIndexCreator.DEFAULT_BIN_WIDTH),
+        INTERVAL_TREE(AbstractIndex.MAGIC_NUMBER, IntervalTreeIndex.INDEX_TYPE, true, IntervalTreeIndex::new, IntervalIndexCreator.DEFAULT_FEATURE_COUNT),
         // Tabix index initialization requires additional information, so generic construction won't work, thus indexCreatorClass is null.
-        TABIX(TabixIndex.MAGIC_NUMBER, null, null, TabixIndex.class, -1);
+        TABIX(TabixIndex.MAGIC_NUMBER, null, false, TabixIndex::new, -1) ;
 
         private final int magicNumber;
         private final Integer tribbleIndexType;
-        private final Class<IndexCreator> indexCreatorClass;
         private final int defaultBinSize;
-        private final Class<Index> indexType;
+        private final boolean canCreate;
+        private final IndexFromStreamFunction createFromInputStream;
 
         public int getDefaultBinSize() {
             return defaultBinSize;
         }
 
-        public IndexCreator getIndexCreator() {
-            try {
-                return indexCreatorClass.newInstance();
-            } catch ( final InstantiationException | IllegalAccessException e ) {
-                throw new TribbleException("Couldn't make index creator in " + this, e);
-            }
-        }
-
         public boolean canCreate() {
-            return indexCreatorClass != null;
+            return canCreate;
         }
 
-        IndexType(final int magicNumber, final Integer tribbleIndexType, final Class creator, final Class indexClass, final int defaultBinSize) {
+        private interface IndexFromStreamFunction {
+            Index apply(InputStream t) throws IOException;
+        }
+
+        IndexType(final int magicNumber, final Integer tribbleIndexType, final boolean canCreate, final IndexFromStreamFunction createFromInputStream, final int defaultBinSize) {
             this.magicNumber = magicNumber;
             this.tribbleIndexType = tribbleIndexType;
-            indexCreatorClass = creator;
-            indexType = indexClass;
+            this.canCreate = canCreate;
+            this.createFromInputStream = createFromInputStream;
             this.defaultBinSize = defaultBinSize;
         }
 
@@ -112,8 +112,12 @@ public class IndexFactory {
             return tribbleIndexType;
         }
 
-        public Class<Index> getIndexType() {
-            return indexType;
+        public Index createIndex(final InputStream in) {
+            try {
+                return createFromInputStream.apply(in);
+            } catch (IOException e) {
+                throw new TribbleException("Failed to create index from stream.", e);
+            }
         }
 
         public int getMagicNumber() { return magicNumber; }
@@ -189,19 +193,16 @@ public class IndexFactory {
     public static Index loadIndex(final String source, final InputStream inputStream) {
         // Must be buffered, because getIndexType uses mark and reset
         try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, Defaults.NON_ZERO_BUFFER_SIZE)) {
-            final Class<Index> indexClass = IndexType.getIndexType(bufferedInputStream).getIndexType();
-            final Constructor<Index> ctor = indexClass.getConstructor(InputStream.class);
-            return ctor.newInstance(bufferedInputStream);
-        } catch (final TribbleException ex) {
-            throw ex;
-        } catch (final InvocationTargetException ex) {
-            if (ex.getCause() instanceof EOFException) {
+            return createIndex(bufferedInputStream);
+        } catch (final EOFException ex) {
                 throw new TribbleException.CorruptedIndexFile("Index file is corrupted", source, ex);
-            }
-            throw new RuntimeException(ex);
-        } catch (final Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (final IOException ex) {
+            throw new TribbleException.UnableToReadIndexFile("Failed to read index file", source, ex);
         }
+    }
+
+    private static Index createIndex(BufferedInputStream bufferedInputStream) throws IOException {
+        return IndexType.getIndexType(bufferedInputStream).createIndex(bufferedInputStream);
     }
 
     private static InputStream indexFileInputStream(final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
@@ -223,7 +224,7 @@ public class IndexFactory {
      * @param inputFile the input file to load features from
      * @param codec     the codec to use for decoding records
      */
-    public static LinearIndex createLinearIndex(final File inputFile, final FeatureCodec codec) {
+    public static  <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
         return createLinearIndex(inputFile, codec, LinearIndexCreator.DEFAULT_BIN_WIDTH);
     }
 
@@ -238,7 +239,7 @@ public class IndexFactory {
                                                                                       final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                       final int binSize) {
         final LinearIndexCreator indexCreator = new LinearIndexCreator(inputFile, binSize);
-        return (LinearIndex)createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
+        return (LinearIndex)createIndex(inputFile, new FeatureIterator<>(inputFile, codec), indexCreator);
     }
 
     /**
@@ -264,7 +265,7 @@ public class IndexFactory {
                                                                                         final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                         final int featuresPerInterval) {
         final IntervalIndexCreator indexCreator = new IntervalIndexCreator(inputFile, featuresPerInterval);
-        return (IntervalTreeIndex)createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
+        return (IntervalTreeIndex)createIndex(inputFile, new FeatureIterator<>(inputFile, codec), indexCreator);
     }
 
     /**
@@ -306,8 +307,8 @@ public class IndexFactory {
             case INTERVAL_TREE: return createIntervalIndex(inputFile, codec);
             case LINEAR:        return createLinearIndex(inputFile, codec);
             case TABIX:         return createTabixIndex(inputFile, codec, sequenceDictionary);
+            default: throw new IllegalArgumentException("Unrecognized IndexType " + type);
         }
-        throw new IllegalArgumentException("Unrecognized IndexType " + type);
     }
 
     /**
@@ -334,7 +335,7 @@ public class IndexFactory {
                                                                                        final IndexBalanceApproach iba) {
         // get a list of index creators
         final DynamicIndexCreator indexCreator = new DynamicIndexCreator(inputFile, iba);
-        return createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
+        return createIndex(inputFile, new FeatureIterator<>(inputFile, codec), indexCreator);
     }
 
     /**
@@ -349,7 +350,7 @@ public class IndexFactory {
                                                                                      final TabixFormat tabixFormat,
                                                                                      final SAMSequenceDictionary sequenceDictionary) {
         final TabixIndexCreator indexCreator = new TabixIndexCreator(sequenceDictionary, tabixFormat);
-        return (TabixIndex)createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
+        return (TabixIndex)createIndex(inputFile, new FeatureIterator<>(inputFile, codec), indexCreator);
     }
 
     /**
@@ -368,7 +369,7 @@ public class IndexFactory {
     private static Index createIndex(final File inputFile, final FeatureIterator iterator, final IndexCreator creator) {
         Feature lastFeature = null;
         Feature currentFeature;
-        final Map<String, Feature> visitedChromos = new HashMap<String, Feature>(40);
+        final Map<String, Feature> visitedChromos = new HashMap<>(40);
         while (iterator.hasNext()) {
             final long position = iterator.getPosition();
             currentFeature = iterator.next();
