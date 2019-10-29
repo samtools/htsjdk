@@ -254,7 +254,6 @@ public class IndexFactoryTest extends HtsjdkTest {
                 Assert.assertTrue(featureReader.hasIndex());
                 Assert.assertEquals(featureReader.query("20",1110696,1230237).stream().count(), 2);
             }
-
         } finally {
             IOUtil.recursiveDelete(dir.toPath());
         }
