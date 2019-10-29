@@ -439,14 +439,14 @@ public class IndexFactory {
             }
             this.codec = codec;
 
-            // We _MUST_ call getPathToDataFile here to preserve behavior of codecs that use parallel files.
-            // That is, codecs that rely on config files to point to other files to be indexed.
-            // This is CRITICALLY IMPORTANT to downstream tools.
-            final String file_path = codec.getPathToDataFile(inputFile.getAbsolutePath());
+            // We must call getPathToDataFile here to work with codecs that store their configuration and data separately
+            final String filePath = codec.getPathToDataFile(inputFile.getAbsolutePath());
 
-            // The path will be returned with the file protocol.  We must remove it because we're working with files
-            // and not path objects:
-            this.inputFile = new File(file_path.replaceFirst("^file://", ""));
+            try {
+                this.inputFile = IOUtil.getPath(filePath).toFile();
+            } catch (final IOException e) {
+                throw new TribbleException("Failed while constructing a FeatureIterator due to a problem converting String to Path", e);
+            }
 
             try {
                 // Since we modified inputFile above, we MUST use this.inputFile for all checks and file creations
