@@ -32,7 +32,6 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
@@ -101,7 +100,7 @@ public class IndexFactory {
             Index apply(InputStream t) throws IOException;
         }
 
-        IndexType(final int magicNumber, final Integer tribbleIndexType, boolean canCreate, IndexFromStreamFunction createFromInputStream, final int defaultBinSize) {
+        IndexType(final int magicNumber, final Integer tribbleIndexType, final boolean canCreate, final IndexFromStreamFunction createFromInputStream, final int defaultBinSize) {
             this.magicNumber = magicNumber;
             this.tribbleIndexType = tribbleIndexType;
             this.canCreate = canCreate;
@@ -113,8 +112,12 @@ public class IndexFactory {
             return tribbleIndexType;
         }
 
-        public Index createIndex(InputStream in) throws IOException{
-           return createFromInputStream.apply(in);
+        public Index createIndex(final InputStream in) {
+            try {
+                return createFromInputStream.apply(in);
+            } catch (IOException e) {
+                throw new TribbleException("Failed to create index from stream.", e);
+            }
         }
 
         public int getMagicNumber() { return magicNumber; }
