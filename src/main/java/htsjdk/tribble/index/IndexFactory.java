@@ -343,6 +343,7 @@ public class IndexFactory {
         return createDynamicIndex(inputPath, codec, IndexBalanceApproach.FOR_SEEK_TIME);
     }
 
+
     /**
      * Create a index of the specified type with default binning parameters
      *
@@ -354,6 +355,34 @@ public class IndexFactory {
                                                                                 final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                 final IndexType type) {
         return createIndex(IOUtil.toPath(inputFile), codec, type, null);
+    }
+
+    /**
+     * Create a index of the specified type with default binning parameters
+     *
+     * @param inputhPath the input file to load features from
+     * @param codec     the codec to use for decoding records
+     * @param type      the type of index to create
+     */
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final Path inputhPath,
+                                                                                final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+                                                                                final IndexType type) {
+        return createIndex(inputhPath, codec, type, null);
+    }
+
+    /**
+     * Create an index of the specified type with default binning parameters
+     *
+     * @param inputFile the input File to load features from
+     * @param codec     the codec to use for decoding records
+     * @param type      the type of index to create
+     * @param sequenceDictionary May be null, but if present may reduce memory footprint for tabix index creation
+     */
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final File inputFile,
+                                                                                final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+                                                                                final IndexType type,
+                                                                                final SAMSequenceDictionary sequenceDictionary) {
+        return createIndex(IOUtil.toPath(inputFile), codec, type, sequenceDictionary);
     }
 
     /**
