@@ -439,13 +439,24 @@ public class IndexFactory {
                 throw new IllegalArgumentException("FeatureIterator input file cannot be null");
             }
             this.codec = codec;
-            this.inputFile = inputFile;
+
+            // We must call getPathToDataFile here to work with codecs that store their configuration and data separately
+            final String filePath = codec.getPathToDataFile(inputFile.getAbsolutePath());
+
             try {
-                if (IOUtil.hasBlockCompressedExtension(inputFile)) {
-                    final BlockCompressedInputStream bcs = initIndexableBlockCompressedStream(inputFile);
+                this.inputFile = IOUtil.getPath(filePath).toFile();
+            } catch (final IOException e) {
+                throw new TribbleException("Failed while constructing a FeatureIterator due to a problem converting String to Path", e);
+            }
+
+            try {
+                // Since we modified inputFile above, we MUST use this.inputFile for all checks and file creations
+                // for the rest of this method!
+                if (IOUtil.hasBlockCompressedExtension(this.inputFile)) {
+                    final BlockCompressedInputStream bcs = initIndexableBlockCompressedStream(this.inputFile);
                     source = (SOURCE) codec.makeIndexableSourceFromStream(bcs);
                 } else {
-                    final PositionalBufferedStream ps = initIndexablePositionalStream(inputFile);
+                    final PositionalBufferedStream ps = initIndexablePositionalStream(this.inputFile);
                     source = (SOURCE) codec.makeIndexableSourceFromStream(ps);
                 }
                 this.codec.readHeader(source);

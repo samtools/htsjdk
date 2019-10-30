@@ -29,12 +29,15 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Interval;
+import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.VCFRedirectCodec;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
+import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
@@ -217,6 +220,42 @@ public class IndexFactoryTest extends HtsjdkTest {
                 Assert.assertEquals(vcOrig.getEnd(), vcTmp.getEnd());
                 Assert.assertFalse(tmpIt.hasNext()); // make sure there is only one matching variant
             }
+        }
+    }
+
+    @DataProvider
+    public Object[][] getRedirectFiles(){
+        return new Object[][] {
+                {VCFRedirectCodec.REDIRECTING_CODEC_TEST_FILE_ROOT + "vcf.gz.redirect", IndexFactory.IndexType.TABIX},
+                {VCFRedirectCodec.REDIRECTING_CODEC_TEST_FILE_ROOT + "vcf.redirect", IndexFactory.IndexType.INTERVAL_TREE},
+                {VCFRedirectCodec.REDIRECTING_CODEC_TEST_FILE_ROOT + "vcf.redirect", IndexFactory.IndexType.LINEAR}
+        };
+    }
+
+    @Test(dataProvider = "getRedirectFiles")
+    public void testIndexRedirectedFiles(String input, IndexFactory.IndexType type) throws IOException {
+        final VCFRedirectCodec codec = new VCFRedirectCodec();
+        final File dir = IOUtil.createTempDir("redirec-test", "dir");
+        try {
+            final File tmpInput = new File(dir, new File(input).getName());
+            Files.copy(new File(input), tmpInput);
+            final File tmpDataFile = new File(codec.getPathToDataFile(tmpInput.toString()));
+            Assert.assertTrue(new File(tmpDataFile.getAbsoluteFile().getParent()).mkdir());
+            final File originalDataFile = new File(codec.getPathToDataFile(input));
+            Files.copy(originalDataFile, tmpDataFile);
+
+            try(final AbstractFeatureReader<VariantContext, LineIterator> featureReader = AbstractFeatureReader.getFeatureReader(tmpInput.getAbsolutePath(), codec, false)) {
+                Assert.assertFalse(featureReader.hasIndex());
+            }
+            final Index index = IndexFactory.createIndex(tmpInput, codec, type);
+            index.writeBasedOnFeatureFile(tmpDataFile);
+
+            try(final AbstractFeatureReader<VariantContext, LineIterator> featureReader = AbstractFeatureReader.getFeatureReader(tmpInput.getAbsolutePath(), codec)) {
+                Assert.assertTrue(featureReader.hasIndex());
+                Assert.assertEquals(featureReader.query("20",1110696,1230237).stream().count(), 2);
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir.toPath());
         }
     }
 }
