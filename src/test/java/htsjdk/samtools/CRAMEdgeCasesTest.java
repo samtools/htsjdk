@@ -1,24 +1,50 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.util.Log;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * A collection of CRAM test based on round trip comparison of SAMRecord before and after CRAM compression.
  */
 public class CRAMEdgeCasesTest extends HtsjdkTest {
+
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
+
+    @Test
+    public final void testMateResolution() throws IOException {
+        final File inputFile = new File(TEST_DATA_DIR, "mateResolution.sam");
+        final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta");
+
+        final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
+        final File tempOutCRAM = File.createTempFile("testMateResolution", ".cram");
+        CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, inputFile, tempOutCRAM, referenceFile);
+
+        try (final SamReader origReader = SamReaderFactory.makeDefault()
+                .referenceSequence(referenceFile)
+                .validationStringency((ValidationStringency.SILENT))
+                .open(inputFile);
+             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
+            final SAMRecordIterator origIterator = origReader.iterator();
+            final SAMRecordIterator copyIterator = copyReader.getIterator();
+            final List<SAMRecord> origSamRecords  = new ArrayList<>();
+            final List<SAMRecord> cramRecords  = new ArrayList<>();
+            while (origIterator.hasNext() && copyIterator.hasNext()) {
+                origSamRecords.add(origIterator.next());
+                cramRecords.add(copyIterator.next());
+            }
+            Assert.assertEquals(origIterator.hasNext(), copyIterator.hasNext());
+            Assert.assertEquals(cramRecords.size(), origSamRecords.size());
+            Assert.assertEquals(cramRecords, origSamRecords);
+        }
+    }
 
     @Test
     public void testUnsorted() throws IOException {

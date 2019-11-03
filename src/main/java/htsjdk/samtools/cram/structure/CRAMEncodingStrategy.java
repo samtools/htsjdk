@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.Defaults;
-import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
@@ -11,7 +10,6 @@ import com.google.gson.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Parameters that can be set to control encoding strategy used on write.
