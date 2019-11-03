@@ -27,7 +27,7 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
 
     public GolombIntegerCodec(final BitInputStream coreBlockInputStream,
                               final BitOutputStream coreBlockOutputStream,
-                              final int m, final Integer offset) {
+                              final int offset, final int m) {
         super(coreBlockInputStream, coreBlockOutputStream);
         if (m < 2) {
             throw new IllegalArgumentException(

@@ -27,9 +27,7 @@ class RANSDecodingSymbol {
 
     // Advances in the bit stream by "popping" a single symbol with range start
     // "start" and frequency "freq". All frequencies are assumed to sum to
-    // "1 << scale_bits",
-    // and the resulting bytes get written to ptr (which is updated).
-    //TODO: this javadoc above says this writes to ptr... ?
+    // "1 << scale_bits".
     public int advanceSymbol(final int rIn, final ByteBuffer byteBuffer, final int scaleBits) {
         final int mask = (1 << scaleBits) - 1;
 

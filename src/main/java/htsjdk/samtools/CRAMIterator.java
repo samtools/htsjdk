@@ -16,7 +16,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.cram.build.CRAMReferenceState;
+import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.build.CramSpanContainerIterator;
 import htsjdk.samtools.cram.io.CountingInputStream;
@@ -35,7 +35,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
     private final CramContainerIterator containerIterator;
     private final CramHeader cramHeader;
     private final SAMFileHeader samFileHeader;
-    private final CRAMReferenceState cramReferenceState;
+    private final CRAMReferenceRegion cramReferenceState;
     private final QueryInterval[] queryIntervals;
 
     private ValidationStringency validationStringency;
@@ -64,7 +64,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
 
         this.validationStringency = validationStringency;
         samFileHeader = containerIterator.getSamFileHeader();
-        cramReferenceState = new CRAMReferenceState(referenceSource, samFileHeader);
+        cramReferenceState = new CRAMReferenceRegion(referenceSource, samFileHeader);
         cramHeader = containerIterator.getCramHeader();
         firstContainerOffset = this.countingInputStream.getCount();
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
@@ -81,7 +81,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
 
         this.validationStringency = validationStringency;
         samFileHeader = containerIterator.getSamFileHeader();
-        cramReferenceState = new CRAMReferenceState(referenceSource, samFileHeader);
+        cramReferenceState = new CRAMReferenceRegion(referenceSource, samFileHeader);
         cramHeader = containerIterator.getCramHeader();
         firstContainerOffset = this.countingInputStream.getCount();
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
@@ -115,12 +115,8 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
                     compressorCache,
                     getSAMFileHeader());
             samRecordIterator = samRecords.iterator();
-            //System.out.println(String.format("Getting records for container %s",
-            //        container.getAlignmentContext().getReferenceContext()));
             return BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER;
         } else {
-            //System.out.println(String.format("Skipping records for container %s",
-            //        container.getAlignmentContext().getReferenceContext()));
             return BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION;
         }
     }

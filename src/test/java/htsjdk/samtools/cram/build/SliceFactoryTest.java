@@ -21,7 +21,7 @@ public class SliceFactoryTest  extends HtsjdkTest {
         // minimumSingleSliceReferenceSize values
 
         return new Object[][] {
-                // currentRefContextID, nextRecordRefContextID, numberOfRecordsSeen, updatedRefContextID
+                // currentRefContextID, numberOfRecordsSeen, nextRecordRefContextID, updatedRefContextID
 
                 // uninitialized state
                 { ReferenceContext.UNINITIALIZED_REFERENCE_ID, 0, MAPPED_REFERENCE_INDEX,  MAPPED_REFERENCE_INDEX },
@@ -112,7 +112,6 @@ public class SliceFactoryTest  extends HtsjdkTest {
                         SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, ReferenceContext.UNINITIALIZED_REFERENCE_ID},
         };
     }
-
 
     @Test
     private void testEmitSliceMultiSliceContainer() {

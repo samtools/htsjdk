@@ -21,7 +21,7 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.build.CRAMReferenceState;
+import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
@@ -311,25 +311,17 @@ public class Container {
         }
     }
 
-    //TODO: this unpacks all slices
-    //TODO: note that this does not require a reference, since we need to be able to use it to
-    // get raw CRAM records during indexing, and we don't want that to require a reference
-    //Visible for testing
-    List<CRAMRecord> getCRAMRecords(final ValidationStringency validationStringency, final CompressorCache compressorCache) {
-        if (isEOF()) {
-            return Collections.emptyList();
-        }
-
-        final ArrayList<CRAMRecord> records = new ArrayList<>(getContainerHeader().getNumberOfRecords());
-        for (final Slice slice : getSlices()) {
-            records.addAll(slice.getRawCRAMRecords(compressorCache, validationStringency));
-        }
-        return records;
-    }
-
+    /**
+     * Get SAMRecords from all slices within this container.
+     * @param validationStringency
+     * @param cramReferenceRegion
+     * @param compressorCache
+     * @param samFileHeader
+     * @return
+     */
     public List<SAMRecord> getSAMRecords(
             final ValidationStringency validationStringency,
-            final CRAMReferenceState cramReferenceState,
+            final CRAMReferenceRegion cramReferenceRegion,
             final CompressorCache compressorCache,
             final SAMFileHeader samFileHeader) {
         final List<SAMRecord> samRecords = new ArrayList<>(getContainerHeader().getNumberOfRecords());
@@ -337,8 +329,7 @@ public class Container {
             final List<CRAMRecord> rawCRAMRecords = slice.getRawCRAMRecords(compressorCache, validationStringency);
             slice.normalizeCRAMRecords(
                     rawCRAMRecords,
-                    cramReferenceState,
-                    0,
+                    cramReferenceRegion,
                     getCompressionHeader().getSubstitutionMatrix());
             for (final CRAMRecord cramRecord : rawCRAMRecords) {
                 final SAMRecord samRecord = cramRecord.toSAMRecord(samFileHeader);
@@ -367,9 +358,6 @@ public class Container {
             return Collections.emptyList();
         }
 
-        //TODO: these might need to be merged, so that in the end there is only one entry per ref context ?
-        // these should NOT need to be sorted ?? we need one per slice, several for multi-ref slices,
-        // so no merging should be required
         return getSlices().stream()
                 .map(s -> s.getCRAIEntries(compressorCache))
                 .flatMap(List::stream)

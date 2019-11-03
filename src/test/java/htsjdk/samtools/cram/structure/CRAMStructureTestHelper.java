@@ -122,7 +122,7 @@ public class CRAMStructureTestHelper {
         samRecord.setReferenceIndex(referenceIndex);
         samRecord.setAlignmentStart(intForNameAndStart);
         samRecord.setReadName(Integer.toString(intForNameAndStart));
-        addBasesAndQualities(samRecord);
+        addBasesAndQualities(samRecord, READ_LENGTH);
 
         samRecord.setCigarString(String.format("%dM", READ_LENGTH));
 
@@ -149,7 +149,7 @@ public class CRAMStructureTestHelper {
         final SAMRecord samRecord = new SAMRecord(SAM_FILE_HEADER);
         samRecord.setReadName(Integer.toString(intForNameAndStart));
         samRecord.setReadUnmappedFlag(true);
-        addBasesAndQualities(samRecord);
+        addBasesAndQualities(samRecord, READ_LENGTH);
 
         samRecord.setCigarString("*");
 
@@ -424,12 +424,12 @@ public class CRAMStructureTestHelper {
                 READ_GROUP_MAP);
     }
 
-    public static SAMRecord addBasesAndQualities(final SAMRecord samRecord) {
-        final byte bases[] = new byte[READ_LENGTH];
+    public static SAMRecord addBasesAndQualities(final SAMRecord samRecord, final int readLength) {
+        final byte bases[] = new byte[readLength];
         Arrays.fill(bases, (byte) 'A');
         samRecord.setReadBases(bases);
 
-        final byte[] baseQualities = new byte[READ_LENGTH];
+        final byte[] baseQualities = new byte[readLength];
         Arrays.fill(baseQualities, (byte) 50);
         samRecord.setBaseQualities(baseQualities);
 

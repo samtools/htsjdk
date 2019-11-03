@@ -396,8 +396,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         verifyWriterOutput(outputFile, new ReferenceSource(referenceFile), nRecs, true);
     }
 
-    // throws an exception since no reference is provided
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test
     public void testMakeCRAMWriterWithNoReference() throws Exception {
         final File outputFile = prepareOutputFileWithSuffix("." + FileExtensions.CRAM);
         final SAMFileHeader header = new SAMFileHeader();

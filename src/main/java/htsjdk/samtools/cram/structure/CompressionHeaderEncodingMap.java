@@ -61,9 +61,9 @@ public class CompressionHeaderEncodingMap {
     // External compressor to use for each external block, keyed by external content ID. This
     // map contains a key for each data series that is in an external block, plus additional
     // ones for each external block used for tags.
-    // TODO: the encodingMap itself is a template that is the same for each container being
-    // TODO: written, but the externalCompressor list is a little different since it  varies
-    // TODO: with the tags discovered for each container
+    //TODO: the encodingMap itself is a template that is the same for each container being
+    // written, but the externalCompressor list is a little different since it  varies
+    // with the tags discovered for each container
     private final Map<Integer, ExternalCompressor> externalCompressors = new TreeMap<>();
 
     // Keep a compressor cache for the lifetime of this encoding map
@@ -233,7 +233,6 @@ public class CompressionHeaderEncodingMap {
             }
         }
 
-        //TODO: what is the correct allocation size here....
         final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
         ITF8.writeUnsignedITF8(size, mapBuffer);
         for (final DataSeries dataSeries : encodingMap.keySet()) {

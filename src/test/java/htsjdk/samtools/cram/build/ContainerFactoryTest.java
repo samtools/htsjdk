@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-// TODO: test that the RI series is used for MULTI_REF slices
-
 public class ContainerFactoryTest extends HtsjdkTest {
 
     @DataProvider(name="singleContainerSlicePartitioning")

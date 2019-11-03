@@ -7,18 +7,15 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.samtools.util.Log;
 
 import htsjdk.samtools.util.SequenceUtil;
 import java.nio.file.*;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,37 +90,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
 
     @Test(dataProvider = "fullVerification")
     public void fullVerificationTest(String name) throws IOException {
-        doComplianceTest(name, (version, expected, actual) -> Assert.assertEquals(expected, actual));
-    }
-
-    // Files that can be subjected to full verification only after read base normalization, because either
-    // the reference or the reads contain ambiguity codes that are normalized by SequenceUtil.toBamReadBasesInPlace
-    // during the round-trip process.
-    @DataProvider(name = "ambiguityCodeVerification")
-    public Object[][] getAmbiguityCodeVerificationData() {
-        return new Object[][]{
-                {"amb#amb"}
-        };
-    }
-
-    @Test(dataProvider = "ambiguityCodeVerification")
-    public void ambiguityCodeVerificationTest(String name) throws IOException {
-        doComplianceTest(name,
-                (version, expected, actual) ->
-                {
-                    if (expected.getReadString().equals(actual.getReadString())) {
-                        Assert.assertEquals(expected, actual);
-                    } else {
-                        // tolerate BAM and CRAM conversion of read bases to upper case IUPAC codes by
-                        // creating a deep copy of the expected reads and normalizing (upper case IUPAC)
-                        // the bases; then proceeding with the full compare with the actual
-                        SAMRecord expectedNormalized = actual.deepCopy();
-                        final byte[] expectedBases = expectedNormalized.getReadBases();
-                        SequenceUtil.toBamReadBasesInPlace(expectedBases);
-                        Assert.assertEquals(actual, expectedNormalized);
-                    }
-                }
-                );
+        doComplianceTest(name, (version, actual, expected) -> Assert.assertEquals(actual, expected));
     }
 
     private static class TestCase {
@@ -140,20 +107,71 @@ public class CRAMComplianceTest extends HtsjdkTest {
         }
     }
 
+    // Files that can be subjected to full verification only after read base normalization, because either
+    // the reference or the reads contain ambiguity codes that are normalized by SequenceUtil.toBamReadBasesInPlace
+    // during the round-trip process.
+    @DataProvider(name = "ambiguityCodeVerification")
+    public Object[][] getAmbiguityCodeVerificationData() {
+        return new Object[][]{
+                // This test case has no 2.1 cram file because the test case had one read that had the unmapped
+                // flag set, along with a (non-zero and non-255) mapping quality value. Since a mapping quality
+                // on an unmapped read does not not roundtrip through CRAM (see
+                // https://github.com/samtools/htsjdk/issues/714), and we don't have an easy way to create a
+                // repaired 2.1 cram, the 2.1 file has just been removed from the repo.
+                {"amb#amb"}
+        };
+    }
+
+    @Test(dataProvider = "ambiguityCodeVerification")
+    public void ambiguityCodeVerificationTest(String name) throws IOException {
+        TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
+        /// round trip the bam through cram, but tolerate ambiguity code transforms
+        roundTripTolerateAmbiguityCodeConversion(t.bamFile, t.refFile);
+        // round trip the original cram (which has already had ambiguity code transform) through bam
+        testCRAMThroughBAMRoundTrip(t.cramFile_30, t.refFile);
+    }
+
+    private void roundTripTolerateAmbiguityCodeConversion(final File inputFile, final File referenceFile) throws IOException {
+        final List<SAMRecord> originalSAMRecords = getSAMRecordsFromFile(inputFile, referenceFile);
+        // roundtrip the SAM records through a temporary CRAM
+        final File tempCRAMFile = File.createTempFile("testAmbiguousBasesBAMThroughCRAMRoundTrip", FileExtensions.CRAM);
+        tempCRAMFile.deleteOnExit();
+        final SAMFileHeader samHeader = getFileHeader(inputFile, referenceFile);
+        writeRecordsToFile(originalSAMRecords, tempCRAMFile, referenceFile, samHeader);
+        final List<SAMRecord> roundTripCRAMRecords = getSAMRecordsFromFile(tempCRAMFile, referenceFile);
+        Assert.assertEquals(roundTripCRAMRecords.size(), originalSAMRecords.size());
+
+        for (int i = 0; i < originalSAMRecords.size(); i++) {
+            final SAMRecord originalRecord = originalSAMRecords.get(i);
+            final SAMRecord roundTripRecord = roundTripCRAMRecords.get(i);
+            if (originalRecord.getReadString().equals(roundTripRecord.getReadString())) {
+                Assert.assertEquals(roundTripRecord, originalRecord);
+            } else {
+                // tolerate BAM and CRAM conversion of read bases to upper case IUPAC codes by
+                // creating a deep copy of the expected reads and normalizing (upper case IUPAC)
+                // the bases; then proceeding with the full compare with the actual
+                final SAMRecord expectedNormalized = originalRecord.deepCopy();
+                final byte[] expectedBases = expectedNormalized.getReadBases();
+                SequenceUtil.toBamReadBasesInPlace(expectedBases);
+                Assert.assertEquals(roundTripRecord, expectedNormalized);
+            }
+        }
+    }
+
     private void doComplianceTest(
             final String name,
             final TriConsumer<Integer, SAMRecord, SAMRecord> assertFunction) throws IOException {
-        TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
+        final TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
 
         // 1) Read from SAM/BAM Round Trip through CRAM
         // retrieve all records from the original file
-        List<SAMRecord> samRecords = getSAMRecordsFromFile(t.bamFile, t.refFile);
-        SAMFileHeader samFileHeader = getFileHeader(t.bamFile, t.refFile);
+        final List<SAMRecord> samRecords = getSAMRecordsFromFile(t.bamFile, t.refFile);
+        final SAMFileHeader samFileHeader = getFileHeader(t.bamFile, t.refFile);
 
         // write them to a cram stream
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ReferenceSource source = new ReferenceSource(t.refFile);
-        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, samFileHeader, name);
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ReferenceSource source = new ReferenceSource(t.refFile);
+        final CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, samFileHeader, name);
         for (SAMRecord samRecord : samRecords) {
             cramFileWriter.addAlignment(samRecord);
         }
@@ -166,7 +184,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
             SAMRecord restored = cramFileReaderIterator.next();
             Assert.assertNotNull(restored);
-            assertFunction.accept(CramVersions.DEFAULT_CRAM_VERSION.major, samRecord, restored);
+            assertFunction.accept(CramVersions.DEFAULT_CRAM_VERSION.major, restored, samRecord);
         }
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
@@ -177,7 +195,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
             SAMRecord restored = cramFileReaderIterator.next();
             Assert.assertNotNull(restored);
-            assertFunction.accept(CramVersions.CRAM_v2_1.major, samRecord, restored);
+            assertFunction.accept(CramVersions.CRAM_v2_1.major, restored, samRecord);
         }
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
@@ -188,31 +206,31 @@ public class CRAMComplianceTest extends HtsjdkTest {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
             SAMRecord restored = cramFileReaderIterator.next();
             Assert.assertNotNull(restored);
-            assertFunction.accept(CramVersions.CRAM_v3.major, samRecord, restored);
+            assertFunction.accept(CramVersions.CRAM_v3.major, restored, samRecord);
         }
         Assert.assertFalse(cramFileReaderIterator.hasNext());
     }
 
-    private void assertSameRecordsPartial(Integer majorVersion, SAMRecord record1, SAMRecord record2) {
+    private void assertSameRecordsPartial(Integer majorVersion, SAMRecord actual, SAMRecord expected) {
         // test a partial set of fields for equality, avoiding known CRAM conversion issues
-        Assert.assertEquals(record2.getFlags(), record1.getFlags());
-        Assert.assertEquals(record2.getReadName(), record1.getReadName());
-        Assert.assertEquals(record2.getReferenceName(), record1.getReferenceName());
-        Assert.assertEquals(record2.getAlignmentStart(), record1.getAlignmentStart());
+        Assert.assertEquals(actual.getFlags(), expected.getFlags());
+        Assert.assertEquals(actual.getReadName(), expected.getReadName());
+        Assert.assertEquals(actual.getReferenceName(), expected.getReferenceName());
+        Assert.assertEquals(actual.getAlignmentStart(), expected.getAlignmentStart());
 
         /**
          * Known issue: CRAM v2.1 doesn't handle reads with missing bases correctly. This
          * causes '*' bases to arise when reading CRAM. Skipping the base comparison asserts.
          * https://github.com/samtools/htsjdk/issues/509
          */
-        if (record1.getReadBases() != SAMRecord.NULL_SEQUENCE || majorVersion >= CramVersions.CRAM_v3.major) {
+        if (expected.getReadBases() != SAMRecord.NULL_SEQUENCE || majorVersion >= CramVersions.CRAM_v3.major) {
             // BAM and CRAM convert read bases to upper case IUPAC codes
-            final byte[] originalBases = record1.getReadBases();
-            SequenceUtil.toBamReadBasesInPlace(originalBases);
-            Assert.assertEquals(record2.getReadBases(), originalBases);
+            final byte[] expectedBases = expected.getReadBases();
+            SequenceUtil.toBamReadBasesInPlace(expectedBases);
+            Assert.assertEquals(actual.getReadBases(), expectedBases);
         }
 
-        Assert.assertEquals(record2.getBaseQualities(), record1.getBaseQualities());
+        Assert.assertEquals(actual.getBaseQualities(), expected.getBaseQualities());
     }
 
     @DataProvider(name = "CRAMSourceFiles")
@@ -311,12 +329,12 @@ public class CRAMComplianceTest extends HtsjdkTest {
         List<SAMRecord> cramRecords = getSAMRecordsFromFile(tempCRAMFile, referenceFile);
         Assert.assertEquals(cramRecords.size(), originalBAMRecords.size());
         for (int i = 0; i < originalBAMRecords.size(); i++) {
-            Assert.assertEquals(originalBAMRecords.get(i), cramRecords.get(i));
+            Assert.assertEquals(cramRecords.get(i), originalBAMRecords.get(i));
         }
     }
 
     @Test
-    public void testBAMThroughCRAMRoundTripViaPath() throws IOException, NoSuchAlgorithmException {
+    public void testBAMThroughCRAMRoundTripViaPath() throws IOException {
         final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
         // These files are reduced versions of the CEUTrio.HiSeq.WGS.b37.NA12878.20.21.bam and human_g1k_v37.20.21.fasta
@@ -339,7 +357,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
             List<SAMRecord> cramRecords = getSAMRecordsFromPath(tempCRAM, referenceFile);
             Assert.assertEquals(cramRecords.size(), originalBAMRecords.size());
             for (int i = 0; i < originalBAMRecords.size(); i++) {
-                Assert.assertEquals(originalBAMRecords.get(i), cramRecords.get(i));
+                Assert.assertEquals(cramRecords.get(i), originalBAMRecords.get(i));
             }
         }
     }

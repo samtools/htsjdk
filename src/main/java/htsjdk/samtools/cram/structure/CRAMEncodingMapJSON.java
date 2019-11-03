@@ -62,7 +62,7 @@ class CRAMEncodingMapJSON {
         public final int compressorSpecificArg; // RANS order or GZIP compression level, otherwise NO_COMPRESSION_ARG
 
         // TODO: contentID and dataSeries are redundant ?
-        // TODO: also, compressor will be unused if we ever use a DataSeries encoding that is not External
+        // Note: also, compressor will be unused if we ever use a DataSeries encoding that is not External
         public CRAMEncodingMapJSONEntry(final Integer contentID,
                                         final DataSeries dataSeries,
                                         final EncodingDescriptor encodingDescriptor,

@@ -35,7 +35,6 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +75,6 @@ public class ReferenceSource implements CRAMReferenceSource {
      *
      * @return CRAMReferenceSource if one can be acquired. Guaranteed to not be null if none
      * of the listed exceptions is thrown.
-     * @throws IllegalStateException if no default reference source can be acquired
      * @throws IllegalArgumentException if the reference_fasta environment variable refers to a
      * a file that doesn't exist
      *<p>
@@ -104,8 +102,7 @@ public class ReferenceSource implements CRAMReferenceSource {
             return new ReferenceSource((ReferenceSequenceFile)null);
         }
         else {
-            throw new IllegalStateException(
-                    String.format("A valid CRAM reference was not supplied and one cannot be acquired via the property settings %s.reference_fasta or %s.use_cram_ref_download",Defaults.SAMJDK_PREFIX,Defaults.SAMJDK_PREFIX));
+            return new CRAMLazyReferenceSource();
         }
     }
 

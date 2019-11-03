@@ -239,10 +239,10 @@ public class CramRecordWriter {
                         case Substitution.operator:
                             final Substitution sv = (Substitution) f;
                             if (sv.getCode() < 0)
-                                baseSubstitutionCodeCodec.writeData(compressionHeader.getSubstitutionMatrix().code(sv.getReferenceBase(), sv.getBase()));
+                                baseSubstitutionCodeCodec.writeData(
+                                        compressionHeader.getSubstitutionMatrix().code(sv.getReferenceBase(), sv.getBase()));
                             else
                                 baseSubstitutionCodeCodec.writeData(sv.getCode());
-                            // baseSubstitutionCodec.writeData((byte) sv.getBaseChange().getChange());
                             break;
                         case Insertion.operator:
                             final Insertion iv = (Insertion) f;
@@ -273,10 +273,11 @@ public class CramRecordWriter {
                             baseCodec.writeData(ib.getBase());
                             break;
                         case BaseQualityScore.operator:
-                            //TODO: the code never generates these...
+                            //Note: htsjdk never generates these, it only consumes them
                             final BaseQualityScore bqs = (BaseQualityScore) f;
                             qualityScoreCodec.writeData(bqs.getQualityScore());
                             break;
+                        case Bases.operator: // not implemented since the htsjdk implementation doesn't generate these
                         default:
                             throw new RuntimeException("Unknown read feature operator: " + (char) f.getOperator());
                     }

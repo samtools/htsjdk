@@ -23,11 +23,8 @@ public class CRAMRecordTest extends HtsjdkTest {
                 // readLength, alignmentStart, isMapped, readFeatures, expected alignmentEnd
                 { 100, 5, true, null, 104},
                 { 100, 10, true, Collections.singletonList(new SoftClip(1, "AAA".getBytes())), 100+10-1 -3},
-                //TODO: why does a Deletion result in +5
                 { 100, 10, true, Collections.singletonList(new Deletion(1, 5)), 100+10-1 +5},
-                //TODO: why does an Insertion result in -10
                 { 100, 30, true, Collections.singletonList(new Insertion(1, "CCCCCCCCCC".getBytes())), 100+30-1 -10},
-                //TODO: why does an InsertBase result in -10
                 { 100, 40, true, Collections.singletonList(new InsertBase(1, (byte) 'A')), 100+40-1 -1}
         };
     }

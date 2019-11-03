@@ -75,7 +75,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @throws IllegalArgumentException if the {@code cramFile} and the {@code inputStream} are both null
      * or if the {@code CRAMReferenceSource} is null
      */
-    //TODO: TEST only
     public CRAMFileReader(final File cramFile,
                           final InputStream inputStream,
                           final CRAMReferenceSource referenceSource) {
@@ -83,7 +82,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 "Either file or input stream is required.");
 
         this.cramFile = cramFile;
-        this.inputStream = inputStream;
+        this.inputStream = new BufferedInputStream(inputStream);
         this.referenceSource = referenceSource;
         if (cramFile != null) {
             mIndexFile = findIndexForFile(null, cramFile);
@@ -101,7 +100,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *                        reference sequences. May not be null.
      * @throws IllegalArgumentException if the {@code cramFile} or the {@code CRAMReferenceSource} is null
      */
-    //TODO: test only
     public CRAMFileReader(final File cramFile,
                           final File indexFile,
                           final CRAMReferenceSource referenceSource) {
@@ -122,7 +120,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *                        reference sequences. May not be null.
      * @throws IllegalArgumentException if the {@code cramFile} or the {@code CRAMReferenceSource} is null
      */
-    //TODO: test only
     public CRAMFileReader(final File cramFile, final CRAMReferenceSource referenceSource) {
         ValidationUtils.nonNull(cramFile,"File is required.");
 
@@ -145,7 +142,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *
      * @throws IllegalArgumentException if the {@code inputStream} or the {@code CRAMReferenceSource} is null
      */
-    //TODO: SAMReaderFactory
     public CRAMFileReader(final InputStream inputStream,
                           final SeekableStream indexInputStream,
                           final CRAMReferenceSource referenceSource,
@@ -167,7 +163,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *
      * @throws IllegalArgumentException if the {@code inputStream} or the {@code CRAMReferenceSource} is null
      */
-    //TODO: SAMReaderFactory
     public CRAMFileReader(final InputStream stream,
                           final File indexFile,
                           final CRAMReferenceSource referenceSource,
@@ -187,7 +182,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      *
      * @throws IllegalArgumentException if the {@code cramFile} or the {@code CRAMReferenceSource} is null
      */
-    //TODO: SAMReaderFactory
     public CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource,
                           final ValidationStringency validationStringency) throws IOException {
         ValidationUtils.nonNull(cramFile, "Input file can not be null for CRAM reader");
@@ -311,7 +305,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         }
         try {
             if (cramFile != null) {
-                iterator = new CRAMIterator(new FileInputStream(cramFile), referenceSource, validationStringency);
+                iterator = new CRAMIterator(new BufferedInputStream(new FileInputStream(cramFile)), referenceSource, validationStringency);
             } else {
                 iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
             }
@@ -321,9 +315,11 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         }
     }
 
+    /**
+     * Note: the resolution of this iterator is the Slice, so the records returned are all of the records
+     * in all the slices that overlap these spans.
+     */
     @Override
-    //TODO: the resolution of this iterator is the Slice, so the records returned are all of the records
-    // in the slices that overlap these spans ?
     public CloseableIterator<SAMRecord> getIterator(final SAMFileSpan fileSpan) {
         return iterator(fileSpan);
     }
@@ -449,7 +445,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @param filePointers file pointer pairs corresponding to chunk boundaries for the
      *                     intervals
      */
-    //TODO: this is test-only
     public CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
                                                             final boolean contained,
                                                             final long[] filePointers) {

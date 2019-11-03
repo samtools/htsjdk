@@ -63,9 +63,8 @@ public class GolombIntegerEncoding extends ExperimentalEncoding<Integer> {
         return new GolombIntegerCodec(
                 sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
                 sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
-                //TODO: the order here is reversed (the other exp codecs are offset, m)
-                m,
-                offset);
+                offset,
+                m);
     }
 
     @Override

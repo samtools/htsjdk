@@ -29,9 +29,6 @@ public class InsertBase implements Serializable, ReadFeature {
     private byte base;
     public static final byte operator = 'i';
 
-    public InsertBase() {
-    }
-
     public InsertBase(final int position, final byte base) {
         this.position = position;
         this.base = base;

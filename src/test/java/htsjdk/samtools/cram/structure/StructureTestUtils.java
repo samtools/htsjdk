@@ -16,7 +16,7 @@ public class StructureTestUtils extends HtsjdkTest {
     public static final Set<DataSeries> DATASERIES_NOT_WRITTEN_BY_HTSJDK = new HashSet<DataSeries>() {{
         add(DataSeries.TV_TestMark);
         add(DataSeries.TM_TestMark);
-        add(DataSeries.BB_bases);
+        add(DataSeries.BB_Bases);
         add(DataSeries.QQ_scores);
     }};
 

@@ -31,7 +31,7 @@ public class CRAMEncodingStrategy {
     // encoding strategies
     private String customCompressionMapPath = "";
 
-    //TODO: should this have separate values for tags (separate from CRAMRecord data) ?
+    //Note: should this have separate values for tags (separate from CRAMRecord data) ?
     private int gzipCompressionLevel = Defaults.COMPRESSION_LEVEL;
 
    // The minimum number of reads we need to have seen to emit a single-reference slice. If we've seen

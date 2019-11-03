@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.build.CRAMReferenceState;
+import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
@@ -18,8 +18,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
-
-// TODO: we need a test to verify that containerFactory rejects attempts lists of records that exceed the limit
 
 public class ContainerTest extends HtsjdkTest {
     private static final int TEST_RECORD_COUNT = 2000;
@@ -119,16 +117,59 @@ public class ContainerTest extends HtsjdkTest {
         }
     }
 
-    @Test
-    public void testExtentsForNCigarOperator() {
-        final SAMRecord samRecord = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
-        samRecord.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
-        samRecord.setAlignmentStart(5);
-        samRecord.setReadName("testRead");
-        CRAMStructureTestHelper.addBasesAndQualities(samRecord);
-        samRecord.setCigarString("10M1N10M");
+    @DataProvider(name = "cigarWithNExtents")
+    private Object[][] getCigarWithNExtents() {
+        return new Object[][] {
+                // start, readLength, cigar, extents
+                { 1, 20, "10M1N10M", new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        1,
+                        21) },
+                { 5, 20, "10M1N10M", new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        5,
+                        21) },
+                { 5, 20, "10M1N10M", new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        5,
+                        21) },
+                { 1, 1, "1N", new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        1,
+                        2) },
+                { 10, 1, "1N", new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        10,
+                        2) },
+                { 5, 10, "1N10M10N", new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        5,
+                        21) },
+                { 5, 10, "10M10N", new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        5,
+                        20) },
+                { 5, 20, "5N20M", new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        5,
+                        25) },
+        };
+    }
 
-        final int alignmentEnd = samRecord.getAlignmentEnd();
+    @Test(dataProvider = "cigarWithNExtents")
+    public void testExtentsForNCigarOperator(
+            final int alignmentStart,
+            final int readLength,
+            final String cigarString,
+            final AlignmentContext expectedAlignmentContext) {
+        // test for https://github.com/samtools/htsjdk/issues/1088
+        final SAMRecord samRecord = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
+        samRecord.setReferenceIndex(expectedAlignmentContext.getReferenceContext().getReferenceSequenceID());
+        samRecord.setAlignmentStart(alignmentStart);
+        samRecord.setReadName("testRead");
+        CRAMStructureTestHelper.addBasesAndQualities(samRecord, readLength);
+        samRecord.setCigarString(cigarString);
+
         final ContainerFactory containerFactory = new ContainerFactory(
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 new CRAMEncodingStrategy(),
@@ -136,167 +177,9 @@ public class ContainerTest extends HtsjdkTest {
         final Container container = CRAMStructureTestHelper.createContainer(containerFactory, Collections.singletonList(samRecord), 10);
         Assert.assertEquals(
                 container.getAlignmentContext(),
-                new AlignmentContext(
-                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
-                        5,
-                        21));
+                expectedAlignmentContext);
     }
 
-//    @Test
-//    public static void distributeIndexingParametersToSlicesOneSlice() {
-//        // this container starts 100,000 bytes into the CRAM stream
-//        final int containerStreamByteOffset = 100000;
-//
-//        // this Container consists of:
-//        // a header (size irrelevant)
-//        // a Compression Header of size 7552 bytes
-//        // a Slice of size 6262 bytes
-//
-//        final int compressionHeaderSize = 7552;
-//        final int sliceSize = 6262;
-//
-//        final Container container = createOneSliceContainer(containerStreamByteOffset, sliceSize, compressionHeaderSize);
-//
-//        assertSliceIndexingParams(container.getSlices().get(0), 0, containerStreamByteOffset, sliceSize, compressionHeaderSize);
-//    }
-//
-//    // two slices
-//
-//    @Test
-//    public static void distributeIndexingParametersToSlicesTwoSlices() {
-//        // this container starts 200,000 bytes into the CRAM stream
-//        final int containerStreamByteOffset = 200000;
-//
-//        // this Container consists of:
-//        // a header (size irrelevant)
-//        // a Compression Header of size 64343 bytes
-//        // a Slice of size 7890 bytes
-//        // a Slice of size 5555 bytes
-//
-//        final int compressionHeaderSize = 64343;
-//        final int slice0size = 7890;
-//        final int slice1size = 5555;
-//
-//        final Container container = createTwoSliceContainer(containerStreamByteOffset, slice0size, slice1size, compressionHeaderSize);
-//
-//        assertSliceIndexingParams(container.getSlices().get(0), 0, containerStreamByteOffset, slice0size, compressionHeaderSize);
-//        assertSliceIndexingParams(container.getSlices().get(1), 1, containerStreamByteOffset, slice1size, compressionHeaderSize + slice0size);
-//    }
-//
-//    @DataProvider(name = "containerDistributeNegative")
-//    private Object[][] containerDistributeNegative() {
-//        final ReferenceContext refContext = new ReferenceContext(0);
-//
-////        final Container nullLandmarks = new Container(refContext);
-////        nullLandmarks.containerBlocksByteSize = 6789;
-////        nullLandmarks.landmarks = null;
-//
-//        final ContainerHeader nullLandmarks = new ContainerHeader(
-//                6789,
-//                refContext,
-//                0,
-//                0,
-//                0,
-//                0L,
-//                0L,
-//                0,
-//                null, // null landmarks
-//                0);
-//        //nullLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 999);
-//
-//        final Container tooManyLandmarks = new Container(refContext);
-//        tooManyLandmarks.containerBlocksByteSize = 111;
-//        tooManyLandmarks.landmarks = new int[]{ 1, 2, 3, 4, 5 };
-//
-//        final ContainerHeader tooManyLandmarks = new ContainerHeader(
-//                12345,
-//                refContext,
-//                0,
-//                0,
-//                0,
-//                0L,
-//                0L,
-//                0,
-//                new int[]{ 1, 2, 3, 4, 5 }, // too many landmarks
-//                0);
-//        //tooManyLandmarks.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), 12345);
-//
-//        final Container tooManySlices = new Container(refContext);
-//        tooManySlices.containerBlocksByteSize = 675345389;
-//        tooManySlices.landmarks = new int[]{ 1 };
-//        tooManySlices.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
-//
-//        final Container noByteSize = new Container(refContext);
-//        noByteSize.landmarks = new int[]{ 1, 2 };
-//        noByteSize.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), 12345);
-//
-//        return new Object[][] {
-//                { nullLandmarks },
-//                { tooManyLandmarks },
-//                //{ tooManySlices },
-//                //{ noByteSize },
-//        };
-//    }
-//
-//    @Test(expectedExceptions = CRAMException.class, dataProvider = "containerDistributeNegative")
-//    public static void distributeIndexingParametersToSlicesNegative(final Container container) {
-//        container.distributeIndexingParametersToSlices();
-//    }
-//
-//    private static Container createOneSliceContainer(final int containerStreamByteOffset,
-//                                                     final int slice0size,
-//                                                     final int compressionHeaderSize) {
-//        final ReferenceContext refContext = new ReferenceContext(0);
-//
-//        final Container oneSliceContainer = new Container(
-//                COMPRESSION_HEADER,
-//                Collections.singletonList(new Slice(refContext)),
-//                1234,
-//                0,
-//                0,
-//                0);
-//
-//        oneSliceContainer.containerBlocksByteSize = compressionHeaderSize + slice0size;
-//        oneSliceContainer.landmarks = new int[]{
-//                compressionHeaderSize,                // beginning of slice
-//        };
-//
-//        oneSliceContainer.setSlicesAndByteOffset(Collections.singletonList(new Slice(refContext)), containerStreamByteOffset);
-//        oneSliceContainer.distributeIndexingParametersToSlices();
-//        return oneSliceContainer;
-//    }
-//
-//    private static Container createTwoSliceContainer(final int containerStreamByteOffset,
-//                                                     final int slice0size,
-//                                                     final int slice1size,
-//                                                     final int compressionHeaderSize) {
-//        final int containerDataSize = compressionHeaderSize + slice0size + slice1size;
-//
-//        final ReferenceContext refContext = new ReferenceContext(0);
-//
-//        final Container container = new Container(refContext);
-//        container.containerBlocksByteSize = containerDataSize;
-//        container.landmarks = new int[]{
-//                compressionHeaderSize,                // beginning of slice 1
-//                compressionHeaderSize + slice0size    // beginning of slice 2
-//        };
-//
-//        container.setSlicesAndByteOffset(Arrays.asList(new Slice(refContext), new Slice(refContext)), containerStreamByteOffset);
-//        container.distributeIndexingParametersToSlices();
-//        return container;
-//    }
-
-//    private static void assertSliceIndexingParams(final Slice slice,
-//                                                  final int expectedIndex,
-//                                                  final int expectedContainerOffset,
-//                                                  final int expectedSize,
-//                                                  final int expectedOffset) {
-//        Assert.assertEquals(slice.getLandmarkIndex(), expectedIndex);
-//        Assert.assertEquals(slice.getByteOffsetOfContainer(), expectedContainerOffset);
-//        Assert.assertEquals(slice.getByteSizeOfSliceBlocks(), expectedSize);
-//        Assert.assertEquals(slice.getByteOffsetOfSliceHeaderBlock(), expectedOffset);
-//    }
-//
     @DataProvider(name = "cramVersions")
     private Object[][] cramVersions() {
         return new Object[][] {
@@ -317,7 +200,6 @@ public class ContainerTest extends HtsjdkTest {
              final CountingInputStream inputStream = new CountingInputStream(bais)) {
             final Container container = new Container(version, inputStream, inputStream.getCount());
             Assert.assertTrue(container.isEOF());
-            Assert.assertTrue(container.getCRAMRecords(ValidationStringency.STRICT, new CompressorCache()).isEmpty());
         }
     }
 
@@ -362,7 +244,7 @@ public class ContainerTest extends HtsjdkTest {
 
         final List<SAMRecord> roundTripRecords = container.getSAMRecords(
                 ValidationStringency.STRICT,
-                new CRAMReferenceState(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER),
+                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER),
                 new CompressorCache(),
                 CRAMStructureTestHelper.SAM_FILE_HEADER
         );
