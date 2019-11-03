@@ -19,8 +19,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-// TODO: fix samtools roundtripping test
-
 public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
@@ -28,14 +26,12 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     @DataProvider(name="roundTripTestFiles")
     public Object[][] roundTripTestFiles() {
         return new Object[][] {
-                // SAM validation error: ERROR: Read name20FUKAAXX100202:2:1:20271:61529,
-                // Mate Alignment start (9999748) must be <= reference sequence length (200) on reference 20
                 { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
-//                { new File("/Users/cnorman/projects/references/NA12878.cram"),
-//                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta") },
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
 //                        new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta") },
+//                { new File("/Users/cnorman/projects/references/NA12878.cram"),
+//                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta") },
 //                { new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta") },
 //                { new File("/Users/cnorman/projects/references/m64020_190208_213731-88146610-all.bam"),
@@ -44,179 +40,142 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "roundTripTestFiles")
-    public final void testRoundTrip(final File sourceFile, final File referenceFile) throws IOException {
-        System.out.println(String.format("Test file size: %,d (%s)", Files.size(sourceFile.toPath()), sourceFile.toPath()));
+    public final void testRoundTripDefaultEncodingStrategy(final File sourceFile, final File referenceFile) throws IOException {
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
         final File tempOutCRAM = File.createTempFile("testRoundTrip", ".cram");
-        System.out.println(String.format("Output file: %s", tempOutCRAM.toPath()));
-        long start = System.currentTimeMillis();
-        final long fileSize = testWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
-        long end = System.currentTimeMillis();
-        System.out.println(String.format("Output size: %,d Strategy %s", fileSize, testStrategy));
-        System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
+
+        System.out.println(String.format("Test file size: %,d (%s) Output file: %s",
+                Files.size(sourceFile.toPath()),
+                sourceFile.toPath(),
+                tempOutCRAM.toPath()));
+
+        long startTime = System.currentTimeMillis();
+        final long fileSize = CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
+        long endTime = System.currentTimeMillis();
+
+        System.out.println(String.format(
+                "Output size: %,d Elapsed time minutes: %,d Strategy: %s",
+                fileSize,
+                (endTime-startTime)/1000/60, testStrategy));
 
         assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, true);
-
-        if (SamtoolsTestUtils.isSamtoolsAvailable()) {
-            start = System.currentTimeMillis();
-            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(
-                    tempOutCRAM,
-                    referenceFile,
-                    "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
-            end = System.currentTimeMillis();
-            System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
-            System.out.println(String.format("Samtools file size: %,d (%s)", Files.size(samtoolsOutFile.toPath()), samtoolsOutFile.toPath()));
-            assertRoundTripFidelity(tempOutCRAM, samtoolsOutFile, referenceFile, true);
-            //samtoolsOutFile.delete();
-        }
-        //tempOutCRAM.delete();
-    }
-
-    @Test
-    public final void testMateResolution() throws IOException {
-        final File inputFile = new File("/Users/cnorman/projects/cramstuff/mateResolution.sam");
-        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
-
-        final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
-        final File tempOutCRAM = File.createTempFile("testMateResolution", ".cram");
-        testWithEncodingStrategy(testStrategy, inputFile, tempOutCRAM, referenceFile);
-
-        try (final SamReader origReader = SamReaderFactory.makeDefault()
-                .referenceSequence(referenceFile)
-                .validationStringency((ValidationStringency.SILENT))
-                .open(inputFile);
-             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
-            final SAMRecordIterator origIterator = origReader.iterator();
-            final SAMRecordIterator copyIterator = copyReader.getIterator();
-            final List<SAMRecord> origSamRecords  = new ArrayList<>();
-            final List<SAMRecord> cramRecords  = new ArrayList<>();
-            while (origIterator.hasNext() && copyIterator.hasNext()) {
-                origSamRecords.add(origIterator.next());
-                cramRecords.add(copyIterator.next());
-            }
-            for (int i = 0; i < origSamRecords.size(); i++) {
-                if (!origSamRecords.get(i).equals(cramRecords.get(i))) {
-                    origSamRecords.get(i).equals(cramRecords.get(i));
-                }
-                Assert.assertEquals(cramRecords.get(i), origSamRecords.get(i));
-            }
-        }
+        //assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
+        tempOutCRAM.delete();
     }
 
     @Test(dataProvider = "roundTripTestFiles")
     public final void testBestEncodingStrategy(final File cramSourceFile, final File referenceFile) throws IOException {
-        System.out.println(String.format("Test file size: %,d (%s)", Files.size(cramSourceFile.toPath()), cramSourceFile.toPath()));
-        // src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingMapProfileBEST.json has the encoding map used by this strategy
+        // src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingMapProfileBEST.json contains the encoding map used by this strategy
         final File encodingStrategyFile = new File("src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingStrategyTemplate.json");
         final CRAMEncodingStrategy testStrategy = CRAMEncodingStrategy.readFromPath(encodingStrategyFile.toPath());
+
         final File tempOutCRAM = File.createTempFile("bestEncodingStrategyTest", ".cram");
-        System.out.println(String.format("Output file: %s", tempOutCRAM.toPath()));
+        System.out.println(String.format("Test file/size: %,d (%s) Output file: %s",
+                Files.size(cramSourceFile.toPath()),
+                cramSourceFile.toPath(),
+                tempOutCRAM.toPath()));
+
         final long start = System.currentTimeMillis();
-        final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
+        final long fileSize = CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
         long end = System.currentTimeMillis();
-        System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
-        System.out.println(String.format("Size: %,d Strategy %s", fileSize, testStrategy));
+
+        System.out.println(String.format("Size: %,d Elapsed time minutes: %,d Strategy: %s", fileSize, (end-start)/1000/60, testStrategy));
+
         assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, false);
-//        if (SamtoolsTestUtils.isSamtoolsAvailable()) {
-//            // give the result to samtools and see if it can read it and wite another cra,...
-//            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(
-//                    tempOutCRAM,
-//                    referenceFile,
-//                    "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
-//            System.out.println(String.format("Samtools file size: %,d (%s)",
-//                    Files.size(samtoolsOutFile.toPath()),
-//                    samtoolsOutFile.toPath()));
-//        }
+
         tempOutCRAM.delete();
     }
 
     @Test(dataProvider = "roundTripTestFiles")
     public final void testAllEncodingStrategyCombinations(final File cramSourceFile, final File referenceFile) throws IOException {
-        final Map<Integer, CRAMEncodingStrategy> encodingStrategyByTest = new HashMap<>();
-        final Map<Integer, String> encodingParamsByTest = new HashMap<>();
-        final Map<Integer, Long> fileSizeByTest = new HashMap<>();
+        final Map<Integer, CRAMEncodingStrategy> encodingStrategyByTestNumber = new HashMap<>();
+        final Map<Integer, String> testSummaryByTestNumber = new HashMap<>();
+        final Map<Integer, Long> fileSizeByTestNumber = new HashMap<>();
 
-        System.out.println(String.format("Test file size: %,d", Files.size(cramSourceFile.toPath())));
+        System.out.println(String.format("Original test file size: %,d", Files.size(cramSourceFile.toPath())));
         int testCount = 1;
 
-        // the larger reads/slice and slices/container values are only interesting if there
-        // are enough records in the input file to cause these thresholds to be crossed
-        //      for (final int slicesPerContainer : Arrays.asList(1, 3)) {
+        for (final Tuple<String, CRAMEncodingStrategy> testStrategy : getAllEncodingStrategies()) {
+            final File tempOutCRAM = File.createTempFile("allEncodingStrategyCombinations", ".cram");
+
+            final long startTime = System.currentTimeMillis();
+            final long fileSize = CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy.b, cramSourceFile, tempOutCRAM, referenceFile);
+            final long endTime = System.currentTimeMillis();
+
+            assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, false);
+            //assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
+
+            tempOutCRAM.delete();
+            final File mapPath = new File(testStrategy.b.getCustomCompressionMapPath());
+            mapPath.delete();
+
+            final String testSummary = String.format(
+                    "Size: %,d Test: %,d Seconds: %d, %s %s",
+                    fileSize,
+                    testCount,
+                    (endTime - startTime) / 1000,
+                    testStrategy.a,
+                    testStrategy.b);
+            System.out.println(testSummary);
+
+            testSummaryByTestNumber.put(testCount, testSummary);
+            encodingStrategyByTestNumber.put(testCount, testStrategy.b);
+            fileSizeByTestNumber.put(testCount, fileSize);
+            testCount++;
+            System.out.println();
+        }
+
+        // sort and display encoding strategies ordered by ascending result file size
+        final List<Tuple<Long, Integer>> bestEncodingStrategies =
+                fileSizeByTestNumber.entrySet()
+                .stream()
+                .map(e -> new Tuple<>(e.getValue(), e.getKey()))
+                .collect(Collectors.toList());
+        bestEncodingStrategies.sort(Comparator.comparing(t -> t.a));
+        System.out.println(String.format("%d tests, top 50 sorted by result size:", testCount));
+        // take the 50 best results
+        bestEncodingStrategies
+                .stream().limit(50)
+                .forEach((Tuple<Long, Integer> t) ->
+                        System.out.println(String.format("Test: %d Summary: %s Encoding: %s",
+                                t.b,
+                                testSummaryByTestNumber.get(t.b),
+                                encodingStrategyByTestNumber.get(t.b)))
+                );
+    }
+
+    private List<Tuple<String, CRAMEncodingStrategy>> getAllEncodingStrategies() throws IOException {
+        // description, strategy
+        final List<Tuple<String, CRAMEncodingStrategy>> allStrategies = new ArrayList<>();
+
+        // Note that the larger reads/slice and slices/container values are only interesting when there
+        // are enough records in the test file to cause these thresholds to be crossed
         for (final int gzipCompressionLevel : Arrays.asList(5, 9)) {
             for (final int readsPerSlice : Arrays.asList(10000, 20000)) {
                 for (final int slicesPerContainer : Arrays.asList(1, 2)) {
                     for (final DataSeries dataSeries : enumerateDataSeries()) {
                         for (final EncodingDescriptor encodingDescriptor : enumerateEncodingDescriptorsFor(dataSeries)) {
                             for (final ExternalCompressor compressor : enumerateExternalCompressors(gzipCompressionLevel)) {
-                                final long startTime = System.currentTimeMillis();
-                                final CRAMEncodingStrategy testStrategy = createEncodingStrategyForParams(
+                                final String strategyDescription = String.format(
+                                        "Series: %s Encoding: %s Compressor: %s",
+                                        dataSeries,
+                                        encodingDescriptor.getEncodingID(),
+                                        compressor);
+                                final CRAMEncodingStrategy strategy = createEncodingStrategyForParams(
                                         gzipCompressionLevel,
                                         readsPerSlice,
                                         slicesPerContainer,
                                         dataSeries,
                                         encodingDescriptor,
                                         compressor);
-
-                                final File tempOutCRAM = File.createTempFile("allEncodingStrategyCombinations", ".cram");
-                                final long fileSize = testWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
-                                assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, false);
-
-                                if (SamtoolsTestUtils.isSamtoolsAvailable()) {
-                                    // give the result to samtools and see if it can read it and wite another cra,...
-                                    final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(
-                                            tempOutCRAM,
-                                            referenceFile,
-                                            "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
-                                    System.out.println(String.format("Samtools file size: %,d (%s)",
-                                            Files.size(samtoolsOutFile.toPath()),
-                                            samtoolsOutFile.toPath()));
-                                }
-                                tempOutCRAM.delete();
-                                final File mapPath = new File(testStrategy.getCustomCompressionMapPath());
-                                mapPath.delete();
-
-                                final long endTime = System.currentTimeMillis();
-                                final String testSummary = String.format(
-                                        "Size: %,d Test: %,d Seconds: %d, Series: %s Encoding: %s Compressor: %s %s",
-                                        fileSize,
-                                        testCount,
-                                        (endTime - startTime) / 1000,
-                                        dataSeries,
-                                        encodingDescriptor.getEncodingID(),
-                                        compressor,
-                                        testStrategy);
-                                System.out.println(testSummary);
-
-                                encodingParamsByTest.put(testCount, testSummary);
-                                encodingStrategyByTest.put(testCount, testStrategy);
-                                fileSizeByTest.put(testCount, fileSize);
-                                testCount++;
+                                allStrategies.add(new Tuple<>(strategyDescription, strategy));
                             }
                         }
                     }
                 }
             }
-            System.out.println();
         }
-
-        // sort and display encoding strategies ordered by ascending result file size
-        final List<Tuple<Long, Integer>> bestEncodingStrategies =
-                fileSizeByTest.entrySet()
-                .stream()
-                .map(e -> new Tuple<>(e.getValue(), e.getKey()))
-                .collect(Collectors.toList());
-        bestEncodingStrategies.sort(Comparator.comparing(t -> t.a));
-        System.out.println(String.format("%d tests, sorted by result size:", testCount));
-        bestEncodingStrategies
-                // take the 500 best results
-                .stream().limit(50)
-                .forEach((Tuple<Long, Integer> t) ->
-                        System.out.println(String.format("Size: %,d Test: %d Params: %s Encoding: %s",
-                                t.a,
-                                t.b,
-                                encodingParamsByTest.get(t.b),
-                                encodingStrategyByTest.get(t.b)))
-                );
+        return allStrategies;
     }
 
     public void assertRoundTripFidelity(
@@ -235,9 +194,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 if (emitDetail) {
                     final SAMRecord sourceRec = sourceIterator.next();
                     final SAMRecord targetRec = targetIterator.next();
-                    //TODO: remove this code:
                     if (!sourceRec.equals(targetRec)) {
-                        System.out.println("Diff found:");
+                        System.out.println("Difference found:");
                         System.out.println(sourceRec.getSAMString());
                         System.out.println(targetRec.getSAMString());
                     }
@@ -247,6 +205,20 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 }
             }
             Assert.assertEquals(sourceIterator.hasNext(), targetIterator.hasNext());
+        }
+    }
+
+    private void assertRoundtripFidelityWithSamtools(final File sourceCRAM, final File referenceFile) throws IOException {
+        if (SamtoolsTestUtils.isSamtoolsAvailable()) {
+            final long start = System.currentTimeMillis();
+            final File samtoolsOutFile = SamtoolsTestUtils.getWriteToTemporaryCRAM(
+                    sourceCRAM,
+                    referenceFile,
+                    "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
+            final long end = System.currentTimeMillis();
+            System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
+            System.out.println(String.format("Samtools file size: %,d (%s)", Files.size(samtoolsOutFile.toPath()), samtoolsOutFile.toPath()));
+            assertRoundTripFidelity(sourceCRAM, samtoolsOutFile, referenceFile, true);
         }
     }
 
@@ -277,44 +249,14 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         return encodingStrategy;
     }
 
-    // write with encoding params and return the size of the generated file
-    private long testWithEncodingStrategy(
-            final CRAMEncodingStrategy cramEncodingStrategy,
-            final File inputFile,
-            final File tempOutputCRAM,
-            final File referenceFile) throws IOException {
-        final File tempOutFile = File.createTempFile("encodingStrategiesTest", ".cram");
-        tempOutFile.deleteOnExit();
-        try (final SamReader reader = SamReaderFactory.makeDefault()
-                .referenceSequence(referenceFile)
-                .validationStringency((ValidationStringency.SILENT))
-                .open(inputFile);
-             final FileOutputStream fos = new FileOutputStream(tempOutputCRAM)) {
-            final CRAMFileWriter cramWriter = new CRAMFileWriter(
-                    cramEncodingStrategy,
-                    fos,
-                    null,
-                    true,
-                    new ReferenceSource(referenceFile),
-                    reader.getFileHeader(),
-                    tempOutputCRAM.getName());
-            final SAMRecordIterator inputIterator = reader.iterator();
-            while (inputIterator.hasNext()) {
-                cramWriter.addAlignment(inputIterator.next());
-            }
-            cramWriter.close();
-        }
-        return Files.size(tempOutputCRAM.toPath());
-    }
-
     public List<ExternalCompressor> enumerateExternalCompressors(final int gzipCompressionLevel) {
         final RANS rans = new RANS();
         return Arrays.asList(
                 new GZIPExternalCompressor(gzipCompressionLevel),
                 new RANSExternalCompressor(RANS.ORDER.ZERO, rans),
                 new RANSExternalCompressor(RANS.ORDER.ONE, rans)
-                //TODO: temporarily turn off LZMA cand BZIP compression since some local samtools (mine) don't
-                // have those compiled in
+                //NOTE: don't use LZMA or BZIP compression if we wantto validate using samtools since not
+                // all samtools builds have these enabled
                 //new LZMAExternalCompressor(),
                 //new BZIP2ExternalCompressor()
         );

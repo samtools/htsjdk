@@ -40,8 +40,7 @@ public class SamtoolsTestUtils {
             final String commandLineOptions) {
         try {
             final File tempCRAMFile = File.createTempFile("getWriteToTemporaryCRAM", FileExtensions.CRAM);
-            //TODO: uncomment this
-            //tempCRAMFile.deleteOnExit();
+            tempCRAMFile.deleteOnExit();
             final ProcessExecutor pe = new ProcessExecutor();
             final String commandString = String.format("%s/samtools view -h -C %s -T %s %s -o %s",
                     getSamtoolsBin(),
@@ -57,6 +56,5 @@ public class SamtoolsTestUtils {
         } catch (IOException e) {
             throw new RuntimeIOException(e);
         }
-
     }
 }
