@@ -42,7 +42,7 @@ public class AlignmentContext {
 
     private final ReferenceContext referenceContext;
     // minimum alignment start of the reads represented here, using a 1-based coordinate system
-    // or UNINITIALIZED if the ReferenceContext is not SINGLE_REFERENCE_TYPE
+    // or UNINITIALIZED (0) if the ReferenceContext is not SINGLE_REFERENCE_TYPE
     private final int alignmentStart;
     private final int alignmentSpan;
 

@@ -57,7 +57,8 @@ public class DataSeriesReader<T> {
     }
 
     /**
-     * Read an array of specified length. Normally this is a byte array. The intent here is optimization: reading an array may be faster than reading elements one by one.
+     * Read an array of specified length. Normally this is a byte array. The intent here is optimization: reading an
+     * array may be faster than reading elements one by one.
      * @param length the length of the array to be read
      * @return the array of objects
      */

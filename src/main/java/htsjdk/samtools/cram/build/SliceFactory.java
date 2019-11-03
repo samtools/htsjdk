@@ -17,7 +17,7 @@ public class SliceFactory {
     private final CRAMEncodingStrategy encodingStrategy;
 
     private final List<SliceEntry> cramRecordSliceEntries;
-    private final CRAMReferenceState cramReferenceState;
+    private final CRAMReferenceRegion cramReferenceRegion;
 
     private long sliceRecordCounter;
     private final int maxRecordsPerSlice;
@@ -32,7 +32,7 @@ public class SliceFactory {
             final SAMFileHeader samFileHeader,
             final long globalRecordCounter) {
         this.encodingStrategy = cramEncodingStrategy;
-        this.cramReferenceState = new CRAMReferenceState(cramReferenceSource, samFileHeader);
+        this.cramReferenceRegion = new CRAMReferenceRegion(cramReferenceSource, samFileHeader);
 
         minimumSingleReferenceSliceThreshold = encodingStrategy.getMinimumSingleReferenceSliceSize();
         maxRecordsPerSlice = this.encodingStrategy.getReadsPerSlice();
@@ -92,7 +92,7 @@ public class SliceFactory {
                     containerByteOffset,
                     sliceEntry.getGlobalRecordCounter()
             );
-            slice.setReferenceMD5(cramReferenceState.getCurrentReferenceBases());
+            slice.setReferenceMD5(cramReferenceRegion.getCurrentReferenceBases());
             slices.add(slice);
         }
         cramRecordSliceEntries.clear();
@@ -108,7 +108,7 @@ public class SliceFactory {
                     CramVersions.DEFAULT_CRAM_VERSION,
                     encodingStrategy,
                     samRecord,
-                    cramReferenceState.getReferenceBases(referenceIndex),
+                    cramReferenceRegion.getReferenceBases(referenceIndex),
                     recordIndex++,
                     readGroupNameToID);
             cramRecords.add(cramRecord);
@@ -162,7 +162,6 @@ public class SliceFactory {
     //the original order. If we just choose the first name that matches, it might not be the right one.
     //So test the candidate mate to see if it matches the mate properties specified in the original
     //read.
-    //TODO: we might want to move this method to CRAMRecord...
     private CRAMRecord rejectBadMateChoice(final CRAMRecord firstMate, final CRAMRecord candidateMate) {
         if (firstMate == null) {
             return null;

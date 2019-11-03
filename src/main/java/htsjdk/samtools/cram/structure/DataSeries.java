@@ -75,7 +75,7 @@ public enum DataSeries {
 
     // Read Feature Codes
 
-    BB_bases                            (DataSeriesType.BYTE_ARRAY, "BB", 20),
+    BB_Bases                            (DataSeriesType.BYTE_ARRAY, "BB", 20),
     QQ_scores                           (DataSeriesType.BYTE_ARRAY, "QQ", 21),
     BA_Base                             (DataSeriesType.BYTE,       "BA", 22),
     // NOTE: the CramRecordReader and CramRecordWriter split the QS_QualityScore into two separate

@@ -142,7 +142,7 @@ public class SamReaderTest extends HtsjdkTest {
         }
     }
 
-    @Test(dataProvider = "cramTestCases", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "cramTestCases", expectedExceptions = SAMException.class)
     public void testReferenceRequiredForCRAM(final String inputFile, final String ignoredReferenceFile) throws IOException {
         final File input = new File(TEST_DATA_DIR, inputFile);
         try(final SamReader reader = SamReaderFactory.makeDefault().open(input)) {

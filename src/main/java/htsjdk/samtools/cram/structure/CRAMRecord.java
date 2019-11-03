@@ -17,7 +17,8 @@ public class CRAMRecord {
     private static final Log log = Log.getInstance(CRAMRecord.class);
 
     // CF data series flags (defined by the CRAM spec)
-    public static final int CF_FORCE_PRESERVE_QS   = 0x1;  // preserve quality scores
+    //TODO: rename this flag to CF_QS_PRESERVED_AS_ARRAY
+    public static final int CF_FORCE_PRESERVE_QS   = 0x1;  // preserve quality scores as array
     public static final int CF_DETACHED            = 0x2;  // mate is stored literally vs as record offset
     public static final int CF_HAS_MATE_DOWNSTREAM = 0x4;
     // sequence is unknown; encoded reference differences are present only to recreate the CIGAR string
@@ -26,6 +27,8 @@ public class CRAMRecord {
     // sequential index of the record in a stream:
     public final static int SEQUENTIAL_INDEX_DEFAULT = -1;
     public final static int NO_READGROUP_ID = -1;
+    public final static byte MISSING_QUALITY_SCORE = -1; // SAMRecord.UNKNOWN_MAPPING_QUALITY: 255
+    private final static byte DEFAULT_QUALITY_SCORE = '?' - '!';
 
     //NOTE: "mate unmapped" and "mate negative strand" (MF_MATE_UNMAPPED and MF_MATE_NEG_STRAND, but aka
     // MATE_REVERSE_STRAND and MATE_UNMAPPED in SAMRecord flag space - note that the flag values are different
@@ -37,16 +40,11 @@ public class CRAMRecord {
     private static final int MF_MATE_NEG_STRAND = 0x1;  // same meaning as SAMFlag.MATE_REVERSE_STRAND, but different value
     private static final int MF_MATE_UNMAPPED   = 0x2;  // same meaning as SAMFlag.MATE_UNMAPPED, but different value
 
-    // SAMRecord fields
-    // (TODO: is this consistently 1-based ?) start position of this read, using a 1-based coordinate system
-    private final int alignmentStart;
+    private final int referenceIndex;
+    private final int alignmentStart; // position on the reference where this read starts (1-based (SAM) coordinates)
+    private final int alignmentEnd;  // position on the reference where this alignment ends
     private final int readLength;
     private final CRAMRecordReadFeatures readFeatures;
-
-    // point on the reference where this alignment ends
-    private final int alignmentEnd;
-
-    private final int referenceIndex;
     private final int mappingQuality;
     private final int readGroupID;
     private final List<ReadTag> tags;
@@ -56,7 +54,8 @@ public class CRAMRecord {
     private int cramFlags;
     private int templateSize;
     private String readName;
-    //readBases is never null since the contents hasher doesn't handle nulls; its always at least SAMRecord.NULL_SEQUENCE (byte[0])
+    // readBases is always always initialized to at least SAMRecord.NULL_SEQUENCE (byte[0], since
+    // the contents hasher doesn't handle nulls
     private byte[] readBases;
     private byte[] qualityScores;
     private MutableInt tagIdsIndex = new MutableInt(0);
@@ -119,7 +118,6 @@ public class CRAMRecord {
         alignmentStart = samRecord.getAlignmentStart();
         if (samRecord.getReadUnmappedFlag()) {
             readFeatures = new CRAMRecordReadFeatures();
-            //readFeatures = null;
             alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
         } else {
             readFeatures = new CRAMRecordReadFeatures(samRecord, refBases);
@@ -144,16 +142,25 @@ public class CRAMRecord {
         // follow the same approach to reproduce the behaviour of samtools.
         // copy read bases to avoid changing the original record:
         final byte[] bases = samRecord.getReadBases();
-        readBases = bases == null ?
+        readBases =
+                bases == null || bases.equals(SAMRecord.NULL_SEQUENCE) ?
                     SAMRecord.NULL_SEQUENCE :
                     SequenceUtil.toBamReadBasesInPlace(Arrays.copyOf(bases, samRecord.getReadLength()));
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
             setUnknownBases(samRecord.getReadBases().equals(SAMRecord.NULL_SEQUENCE));
         }
 
-        final byte[] qualScores = samRecord.getBaseQualities();
-        qualityScores = qualScores == null ? SAMRecord.NULL_QUALS: samRecord.getBaseQualities();
+        qualityScores = samRecord.getBaseQualities();
         if (!qualityScores.equals(SAMRecord.NULL_QUALS)) {
+            setForcePreserveQualityScores(true);
+        } else if (readFeatures.getReadFeaturesList().size() > 0) {
+            // Some ReadFeatures (such as ReadBase) have an associated quality score. If our read has no
+            // quality scores, we need to synthesize an array of missing scores and force it to be serialized
+            // so that the reader knows to ignore the quality scores that accompany the read features (the
+            // reader will recognize that the serialized scores are all missing and will set the record to "*",
+            // see restoreQualityScores.)
+            qualityScores = new byte[readLength];
+            Arrays.fill(qualityScores, MISSING_QUALITY_SCORE);
             setForcePreserveQualityScores(true);
         }
 
@@ -235,9 +242,6 @@ public class CRAMRecord {
         this.qualityScores = qualityScores;
         this.readBases = readBases;
         this.tags = readTags;
-        this.readFeatures = readFeaturesList == null ?
-                new CRAMRecordReadFeatures() :
-                new CRAMRecordReadFeatures(readFeaturesList);
         this.readGroupID = readGroupID;
         this.mateFlags = mateFlags;
         this.mateReferenceIndex = mateReferenceIndex;
@@ -246,19 +250,12 @@ public class CRAMRecord {
         //TODO: add a test for this case
         // its acceptable to have a mapped, placed read, but no read features, if the read matches the
         // reference exactly
+        readFeatures = readFeaturesList == null ?
+                    new CRAMRecordReadFeatures() :
+                    new CRAMRecordReadFeatures(readFeaturesList);
         alignmentEnd = isPlaced() ?
                 this.readFeatures.getAlignmentEnd(alignmentStart, readLength) :
                 AlignmentContext.NO_ALIGNMENT_END;
-//        if (readFeaturesList == null) {
-//            if (!CRAMRecord.isSegmentUnmapped(bamFlags)) {
-//                throw new CRAMException("Mapped read missing read features");
-//            }
-//            this.readFeatures = null;
-//            alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
-//        } else {
-//            this.readFeatures = new CRAMRecordReadFeatures(readFeaturesList);
-//            alignmentEnd = this.readFeatures.getAlignmentEnd(alignmentStart, readLength);
-//        }
     }
 
     /**
@@ -283,7 +280,6 @@ public class CRAMRecord {
             samRecord.setMappingQuality(mappingQuality);
         }
 
-//        if (readFeatures == null)
         if (isSegmentUnmapped())
             samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         else
@@ -321,6 +317,7 @@ public class CRAMRecord {
 
     public void assignReadName() {
         if (readName == null) {
+            //TODO: resolve source of read name prefix (encoding params ?)
             final String readNamePrefix = "";
             final String name = readNamePrefix + getSequentialIndex();
             readName = name;
@@ -329,50 +326,44 @@ public class CRAMRecord {
             if (previousSegment != null)
                 previousSegment.readName = name;
         }
-
     }
 
-    public static void restoreQualityScores(final byte defaultQualityScore, final List<CRAMRecord> records) {
-        for (final CRAMRecord record : records) {
-            if (!record.isForcePreserveQualityScores()) {
-                boolean star = true;
-                final byte[] scores = new byte[record.readLength];
-                Arrays.fill(scores, defaultQualityScore);
-                for (final ReadFeature feature : record.getReadFeatures()) {
-                    switch (feature.getOperator()) {
-                        case BaseQualityScore.operator:
-                            int pos = feature.getPosition();
-                            scores[pos - 1] = ((BaseQualityScore) feature).getQualityScore();
-                            star = false;
-                            break;
-                        case ReadBase.operator:
-                            pos = feature.getPosition();
-                            scores[pos - 1] = ((ReadBase) feature).getQualityScore();
-                            star = false;
-                            break;
-
-                        default:
-                            break;
-                    }
+    /**
+     * Resolve the quality scores for this CRAM record based on preserved scores, read features and flags.
+     */
+    public void resolveQualityScores() {
+        if (!isForcePreserveQualityScores()) {
+            boolean hasMissingScores = true;
+            final byte[] scores = new byte[readLength];
+            Arrays.fill(scores, DEFAULT_QUALITY_SCORE);
+            for (final ReadFeature feature : getReadFeatures()) {
+                switch (feature.getOperator()) {
+                    case BaseQualityScore.operator:
+                        int pos = feature.getPosition();
+                        scores[pos - 1] = ((BaseQualityScore) feature).getQualityScore();
+                        hasMissingScores = false;
+                        break;
+                    case ReadBase.operator:
+                        pos = feature.getPosition();
+                        scores[pos - 1] = ((ReadBase) feature).getQualityScore();
+                        hasMissingScores = false;
+                        break;
+                    default:
+                        break;
                 }
-
-                if (star) {
-                    record.qualityScores = SAMRecord.NULL_QUALS;
-                } else {
-                    record.qualityScores = scores;
+            }
+            qualityScores = hasMissingScores ? SAMRecord.NULL_QUALS : scores;
+        } else {
+            final byte[] scores = qualityScores;
+            int missingScores = 0;
+            for (int i = 0; i < scores.length; i++) {
+                if (scores[i] == MISSING_QUALITY_SCORE) {
+                    scores[i] = DEFAULT_QUALITY_SCORE;
+                    missingScores++;
                 }
-            } else {
-                final byte[] scores = record.qualityScores;
-                int missingScores = 0;
-                for (int i = 0; i < scores.length; i++) {
-                    if (scores[i] == -1) {
-                        scores[i] = defaultQualityScore;
-                        missingScores++;
-                    }
-                }
-                if (missingScores == scores.length) {
-                    record.qualityScores = SAMRecord.NULL_QUALS;
-                }
+            }
+            if (missingScores == scores.length) {
+                qualityScores = SAMRecord.NULL_QUALS;
             }
         }
     }
@@ -401,9 +392,16 @@ public class CRAMRecord {
         return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;
     }
 
+    /**
+     *
+     * @param referenceBases reference bases for this reference, if one is required (may be null for crams with
+     *                 RR=false in the compression header)
+     * @param zeroBasedReferenceOffset zero-based reference offset of the first base in {@code referenceBases}
+     * @param substitutionMatrix substitution matrix
+     */
     public void restoreReadBases(
-            final byte[] refBases,
-            final int zeroBasedReferenceOffset, //TODO: unused - always 0
+            final byte[] referenceBases,
+            final int zeroBasedReferenceOffset,
             final SubstitutionMatrix substitutionMatrix) {
         if (isUnknownBases()) {
             readBases = SAMRecord.NULL_SEQUENCE;
@@ -415,7 +413,7 @@ public class CRAMRecord {
                     isUnknownBases(),
                     alignmentStart,
                     readLength,
-                    refBases,
+                    referenceBases,
                     zeroBasedReferenceOffset,
                     substitutionMatrix);
         }

@@ -200,7 +200,6 @@ public class CompressionHeaderFactory {
             }
         };
 
-        //TODO: WTF?
         final Map<byte[], MutableInt> map = new TreeMap<>(baComparator);
         final MutableInt noTagCounter = new MutableInt();
         map.put(new byte[0], noTagCounter);
@@ -326,7 +325,7 @@ public class CompressionHeaderFactory {
         return ALL_BYTES_USED;
     }
 
-    // TODO: used in testing
+    // Visible for testing
     static class ByteSizeRange {
         int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
     }

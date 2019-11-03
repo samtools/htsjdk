@@ -40,7 +40,8 @@ public class SamtoolsTestUtils {
             final String commandLineOptions) {
         try {
             final File tempCRAMFile = File.createTempFile("getWriteToTemporaryCRAM", FileExtensions.CRAM);
-            tempCRAMFile.deleteOnExit();
+            //TODO: uncomment this
+            //tempCRAMFile.deleteOnExit();
             final ProcessExecutor pe = new ProcessExecutor();
             final String commandString = String.format("%s/samtools view -h -C %s -T %s %s -o %s",
                     getSamtoolsBin(),

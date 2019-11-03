@@ -16,12 +16,11 @@ import java.util.function.BiFunction;
 public class RansTest extends HtsjdkTest {
     private Random random = new Random(TestUtil.RANDOM_SEED);
 
-    // When passing large byte arrays to JUnit tests, wrap them in an object to
-    // prevent intelliJ from serializing the entire contents of the array to a string
-    // for inclusion in the test output.
-    private static class TestContainer {
+    // Since some of our test cases use very large byte arrays, so enclose them in a wrapper class since
+    // otherwise IntelliJ serializes them to strings for display in the test output, which is *super*-slow.
+    private static class TestCaseWrapper {
         public final byte[] testArray;
-        public TestContainer(final byte[] testdata) {
+        public TestCaseWrapper(final byte[] testdata) {
             this.testArray = testdata;
         }
         public String toString() {
@@ -32,29 +31,26 @@ public class RansTest extends HtsjdkTest {
     @DataProvider(name="ransData")
     public Object[][] getRansTestData() {
         return new Object[][] {
-                //TODO: temp test for debugging
-//                { new TestContainer(randomBytesFromGeometricDistribution(3, 0.1)) },
-
-//                { new TestContainer(new byte[]{}) },
-//                { new TestContainer(new byte[] {0}) },
-//                { new TestContainer(new byte[] {0, 1}) },
-//                { new TestContainer(new byte[] {0, 1, 2}) },
-                { new TestContainer(new byte[] {0, 1, 2, 3}) },
-//                { new TestContainer(new byte[1000]) },
-//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> (byte) 1)) },
-//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)) },
-//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)) },
-//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())) },
-//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)) },
-//                { new TestContainer(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)) },
-//                { new TestContainer(randomBytesFromGeometricDistribution(1000, 0.1)) },
-//                { new TestContainer(randomBytesFromGeometricDistribution(1000, 0.01)) },
-//                { new TestContainer(randomBytesFromGeometricDistribution(10 * 1000 * 1000 + 1, 0.01)) }
+                { new TestCaseWrapper(new byte[]{}) },
+                { new TestCaseWrapper(new byte[] {0}) },
+                { new TestCaseWrapper(new byte[] {0, 1}) },
+                { new TestCaseWrapper(new byte[] {0, 1, 2}) },
+                { new TestCaseWrapper(new byte[] {0, 1, 2, 3}) },
+                { new TestCaseWrapper(new byte[1000]) },
+                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> (byte) 1)) },
+                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)) },
+                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)) },
+                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())) },
+                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)) },
+                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)) },
+                { new TestCaseWrapper(randomBytesFromGeometricDistribution(1000, 0.1)) },
+                { new TestCaseWrapper(randomBytesFromGeometricDistribution(1000, 0.01)) },
+                { new TestCaseWrapper(randomBytesFromGeometricDistribution(10 * 1000 * 1000 + 1, 0.01)) },
         };
     }
 
     @Test(dataProvider="ransData")
-    public void testRANS(final TestContainer tc) {
+    public void testRANS(final TestCaseWrapper tc) {
         roundTripForEachOrder(tc.testArray);
     }
 

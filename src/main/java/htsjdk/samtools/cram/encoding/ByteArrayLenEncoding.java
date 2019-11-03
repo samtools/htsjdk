@@ -34,15 +34,14 @@ import java.nio.ByteBuffer;
  * This has implications for data access, since some of it's data is interleaved with other data in the
  * core block.
  */
-//TODO: is this considered "external" or "core" (some use cases split the encodings across core/external streams)
-//See https://github.com/samtools/hts-specs/issues/426).
 public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
     private final CRAMEncoding<Integer> lenEncoding;
     private final CRAMEncoding<byte[]> byteEncoding;
 
-    // TODO: why does the spec require that ByteArrayStopEncoding has a externalContentID, but
-    // TODO: this ByteArrayLenEncoding does not (and NEITHER are External) ?
-    // See https://github.com/samtools/hts-specs/issues/426).
+    /**
+     * Note: depending on the sub-encodings, this encoding can wind up being a core/external hybrid.
+     * See https://github.com/samtools/hts-specs/issues/426).
+     */
     public ByteArrayLenEncoding(final CRAMEncoding<Integer> lenEncoding, final CRAMEncoding<byte[]> byteEncoding) {
         super(EncodingID.BYTE_ARRAY_LEN);
         this.lenEncoding = lenEncoding;

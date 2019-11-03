@@ -154,6 +154,13 @@ public class CompressionHeader {
         this.substitutionMatrix = substitutionMatrix;
     }
 
+    /**
+     * @return true if RR is set on this compression header
+     */
+    public boolean isReferenceRequired() {
+        return referenceRequired;
+    }
+
     public void addTagEncoding(final int tagId, final ExternalCompressor compressor, final EncodingDescriptor params) {
         encodingMap.putTagBlockCompression(tagId, compressor);
         tagEncodingMap.put(tagId, params);
@@ -268,7 +275,6 @@ public class CompressionHeader {
 
     private void internalWrite(final OutputStream outputStream) throws IOException {
         { // preservation map:
-            //TODO: fix this buffer allocation...
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(5, mapBuffer);
 
@@ -300,7 +306,6 @@ public class CompressionHeader {
         encodingMap.write(outputStream);
 
         { // tag encoding map:
-            //TODO: fix this static allocation size
             final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(tagEncodingMap.size(), mapBuffer);
             for (final Integer dataSeries : tagEncodingMap.keySet()) {

@@ -322,7 +322,7 @@ public class SliceTests extends HtsjdkTest {
         slice.setEmbeddedReferenceBlock(block);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = CRAMException.class)
     public void testRejectEmbeddedReferenceBlockConflictsWithID() {
         final Slice slice = CRAMStructureTestHelper.createSliceWithSingleMappedRecord();
         final int embeddedReferenceBlockContentID = 27;
@@ -340,7 +340,7 @@ public class SliceTests extends HtsjdkTest {
         slice.setEmbeddedReferenceBlock(block);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = CRAMException.class)
     public void testRejectResetEmbeddedReferenceBlockContentID() {
         final int originalBlockID = 27;
         final int conflictingBlockID = 28;
@@ -350,7 +350,7 @@ public class SliceTests extends HtsjdkTest {
         slice.setEmbeddedReferenceContentID(conflictingBlockID);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = CRAMException.class)
     public void testRejectConflictingEmbeddedReferenceBlockContentID() {
         final int originalBlockID = 27;
         final int conflictingBlockID = 28;

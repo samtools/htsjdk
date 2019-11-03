@@ -16,7 +16,6 @@ public class HuffmanCodecHelper<T> {
     private final List<HuffmanBitCode<T>> huffmanBitCodesByBitLengthThenCode;
     private final Map<T, HuffmanBitCode<T>> huffmanBitCodesBySymbol;
 
-    //TODO: types?
     private final List<T> symbolsSortedByBitCode;
     private final int[] bitLensSortedByBitCode;
     private final int[] bitCodeToSymbol;

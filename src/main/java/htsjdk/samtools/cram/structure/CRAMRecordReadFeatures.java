@@ -15,7 +15,6 @@ import java.util.*;
  * Class for handling the read features in CRAMRecord.
  */
 public class CRAMRecordReadFeatures {
-    //TODO: this used to be a LinkedList but there seems to be no reason for that ??
     final List<ReadFeature> readFeatures;
 
     /**
@@ -51,7 +50,7 @@ public class CRAMRecordReadFeatures {
             Arrays.fill(readBases, (byte) 'N');
         }
 
-        final byte[] qualityScore = samRecord.getBaseQualities();
+        final byte[] baseQualities = samRecord.getBaseQualities();
         int zeroBasedPositionInRead = 0;
         int alignmentStartOffset = 0;
         for (final CigarElement cigarElement : cigarElements) {
@@ -87,7 +86,7 @@ public class CRAMRecordReadFeatures {
                             alignmentStartOffset,
                             cigarElementLength,
                             readBases,
-                            qualityScore);
+                            baseQualities);
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported cigar operator: " + cigarElement.getOperator());
@@ -124,11 +123,11 @@ public class CRAMRecordReadFeatures {
                 zeroBasedPositionInRead,
                 zeroBasedPositionInRead + cigarElementLength);
         for (int i = 0; i < insertedBases.length; i++) {
-            //TODO: why does this use N InsertBase features, instead of a single Insertion (which inserts multiple bases)
-            // single base insertion:
-            final InsertBase insertBase = new InsertBase();
-            insertBase.setPosition(zeroBasedPositionInRead + 1 + i);
-            insertBase.setBase(insertedBases[i]);
+            // Note: when cigarElementLength > 1, this should use a Bases read feature instead of using n
+            // InsertBases read features, but doing so require a ByteArrayLenEncoding, which requires
+            // a length subencoding with varying lengths, which in turn requires computing a frequency
+            // distribution over the lengths
+            final InsertBase insertBase = new InsertBase(zeroBasedPositionInRead + 1 + i, insertedBases[i]);
             readFeatures.add(insertBase);
         }
     }
@@ -148,7 +147,7 @@ public class CRAMRecordReadFeatures {
      * @param alignmentStartOffset offset into the reference array
      * @param nofReadBases         how many read bases to process
      * @param bases                the read bases array
-     * @param qualityScore         the quality score array
+     * @param baseQualities        the quality score array
      */
     //Visible for testing
     static void addMismatchReadFeatures(
@@ -159,7 +158,7 @@ public class CRAMRecordReadFeatures {
             final int alignmentStartOffset,
             final int nofReadBases,
             final byte[] bases,
-            final byte[] qualityScore) {
+            final byte[] baseQualities) {
         int oneBasedPositionInRead = fromPosInRead + 1;
         int refIndex = alignmentStart + alignmentStartOffset - 1;
 
@@ -177,7 +176,10 @@ public class CRAMRecordReadFeatures {
                 if (isSubstitution) {
                     features.add(new Substitution(oneBasedPositionInRead, readBase, refBase));
                 } else {
-                    final byte score = qualityScore[i + fromPosInRead];
+                    final byte score =
+                            baseQualities.equals(SAMRecord.NULL_QUALS) ?
+                                    CRAMRecord.MISSING_QUALITY_SCORE :
+                                    baseQualities[i + fromPosInRead] ;
                     features.add(new ReadBase(oneBasedPositionInRead, readBase, score));
                 }
             }
@@ -188,7 +190,7 @@ public class CRAMRecordReadFeatures {
         int alignmentSpan = readLength;
         if (readFeatures != null) {
             for (final ReadFeature readFeature : readFeatures) {
-                //TODO: there are lots of operators missing here...
+                // only adjust for read features that affect alignment end
                 switch (readFeature.getOperator()) {
                     case InsertBase.operator:
                         alignmentSpan--;
@@ -202,7 +204,9 @@ public class CRAMRecordReadFeatures {
                     case Deletion.operator:
                         alignmentSpan += ((Deletion) readFeature).getLength();
                         break;
-
+                    case RefSkip.operator:
+                        alignmentSpan += ((RefSkip) readFeature).getLength();
+                        break;
                     default:
                         break;
                 }
@@ -328,43 +332,44 @@ public class CRAMRecordReadFeatures {
     /**
      * Get the set of readBases given these read features.
      * @param isUnknownBases
-     * @param alignStart
+     * @param readAlignmentStart 1-based alignment start for this record
      * @param readLength
-     * @param ref
+     * @param referenceBases
      * @param zeroBasedReferenceOffset
      * @param substitutionMatrix
      * @return
      */
     public static byte[] restoreReadBases(
+            //TODO: fix up the order of these
             final List<ReadFeature> readFeatures,
             final boolean isUnknownBases,
-            final int alignStart,
+            final int readAlignmentStart,
             final int readLength,
-            final byte[] ref,
-            final int zeroBasedReferenceOffset, //TODO: unused - always 0
+            final byte[] referenceBases,
+            final int zeroBasedReferenceOffset,
             final SubstitutionMatrix substitutionMatrix) {
         if (isUnknownBases || readLength == 0) {
             return SAMRecord.NULL_SEQUENCE;
         }
         final byte[] bases = new byte[readLength];
 
+        // ReadFeatures use a 0-based feature position, but the CRAMRecord uses SAM (1 based) coordinates
         int posInRead = 1;
-        //TODO: why is this -1 ? 1/0 based coord transform ?
-        final int alignmentStart = alignStart - 1;
+        final int alignmentStart = readAlignmentStart - 1;
 
         int posInSeq = 0;
         if (readFeatures == null) {
-            if (ref.length + zeroBasedReferenceOffset < alignmentStart + bases.length) {
+            if (referenceBases.length + zeroBasedReferenceOffset < alignmentStart + bases.length) {
                 Arrays.fill(bases, (byte) 'N');
                 System.arraycopy(
-                        ref,
+                        referenceBases,
                         alignmentStart - zeroBasedReferenceOffset,
                         bases,
                         0,
-                        Math.min(bases.length, ref.length + zeroBasedReferenceOffset - alignmentStart));
+                        Math.min(bases.length, referenceBases.length + zeroBasedReferenceOffset - alignmentStart));
             } else {
                 System.arraycopy(
-                        ref,
+                        referenceBases,
                         alignmentStart - zeroBasedReferenceOffset,
                         bases,
                         0,
@@ -377,13 +382,13 @@ public class CRAMRecordReadFeatures {
         for (final ReadFeature variation : variations) {
             for (; posInRead < variation.getPosition(); posInRead++) {
                 final int rp = alignmentStart + posInSeq++ - zeroBasedReferenceOffset;
-                bases[posInRead - 1] = getByteOrDefault(ref, rp, (byte) 'N');
+                bases[posInRead - 1] = getByteOrDefault(referenceBases, rp, (byte) 'N');
             }
 
             switch (variation.getOperator()) {
                 case Substitution.operator:
                     final Substitution substitution = (Substitution) variation;
-                    byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq - zeroBasedReferenceOffset, (byte) 'N');
+                    byte refBase = getByteOrDefault(referenceBases, alignmentStart + posInSeq - zeroBasedReferenceOffset, (byte) 'N');
                     // substitution requires ACGTN only:
                     refBase = Utils.normalizeBase(refBase);
                     final byte base = substitutionMatrix.base(refBase, substitution.getCode());
@@ -410,6 +415,12 @@ public class CRAMRecordReadFeatures {
                     final InsertBase insert = (InsertBase) variation;
                     bases[posInRead++ - 1] = insert.getBase();
                     break;
+                case Bases.operator:
+                    final Bases readBases = (Bases) variation;
+                    for (byte b : readBases.getBases()) {
+                        bases[posInRead++ - 1] = b;
+                    }
+                    break;
                 case RefSkip.operator:
                     posInSeq += ((RefSkip) variation).getLength();
                     break;
@@ -417,8 +428,8 @@ public class CRAMRecordReadFeatures {
         }
 
         for (; posInRead <= readLength
-                && alignmentStart + posInSeq - zeroBasedReferenceOffset < ref.length; posInRead++, posInSeq++) {
-            bases[posInRead - 1] = ref[alignmentStart + posInSeq - zeroBasedReferenceOffset];
+                && alignmentStart + posInSeq - zeroBasedReferenceOffset < referenceBases.length; posInRead++, posInSeq++) {
+            bases[posInRead - 1] = referenceBases[alignmentStart + posInSeq - zeroBasedReferenceOffset];
         }
 
         // ReadBase overwrites bases:

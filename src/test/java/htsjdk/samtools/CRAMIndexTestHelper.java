@@ -66,7 +66,9 @@ public class CRAMIndexTestHelper {
         final File temporaryCRAM = createCRAMAndIndexFiles(".crai");
         final File temporaryCRAI = new File(temporaryCRAM.getAbsolutePath() + ".crai");
 
-        final SamReaderFactory samReadFactory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
+        final SamReaderFactory samReadFactory = SamReaderFactory.makeDefault()
+                .referenceSource(referenceSource)
+                .validationStringency(ValidationStringency.STRICT);
         try (final SamReader samReader = samReadFactory.open(sourceFile.toPath());
              final FileOutputStream cramFileOutputStream = new FileOutputStream(temporaryCRAM);
              final CRAMFileWriter cramWriter = new CRAMFileWriter(

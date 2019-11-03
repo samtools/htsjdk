@@ -48,7 +48,6 @@ public class CramRecordReader {
     private final DataSeriesReader<Integer> readFeaturePositionCodec;
     private final DataSeriesReader<Byte> readFeatureCodeCodec;
     private final DataSeriesReader<Byte> baseCodec;
-    private final DataSeriesReader<Byte> qualityScoreCodec;
     private final DataSeriesReader<byte[]> qualityScoreArrayCodec;
     private final DataSeriesReader<Byte> baseSubstitutionCodec;
     private final DataSeriesReader<byte[]> insertionCodec;
@@ -65,13 +64,13 @@ public class CramRecordReader {
     private final DataSeriesReader<Integer> refIdCodec;
     private final DataSeriesReader<Integer> refSkipCodec;
     private final DataSeriesReader<byte[]> basesCodec;
-    private final DataSeriesReader<byte[]> scoresCodec;
+    private final DataSeriesReader<Byte> qualityScoreCodec;
+    private final DataSeriesReader<byte[]> qualityScoresCodec;
 
     private final Charset charset = Charset.forName("UTF8");
 
     private final Slice slice;
     private final CompressionHeader compressionHeader;
-    private final CompressorCache compressorCache;
     private final SliceBlocksReadStreams sliceBlocksReadStreams;
     protected final ValidationStringency validationStringency;
 
@@ -87,7 +86,6 @@ public class CramRecordReader {
             final ValidationStringency validationStringency) {
         this.slice = slice;
         this.compressionHeader = slice.getCompressionHeader();
-        this.compressorCache = compressorCache;
         this.validationStringency = validationStringency;
         this.sliceBlocksReadStreams = new SliceBlocksReadStreams(slice.getSliceBlocks(), compressorCache);
 
@@ -102,7 +100,6 @@ public class CramRecordReader {
         readFeaturePositionCodec =      createDataSeriesReader(DataSeries.FP_FeaturePosition);
         readFeatureCodeCodec =          createDataSeriesReader(DataSeries.FC_FeatureCode);
         baseCodec =                     createDataSeriesReader(DataSeries.BA_Base);
-        qualityScoreCodec =             createDataSeriesReader(DataSeries.QS_QualityScore);
         baseSubstitutionCodec =         createDataSeriesReader(DataSeries.BS_BaseSubstitutionCode);
         insertionCodec =                createDataSeriesReader(DataSeries.IN_Insertion);
         softClipCodec =                 createDataSeriesReader(DataSeries.SC_SoftClip);
@@ -117,8 +114,9 @@ public class CramRecordReader {
         tagIdListCodec =                createDataSeriesReader(DataSeries.TL_TagIdList);
         refIdCodec =                    createDataSeriesReader(DataSeries.RI_RefId);
         refSkipCodec =                  createDataSeriesReader(DataSeries.RS_RefSkip);
-        basesCodec =                    createDataSeriesReader(DataSeries.BB_bases);
-        scoresCodec =                   createDataSeriesReader(DataSeries.QQ_scores);
+        basesCodec =                    createDataSeriesReader(DataSeries.BB_Bases);
+        qualityScoreCodec =             createDataSeriesReader(DataSeries.QS_QualityScore);
+        qualityScoresCodec =            createDataSeriesReader(DataSeries.QQ_scores);
 
         // special case: re-encodes QS as a byte array
         // This appears to split the QS_QualityScore series into a second codec that uses BYTE_ARRAY so that arrays of
@@ -275,7 +273,7 @@ public class CramRecordReader {
                             readFeatures.add(bases);
                             break;
                         case Scores.operator:
-                            final Scores scores = new Scores(pos, scoresCodec.readData());
+                            final Scores scores = new Scores(pos, qualityScoresCodec.readData());
                             readFeatures.add(scores);
                             break;
                         default:
