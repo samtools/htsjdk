@@ -5,8 +5,6 @@ import com.google.gson.GsonBuilder;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
-import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
-import htsjdk.samtools.cram.compression.RANSExternalCompressor;
 import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
@@ -27,25 +25,25 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Maintains a map of the EncodingDescriptor for each Data Series, and for each such descriptor
+ * Maintains a map of the EncodingDescriptor for each Data Series, and for each such EncodingDescriptor
  * that represents an EXTERNAL encoding, the corresponding compressor to use.
  *
  * There are three constructors; one populates the map from scratch using the default encodings chosen by
- * this (htsjdk) implementation (when writing a new CRAM); one populates the map from a serialized
- * CRAM stream, resulting in encodings chosen by the implementation that wrote that CRAM; and one populates
- * the map from a CompressionHeaderEncodingMap that was previously serialized as part of a serialized
- * CRAMEncodingStrategy. The latter serialized format is different from the native CRAM serialized form because
- * in a CRAM stream, the compressors are not stored as part of the encoding amp, but rather are stored with the
- * block containing the data that uses that compression method.
+ * this (htsjdk) implementation, used when writing a new CRAM; one populates the map from a serialized
+ * CRAM stream resulting in encodings chosen by the implementation that wrote that CRAM; and one populates
+ * the map from a CompressionHeaderEncodingMap that was previously serialized as part. The latter serialized
+ * format is different from the native CRAM serialized form because in a CRAM stream, the compressors are
+ * not stored as part of the compression header encoding map, but rather are stored with the block containing
+ * the data.
  *
  * Although the CRAM spec defines a fixed list of data series, individual CRAM implementations
  * may choose to use only a subset of these. Therefore, the actual set of encodings that are
  * instantiated can vary depending on the source.
  *
- * Notes on the CRAM write implementation: This implementation encodes ALL DataSeries to external blocks,
- * (although some of the external encodings split the data between core and external; see
+ * Notes on the htsjdk CRAM write implementation: This implementation encodes ALL DataSeries to external
+ * blocks, (although some of the external encodings split the data between core and external; see
  * {@link htsjdk.samtools.cram.encoding.ByteArrayLenEncoding}, and does not use the 'BB' or 'QQ'
- * DataSeries when writing CRAM at all.
+ * DataSeries when writing CRAM at all.  Relies heavily on GZIP and RANS for compression.
  *
  * See {@link htsjdk.samtools.cram.encoding.EncodingFactory} for details on how an {@link EncodingDescriptor}
  * is mapped to the codec that actually transfers data to and from underlying Slice blocks.
@@ -55,28 +53,34 @@ public class CompressionHeaderEncodingMap {
 
     // Encoding descriptors for each data series. (These encodings can be either EXTERNAL or CORE, although
     // the spec does not make a clear distinction between EXTERNAL and CODE for encodings; only for blocks.
-    // See https://github.com/samtools/hts-specs/issues/426).
+    // See https://github.com/samtools/hts-specs/issues/426). The encodingMap is used as a template that is
+    // reused for each container being written (though this is not required).
     private Map<DataSeries, EncodingDescriptor> encodingMap = new TreeMap<>();
 
     // External compressor to use for each external block, keyed by external content ID. This
     // map contains a key for each data series that is in an external block, plus additional
-    // ones for each external block used for tags.
-    //TODO: the encodingMap itself is a template that is the same for each container being
-    // written, but the externalCompressor list is a little different since it  varies
-    // with the tags discovered for each container
+    // ones for each external block used for tags. The externalCompressors list does not quite
+    // parallel the encodingMap because it varies with the tags discovered in the records
+    // for each container.
     private final Map<Integer, ExternalCompressor> externalCompressors = new TreeMap<>();
 
     // Keep a compressor cache for the lifetime of this encoding map
     private final CompressorCache compressorCache = new CompressorCache();
 
     /**
-     * Constructor used to create an encoding map for writing CRAMs
+     * Constructor used to create the default encoding map for writing CRAMs. The encoding strategy
+     * parameter values are used to set comrpession levels, etc, but any encoding map embedded is ignored
+     * since this uses the default strategy.
      *
      * @param encodingStrategy {@link CRAMEncodingStrategy} containing parameter values to use when creating
      *                                                     the encoding map
      */
-    //TODO: this constructor ignores the encoding map embedded in the encodingStrategy...
     public CompressionHeaderEncodingMap(final CRAMEncodingStrategy encodingStrategy) {
+        ValidationUtils.nonNull(encodingStrategy, "An encoding strategy must be provided");
+        ValidationUtils.validateArg(
+                encodingStrategy.getCustomCompressionMapPath() == null || encodingStrategy.getCustomCompressionMapPath().length() == 0,
+                "A custom compression map cannot be used with this constructor");
+
         // NOTE: all of these encodings use external blocks and compressors for actual CRAM
         // data. The only use of core block encodings are as params for other (external)
         // encodings, i.e., the ByteArrayLenEncoding used for tag data uses a core (sub-)encoding
@@ -114,7 +118,7 @@ public class CompressionHeaderEncodingMap {
     }
 
     /**
-     * Constructor used to create an encoding map when reading a CRAM.
+     * Constructor used to discover an encoding map from a serialized CRAM stream.
      * @param inputStream the CRAM input stream to be consumed
      */
     public CompressionHeaderEncodingMap(final InputStream inputStream) {
@@ -220,7 +224,7 @@ public class CompressionHeaderEncodingMap {
 
     /**
      * Write the encoding map out to a CRAM Stream
-     * @param outputStream
+     * @param outputStream stream to write
      * @throws IOException
      */
     public void write(final OutputStream outputStream) throws IOException {
@@ -259,7 +263,7 @@ public class CompressionHeaderEncodingMap {
     }
 
     /**
-     * Constructor used to create an encoding map from a serialized JSON file when writing a CRAM.
+     * Create an encoding map from a serialized JSON file for use when writing a CRAM.
      * @param encodingMapPath the CRAM input stream to be consumed
      */
     public static CompressionHeaderEncodingMap readFromPath(final Path encodingMapPath) {
@@ -304,6 +308,18 @@ public class CompressionHeaderEncodingMap {
         }
     }
 
+    /**
+     * Return the best external compressor to use for the provided byte array (compressor that results in the
+     * smallest compressed size).
+     *
+     * Note that this does not necessarily mean this is the best compression to use for the source
+     * data series, as it does not consider the size of the alphabet (2 byte int, 4 byte int) since
+     * its only choosing from EXTERNAL compressors.
+     *
+     * @param data byte array to compress
+     * @param encodingStrategy encoding strategy parameters to use
+     * @return the best {@link ExternalCompressor} to use for this data
+     */
     public ExternalCompressor getBestExternalCompressor(final byte[] data, final CRAMEncodingStrategy encodingStrategy) {
         final ExternalCompressor gzip = compressorCache.getCompressorForMethod(
                 BlockCompressionMethod.GZIP,

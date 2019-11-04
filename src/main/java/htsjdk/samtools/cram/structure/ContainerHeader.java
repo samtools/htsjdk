@@ -10,8 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-// TODO: if MULTIPLE_REFERENCE_ID, all slices in the container must also be MULTIPLE_REFERENCE_ID
-
 public class ContainerHeader {
     // Container Header as defined in the specs, in addition to sequenceId from ReferenceContext
     // total length of all blocks in this container (total length of this container, minus the Container Header).
@@ -210,7 +208,6 @@ public class ContainerHeader {
     }
 
     public boolean isEOF() {
-        // TODO: add AlignmentContext.isEOF
         final boolean v3 = containerBlocksByteSize == 15 && alignmentContext.getReferenceContext().isUnmappedUnplaced()
                 && alignmentContext.getAlignmentStart() == 4542278 && blockCount == 1
                 && recordCount == 0;

@@ -27,6 +27,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,8 +40,8 @@ import java.util.Set;
 import java.util.TreeMap;
 
 /**
- * A class responsible for decisions about which encodings to use for a given set of records.
- * This particular version relies heavily on GZIP and RANS for better compression.
+ * CRAM compression header class. Determines which encodings to use for a given set of records based on
+ * the provided {@link CRAMEncodingStrategy} and {@link CompressionHeaderEncodingMap}.
  */
 public class CompressionHeaderFactory {
     public static final int BYTE_SPACE_SIZE = 256;
@@ -53,14 +54,15 @@ public class CompressionHeaderFactory {
     private final CompressionHeaderEncodingMap encodingMap;
 
     private final Map<Integer, EncodingDetails> bestTagEncodings = new HashMap<>();
-    //TODO: fix this allocation
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
 
     /**
      * Create a CompressionHeaderFactory using the provided CRAMEncodingStrategy.
-     * @param encodingStrategy
+     * @param encodingStrategy {@link CRAMEncodingStrategy} to use, may not be null
      */
     public CompressionHeaderFactory(final CRAMEncodingStrategy encodingStrategy) {
+        ValidationUtils.nonNull(encodingStrategy, "A CRAMEncodingStrategy is required");
+
         // cache the encodingMap if its serialized so it only gets created once per
         // container factory rather than once per container
         final String customCompressionMapPath = encodingStrategy.getCustomCompressionMapPath();
@@ -77,8 +79,8 @@ public class CompressionHeaderFactory {
     }
 
     /**
-     * Creates the compression header based on accumulated statee and resets the tag
-     * encoding map state as perparation for the next compression header.
+     * Creates a compression header for the provided list of {@link CRAMRecord} objects. Resets any internal
+     * state (i.e. the tag encoding map state) as preparation for starting the next compression header.
      *
      * @param containerCRAMRecords
      *            all CRAMRecords that will be stored in the container
@@ -88,7 +90,7 @@ public class CompressionHeaderFactory {
      * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} object
      *         describing the encoding chosen for the data
      */
-    public CompressionHeader build(final List<CRAMRecord> containerCRAMRecords, final boolean coordinateSorted) {
+    public CompressionHeader createCompressionHeader(final List<CRAMRecord> containerCRAMRecords, final boolean coordinateSorted) {
         final CompressionHeader compressionHeader = new CompressionHeader(
                 encodingMap,
                 coordinateSorted,
@@ -260,6 +262,12 @@ public class CompressionHeaderFactory {
         return (byte) (tagID & 0xFF);
     }
 
+    /**
+     * Get the best external compressor to use for the given byte array.
+     *
+     * @param data byte array to compress
+     * @return best compressor to use for the data
+     */
     public ExternalCompressor getBestExternalCompressor(final byte[] data) {
         return encodingMap.getBestExternalCompressor(data, encodingStrategy);
     }

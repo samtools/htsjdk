@@ -34,13 +34,13 @@ public class CramRecordWriter {
     //NOTE: these are all named with a "Codec" suffix, but they're really DataSeriesWriters, which are
     // generic-typed wrappers around a CRAMCodec
 
-    private final DataSeriesWriter<Integer> bitFlagsC;
-    private final DataSeriesWriter<Integer> compBitFlagsC;
-    private final DataSeriesWriter<Integer> readLengthC;
-    private final DataSeriesWriter<Integer> alStartC;
-    private final DataSeriesWriter<Integer> readGroupC;
-    private final DataSeriesWriter<byte[]> readNameC;
-    private final DataSeriesWriter<Integer> distanceC; // TODO: recordsToNextFragment!
+    private final DataSeriesWriter<Integer> bitFlagsCodec;
+    private final DataSeriesWriter<Integer> cramBitFlagsCodec;
+    private final DataSeriesWriter<Integer> readLengthCodec;
+    private final DataSeriesWriter<Integer> alignmentStartCodec;
+    private final DataSeriesWriter<Integer> readGroupCodec;
+    private final DataSeriesWriter<byte[]> readNameCodec;
+    private final DataSeriesWriter<Integer> distanceToNextFragmentCodec;
     private final Map<Integer, DataSeriesWriter<byte[]>> tagValueCodecs;
     private final DataSeriesWriter<Integer> numberOfReadFeaturesCodec;
     private final DataSeriesWriter<Integer> featurePositionCodec;
@@ -82,13 +82,13 @@ public class CramRecordWriter {
 
         // NOTE that this implementation doesn't generate BB or QQ data series, so no writer
         // or codec is created for those.
-        bitFlagsC =                 createDataWriter(DataSeries.BF_BitFlags);
-        compBitFlagsC =             createDataWriter(DataSeries.CF_CompressionBitFlags);
-        readLengthC =               createDataWriter(DataSeries.RL_ReadLength);
-        alStartC =                  createDataWriter(DataSeries.AP_AlignmentPositionOffset);
-        readGroupC =                createDataWriter(DataSeries.RG_ReadGroup);
-        readNameC =                 createDataWriter(DataSeries.RN_ReadName);
-        distanceC =                 createDataWriter(DataSeries.NF_RecordsToNextFragment);
+        bitFlagsCodec =                 createDataWriter(DataSeries.BF_BitFlags);
+        cramBitFlagsCodec =             createDataWriter(DataSeries.CF_CompressionBitFlags);
+        readLengthCodec =               createDataWriter(DataSeries.RL_ReadLength);
+        alignmentStartCodec =                  createDataWriter(DataSeries.AP_AlignmentPositionOffset);
+        readGroupCodec =                createDataWriter(DataSeries.RG_ReadGroup);
+        readNameCodec =                 createDataWriter(DataSeries.RN_ReadName);
+        distanceToNextFragmentCodec =                 createDataWriter(DataSeries.NF_RecordsToNextFragment);
         numberOfReadFeaturesCodec = createDataWriter(DataSeries.FN_NumberOfReadFeatures);
         featurePositionCodec =      createDataWriter(DataSeries.FP_FeaturePosition);
         featuresCodeCodec =         createDataWriter(DataSeries.FC_FeatureCode);
@@ -174,39 +174,39 @@ public class CramRecordWriter {
 
         // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,
         // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.
-        bitFlagsC.writeData(r.getBAMFlags());
-        compBitFlagsC.writeData(r.getCRAMFlags());
+        bitFlagsCodec.writeData(r.getBAMFlags());
+        cramBitFlagsCodec.writeData(r.getCRAMFlags());
         if (slice.getAlignmentContext().getReferenceContext().isMultiRef()) {
             refIdCodec.writeData(r.getReferenceIndex());
         }
 
-        readLengthC.writeData(r.getReadLength());
+        readLengthCodec.writeData(r.getReadLength());
 
         if (compressionHeader.isAPDelta()) {
             final int alignmentDelta = r.getAlignmentStart() - prevAlignmentStart;
-            alStartC.writeData(alignmentDelta);
+            alignmentStartCodec.writeData(alignmentDelta);
         } else {
-            alStartC.writeData(r.getAlignmentStart());
+            alignmentStartCodec.writeData(r.getAlignmentStart());
         }
 
-        readGroupC.writeData(r.getReadGroupID());
+        readGroupCodec.writeData(r.getReadGroupID());
 
         if (compressionHeader.isPreserveReadNames()) {
-            readNameC.writeData(r.getReadName().getBytes(charset));
+            readNameCodec.writeData(r.getReadName().getBytes(charset));
         }
 
         // mate record:
         if (r.isDetached()) {
             mateBitFlagsCodec.writeData(r.getMateFlags());
             if (!compressionHeader.isPreserveReadNames()) {
-                readNameC.writeData(r.getReadName().getBytes(charset));
+                readNameCodec.writeData(r.getReadName().getBytes(charset));
             }
 
             nextFragmentReferenceSequenceIDCodec.writeData(r.getMateReferenceIndex());
             nextFragmentAlignmentStart.writeData(r.getMateAlignmentStart());
             templateSize.writeData(r.getTemplateSize());
         } else if (r.isHasMateDownStream()) {
-            distanceC.writeData(r.getRecordsToNextFragment());
+            distanceToNextFragmentCodec.writeData(r.getRecordsToNextFragment());
         }
 
         // tag records:

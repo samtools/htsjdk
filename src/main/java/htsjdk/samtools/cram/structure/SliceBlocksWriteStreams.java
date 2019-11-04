@@ -31,7 +31,6 @@ public class SliceBlocksWriteStreams {
      * @param compressionHeader {@link CompressionHeader} for the container containing the slice
      * @param sliceBlocks {@link SliceBlocks} for the represented by these blocks {@link Slice}
      */
-    //TODO: add tag streams
     public SliceBlocksWriteStreams(final CompressionHeader compressionHeader, final SliceBlocks sliceBlocks) {
         this.compressionHeader = compressionHeader;
         this.sliceBlocks = sliceBlocks;

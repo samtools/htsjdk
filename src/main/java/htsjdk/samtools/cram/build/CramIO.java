@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * A collection of methods to open and close CRAM files.
+ * A collection of methods to read and write special values to/from CRAM files.
  */
 public class CramIO {
 

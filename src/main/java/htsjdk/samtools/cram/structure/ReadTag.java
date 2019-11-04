@@ -28,9 +28,9 @@ import java.util.Objects;
 
 /**
  * CRAM counterpart of {@link htsjdk.samtools.SAMTag}.
- * TODO: consider merging/dropping this class in favour of SAMTag or a SAMTag implementation.
  */
 public class ReadTag implements Comparable<ReadTag> {
+    // NOTE: consider merging/dropping this class in favour of SAMTag or a SAMTag implementation.
     private static final long MAX_INT = Integer.MAX_VALUE;
     private static final long MAX_UINT = MAX_INT * 2 + 1;
     private static final long MAX_SHORT = Short.MAX_VALUE;

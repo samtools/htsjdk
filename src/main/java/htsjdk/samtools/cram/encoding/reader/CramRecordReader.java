@@ -29,13 +29,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A reader used to consume encoded CRAMRecords from a set of streams representing a Slice's data series blocks.
- * This essentially acts as a bridge between CRAMRecord fields and the various various data series streams
- * associated with a Slice.
+ * A reader used to consume encoded {@link CRAMRecord}s from a set of streams representing a Slice's data series blocks.
+ * This essentially acts as a bridge between {@link CRAMRecord fields and the various various data series streams
+ * associated with a {@link Slice}.
  */
 public class CramRecordReader {
-    //TODO: these are all named with a "Codec" suffix, but they're really DataSeriesReaders, which are
-    // generic-typed wrappers around a CRAMCodec
     private final DataSeriesReader<Integer> bitFlagsCodec;
     private final DataSeriesReader<Integer> compressionBitFlagsCodec;
     private final DataSeriesReader<Integer> readLengthCodec;

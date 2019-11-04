@@ -11,12 +11,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.IOException;
 import java.io.OutputStream;
 
-// TODO: test mate recovery for detached/not for both coord-sorted/not
-// TODO: are mates recovered if the mate winds up in a separate container altogether ??
-// TODO: should the spec allow embedded references for multi-ref containers (or more specifically, should it
-// TODO: be allowed for non-coord sorted inputs) ?
-// TODO: non-coordinate sorted inputs
-
 /**
  * Class for writing SAMRecords into a series of CRAM containers on an output stream, with an optional index.
  */
