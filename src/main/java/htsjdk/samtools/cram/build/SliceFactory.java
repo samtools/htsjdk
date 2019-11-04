@@ -13,6 +13,10 @@ import htsjdk.samtools.cram.structure.Slice;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Class used to determine when to emit a {@link Slice}, based on a set of rules implemented by this class; the
+ * accumulated SliceEntry state objects; and the parameter values in the provided {@link CRAMEncodingStrategy} object.
+ */
 public class SliceFactory {
     private final CRAMEncodingStrategy encodingStrategy;
 
@@ -26,6 +30,12 @@ public class SliceFactory {
 
     private final Map<String, Integer> readGroupNameToID = new HashMap<>();
 
+    /**
+     * @param cramEncodingStrategy {@link CRAMEncodingStrategy} to use for {@link Slice}s that are created
+     * @param cramReferenceSource {@link CRAMReferenceSource} to use for {@link Slice}s that are created
+     * @param samFileHeader for inut records, used for finding read groups, sort order, etc.
+     * @param globalRecordCounter initial global record counter for {@link Slice}s that are created
+     */
     public SliceFactory(
             final CRAMEncodingStrategy cramEncodingStrategy,
             final CRAMReferenceSource cramReferenceSource,
@@ -33,11 +43,9 @@ public class SliceFactory {
             final long globalRecordCounter) {
         this.encodingStrategy = cramEncodingStrategy;
         this.cramReferenceRegion = new CRAMReferenceRegion(cramReferenceSource, samFileHeader);
-
         minimumSingleReferenceSliceThreshold = encodingStrategy.getMinimumSingleReferenceSliceSize();
         maxRecordsPerSlice = this.encodingStrategy.getReadsPerSlice();
         this.coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-
         this.sliceRecordCounter = globalRecordCounter;
         cramRecordSliceEntries = new ArrayList<>(this.encodingStrategy.getSlicesPerContainer());
 
@@ -56,7 +64,7 @@ public class SliceFactory {
      * @param sliceSAMRecords
      * @return
      */
-    public long addSliceEntry(final int currentReferenceContextID, final List<SAMRecord> sliceSAMRecords) {
+    public long createNewSliceEntry(final int currentReferenceContextID, final List<SAMRecord> sliceSAMRecords) {
         cramRecordSliceEntries.add(
                 new SliceEntry(
                         currentReferenceContextID,
@@ -65,11 +73,15 @@ public class SliceFactory {
         return sliceRecordCounter + sliceSAMRecords.size();
     }
 
-    //convert the SAMRecords to CRAMRecords, and return as a list
+    /**
+     * Get the CRAM records accumulated for the current Slice.
+     *
+     * @return the list of all CRAMRecords
+     */
     public List<CRAMRecord> getCRAMRecords() {
         // Create a list of ALL reads from all accumulated slices (used to create the container
         // compression header, which must be presented with ALL reads that will be included in the
-        // container, no matter how they may be distributed across slices. So if more than one slice
+        // container, no matter how they may be distributed across slices). So if more than one slice
         // entry has been accumulated, we need to temporarily stream all the records into a single
         // list to present to compressionHeaderFactory.
         return cramRecordSliceEntries.size() > 1 ?
@@ -184,22 +196,22 @@ public class SliceFactory {
         return candidateMate;
     }
 
-    // Slices with the Multiple Reference flag (-2) set as the sequence ID in the header may contain reads mapped to
-    // multiple external references, including unmapped reads (placed on these references or unplaced), but multiple
-    // embedded references cannot be combined in this way. When multiple references are used, the RI data series will
-    // be used to determine the reference sequence ID for each record. This data series is not present when only a
-    // single reference is used within a slice.
-    //
-    // The Unmapped (-1) sequence ID in the header is for slices containing only unplaced unmapped reads.
-    // A slice containing data that does not use the external reference in any sequence may set the reference MD5 sum
-    // to zero. This can happen because the data is unmapped or the sequence has been stored verbatim instead of via
-    // reference-differencing. This latter scenario is recommended for unsorted or non-coordinate-sorted data.
-
     /**
      * Decide if the current records should be flushed based on the current reference context, the reference context
      * for the next record to be written, and the number of records seen so far.
      *
-     * @param nextReferenceIndex
+     * Slices with the Multiple Reference flag (-2) set as the sequence ID in the header may contain reads mapped to
+     * multiple external references, including unmapped reads (placed on these references or unplaced), but multiple
+     * embedded references cannot be combined in this way. When multiple references are used, the RI data series will
+     * be used to determine the reference sequence ID for each record. This data series is not present when only a
+     * single reference is used within a slice.
+     *
+     * The Unmapped (-1) sequence ID in the header is for slices containing only unplaced unmapped reads.
+     * A slice containing data that does not use the external reference in any sequence may set the reference MD5 sum
+     * to zero. This can happen because the data is unmapped or the sequence has been stored verbatim instead of via
+     * reference-differencing. This latter scenario is recommended for unsorted or non-coordinate-sorted data.
+     *
+     * @param nextReferenceIndex reference index of the next record to be emitted
      * @return ReferenceContext.UNINITIALIZED_REFERENCE_ID if a current container should be flushed and
      * subsequent records should go into a new container; otherwise the updated reference context.
      */
@@ -273,10 +285,10 @@ public class SliceFactory {
     }
 
     // We can't create a slice until we have a compression header, and we can't create a compression
-    // header until we've seen all records that will live in a container. So we use SliceEntry to
-    // accumulate sets of records that represent will slice when we're ready to create the actual
+    // header until we've seen all records that will live in a container. So use SliceEntry to
+    // accumulate sets of records that will populate a slice until we're ready to create the actual
     // container and it's slices.
-    public class SliceEntry {
+    private class SliceEntry {
         private final List<CRAMRecord> records;
         private final ReferenceContext referenceContext;
         private final long sliceRecordCounter;

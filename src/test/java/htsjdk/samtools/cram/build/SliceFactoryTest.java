@@ -71,8 +71,8 @@ public class SliceFactoryTest  extends HtsjdkTest {
                 { ReferenceContext.MULTIPLE_REFERENCE_ID, CRAMEncodingStrategy.DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD - 1,
                         SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, ReferenceContext.MULTIPLE_REFERENCE_ID},
 
-                //We generally want to try to minimize the number of multi-ref slices we emit, since they confer
-                // MULTI_REF-ness on the containing container, and they aren't efficient because they're disable
+                //We generally want to minimize the number of multi-ref slices we emit, since they confer
+                // MULTI_REF-ness on the containing Container, and they aren't efficient because they disable
                 // reference-compression. So for coordinate-sorted inputs, the current policy emits a MULTI_REF
                 // slice once we've accumulated MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD reads, in order to keep
                 // the size of multi-ref slices to a minimum, on the optimistic theory that for coord-sorted,
@@ -132,7 +132,7 @@ public class SliceFactoryTest  extends HtsjdkTest {
                 CRAMStructureTestHelper.REFERENCE_SOURCE,
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 0L);
-        sliceFactory.addSliceEntry(0, CRAMStructureTestHelper.createSAMRecordsMapped(10, 0));
+        sliceFactory.createNewSliceEntry(0, CRAMStructureTestHelper.createSAMRecordsMapped(10, 0));
         Assert.assertEquals(
                 sliceFactory.shouldEmitSlice(0, 1, 1),
                 ReferenceContext.UNINITIALIZED_REFERENCE_ID

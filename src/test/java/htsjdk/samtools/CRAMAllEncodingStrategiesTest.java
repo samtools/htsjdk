@@ -26,14 +26,15 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     @DataProvider(name="roundTripTestFiles")
     public Object[][] roundTripTestFiles() {
         return new Object[][] {
-                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+//                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+//                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
 //                        new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta") },
 //                { new File("/Users/cnorman/projects/references/NA12878.cram"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta") },
 //                { new File("/Users/cnorman/projects/testdata/samn/DDP_ATCP_265_2.cram"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta") },
+//                  // this file has NM/MD tags, but the samtools roundtrip args discard them so sam roundtrip fails
 //                { new File("/Users/cnorman/projects/references/m64020_190208_213731-88146610-all.bam"),
 //                        new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta") }
         };
@@ -59,7 +60,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 (endTime-startTime)/1000/60, testStrategy));
 
         assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, true);
-        //assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
+        assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
         tempOutCRAM.delete();
     }
 

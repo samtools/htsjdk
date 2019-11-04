@@ -41,7 +41,7 @@ public class CRAMRecordTestHelper {
         return new CRAMRecord(
                 1,
                 0, //mapped
-                CRAMRecord.CF_FORCE_PRESERVE_QS,
+                CRAMRecord.CF_QS_PRESERVED_AS_ARRAY,
                 readName,
                 readLength,
                 referenceIndex,
@@ -73,7 +73,7 @@ public class CRAMRecordTestHelper {
         return new CRAMRecord(
                 1,
                 0,
-                CRAMRecord.CF_FORCE_PRESERVE_QS,
+                CRAMRecord.CF_QS_PRESERVED_AS_ARRAY,
                 readName,
                 readLength,
                 referenceIndex,
@@ -106,7 +106,7 @@ public class CRAMRecordTestHelper {
         return new CRAMRecord(
                 1,
                 bamFlags,
-                CRAMRecord.CF_FORCE_PRESERVE_QS,
+                CRAMRecord.CF_QS_PRESERVED_AS_ARRAY,
                 readName,
                 readLength,
                 referenceIndex,

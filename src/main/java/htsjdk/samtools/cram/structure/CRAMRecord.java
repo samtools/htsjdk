@@ -17,8 +17,7 @@ public class CRAMRecord {
     private static final Log log = Log.getInstance(CRAMRecord.class);
 
     // CF data series flags (defined by the CRAM spec)
-    //TODO: rename this flag to CF_QS_PRESERVED_AS_ARRAY
-    public static final int CF_FORCE_PRESERVE_QS   = 0x1;  // preserve quality scores as array
+    public static final int CF_QS_PRESERVED_AS_ARRAY = 0x1;  // preserve quality scores as array
     public static final int CF_DETACHED            = 0x2;  // mate is stored literally vs as record offset
     public static final int CF_HAS_MATE_DOWNSTREAM = 0x4;
     // sequence is unknown; encoded reference differences are present only to recreate the CIGAR string
@@ -655,7 +654,7 @@ public class CRAMRecord {
         return isForcePreserveQualityScores(cramFlags);
     }
 
-    public static boolean isForcePreserveQualityScores(final int cramFlags) {return (cramFlags & CF_FORCE_PRESERVE_QS) != 0; }
+    public static boolean isForcePreserveQualityScores(final int cramFlags) {return (cramFlags & CF_QS_PRESERVED_AS_ARRAY) != 0; }
 
     public boolean isUnknownBases() {
         return isUnknownBases(cramFlags);
@@ -794,8 +793,8 @@ public class CRAMRecord {
 
     private void setForcePreserveQualityScores(final boolean forcePreserveQualityScores) {
         cramFlags = forcePreserveQualityScores ?
-                cramFlags | CF_FORCE_PRESERVE_QS :
-                cramFlags & ~CF_FORCE_PRESERVE_QS;
+                cramFlags | CF_QS_PRESERVED_AS_ARRAY :
+                cramFlags & ~CF_QS_PRESERVED_AS_ARRAY;
     }
 
     private static void copyFlags(final CRAMRecord cramRecord, final SAMRecord samRecord) {
@@ -824,11 +823,10 @@ public class CRAMRecord {
         if (getReferenceIndex() != that.getReferenceIndex()) return false;
         if (getMappingQuality() != that.getMappingQuality()) return false;
         if (getReadGroupID() != that.getReadGroupID()) return false;
-        //TODO: should sequentialIndex be required to match ?
-        //if (getSequentialIndex() != that.getSequentialIndex()) return false;
+        if (getSequentialIndex() != that.getSequentialIndex()) return false;
         if (getBAMFlags() != that.getBAMFlags()) return false;
         if (cramFlags != that.cramFlags) return false;
-        //if (getTemplateSize() != that.getTemplateSize()) return false;
+        if (getTemplateSize() != that.getTemplateSize()) return false;
         if (getMateFlags() != that.getMateFlags()) return false;
         if (getMateAlignmentStart() != that.getMateAlignmentStart()) return false;
         if (getMateReferenceIndex() != that.getMateReferenceIndex()) return false;

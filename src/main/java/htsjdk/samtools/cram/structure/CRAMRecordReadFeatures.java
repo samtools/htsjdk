@@ -340,7 +340,6 @@ public class CRAMRecordReadFeatures {
      * @return
      */
     public static byte[] restoreReadBases(
-            //TODO: fix up the order of these
             final List<ReadFeature> readFeatures,
             final boolean isUnknownBases,
             final int readAlignmentStart,
