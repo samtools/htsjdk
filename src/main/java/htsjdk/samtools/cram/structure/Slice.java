@@ -385,15 +385,20 @@ public class Slice {
 
     public CompressionHeader getCompressionHeader() { return compressionHeader; }
 
-    //NOTE: this is what ACTUALLY decodes the underlying blocks. We don't do this automatically when initially
-    // reading the blocks from the underlying stream since there are case where we want to iterate through
-    // containers or slices (i.e., during indexing, or when satisfying index queries) where we want to consume
-    // the underlying blocks, but not actually pay the price to decode them
-    //
-    // The CRAMRecords returned from this are not normalized (read bases, quality scores and mates have not
-    // been resolved).
-    //TODO: rename this to decodeRawCRAMRecords
-    public ArrayList<CRAMRecord> getRawCRAMRecords(
+    /**
+     * Reads and decodes the underlying blocks. We don't do this automatically when initially
+     * reading the blocks from the underlying stream since there are case where we want to iterate through
+     * containers or slices (i.e., during indexing, or when satisfying index queries) where we want to consume
+     * the underlying blocks, but not actually pay the price to decode them.
+     *
+     * The CRAMRecords returned from this are not normalized (read bases, quality scores and mates have not
+     * been resolved). See {@link #normalizeCRAMRecords} for more information about normalization.
+     *
+     * @param compressorCache cached compressor objects to use to decode streams
+     * @param validationStringency validation stringency to use
+     * @return list of raw (not normalized) CRAMRecords for this Slice ({@link #normalizeCRAMRecords})
+     */
+    public ArrayList<CRAMRecord> decodeCRAMRecords(
             final CompressorCache compressorCache,
             final ValidationStringency validationStringency) {
         final CramRecordReader reader = new CramRecordReader(this, compressorCache, validationStringency);
@@ -420,11 +425,11 @@ public class Slice {
      *
      * NOTE: This has a side effect of updating the CRAM records in place.
      *
-     * @param records
+     * @param cramRecords
      * @param cramReferenceRegion
      * @param substitutionMatrix
      */
-    public void normalizeCRAMRecords(final List<CRAMRecord> records,
+    public void normalizeCRAMRecords(final List<CRAMRecord> cramRecords,
                                      final CRAMReferenceRegion cramReferenceRegion,
                                      final SubstitutionMatrix substitutionMatrix) {
         byte[] referenceBases = null;
@@ -456,11 +461,11 @@ public class Slice {
         }
 
         // restore pairing first:
-        for (final CRAMRecord record : records) {
+        for (final CRAMRecord record : cramRecords) {
             if (record.isMultiFragment() &&
                     !record.isDetached() &&
                     record.isHasMateDownStream()) {
-                final CRAMRecord downMate = records.get(
+                final CRAMRecord downMate = cramRecords.get(
                         //TODO: Why does this need to add 1 ?
                         (int) (record.getSequentialIndex() + record.getRecordsToNextFragment() + 1L - globalRecordCounter));
                 record.setNextSegment(downMate);
@@ -468,19 +473,19 @@ public class Slice {
             }
         }
 
-        for (final CRAMRecord record : records) {
+        for (final CRAMRecord record : cramRecords) {
             if (record.getPreviousSegment() == null && record.getNextSegment() != null) {
                 record.restoreMateInfo();
             }
         }
 
         // assign read names if needed:
-        for (final CRAMRecord record : records) {
+        for (final CRAMRecord record : cramRecords) {
             record.assignReadName();
         }
 
         // resolve bases:
-        for (final CRAMRecord record : records) {
+        for (final CRAMRecord record : cramRecords) {
             if (!record.isSegmentUnmapped()) {
                 if (compressionHeader.isReferenceRequired()) {
                     referenceBases = cramReferenceRegion.getReferenceBases(record.getReferenceIndex());
@@ -492,7 +497,7 @@ public class Slice {
         }
 
         // resolve quality scores:
-        for (final CRAMRecord record : records) {
+        for (final CRAMRecord record : cramRecords) {
             record.resolveQualityScores();
         }
     }
@@ -796,7 +801,7 @@ public class Slice {
         // See https://github.com/samtools/htsjdk/issues/1347.
         // Note that this doesn't normalize the CRAMRecords, which bypasses resolution of bases
         // against the reference.
-        final List<CRAMRecord> cramRecords = getRawCRAMRecords(compressorCache, validationStringency);
+        final List<CRAMRecord> cramRecords = decodeCRAMRecords(compressorCache, validationStringency);
 
         final Map<ReferenceContext, AlignmentSpan> spans = new HashMap<>();
         cramRecords.forEach(r -> mergeRecordSpan(r, spans));
