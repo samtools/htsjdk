@@ -326,7 +326,7 @@ public class Container {
             final SAMFileHeader samFileHeader) {
         final List<SAMRecord> samRecords = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
-            final List<CRAMRecord> rawCRAMRecords = slice.getRawCRAMRecords(compressorCache, validationStringency);
+            final List<CRAMRecord> rawCRAMRecords = slice.decodeCRAMRecords(compressorCache, validationStringency);
             slice.normalizeCRAMRecords(
                     rawCRAMRecords,
                     cramReferenceRegion,

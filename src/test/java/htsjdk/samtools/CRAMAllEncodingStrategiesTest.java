@@ -26,8 +26,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     @DataProvider(name="roundTripTestFiles")
     public Object[][] roundTripTestFiles() {
         return new Object[][] {
-//                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-//                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
 //                { new File("/Users/cnorman/projects/gatk/src/test/resources/large/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.cram"),
 //                        new File("/Users/cnorman/projects/gatk/src/test/resources/large/human_g1k_v37.20.21.fasta") },
 //                { new File("/Users/cnorman/projects/references/NA12878.cram"),

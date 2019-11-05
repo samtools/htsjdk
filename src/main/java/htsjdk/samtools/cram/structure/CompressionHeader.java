@@ -101,6 +101,10 @@ public class CompressionHeader {
         }
     }
 
+    /**
+     * Get the {@link CompressionHeaderEncodingMap} for this compression header.
+     * @return {@link CompressionHeaderEncodingMap} for this {@link CompressionHeader}
+     */
     public CompressionHeaderEncodingMap getEncodingMap() { return encodingMap; }
 
     /**
