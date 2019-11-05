@@ -847,7 +847,6 @@ public class CRAMRecord {
         if (getReferenceIndex() != that.getReferenceIndex()) return false;
         if (getMappingQuality() != that.getMappingQuality()) return false;
         if (getReadGroupID() != that.getReadGroupID()) return false;
-        if (getSequentialIndex() != that.getSequentialIndex()) return false;
         if (getBAMFlags() != that.getBAMFlags()) return false;
         if (cramFlags != that.cramFlags) return false;
         if (getTemplateSize() != that.getTemplateSize()) return false;
