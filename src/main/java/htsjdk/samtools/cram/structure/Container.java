@@ -68,8 +68,8 @@ public class Container {
      *
      * Any other combination is invalid.
      *
-//     * @param compressionHeader the CRAM {@link CompressionHeader} to assign to the Container
-//     * @param containerSlices the constituent Slices of the Container
+     * @param compressionHeader the CRAM {@link CompressionHeader} to use for the Container
+     * @param containerSlices the {@link Slice}s for the Container
      * @param containerByteOffset the Container's byte offset from the start of the stream
      * @param globalRecordCounter the global record count for the first record in this container
      * @throws CRAMException for invalid Container states
@@ -77,12 +77,12 @@ public class Container {
      */
     public Container(
             final CompressionHeader compressionHeader,
-            final List<Slice> slices,
+            final List<Slice> containerSlices,
             final long containerByteOffset,
             final long globalRecordCounter) {
 
         this.compressionHeader = compressionHeader;
-        this.slices = slices;
+        this.slices = containerSlices;
         this.containerByteOffset = containerByteOffset;
 
         final ReferenceContext commonRefContext = getDerivedReferenceContextFromSlices(slices);

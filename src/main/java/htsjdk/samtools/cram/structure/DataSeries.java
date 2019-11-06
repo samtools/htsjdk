@@ -27,7 +27,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Represents a specific CRAM record data series and its associated type and unique Content ID
+ * Represents a specific CRAM record data series and its associated type and unique Content ID. The
+ * content id for a data series is not prescribed by the CrAM spec, so the ids used here represent the
+ * ID used by this implementation on write. On read, the ID for each data series must be discovered
+ * by interrogating the encoding map.
  */
 public enum DataSeries {
 
@@ -91,6 +94,7 @@ public enum DataSeries {
 
     // For Testing Only
 
+    // NOTE: these are not listed in the spec
     TM_TestMark                         (DataSeriesType.INT,        "TM", 31),
     TV_TestMark                         (DataSeriesType.INT,        "TV", 32);
 
@@ -112,6 +116,12 @@ public enum DataSeries {
         return canonicalName;
     }
 
+    /**
+     * The content id for a data series is not prescribed by the CrAM spec, so the ids used here represent the
+     * ID used by this implementation on write. On read, the ID for each data series must be discovered
+     * by interrogating the encoding map.
+     * @return content ID used when writing a CRAM
+     */
     public Integer getExternalBlockContentId() {
         return externalBlockContentId;
     }

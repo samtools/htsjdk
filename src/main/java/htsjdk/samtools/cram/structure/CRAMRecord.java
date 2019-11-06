@@ -37,6 +37,11 @@ import htsjdk.utils.ValidationUtils;
 
 import java.util.*;
 
+/**
+ * A CRAMRecord represents a SAMRecord that has been transformed to CRAM-style representation. This includes
+ * representing read bases as reference-relative read features, and representation of quality scores,
+ * tags, and BAM and CRAM flags.
+ */
 public class CRAMRecord {
     private static final Log log = Log.getInstance(CRAMRecord.class);
 
@@ -97,7 +102,7 @@ public class CRAMRecord {
      * @param cramVersion
      * @param encodingStrategy
      * @param samRecord
-     * @param refBases
+     * @param referenceBases
      * @param sequentialIndex
      * @param readGroupMap
      */
@@ -105,21 +110,20 @@ public class CRAMRecord {
             final Version cramVersion,
             final CRAMEncodingStrategy encodingStrategy,
             final SAMRecord samRecord,
-            final byte[] refBases,
+            final byte[] referenceBases,
             final long sequentialIndex,
             final Map<String, Integer> readGroupMap) {
         ValidationUtils.nonNull(cramVersion);
         ValidationUtils.nonNull(encodingStrategy);
-        ValidationUtils.nonNull(samRecord, "samRecord must have a valid header");
-        ValidationUtils.nonNull(samRecord.getHeader(), "samRecord must have a valid header");
-        ValidationUtils.nonNull(refBases != null || samRecord.getReadUnmappedFlag() == false);
+        ValidationUtils.nonNull(samRecord, "a valid SAMRecord is required");
+        ValidationUtils.nonNull(samRecord.getHeader(), "SAMRecord must have a valid header");
+        ValidationUtils.nonNull(referenceBases != null || samRecord.getReadUnmappedFlag() == false);
         ValidationUtils.validateArg(sequentialIndex > SEQUENTIAL_INDEX_DEFAULT, "must have a valid sequential index");
         ValidationUtils.nonNull(readGroupMap);
 
         this.sequentialIndex = sequentialIndex;
 
-        // default to detached state until the actual mate information state is resolved during mate
-        // matching after all the CRAMRecords for a the containing container are known
+        // default to detached state until the actual mate information state is resolved during mate normalization
         setToDetachedState();
 
         // flags
@@ -143,7 +147,7 @@ public class CRAMRecord {
             readFeatures = new CRAMRecordReadFeatures();
             alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
         } else {
-            readFeatures = new CRAMRecordReadFeatures(samRecord, refBases);
+            readFeatures = new CRAMRecordReadFeatures(samRecord, referenceBases);
             alignmentEnd = readFeatures.getAlignmentEnd(alignmentStart, readLength);
         }
 
@@ -165,8 +169,7 @@ public class CRAMRecord {
         // follow the same approach to reproduce the behaviour of samtools.
         // copy read bases to avoid changing the original record:
         final byte[] bases = samRecord.getReadBases();
-        readBases =
-                bases == null || bases.equals(SAMRecord.NULL_SEQUENCE) ?
+        readBases = bases == null || bases.equals(SAMRecord.NULL_SEQUENCE) ?
                     SAMRecord.NULL_SEQUENCE :
                     SequenceUtil.toBamReadBasesInPlace(Arrays.copyOf(bases, samRecord.getReadLength()));
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
@@ -303,10 +306,11 @@ public class CRAMRecord {
             samRecord.setMappingQuality(mappingQuality);
         }
 
-        if (isSegmentUnmapped())
+        if (isSegmentUnmapped()) {
             samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
-        else
+        } else {
             samRecord.setCigar(readFeatures.getCigarForReadFeatures(readLength));
+        }
 
         if (samRecord.getReadPairedFlag()) {
             samRecord.setMateReferenceIndex(mateReferenceIndex);
@@ -848,7 +852,7 @@ public class CRAMRecord {
         if (getMappingQuality() != that.getMappingQuality()) return false;
         if (getReadGroupID() != that.getReadGroupID()) return false;
         if (getBAMFlags() != that.getBAMFlags()) return false;
-        if (cramFlags != that.cramFlags) return false;
+        if (getCRAMFlags() != that.getCRAMFlags()) return false;
         if (getTemplateSize() != that.getTemplateSize()) return false;
         if (getMateFlags() != that.getMateFlags()) return false;
         if (getMateAlignmentStart() != that.getMateAlignmentStart()) return false;

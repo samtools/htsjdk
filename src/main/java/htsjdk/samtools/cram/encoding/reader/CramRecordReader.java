@@ -180,7 +180,8 @@ public class CramRecordReader {
         int recordsToNextFragment = -1;
         if (CRAMRecord.isDetached(cramFlags)) {
             mateFlags = mateBitFlagCodec.readData();
-            //TODO: why is readName consumed here for detached case ???
+            //NOTE: The spec prescribes that readName must be decoded AFTER mateFlags in the case
+            //where read names are not preserved
             if (!compressionHeader.isPreserveReadNames()) {
                 readName = new String(readNameCodec.readData(), charset);
             }

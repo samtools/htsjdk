@@ -90,8 +90,8 @@ public class Slice {
     // because the alignment context part of the AlignmentSpan in the SliceHeader, so keeping it
     // here would be redundant.
     // These values are only maintained for slices that are created from SAM/CRAMRecords. Slices that
-    // are created from deserializing a stream do not have recorded values for these because they're
-    // not kept in the stream, and the individual records are not decoded until they're requested (and
+    // are created from deserializing a stream do not have recorded values for these because those values
+    // not part of the stream, and the individual records are not decoded until they're requested (and
     // they are not decoded during indexing, with the exception of MULTI_REF slices, where its required
     // that the slice be resolved into individual reference contexts for inclusion in the index).
     private int mappedReadsCount = 0;   // mapped (rec.getReadUnmappedFlag() != true)

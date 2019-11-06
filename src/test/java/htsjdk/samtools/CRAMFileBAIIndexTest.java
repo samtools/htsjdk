@@ -48,22 +48,6 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     private static final ReferenceSource referenceSource = new ReferenceSource(
             new FakeReferenceSequenceFile(
                     SamReaderFactory.makeDefault().getFileHeader(BAM_FILE).getSequenceDictionary().getSequences()));
-//    private static final CRAMReferenceSource referenceSource = new CRAMReferenceSource() {
-//        final List<SAMSequenceRecord> samSequenceRecords =
-//                SamReaderFactory.makeDefault().getFileHeader(BAM_FILE).getSequenceDictionary().getSequences();
-//        final int longestSequenceLength = samSequenceRecords.stream()
-//                .map(SAMSequenceRecord::getSequenceLength)
-//                .reduce((l1,l2)-> l1 >= l2 ? l1 : l2).get();
-//        byte[] seq;
-//        @Override
-//        public byte[] getReferenceBases(SAMSequenceRecord sequenceRecord, boolean tryNameVariants) {
-//            if (seq == null ) {
-//                seq = new byte[longestSequenceLength];
-//                Arrays.fill(seq, (byte) 'N');
-//            }
-//            return seq;
-//        }
-//    };
 
     @DataProvider(name="filesWithContainerAndSlicePartitioningVariations")
     public Object[][] getFilesWithContainerAndSlicePartitioningVariations() throws IOException {

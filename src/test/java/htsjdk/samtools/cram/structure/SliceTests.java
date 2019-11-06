@@ -287,17 +287,6 @@ public class SliceTests extends HtsjdkTest {
         slice.getMultiRefAlignmentSpans(new CompressorCache(), ValidationStringency.DEFAULT_STRINGENCY);
     }
 
-
-//    @Test(dataProvider = "uninitializedBAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
-//    public void uninitializedBAIParameterTest(final Slice s) {
-//        s.baiIndexInitializationCheck();
-//    }
-//
-//    @Test(dataProvider = "uninitializedCRAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
-//    public void uninitializedCRAIParameterTest(final Slice s) {
-//        s.craiIndexInitializationCheck();
-//    }
-
     // Embedded reference block tests
 
     @Test(expectedExceptions = IllegalArgumentException.class)
