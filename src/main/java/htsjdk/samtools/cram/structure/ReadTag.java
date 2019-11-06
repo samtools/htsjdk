@@ -42,7 +42,7 @@ public class ReadTag implements Comparable<ReadTag> {
     private String key;
     private String keyAndType;
     public String keyType3Bytes;
-    public int keyType3BytesAsInt;
+    public int keyType3BytesAsInt; // this is used as the content id for this tag series
     private char type;
     private Object value;
     private short code;
@@ -113,6 +113,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return new String(new byte[]{b1, b2, b3});
     }
 
+    //TODO: consolidate this with the method above
     public static String intToNameType4Bytes(final int value) {
         final byte b3 = (byte) (0xFF & value);
         final byte b2 = (byte) (0xFF & (value >> 8));
@@ -144,7 +145,7 @@ public class ReadTag implements Comparable<ReadTag> {
     }
 
     @Override
-    public int compareTo(@SuppressWarnings("NullableProblems") final ReadTag o) {
+    public int compareTo(final ReadTag o) {
         return key.compareTo(o.key);
     }
 
@@ -241,6 +242,7 @@ public class ReadTag implements Comparable<ReadTag> {
 
     // yeah, I'm that risky:
     // with a little less thread risky.
+    //TODO: fix this
     private static final ThreadLocal<ByteBuffer> bufferLocal = new ThreadLocal<ByteBuffer>() {
         @Override
         protected ByteBuffer initialValue() {
@@ -254,7 +256,6 @@ public class ReadTag implements Comparable<ReadTag> {
 
     public static byte[] writeSingleValue(final byte tagType, final Object value,
                                           final boolean isUnsignedArray) {
-
         final ByteBuffer buffer = bufferLocal.get();
         buffer.clear();
         switch (tagType) {

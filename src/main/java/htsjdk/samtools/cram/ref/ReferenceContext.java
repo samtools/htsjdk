@@ -4,17 +4,12 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.CRAMException;
 
 /**
- * A reference context defines the backing reference sequence for a given record, slice or container.
- * It is either a single-reference context, backed by a valid reference sequence ID; the sentinel value
- * ({@link ReferenceContext#UNMAPPED_UNPLACED_ID}) indicating unmapped/unplaced
- * ({@link ReferenceContextType#UNMAPPED_UNPLACED_TYPE}), or a multiple-reference context
- * ({@link ReferenceContext#MULTIPLE_REFERENCE_ID}) indicating a multi reference context
- * ({@link ReferenceContextType#MULTIPLE_REFERENCE_TYPE}).
- *
- * Are we handling {@link ReferenceContextType#MULTIPLE_REFERENCE_TYPE} records (-2,
- * ({@link ReferenceContext#MULTIPLE_REFERENCE_ID}) from the CRAM spec)?
- * Are we handling UNMAPPED_UNPLACED_TYPE records (-1, from the CRAM spec)?
- * Or are we handing a known SINGLE_REFERENCE_TYPE sequence (0 or higher, from the CRAM spec))?
+ * ReferenceContext defines how a given Slice or Container relates to a reference sequence. There are
+ * 3 types of reference context: single-reference context, which is backed by an accompanying reference
+ * sequence ID, {@link ReferenceContext#UNMAPPED_UNPLACED_ID}/{@link ReferenceContextType#UNMAPPED_UNPLACED_TYPE}
+ * which indicates an unmapped/unplaced context, and
+ * {@link ReferenceContext#MULTIPLE_REFERENCE_ID}/{@link ReferenceContextType#MULTIPLE_REFERENCE_TYPE})
+ * which indicates a multiple reference context.
  */
 public class ReferenceContext implements Comparable<ReferenceContext> {
     public static final int UNMAPPED_UNPLACED_ID = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX; // -1
@@ -26,8 +21,8 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
 
     private final ReferenceContextType type;
 
-    // the values for this are either a valid (>=0) reference sequence ID, or one of the sentinel values indicating
-    // unmapped/unplaced or multiple reference
+    // the values for this are either a valid (>=0) reference sequence ID, or one of the sentinel
+    // values indicating unmapped/unplaced or multiple reference
     private final int referenceContextID;
 
     /**
@@ -68,8 +63,8 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     }
 
     /**
-     * Get the ReferenceContext sequence ID, or, for unmapped or multiple context, a sentinel value suitable for
-     * serialization:
+     * Get the ReferenceContext sequence ID, or, for unmapped or multiple context, a sentinel value suitable
+     * for serialization:
      *
      * 0 or greater for single reference
      *  -1 for unmapped
@@ -81,9 +76,12 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
     }
 
     /**
-     * Get the valid reference sequence ID. May only be called if this is reference context of type single-reference.
+     * Get the valid reference sequence ID. May only be called if this is reference context of type
+     * single-reference (other reference context types don't have a valid sequence ID), otherwise
+     * see {@link #getReferenceContextID()}.
+     *
      * @throws CRAMException if this is not a single-ref reference context
-     * @return the sequence ID
+     * @return the sequence ID for this refernce context
      */
     public int getReferenceSequenceID() {
         if (type != ReferenceContextType.SINGLE_REFERENCE_TYPE) {

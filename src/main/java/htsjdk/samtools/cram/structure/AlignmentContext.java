@@ -66,7 +66,7 @@ public class AlignmentContext {
 
     private final ReferenceContext referenceContext;
     // minimum alignment start of the reads represented here, using a 1-based coordinate system
-    // or UNINITIALIZED (0) if the ReferenceContext is not SINGLE_REFERENCE_TYPE
+    // or NO_ALIGNMENT_START (0) if the ReferenceContext is not SINGLE_REFERENCE_TYPE
     private final int alignmentStart;
     private final int alignmentSpan;
 
@@ -75,9 +75,8 @@ public class AlignmentContext {
                             final int alignmentSpan) {
         // We can't enforce valid alignment contexts, or even warn about them here, because there are too many
         // files floating around that were created with implementations based on versions of the spec that didn't
-        // prescribe the valid start/span values for multi ref or unmapped slices, and SAMFileHeader containers.
-        // So skip this ssince it results in lots of warnings.
-        //validateAlignmentContext(false, referenceContext, alignmentStart, alignmentSpan);
+        // prescribe the valid start/span values for multi ref or unmapped slices, or SAMFileHeader containers.
+        // So skip this since it results in lots of warnings.
         this.referenceContext = referenceContext;
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;
@@ -95,12 +94,19 @@ public class AlignmentContext {
         return alignmentSpan;
     }
 
-    // Determine if these values result would in a valid alignment context
-    //if isString = true, throws if not
-    //Note: The spec does not prescribe what the alignment start/span for a SAMFileHeader container
-    // should be, and only recently prescribed what they should be for multi-ref slices, so there are
-    // many files out their with random values for those. There we can't really throw since there are
-    // many files out their with random values in these places.
+    /**
+     * Determine if the provided values would result in a valid alignment context.
+     *
+     * Note: The spec does not prescribe what the alignment start/span for a SAMFileHeader container
+     * should be, and only recently prescribed what they should be for multi-ref slices, so there are
+     * many files out their with various out-of-band  values in those cases, so we can't validate or
+     * throw in the general case.
+     *
+     * @param isStrict throw if the values do not represent a valid alignmentContext
+     * @param referenceContext reference context to validate
+     * @param alignmentStart alignment start to validate
+     * @param alignmentSpan alignment span to validate
+     */
     public static void validateAlignmentContext(
             final boolean isStrict,
             final ReferenceContext referenceContext,
@@ -108,7 +114,7 @@ public class AlignmentContext {
             final int alignmentSpan) {
         switch (referenceContext.getType()) {
             case SINGLE_REFERENCE_TYPE:
-                // note that it is technically possible to have an alignment span == 0, i.e., for a slice
+                // Note that it is technically possible to have an alignment span == 0, i.e., for a slice
                 // with a single record where the sequence is SAMRecord.NULL_SEQUENCE, so we only check
                 // alignment start
                 if (alignmentStart < 0) {
@@ -127,7 +133,7 @@ public class AlignmentContext {
 
             case UNMAPPED_UNPLACED_TYPE:
                 // the spec requires start==0 and span==0 for unmapped, but also make a special exception
-                // for EOF Containers, as required by the spec
+                // for EOF Containers
                 if (!(alignmentStart == NO_ALIGNMENT_START && alignmentSpan == NO_ALIGNMENT_SPAN) &&
                         !(alignmentStart == CramIO.EOF_ALIGNMENT_START && alignmentSpan == CramIO.EOF_ALIGNMENT_SPAN)) {
                     final String errorString = String.format(

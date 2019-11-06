@@ -47,7 +47,8 @@ public class CompressionHeader {
     private boolean preserveReadNames = true;
     private boolean referenceRequired = true;
 
-    //TODO: Move the tagEncodingMap into CompressionHeaderEncodingMap, or into a separate class ?
+    // ContentID to tage series EncodingDescriptor. For tags, the content ID is defined
+    // by to be a value derived from the tag data type and name (see @link #ReadTag.name3BytesToInt).
     private final Map<Integer, EncodingDescriptor> tagEncodingMap = new TreeMap<>();
     private SubstitutionMatrix substitutionMatrix;
     private byte[][][] tagIDDictionary;

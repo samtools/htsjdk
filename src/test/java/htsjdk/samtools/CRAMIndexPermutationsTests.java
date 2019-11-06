@@ -24,12 +24,11 @@ public class CRAMIndexPermutationsTests extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
-    // Subset of NA12878 (20:10000000-10004000, 21:10000000-10004000, +2000 unmapped). There is no corresponding
+    // BAM test file for comparison with CRAM results. This is asubset of NA12878
+    // (20:10000000-10004000, 21:10000000-10004000, +2000 unmapped). There is no corresponding
     // reference checked in for this file since its too big, but because we're only using it to validate
     // index query results, we only care that the right the reads are returned, not what the read bases are, so
     // we use a synthetic in-memory fake reference of all 'N's to convert it to CRAM.
-    //private static final File originalCRAM = new File(TEST_DATA_DIR, "NA12878.20.21.unmapped.orig.cram");
-    // BAM file for comparison with CRAM results
     private static final File truthBAM = new File(TEST_DATA_DIR, "NA12878.20.21.unmapped.orig.bam");
 
     //Note that these tests can be REALLY slow because although we don't use the real (huge) reference, we use a fake

@@ -61,7 +61,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
         assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, true);
         assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
-        tempOutCRAM.delete();
+        //tempOutCRAM.delete();
     }
 
     @Test(dataProvider = "roundTripTestFiles")
