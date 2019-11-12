@@ -1,6 +1,8 @@
 package htsjdk.tribble.gff;
 
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
 
@@ -12,6 +14,7 @@ import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.readers.*;
+import jdk.internal.util.xml.impl.Input;
 
 
 import java.io.*;
@@ -20,15 +23,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Codec for parsing Gff3 files, as defined in https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
  * Note that while spec states that all feature types must be defined in sequence ontology, this implementation makes no check on feature types, and allows any string as feature type
+ *
+ * Only features with no parents will be directly emitted, with other features contained in these "top-level" features accesible through {@link Gff3Feature#getChildren()}, {@link Gff3Feature#getDescendents()}, or {@link Gff3Feature#flatten()}.
+ * For example, for a gene with a single transcript, with two exons each with one CDS, only the single gene feature will be directly emitted from this codec.  The transcript will be accessible as a child of the gene, and the
+ * exons and CDS as children of the transcript.  The transcript, exons, and CDS will be accessible as descendents of the gene.  And all six feature will be accessible through {@link Gff3Feature#flatten()}.
  */
 
 public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     public static final String FIELD_DELIMITER = "\t";
+    /**
+     *
+     */
     private static final String GFF3_VERSION_REGEX="##gff-version 3(?:.\\d)*(?:\\.\\d)*$";
 
     private static final int NUM_FIELDS = 9;
@@ -45,7 +56,6 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     /**
      * accepted extensions for gff3 format
      */
-    private final Set<String> FILE_EXTENSIONS = new HashSet<String>(Arrays.asList("gff", "gff3"));
 
 
     private static final String COMMENT_START = "#";
@@ -55,10 +65,12 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private static final String PARENT_ATTRIBUTE_KEY = "Parent";
     private static final String IS_CIRCULAR_ATTRIBUTE_KEY = "Is_circular";
 
+    private static final String ARTEMIS_FASTA_MARKER = ">";
+
     private final LinkedList<Gff3Feature> activeTopLevelFeatures = new LinkedList<>();
     private final LinkedList<Gff3Feature> featuresToFlush = new LinkedList<>();
     /* discontinuous features can have multiple lines representing the same feature, with the same ID in GFF.
-    For this implementation the discontinous features are split into separate features.
+    For this implementation the discontinuous features are split into separate features, which point to each other as "co-features".
      */
     private final Map<String, Set<Gff3Feature>> activeFeaturesWithIDs = new HashMap<>();
 
@@ -78,8 +90,14 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     @Override
     public Gff3Feature decode(final LineIterator lineIterator) throws IOException {
+        /*
+        Basic strategy: Load top-level features (those with no parent) into linked list, and all features with ID into map.  For each feature, link to parents using this map.
+        When reaching flush directive, fasta, or end of file, prepare to flush top level features by moving all top level features to linked list of features to flush, and clearing
+        list of active top level features and map of active features with IDs.  Always poll featuresToFlush to return any completed top level features.
+         */
         if(!lineIterator.hasNext()) {
-            prepareToFlushFeatures(activeTopLevelFeatures);
+            //no more lines, flush whatever is active
+            prepareToFlushFeatures();
             return featuresToFlush.poll();
         }
 
@@ -87,24 +105,24 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         currentLineNum++;
 
         if (reachedFasta) {
-            prepareToFlushFeatures(activeTopLevelFeatures);
+            //previously reached fasta, flush whatever is active
+            prepareToFlushFeatures();
             return featuresToFlush.poll();
         }
 
-
-        if (line.startsWith(">")) {
+        if (line.startsWith(ARTEMIS_FASTA_MARKER)) {
             //backwards compatability with Artemis is built into gff3 spec
-            parseDirective(DIRECTIVE_START + "FASTA");
-            return null;
+            processDirective(Gff3Directive.FASTA_DIRECTIVE, null);
+            return featuresToFlush.poll();
         }
 
         if (line.startsWith(COMMENT_START) && !line.startsWith(DIRECTIVE_START)) {
-            return null;
+            return featuresToFlush.poll();
         }
 
         if (line.startsWith(DIRECTIVE_START)) {
             parseDirective(line);
-            return null;
+            return featuresToFlush.poll();
         }
 
         final String[] splitLine = line.split(FIELD_DELIMITER, -1);
@@ -115,7 +133,6 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         }
 
         try {
-            //final String contig = splitLine[CHROMOSOME_NAME_INDEX];
             final String contig = URLDecoder.decode(splitLine[CHROMOSOME_NAME_INDEX], "UTF-8");
             final String source = URLDecoder.decode(splitLine[ANNOTATION_SOURCE_INDEX], "UTF-8");
             final String type = URLDecoder.decode(splitLine[FEATURE_TYPE_INDEX], "UTF-8");
@@ -134,7 +151,6 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
                 }
 
                 for (final Gff3Feature parent : parents) {
-                    parent.addChild(thisFeature);
                     thisFeature.addParent(parent);
                 }
             }
@@ -145,7 +161,6 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             if (id != null) {
                 if (activeFeaturesWithIDs.containsKey(id)) {
                     for (final Gff3Feature coFeature : activeFeaturesWithIDs.get(id)) {
-                        coFeature.addCoFeature(thisFeature);
                         thisFeature.addCoFeature(coFeature);
                     }
                     activeFeaturesWithIDs.get(id).add(thisFeature);
@@ -212,12 +227,14 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         try {
             // Simple file and name checks to start with:
             Path p = IOUtil.getPath(inputFilePath);
-            canDecode = FILE_EXTENSIONS.stream().anyMatch( fe -> p.toString().endsWith(fe));
+            canDecode = FileExtensions.GFF3.stream().anyMatch(fe -> p.toString().endsWith(fe));
 
             if (canDecode) {
 
                 // Crack open the file and look at the top of it:
-                try ( BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(p))) ) {
+                final InputStream inputStream = IOUtil.hasGzipFileExtension(p)? new GZIPInputStream(Files.newInputStream(p)) : Files.newInputStream(p);
+
+                try ( BufferedReader br = new BufferedReader(new InputStreamReader(inputStream)) ) {
 
                     String line = br.readLine();
 
@@ -288,48 +305,44 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private void parseDirective(final String directiveLine) throws IOException {
         final Gff3Directive directive = Gff3Directive.toDirective(directiveLine);
         if (directive != null) {
-            switch (directive) {
-                case VERSION3_DIRECTIVE:
-                    break;
+            processDirective(directive, directive.decode(directiveLine));
 
-                case SEQUENCE_REGION_DIRECTIVE:
-                    final SequenceRegion newRegion = (SequenceRegion) Gff3Directive.SEQUENCE_REGION_DIRECTIVE.decode(directiveLine);
-                    if (sequenceRegionMap.containsKey(newRegion.getContig())) {
-                        throw new TribbleException("directive for sequence-region " + newRegion.getContig() + " included more than once.");
-                    }
-                    sequenceRegionMap.put(newRegion.getContig(), newRegion);
-                    break;
-
-                case FLUSH_DIRECTIVE:
-                    prepareToFlushFeatures(activeTopLevelFeatures);
-                    break;
-
-                case FASTA_DIRECTIVE:
-                    reachedFasta = true;
-                    break;
-
-                default:
-                    throw new IllegalArgumentException( "directive " + directive + " not handled by parser.");
-
-
-            }
         } else {
             logger.warn("ignoring directive " + directiveLine);
         }
     }
 
-    private void prepareToFlushFeatures(final Collection<Gff3Feature> features) {
-        featuresToFlush.addAll(features);
-        for (final Gff3Feature feature : features) {
-            if (feature.getID() == null) {
-                continue;
-            }
-            activeFeaturesWithIDs.get(feature.getID()).remove(feature);
-            if (activeFeaturesWithIDs.get(feature.getID()).isEmpty()) {
-                activeFeaturesWithIDs.remove(feature.getID());
-            }
+    private void processDirective(final Gff3Directive directive, final Object decodedResult) {
+        switch (directive) {
+            case VERSION3_DIRECTIVE:
+                break;
+
+            case SEQUENCE_REGION_DIRECTIVE:
+                final SequenceRegion newRegion = (SequenceRegion) decodedResult;
+                if (sequenceRegionMap.containsKey(newRegion.getContig())) {
+                    throw new TribbleException("directive for sequence-region " + newRegion.getContig() + " included more than once.");
+                }
+                sequenceRegionMap.put(newRegion.getContig(), newRegion);
+                break;
+
+            case FLUSH_DIRECTIVE:
+                prepareToFlushFeatures();
+                break;
+
+            case FASTA_DIRECTIVE:
+                reachedFasta = true;
+                break;
+
+            default:
+                throw new IllegalArgumentException( "directive " + directive + " not handled by parser.");
+
         }
-        activeTopLevelFeatures.removeAll(features);
+    }
+
+    private void prepareToFlushFeatures() {
+        featuresToFlush.addAll(activeTopLevelFeatures);
+        activeFeaturesWithIDs.clear();
+        activeTopLevelFeatures.clear();
     }
 
     @Override

@@ -1,5 +1,6 @@
 package htsjdk.tribble.gff;
 
+import htsjdk.samtools.util.Tuple;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
 
@@ -20,9 +21,9 @@ public class Gff3Feature implements Feature {
     private final Strand strand;
     private final int phase;
     private final Map<String, String> attributes;
-    private final List<Gff3Feature> parents = new ArrayList<>();
-    private final List<Gff3Feature> children = new ArrayList<>();
-    private final List<Gff3Feature> coFeatures = new ArrayList<>();
+    private final HashSet<Gff3Feature> parents = new HashSet<>();
+    private final HashSet<Gff3Feature> children = new HashSet<>();
+    private final HashSet<Gff3Feature> coFeatures = new HashSet<>();
     private final String ID;
 
     private final static String DERIVES_FROM_ATTRIBUTE_KEY = "Derives_from";
@@ -78,16 +79,16 @@ public class Gff3Feature implements Feature {
     public Map<String, String> getAttributes() { return attributes;}
 
     /**
-     * Gets list of parent features
+     * Gets set of parent features
      * @return list of parent features
      */
-    public List<Gff3Feature> getParents() {return parents;}
+    public Set<Gff3Feature> getParents() {return parents;}
 
     /**
-     * Gets list of features for which this feature is a parent
+     * Gets set of features for which this feature is a parent
      * @return list of child features
      */
-    public List<Gff3Feature> getChildren() {return children;}
+    public Set<Gff3Feature> getChildren() {return children;}
 
     /**
      * Get list of all features this feature descends from, through chains of Parent attributes.  Derives_From can be used to specify a particular inheritance path for this feature when multiple paths are available
@@ -140,10 +141,10 @@ public class Gff3Feature implements Feature {
     }
 
     /**
-     * Get list of co-features.  Co-features correspond to the other lines in the gff file that together make up a single discontinuous feature
+     * Get set of co-features.  Co-features correspond to the other lines in the gff file that together make up a single discontinuous feature
      * @return list of co-features
      */
-    public List<Gff3Feature> getCoFeatures() {return coFeatures;}
+    public Set<Gff3Feature> getCoFeatures() {return coFeatures;}
 
     public String getID() {return ID;}
 
@@ -157,11 +158,26 @@ public class Gff3Feature implements Feature {
 
     public void addParent(final Gff3Feature parent) {
         parents.add(parent);
+        parent.addChildShallow(this);
     }
 
-    public void addChild(final Gff3Feature child) {children.add(child);}
+    public void addChild(final Gff3Feature child) {
+        children.add(child);
+        child.addParentShallow(this);
+    }
 
-    public void addCoFeature(final Gff3Feature coFeature) {coFeatures.add(coFeature);}
+    private void addParentShallow(final Gff3Feature parent) {
+        parents.add(parent);
+    }
+
+    private void addChildShallow(final Gff3Feature child) { children.add(child); }
+
+    public void addCoFeature(final Gff3Feature coFeature) {
+        coFeatures.add(coFeature);
+        coFeature.addCoFeatureShallow(coFeature);
+    }
+
+    private void addCoFeatureShallow(final Gff3Feature coFeatuure) { coFeatures.add(coFeatuure); }
 
     @Override
     public boolean equals(Object other) {
@@ -171,33 +187,94 @@ public class Gff3Feature implements Feature {
 
         final Gff3Feature otherGff3Feature = (Gff3Feature) other;
 
-        return otherGff3Feature.getContig().equals(contig) &&
+        final Set<Gff3Feature> topLevelFeatures = getAncestors().stream().filter(f -> !f.hasParents()).collect(Collectors.toSet());
+        final Set<Gff3Feature> allNodes = topLevelFeatures.stream().flatMap(f -> f.flatten().stream().map(Gff3Feature::shallowCopy)).collect(Collectors.toSet());
+        final Set<List<Gff3Feature>> allChildEdges = allNodes.stream()
+                .flatMap(f ->f.getChildren().stream().map(c -> Arrays.asList(f.shallowCopy(), c.shallowCopy()))).collect(Collectors.toSet());
+        final Set<List<Gff3Feature>> allParentEdges = allNodes.stream()
+                .flatMap(f ->f.getParents().stream().map(p -> Arrays.asList(f.shallowCopy(), p.shallowCopy()))).collect(Collectors.toSet());
+        final Set<Set>
+
+        boolean ret = otherGff3Feature.getContig().equals(contig) &&
                 otherGff3Feature.getSource().equals(source) &&
                 otherGff3Feature.getType().equals(type) &&
                 otherGff3Feature.getStart() == start &&
                 otherGff3Feature.getEnd()== end &&
                 otherGff3Feature.getStrand() == strand &&
                 otherGff3Feature.getPhase() == phase &&
-                otherGff3Feature.getAttributes().equals(attributes) &&
-                otherGff3Feature.getParents().equals(parents) &&
-                otherGff3Feature.getChildren().equals(children) &&
-                otherGff3Feature.getCoFeatures().equals(coFeatures);
+                otherGff3Feature.getAttributes().equals(attributes);
+        for (final Gff3Feature parent : otherGff3Feature)
+        // &&
+//                otherGff3Feature.getParents().equals(parents) &&
+//                otherGff3Feature.getChildren().equals(children) &&
+//                otherGff3Feature.getCoFeatures().equals(coFeatures);
+    }
+
+
+    // graph representation, for
+    private boolean upwardsEquals(Gff3Feature other) {
+        boolean ret = shallowEquals(other);
+
+        ret &= getParents().size() == other.getParents().size();
+
+        if (ret) {
+            //construct hashmap between shallow copies of parents and parents
+            final HashMap<Gff3Feature, Gff3Feature> shallowCopyMap = getParents().stream().collect(Collectors.toMap(f -> f.shallowCopy()))
+        }
+    }
+
+    private Gff3Feature shallowCopy() {
+        return new Gff3Feature(contig, source, type, start, end, strand, phase, attributes);
+    }
+
+    public boolean shallowEquals(final Gff3Feature other) {
+        return other.getContig().equals(contig) &&
+                other.getSource().equals(source) &&
+                other.getType().equals(type) &&
+                other.getStart() == start &&
+                other.getEnd()== end &&
+                other.getStrand() == strand &&
+                other.getPhase() == phase &&
+                other.getAttributes().equals(attributes);
     }
 
     @Override
     public int hashCode() {
-        return shallowHashCode() +
-                children.stream().map(Gff3Feature::shallowHashCode).reduce(0, Integer::sum) +
-                parents.stream().map(Gff3Feature::shallowHashCode).reduce(0, Integer::sum) +
-                coFeatures.stream().map(Gff3Feature::shallowHashCode).reduce(0, Integer::sum);
+        int hash = verticalHashCode();
+        hash = 31 * hash + coFeatures.stream().map(Gff3Feature::verticalHashCode).reduce(0, Integer::sum);
+        return hash;
     }
 
-    private int shallowHashCode() {
-        return contig.hashCode() + source.hashCode() + type.hashCode() + start + 31*end +
-                strand.hashCode() + phase*(31^2) + attributes.hashCode();
+    public int shallowHashCode() {
+        int hash = contig.hashCode();
+        hash = 31 * hash + source.hashCode();
+        hash = 31 * hash + type.hashCode();
+        hash += start;
+        hash = 31 * hash + end;
+        hash = 31 * hash + phase;
+        hash += strand.hashCode();
+        hash += attributes.hashCode();
+        return hash;
     }
 
+    public int upwardHashCode() {
+        int hash = shallowHashCode();
+        hash = 31 * hash + parents.stream().map(Gff3Feature::upwardHashCode).reduce(0, Integer::sum);
+        return hash;
+    }
 
+    public int downwardHashCode() {
+        int hash = shallowHashCode();
+        hash = 31 * hash + children.stream().map(Gff3Feature::downwardHashCode).reduce(0, Integer::sum);
+        return hash;
+    }
+
+    public int verticalHashCode() {
+        int hash = shallowHashCode();
+        hash = 31 * hash + parents.stream().map(Gff3Feature::upwardHashCode).reduce(0, Integer::sum);
+        hash = 31 * hash + children.stream().map(Gff3Feature::downwardHashCode).reduce(0, Integer::sum);
+        return hash;
+    }
     /***
      * flatten this features and all descendents into a list of features
      * @return list of this feature and all descendents
