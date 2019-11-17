@@ -2,11 +2,11 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.*;
-import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.encoding.ByteArrayLenEncoding;
 import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.SamtoolsTestUtils;
 import org.testng.Assert;
@@ -15,13 +15,13 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
+    private final CompressorCache compressorCache = new CompressorCache();
 
     @DataProvider(name="roundTripTestFiles")
     public Object[][] roundTripTestFiles() {
@@ -65,29 +65,6 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "roundTripTestFiles")
-    public final void testBestEncodingStrategy(final File cramSourceFile, final File referenceFile) throws IOException {
-        // src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingMapProfileBEST.json contains the encoding map used by this strategy
-        final File encodingStrategyFile = new File("src/test/resources/htsjdk/samtools/cram/json/CRAMEncodingStrategyTemplate.json");
-        final CRAMEncodingStrategy testStrategy = CRAMEncodingStrategy.readFromPath(encodingStrategyFile.toPath());
-
-        final File tempOutCRAM = File.createTempFile("bestEncodingStrategyTest", ".cram");
-        System.out.println(String.format("Test file/size: %,d (%s) Output file: %s",
-                Files.size(cramSourceFile.toPath()),
-                cramSourceFile.toPath(),
-                tempOutCRAM.toPath()));
-
-        final long start = System.currentTimeMillis();
-        final long fileSize = CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, cramSourceFile, tempOutCRAM, referenceFile);
-        long end = System.currentTimeMillis();
-
-        System.out.println(String.format("Size: %,d Elapsed time minutes: %,d Strategy: %s", fileSize, (end-start)/1000/60, testStrategy));
-
-        assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, false);
-
-        tempOutCRAM.delete();
-    }
-
-    @Test(dataProvider = "roundTripTestFiles")
     public final void testAllEncodingStrategyCombinations(final File cramSourceFile, final File referenceFile) throws IOException {
         final Map<Integer, CRAMEncodingStrategy> encodingStrategyByTestNumber = new HashMap<>();
         final Map<Integer, String> testSummaryByTestNumber = new HashMap<>();
@@ -107,8 +84,6 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             //assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
 
             tempOutCRAM.delete();
-            final File mapPath = new File(testStrategy.b.getCustomCompressionMapPath());
-            mapPath.delete();
 
             final String testSummary = String.format(
                     "Size: %,d Test: %,d Seconds: %d, %s %s",
@@ -229,34 +204,21 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
            final int slicesPerContainer,
            final DataSeries ds,
            final EncodingDescriptor encodingDescriptor,
-           final ExternalCompressor compressor) throws IOException {
+           final ExternalCompressor compressor) {
         final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy();
-        encodingStrategy.setGZIPCompressionLevel(gzipCompressionLevel);
-        encodingStrategy.setReadsPerSlice(readsPerSlice);
-        encodingStrategy.setSlicesPerContainer(slicesPerContainer);
-        final CompressionHeaderEncodingMap encodingMap = createEncodingMapExternalEncodingVariationFor(ds, encodingDescriptor, compressor);
-        final File tempEncodingMapFile = File.createTempFile("testEncodingMap", ".json");
-        tempEncodingMapFile.deleteOnExit();
-        final Path encodingMapPath = tempEncodingMapFile.toPath();
-        encodingMap.writeToPath(encodingMapPath);
-        encodingStrategy.setEncodingMap(encodingMapPath);
-
-        // save the map to retrieve it in case its the best one
-        //final File tempStrategyFile = File.createTempFile("testEncodingMap", ".json");
-        //tempStrategyFile.deleteOnExit();
-        //final Path strategyPath = tempStrategyFile.toPath();
-        //encodingStrategy.writeToPath(strategyPath);
-
+//        encodingStrategy.setGZIPCompressionLevel(gzipCompressionLevel);
+//        encodingStrategy.setReadsPerSlice(readsPerSlice);
+//        encodingStrategy.setSlicesPerContainer(slicesPerContainer);
+//        encodingStrategy.setCustomCompressionHeaderEncodingMap(createEncodingMapExternalEncodingVariationFor(ds, encodingDescriptor, compressor));
         return encodingStrategy;
     }
 
     public List<ExternalCompressor> enumerateExternalCompressors(final int gzipCompressionLevel) {
-        final RANS rans = new RANS();
         return Arrays.asList(
-                new GZIPExternalCompressor(gzipCompressionLevel),
-                new RANSExternalCompressor(RANS.ORDER.ZERO, rans),
-                new RANSExternalCompressor(RANS.ORDER.ONE, rans)
-                //NOTE: don't use LZMA or BZIP compression if we wantto validate using samtools since not
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.GZIP, gzipCompressionLevel),
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.RANS, 0),
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.RANS, 1)
+                //NOTE: don't use LZMA or BZIP compression if we want to validate using samtools since not
                 // all samtools builds have these enabled
                 //new LZMAExternalCompressor(),
                 //new BZIP2ExternalCompressor()

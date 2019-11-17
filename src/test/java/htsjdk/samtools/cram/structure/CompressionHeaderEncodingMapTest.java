@@ -2,9 +2,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
-import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
@@ -12,8 +10,6 @@ import java.util.Collections;
 import java.util.Set;
 
 public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram/json");
-
     @Test
     public void testAllHTSJDKWriteEncodings() {
         // make sure all of the expected encodings that HTSJDK writes are present in the default encoding map
@@ -60,49 +56,6 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
                 assertExpectedHTSJDKGeneratedEncodings(roundTippedEncodingMap, Collections.EMPTY_SET);
             }
         }
-    }
-
-    @Test
-    public void testAllHTSJDKWriteEncodingsRoundTripThroughJSON() throws IOException {
-        final File tempFile = File.createTempFile("encodingMapTest", ".json");
-        tempFile.deleteOnExit();
-
-        final CompressionHeaderEncodingMap originalEncodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
-        originalEncodingMap.writeToPath(tempFile.toPath());
-        final CompressionHeaderEncodingMap roundTripEncodingMap = CompressionHeaderEncodingMap.readFromPath(tempFile.toPath());
-
-        Assert.assertEquals(roundTripEncodingMap, originalEncodingMap);
-    }
-
-    @Test
-    public void testCoreEncodingRoundTripThroughJSON() throws IOException {
-        final File tempFile = File.createTempFile("encodingMapTest", ".json");
-        tempFile.deleteOnExit();
-
-        final CompressionHeaderEncodingMap originalEncodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
-        // use a huffman (core) encoding to make sure a null compressor can be round-tripped, since core encodings
-        // have  no external compressor
-        final CanonicalHuffmanIntegerEncoding huffmanEncoding = new CanonicalHuffmanIntegerEncoding(new int[] { 1 }, new int[] { 0 });
-        final EncodingDescriptor huffmanDescriptor = huffmanEncoding.toEncodingDescriptor();
-        originalEncodingMap.putCoreEncoding(
-                DataSeries.BF_BitFlags,
-                huffmanDescriptor);
-        originalEncodingMap.writeToPath(tempFile.toPath());
-        final CompressionHeaderEncodingMap roundTripEncodingMap = CompressionHeaderEncodingMap.readFromPath(tempFile.toPath());
-        Assert.assertEquals(roundTripEncodingMap.getEncodingDescriptorForDataSeries(DataSeries.BF_BitFlags), huffmanDescriptor);
-    }
-
-    @DataProvider
-    public Object[][] getBadEncodingMapJSONs() {
-        return new Object[][] {
-                { new File(TEST_DATA_DIR, "encodingMapWithBadMapVersion.json") }, // htsjdkCRAMEncodingMapVersion 99999
-                { new File(TEST_DATA_DIR, "encodingMapWithBadCRAMVersion.json") } // CRAM version 271.1.8
-        };
-    }
-
-    @Test(dataProvider="getBadEncodingMapJSONs", expectedExceptions = IllegalArgumentException.class)
-    public void testRejectJSONWithEncodingVersionMismatch(final File badJSONFile) {
-        CompressionHeaderEncodingMap.readFromPath(badJSONFile.toPath());
     }
 
     private void assertExpectedHTSJDKGeneratedEncodings(

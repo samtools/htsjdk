@@ -45,7 +45,7 @@ public class RANS {
     private RANSDecodingSymbol[][] decodingSymbols;
     private RANSEncodingSymbol[][] encodingSymbols;
 
-    // Lazy initialization of working memory for the encoder/decder
+    // Lazy initialization of working memory for the encoder/decoder
     private void initializeRANSCoder() {
         if (D == null) {
             D = new ArithmeticDecoder[NUMBER_OF_SYMBOLS];

@@ -25,21 +25,13 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.Defaults;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
-
-import com.google.gson.*;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * Parameters that can be set to control encoding strategy used on write.
  */
 public class CRAMEncodingStrategy {
-    private final long version = 1L;
     // Default value for the minimum number of reads we need to have seen to emit a single-reference slice.
     // If we've see fewer than this number, and we have more reads from a different reference context, we prefer to
     // switch to, and subsequently emit, a multiple reference slice, rather than a small single-reference
@@ -48,10 +40,9 @@ public class CRAMEncodingStrategy {
 
     // This number must be >= DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD (required by ContainerFactory).
     public static final int DEFAULT_READS_PER_SLICE = 10000;
-    private final String strategyName = "default";
 
     // encoding strategies
-    private String customCompressionMapPath = "";
+    private CompressionHeaderEncodingMap customCompressionHeaderEncodingMap;
 
     //Note: should this have separate values for tags (separate from CRAMRecord data) ?
     private int gzipCompressionLevel = Defaults.COMPRESSION_LEVEL;
@@ -81,11 +72,6 @@ public class CRAMEncodingStrategy {
 
     public CRAMEncodingStrategy setPreserveReadNames(boolean preserveReadNames) {
         this.preserveReadNames = preserveReadNames;
-        return this;
-    }
-
-    public CRAMEncodingStrategy setEncodingMap(final Path encodingMap) {
-        this.customCompressionMapPath = encodingMap.toAbsolutePath().toString();
         return this;
     }
 
@@ -147,39 +133,21 @@ public class CRAMEncodingStrategy {
         return this;
     }
 
-    public String getCustomCompressionMapPath() { return customCompressionMapPath; }
+    public void setCustomCompressionHeaderEncodingMap(final CompressionHeaderEncodingMap encodingMap) {
+        this.customCompressionHeaderEncodingMap = encodingMap;
+    }
+    public CompressionHeaderEncodingMap getCustomCompressionHeaderEncodingMap() { return customCompressionHeaderEncodingMap; }
     public int getGZIPCompressionLevel() { return gzipCompressionLevel; }
     public int getReadsPerSlice() { return readsPerSlice; }
     public int getSlicesPerContainer() { return slicesPerContainer; }
 
-    public void writeToPath(final Path outputPath) {
-        try (final BufferedWriter fileWriter = Files.newBufferedWriter(outputPath)) {
-            final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            final String jsonEncodingString = gson.toJson(this);
-            fileWriter.write(jsonEncodingString);
-        } catch (final IOException e) {
-            throw new RuntimeIOException("Failed creating json file for encoding strategy", e);
-        }
-    }
-
-    public static CRAMEncodingStrategy readFromPath(final Path outputPath) {
-        try (final BufferedReader fileReader = Files.newBufferedReader(outputPath)) {
-            final Gson gson = new Gson();
-            return gson.fromJson(fileReader, CRAMEncodingStrategy.class);
-        } catch (final IOException e) {
-            throw new RuntimeIOException("Failed opening encoding strategy json file", e);
-        }
-    }
-
     @Override
     public String toString() {
         return "CRAMEncodingStrategy{" +
-                "strategyName='" + strategyName + '\'' +
-                ", version=" + version +
                 ", gzipCompressionLevel=" + gzipCompressionLevel +
                 ", readsPerSlice=" + readsPerSlice +
                 ", slicesPerContainer=" + slicesPerContainer +
-                ", customCompressionMapPath='" + customCompressionMapPath + '\'' +
+                ", customCompressionMap='" + customCompressionHeaderEncodingMap + '\'' +
                 ", preserveReadNames=" + preserveReadNames +
                 ", readNamePrefix='" + readNamePrefix + '\'' +
                 ", retainMD=" + retainMD +
@@ -195,7 +163,6 @@ public class CRAMEncodingStrategy {
 
         CRAMEncodingStrategy that = (CRAMEncodingStrategy) o;
 
-        if (version != that.version) return false;
         if (gzipCompressionLevel != that.gzipCompressionLevel) return false;
         if (readsPerSlice != that.readsPerSlice) return false;
         if (getSlicesPerContainer() != that.getSlicesPerContainer()) return false;
@@ -209,8 +176,7 @@ public class CRAMEncodingStrategy {
 
     @Override
     public int hashCode() {
-        int result = Long.hashCode(version);
-        result = 31 * result + gzipCompressionLevel;
+        int result = 31 * gzipCompressionLevel;
         result = 31 * result + readsPerSlice;
         result = 31 * result + getSlicesPerContainer();
         result = 31 * result + (preserveReadNames ? 1 : 0);

@@ -63,18 +63,9 @@ public class CompressionHeaderFactory {
     public CompressionHeaderFactory(final CRAMEncodingStrategy encodingStrategy) {
         ValidationUtils.nonNull(encodingStrategy, "A CRAMEncodingStrategy is required");
 
-        // cache the encodingMap if its serialized so it only gets created once per
-        // container factory rather than once per container
-        final String customCompressionMapPath = encodingStrategy.getCustomCompressionMapPath();
-        if (customCompressionMapPath.isEmpty()) {
-            this.encodingMap = new CompressionHeaderEncodingMap(encodingStrategy);
-        } else {
-            try {
-                this.encodingMap = CompressionHeaderEncodingMap.readFromPath(IOUtil.getPath(customCompressionMapPath));
-            } catch (final IOException e) {
-                throw new RuntimeIOException("Failure reading custom encoding map from Path", e);
-            }
-        }
+        this.encodingMap = encodingStrategy.getCustomCompressionHeaderEncodingMap() == null ?
+                new CompressionHeaderEncodingMap(encodingStrategy) :
+                encodingStrategy.getCustomCompressionHeaderEncodingMap();
         this.encodingStrategy = encodingStrategy;
     }
 
