@@ -122,4 +122,15 @@ public class BlockCompressedFilePointerUtil {
     public static String asString(final long vfp) {
         return String.format("%d(0x%x): (block address: %d, offset: %d)", vfp, vfp, getBlockAddress(vfp), getBlockOffset(vfp));
     }
+
+    /**
+     * Return a String with the file pointer in "address:offset" form.
+     * @param vfp virtual file pointer to format
+     * @return {@code vfp} formatted as string in address:offset form
+     */
+    public static String asAddressOffsetString(final long vfp) {
+        return String.format("%d:%d",
+                BlockCompressedFilePointerUtil.getBlockAddress(vfp),
+                BlockCompressedFilePointerUtil.getBlockOffset(vfp));
+    }
 }
