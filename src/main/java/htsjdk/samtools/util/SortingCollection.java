@@ -524,11 +524,16 @@ public class SortingCollection<T> implements Iterable<T> {
         // enough memory for buffering it will return zero and all reading will be unbuffered.
         private int checkMemoryAndAdjustBuffer(int numFiles) {
             int bufferSize = Defaults.BUFFER_SIZE;
+
             // garbage collect so that our calculation is accurate.
-            Runtime.getRuntime().gc();
+            final Runtime rt = Runtime.getRuntime();
+            rt.gc();
+
+            //                             free in heap       space available to expand heap
+            final long allocatableMemory = rt.freeMemory() + (rt.maxMemory() - rt.totalMemory());
 
             // There is ~20k in overhead per file.
-            final long freeMemory = Runtime.getRuntime().freeMemory() - (numFiles * 20 * 1024);
+            final long freeMemory = allocatableMemory - (numFiles * 20 * 1024);
             // use the floor value from the divide
             final int memoryPerFile = (int) (freeMemory / numFiles);
 
