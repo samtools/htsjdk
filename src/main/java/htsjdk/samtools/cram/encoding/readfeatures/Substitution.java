@@ -28,6 +28,7 @@ import java.util.Objects;
  */
 public class Substitution implements Serializable, ReadFeature {
     public static final int NO_CODE = -1;
+    public static final byte operator = 'X';
 
     /**
      * zero-based position in read
@@ -46,13 +47,19 @@ public class Substitution implements Serializable, ReadFeature {
      */
     private byte code = NO_CODE;
 
-    public Substitution() {
+    // Substitutions have two manifestations; just a raw code that can be mapped to a base in a
+    // {@link SusbtitutionMatrix}, or a base and reference base that can be mapped to a code in
+    // a {@link SusbtitutionMatrix}
+    public Substitution(final int position, final byte code) {
+        this.position = position;
+        this.code = code;
     }
 
     public Substitution(int position, byte base, byte referenceBase) {
         this.position = position;
         this.base = base;
         this.referenceBase = referenceBase;
+        this.code = NO_CODE;
     }
 
     public byte getCode() {
@@ -62,8 +69,6 @@ public class Substitution implements Serializable, ReadFeature {
     public void setCode(final byte code) {
         this.code = code;
     }
-
-    public static final byte operator = 'X';
 
     @Override
     public byte getOperator() {
@@ -75,25 +80,12 @@ public class Substitution implements Serializable, ReadFeature {
         return position;
     }
 
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
-    }
-
     public byte getBase() {
         return base;
     }
 
-    public void setBase(final byte base) {
-        this.base = base;
-    }
-
     public byte getReferenceBase() {
         return referenceBase;
-    }
-
-    public void setReferenceBase(final byte referenceBase) {
-        this.referenceBase = referenceBase;
     }
 
     @Override

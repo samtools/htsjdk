@@ -229,10 +229,8 @@ public class CramRecordReader {
                             readFeatures.add(readBase);
                             break;
                         case Substitution.operator:
-                            final Substitution substitution = new Substitution();
-                            substitution.setPosition(pos);
                             final byte code = baseSubstitutionCodec.readData();
-                            substitution.setCode(code);
+                            final Substitution substitution = new Substitution(pos, code);
                             readFeatures.add(substitution);
                             break;
                         case Insertion.operator:
@@ -244,8 +242,8 @@ public class CramRecordReader {
                             readFeatures.add(softClip);
                             break;
                         case HardClip.operator:
-                            final HardClip hardCLip = new HardClip(pos, hardClipCodec.readData());
-                            readFeatures.add(hardCLip);
+                            final HardClip hardClip = new HardClip(pos, hardClipCodec.readData());
+                            readFeatures.add(hardClip);
                             break;
                         case Padding.operator:
                             final Padding padding = new Padding(pos, paddingCodec.readData());

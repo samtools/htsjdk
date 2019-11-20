@@ -410,13 +410,11 @@ public class CRAMRecordReadFeatures {
 
             switch (variation.getOperator()) {
                 case Substitution.operator:
-                    final Substitution substitution = (Substitution) variation;
                     byte refBase = getByteOrDefault(referenceBases, alignmentStart + posInSeq - zeroBasedReferenceOffset, (byte) 'N');
                     // substitution requires ACGTN only:
                     refBase = Utils.normalizeBase(refBase);
+                    final Substitution substitution = (Substitution) variation;
                     final byte base = substitutionMatrix.base(refBase, substitution.getCode());
-                    substitution.setBase(base);
-                    substitution.setReferenceBase(refBase);
                     bases[posInRead++ - 1] = base;
                     posInSeq++;
                     break;

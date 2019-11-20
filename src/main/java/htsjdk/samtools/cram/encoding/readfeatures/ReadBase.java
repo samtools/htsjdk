@@ -49,17 +49,8 @@ public class ReadBase implements Serializable, ReadFeature {
         return position;
     }
 
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
-    }
-
     public byte getQualityScore() {
         return qualityScore;
-    }
-
-    public void setQualityScore(final byte qualityScore) {
-        this.qualityScore = qualityScore;
     }
 
     @Override

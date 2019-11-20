@@ -37,9 +37,6 @@ public class SoftClip implements Serializable, ReadFeature {
         this.sequence = sequence;
     }
 
-    public SoftClip() {
-    }
-
     public SoftClip(final int position, final byte[] sequence) {
         this.position = position;
         this.sequence = sequence;
@@ -55,11 +52,6 @@ public class SoftClip implements Serializable, ReadFeature {
     @Override
     public int getPosition() {
         return position;
-    }
-
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
     }
 
     @Override

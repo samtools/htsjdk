@@ -29,14 +29,10 @@ public class RefSkip implements Serializable, ReadFeature {
     private int length;
     public static final byte operator = 'N';
 
-    public RefSkip() {
-    }
-
     public RefSkip(final int position, final int length) {
         this.position = position;
         this.length = length;
     }
-
 
     @Override
     public byte getOperator() {
@@ -48,17 +44,8 @@ public class RefSkip implements Serializable, ReadFeature {
         return position;
     }
 
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
-    }
-
     public int getLength() {
         return length;
-    }
-
-    public void setLength(final int length) {
-        this.length = length;
     }
 
     @Override

@@ -53,11 +53,6 @@ public class Bases implements Serializable, ReadFeature {
     }
 
     @Override
-    public void setPosition(final int position) {
-        this.position = position;
-    }
-
-    @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + "position=" + position + "; bases=" + new String(bases) + "] ";
     }
