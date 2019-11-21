@@ -171,6 +171,7 @@ public class SliceFactory {
                     final Map<String, CRAMRecord> mateMap =
                             //TODO: should these test for isFirstSegment rather than isSecondary?
                             r.isSecondaryAlignment() ?
+                                    //TODO: is this right ?
                                     primaryMateMap :
                                     secondaryMateMap;
                     CRAMRecord mate = mateMap.get(r.getReadName());

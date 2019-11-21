@@ -52,8 +52,6 @@ public class CRAMRecord {
     // sequence is unknown; encoded reference differences are present only to recreate the CIGAR string
     public static final int CF_UNKNOWN_BASES       = 0x8;
 
-    // sequential index of the record in a stream:
-    public final static int SEQUENTIAL_INDEX_DEFAULT = -1;
     public final static int NO_READGROUP_ID = -1;
     public final static byte MISSING_QUALITY_SCORE = -1; // SAMRecord.UNKNOWN_MAPPING_QUALITY: 255
     private final static byte DEFAULT_QUALITY_SCORE = '?' - '!';
@@ -82,7 +80,7 @@ public class CRAMRecord {
     private int cramFlags;
     private int templateSize;
     private String readName;
-    // readBases is always always initialized to at least SAMRecord.NULL_SEQUENCE (byte[0], since
+    // readBases is always initialized to at least SAMRecord.NULL_SEQUENCE (byte[0], since
     // the contents hasher doesn't handle nulls
     private byte[] readBases;
     private byte[] qualityScores;
@@ -118,7 +116,7 @@ public class CRAMRecord {
         ValidationUtils.nonNull(samRecord, "a valid SAMRecord is required");
         ValidationUtils.nonNull(samRecord.getHeader(), "SAMRecord must have a valid header");
         ValidationUtils.nonNull(referenceBases != null || samRecord.getReadUnmappedFlag() == false);
-        ValidationUtils.validateArg(sequentialIndex > SEQUENTIAL_INDEX_DEFAULT, "must have a valid sequential index");
+        ValidationUtils.validateArg(sequentialIndex >= 0, "sequential index must be >= 0");
         ValidationUtils.nonNull(readGroupMap);
 
         this.sequentialIndex = sequentialIndex;
@@ -509,6 +507,7 @@ public class CRAMRecord {
         while (prev.nextSegment != null) {
             prev = prev.nextSegment;
         }
+        //TODO: is this -1 the inverse of the +1L in the Slice code that finds the mate offset ?
         prev.recordsToNextFragment = (int) (r.sequentialIndex - prev.sequentialIndex - 1);
         prev.nextSegment = r;
         r.previousSegment = prev;
@@ -692,6 +691,7 @@ public class CRAMRecord {
         return (cramFlags & CF_UNKNOWN_BASES) != 0;
     }
 
+    //TODO: this should be called isReadPaired
     public boolean isMultiFragment() {
         return (bamFlags & SAMFlag.READ_PAIRED.intValue()) != 0;
     }

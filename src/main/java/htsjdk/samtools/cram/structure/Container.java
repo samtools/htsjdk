@@ -108,35 +108,13 @@ public class Container {
         checkReferenceContexts(commonRefContext.getReferenceContextID());
     }
 
-    private final AlignmentContext getDerivedAlignmentContext(final ReferenceContext commonRefContext) {
-        int alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-        int alignmentSpan = AlignmentContext.NO_ALIGNMENT_SPAN;
-
-        if (commonRefContext.isMappedSingleRef()) {
-            int start = Integer.MAX_VALUE;
-            // end is start + span - 1.  We can do slightly easier math instead.
-            int endPlusOne = Integer.MIN_VALUE;
-
-            for (final Slice slice : slices) {
-                final AlignmentContext alignmentContext = slice.getAlignmentContext();
-                start = Math.min(start, alignmentContext.getAlignmentStart());
-                endPlusOne = Math.max(endPlusOne, alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan());
-            }
-            alignmentStart = start;
-            alignmentSpan = endPlusOne - start;
-        } else if (commonRefContext.isUnmappedUnplaced()) {
-            return AlignmentContext.UNMAPPED_UNPLACED_CONTEXT;
-        } else if (commonRefContext.isMultiRef()) {
-            return AlignmentContext.MULTIPLE_REFERENCE_CONTEXT;
-        }
-
-        // since we're creating this container, ensure that it has a valid alignment context
-        AlignmentContext.validateAlignmentContext(true, commonRefContext, alignmentStart, alignmentSpan);
-        return new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan);
-    }
-
-    // Note: this is the degenerate case of the CramContainerHeaderIterator, which for disq really only
-    // cares about the byte offset...
+    /**
+     * Create a container for use by CramContainerHeaderIterator, which is only used to
+     * find the offsets within a CRAM stream where containers start.
+     *
+     * @param containerHeader the container header for the container
+     * @param containerByteOffset the byte offset of this container in the containing stream
+     */
     public Container(final ContainerHeader containerHeader, final long containerByteOffset) {
         this.containerHeader = containerHeader;
         this.containerByteOffset = containerByteOffset;
@@ -144,9 +122,15 @@ public class Container {
         slices = Collections.EMPTY_LIST;
     }
 
-    // Note: this is the case where we're reading a container from a stream. This reads in the container
-    // header, and all slice blocks, but does not resolve the blocks into CRAMRecords, since we don't want
-    // to do that until its necessary (and it might not be if, for example, we're indexing the container).
+    /**
+     * Read a Container from a CRAM stream. This reads the container header and all slice blocks, but does
+     * not resolve the blocks into CRAMRecords, since we don't want to do that until its necessary (and it
+     * might not be if, for example, we're indexing the container).
+     *
+     * @param version CRAM version of the input stream
+     * @param inputStream input stream to read
+     * @param containerByteOffset byte offset within the stream of this container
+     */
     public Container(final Version version, final InputStream inputStream, final long containerByteOffset) {
         containerHeader = ContainerHeader.readContainerHeader(version.major, inputStream);
         if (containerHeader.isEOF()) {
@@ -437,6 +421,35 @@ public class Container {
                     getContainerHeader(),toString(),
                     derivedSliceReferenceContext));
         }
+    }
+
+    // Determine the aggregate alignment context for this container by inspecting the constitiuent
+    // slices.
+    private final AlignmentContext getDerivedAlignmentContext(final ReferenceContext commonRefContext) {
+        int alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+        int alignmentSpan = AlignmentContext.NO_ALIGNMENT_SPAN;
+
+        if (commonRefContext.isMappedSingleRef()) {
+            int start = Integer.MAX_VALUE;
+            // end is start + span - 1.  We can do slightly easier math instead.
+            int endPlusOne = Integer.MIN_VALUE;
+
+            for (final Slice slice : slices) {
+                final AlignmentContext alignmentContext = slice.getAlignmentContext();
+                start = Math.min(start, alignmentContext.getAlignmentStart());
+                endPlusOne = Math.max(endPlusOne, alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan());
+            }
+            alignmentStart = start;
+            alignmentSpan = endPlusOne - start;
+        } else if (commonRefContext.isUnmappedUnplaced()) {
+            return AlignmentContext.UNMAPPED_UNPLACED_CONTEXT;
+        } else if (commonRefContext.isMultiRef()) {
+            return AlignmentContext.MULTIPLE_REFERENCE_CONTEXT;
+        }
+
+        // since we're creating this container, ensure that it has a valid alignment context
+        AlignmentContext.validateAlignmentContext(true, commonRefContext, alignmentStart, alignmentSpan);
+        return new AlignmentContext(commonRefContext, alignmentStart, alignmentSpan);
     }
 
     private ReferenceContext getDerivedReferenceContextFromSlices(final List<Slice> containerSlices) {

@@ -184,6 +184,7 @@ public class Slice {
             final CompressionHeader compressionHeader,
             final long containerByteOffset,
             final long globalRecordCounter) {
+        ValidationUtils.validateArg(globalRecordCounter >= 0, "record counter must be >= 0");
         this.compressionHeader = compressionHeader;
         this.byteOffsetOfContainer = containerByteOffset;
 
@@ -704,7 +705,8 @@ public class Slice {
     @Override
     public String toString() {
         return String.format(
-                "slice: %s nRecords=%d, sliceHeaderOffset=%d, sizeOfBlocks=%d, landmark=%d, mapped/unmapped/unplaced: %d/%d/%d, md5=%s",
+                "slice: %s globalRecordCounter=%d, nRecords=%d, sliceHeaderOffset=%d, sizeOfBlocks=%d, landmark=%d, mapped/unmapped/unplaced: %d/%d/%d, md5=%s",
+                globalRecordCounter,
                 alignmentContext,
                 nRecords,
                 getByteOffsetOfSliceHeaderBlock(),
