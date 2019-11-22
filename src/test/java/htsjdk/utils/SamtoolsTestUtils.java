@@ -12,49 +12,52 @@ import java.nio.file.Paths;
  * Test utilities for running samtools from htsjdk tests.
  */
 public class SamtoolsTestUtils {
-    private static final Log LOG = Log.getInstance(SamtoolsTestUtils.class);
-    private static final String SAMTOOLS_BIN_PROPERTY = "HTSJDK_SAMTOOLS_BIN";
+    private static final String SAMTOOLS_BINARY_ENV_VARIABLE = "HTSJDK_SAMTOOLS_BIN";
     public final static String expectedSamtoolsVersion = "1.9";
 
     /**
-     * @return true if samtools is available
+     * @return true if samtools is available, otherwise false
      */
     public static boolean isSamtoolsAvailable() {
         final String binPath = getSamtoolsBin();
-        if (binPath == null) {
-            LOG.warn(String.format(
-                    "No samtools binary found. Set property %s to enable testing with samtools.",
-                    SAMTOOLS_BIN_PROPERTY));
-            return false;
-        }
         final Path binFile = Paths.get(binPath);
-        if (!Files.exists(binFile)) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "%s property is set to non-existent file: %s", SAMTOOLS_BIN_PROPERTY, binFile));
-        }
-        return true;
+        return Files.exists(binFile);
     }
 
     /**
-     * @return the path of the location of the local samtools executable (excluding the name of the executeable
-     * itself)
+     * @return true if a local samtools executable is available, otherwise throws a runtimeException
+     */
+    public static void assertSamtoolsAvailable() {
+        if (!isSamtoolsAvailable()) {
+            throw new RuntimeException(
+                    String.format(
+                            "No samtools executable can be found." +
+                                    " The %s environment variable must be set to the name of the local samtools executable.",
+                            SAMTOOLS_BINARY_ENV_VARIABLE));
+        }
+    }
+
+    /**
+     * @return the name and location of the local samtools executable as specified by the environment
+     * variable HTSJDK_SAMTOOLS_BIN, or the default value of "/usr/local/bin/samtools" if the environment
+     * variable is not set
      */
     public static String getSamtoolsBin() {
-        final String samtoolsPath = System.getenv(SAMTOOLS_BIN_PROPERTY);
+        final String samtoolsPath = System.getenv(SAMTOOLS_BINARY_ENV_VARIABLE);
         return samtoolsPath == null ? "/usr/local/bin/samtools" : samtoolsPath;
     }
 
     /**
-     * Execute a samtools command line.
+     * Execute a samtools command line if a local samtools executable is available see {@link #isSamtoolsAvailable()}.
      *
      * @param commandLine samtools command line string, excluding the "samtools" prefix. For example:
      *                    {@code "view -h -b my.sam -o my.bam"}
      * @return the {@link ProcessExecutor.ExitStatusAndOutput} resulting from the command execution, if
      * the command succeeds
-     * @throws RuntimeException if the command fails
+     * @throws RuntimeException if the command fails, or if a local samtools executable is not available.
      */
     public static ProcessExecutor.ExitStatusAndOutput executeSamToolsCommand(final String commandLine) {
+        assertSamtoolsAvailable();
         final String commandString = String.format("%s %s", getSamtoolsBin(), commandLine);
         final ProcessExecutor.ExitStatusAndOutput processStatus =
                 ProcessExecutor.executeAndReturnInterleavedOutput(commandString);
@@ -70,10 +73,21 @@ public class SamtoolsTestUtils {
         return processStatus;
     }
 
+    /**
+     * Convert an input sam/bam/cram file to a temporary CRAM file using the samtools "view" command. The temp
+     * file will be deleted when the process exits. Use {@link #isSamtoolsAvailable()} to determine if its safe
+     * to use this method.
+     *
+     * @param inputSAMBAMCRAMFile input file to convert
+     * @param referenceFile a valid reference file
+     * @param commandLineOptions additional command line options (--input-fmt-option or --output-fmt-option)
+     * @return a temporary file containing the samtools-generated results.
+     */
     public static final File convertToCRAM(
             final File inputSAMBAMCRAMFile,
             final File referenceFile,
             final String commandLineOptions) {
+        assertSamtoolsAvailable();
         try {
             final File tempCRAMFile = File.createTempFile("samtoolsTemporaryCRAM", FileExtensions.CRAM);
             tempCRAMFile.deleteOnExit();
