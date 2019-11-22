@@ -8,6 +8,9 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
     - $HOME/.m2
+env:
+  global:
+    - HTSJDK_SAMTOOLS_BIN=/usr/bin/samtools
 jdk:
   - oraclejdk8
   - openjdk8
@@ -24,6 +27,9 @@ matrix:
        env: TEST_TYPE=FTP
      - jdk: openjdk8
        env: SPOT_BUGS=true
+
+before_install:
+  - scripts/install-samtools.sh
 
 script:
   - if [[ $SPOT_BUGS == "true" ]]; then
