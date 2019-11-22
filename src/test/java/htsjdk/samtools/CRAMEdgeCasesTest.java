@@ -3,6 +3,7 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
+import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -18,6 +19,41 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
+    @Test
+    public final void testReadSamtoolsCRAM() throws IOException {
+        final File inputFile = new File(TEST_DATA_DIR, "mateResolution2.samtools.cram");
+        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+
+        try (final SamReader origReader = SamReaderFactory.makeDefault()
+                .referenceSequence(referenceFile)
+                .validationStringency((ValidationStringency.SILENT))
+                .open(inputFile)) {
+            final SAMRecordIterator origIterator = origReader.iterator();
+            final List<SAMRecord> origSamRecords  = new ArrayList<>();
+            while (origIterator.hasNext()) {
+                origSamRecords.add(origIterator.next());
+            }
+            Assert.assertEquals(origSamRecords.size(), 3);
+        }
+    }
+
+    // NOTE: The test file has 3 reads, with the first read mated to the third, and the third mated
+    // to the second (see with BAM flags and mate alignment start):
+    //
+    //HK35MCCXX160204:8:2209:4005:44116       99      20      7000    0       151M    =       7173    281...
+    //      paired, proper, mate reversed, first in pair
+    //HK35MCCXX160204:8:2209:4005:44116       2179    20      7172    0       44M107S =       7000    -281...
+    //      paired, proper, second in pair, supplementary
+    //HK35MCCXX160204:8:2209:4005:44116       147     20      7173    0       108M43S =       7000    -281...
+    //      paired, proper, read reversed, second in pair
+    //
+    // On master, after round-tripping, they come back in the same order, but the flags are changed, and the
+    // first read is now mated to the second, and the second to thethird):
+    //
+    //HK35MCCXX160204:8:2209:4005:44116       67      20      7000    0       151M    =       7172    281...
+    //HK35MCCXX160204:8:2209:4005:44116       2211    20      7172    0       44M107S =       7173    -281...
+    //HK35MCCXX160204:8:2209:4005:44116       147     20      7173    0       108M43S =       7000    -281...
+    //
     @Test
     public final void testMateResolution() throws IOException {
         final File inputFile = new File(TEST_DATA_DIR, "mateResolution.sam");
@@ -45,6 +81,68 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
             Assert.assertEquals(cramRecords, origSamRecords);
         }
     }
+
+    @Test
+    public final void testMateResolution2() throws IOException {
+        final File inputFile = new File(TEST_DATA_DIR, "mateResolution2.sam");
+        //final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta");
+        final ReferenceSource fakeReferenceSource =
+                new ReferenceSource(new FakeReferenceSequenceFile(
+                        SamReaderFactory.makeDefault().getFileHeader(inputFile).getSequenceDictionary().getSequences()
+                ));
+
+        final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
+        final File tempOutCRAM = File.createTempFile("testMateResolution", ".cram");
+        CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, inputFile, tempOutCRAM, fakeReferenceSource);
+
+        try (final SamReader origReader = SamReaderFactory.makeDefault()
+                .referenceSource(fakeReferenceSource)
+                .validationStringency((ValidationStringency.SILENT))
+                .open(inputFile);
+             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, fakeReferenceSource)) {
+            final SAMRecordIterator origIterator = origReader.iterator();
+            final SAMRecordIterator copyIterator = copyReader.getIterator();
+            final List<SAMRecord> origSamRecords  = new ArrayList<>();
+            final List<SAMRecord> cramRecords  = new ArrayList<>();
+            while (origIterator.hasNext() && copyIterator.hasNext()) {
+                origSamRecords.add(origIterator.next());
+                cramRecords.add(copyIterator.next());
+            }
+            Assert.assertEquals(origIterator.hasNext(), copyIterator.hasNext());
+            Assert.assertEquals(cramRecords.size(), origSamRecords.size());
+            Assert.assertEquals(cramRecords, origSamRecords);
+        }
+    }
+
+    @Test
+    public final void testSamtoolsMateResolution() throws IOException {
+        final File inputFile = new File(TEST_DATA_DIR, "mateResolution2.samtools.cram");
+        //final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta");
+        final File referenceFile = new File("/Users/cnorman/projects/references/hg38/Homo_sapiens_assembly38.fasta");
+
+        final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
+        final File tempOutCRAM = File.createTempFile("testMateResolution", ".cram");
+        CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, inputFile, tempOutCRAM, referenceFile);
+
+        try (final SamReader origReader = SamReaderFactory.makeDefault()
+                .referenceSequence(referenceFile)
+                .validationStringency((ValidationStringency.SILENT))
+                .open(inputFile);
+             final CRAMFileReader copyReader = new CRAMFileReader(tempOutCRAM, new ReferenceSource(referenceFile))) {
+            final SAMRecordIterator origIterator = origReader.iterator();
+            final SAMRecordIterator copyIterator = copyReader.getIterator();
+            final List<SAMRecord> origSamRecords  = new ArrayList<>();
+            final List<SAMRecord> cramRecords  = new ArrayList<>();
+            while (origIterator.hasNext() && copyIterator.hasNext()) {
+                origSamRecords.add(origIterator.next());
+                cramRecords.add(copyIterator.next());
+            }
+            Assert.assertEquals(origIterator.hasNext(), copyIterator.hasNext());
+            Assert.assertEquals(cramRecords.size(), origSamRecords.size());
+            Assert.assertEquals(cramRecords, origSamRecords);
+        }
+    }
+
 
     @Test
     public void testUnsorted() throws IOException {

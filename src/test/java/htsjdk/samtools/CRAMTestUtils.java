@@ -10,24 +10,34 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 
 public final class CRAMTestUtils {
 
     //private constructor since this is a utility class
     private CRAMTestUtils(){};
 
-    // write the contents of an input file to a the provided CRAM file using the provided encoding params,
+    // write the contents of an input file to the provided CRAM file using the provided encoding params,
     // returns the size of the generated file
     public static long writeToCRAMWithEncodingStrategy(
             final CRAMEncodingStrategy cramEncodingStrategy,
             final File inputFile,
             final File tempOutputCRAM,
             final File referenceFile) throws IOException {
+        return writeToCRAMWithEncodingStrategy(cramEncodingStrategy, inputFile, tempOutputCRAM, new ReferenceSource(referenceFile));
+    }
+
+    // write the contents of an input file to the provided CRAM file using the provided encoding params and
+    // reference
+    // returns the size of the generated file
+    public static long writeToCRAMWithEncodingStrategy(
+        final CRAMEncodingStrategy cramEncodingStrategy,
+        final File inputFile,
+        final File tempOutputCRAM,
+        final ReferenceSource referenceSource) throws IOException {
         final File tempOutFile = File.createTempFile("encodingStrategiesTest", ".cram");
         tempOutFile.deleteOnExit();
         try (final SamReader reader = SamReaderFactory.makeDefault()
-                .referenceSequence(referenceFile)
+                .referenceSource(referenceSource)
                 .validationStringency((ValidationStringency.SILENT))
                 .open(inputFile);
              final FileOutputStream fos = new FileOutputStream(tempOutputCRAM)) {
@@ -36,7 +46,7 @@ public final class CRAMTestUtils {
                     fos,
                     null,
                     true,
-                    new ReferenceSource(referenceFile),
+                    referenceSource,
                     reader.getFileHeader(),
                     tempOutputCRAM.getName());
             final SAMRecordIterator inputIterator = reader.iterator();
