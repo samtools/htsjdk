@@ -1,6 +1,5 @@
 package htsjdk.tribble.gff;
 
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -13,8 +12,8 @@ import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
+import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.*;
-import jdk.internal.util.xml.impl.Input;
 
 
 import java.io.*;
@@ -29,9 +28,9 @@ import java.util.zip.GZIPInputStream;
  * Codec for parsing Gff3 files, as defined in https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
  * Note that while spec states that all feature types must be defined in sequence ontology, this implementation makes no check on feature types, and allows any string as feature type
  *
- * Only features with no parents will be directly emitted, with other features contained in these "top-level" features accesible through {@link Gff3Feature#getChildren()}, {@link Gff3Feature#getDescendents()}, or {@link Gff3Feature#flatten()}.
+ * Only features with no parents will be directly emitted, with other features contained in these "top-level" features accessible through {@link Gff3Feature#getChildren()}, {@link Gff3Feature#getDescendents()}, or {@link Gff3Feature#flatten()}.
  * For example, for a gene with a single transcript, with two exons each with one CDS, only the single gene feature will be directly emitted from this codec.  The transcript will be accessible as a child of the gene, and the
- * exons and CDS as children of the transcript.  The transcript, exons, and CDS will be accessible as descendents of the gene.  And all six feature will be accessible through {@link Gff3Feature#flatten()}.
+ * exons and CDS as children of the transcript.  The transcript, exons, and CDS will be accessible as descendents of the gene.  All six feature will be accessible through {@link Gff3Feature#flatten()}.
  */
 
 public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
@@ -69,9 +68,6 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     private final LinkedList<Gff3Feature> activeTopLevelFeatures = new LinkedList<>();
     private final LinkedList<Gff3Feature> featuresToFlush = new LinkedList<>();
-    /* discontinuous features can have multiple lines representing the same feature, with the same ID in GFF.
-    For this implementation the discontinuous features are split into separate features, which point to each other as "co-features".
-     */
     private final Map<String, Set<Gff3Feature>> activeFeaturesWithIDs = new HashMap<>();
 
     private int currentLineNum = 0;
@@ -141,20 +137,20 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final int phase = splitLine[GENOMIC_PHASE_INDEX].equals(".")? -1 : Integer.valueOf(splitLine[GENOMIC_PHASE_INDEX]);
             final Strand strand = Strand.decode(splitLine[GENOMIC_STRAND_INDEX]);
             final Map<String, String> attributes = parseAttributes(splitLine[EXTRA_FIELDS_INDEX]);
-            final Gff3Feature thisFeature = new Gff3Feature(contig, source, type, start, end, strand, phase, attributes);
+
             final List<String> parentIDs = attributes.get(PARENT_ATTRIBUTE_KEY) != null? Arrays.asList(attributes.get(PARENT_ATTRIBUTE_KEY).split(",")) : new ArrayList<>();
 
+            final Set<Gff3Feature> parents = new HashSet<>();
             for (final String parentID : parentIDs) {
-                final Set<Gff3Feature> parents = activeFeaturesWithIDs.get(parentID);
+                final Set<Gff3Feature> theseParents = activeFeaturesWithIDs.get(parentID);
                 if (parents == null) {
-                    throw new TribbleException("Could not find feature with ID " + parentID);
+                    throw new TribbleException("Could not find parent feature with ID " + parentID);
                 }
 
-                for (final Gff3Feature parent : parents) {
-                    thisFeature.addParent(parent);
-                }
+                parents.addAll(theseParents);
             }
-            if (!thisFeature.hasParents()) {
+            final Gff3Feature thisFeature = new Gff3Feature(contig, source, type, start, end, strand, phase, attributes, parents);
+            if (thisFeature.isTopLevelFeature()) {
                 activeTopLevelFeatures.add(thisFeature);
             }
             final String id = thisFeature.getID();
@@ -363,6 +359,11 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     @Override
     public void close(final LineIterator lineIterator) {
         CloserUtil.close(lineIterator);
+    }
+
+    @Override
+    public TabixFormat getTabixFormat() {
+        return TabixFormat.GFF;
     }
 
     private enum Gff3Directive {
