@@ -24,18 +24,14 @@
  */
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.CompressorCache;
-import htsjdk.samtools.cram.structure.block.Block;
 
 /**
- * Class representing a (cached) region of a reference, and a CRAMReferenceSource for retrieving additional
- * regions.
+ * A (cached) region of a reference. Maintains a CRAMReferenceSource for retrieving additional regions.
  */
 public class CRAMReferenceRegion {
 
@@ -50,6 +46,9 @@ public class CRAMReferenceRegion {
      * @param samFileHeader {@link SAMFileHeader} to use to resolve reference contig names to reference index
      */
     public CRAMReferenceRegion(final CRAMReferenceSource cramReferenceSource, final SAMFileHeader samFileHeader) {
+        if (cramReferenceSource == null) {
+            throw new IllegalArgumentException("A valid reference must be supplied to retrieve records from the CRAM stream.");
+        }
         this.referenceSource = cramReferenceSource;
         this.samFileHeader = samFileHeader;
     }
@@ -74,7 +73,7 @@ public class CRAMReferenceRegion {
                 final SAMSequenceRecord sequence = samFileHeader.getSequence(referenceIndex);
                 referenceBases = referenceSource.getReferenceBases(sequence, true);
                 if (referenceBases == null) {
-                    throw new SAMException(
+                    throw new IllegalArgumentException(
                             String.format(
                                     "A reference must be supplied (reference sequence %s not found).",
                                     sequence));

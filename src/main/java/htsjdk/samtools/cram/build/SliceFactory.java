@@ -38,13 +38,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Class used to determine when to emit a {@link Slice}, based on a set of rules implemented by this class; the
- * accumulated SliceEntry state objects; and the parameter values in the provided {@link CRAMEncodingStrategy} object.
+ * Factory for creating {@link Slice}s when writing a CRAM stream. Determines when to emit a {@link Slice}, based on
+ * a set of rules implemented by this class; the accumulated SliceEntry state objects; and the parameter values in
+ * the provided {@link CRAMEncodingStrategy} object.
  */
 public class SliceFactory {
     private final CRAMEncodingStrategy encodingStrategy;
 
-    private final List<SliceEntry> cramRecordSliceEntries;
+    private final List<SliceStagingEntry> cramRecordSliceEntries;
     private final CRAMReferenceRegion cramReferenceRegion;
 
     private long sliceRecordCounter;
@@ -57,7 +58,7 @@ public class SliceFactory {
     /**
      * @param cramEncodingStrategy {@link CRAMEncodingStrategy} to use for {@link Slice}s that are created
      * @param cramReferenceSource {@link CRAMReferenceSource} to use for {@link Slice}s that are created
-     * @param samFileHeader for inut records, used for finding read groups, sort order, etc.
+     * @param samFileHeader for input records, used for finding read groups, sort order, etc.
      * @param globalRecordCounter initial global record counter for {@link Slice}s that are created
      */
     public SliceFactory(
@@ -90,7 +91,7 @@ public class SliceFactory {
      */
     public long createNewSliceEntry(final int currentReferenceContextID, final List<SAMRecord> sliceSAMRecords) {
         cramRecordSliceEntries.add(
-                new SliceEntry(
+                new SliceStagingEntry(
                         currentReferenceContextID,
                         convertToCRAMRecords(sliceSAMRecords, sliceRecordCounter),
                         sliceRecordCounter));
@@ -121,12 +122,12 @@ public class SliceFactory {
             final CompressionHeader compressionHeader,
             final long containerByteOffset) {
         final List<Slice> slices = new ArrayList<>(cramRecordSliceEntries.size());
-        for (final SliceEntry sliceEntry : cramRecordSliceEntries) {
+        for (final SliceStagingEntry sliceStagingEntry : cramRecordSliceEntries) {
             final Slice slice = new Slice(
-                    sliceEntry.getRecords(),
+                    sliceStagingEntry.getRecords(),
                     compressionHeader,
                     containerByteOffset,
-                    sliceEntry.getGlobalRecordCounter()
+                    sliceStagingEntry.getGlobalRecordCounter()
             );
             slice.setReferenceMD5(cramReferenceRegion.getCurrentReferenceBases());
             slices.add(slice);
@@ -153,7 +154,6 @@ public class SliceFactory {
         return cramRecords;
     }
 
-    // Note: this mate processing assumes that all of these records wind up in the same slice!!
     private void resolveMatesForSlice(final List<CRAMRecord> cramRecords) {
         if (!coordinateSorted) {
             for (final CRAMRecord r : cramRecords) {
@@ -167,9 +167,8 @@ public class SliceFactory {
             final Map<String, CRAMRecord> primaryMateMap = new TreeMap<>();
             final Map<String, CRAMRecord> secondaryMateMap = new TreeMap<>();
             for (final CRAMRecord r : cramRecords) {
-                if (r.isMultiFragment()) {
+                if (r.isReadPaired()) {
                     final Map<String, CRAMRecord> mateMap =
-                            //TODO: should these test for isFirstSegment rather than isSecondary?
                             r.isSecondaryAlignment() ?
                                     //TODO: is this right ?
                                     primaryMateMap :
@@ -195,10 +194,9 @@ public class SliceFactory {
         }
     }
 
-    //TODO: We want to make sure that we choose the next mate in the fragment sequence to preserve
-    //the original order. If we just choose the first name that matches, it might not be the right one.
-    //So test the candidate mate to see if it matches the mate properties specified in the original
-    //read.
+    // We want to make sure that we choose the next mate in the fragment sequence to preserve
+    // the original order. If we just choose the first name that matches, it might not be the right one.
+    // So test the candidate mate to see if it matches the mate properties specified in the original read.
     private CRAMRecord rejectBadMateChoice(final CRAMRecord firstMate, final CRAMRecord candidateMate) {
         if (firstMate == null) {
             return null;
@@ -309,16 +307,16 @@ public class SliceFactory {
         }
     }
 
-    // We can't create a slice until we have a compression header, and we can't create a compression
-    // header until we've seen all records that will live in a container. So use SliceEntry to
-    // accumulate sets of records that will populate a slice until we're ready to create the actual
-    // container and it's slices.
-    private class SliceEntry {
+    // We can't create a Slice until we have a compression header, and we can't create a compression
+    // header until we've seen all records that will live in a container. SliceStagingEntry objects are
+    // used to accumulate and hold sets of records that will populate a Slice until we're ready to create
+    // the actual container with real Slice objects.
+    private static class SliceStagingEntry {
         private final List<CRAMRecord> records;
         private final ReferenceContext referenceContext;
         private final long sliceRecordCounter;
 
-        public SliceEntry(final int referenceContextID, final List<CRAMRecord> sourceRecords, final long sliceRecordCounter) {
+        public SliceStagingEntry(final int referenceContextID, final List<CRAMRecord> sourceRecords, final long sliceRecordCounter) {
             this.records = new ArrayList<>(sourceRecords);
             this.referenceContext = new ReferenceContext(referenceContextID);
             this.sliceRecordCounter = sliceRecordCounter;

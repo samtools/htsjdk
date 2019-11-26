@@ -307,7 +307,7 @@ public class CRAMStructureTestHelper {
             final int index,
             final int referenceIndex,
             final int alignmentStart,
-            final int samFlag) {
+            final int samFlags) {
         ValidationUtils.validateArg(
                 referenceIndex == REFERENCE_SEQUENCE_ZERO ||
                         referenceIndex == REFERENCE_SEQUENCE_ONE ||
@@ -315,7 +315,7 @@ public class CRAMStructureTestHelper {
                 "invalid reference index");
         return new CRAMRecord(
                 index,
-                samFlag,
+                samFlags,
                 0,
                 "A READ NAME",
                 READ_LENGTH,
@@ -329,7 +329,6 @@ public class CRAMStructureTestHelper {
                 null,
                 1,
                 0,
-                //TODO: are these the correct states for mates ?
                 SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
                 SAMRecord.NO_ALIGNMENT_START,
                 -1);
@@ -367,8 +366,7 @@ public class CRAMStructureTestHelper {
         Assert.assertEquals(container.getContainerHeader().getBaseCount(), expectedBaseCount);
         Assert.assertEquals(container.getContainerHeader().getGlobalRecordCounter(), expectedGlobalRecordCounter);
 
-        //TODO: this assumes a single slice
-        // verify the underlying slice too
+        //Note: this assumes a single slice
         Assert.assertEquals(container.getSlices().size(), 1);
         assertSliceState(
                 container.getSlices().get(0),
@@ -412,6 +410,7 @@ public class CRAMStructureTestHelper {
                 intForNameAndIndex,
                 READ_GROUP_MAP);
     }
+
     private static CRAMRecord toUnmappedCRAMRecord(
             final SAMRecord samRecord,
             final int intForNameAndIndex) {
@@ -419,7 +418,7 @@ public class CRAMStructureTestHelper {
                 CramVersions.DEFAULT_CRAM_VERSION,
                 ENCODING_STRATEGY,
                 samRecord,
-                null, // TODO: is null bases correct here ?
+                null,
                 intForNameAndIndex,
                 READ_GROUP_MAP);
     }

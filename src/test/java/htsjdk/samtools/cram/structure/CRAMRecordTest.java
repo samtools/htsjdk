@@ -13,10 +13,6 @@ import java.util.*;
 
 public class CRAMRecordTest extends HtsjdkTest {
 
-    //TODO: need round trip tests (CRAMRecord fromSAMRecord/toSAMRecord) based on SAMRecord cigar strings
-    // TODO: test for conversion of SAMRecord with SAMRecord.NULL_SEQUENCE (can lead to an alignment context span == 0)
-    // testSingleRecord(SAMRecord.NULL_SEQUENCE, SAMRecord.NULL_QUALS, "A".getBytes());
-
     @DataProvider(name="alignmentEndData")
     public Object[][] getAlignmentEndTestData() {
         return new Object[][] {
@@ -91,82 +87,6 @@ public class CRAMRecordTest extends HtsjdkTest {
         return retval.toArray(new Object[0][0]);
     }
 
-//    @Test(dataProvider = "placedTests")
-//    public void test_isPlaced(final int sequenceId,
-//                              final int alignmentStart,
-//                              final boolean mapped,
-//                              final boolean placementExpectation) {
-//        final CramCompressionRecord r = new CramCompressionRecord();
-//        r.sequenceId = sequenceId;
-//        r.alignmentStart = alignmentStart;
-//        r.setSegmentUnmapped(!mapped);
-//        Assert.assertEquals(r.isPlaced(), placementExpectation);
-//    }
-//
-//    @Test(dataProvider = "placedTests")
-//    public void test_placementForAlignmentSpanAndEnd(final int sequenceId,
-//                                                     final int alignmentStart,
-//                                                     final boolean mapped,
-//                                                     final boolean placementExpectation) {
-//        final CramCompressionRecord r = new CramCompressionRecord();
-//        r.sequenceId = sequenceId;
-//        r.alignmentStart = alignmentStart;
-//        r.setSegmentUnmapped(!mapped);
-//        final int readLength = 100;
-//        r.readLength = readLength;
-//
-//        if (placementExpectation) {
-//            Assert.assertEquals(r.getAlignmentSpan(), readLength);
-//            Assert.assertEquals(r.getAlignmentEnd(), alignmentStart + readLength - 1);
-//        }
-//        else {
-//            Assert.assertEquals(r.getAlignmentSpan(), Slice.NO_ALIGNMENT_SPAN);
-//            Assert.assertEquals(r.getAlignmentEnd(), Slice.NO_ALIGNMENT_END);
-//        }
-//    }
-
-//    @Test
-//    public void testEqualsAndHashCodeAreConsistent() {
-//        final List<CramCompressionRecord> records = new ArrayList<>();
-//
-//        final List<ReadFeature> features = new ArrayList<>();
-//        String softClip = "AAA";
-//        features.add(new SoftClip(1, softClip.getBytes()));
-//        String insertion = "CCCCCCCCCC";
-//        features.add(new Insertion(1, insertion.getBytes()));
-//
-//        for (int alignmentStart : new int[] {0, 1}) {
-//            for (int readLength : new int[] {100, 101}) {
-//                for (int flags : new int[] {0, 0x4}) {
-//                    for (List<ReadFeature> readFeatures : Lists.<List<ReadFeature>>newArrayList(null, new ArrayList<>(), features)) {
-//                        for (String readName : new String[] {null, "", "r"}) {
-//                            for (byte[] readBases : new byte[][]{null, new byte[]{(byte) 'A', (byte) 'C'}}) {
-//                                for (byte[] qualityScores : new byte[][]{null, new byte[]{(byte) 1, (byte) 2}}) {
-//                                    final CramCompressionRecord r = new CramCompressionRecord();
-//                                    r.alignmentStart = alignmentStart;
-//                                    r.readLength = readLength;
-//                                    r.flags = flags;
-//                                    r.readFeatures = readFeatures;
-//                                    r.readName = readName;
-//                                    r.readBases = readBases;
-//                                    r.qualityScores = qualityScores;
-//                                    records.add(r);
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        for (CramCompressionRecord r1 : records) {
-//            for (CramCompressionRecord r2 : records) {
-//                if (r1.equals(r2)) {
-//                    Assert.assertEquals(r1.hashCode(), r2.hashCode(), String.format("Comparing %s and %s", r1, r2));
-//                }
-//            }
-//        }
-//    }
     /**
      * This checks that all read bases returned in the record from CRAMRecord
      * are from the BAM read base set.

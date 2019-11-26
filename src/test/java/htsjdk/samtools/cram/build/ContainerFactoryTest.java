@@ -8,6 +8,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.sql.Ref;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,8 +16,8 @@ import java.util.stream.Stream;
 
 public class ContainerFactoryTest extends HtsjdkTest {
 
-    @DataProvider(name="singleContainerSlicePartitioning")
-    private Object[][] getSingleContainerSlicePartitioning() {
+    @DataProvider(name="singleContainerSliceDistribution")
+    private Object[][] getSingleContainerSliceDistribution() {
         final int RECORDS_PER_SLICE = 100;
         return new Object[][] {
                 // samRecords, records/slice, slices/container, expected refContext id, expected slice count,
@@ -133,8 +134,8 @@ public class ContainerFactoryTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "singleContainerSlicePartitioning")
-    public void testSingleContainerSlicePartitioning(
+    @Test(dataProvider = "singleContainerSliceDistribution")
+    public void testSingleContainerSliceDistribution(
             final List<SAMRecord> samRecords,
             final int readsPerSlice,
             final int slicesPerContainer,
@@ -168,47 +169,54 @@ public class ContainerFactoryTest extends HtsjdkTest {
         }
     }
 
-    @DataProvider(name="multipleContainerSlicePartitioning")
-    private Object[][] getMultipleContainerSlicePartitioning() {
+    @DataProvider(name="multipleContainerSliceDistribution")
+    private Object[][] getMultipleContainerSliceDistribution() {
         final int RECORDS_PER_SLICE = 100;
         return new Object[][] {
-                //TODO: add expected container reference contexts!!!!!!
-                // samRecords, records/slice, slices/container, expected container count, expected record count for each container
+                // input samRecords, records/slice, slices/container,
+                // expected container count, expected record count per container, expected reference context per container
                 {
                         // this generates two containers since it has two containers worth of records mapped to a single ref
                         CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0),
                         RECORDS_PER_SLICE, 1,
-                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE)
+                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE),
+                        Arrays.asList(new ReferenceContext(0), new ReferenceContext(0))
                 },
                 {
                         CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 3 + 1, 0),
                         RECORDS_PER_SLICE, 2,
-                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE+ 1)
+                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE+ 1),
+                        Arrays.asList(new ReferenceContext(0), new ReferenceContext(0))
                 },
                 {
                         CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 4, 0),
                         RECORDS_PER_SLICE, 2,
-                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE * 2)
+                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE * 2),
+                        Arrays.asList(new ReferenceContext(0), new ReferenceContext(0))
                 },
                 {
-                        // this generates two containers since it has two mapped ref indexes
+                        // this generates one container because although it has records mapped to two different reference
+                        // contigs, there aren't enough records to reach the minimum single ref threshold
                         Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0),
                                 CRAMStructureTestHelper.createSAMRecordsMapped(1, 1))
                                 .flatMap(List::stream)
                                 .collect(Collectors.toList()),
                         RECORDS_PER_SLICE, 1,
-                        1, Arrays.asList(RECORDS_PER_SLICE)
+                        1, Arrays.asList(RECORDS_PER_SLICE),
+                        Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)
                 },
                 {
-                        // this generates two containers since it has some mapped and one unmapped
+                        // this generates one container because it has some mapped (but not enough to reach the
+                        // minimum single ref threshold), and one unmapped
                         Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0),
                                 CRAMStructureTestHelper.createSAMRecordsUnmapped(1))
                                 .flatMap(List::stream)
                                 .collect(Collectors.toList()),
                         RECORDS_PER_SLICE, 1,
-                        1, Arrays.asList(RECORDS_PER_SLICE)
+                        1, Arrays.asList(RECORDS_PER_SLICE),
+                        Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)
                 },
                 {
                         // this generates two containers since it has some mapped and one unmapped
@@ -218,10 +226,12 @@ public class ContainerFactoryTest extends HtsjdkTest {
                                 .flatMap(List::stream)
                                 .collect(Collectors.toList()),
                         RECORDS_PER_SLICE, 2,
-                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE)
+                        2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE),
+                        Arrays.asList(new ReferenceContext(0), ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
                 {
-                        // this generates two containers since it has some mapped and one unmapped
+                        // this generates two containers since it has some mapped, but not enough to emit a single
+                        // ref container, and one unmapped, which goes into a second container
                         Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE / 2, 0),
                                 CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE))
@@ -230,7 +240,8 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         RECORDS_PER_SLICE, 1,
                         // first container is multi ref and contains half of the records from the first set of mapped
                         // records; the remaining go into the second container
-                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE / 2)
+                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE / 2),
+                        Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
                 {
                         // even though we allow 2 slices/container, this generates two containers since it has
@@ -242,20 +253,24 @@ public class ContainerFactoryTest extends HtsjdkTest {
                                 .flatMap(List::stream)
                                 .collect(Collectors.toList()),
                         RECORDS_PER_SLICE, 2,
-                        // first container is multi ref and contains half of the records from the first set of mapped
-                        // records; the remaining go into the second container
-                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE / 2)
+                        // first container is multi ref and contains the records from the first set of mapped
+                        // records (which are not enough to reach the minimum single-ref threshold), plus half of
+                        // the unmapped records; the unmapped remaining go into the second container
+                        2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE / 2),
+                        Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
         };
     }
 
-    @Test(dataProvider = "multipleContainerSlicePartitioning")
+    @Test(dataProvider = "multipleContainerSliceDistribution")
     public void testMultipleContainerRecordsPerContainer(
         final List<SAMRecord> samRecords,
         final int readsPerSlice,
         final int slicesPerContainer,
         final int expectedContainerCount,
-        final List<Integer> expectedContainerRecordCounts) {
+        final List<Integer> expectedContainerRecordCounts,
+        final List<ReferenceContext> expectedContainerReferenceContexts
+    ) {
         final CRAMEncodingStrategy cramEncodingStrategy =
                 new CRAMEncodingStrategy()
                     .setMinimumSingleReferenceSliceSize(readsPerSlice)
@@ -266,12 +281,16 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 cramEncodingStrategy,
                 CRAMStructureTestHelper.REFERENCE_SOURCE);
         final List<Container> containers = CRAMStructureTestHelper.createContainers(containerFactory, samRecords);
+
         Assert.assertEquals(containers.size(), expectedContainerCount);
+        Assert.assertEquals(containers.size(), expectedContainerReferenceContexts.size());
 
         for (int i = 0; i < containers.size(); i++) {
+            final Container container = containers.get(i);
             Assert.assertEquals(
-                    (Integer) containers.get(i).getContainerHeader().getNumberOfRecords(),
+                    (Integer) container.getContainerHeader().getNumberOfRecords(),
                     expectedContainerRecordCounts.get(i));
+            Assert.assertEquals(container.getAlignmentContext().getReferenceContext(), expectedContainerReferenceContexts.get(i));
         }
     }
 

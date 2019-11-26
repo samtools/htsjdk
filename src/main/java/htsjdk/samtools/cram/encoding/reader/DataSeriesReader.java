@@ -25,7 +25,7 @@ import htsjdk.samtools.cram.structure.EncodingDescriptor;
 import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 
 /**
- * A CRAM Data Series reader for a particular Encoding, DataSeriesType and associated parameters
+ * A CRAM Data Series reader for a particular (Encoding, DataSeriesType) and associated parameters
  *
  * @param <T> data type of the series to be read.
  */
@@ -37,7 +37,8 @@ public class DataSeriesReader<T> {
      *
      * @param valueType type of the data to read
      * @param encodingDescriptor encoding-specific parameters
-     * @param sliceBlocksReadStreams sliceBlocksReadStreams
+     * @param sliceBlocksReadStreams each DataSeries object uses its encoding descriptor/id to choose the stream
+     *                               to consume from amongst the various streams in the SliceBlocksReadStreams
      */
     public DataSeriesReader(final DataSeriesType valueType,
                             final EncodingDescriptor encodingDescriptor,

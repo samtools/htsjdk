@@ -21,9 +21,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -97,7 +95,7 @@ public class CramIO {
      * Writes CRAM header into the specified {@link OutputStream}.
      *
      * @param cramHeader the {@link CramHeader} object to write
-     * @param outputStream         the output stream to write to
+     * @param outputStream the output stream to write to
      * @return the number of bytes written out
      */
     public static long writeCramHeader(final CramHeader cramHeader, final OutputStream outputStream) {

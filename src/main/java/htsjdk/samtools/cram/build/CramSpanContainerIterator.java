@@ -10,8 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * An iterator of CRAM containers read from locations in {@link htsjdk.samtools.seekablestream.SeekableStream}.
- * The locations are specified with pairs of coordinates, they are basically file pointers as returned for example
+ * An iterator of CRAM containers read from locations in a {@link htsjdk.samtools.seekablestream.SeekableStream}.
+ * The locations are specified with pairs of coordinates, and are basically file pointers as returned for example
  * by {@link htsjdk.samtools.SamReader.Indexing#getFilePointerSpanningReads()}
  */
 public class CramSpanContainerIterator extends CramContainerIterator {

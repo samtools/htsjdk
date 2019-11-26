@@ -25,7 +25,6 @@ import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
@@ -40,14 +39,18 @@ import java.util.Set;
 import java.util.TreeMap;
 
 /**
- * CRAM compression header class. Determines which encodings to use for a given set of records based on
- * the provided {@link CRAMEncodingStrategy} and {@link CompressionHeaderEncodingMap}.
+ * Factory for creating CRAM compression headers for containers when writing to a CRAM stream. The fixed data
+ * series are generally the same for every container in the stream (this is not reuired by the spec, but reflects
+ * the current htsjsk implmentation), however, the tag data series and encodings can vary across containers
+ * based on which tags are present in the actual records for that container, and the best compressor to use based
+ * on the actual data. This class delegates to a {@link CRAMEncodingStrategy} object to determine which encodings
+ * to use for the fixed CRAM data series, and dynamically chooses the best encoding for tag data series.
  */
 public class CompressionHeaderFactory {
     public static final int BYTE_SPACE_SIZE = 256;
     public static final int ALL_BYTES_USED = -1;
 
-    // a parameter for Huffman encoding, so we don't have to re-construct on each call
+    // a parameter for Huffman encoding used for tag ByteArrayLenEncodings
     private static final int[] SINGLE_ZERO = new int[] { 0 };
 
     private final CRAMEncodingStrategy encodingStrategy;
@@ -73,19 +76,17 @@ public class CompressionHeaderFactory {
      * Creates a compression header for the provided list of {@link CRAMRecord} objects. Resets any internal
      * state (i.e. the tag encoding map state) as preparation for starting the next compression header.
      *
-     * @param containerCRAMRecords
-     *            all CRAMRecords that will be stored in the container
+     * @param containerCRAMRecords all CRAMRecords that will be stored in the container
      * @param coordinateSorted
      *            if true the records are assumed to be sorted by alignment
      *            position
-     * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} object
-     *         describing the encoding chosen for the data
+     * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} for the container for {@code containerCRAMRecords}
      */
     public CompressionHeader createCompressionHeader(final List<CRAMRecord> containerCRAMRecords, final boolean coordinateSorted) {
         final CompressionHeader compressionHeader = new CompressionHeader(
                 encodingMap,
                 coordinateSorted,
-                encodingStrategy.getPreserveReadNames(),
+                true,
                 true);
 
         compressionHeader.setTagIdDictionary(buildTagIdDictionary(containerCRAMRecords));
@@ -108,15 +109,15 @@ public class CompressionHeaderFactory {
      * Iterate over the records and for each tag found come up with an encoding.
      * Tag encodings are registered via the builder.
      *
-     * @param records
+     * @param cramRecords
      *            CRAM records holding the tags to be encoded
      * @param compressionHeader
      *            compression header to register encodings
      */
-    private void buildTagEncodings(final List<CRAMRecord> records, final CompressionHeader compressionHeader) {
+    private void buildTagEncodings(final List<CRAMRecord> cramRecords, final CompressionHeader compressionHeader) {
         final Set<Integer> tagIdSet = new HashSet<>();
 
-        for (final CRAMRecord record : records) {
+        for (final CRAMRecord record : cramRecords) {
             if (record.getTags() == null || record.getTags().size() == 0) {
                 continue;
             }
@@ -130,7 +131,7 @@ public class CompressionHeaderFactory {
             if (bestTagEncodings.containsKey(tagId)) {
                 compressionHeader.addTagEncoding(tagId, bestTagEncodings.get(tagId).compressor, bestTagEncodings.get(tagId).params);
             } else {
-                final EncodingDetails e = buildEncodingForTag(records, tagId);
+                final EncodingDetails e = buildEncodingForTag(cramRecords, tagId);
                 compressionHeader.addTagEncoding(tagId, e.compressor, e.params);
                 bestTagEncodings.put(tagId, e);
             }
@@ -141,13 +142,13 @@ public class CompressionHeaderFactory {
      * Given the records update the substitution matrix with actual substitution
      * codes.
      *
-     * @param records
+     * @param cramRecords
      *            CRAM records
      * @param substitutionMatrix
      *            the matrix to be updated
      */
-    static void updateSubstitutionCodes(final List<CRAMRecord> records, final SubstitutionMatrix substitutionMatrix) {
-        for (final CRAMRecord record : records) {
+    static void updateSubstitutionCodes(final List<CRAMRecord> cramRecords, final SubstitutionMatrix substitutionMatrix) {
+        for (final CRAMRecord record : cramRecords) {
             if (record.getReadFeatures() != null) {
                 for (final ReadFeature recordFeature : record.getReadFeatures()) {
                     if (recordFeature.getOperator() == Substitution.operator) {
@@ -166,11 +167,11 @@ public class CompressionHeaderFactory {
     /**
      * Build a dictionary of tag ids.
      *
-     * @param records
+     * @param cramRecords
      *            records holding the tags
      * @return a 3D byte array: a set of unique lists of tag ids.
      */
-    private static byte[][][] buildTagIdDictionary(final List<CRAMRecord> records) {
+    private static byte[][][] buildTagIdDictionary(final List<CRAMRecord> cramRecords) {
         final Comparator<ReadTag> comparator = new Comparator<ReadTag>() {
             @Override
             public int compare(final ReadTag o1, final ReadTag o2) {
@@ -196,7 +197,7 @@ public class CompressionHeaderFactory {
         final Map<byte[], MutableInt> map = new TreeMap<>(baComparator);
         final MutableInt noTagCounter = new MutableInt();
         map.put(new byte[0], noTagCounter);
-        for (final CRAMRecord record : records) {
+        for (final CRAMRecord record : cramRecords) {
             if (record.getTags() == null) {
                 noTagCounter.value++;
                 record.setTagIdsIndex(noTagCounter);
@@ -263,10 +264,10 @@ public class CompressionHeaderFactory {
         return encodingMap.getBestExternalCompressor(data, encodingStrategy);
     }
 
-    byte[] getDataForTag(final List<CRAMRecord> records, final int tagID) {
+    byte[] getDataForTag(final List<CRAMRecord> cramRecords, final int tagID) {
         baosForTagValues.reset();
 
-        for (final CRAMRecord record : records) {
+        for (final CRAMRecord record : cramRecords) {
             if (record.getTags() != null) {
                 for (final ReadTag tag : record.getTags()) {
                     if (tag.keyType3BytesAsInt == tagID) {

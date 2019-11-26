@@ -62,8 +62,6 @@ public class ContainerHeader {
      * - Slice 1 has offset 109000 and size 14456 (123456 - 109000)
      */
     private int[] landmarks;
-
-    //TODO: where is the checksum validation code ?? where ?
     private int checksum = 0;
 
     // Note: this is the case where the header is read in from a stream, or is a temporary holder for a SAMFileHeader

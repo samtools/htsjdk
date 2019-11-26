@@ -101,10 +101,8 @@ public class RansTest extends HtsjdkTest {
             Assert.assertEquals(raw.limit(), size);
 
             Assert.assertEquals(compressed.position(), 0);
-            //TODO: > 10 ?
             Assert.assertTrue(compressed.limit() > 10);
             Assert.assertEquals(compressed.get(), (byte) order.ordinal());
-            //TODO: what is - 1 - 4 - 4 here ?
             Assert.assertEquals(compressed.getInt(), compressed.limit() - 1 - 4 - 4);
             Assert.assertEquals(compressed.getInt(), size);
             compressed.rewind();
@@ -123,7 +121,6 @@ public class RansTest extends HtsjdkTest {
         final byte[] data = randomBytesFromGeometricDistribution(1000, 0.01);
         final ByteBuffer compressed = new RANS().compress(ByteBuffer.wrap(data), RANS.ORDER.ZERO);
         Assert.assertEquals(compressed.get(), (byte) 0);
-        //TODO: what is -9 here ?
         Assert.assertEquals(compressed.getInt(), compressed.limit() - 9);
         Assert.assertEquals(compressed.getInt(), data.length);
     }

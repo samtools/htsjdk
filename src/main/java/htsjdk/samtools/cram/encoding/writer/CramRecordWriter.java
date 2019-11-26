@@ -27,8 +27,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A writer that emits CRAMRecords into streams representing a Slice's data series blocks. This essentially acts as
- * a bridge between CRAMRecord fields and the various various data series streams associated with a Slice.
+ * A writer that emits CRAMRecords into the various streams that represent a Slice's data series blocks.
+ * This essentially acts as a bridge between CRAMRecord fields and the various various data series streams
+ * associated with a Slice. It is the inverse of CramRecordReader.
  */
 public class CramRecordWriter {
     //NOTE: these are all named with a "Codec" suffix, but they're really DataSeriesWriters, which are

@@ -100,12 +100,9 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
      * @param cramStream CRAM stream to index; must be coordinate sorted
      * @param craiStream stream for output index
      */
-    //TODO: why does this need a seekable stream to read the file just to index it
-    // Note: since we're only indexing, we don't need a reference since we're not going to
-    // normalize any contained records, only establish the alignment start and spans.
     public static void writeIndex(final SeekableStream cramStream, OutputStream craiStream) {
         final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
-        final SAMFileHeader samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), cramStream, null);
+        final SAMFileHeader samFileHeader = Container.readSAMFileHeaderContainer(cramHeader.getVersion(), cramStream, null);
         if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             throw new SAMException(String.format(
                     "Input must be coordinate sorted (found %s) to create an index.",

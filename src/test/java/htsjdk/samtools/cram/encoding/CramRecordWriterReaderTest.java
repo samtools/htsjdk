@@ -13,9 +13,6 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: this really needs to use SAMRecords to check round tripping of read bases via reference/substitution matrix,
-// bases, qual scores, etc.
-
 public class CramRecordWriterReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "coordSortedTrueFalse")
@@ -29,17 +26,11 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
         // (since we're not doing full substitution matrix/reference compression
         final List<CRAMRecord> unmappedRecords = getUnmappedRecords();
 
-        // TODO:
-        // note for future refactoring
-        // createHeader(records) calls CompressionHeaderBuilder.setTagIdDictionary(buildTagIdDictionary(records));
-        // which is the only way to set a record's tagIdsIndex
-        // which would otherwise be null
-
         final CompressionHeader header = new CompressionHeaderFactory(
                 new CRAMEncodingStrategy()).createCompressionHeader(unmappedRecords, coordinateSorted);
 
         final Slice slice = new Slice(unmappedRecords, header, 0L, 0L);
-        final List<CRAMRecord> roundTripRecords = slice.decodeCRAMRecords(new CompressorCache(), ValidationStringency.STRICT);
+        final List<CRAMRecord> roundTripRecords = slice.deserializeCRAMRecords(new CompressorCache(), ValidationStringency.STRICT);
 
         Assert.assertEquals(roundTripRecords, unmappedRecords);
     }

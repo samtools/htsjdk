@@ -70,13 +70,22 @@ public class AlignmentContext {
     private final int alignmentStart;
     private final int alignmentSpan;
 
+    /**
+     * Create an AlignmentContext from a refernce context, start, and span.
+     *
+     * Unfortunately, this can't enforce that the values are valid alignment values, or even warn about such
+     * values here, because there are too many cases where the spec doesn't or didn't originally prescribe
+     * valid values for cases like MULTIPLE_REF containers/slices, or unmapped slices, or SAMFileHeader
+     * containers. As a result, there are many files floating around that use various out-of-spec values
+     * that were created with old htsjdk or other implementations that were based based on older spec versions.
+     *
+     * @param referenceContext the reference context for this alignment context
+     * @param alignmentStart the 1-based alignment start
+     * @param alignmentSpan the alignment span
+     */
     public AlignmentContext(final ReferenceContext referenceContext,
                             final int alignmentStart,
                             final int alignmentSpan) {
-        // We can't enforce valid alignment contexts, or even warn about them here, because there are too many
-        // files floating around that were created with implementations based on versions of the spec that didn't
-        // prescribe the valid start/span values for multi ref or unmapped slices, or SAMFileHeader containers.
-        // So skip this since it results in lots of warnings.
         this.referenceContext = referenceContext;
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;

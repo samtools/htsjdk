@@ -106,10 +106,6 @@ public class ReferenceSource implements CRAMReferenceSource {
         }
     }
 
-    public void clearCache() {
-        cacheW.clear();
-    }
-
     private byte[] findInCache(final String name) {
         final WeakReference<byte[]> weakReference = cacheW.get(name);
         if (weakReference != null) {
@@ -182,7 +178,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         return null;
     }
 
-    byte[] findBasesByName(final String name, final boolean tryVariants) {
+    private byte[] findBasesByName(final String name, final boolean tryVariants) {
         if (rsFile == null || !rsFile.isIndexed())
             return null;
 
@@ -242,7 +238,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     private static final Pattern chrPattern = Pattern.compile("chr.*",
             Pattern.CASE_INSENSITIVE);
 
-    List<String> getVariants(final String name) {
+    private List<String> getVariants(final String name) {
         final List<String> variants = new ArrayList<>();
 
         if (name.equals("M"))

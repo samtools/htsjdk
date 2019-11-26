@@ -113,7 +113,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return new String(new byte[]{b1, b2, b3});
     }
 
-    //TODO: consolidate this with the method above
+    //TODO: consolidate this with the method above, and add some tests
     public static String intToNameType4Bytes(final int value) {
         final byte b3 = (byte) (0xFF & value);
         final byte b2 = (byte) (0xFF & (value >> 8));
@@ -242,7 +242,6 @@ public class ReadTag implements Comparable<ReadTag> {
 
     // yeah, I'm that risky:
     // with a little less thread risky.
-    //TODO: fix this
     private static final ThreadLocal<ByteBuffer> bufferLocal = new ThreadLocal<ByteBuffer>() {
         @Override
         protected ByteBuffer initialValue() {

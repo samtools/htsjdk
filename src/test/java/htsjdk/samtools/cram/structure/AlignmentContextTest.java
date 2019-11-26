@@ -53,10 +53,14 @@ public class AlignmentContextTest extends HtsjdkTest {
                         CramIO.EOF_ALIGNMENT_START,
                         CramIO.EOF_ALIGNMENT_SPAN
                 },
-                //TODO: fix this constant (-1) to be symbolic (should AlignmentContext.NO_ALIGNMENT_START change to be -1 ?)
+
+                // NOTE: although these are not technically valid in that new code shouldn't generate them,
+                // they're  here to validate that we can consume older files that used such values when the
+                // spec under-prescribed what values are legal
                 { new AlignmentContext(
                         new ReferenceContext(1), -1, 0),
-                ReferenceContextType.SINGLE_REFERENCE_TYPE, -1, 0},
+                        ReferenceContextType.SINGLE_REFERENCE_TYPE, -1, 0},
+
                 { new AlignmentContext(
                         ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, 7, 8),
                         ReferenceContextType.MULTIPLE_REFERENCE_TYPE, 7, 8

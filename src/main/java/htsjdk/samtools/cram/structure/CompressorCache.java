@@ -35,7 +35,7 @@ import java.util.HashMap;
 /**
  * Maintain a cache of reusable compressor instances in order to reduce the need to repeatedly
  * instantiate them, since some, like the RANS de/compressor, allocate large numbers (~256k) of
- * small temporary objects every time its instantiated.
+ * small temporary objects every time they're instantiated.
  */
 public class CompressorCache {
     private final String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compressor";
@@ -43,7 +43,7 @@ public class CompressorCache {
     private RANS sharedRANS;
 
     /**
-     * Return a compressor if its in our cache, otherwise spin one up and cache it and return that.
+     * Return a compressor if its in our cache, otherwise spin one up and cache it and return it.
      * @param compressionMethod
      * @param compressorSpecificArg
      * @return a cached compressor instance

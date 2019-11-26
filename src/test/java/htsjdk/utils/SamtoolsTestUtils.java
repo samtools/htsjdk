@@ -90,7 +90,7 @@ public class SamtoolsTestUtils {
         assertSamtoolsAvailable();
         try {
             final File tempCRAMFile = File.createTempFile("samtoolsTemporaryCRAM", FileExtensions.CRAM);
-            tempCRAMFile.deleteOnExit();
+            //tempCRAMFile.deleteOnExit();
             final String commandString = String.format("view -h -C -T %s %s %s -o %s",
                     referenceFile.getAbsolutePath(),
                     commandLineOptions == null ? "" : commandLineOptions,

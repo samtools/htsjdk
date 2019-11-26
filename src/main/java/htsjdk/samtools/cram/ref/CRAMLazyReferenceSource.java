@@ -27,19 +27,19 @@ package htsjdk.samtools.cram.ref;
 import htsjdk.samtools.SAMSequenceRecord;
 
 /**
- * A lazy CRAMReferenceSource implementation placeholder for use when no explicit reference source has been
- * provided.
+ * A lazy CRAMReferenceSource implementation, for use when no explicit reference source has been provided
+ * by the user. This allows client code to have a CRAMReferenceSource to thread through the CRAM code and to
+ * access containers, slices, and un-normalized CRAM records and otherwise perform operations such as indexing
+ * that do not require a reference to be resolved. If a reference sequence is actually requested, throws an
+ * exception.
  */
 public class CRAMLazyReferenceSource implements CRAMReferenceSource {
-    byte[] referenceSequence;
-
-    public byte[] getReferenceBases(final int referenceIndex) {
-        return referenceSequence;
-    }
 
     @Override
     public byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, final boolean tryNameVariants) {
-        return referenceSequence;
+        throw new IllegalArgumentException(
+                String.format("A reference must be supplied that includes the reference sequence for %s).",
+                        sequenceRecord.getSequenceName()));
     }
 
 }

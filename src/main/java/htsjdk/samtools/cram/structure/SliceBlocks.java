@@ -47,6 +47,7 @@ import java.util.Map;
 public class SliceBlocks {
     // the core block for this Slice
     private Block coreBlock;
+
     // the external Blocks as a Map of content ID to block
     private Map<Integer, Block> externalBlocks = new HashMap<>();
 

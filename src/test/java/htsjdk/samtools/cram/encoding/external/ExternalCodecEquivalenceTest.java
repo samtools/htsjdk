@@ -156,8 +156,6 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
         return retval;
     }
 
-    // TODO: move these into the Codec classes?
-
     private interface ReadCodecConstructor<T> {
         CRAMCodec<T> reader(final ByteArrayInputStream is);
     }

@@ -151,7 +151,6 @@ public class CRAMContainerStreamWriter {
         if (cramIndexer != null) {
             // using silent validation here because the reads have been through validation already or
             // they have been generated somehow through the htsjdk
-            //TODO: do we need this ValidationStringency ?
             cramIndexer.processContainer(container,  ValidationStringency.SILENT);
         }
     }

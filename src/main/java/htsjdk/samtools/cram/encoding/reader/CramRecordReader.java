@@ -29,9 +29,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * A reader used to consume encoded {@link CRAMRecord}s from a set of streams representing a Slice's data series blocks.
- * This essentially acts as a bridge between {@link CRAMRecord fields and the various various data series streams
- * associated with a {@link Slice}.
+ * A reader used to consume and populate encoded {@link CRAMRecord}s from a set of streams representing data
+ * series/blocks in a Slice. This is essentially a bridge between the various data series streams associated in
+ * a {@link Slice} and the corresponding {@link CRAMRecord} fields.
  */
 public class CramRecordReader {
     private final DataSeriesReader<Integer> bitFlagsCodec;
@@ -325,7 +325,7 @@ public class CramRecordReader {
                     sliceBlocksReadStreams);
         } else {
             // NOTE: Not all CRAM implementations choose to use all data series. For example, the
-            // htsjdk implementation doesn't use `BB` and `QQ`; other implementations may choose to
+            // htsjdk write implementation doesn't use `BB` and `QQ`; other implementations may choose to
             // omit other data series, so its ok to return null.
             return null;
         }

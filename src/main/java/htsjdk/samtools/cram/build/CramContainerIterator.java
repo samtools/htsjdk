@@ -15,15 +15,15 @@ import java.util.Iterator;
 public class CramContainerIterator implements Iterator<Container>, Closeable {
     private CramHeader cramHeader;
     private final SAMFileHeader samFileHeader;
+    private final CountingInputStream countingInputStream;
 
-    private CountingInputStream countingInputStream;
     private Container nextContainer;
     private boolean eof = false;
 
     public CramContainerIterator(final InputStream inputStream) {
         this.countingInputStream = new CountingInputStream(inputStream);
         cramHeader = CramIO.readCramHeader(countingInputStream);
-        samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), countingInputStream, null);
+        samFileHeader = Container.readSAMFileHeaderContainer(cramHeader.getVersion(), countingInputStream, null);
     }
 
     private void readNextContainer() {

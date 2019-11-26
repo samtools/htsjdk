@@ -136,7 +136,7 @@ public class CRAMRecord {
         setVendorFiltered(samRecord.getReadFailsVendorQualityCheckFlag());
         setDuplicate(samRecord.getDuplicateReadFlag());
 
-        readName = encodingStrategy.getPreserveReadNames() ? samRecord.getReadName() : null;
+        readName = samRecord.getReadName();
         referenceIndex = samRecord.getReferenceIndex();
 
         readLength = samRecord.getReadLength();
@@ -271,7 +271,6 @@ public class CRAMRecord {
         this.mateReferenceIndex = mateReferenceIndex;
         this.mateAlignmentStart = mateAlignmentStart;
         this.recordsToNextFragment = recordsToNextFragment;
-        //TODO: add a test for this case
         // its acceptable to have a mapped, placed read, but no read features, if the read matches the
         // reference exactly
         readFeatures = readFeaturesList == null ?
@@ -342,14 +341,13 @@ public class CRAMRecord {
 
     public void assignReadName() {
         if (readName == null) {
-            //TODO: resolve source of read name prefix (encoding params ?)
-            final String readNamePrefix = "";
-            final String name = readNamePrefix + getSequentialIndex();
-            readName = name;
-            if (nextSegment != null)
-                nextSegment.readName = name;
-            if (previousSegment != null)
-                previousSegment.readName = name;
+            readName = Long.toString(getSequentialIndex());
+            if (nextSegment != null) {
+                nextSegment.readName = readName;
+            }
+            if (previousSegment != null) {
+                previousSegment.readName = readName;
+            }
         }
     }
 
@@ -419,7 +417,7 @@ public class CRAMRecord {
 
     /**
      *
-     * @param referenceBases reference bases for this reference, if one is required (may be null for crams with
+     * @param referenceBases reference bases for this reference, if one is required (may be null for records with
      *                 RR=false in the compression header)
      * @param zeroBasedReferenceOffset zero-based reference offset of the first base in {@code referenceBases}
      * @param substitutionMatrix substitution matrix
@@ -508,6 +506,7 @@ public class CRAMRecord {
             prev = prev.nextSegment;
         }
         //TODO: is this -1 the inverse of the +1L in the Slice code that finds the mate offset ?
+        // see https://github.com/samtools/hts-specs/issues/458
         prev.recordsToNextFragment = (int) (r.sequentialIndex - prev.sequentialIndex - 1);
         prev.nextSegment = r;
         r.previousSegment = prev;
@@ -617,7 +616,7 @@ public class CRAMRecord {
     public int getMateAlignmentStart() { return mateAlignmentStart; }
 
     public void setTagIdsIndex(MutableInt tagIdsIndex) {
-        //TODO: why does this value appear to be deliberately shared across records
+        //TODO: why is this value deliberately shared across records
         this.tagIdsIndex = tagIdsIndex;
     }
 
@@ -691,8 +690,7 @@ public class CRAMRecord {
         return (cramFlags & CF_UNKNOWN_BASES) != 0;
     }
 
-    //TODO: this should be called isReadPaired
-    public boolean isMultiFragment() {
+    public boolean isReadPaired() {
         return (bamFlags & SAMFlag.READ_PAIRED.intValue()) != 0;
     }
 
@@ -826,7 +824,7 @@ public class CRAMRecord {
     }
 
     private static void copyFlags(final CRAMRecord cramRecord, final SAMRecord samRecord) {
-        samRecord.setReadPairedFlag(cramRecord.isMultiFragment());
+        samRecord.setReadPairedFlag(cramRecord.isReadPaired());
         samRecord.setProperPairFlag(cramRecord.isProperPair());
         samRecord.setReadUnmappedFlag(cramRecord.isSegmentUnmapped());
         samRecord.setReadNegativeStrandFlag(cramRecord.isNegativeStrand());

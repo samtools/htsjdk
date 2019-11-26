@@ -20,9 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-//TODO: validate mapped/unmapped/nocoord record counts
-//TODO: need to round-trip CRAM/SAM records and compare
-
 public class SliceTests extends HtsjdkTest {
     private static final int TEST_RECORD_COUNT = 10;
 

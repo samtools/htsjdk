@@ -81,7 +81,7 @@ public class SAMSequenceDictionaryExtractor {
                 try (final InputStream in = Files.newInputStream(cramPath)) {
                     final CramHeader cramHeader = CramIO.readCramHeader(in);
                     final Optional<SAMFileHeader> samHeader = Optional.ofNullable(
-                            Container.getSAMFileHeaderContainer(cramHeader.getVersion(), in, cramPath.toString()));
+                            Container.readSAMFileHeaderContainer(cramHeader.getVersion(), in, cramPath.toString()));
                     if (samHeader.isPresent()) {
                         return samHeader.get().getSequenceDictionary();
                     }

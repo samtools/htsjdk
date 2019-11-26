@@ -154,7 +154,7 @@ public class BAMIndexMetaData {
     }
 
     // The resolution of a CRAM BAI index is more coarse than for BAM BAI. Each entry
-    // is represented by a BAIEntry that represents a slice or, in the case of
+    // is represented by a BAIEntry that represents a slice (or, in the case of
     // MULTI_REFERENCE slices, a subset of a slice), rather than SAMRecords.
     void recordMetaData(final BAIEntry baiEntry) {
         alignedRecords += baiEntry.getMappedReadsCount();

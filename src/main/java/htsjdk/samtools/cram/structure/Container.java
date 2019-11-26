@@ -211,16 +211,17 @@ public class Container {
 
     /**
      * Reads the special container that contains the SAMFileHeader from a CRAM stream, and returns just
-     * the SAMFileHeader (we don't want to hand out the container since its not really a container in that
-     * while it has a container header, it has no compression header block, slices, etc).
-     * @param version
-     * @param inputStream
-     * @param id
-     * @return
+     * the SAMFileHeader (we don't want to hand out the container since its not a real container in that
+     * it has no compression header block, slices, etc).
+     *
+     * @param version CRAM version being read
+     * @param inputStream stream from which to read the header container
+     * @param id id from the cram header, for error reporting
+     * @return the {@link SAMFileHeader} for this CRAM stream
      */
-    public static SAMFileHeader getSAMFileHeaderContainer(final Version version,
-                                                          final InputStream inputStream,
-                                                          final String id) {
+    public static SAMFileHeader readSAMFileHeaderContainer(final Version version,
+                                                           final InputStream inputStream,
+                                                           final String id) {
         final ContainerHeader containerHeader = ContainerHeader.readContainerHeader(version.major, inputStream);
         final Block block;
         if (version.compatibleWith(CramVersions.CRAM_v3)) {
@@ -230,7 +231,6 @@ public class Container {
             block = Block.read(version.major, bais);
             // ignore any remaining blocks in the container (samtools adds a second 10,000 byte (raw) block of 0s) ?
         } else {
-            //TODO: is this still an issue ?
             /*
              * pending issue: container.containerBlocksByteSize inputStream 2 bytes shorter
              * than needed in the v21 test cram files.
@@ -265,6 +265,13 @@ public class Container {
         }
     }
 
+    /**
+     * Write a SAMFileHeader container to a CRAM stream.
+     * @param version CRAM version being written.
+     * @param samFileHeader SAMFileHeader to write
+     * @param os stream to which the header container should be written
+     * @return the number of bytes written to the stream
+     */
     public static long writeSAMFileHeaderContainer(final Version version, final SAMFileHeader samFileHeader, final OutputStream os) {
         final byte[] samFileHeaderBytes = CramIO.samHeaderToByteArray(samFileHeader);
         // The spec recommends "reserving" 50% more space than is required by the header, buts not
@@ -275,7 +282,6 @@ public class Container {
         try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             block.write(version.major, byteArrayOutputStream);
             int containerBlocksByteSize = byteArrayOutputStream.size();
-            // TODO: make sure this container is initialized correctly/fully (add a test for checksum ?)
             final ContainerHeader containerHeader = new ContainerHeader(
                     // we're forced to create an alignment context for this bogus container...
                     AlignmentContext.UNMAPPED_UNPLACED_CONTEXT,
@@ -284,7 +290,6 @@ public class Container {
                     0,
                     0,
                     1,
-                    //TODO: should the landmarks be specified ?
                     new int[]{},
                     0);
             final int containerHeaderByteSize = containerHeader.writeContainerHeader(version.major, os);
@@ -296,12 +301,17 @@ public class Container {
     }
 
     /**
-     * Get SAMRecords from all slices within this container.
-     * @param validationStringency
-     * @param cramReferenceRegion
-     * @param compressorCache
-     * @param samFileHeader
-     * @return
+     * Get SAMRecords from all Slices in this container. This is a 3 step process:
+     *
+     * 1) deserialize the slice blocks and create a list of CRAMRecords
+     * 2) Normalize the CRAMRecords
+     * 3) Convert the normalized CRAMRecords into SAMRecords
+     *
+     * @param validationStringency validation stringency to use (when reading tags)
+     * @param cramReferenceRegion reference region to use to restore bases
+     * @param compressorCache compressor cache to use for decompressing streams
+     * @param samFileHeader the SAMFileHeader for this CRAM stream (for resolving read groups)
+     * @return the {@Link SAMRecord}s from this container
      */
     public List<SAMRecord> getSAMRecords(
             final ValidationStringency validationStringency,
@@ -310,7 +320,7 @@ public class Container {
             final SAMFileHeader samFileHeader) {
         final List<SAMRecord> samRecords = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
-            final List<CRAMRecord> rawCRAMRecords = slice.decodeCRAMRecords(compressorCache, validationStringency);
+            final List<CRAMRecord> rawCRAMRecords = slice.deserializeCRAMRecords(compressorCache, validationStringency);
             slice.normalizeCRAMRecords(
                     rawCRAMRecords,
                     cramReferenceRegion,

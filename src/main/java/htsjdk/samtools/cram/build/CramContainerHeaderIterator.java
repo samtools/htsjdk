@@ -32,7 +32,7 @@ public class CramContainerHeaderIterator extends CramContainerIterator {
      */
     @Override
     protected Container containerFromStream(final CountingInputStream countingStream) {
-        long byteOffset = countingStream.getCount();
+        final long byteOffset = countingStream.getCount();
         final ContainerHeader containerHeader = ContainerHeader.readContainerHeader(getCramHeader().getVersion().major, countingStream);
         InputStreamUtils.skipFully(countingStream, containerHeader.getContainerBlocksByteSize());
         return new Container(containerHeader, byteOffset);

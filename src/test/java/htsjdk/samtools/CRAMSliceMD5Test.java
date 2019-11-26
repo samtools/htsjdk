@@ -34,7 +34,7 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(test.cramData);
              final CountingInputStream inputStream = new CountingInputStream(bais)) {
             final CramHeader cramHeader = CramIO.readCramHeader(inputStream);
-            Container.getSAMFileHeaderContainer(cramHeader.getVersion(), bais, null);
+            Container.readSAMFileHeaderContainer(cramHeader.getVersion(), bais, null);
             final long containerByteOffset = inputStream.getCount();
             container = new Container(cramHeader.getVersion(), inputStream, containerByteOffset);
         }

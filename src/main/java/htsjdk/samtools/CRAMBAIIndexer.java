@@ -146,7 +146,6 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                 advanceToReference(reference);
             }
 
-            //TODO: do we need this?
             // check that it advanced properly
             if (reference != currentReference) {
                 throw new SAMException(
@@ -194,15 +193,13 @@ public class CRAMBAIIndexer implements CRAMIndexer {
      * @param output File for output index file
      * @param log    optional {@link htsjdk.samtools.util.Log} to output progress
      */
-    //TODO: CRAMFileBAIIndexTest test only ?
-    //TODO: why does this need to be a seekable stream - it can just be a stream ???
     public static void createIndex(final SeekableStream stream,
                                    final File output,
                                    final Log log,
                                    final ValidationStringency validationStringency) {
 
         final CramHeader cramHeader = CramIO.readCramHeader(stream);
-        final SAMFileHeader samFileHeader = Container.getSAMFileHeaderContainer(cramHeader.getVersion(), stream, null);
+        final SAMFileHeader samFileHeader = Container.readSAMFileHeaderContainer(cramHeader.getVersion(), stream, null);
         if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             throw new SAMException(String.format(
                     "Input must be coordinate sorted (found %s) to create an index.",
@@ -253,9 +250,6 @@ public class CRAMBAIIndexer implements CRAMIndexer {
      * One instance is used to construct an entire index.
      * processAlignment is called for each alignment until a new reference is encountered, then
      * processReference is called when all records for the reference have been processed.
-     *
-     * TODO: this was copied from BAMIndexer.BAMIndexBuilder
-     * so perhaps they should be merged back together
      */
     private class CRAMBAIIndexBuilder {
 

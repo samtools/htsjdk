@@ -43,7 +43,6 @@ import java.util.function.Function;
  * whatever index format (.bai or .crai converted to .bai) is available for the
  * target file.
  */
-//TODO: repeat each of these tests using encoding params that force multiref-containers
 
 public class CRAMIndexQueryTest extends HtsjdkTest {
 

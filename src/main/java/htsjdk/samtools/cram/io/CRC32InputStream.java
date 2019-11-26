@@ -36,7 +36,7 @@ public class CRC32InputStream extends InputStream {
     }
 
     @Override
-    public int read(@SuppressWarnings("NullableProblems") final byte[] b) {
+    public int read(final byte[] b) {
         try {
             final int result = delegate.read(b);
             if (result != -1)
@@ -48,7 +48,7 @@ public class CRC32InputStream extends InputStream {
     }
 
     @Override
-    public int read(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) {
+    public int read(final byte[] b, final int off, final int length) {
         try {
             final int result = delegate.read(b, off, length);
             crc32.update(b, off, result);

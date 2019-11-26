@@ -203,8 +203,6 @@ public class ContainerTest extends HtsjdkTest {
         }
     }
 
-    //TODO: this needs more tests, using both coord-sorted and non-coord-sorted inputs
-
     @DataProvider(name = "getRecordsTestCases")
     private Object[][] getRecordsTestCases() {
 

@@ -43,16 +43,12 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
- * Maintains a map of the EncodingDescriptor for each Data Series, and for each such EncodingDescriptor
- * that represents an EXTERNAL encoding, the corresponding compressor to use.
+ * Maintains a map of DataSeries to EncodingDescriptor, and a second map that contains the compressor to use
+ * for each EncodingDescriptor that represents an EXTERNAL encoding.
  *
- * There are three constructors; one populates the map from scratch using the default encodings chosen by
+ * There are two constructors; one populates the map from scratch using the default encodings chosen by
  * this (htsjdk) implementation, used when writing a new CRAM; one populates the map from a serialized
- * CRAM stream resulting in encodings chosen by the implementation that wrote that CRAM; and one populates
- * the map from a CompressionHeaderEncodingMap that was previously serialized as part. The latter serialized
- * format is different from the native CRAM serialized form because in a CRAM stream, the compressors are
- * not stored as part of the compression header encoding map, but rather are stored with the block containing
- * the data.
+ * CRAM stream resulting in encodings chosen by the implementation that wrote that CRAM.
  *
  * Although the CRAM spec defines a fixed list of data series, individual CRAM implementations
  * may choose to use only a subset of these. Therefore, the actual set of encodings that are
@@ -88,7 +84,7 @@ public class CompressionHeaderEncodingMap {
      * parameter values are used to set compression levels, etc, but any encoding map embedded is ignored
      * since this uses the default strategy.
      *
-     * @param encodingStrategy {@link #CRAMEncodingStrategy} containing parameter values to use when creating
+     * @param encodingStrategy {@link CRAMEncodingStrategy} containing parameter values to use when creating
      *                                                     the encoding map
      */
     public CompressionHeaderEncodingMap(final CRAMEncodingStrategy encodingStrategy) {

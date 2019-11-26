@@ -57,7 +57,7 @@ public class VersionTest extends HtsjdkTest {
 
         SeekableStream cramSeekableStream = new SeekableMemoryStream(cramBytes, null);
         CramHeader cramHeader = CramIO.readCramHeader(cramSeekableStream);
-        Container.getSAMFileHeaderContainer(cramHeader.getVersion(), cramSeekableStream, null);
+        Container.readSAMFileHeaderContainer(cramHeader.getVersion(), cramSeekableStream, null);
         Assert.assertEquals(version, cramHeader.getVersion());
 
         // read whole container:
@@ -70,8 +70,6 @@ public class VersionTest extends HtsjdkTest {
         Container eof = new Container(version, cramSeekableStream, streamPos);
         Assert.assertNotNull(eof);
         Assert.assertTrue(eof.isEOF());
-
-        // TODO: ensure there is nothing left in the stream.
 
         // position stream at the start of the 1st container:
         cramSeekableStream.seek(containerStart);

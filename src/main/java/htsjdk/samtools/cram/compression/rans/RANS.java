@@ -196,11 +196,12 @@ public class RANS {
         return outBuffer;
     }
 
-    // TODO: Allocates an output buffer to hold the result of compressing a stream of a given input size
-    // TODO: on an inSize of 3, ths allocates 198,154 bytes (used for 256*256 symbol freq table ???)
-    // TODO: what is (1.05 * inSize + 257 * 257 * 3 + 4) derived from ?
     private static ByteBuffer allocateOutputBuffer(final int inSize) {
-        final int compressedSize = (int) (1.05 * inSize + 257 * 257 * 3 + 4);
+        // This calculation is identical to the one in samtools rANS_static.c
+        // Presumably the frequency table (always big enough for order 1) = 257*257, then * 3 for each entry
+        // (byte->symbol, 2 bytes -> scaled frequency), + 9 for the header (order byte, and 2 int lengths
+        // for compressed/uncompressed lengths) ? Plus additional 5% for..., for what ???
+        final int compressedSize = (int) (1.05 * inSize + 257 * 257 * 3 + 9);
         final ByteBuffer outputBuffer = ByteBuffer.allocate(compressedSize);
         if (outputBuffer.remaining() < compressedSize) {
             throw new RuntimeException("Failed to allocate sufficient buffer size for RANS coder.");

@@ -29,7 +29,7 @@ import htsjdk.utils.ValidationUtils;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
 
 /**
- * Parameters that can be set to control encoding strategy used on write.
+ * Parameters that can be set to control the encoding strategy used when writing CRAM.
  */
 public class CRAMEncodingStrategy {
     // Default value for the minimum number of reads we need to have seen to emit a single-reference slice.
@@ -55,31 +55,20 @@ public class CRAMEncodingStrategy {
     private int readsPerSlice = DEFAULT_READS_PER_SLICE;
     private int slicesPerContainer = 1;
 
-    // should these preservation policies be stored independently of encoding strategy ?
-    private boolean preserveReadNames = true;
-    private String readNamePrefix = "";          // only if preserveReadNames = false
-    private boolean retainMD = true;
-    private boolean embedReference = false; // embed reference
-    private boolean embedBases = true;      // embed bases rather than doing reference compression
-
+    /**
+     * Create an encoding strategy that uses all default values.
+     */
     public CRAMEncodingStrategy() {
         // use defaults;
-    }
-
-    public boolean getPreserveReadNames() {
-        return preserveReadNames;
-    }
-
-    public CRAMEncodingStrategy setPreserveReadNames(boolean preserveReadNames) {
-        this.preserveReadNames = preserveReadNames;
-        return this;
     }
 
     /**
      * Set number of slices per container. In some cases, a container containing fewer slices than the
      * requested value will be produced in order to honor the specification rule that all slices in a
      * container must have the same {@link ReferenceContextType}.
-     * Note that this value must be >= {@link #getMinimumSingleReferenceSliceSize}.
+     *
+     * Note: this value must be >= {@link #getMinimumSingleReferenceSliceSize}.
+     *
      * @param readsPerSlice number of slices written per container
      * @return updated CRAMEncodingStrategy
      */
@@ -99,6 +88,7 @@ public class CRAMEncodingStrategy {
     * that contains fewer than this number of records.
     *
     * This number must be < the value for {@link #getReadsPerSlice}
+    *
     * @param minimumSingleReferenceSliceSize
     */
     public CRAMEncodingStrategy setMinimumSingleReferenceSliceSize(int minimumSingleReferenceSliceSize) {
@@ -114,7 +104,8 @@ public class CRAMEncodingStrategy {
     }
 
     public CRAMEncodingStrategy setGZIPCompressionLevel(final int compressionLevel) {
-        ValidationUtils.validateArg(compressionLevel >=0 && compressionLevel <= 10, "cram gzip compression level must be > 0 and <= 10");
+        ValidationUtils.validateArg(compressionLevel >=0 && compressionLevel <= 10,
+                "cram gzip compression level must be > 0 and <= 10");
         this.gzipCompressionLevel = compressionLevel;
         return this;
     }
@@ -133,10 +124,16 @@ public class CRAMEncodingStrategy {
         return this;
     }
 
+    /**
+     * Set the {@link CompressionHeaderEncodingMap} to use.
+     *
+     * @param encodingMap the encoding map to use
+     */
     public void setCustomCompressionHeaderEncodingMap(final CompressionHeaderEncodingMap encodingMap) {
         this.customCompressionHeaderEncodingMap = encodingMap;
     }
     public CompressionHeaderEncodingMap getCustomCompressionHeaderEncodingMap() { return customCompressionHeaderEncodingMap; }
+
     public int getGZIPCompressionLevel() { return gzipCompressionLevel; }
     public int getReadsPerSlice() { return readsPerSlice; }
     public int getSlicesPerContainer() { return slicesPerContainer; }
@@ -144,18 +141,12 @@ public class CRAMEncodingStrategy {
     @Override
     public String toString() {
         return "CRAMEncodingStrategy{" +
+                ", customCompressionMap='" + customCompressionHeaderEncodingMap + '\'' +
                 ", gzipCompressionLevel=" + gzipCompressionLevel +
                 ", readsPerSlice=" + readsPerSlice +
                 ", slicesPerContainer=" + slicesPerContainer +
-                ", customCompressionMap='" + customCompressionHeaderEncodingMap + '\'' +
-                ", preserveReadNames=" + preserveReadNames +
-                ", readNamePrefix='" + readNamePrefix + '\'' +
-                ", retainMD=" + retainMD +
-                ", embedReference=" + embedReference +
-                ", embedBases=" + embedBases +
                 '}';
     }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -164,26 +155,23 @@ public class CRAMEncodingStrategy {
         CRAMEncodingStrategy that = (CRAMEncodingStrategy) o;
 
         if (gzipCompressionLevel != that.gzipCompressionLevel) return false;
-        if (readsPerSlice != that.readsPerSlice) return false;
+        if (getMinimumSingleReferenceSliceSize() != that.getMinimumSingleReferenceSliceSize()) return false;
+        if (getReadsPerSlice() != that.getReadsPerSlice()) return false;
         if (getSlicesPerContainer() != that.getSlicesPerContainer()) return false;
-        if (preserveReadNames != that.preserveReadNames) return false;
-        if (retainMD != that.retainMD) return false;
-        if (embedReference != that.embedReference) return false;
-        if (embedBases != that.embedBases) return false;
-        return readNamePrefix != null ? readNamePrefix.equals(that.readNamePrefix) : that.readNamePrefix == null;
-
+        return getCustomCompressionHeaderEncodingMap() != null ?
+                getCustomCompressionHeaderEncodingMap().equals(that.getCustomCompressionHeaderEncodingMap()) :
+                that.getCustomCompressionHeaderEncodingMap() == null;
     }
 
     @Override
     public int hashCode() {
-        int result = 31 * gzipCompressionLevel;
-        result = 31 * result + readsPerSlice;
+        int result = getCustomCompressionHeaderEncodingMap() != null ?
+                getCustomCompressionHeaderEncodingMap().hashCode() : 0;
+        result = 31 * result + gzipCompressionLevel;
+        result = 31 * result + getMinimumSingleReferenceSliceSize();
+        result = 31 * result + getReadsPerSlice();
         result = 31 * result + getSlicesPerContainer();
-        result = 31 * result + (preserveReadNames ? 1 : 0);
-        result = 31 * result + (readNamePrefix != null ? readNamePrefix.hashCode() : 0);
-        result = 31 * result + (retainMD ? 1 : 0);
-        result = 31 * result + (embedReference ? 1 : 0);
-        result = 31 * result + (embedBases ? 1 : 0);
         return result;
     }
+
 }

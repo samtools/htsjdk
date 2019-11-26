@@ -47,11 +47,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A CRAM slice is a logical union of blocks into for example alignment slices.
+ * A CRAM slice is a logical construct that is just a subset of the blocks in a Slice.
  *
- * NOTE: Every Slice has a reference context (it is either single-ref/mapped, unmapped, or multi-ref). But
- * single-ref mapped doesn't mean that the records are MAPPED (that is, that their getMappedRead flag is true),
- * only that the records in that slice are PLACED on the corresponding reference contig.
+ * NOTE: Every Slice has a reference context (it is either single-reference (mapped), multi-reference, or
+ * unmapped), reflecting depending on  the records it contains. Single-ref mapped doesn't mean that the records
+ * are necessarily (that is, that their getMappedRead flag is true), only that the records in that slice are PLACED
+ * on the corresponding reference contig.
  */
 public class Slice {
     private static final Log log = Log.getInstance(Slice.class);
@@ -62,7 +63,7 @@ public class Slice {
     public static final int EMBEDDED_REFERENCE_ABSENT_CONTENT_ID = -1;
 
     ////////////////////////////////
-    // Slice header values as defined in the spec
+    // Slice header components as defined in the spec
     private final AlignmentContext alignmentContext; // ref sequence, alignment start and span
     private final int nRecords;
     private final long globalRecordCounter;
@@ -71,7 +72,7 @@ public class Slice {
     private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
     private byte[] referenceMD5 = new byte[MD5_BYTE_SIZE];
     private SAMBinaryTagAndValue sliceTags;
-    // End slice header values
+    // End slice header components
     ////////////////////////////////
 
     private final CompressionHeader compressionHeader;
@@ -79,21 +80,22 @@ public class Slice {
     private final long byteOffsetOfContainer;
 
     private Block sliceHeaderBlock;
-    // Modeling the contentID and embedded reference block separately is redundant, since the
-    // block can be retrieved from the external blocks list given the content id, but we retain
-    // them both for validation purposes because they're both present in the serialized CRAM stream,
-    // and on read these are provided separately when populating the slice.
+
+    // Modeling the embedded reference block here is somewhat redundant, since it can be retrieved from the
+    // external blocks that are managed by the {@link SliceBlocks} object by using the externalBlockContentId,
+    // but we retain it here to use for validation purposes.
     private Block embeddedReferenceBlock;
     private long baseCount;
 
-    // Values used for indexing. Even though AlignmentSpan could be used here, we don't use it
-    // because the alignment context part of the AlignmentSpan in the SliceHeader, so keeping it
-    // here would be redundant.
+    // Values used for indexing. We don't use an AlignmentSpan object to model these values because
+    // AlignmentSpan contains an AlignmentContext, but the AlignmentContext for a Slice is maintained as part
+    // of the Slice header, so using AlignmentSpan here would result in redundant AlignmentContext values.
+    //
     // These values are only maintained for slices that are created from SAM/CRAMRecords. Slices that
     // are created from deserializing a stream do not have recorded values for these because those values
-    // not part of the stream, and the individual records are not decoded until they're requested (and
-    // they are not decoded during indexing, with the exception of MULTI_REF slices, where its required
-    // that the slice be resolved into individual reference contexts for inclusion in the index).
+    // not part of the stream, and the individual records are not decoded until they're requested (they are
+    // not decoded during indexing, with the exception of MULTI_REF slices, where its required that the slice
+    // be resolved into individual reference contexts for inclusion in the index).
     private int mappedReadsCount = 0;   // mapped (rec.getReadUnmappedFlag() != true)
     private int unmappedReadsCount = 0; // unmapped (rec.getReadUnmappedFlag() == true)
     private int unplacedReadsCount = 0; // nocoord (alignmentStart == SAMRecord.NO_ALIGNMENT_START)
@@ -102,12 +104,20 @@ public class Slice {
     private int byteSizeOfSliceBlocks = UNINITIALIZED_INDEXING_PARAMETER;
     private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
 
+    /**
+     * Create a slice by reading a serialized Slice from an input stream.
+     *
+     * @param majorVersion the major version of the CRAM stream being read
+     * @param compressionHeader the compression header for the contain in which the Slice resides
+     * @param inputStream the input stream to be read
+     * @param containerByteOffset the stream byte offset of start of the container in which this Slice resides
+     */
     public Slice(
-            final int major,
+            final int majorVersion,
             final CompressionHeader compressionHeader,
             final InputStream inputStream,
             final long containerByteOffset) {
-        sliceHeaderBlock = Block.read(major, inputStream);
+        sliceHeaderBlock = Block.read(majorVersion, inputStream);
         if (sliceHeaderBlock.getContentType() != BlockContentType.MAPPED_SLICE) {
             throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
         }
@@ -132,7 +142,7 @@ public class Slice {
         InputStreamUtils.readFully(parseInputStream, referenceMD5, 0, referenceMD5.length);
 
         final byte[] readTagBytes = InputStreamUtils.readFully(parseInputStream);
-        if (major >= CramVersions.CRAM_v3.major) {
+        if (majorVersion >= CramVersions.CRAM_v3.major) {
             setSliceTags(BinaryTagCodec.readTags(
                     readTagBytes, 0, readTagBytes.length, ValidationStringency.DEFAULT_STRINGENCY));
         }
@@ -141,7 +151,7 @@ public class Slice {
         // to do this automatically since there are case where we want to iterate through containers or slices
         // (i.e., during indexing, or when satisfying index queries) when we want to consume the underlying blocks,
         // but not actually decode them
-        sliceBlocks.readBlocks(major, nSliceBlocks, inputStream);
+        sliceBlocks.readBlocks(majorVersion, nSliceBlocks, inputStream);
 
         if (embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID) {
             // also adds this block to the external list
@@ -150,17 +160,17 @@ public class Slice {
     }
 
     /**
-     * Create a single Slice from CRAM Compression Records and a Compression Header.
-     * The caller is responsible for appropriate subdivision of records into
-     * containers and slices.
+     * Create a single Slice from CRAM Compression Records and a Compression Header. The caller is
+     * responsible for appropriate subdivision of records into containers and slices (see ContainerFactory}.
      *
      * @param records input CRAM Compression Records
      * @param compressionHeader the enclosing {@link Container}'s Compression Header
+     * @param containerByteOffset
+     * @param globalRecordCounter
      * @return a Slice corresponding to the given records
      *
-     * Using a collection of {@link CRAMRecord}s,
-     * determine whether the slice is single ref, unmapped or multi reference.
-     * Derive alignment boundaries for the slice if single ref.
+     * Determines whether the slice is single ref, unmapped or multi reference, and derives alignment
+     * boundaries for the slice if single ref.
      *
      * Valid Slice states, by individual record contents:
      *
@@ -176,8 +186,6 @@ public class Slice {
      * @see CRAMRecord#isPlaced()
      *
      * @see ReferenceContextType
-     * @param records the input records
-     * @return the initialized Slice
      */
     public Slice(
             final List<CRAMRecord> records,
@@ -387,10 +395,10 @@ public class Slice {
     public CompressionHeader getCompressionHeader() { return compressionHeader; }
 
     /**
-     * Reads and decodes the underlying blocks. We don't do this automatically when initially
-     * reading the blocks from the underlying stream since there are case where we want to iterate through
-     * containers or slices (i.e., during indexing, or when satisfying index queries) where we want to consume
-     * the underlying blocks, but not actually pay the price to decode them.
+     * Reads and decodes the underlying blocks and returns a list of CRAMRecords. We don't do this automatically
+     * when initially reading the blocks from the underlying stream since there are case where we want to iterate
+     * through containers or slices where we want to consume the underlying blocks, but not actually pay the price
+     * to decode them (i.e., during indexing, or when satisfying index queries).
      *
      * The CRAMRecords returned from this are not normalized (read bases, quality scores and mates have not
      * been resolved). See {@link #normalizeCRAMRecords} for more information about normalization.
@@ -399,7 +407,7 @@ public class Slice {
      * @param validationStringency validation stringency to use
      * @return list of raw (not normalized) CRAMRecords for this Slice ({@link #normalizeCRAMRecords})
      */
-    public ArrayList<CRAMRecord> decodeCRAMRecords(
+    public ArrayList<CRAMRecord> deserializeCRAMRecords(
             final CompressorCache compressorCache,
             final ValidationStringency validationStringency) {
         final CramRecordReader reader = new CramRecordReader(this, compressorCache, validationStringency);
@@ -417,7 +425,7 @@ public class Slice {
     }
 
     /**
-     * Normalize a list of CramCompressionRecords that have been read in from a CRAM stream. Normalization
+     * Normalize a list of CramRecords that have been read in from a CRAM stream. Normalization
      * restores raw CRAM records to a state suitable for conversion to SAMRecords, resolving read bases against
      * the reference, as well as quality scores and mates.
      * The records in this list should be the records from this slice, not the entire container,
@@ -463,11 +471,11 @@ public class Slice {
 
         // restore pairing first:
         for (final CRAMRecord record : cramRecords) {
-            if (record.isMultiFragment() &&
+            if (record.isReadPaired() &&
                     !record.isDetached() &&
                     record.isHasMateDownStream()) {
                 final CRAMRecord downMate = cramRecords.get(
-                        //TODO: Why does this need to add 1 ?
+                        //TODO: Why does this add 1 ? see https://github.com/samtools/hts-specs/issues/458
                         (int) (record.getSequentialIndex() + record.getRecordsToNextFragment() + 1L - globalRecordCounter));
                 record.setNextSegment(downMate);
                 downMate.setPreviousSegment(record);
@@ -480,7 +488,8 @@ public class Slice {
             }
         }
 
-        // assign read names if needed:
+        // assign read names if needed (should be called after mate resolution so generated names
+        // can be propagated to mates):
         for (final CRAMRecord record : cramRecords) {
             record.assignReadName();
         }
@@ -659,7 +668,6 @@ public class Slice {
         //TODO: CRAMComplianceTest/c1#bounds triggers this (the reads are mapped beyond reference length),
         // and CRAMEdgeCasesTest.testNullsAndBeyondRef seems to deliberately test that reads that extend
         // beyond the reference length should be ok ?
-        // Is there any case where being mapped outside of the reference span is legitimate ?
         if (alignmentContext.getAlignmentStart() > referenceBases.length) {
             log.warn(String.format(
                     "Slice mapped outside of reference: seqID=%s, start=%d, record counter=%d.",
@@ -803,7 +811,7 @@ public class Slice {
         // See https://github.com/samtools/htsjdk/issues/1347.
         // Note that this doesn't normalize the CRAMRecords, which bypasses resolution of bases
         // against the reference.
-        final List<CRAMRecord> cramRecords = decodeCRAMRecords(compressorCache, validationStringency);
+        final List<CRAMRecord> cramRecords = deserializeCRAMRecords(compressorCache, validationStringency);
 
         final Map<ReferenceContext, AlignmentSpan> spans = new HashMap<>();
         cramRecords.forEach(r -> mergeRecordSpan(r, spans));

@@ -36,13 +36,13 @@ import htsjdk.utils.ValidationUtils;
 import java.util.*;
 
 /**
- * Class for handling the read features in CRAMRecord.
+ * Class for handling the read features for a {@link CRAMRecord}.
  */
 public class CRAMRecordReadFeatures {
     final List<ReadFeature> readFeatures;
 
     /**
-     * Create a CRAMRecordReadFeatures.
+     * Create a CRAMRecordReadFeatures with no actual read features (i.e. an unmapped record).
      */
     public CRAMRecordReadFeatures() {
         this(Collections.EMPTY_LIST);
@@ -58,9 +58,9 @@ public class CRAMRecordReadFeatures {
     }
 
     /**
-     * Create the read features for a given SAMRecord
-     * @param samRecord
-     * @param refBases
+     * Create the read features for a given SAMRecord.
+     * @param samRecord the {@link SAMRecord} for which to create read features
+     * @param refBases the reference bases for the entire reference contig to which this record is mapped
      */
     public CRAMRecordReadFeatures(final SAMRecord samRecord, final byte[] refBases) {
         readFeatures = new ArrayList<>();
@@ -186,7 +186,6 @@ public class CRAMRecordReadFeatures {
         int oneBasedPositionInRead = fromPosInRead + 1;
         int refIndex = alignmentStart + alignmentStartOffset - 1;
 
-        //TODO: NPE surfaces here if no ref bases (or ref mismatch) ?
         byte refBase;
         for (int i = 0; i < nofReadBases; i++, oneBasedPositionInRead++, refIndex++) {
             refBase = refIndex >= refBases.length ?
