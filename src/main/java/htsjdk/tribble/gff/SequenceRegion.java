@@ -2,6 +2,9 @@ package htsjdk.tribble.gff;
 
 import htsjdk.samtools.util.Locatable;
 
+/**
+ * Represents a sequence region feature in a gff3 file.  May be linear or circular.
+ */
 public class SequenceRegion implements Locatable {
     private final int start;
     private final int end;

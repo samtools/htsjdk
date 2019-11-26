@@ -186,7 +186,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     }
 
     /**
-     * If sequence region of feature's contig has be specified with sequence region directive, validates that
+     * If sequence region of feature's contig has been specified with sequence region directive, validates that
      * feature's coordinates are within the specified sequence region.  TribbleException is thrown if invalid.
      * @param feature
      */

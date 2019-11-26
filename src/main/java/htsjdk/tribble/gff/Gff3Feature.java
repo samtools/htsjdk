@@ -10,11 +10,19 @@ import java.util.stream.Collectors;
 
 /**
  * Gff3 format spec is defined at https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
- * Discontinous features which are split between multiple lines in the gff files are implemented as separate features linked as "co-features"
+ * Discontinuous features which are split between multiple lines in the gff files are implemented as separate features linked as "co-features"
  */
 public class Gff3Feature implements Feature {
+    private final static String DERIVES_FROM_ATTRIBUTE_KEY = "Derives_from";
+    private static final String ID_ATTRIBUTE_KEY = "ID";
+    private static final String NAME_ATTRIBUTE_KEY = "Name";
+    private static final String ALIAS_ATTRIBUTE_KEY = "Alias";
 
+    /**
+     * basic data about feature, contig, position, strand, etc.
+     */
     private final Gff3BaseData baseData;
+
     private final Set<Gff3Feature> parents;
     private final Set<Gff3Feature> children = new HashSet<>();
     private final Set<Gff3Feature> coFeatures = new HashSet<>();
@@ -27,10 +35,6 @@ public class Gff3Feature implements Feature {
     private final boolean isTopLevelFeature;
     private boolean topLevelFeaturesFiltered = false;
 
-    private final static String DERIVES_FROM_ATTRIBUTE_KEY = "Derives_from";
-    private static final String ID_ATTRIBUTE_KEY = "ID";
-    private static final String NAME_ATTRIBUTE_KEY = "Name";
-    private static final String ALIAS_ATTRIBUTE_KEY = "Alias";
 
 
     public Gff3Feature(final String contig, final String source, final String type,
@@ -44,11 +48,13 @@ public class Gff3Feature implements Feature {
                        final Map<String, String> attributes, final Collection<Gff3Feature> parents) {
         baseData = new Gff3BaseData(contig, source, type, start, end, strand, phase, attributes);
 
-        final Set<Gff3Feature> modifiableParents = new HashSet<>();
-        modifiableParents.addAll(parents);
 
-        this.parents = Collections.unmodifiableSet(modifiableParents);
+        this.parents = Collections.unmodifiableSet(new HashSet<>(parents));
 
+        /*build set of top level features as top level features of this feature's parents.
+        When top level features is first accessed through getTopLevelFeatures(), this set will
+        be filtered to account for Derives_from attribute if needed.
+         */
         this.parents.forEach( p -> {
             topLevelFeatures.addAll(p.getTopLevelFeatures());
             p.addChild(this);
@@ -61,6 +67,10 @@ public class Gff3Feature implements Feature {
         }
     }
 
+    /**
+     * Get the set of top level features from which this feature is descended
+     * @return set of top level feature from which this feature is descended
+     */
     public Set<Gff3Feature> getTopLevelFeatures() {
         if (!topLevelFeaturesFiltered) {
             if (baseData.attributes.containsKey(DERIVES_FROM_ATTRIBUTE_KEY)) {
@@ -112,13 +122,13 @@ public class Gff3Feature implements Feature {
 
     /**
      * Gets set of parent features
-     * @return list of parent features
+     * @return set of parent features
      */
     public Set<Gff3Feature> getParents() {return parents;}
 
     /**
      * Gets set of features for which this feature is a parent
-     * @return list of child features
+     * @return set of child features
      */
     public Set<Gff3Feature> getChildren() {return children;}
 
@@ -193,7 +203,7 @@ public class Gff3Feature implements Feature {
 
     /**
      * Add a feature as a coFeature of this feature.  When this method is called, the input coFeature will also be
-     * added as a coFeature of all the previous coFeatures of this object, and this feature and all coFeatures will be
+     * added as a coFeature of all the other coFeatures of this object, and this feature and all coFeatures will be
      * added as coFeatures of the input coFeature.  All coFeatures must have equal IDs and parents.
      * @param coFeature feature to add as this features coFeature
      */
@@ -240,7 +250,7 @@ public class Gff3Feature implements Feature {
 
 
     /***
-     * flatten this features and all descendents into a list of features
+     * flatten this feature and all descendents into a list of features
      * @return list of this feature and all descendents
      */
     public List<Gff3Feature> flatten() {
