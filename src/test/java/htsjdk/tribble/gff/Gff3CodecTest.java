@@ -48,12 +48,7 @@ public class Gff3CodecTest extends HtsjdkTest {
                 {gencode_mouse_small, 16, 70},
                 {ncbi_woodpecker_small, 10, 185},
                 {with_fasta, 4, 12},
-                {with_fasta_artemis, 4, 12},
-                {ensembl_human_small_gzipped, 33, 82},
-                {gencode_mouse_small_gzipped, 16, 70},
-                {ncbi_woodpecker_small_gzipped, 10, 185},
-                {with_fasta_gzipped, 4, 12},
-                {with_fasta_artemis_gzipped, 4, 12}
+                {with_fasta_artemis, 4, 12}
         };
     }
 
@@ -70,6 +65,40 @@ public class Gff3CodecTest extends HtsjdkTest {
         }
         Assert.assertEquals(countTopLevelFeatures, expectedTopLevelFeatures);
         Assert.assertEquals(countTotalFeatures, expectedTotalFeatures);
+    }
+
+    @DataProvider(name = "testGZippedDataProvider")
+    Object[][] testGZippedDataProvider(){
+        return new Object[][] {
+                {ensembl_human_small, ensembl_human_small_gzipped},
+                {gencode_mouse_small, gencode_mouse_small_gzipped},
+                {ncbi_woodpecker_small, ncbi_woodpecker_small_gzipped},
+                {with_fasta, with_fasta_gzipped},
+                {with_fasta_artemis, with_fasta_artemis_gzipped}
+        };
+    }
+
+    @Test(dataProvider = "testGZippedDataProvider")
+    public void testGZipped(final Path inputGff3, final Path inputGff3GZipped) throws IOException {
+        Assert.assertTrue((new Gff3Codec()).canDecode(inputGff3.toAbsolutePath().toString()));
+        Assert.assertTrue((new Gff3Codec()).canDecode(inputGff3GZipped.toAbsolutePath().toString()));
+
+        final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputGff3.toAbsolutePath().toString(), null, new Gff3Codec(), false);
+        final AbstractFeatureReader<Gff3Feature, LineIterator> readerGZipped = AbstractFeatureReader.getFeatureReader(inputGff3GZipped.toAbsolutePath().toString(), null, new Gff3Codec(), false);
+
+
+        final Set<Gff3Feature> topLevelFeatures = new HashSet<>();
+        final Set<Gff3Feature> topLevelFeaturesGZipped = new HashSet<>();
+
+        for (final Gff3Feature feature : reader.iterator()) {
+            topLevelFeatures.add(feature);
+        }
+
+        for (final Gff3Feature feature : readerGZipped.iterator()) {
+            topLevelFeaturesGZipped.add(feature);
+        }
+
+        Assert.assertEquals(topLevelFeatures, topLevelFeaturesGZipped);
     }
 
     @DataProvider(name = "sequenceRegionValidationDataProvider")
