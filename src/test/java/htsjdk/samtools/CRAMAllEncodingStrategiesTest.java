@@ -36,7 +36,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
         final File tempOutCRAM = File.createTempFile("testRoundTrip", ".cram");
         CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
-        assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, true);
+        assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, false);
         assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
         tempOutCRAM.delete();
     }
@@ -112,15 +112,11 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     private void assertRoundtripFidelityWithSamtools(final File sourceCRAM, final File referenceFile) throws IOException {
         if (SamtoolsTestUtils.isSamtoolsAvailable()) {
-            final long start = System.currentTimeMillis();
             final File samtoolsOutFile = SamtoolsTestUtils.convertToCRAM(
                     sourceCRAM,
                     referenceFile,
                     "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
-            final long end = System.currentTimeMillis();
-            System.out.println(String.format("Elapsed time minutes %,d", (end-start)/1000/60));
-            System.out.println(String.format("Samtools file size: %,d (%s)", Files.size(samtoolsOutFile.toPath()), samtoolsOutFile.toPath()));
-            assertRoundTripFidelity(sourceCRAM, samtoolsOutFile, referenceFile, true);
+            assertRoundTripFidelity(sourceCRAM, samtoolsOutFile, referenceFile, false);
         }
     }
 

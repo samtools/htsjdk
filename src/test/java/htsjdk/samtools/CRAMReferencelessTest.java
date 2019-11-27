@@ -36,8 +36,9 @@ public class CRAMReferencelessTest extends HtsjdkTest {
     @Test
     private void testReadCRAMNoReferenceRequired() throws IOException {
         // test reading a cram with no reference compression (RR=false in compression header)
-        try (final SamReader samReader =
-                     SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, "referenceNotRequired.cram"))) {
+        try (final SamReader samReader = SamReaderFactory.makeDefault()
+                             .validationStringency(ValidationStringency.LENIENT)
+                             .open(new File(TEST_DATA_DIR, "referenceNotRequired.cram"))) {
             final Iterator<SAMRecord> iterator = samReader.iterator();
             while (iterator.hasNext()) {
                 final SAMRecord samRecord1 = iterator.next();
