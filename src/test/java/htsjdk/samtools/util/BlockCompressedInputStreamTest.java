@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.zip.Inflater;
 
 public class BlockCompressedInputStreamTest extends HtsjdkTest {
@@ -154,26 +155,28 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
         final File tempFile = File.createTempFile("testCustomInflater.", ".bam");
         tempFile.deleteOnExit();
         final List<String> linesWritten = writeTempBlockCompressedFileForInflaterTest(tempFile);
+        // wrap our expected output in a lambda to prevent massive string expansion of the test params during test execution
+        final Supplier<List<String>> expectedOutputSupplier = () -> linesWritten;
 
         final InflaterFactory countingInflaterFactory = new CountingInflaterFactory();
 
         return new Object[][]{
                 // set the default InflaterFactory to a CountingInflaterFactory
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false), linesWritten, 4, countingInflaterFactory},
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile), linesWritten, 4, countingInflaterFactory},
-                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile), linesWritten, 4, countingInflaterFactory},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false), expectedOutputSupplier, 4, countingInflaterFactory},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile), expectedOutputSupplier, 4, countingInflaterFactory},
+                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile), expectedOutputSupplier, 4, countingInflaterFactory},
                 {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam")), null, 21, countingInflaterFactory},
                 // provide a CountingInflaterFactory explicitly
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false, countingInflaterFactory), linesWritten, 4, null},
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile, countingInflaterFactory), linesWritten, 4, null},
-                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile, countingInflaterFactory), linesWritten, 4, null},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false, countingInflaterFactory), expectedOutputSupplier, 4, null},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile, countingInflaterFactory), expectedOutputSupplier, 4, null},
+                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile, countingInflaterFactory), expectedOutputSupplier, 4, null},
                 {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam"), countingInflaterFactory), null, 21, null}
         };
     }
 
     @Test(dataProvider = "customInflaterInput", singleThreaded = true)
     public void testCustomInflater(final CheckedExceptionInputStreamSupplier bcisSupplier,
-                                   final List<String> expectedOutput,
+                                   final Supplier<List<String>> expectedOutputSupplier,
                                    final int expectedInflateCalls,
                                    final InflaterFactory customDefaultInflaterFactory) throws Exception
     {
@@ -192,8 +195,8 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
             String line;
             for (int i = 0; (line = reader.readLine()) != null; ++i) {
                 // check expected output, if provided
-                if (expectedOutput != null) {
-                    Assert.assertEquals(line + "\n", expectedOutput.get(i));
+                if (expectedOutputSupplier != null) {
+                    Assert.assertEquals(line + "\n", expectedOutputSupplier.get().get(i));
                 }
             }
         }
