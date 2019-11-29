@@ -395,10 +395,10 @@ public class Slice {
     public CompressionHeader getCompressionHeader() { return compressionHeader; }
 
     /**
-     * Reads and decodes the underlying blocks and returns a list of CRAMRecords. We don't do this automatically
-     * when initially reading the blocks from the underlying stream since there are case where we want to iterate
-     * through containers or slices where we want to consume the underlying blocks, but not actually pay the price
-     * to decode them (i.e., during indexing, or when satisfying index queries).
+     * Reads and decodes the underlying blocks and returns a list of CRAMRecords. We don't do this when initially
+     * reading the blocks from the underlying stream since there are cases where we want to iterate through
+     * containers or slices where we want to consume the underlying blocks, but not actually pay the price to
+     * decode them (i.e., during indexing, or when satisfying index queries).
      *
      * The CRAMRecords returned from this are not normalized (read bases, quality scores and mates have not
      * been resolved). See {@link #normalizeCRAMRecords} for more information about normalization.
@@ -413,6 +413,8 @@ public class Slice {
         final CramRecordReader cramRecordReader = new CramRecordReader(this, compressorCache, validationStringency);
         final ArrayList<CRAMRecord> cramRecords = new ArrayList<>(nRecords);
 
+        // in the case where APDelta = true, the first record in the slice has a 0 position delta, so initialize
+        // prevAlignmentStart using the slice alignment start
         int prevAlignmentStart = alignmentContext.getAlignmentStart();
         for (int i = 0; i < nRecords; i++) {
             // read the new record and update the running prevAlignmentStart

@@ -139,7 +139,7 @@ public class CramRecordReader {
     /**
      * Read a Cram Compression Record, using this class's Encodings
      *
-     * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
+     * @param prevAlignmentStart the alignmentStart of the previous record, for position delta calculation
      * @return the newly-read CRAMRecord
      */
     public CRAMRecord read(
@@ -149,6 +149,8 @@ public class CramRecordReader {
         // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.
         final int bamFlags = bitFlagsCodec.readData();
         final int cramFlags = compressionBitFlagsCodec.readData();
+
+        // decode positions
         int referenceIndex;
         if (slice.getAlignmentContext().getReferenceContext().isMultiRef()) {
             referenceIndex = refIdCodec.readData();
@@ -158,8 +160,10 @@ public class CramRecordReader {
         }
 
         final int readLength = readLengthCodec.readData();
+
         int alignmentStart;
         if (compressionHeader.isAPDelta()) {
+            // note that its legal to have negative alignmentStart deltas
             alignmentStart = prevAlignmentStart + alignmentStartCodec.readData();
         } else {
             alignmentStart = alignmentStartCodec.readData();
