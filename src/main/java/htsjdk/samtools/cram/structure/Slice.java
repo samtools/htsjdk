@@ -410,13 +410,13 @@ public class Slice {
     public ArrayList<CRAMRecord> deserializeCRAMRecords(
             final CompressorCache compressorCache,
             final ValidationStringency validationStringency) {
-        final CramRecordReader reader = new CramRecordReader(this, compressorCache, validationStringency);
+        final CramRecordReader cramRecordReader = new CramRecordReader(this, compressorCache, validationStringency);
         final ArrayList<CRAMRecord> cramRecords = new ArrayList<>(nRecords);
 
         int prevAlignmentStart = alignmentContext.getAlignmentStart();
         for (int i = 0; i < nRecords; i++) {
             // read the new record and update the running prevAlignmentStart
-            final CRAMRecord cramRecord = reader.read(globalRecordCounter + i, prevAlignmentStart);
+            final CRAMRecord cramRecord = cramRecordReader.read(globalRecordCounter + i, prevAlignmentStart);
             prevAlignmentStart = cramRecord.getAlignmentStart();
             cramRecords.add(cramRecord);
         }
@@ -506,11 +506,14 @@ public class Slice {
             }
         }
 
-        // resolve quality scores:
         for (final CRAMRecord record : cramRecords) {
+            // resolve quality scores:
             record.resolveQualityScores();
+
+            // set all records to normalized
+            record.setIsNormalized();
         }
-    }
+     }
 
     private int getReferenceOffset(final boolean hasEmbeddedReference) {
         final ReferenceContext sliceReferenceContext = getAlignmentContext().getReferenceContext();
@@ -714,8 +717,8 @@ public class Slice {
     public String toString() {
         return String.format(
                 "slice: %s globalRecordCounter=%d, nRecords=%d, sliceHeaderOffset=%d, sizeOfBlocks=%d, landmark=%d, mapped/unmapped/unplaced: %d/%d/%d, md5=%s",
-                globalRecordCounter,
                 alignmentContext,
+                globalRecordCounter,
                 nRecords,
                 getByteOffsetOfSliceHeaderBlock(),
                 getByteSizeOfSliceBlocks(),

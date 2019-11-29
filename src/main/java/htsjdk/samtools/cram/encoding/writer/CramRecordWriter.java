@@ -33,8 +33,7 @@ import java.util.stream.Collectors;
  */
 public class CramRecordWriter {
     //NOTE: these are all named with a "Codec" suffix, but they're really DataSeriesWriters, which are
-    // generic-typed wrappers around a CRAMCodec
-
+    // generic-typed wrappers around a CRAMCodec.
     private final DataSeriesWriter<Integer> bitFlagsCodec;
     private final DataSeriesWriter<Integer> cramBitFlagsCodec;
     private final DataSeriesWriter<Integer> readLengthCodec;

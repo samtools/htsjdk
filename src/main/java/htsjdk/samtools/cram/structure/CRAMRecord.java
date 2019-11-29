@@ -25,6 +25,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.common.Version;
@@ -93,6 +94,9 @@ public class CRAMRecord {
     private int recordsToNextFragment = -1;
     private CRAMRecord nextSegment = null;
     private CRAMRecord previousSegment = null;
+
+    // keep track of whether this record is raw or normalized
+    private boolean isNormalized = false;
 
     /**
      * Create a CRAMRecord from a SAMRecord.
@@ -209,7 +213,6 @@ public class CRAMRecord {
     /**
      * Create a CRAMRecord from a set of values retrieved from a serialized Slice's data series streams.
      *
-     //* @param landmarkIndex
      * @param sequentialIndex
      * @param bamFlags
      * @param cramFlags
@@ -350,6 +353,25 @@ public class CRAMRecord {
             }
         }
     }
+
+    /**
+     * Set this record's state to normalized. When a CRAM record is read from a CRAM stream, it is "raw" in
+     * that the record's read bases, quality scores, and mate graph are not stored directly as part of the
+     * record. Normalization is the process of resolving these values, and is performed at Slice granularity,
+     * across all records in a Slice.
+     * (see {@link Slice#normalizeCRAMRecords(List, CRAMReferenceRegion, SubstitutionMatrix)}).
+     */
+    public void setIsNormalized() { isNormalized = true; }
+
+    /**
+     * When a CRAM record is read from a CRAM stream, it is "raw" in that the record's read bases, quality
+     * scores, and mate graph are not stored directly as part of the record. These values must be resolved
+     * through the separate process of normalization, which is performed at Slice granularity (all records in a
+     * Slice are normalized at the same time).
+     * (see {@link Slice#normalizeCRAMRecords(List, CRAMReferenceRegion, SubstitutionMatrix)}).
+     * @return true if this record is normalized
+     */
+    public boolean getIsNormalized() { return isNormalized; }
 
     /**
      * Resolve the quality scores for this CRAM record based on preserved scores, read features and flags.
