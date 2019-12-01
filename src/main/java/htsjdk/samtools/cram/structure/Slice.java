@@ -72,7 +72,7 @@ public class Slice {
     private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
     private byte[] referenceMD5 = new byte[MD5_BYTE_SIZE];
     private SAMBinaryTagAndValue sliceTags;
-    // End slice header components
+    // End Slice header components
     ////////////////////////////////
 
     private final CompressionHeader compressionHeader;
@@ -395,10 +395,10 @@ public class Slice {
     public CompressionHeader getCompressionHeader() { return compressionHeader; }
 
     /**
-     * Reads and decodes the underlying blocks and returns a list of CRAMRecords. We don't do this when initially
-     * reading the blocks from the underlying stream since there are cases where we want to iterate through
-     * containers or slices where we want to consume the underlying blocks, but not actually pay the price to
-     * decode them (i.e., during indexing, or when satisfying index queries).
+     * Reads and decodes the underlying blocks and returns a list of CRAMRecords. This isn't done initially
+     * when the blocks are read from the underlying stream since there are cases where we want to iterate
+     * through containers or slices and consume the underlying blocks, but not actually pay the price to
+     * decode the records (i.e., during indexing, or when satisfying index queries).
      *
      * The CRAMRecords returned from this are not normalized (read bases, quality scores and mates have not
      * been resolved). See {@link #normalizeCRAMRecords} for more information about normalization.
@@ -418,7 +418,7 @@ public class Slice {
         int prevAlignmentStart = alignmentContext.getAlignmentStart();
         for (int i = 0; i < nRecords; i++) {
             // read the new record and update the running prevAlignmentStart
-            final CRAMRecord cramRecord = cramRecordReader.read(globalRecordCounter + i, prevAlignmentStart);
+            final CRAMRecord cramRecord = cramRecordReader.readCRAMRecord(globalRecordCounter + i, prevAlignmentStart);
             prevAlignmentStart = cramRecord.getAlignmentStart();
             cramRecords.add(cramRecord);
         }
@@ -427,18 +427,19 @@ public class Slice {
     }
 
     /**
-     * Normalize a list of CramRecords that have been read in from a CRAM stream. Normalization
-     * restores raw CRAM records to a state suitable for conversion to SAMRecords, resolving read bases against
+     * Normalize a list of CramRecords that have been read in from a CRAM stream. Normalization converts raw
+     * CRAM records to a state suitable for conversion to SAMRecords, resolving read bases against
      * the reference, as well as quality scores and mates.
-     * The records in this list should be the records from this slice, not the entire container,
-     * since the relative positions of mate records are determined relative to the slice (downstream)
+     * The records in this list being normalized should be the records from a Slice, not an entire Container,
+     * since the relative positions of mate records are determined relative to the Slice (downstream)
      * offsets.
      *
-     * NOTE: This has a side effect of updating the CRAM records in place.
+     * NOTE: This mutates (normalizes) the CRAM records in place.
      *
-     * @param cramRecords
-     * @param cramReferenceRegion
-     * @param substitutionMatrix
+     * @param cramRecords CRAMRecords to normalize
+     * @param cramReferenceRegion the reference region for this slice
+     * @param substitutionMatrix the substitution matrix fromt he CRAM compression header to use when restoring
+     *                          read bases
      */
     public void normalizeCRAMRecords(final List<CRAMRecord> cramRecords,
                                      final CRAMReferenceRegion cramReferenceRegion,
@@ -471,7 +472,7 @@ public class Slice {
             }
         }
 
-        // restore pairing first:
+        // restore mate pairing first:
         for (final CRAMRecord record : cramRecords) {
             if (record.isReadPaired() &&
                     !record.isDetached() &&
@@ -483,7 +484,6 @@ public class Slice {
                 downMate.setPreviousSegment(record);
             }
         }
-
         for (final CRAMRecord record : cramRecords) {
             if (record.getPreviousSegment() == null && record.getNextSegment() != null) {
                 record.restoreMateInfo();
@@ -512,7 +512,7 @@ public class Slice {
             // resolve quality scores:
             record.resolveQualityScores();
 
-            // set all records to normalized
+            // in this last pass, set all records as normalized
             record.setIsNormalized();
         }
      }
@@ -537,10 +537,11 @@ public class Slice {
         for (final int id : getSliceBlocks().getExternalContentIDs()) {
             getContentIDs()[i] = id;
         }
-        // establish our header block before writing
+        // establish our header block, then write it out
         sliceHeaderBlock = Block.createRawSliceHeaderBlock(createSliceHeaderBlockContent(major, this));
         sliceHeaderBlock.write(major, outputStream);
-        // writes the core, and external blocks
+
+        // write the core and external blocks
         getSliceBlocks().writeBlocks(major, outputStream);
     }
 
@@ -699,8 +700,10 @@ public class Slice {
                     alignmentContext.getAlignmentStart(),
                     alignmentContext.getAlignmentSpan(),
                     referenceMD5)) {
-                throw new CRAMException("Failed MD5 check on full slice span - trying narrower span");
+                throw new CRAMException(String.format("Reference MD5 failed to validate against %s",
+                        String.format("%032x", new BigInteger(1, referenceMD5))));
             }
+
         }
         return true;
     }
@@ -750,20 +753,6 @@ public class Slice {
     /**
      * Hijacking attributes-related methods from SAMRecord:
      */
-
-//    /**
-//     * Get tag value attached to the slice.
-//     * @param tag tag ID as a short integer as returned by {@link SAMTag#makeBinaryTag(String)}
-//     * @return a value of the tag
-//     */
-//    public Object getAttribute(final short tag) {
-//        if (this.sliceTags == null) return null;
-//        else {
-//            final SAMBinaryTagAndValue tmp = this.sliceTags.find(tag);
-//            if (tmp != null) return tmp.value;
-//            else return null;
-//        }
-//    }
 
     /**
      * Set a value for the tag.

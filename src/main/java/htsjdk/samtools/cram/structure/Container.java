@@ -321,6 +321,7 @@ public class Container {
         final List<SAMRecord> samRecords = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
             final List<CRAMRecord> cramRecords = slice.deserializeCRAMRecords(compressorCache, validationStringency);
+            // before we convert to SAMRecord, we need to normalize the CRAMRecords in each Slice
             slice.normalizeCRAMRecords(
                     cramRecords,
                     cramReferenceRegion,

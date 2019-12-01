@@ -137,12 +137,12 @@ public class CramRecordReader {
     }
 
     /**
-     * Read a Cram Compression Record, using this class's Encodings
+     * Read a CRAMRecord, using this reader's data series readers.
      *
      * @param prevAlignmentStart the alignmentStart of the previous record, for position delta calculation
      * @return the newly-read CRAMRecord
      */
-    public CRAMRecord read(
+    public CRAMRecord readCRAMRecord(
             final long sequentialIndex,
             final int prevAlignmentStart) {
         // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,

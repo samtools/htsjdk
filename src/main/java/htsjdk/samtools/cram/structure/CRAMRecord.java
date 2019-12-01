@@ -465,7 +465,7 @@ public class CRAMRecord {
     }
 
     //////////////////////////////////////
-    // Start Mate stuff
+    // Start Mate code
     //////////////////////////////////////
     public void updateDetachedState() {
         if (nextSegment == null || previousSegment != null) {
@@ -566,7 +566,7 @@ public class CRAMRecord {
     }
 
     //////////////////////////////////////
-    // End Mate stuff
+    // End mate code
     //////////////////////////////////////
 
     /**

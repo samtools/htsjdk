@@ -138,7 +138,7 @@ public class CramRecordWriter {
     public void writeToSliceBlocks(final List<CRAMRecord> records, final int initialAlignmentStart) {
         int prevAlignmentStart = initialAlignmentStart;
         for (final CRAMRecord record : records) {
-            writeRecordToStreams(record, prevAlignmentStart);
+            writeCRAMRecord(record, prevAlignmentStart);
             prevAlignmentStart = record.getAlignmentStart();
         }
         sliceBlocksWriteStreams.flushStreamsToBlocks();
@@ -165,12 +165,12 @@ public class CramRecordWriter {
     }
 
     /**
-     * Write a Cram Compression Record, using this class's Encodings
+     * Write a CRAMRecord using the encodings for this writer.
      *
      * @param r the Cram Compression Record to write
      * @param prevAlignmentStart the alignmentStart of the previous record, for delta calculation
      */
-    private void writeRecordToStreams(final CRAMRecord r, final int prevAlignmentStart) {
+    private void writeCRAMRecord(final CRAMRecord r, final int prevAlignmentStart) {
 
         // NOTE: Because it is legal to interleave multiple data series encodings within a single stream,
         // the order in which these are encoded (and decoded) is significant, and prescribed by the spec.

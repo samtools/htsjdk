@@ -154,6 +154,7 @@ public class SliceFactory {
         return cramRecords;
     }
 
+    //Update mate pairing
     private void resolveMatesForSlice(final List<CRAMRecord> cramRecords) {
         if (!coordinateSorted) {
             for (final CRAMRecord r : cramRecords) {
