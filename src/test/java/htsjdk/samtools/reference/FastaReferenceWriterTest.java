@@ -245,11 +245,25 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
                 .map(s -> new Object[]{s}).toArray(Object[][]::new);
     }
 
+    // test case wrapper to reduce spammy TestNG output during test execution
+    private static class SAMSequenceDictionaryWrapper {
+        final SAMSequenceDictionary dictionary;
+        public SAMSequenceDictionaryWrapper(final SAMSequenceDictionary dictionary) {
+            this.dictionary = dictionary;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%d/%d", dictionary.size(),dictionary.getReferenceLength());
+        }
+    }
+
     @Test(dataProvider = "testData")
-    public void testWriter(final SAMSequenceDictionary dictionary, final boolean withIndex, final boolean withDictionary,
+    public void testWriter(final SAMSequenceDictionaryWrapper dictionaryWrapper, final boolean withIndex, final boolean withDictionary,
                            final boolean withDescriptions, final int defaultBpl,
                            final int minBpl, final int maxBpl, final int seed, final boolean gzipped)
             throws IOException, GeneralSecurityException, URISyntaxException {
+        final SAMSequenceDictionary dictionary = dictionaryWrapper.dictionary;
         final Map<String, byte[]> bases = new LinkedHashMap<>(dictionary.getSequences().size());
         final Map<String, Integer> bpl = new LinkedHashMap<>(dictionary.getSequences().size());
         final Random rdn = new Random(seed);
@@ -584,8 +598,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         }
     }
 
-    private void assertFastaDictionaryContent(final Path dictPath, final SAMSequenceDictionary dictionary)
-            throws IOException, GeneralSecurityException, URISyntaxException {
+    private void assertFastaDictionaryContent(final Path dictPath, final SAMSequenceDictionary dictionary) {
         final SAMSequenceDictionary actualDictionary = SAMSequenceDictionaryExtractor.extractDictionary(dictPath);
         dictionary.assertSameDictionary(actualDictionary);
     }
@@ -636,7 +649,8 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
                         for (final int bpl : testBpls) {
                             for (final int seed : testSeeds) {
                                 for (final boolean gzipped : testWithGzipped)
-                                result.add(new Object[]{dictionary, withIndex, withDictionary, withDescriptions, bpl, 1, (bpl < 0 ? FastaReferenceWriter.DEFAULT_BASES_PER_LINE : bpl) * 2, seed, gzipped});
+                                result.add(new Object[]{
+                                        new SAMSequenceDictionaryWrapper(dictionary), withIndex, withDictionary, withDescriptions, bpl, 1, (bpl < 0 ? FastaReferenceWriter.DEFAULT_BASES_PER_LINE : bpl) * 2, seed, gzipped});
                             }
                         }
                     }

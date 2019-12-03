@@ -158,13 +158,11 @@ public class VariantContextTestProvider extends HtsjdkTest {
             return vcs.get(0).hasGenotypes();
         }
 
+        // Minimize the toString representation to minimize output due to test method argument expansion by testNG
         public String toString() {
             StringBuilder b = new StringBuilder();
-            b.append("VariantContextTestData: [");
             final VariantContext vc = vcs.get(0);
-            final VariantContextBuilder builder = new VariantContextBuilder(vc);
-            builder.noGenotypes();
-            b.append(builder.make().toString());
+            b.append(vc.getType());
             if ( vc.getNSamples() < 5 ) {
                 for ( final Genotype g : vc.getGenotypes() )
                     b.append(g.toString());
@@ -173,7 +171,6 @@ public class VariantContextTestProvider extends HtsjdkTest {
             }
 
             if ( vcs.size() > 1 ) b.append(" ----- with another ").append(vcs.size() - 1).append(" VariantContext records");
-            b.append("]");
             return b.toString();
         }
     }
