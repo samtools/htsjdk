@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,6 +228,39 @@ public class VCFEncoder {
             result = (Boolean) val ? "" : null; // empty string for true, null for false
         } else if (val instanceof List) {
             result = formatVCFField(((List) val).toArray());
+        } else if (val instanceof int[]){
+            final int[] cast = (int[])val;
+            if (cast.length == 0) {
+                return VCFConstants.MISSING_VALUE_v4;
+            }
+            final StringBuilder sb = new StringBuilder(String.valueOf(cast[0]));
+            for (int i = 1; i < cast.length; i++) {
+                sb.append(',');
+                sb.append(cast[i]);
+            }
+            result = sb.toString();
+        } else if (val instanceof double[]){
+            final double[] cast = (double[])val;
+            if (cast.length == 0) {
+                return VCFConstants.MISSING_VALUE_v4;
+            }
+            final StringBuilder sb = new StringBuilder(String.valueOf(cast[0]));
+            for (int i = 1; i < cast.length; i++) {
+                sb.append(',');
+                sb.append(cast[i]);
+            }
+            result = sb.toString();
+        }  else if (val instanceof Object[]){
+            final Object[] cast = (Object[])val;
+            if (cast.length == 0) {
+                return VCFConstants.MISSING_VALUE_v4;
+            }
+            final StringBuilder sb = new StringBuilder(String.valueOf(cast[0]));
+            for (int i = 1; i < cast.length; i++) {
+                sb.append(',');
+                sb.append(cast[i]);
+            }
+            result = sb.toString();
         } else if (val.getClass().isArray()) {
             final int length = Array.getLength(val);
             if (length == 0) {
