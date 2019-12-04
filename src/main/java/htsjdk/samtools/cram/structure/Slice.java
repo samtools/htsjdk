@@ -935,7 +935,7 @@ public class Slice {
                 final Map<ReferenceContext, AlignmentSpan> sliceSpanMap = getMultiRefAlignmentSpans(
                         compressorCache,
                         ValidationStringency.LENIENT);
-                sliceSpanMap.entrySet().stream().filter(as -> !as.equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)).forEach(
+                sliceSpanMap.entrySet().stream().filter(as -> !as.getKey().equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)).forEach(
                         entry -> baiEntries.add(
                                 new BAIEntry(
                                     entry.getKey(),

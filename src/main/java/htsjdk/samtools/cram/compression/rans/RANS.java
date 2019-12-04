@@ -36,7 +36,7 @@ public class RANS {
     private static final int MINIMUM__ORDER_1_SIZE = 4;
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
-    public static int NUMBER_OF_SYMBOLS = 256;
+    public static final int NUMBER_OF_SYMBOLS = 256;
 
     // working variables used by the encoder and decoder; initialize them lazily since
     // they consist of lots of small objects, and we don't want to instantiate them
