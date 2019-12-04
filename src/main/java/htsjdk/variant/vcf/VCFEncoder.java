@@ -327,11 +327,9 @@ public class VCFEncoder {
                             vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
                             writeAllele(g.getAllele(i), alleleMap, vcfoutput);
                         }
-
                     } else {
-                        attrs.add(VCFConstants.MISSING_VALUE_v4);
+                        vcfoutput.append(VCFConstants.MISSING_VALUE_v4);
                     }
-                    continue;
                 } else {
                     final String outputValue;
                     if (field.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
