@@ -321,17 +321,17 @@ public class VCFEncoder {
             final List<String> attrs = new ArrayList<>(genotypeFormatKeys.size());
             for (final String field : genotypeFormatKeys) {
                 if (field.equals(VCFConstants.GENOTYPE_KEY)) {
-                    if (!g.isAvailable()) {
-                        throw new IllegalStateException("GTs cannot be missing for some samples if they are available for others in the record");
-                    }
+                    if (g.isAvailable()) {
+                        writeAllele(g.getAllele(0), alleleMap, vcfoutput);
+                        for (int i = 1; i < g.getPloidy(); i++) {
+                            vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
+                            writeAllele(g.getAllele(i), alleleMap, vcfoutput);
+                        }
 
-                    writeAllele(g.getAllele(0), alleleMap, vcfoutput);
-                    for (int i = 1; i < g.getPloidy(); i++) {
-                        vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
-                        writeAllele(g.getAllele(i), alleleMap, vcfoutput);
+                    } else {
+                        attrs.add(VCFConstants.MISSING_VALUE_v4);
                     }
                     continue;
-
                 } else {
                     final String outputValue;
                     if (field.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
