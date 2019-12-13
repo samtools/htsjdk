@@ -204,17 +204,24 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     @Override
     public final void close()
     {
-        if (!isClosed) {
-            if (alignmentSorter != null) {
-                for (final SAMRecord alignment : alignmentSorter) {
-                    writeAlignment(alignment);
-                    if (progressLogger != null) progressLogger.record(alignment);
+        try {
+            if (!isClosed) {
+                if (alignmentSorter != null) {
+                    try {
+                        for (final SAMRecord alignment : alignmentSorter) {
+                            writeAlignment(alignment);
+                            if (progressLogger != null)
+                                progressLogger.record(alignment);
+                        }
+                    } finally {
+                        alignmentSorter.cleanup();
+                    }
                 }
-                alignmentSorter.cleanup();
+                finish();
             }
-            finish();
+        } finally {
+            isClosed = true;
         }
-        isClosed = true;
     }
 
     /**
