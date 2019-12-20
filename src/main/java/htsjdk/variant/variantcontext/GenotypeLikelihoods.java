@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Objects;
 
+import org.apache.commons.math3.util.CombinatoricsUtils;
+
 public class GenotypeLikelihoods {
     private final static int NUM_LIKELIHOODS_CACHE_N_ALLELES = 5;
     private final static int NUM_LIKELIHOODS_CACHE_PLOIDY = 10;
@@ -443,16 +445,9 @@ public class GenotypeLikelihoods {
      * @return  number of likelihoods
      */
     private static final int calcNumLikelihoods(final int numAlleles, final int ploidy) {
-        if (numAlleles == 1)
-            return 1;
-        else if (ploidy == 1)
-            return numAlleles;
-        else {
-            int acc =0;
-            for (int k=0; k <= ploidy; k++ )
-                acc += calcNumLikelihoods(numAlleles - 1, ploidy - k);
-            return acc;
-        }
+        //Note: Casting to int instead instead of returning long because values above Integer.MAX_VALUE would not be valid array indices,
+        // and would cause other problems if a PL array needed to be that size
+        return (int)(CombinatoricsUtils.binomialCoefficient((numAlleles + ploidy - 1),ploidy));
     }
 
     /**
@@ -471,12 +466,9 @@ public class GenotypeLikelihoods {
      *
      * Note this method caches the value for most common num Allele / ploidy combinations for efficiency
      *
-     * Recursive implementation:
-     *   S(N,P) = sum_{k=0}^P S(N-1,P-k)
-     *  because if we have N integers, we can condition 1 integer to be = k, and then N-1 integers have to sum to P-K
-     * With initial conditions
-     *   S(N,1) = N  (only way to have N integers add up to 1 is all-zeros except one element with a one. There are N of these vectors)
-     *   S(1,P) = 1 (only way to have 1 integer add to P is with that integer P itself).
+     * For non-cached values, the result is calculated via a call to calcNumLikelihoods,
+     * which uses the Apache Commons CombinatoricsUtils class
+     * using the formula (numAlleles + ploidy - 1) choose ploidy
      *
      *   @param  numAlleles      Number of alleles (including ref)
      *   @param  ploidy          Ploidy, or number of chromosomes in set

@@ -128,11 +128,16 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     public void testCalculateNumLikelihoods() {    
         
         for (int nAlleles=2; nAlleles<=5; nAlleles++)
-            // simplest case: diploid
+        {
             Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(nAlleles, 2), nAlleles*(nAlleles+1)/2);
+        }
 
         // some special cases: ploidy = 20, #alleles = 4
         Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(4, 20), 1771);
+        // ploidy = 10, alleles = 5
+        Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(5, 10), 1001);
+        // ploidy = 16, alleles = 10
+        Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(10, 16), 2042975);
     }
     
     @Test
