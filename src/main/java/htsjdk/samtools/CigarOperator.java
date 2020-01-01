@@ -28,40 +28,62 @@ package htsjdk.samtools;
  */
 public enum CigarOperator {
     /** Match or mismatch */
-    M(true, true,   'M'),
+    M(true, true),
     /** Insertion vs. the reference. */
-    I(true, false,  'I'),
+    I(true, false),
     /** Deletion vs. the reference. */
-    D(false, true,  'D'),
+    D(false, true),
     /** Skipped region from the reference. */
-    N(false, true,  'N'),
+    N(false, true),
     /** Soft clip. */
-    S(true, false,  'S'),
+    S(true, false),
     /** Hard clip. */
-    H(false, false, 'H'),
+    H(false, false),
     /** Padding. */
-    P(false, false, 'P'),
+    P(false, false),
     /** Matches the reference. */
-    EQ(true, true,  '='),
+    EQ(true, true,  "="),
     /** Mismatches the reference. */
-    X(true, true,   'X')
+    X(true, true)
     ;
-
-    // Representation of CigarOperator in BAM file
-    private static final byte OP_M = 0;
-    private static final byte OP_I = 1;
-    private static final byte OP_D = 2;
-    private static final byte OP_N = 3;
-    private static final byte OP_S = 4;
-    private static final byte OP_H = 5;
-    private static final byte OP_P = 6;
-    private static final byte OP_EQ = 7;
-    private static final byte OP_X = 8;
 
     private final boolean consumesReadBases;
     private final boolean consumesReferenceBases;
-    private final byte character;
+    private final char character;
     private final String string;
+    private final int mask;
+
+    private static final int INDEL_MASK = I.mask | D.mask;
+    private static final int INDEL_OR_SKIP_MASK = INDEL_MASK | N.mask;
+    private static final int ALIGNMENT_MASK = M.mask | X.mask | EQ.mask;
+    private static final int CLIP_MASK = S.mask | H.mask;
+
+    private static final CigarOperator[] bamCode2Value;
+
+    static {
+        final CigarOperator[] values = CigarOperator.values();
+        bamCode2Value = new CigarOperator[values.length];
+        for (final CigarOperator op : values) {
+            final int code = op.bamCode();
+            if (bamCode2Value[code] != null) {
+                throw new ExceptionInInitializerError("BAM code collision between: " + op + " " + bamCode2Value[code]);
+            }
+            bamCode2Value[op.bamCode()] = op;
+        }
+    }
+
+    private static final CigarOperator[] byte2Value;
+
+    static {
+        byte2Value = new CigarOperator[Byte.MAX_VALUE];
+        for (final CigarOperator op : values()) {
+            final int index = op.character & 0x7F;
+            if (byte2Value[index] != null) {
+                throw new ExceptionInInitializerError("BAM code collision between: " + op + " " + byte2Value[index]);
+            }
+            byte2Value[index] = op;
+        }
+    }
 
     // Readable synonyms of the above enums
     public static final CigarOperator MATCH_OR_MISMATCH = M;
@@ -72,12 +94,18 @@ public enum CigarOperator {
     public static final CigarOperator HARD_CLIP = H;
     public static final CigarOperator PADDING = P;
 
+
+    CigarOperator(final boolean consumesReadBases, final boolean consumesReferenceBases) {
+        this(consumesReadBases, consumesReferenceBases, null);
+    }
+
     /** Default constructor. */
-    CigarOperator(boolean consumesReadBases, boolean consumesReferenceBases, char character) {
+    CigarOperator(boolean consumesReadBases, boolean consumesReferenceBases, final String string) {
         this.consumesReadBases = consumesReadBases;
         this.consumesReferenceBases = consumesReferenceBases;
-        this.character = (byte) character;
-        this.string = new String(new char[] {character}).intern();
+        this.string = string == null ? name() : string; // since we will provide a constant it is internalized already.
+        this.character = this.string.charAt(0);
+        this.mask = 1 << ordinal();
     }
 
     /** If true, represents that this cigar operator "consumes" bases from the read bases. */
@@ -89,58 +117,51 @@ public enum CigarOperator {
     /**
      * @param b CIGAR operator in character form as appears in a text CIGAR string
      * @return CigarOperator enum value corresponding to the given character.
+     * @deprecated use {@link #fromChar(int)} instead.
      */
+    @Deprecated
     public static CigarOperator characterToEnum(final int b) {
-        switch (b) {
-        case 'M':
-            return M;
-        case 'I':
-            return I;
-        case 'D':
-            return D;
-        case 'N':
-            return N;
-        case 'S':
-            return S;
-        case 'H':
-            return H;
-        case 'P':
-            return P;
-        case '=':
-            return EQ;
-        case 'X':
-            return X;
-        default:
-            throw new IllegalArgumentException("Unrecognized CigarOperator: " + b);
-        }
+        return fromChar(b);
+    }
+
+    public static CigarOperator fromChar(final int ch) {
+       if ((ch & ~0x7F) == 0) {
+           final CigarOperator result = byte2Value[ch & 0x7F];
+           if (result == null) {
+               throw new IllegalArgumentException("Unrecognized CigarOperator: " + ch);
+           }
+           return result;
+       } else {
+           throw new IllegalArgumentException("Unrecognized CigarOperator: " + ch);
+       }
     }
 
     /**
      * @param i CIGAR operator in binary form as appears in a BAMRecord.
      * @return CigarOperator enum value corresponding to the given int value.
+     * @deprecated use {@link #fromBamCode(int)}.
      */
+    @Deprecated
     public static CigarOperator binaryToEnum(final int i) {
-        switch(i) {
-            case OP_M:
-                return M;
-            case OP_I:
-                return I;
-            case OP_D:
-                return D;
-            case OP_N:
-                return N;
-            case OP_S:
-                return S;
-            case OP_H:
-                return H;
-            case OP_P:
-                return P;
-            case OP_EQ:
-                return EQ;
-            case OP_X:
-                return X;
-            default:
-                throw new IllegalArgumentException("Unrecognized CigarOperator: " + i);
+        return fromBamCode(i);
+    }
+
+    /**
+     * Looks-up the operator given its BAM code.
+     * <p>
+     *     It is guaranteed that {@code CigarOperator.fromBamCode(op.bamCode()) == op}.
+     * </p>
+     *
+     * @param bamCode the query BAM code.
+     * @return never {@code null}.
+     * @throws IllegalArgumentException if the input BAM code is not valid.
+     * @see #bamCode
+     */
+    public static CigarOperator fromBamCode(final int bamCode) {
+        if (bamCode >= 0 && bamCode < bamCode2Value.length) {
+            return bamCode2Value[bamCode];
+        } else {
+            throw new IllegalArgumentException("Unrecognized CigarOperator: " + bamCode);
         }
     }
 
@@ -148,55 +169,64 @@ public enum CigarOperator {
      *
      * @param e CigarOperator enum value.
      * @return CIGAR operator corresponding to the enum value in binary form as appears in a BAMRecord.
+     * @deprecated use {@link #bamCode()} instead.
      */
+    @Deprecated
     public static int enumToBinary(final CigarOperator e) {
-        switch(e) {
-            case M:
-                return OP_M;
-            case I:
-                return OP_I;
-            case D:
-                return OP_D;
-            case N:
-                return OP_N;
-            case S:
-                return OP_S;
-            case H:
-                return OP_H;
-            case P:
-                return OP_P;
-            case EQ:
-                return OP_EQ;
-            case X:
-                return OP_X;
-            default:
-                throw new IllegalArgumentException("Unrecognized CigarOperator: " + e);
-        }
+        return e.ordinal();
     }
 
-    /** Returns the character that should be used within a SAM file. */
+    /**
+     * Returns the binary representation of this operator as it appears in the BAMs.
+     * @return a unique value between 0 and 8.
+     */
+    public int bamCode() {
+        return ordinal();
+    }
+
+    /** Returns the character that should be used within a SAM file.
+     *
+     * @deprecated use {@link #asByte()} or {@link #asChar()}
+     */
+    @Deprecated
     public static byte enumToCharacter(final CigarOperator e) {
-        return e.character;
+        return (byte) e.character;
+    }
+
+    /**
+     * Returns the operator in its single byte representation.
+     * @return same as the first character (cast to byte) of the string returned by {@link #toString()}.
+     */
+    public byte asByte() {
+        return (byte) character;
+    }
+
+    /**
+     * Returns the operator in its single byte representation.
+     * @return same as the first character of the string returned by {@link #toString()}.
+     */
+    public char asChar() {
+        return character;
     }
 
     /** Returns true if the operator is a clipped (hard or soft) operator */
     public boolean isClipping() {
-        return this == S || this == H;
+        return (CLIP_MASK & mask) != 0;
     }
 
     /** Returns true if the operator is a Insertion or Deletion operator */
     public boolean isIndel() {
-        return this == I || this == D;
+        return (INDEL_MASK & mask) != 0;
     }
 
     /** Returns true if the operator is a Skipped Region Insertion or Deletion operator */
     public boolean isIndelOrSkippedRegion() {
-        return this == N || isIndel();
+        return (mask & INDEL_OR_SKIP_MASK) != 0;
     }
 
     /** Returns true if the operator is a M, a X or a EQ */
     public boolean isAlignment() {
-        return this == M || this == X || this == EQ;
+        return (mask & ALIGNMENT_MASK) != 0;
     }
     
     /** Returns true if the operator is a Padding operator */
@@ -205,7 +235,8 @@ public enum CigarOperator {
     }
     
     /** Returns the cigar operator as it would be seen in a SAM file. */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return this.string;
     }
 }
