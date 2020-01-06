@@ -520,7 +520,7 @@ public class IndexFactory {
                     msg += " Saw feature " + featToString(visitedChromos.get(curChr));
                     msg += " followed later by " + featToString(lastFeature);
                     msg += " and then " + featToString(currentFeature);
-                    throw new TribbleException.MalformedFeatureFile(msg, inputPath.toAbsolutePath().toString());
+                    throw new TribbleException.MalformedFeatureFile(msg, inputPath.toString());
                 }else{
                     visitedChromos.put(curChr, currentFeature);
                 }
@@ -546,7 +546,7 @@ public class IndexFactory {
         if (lastFeature != null && currentFeature.getStart() < lastFeature.getStart() && lastFeature.getContig().equals(currentFeature.getContig()))
             throw new TribbleException.MalformedFeatureFile("Input file is not sorted by start position. \n" +
                     "We saw a record with a start of " + currentFeature.getContig() + ":" + currentFeature.getStart() +
-                    " after a record with a start of " + lastFeature.getContig() + ":" + lastFeature.getStart(), inputPath.toAbsolutePath().toString());
+                    " after a record with a start of " + lastFeature.getContig() + ":" + lastFeature.getStart(), inputPath.toString());
     }
 
 
@@ -616,7 +616,7 @@ public class IndexFactory {
             } catch (final IOException e) {
                 throw new TribbleException.FeatureFileDoesntExist(
                         "Unable to open the input file, most likely the file doesn't exist.",
-                        inputPath.toAbsolutePath().toString());
+                        inputPath.toString());
             }
         }
 
@@ -625,17 +625,17 @@ public class IndexFactory {
             try {
                 if (!IOUtil.isBlockCompressed(inputPath, true)) {
                     throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.",
-                            inputPath.toAbsolutePath().toString());
+                            inputPath.toString());
                 }
 
                 final ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
-                final SeekableStream seekableStream = ssf.getStreamFor(inputPath.toAbsolutePath().toString());
+                final SeekableStream seekableStream = ssf.getStreamFor(inputPath.toUri().toString());
                 return new BlockCompressedInputStream(seekableStream);
             } catch (final FileNotFoundException e) {
                 throw new TribbleException.FeatureFileDoesntExist("Unable to open the input file, most likely the file doesn't exist.",
-                        inputPath.toAbsolutePath().toString());
+                        inputPath.toString());
             } catch (final IOException e) {
-                throw new TribbleException.MalformedFeatureFile("Error initializing stream", inputPath.toAbsolutePath().toString(), e);
+                throw new TribbleException.MalformedFeatureFile("Error initializing stream", inputPath.toString(), e);
             }
         }
 
@@ -689,7 +689,7 @@ public class IndexFactory {
                     nextFeature = codec.decodeLoc(source);
                 }
             } catch (final IOException e) {
-                throw new TribbleException.MalformedFeatureFile("Unable to read a line from the file", inputPath.toAbsolutePath().toString(), e);
+                throw new TribbleException.MalformedFeatureFile("Unable to read a line from the file", inputPath.toString(), e);
             }
         }
     }
