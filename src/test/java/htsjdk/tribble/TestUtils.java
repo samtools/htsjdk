@@ -51,7 +51,7 @@ public class TestUtils {
      * @throws URISyntaxException if the provided strings cannot be understoos as Uris.
      */
 
-    public static Path getTribbleFileInJimfs(String vcf, String index, FileSystem fileSystem) throws IOException, URISyntaxException {
+    public static Path getTribbleFileInJimfs(String vcf, String index, FileSystem fileSystem) throws IOException {
         final FileSystem fs = fileSystem;
         final Path root = fs.getPath("/");
         final Path vcfPath = Paths.get(vcf);

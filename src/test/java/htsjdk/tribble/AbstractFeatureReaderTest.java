@@ -19,7 +19,6 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
@@ -117,7 +116,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     @Test(dataProvider = "vcfFileAndWrapperCombinations")
     public void testGetFeatureReaderWithPathAndWrappers(String file, String index,
                                                         Function<SeekableByteChannel, SeekableByteChannel> wrapper,
-                                                        Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException, URISyntaxException {
+                                                        Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
         try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
             final AbstractFeatureReader<VariantContext, ?> featureReader = getFeatureReader(file, index, wrapper,
                                                                                             indexWrapper,
@@ -144,7 +143,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "failsWithoutWrappers", expectedExceptions = {TribbleException.class, FileTruncatedException.class})
-    public void testFailureIfNoWrapper(String file, String index) throws IOException, URISyntaxException {
+    public void testFailureIfNoWrapper(String file, String index) throws IOException {
         try(final FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
             final FeatureReader<?> reader = getFeatureReader(file, index, null, null, new VCFCodec(), fs)){
             // should have exploded by now
@@ -155,7 +154,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
                                                                                     Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                                                                     Function<SeekableByteChannel, SeekableByteChannel> indexWrapper,
                                                                                     FeatureCodec<T, ?> codec,
-                                                                                    FileSystem fileSystem) throws IOException, URISyntaxException {
+                                                                                    FileSystem fileSystem) throws IOException {
         final Path vcfInJimfs = TestUtils.getTribbleFileInJimfs(vcf, index, fileSystem);
         return AbstractFeatureReader.getFeatureReader(
                 vcfInJimfs.toUri().toString(),
