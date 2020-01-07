@@ -125,8 +125,8 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void testCalculateNumLikelihoods() {    
-        
+    public void testCalculateNumLikelihoods() {
+
         for (int nAlleles=2; nAlleles<=5; nAlleles++)
         {
             Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(nAlleles, 2), nAlleles*(nAlleles+1)/2);
@@ -139,7 +139,22 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
         // ploidy = 16, alleles = 10
         Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(10, 16), 2042975);
     }
-    
+
+    @Test
+    public void testNumLikelihoodsCache() {
+        GenotypeNumLikelihoodsCache cache = new GenotypeNumLikelihoodsCache();
+
+        cache.put(2, 5, 10);
+        cache.put(10, 16, 2042975);
+
+        Assert.assertEquals(cache.get(2, 5), new Integer(10));
+        Assert.assertEquals(cache.get(10, 16), new Integer(2042975));
+        Assert.assertNull(cache.get(4, 4));
+        Assert.assertNull(cache.get(-1, -1));
+        Assert.assertNull(cache.get(1, 0));
+        Assert.assertNull(cache.get(2, 4));
+    }
+
     @Test
     public void testGetLog10GQ(){
         GenotypeLikelihoods gl = GenotypeLikelihoods.fromPLField(vPLString);

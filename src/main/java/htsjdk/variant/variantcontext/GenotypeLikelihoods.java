@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.tribble.TribbleException;
+import htsjdk.variant.utils.BinomialCoefficientUtil;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFUtils;
@@ -36,15 +37,12 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Objects;
-
-import org.apache.commons.math3.util.CombinatoricsUtils;
 
 public class GenotypeLikelihoods {
     private final static int NUM_LIKELIHOODS_CACHE_N_ALLELES = 5;
     private final static int NUM_LIKELIHOODS_CACHE_PLOIDY = 10;
-    // caches likelihoods up to 5 alleles and up to 10 ploidy
-    private final static int[][] numLikelihoodCache = new int[NUM_LIKELIHOODS_CACHE_N_ALLELES][NUM_LIKELIHOODS_CACHE_PLOIDY];
+    // caches likelihoods
+    private final static GenotypeNumLikelihoodsCache numLikelihoodCache = new GenotypeNumLikelihoodsCache();
 
     public final static int MAX_PL = Integer.MAX_VALUE;
 
@@ -57,13 +55,13 @@ public class GenotypeLikelihoods {
     private String likelihoodsAsString_PLs = null;
 
     /**
-     * initialize num likelihoods cache
+     * initialize num likelihoods cache to up to 5 alleles and 10 ploidy
      */
     static {
         // must be done before PLIndexToAlleleIndex
         for ( int numAlleles = 1; numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES; numAlleles++ ) {
             for ( int ploidy = 1; ploidy < NUM_LIKELIHOODS_CACHE_PLOIDY; ploidy++ ) {
-                numLikelihoodCache[numAlleles][ploidy] = calcNumLikelihoods(numAlleles, ploidy);
+                numLikelihoodCache.put(numAlleles,ploidy, calcNumLikelihoods(numAlleles, ploidy));
             }
         }
     }
@@ -447,7 +445,7 @@ public class GenotypeLikelihoods {
     private static final int calcNumLikelihoods(final int numAlleles, final int ploidy) {
         //Note: Casting to int instead instead of returning long because values above Integer.MAX_VALUE would not be valid array indices,
         // and would cause other problems if a PL array needed to be that size
-        return (int)(CombinatoricsUtils.binomialCoefficient((numAlleles + ploidy - 1),ploidy));
+        return (int)(BinomialCoefficientUtil.binomialCoefficient((numAlleles + ploidy - 1),ploidy));
     }
 
     /**
@@ -475,13 +473,15 @@ public class GenotypeLikelihoods {
      *   @return    Number of likelihood elements we need to hold.
      */
     public static int numLikelihoods(final int numAlleles, final int ploidy) {
-        if ( numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES
-                && ploidy < NUM_LIKELIHOODS_CACHE_PLOIDY )
-            return numLikelihoodCache[numAlleles][ploidy];
-        else {
-            // have to calculate on the fly
-            return calcNumLikelihoods(numAlleles, ploidy);
+        //Check cache
+        Integer numLikelihoods = numLikelihoodCache.get(numAlleles, ploidy);
+        if(numLikelihoods != null){
+            return numLikelihoods;
         }
+        // have to calculate on the fly
+        numLikelihoods = calcNumLikelihoods(numAlleles, ploidy);
+        numLikelihoodCache.put(numAlleles, ploidy, numLikelihoods);
+        return numLikelihoods;
     }
 
     // As per the VCF spec: "the ordering of genotypes for the likelihoods is given by: F(j/k) = (k*(k+1)/2)+j.
@@ -604,4 +604,5 @@ public class GenotypeLikelihoods {
         indexes[2] = calculatePLindex(allele2Index, allele2Index);
         return indexes;
     }
+
 }
