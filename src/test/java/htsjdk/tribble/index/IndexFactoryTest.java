@@ -24,6 +24,8 @@
 package htsjdk.tribble.index;
 
 import com.google.common.io.Files;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -48,6 +50,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -131,6 +134,17 @@ public class IndexFactoryTest extends HtsjdkTest {
                     "Tabix indexed (bgzipped) VCF does not contain sequence: " + samSequenceRecord.getSequenceName());
         }
 
+    }
+
+    @Test
+    public void testTabixOnNonDefaultFileSystem() throws IOException {
+        try (final FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+            final Path vcfInJimfs = TestUtils.getTribbleFileInJimfs(
+                    "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz",
+                    null, fs);
+            // IndexFactory doesn't write the output, so we just want to make sure it doesn't throw
+            IndexFactory.createTabixIndex(vcfInJimfs, new VCFCodec(), TabixFormat.VCF, null);
+        }
     }
 
     @DataProvider(name = "vcfDataProvider")
