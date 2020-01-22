@@ -68,7 +68,9 @@ public class CigarUtilTest extends HtsjdkTest {
            Assert.assertTrue(sizeChange >= 0, "sizeChange >= 0. " + sizeChange);
       }
        Assert.assertEquals (TextCigarCodec.encode(newCigar), expectedCigar, testName);
-       Assert.assertEquals(newCigar.getReadLength(), oldCigar.getReadLength());
+       if(clipping == CigarUtil.Clipping.SOFT_CLIP) {
+           Assert.assertEquals(newCigar.getReadLength(), oldCigar.getReadLength());
+       }
        Assert.assertNull(newCigar.isValid(testName, -1));
     }
 
@@ -117,7 +119,7 @@ public class CigarUtilTest extends HtsjdkTest {
             {"Test hard-clipping 3x:stutter + strand", 100, "42M2D1D8M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
             {"Test hard-clipping 3y:stutter + strand", 100, "42M1D2D8M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
             {"Test hard-clipping 3a:boundary + strand", 100, "42M1D8M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 4:boundary - strand", 98, "10M2D40M", true, 41, "10S40M", 110, CigarUtil.Clipping.HARD_CLIP},
+            {"Test hard-clipping 4:boundary - strand", 98, "10M2D40M", true, 41, "10H40M", 110, CigarUtil.Clipping.HARD_CLIP},
             {"Test hard-clipping 5:deletion + strand", 100, "44M1D6M", false, 43, "42M8H", 110, CigarUtil.Clipping.HARD_CLIP},
             {"Test hard-clipping 6:deletion - strand", 98, "6M2D44M", true, 41, "10H40M", 110, CigarUtil.Clipping.HARD_CLIP},
 
@@ -137,7 +139,7 @@ public class CigarUtilTest extends HtsjdkTest {
             {"Test hard-clipping 15:insertion before clip + strand", 100, "10M5I35M", false, 43, "10M5I27M8H", 100, CigarUtil.Clipping.HARD_CLIP},
             {"Test hard-clipping 16:insertion before clip - strand", 100, "16M5I29M", true, 41, "10H6M5I29M", 110, CigarUtil.Clipping.HARD_CLIP},
 
-            {"Test hard-clipping 17:second, earlier clip", 100, "48M2S", false, 43, "42M8S", 100, CigarUtil.Clipping.HARD_CLIP},
+            {"Test hard-clipping 17:second, earlier clip", 100, "48M2S", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
             {"Test hard-clipping 17s:second, earlier clip", 100, "2S48M", true, 43, "8H42M", 106, CigarUtil.Clipping.HARD_CLIP},
             {"Test hard-clipping 18:second, later clip", 100, "42M8S", false, 48, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
             {"Test hard-clipping 18s:second, later clip", 100, "8S42M", true, 48, "8H42M", 100, CigarUtil.Clipping.HARD_CLIP},
