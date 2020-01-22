@@ -43,6 +43,7 @@ import java.util.List;
  */
 public class CigarUtilTest extends HtsjdkTest {
 
+    
    @Test(dataProvider="clipData")
     public void basicTest(final String testName, final int start, final String inputCigar, final boolean negativeStrand,
                           final int clipPosition,
