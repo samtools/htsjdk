@@ -283,34 +283,11 @@ public class IntervalList implements Iterable<Interval> {
             intervals = list.intervals;
         }
 
+        IntervalMerger merger = new IntervalMerger(intervals.iterator(), combineAbuttingIntervals, enforceSameStrands, concatenateNames);
+
         final List<Interval> unique = new ArrayList<>();
-        final List<Interval> toBeMerged = new ArrayList<>();
-        Interval current = null;
+        merger.forEach(unique::add);
 
-        for (final Interval next : intervals) {
-            if (current == null) {
-                toBeMerged.add(next);
-                current = next;
-            } else if (current.intersects(next) || (combineAbuttingIntervals && current.abuts(next))) {
-                if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) {
-                    throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
-                }
-                toBeMerged.add(next);
-                current = new Interval(current.getContig(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), current.isNegativeStrand(), null);
-            } else {
-                // Emit merged/unique interval
-                unique.add(merge(toBeMerged, concatenateNames));
-
-                // Set current == next for next iteration
-                toBeMerged.clear();
-                current = next;
-                toBeMerged.add(current);
-            }
-        }
-
-        if (!toBeMerged.isEmpty()) {
-            unique.add(merge(toBeMerged, concatenateNames));
-        }
         return unique;
     }
 
@@ -639,7 +616,6 @@ public class IntervalList implements Iterable<Interval> {
         return new IntervalList(header).addOther(list1).addOther(list2);
     }
 
-
     /**
      * A method for  concatenating the intervals from one list to this one, checks for equal dictionaries.
      * Does not look for overlapping intervals nor uniquify.
@@ -656,7 +632,6 @@ public class IntervalList implements Iterable<Interval> {
         this.addall(other.intervals);
         return this;
     }
-
 
     /**
      * A utility function for concatenating a list of IntervalLists, checks for equal dictionaries.
@@ -869,4 +844,68 @@ public class IntervalList implements Iterable<Interval> {
         result = 31 * result + intervals.hashCode();
         return result;
     }
+
+    public static class IntervalMerger implements Iterable<Interval> {
+
+        Iterator<Interval> inputIntervals;
+        Interval current = null;
+        final boolean combineAbuttingIntervals;
+        final boolean enforceSameStrands;
+        final boolean concatenateNames;
+        final List<Interval> toBeMerged = new ArrayList<>();
+
+        public IntervalMerger(Iterator<Interval> intervals, final boolean combineAbuttingIntervals, final boolean enforceSameStrand, final boolean concatenateNames) {
+            this.inputIntervals = intervals;
+
+            this.combineAbuttingIntervals = combineAbuttingIntervals;
+            this.enforceSameStrands = enforceSameStrand;
+            this.concatenateNames = concatenateNames;
+        }
+
+        @Override
+        public Iterator<Interval> iterator() {
+
+            return new Iterator<Interval>() {
+                @Override
+                public boolean hasNext() {
+                    return current != null || inputIntervals.hasNext();
+                }
+
+                @Override
+                public Interval next() {
+                    return getNext();
+                }
+
+                private Interval getNext() {
+                    Interval next = null;
+                    while (inputIntervals.hasNext()) {
+                        next = inputIntervals.next();
+                        if (current == null) {
+                            toBeMerged.add(next);
+                            current = next;
+                        } else if (current.intersects(next) || (combineAbuttingIntervals && current.abuts(next))) {
+                            if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) {
+                                throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
+                            }
+                            toBeMerged.add(next);
+                            current = new Interval(current.getContig(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), current.isNegativeStrand(), null);
+                        } else {
+                            // Emit merged/unique interval
+                            final Interval retVal = merge(toBeMerged, concatenateNames);
+                            toBeMerged.clear();
+                            current = next;
+                            toBeMerged.add(next);
+                            return retVal;
+                        }
+                    }
+                    // Emit merged/unique interval
+                    final Interval retVal = merge(toBeMerged, concatenateNames);
+                    toBeMerged.clear();
+                    current = null;
+                    return retVal;
+                }
+            };
+        }
+    }
 }
+
