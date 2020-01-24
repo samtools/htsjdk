@@ -169,7 +169,7 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertTrue(Allele.create("A[<contig>:1[").isSymbolic());
         Assert.assertTrue(Allele.create("A]<contig>:1]").isSymbolic());
         Assert.assertTrue(Allele.create("]<contig>:1]A").isSymbolic());
-        Assert.assertTrue(Allele.create("[<contig>:1[A").isSymbolic());        
+        Assert.assertTrue(Allele.create("[<contig>:1[A").isSymbolic());
     }
     
     @Test
@@ -301,6 +301,15 @@ public class AlleleUnitTest extends VariantBaseTest {
                 {"AA",                  false, false, false},
                 {"A",                   false, false, false}
         };
+    }
+
+    @Test
+    public void testCompareTo() {
+        Assert.assertEquals(Allele.REF_A.compareTo(Allele.REF_A), 0);
+        Assert.assertEquals(Allele.REF_A.compareTo(Allele.ALT_A), -1);
+        Assert.assertEquals(Allele.ALT_A.compareTo(Allele.REF_A), 1);
+        Assert.assertEquals(Allele.ALT_C.compareTo(Allele.REF_A), 1);
+        Assert.assertEquals(Allele.create("ATCA".getBytes(), false).compareTo(Allele.create("ATC".getBytes())), 1);
     }
 
     @Test(dataProvider = "getTestCasesForCheckingSymbolicAlleles")
