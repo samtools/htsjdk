@@ -23,52 +23,59 @@
  */
 package htsjdk.samtools;
 
+/* Disjoint categorization of cigar-operators in coarser classes. */
+enum CigarOperatorClass {
+    ALIGNMENT, CLIPPING, INDEL, SKIP, PADDING
+}
+
 /**
  * The operators that can appear in a cigar string, and information about their disk representations.
  */
 public enum CigarOperator {
+
     /** Match or mismatch */
-    M(true, true),
+    M(true, true, "M", 0, CigarOperatorClass.ALIGNMENT),
     /** Insertion vs. the reference. */
-    I(true, false),
+    I(true, false, "I", 1, CigarOperatorClass.INDEL),
     /** Deletion vs. the reference. */
-    D(false, true),
+    D(false, true, "D", 2, CigarOperatorClass.INDEL),
     /** Skipped region from the reference. */
-    N(false, true),
+    N(false, true, "N", 3, CigarOperatorClass.SKIP),
     /** Soft clip. */
-    S(true, false),
+    S(true, false, "S", 4, CigarOperatorClass.CLIPPING),
     /** Hard clip. */
-    H(false, false),
+    H(false, false, "H", 5, CigarOperatorClass.CLIPPING),
     /** Padding. */
-    P(false, false),
+    P(false, false, "P", 6, CigarOperatorClass.PADDING),
     /** Matches the reference. */
-    EQ(true, true,  "="),
+    EQ(true, true,  "=", 7, CigarOperatorClass.ALIGNMENT),
     /** Mismatches the reference. */
-    X(true, true)
+    X(true, true, "X", 8, CigarOperatorClass.ALIGNMENT)
     ;
 
     private final boolean consumesReadBases;
     private final boolean consumesReferenceBases;
     private final char character;
     private final String string;
-    private final int mask;
+    private final int bamEncoding;
+    private final boolean isAlignment;
+    private final boolean isClipping;
+    private final boolean isIndel;
+    private final boolean isIndelOrSkip;
+    private final boolean isPadding;
+    private final boolean isSkip;
 
-    private static final int INDEL_MASK = I.mask | D.mask;
-    private static final int INDEL_OR_SKIP_MASK = INDEL_MASK | N.mask;
-    private static final int ALIGNMENT_MASK = M.mask | X.mask | EQ.mask;
-    private static final int CLIP_MASK = S.mask | H.mask;
-
-    private static final CigarOperator[] bamCode2Value;
+    private static final CigarOperator[] bamEncoding2Value;
 
     static {
         final CigarOperator[] values = CigarOperator.values();
-        bamCode2Value = new CigarOperator[values.length];
+        bamEncoding2Value = new CigarOperator[values.length];
         for (final CigarOperator op : values) {
-            final int code = op.bamCode();
-            if (bamCode2Value[code] != null) {
-                throw new ExceptionInInitializerError("BAM code collision between: " + op + " " + bamCode2Value[code]);
+            final int code = op.getBamEncoding();
+            if (bamEncoding2Value[code] != null) {
+                throw new ExceptionInInitializerError("BAM code collision between: " + op + " " + bamEncoding2Value[code]);
             }
-            bamCode2Value[op.bamCode()] = op;
+            bamEncoding2Value[op.getBamEncoding()] = op;
         }
     }
 
@@ -94,18 +101,20 @@ public enum CigarOperator {
     public static final CigarOperator HARD_CLIP = H;
     public static final CigarOperator PADDING = P;
 
-
-    CigarOperator(final boolean consumesReadBases, final boolean consumesReferenceBases) {
-        this(consumesReadBases, consumesReferenceBases, null);
-    }
-
     /** Default constructor. */
-    CigarOperator(boolean consumesReadBases, boolean consumesReferenceBases, final String string) {
+    CigarOperator(boolean consumesReadBases, boolean consumesReferenceBases, final String string, final int bamCode,
+                  final CigarOperatorClass clazz) {
         this.consumesReadBases = consumesReadBases;
         this.consumesReferenceBases = consumesReferenceBases;
         this.string = string == null ? name() : string; // since we will provide a constant it is internalized already.
         this.character = this.string.charAt(0);
-        this.mask = 1 << ordinal();
+        this.bamEncoding = bamCode;
+        this.isAlignment = clazz == CigarOperatorClass.ALIGNMENT;
+        this.isIndel = clazz == CigarOperatorClass.INDEL;
+        this.isClipping = clazz == CigarOperatorClass.CLIPPING;
+        this.isSkip = clazz == CigarOperatorClass.SKIP;
+        this.isIndelOrSkip = isIndel || isSkip;
+        this.isPadding = clazz == CigarOperatorClass.PADDING;
     }
 
     /** If true, represents that this cigar operator "consumes" bases from the read bases. */
@@ -139,27 +148,27 @@ public enum CigarOperator {
     /**
      * @param i CIGAR operator in binary form as appears in a BAMRecord.
      * @return CigarOperator enum value corresponding to the given int value.
-     * @deprecated use {@link #fromBamCode(int)}.
+     * @deprecated use {@link #fromBamEncoding(int)}.
      */
     @Deprecated
     public static CigarOperator binaryToEnum(final int i) {
-        return fromBamCode(i);
+        return fromBamEncoding(i);
     }
 
     /**
      * Looks-up the operator given its BAM code.
      * <p>
-     *     It is guaranteed that {@code CigarOperator.fromBamCode(op.bamCode()) == op}.
+     *     It is guaranteed that {@code CigarOperator.fromBamEncoding(op.bamCode()) == op}.
      * </p>
      *
      * @param bamCode the query BAM code.
      * @return never {@code null}.
      * @throws IllegalArgumentException if the input BAM code is not valid.
-     * @see #bamCode
+     * @see #bamEncoding
      */
-    public static CigarOperator fromBamCode(final int bamCode) {
-        if (bamCode >= 0 && bamCode < bamCode2Value.length) {
-            return bamCode2Value[bamCode];
+    public static CigarOperator fromBamEncoding(final int bamCode) {
+        if (bamCode >= 0 && bamCode < bamEncoding2Value.length) {
+            return bamEncoding2Value[bamCode];
         } else {
             throw new IllegalArgumentException("Unrecognized CigarOperator: " + bamCode);
         }
@@ -169,19 +178,19 @@ public enum CigarOperator {
      *
      * @param e CigarOperator enum value.
      * @return CIGAR operator corresponding to the enum value in binary form as appears in a BAMRecord.
-     * @deprecated use {@link #bamCode()} instead.
+     * @deprecated use {@link #getBamEncoding()} instead.
      */
     @Deprecated
     public static int enumToBinary(final CigarOperator e) {
-        return e.ordinal();
+        return e.bamEncoding;
     }
 
     /**
      * Returns the binary representation of this operator as it appears in the BAMs.
      * @return a unique value between 0 and 8.
      */
-    public int bamCode() {
-        return ordinal();
+    public int getBamEncoding() {
+        return bamEncoding;
     }
 
     /** Returns the character that should be used within a SAM file.
@@ -211,27 +220,31 @@ public enum CigarOperator {
 
     /** Returns true if the operator is a clipped (hard or soft) operator */
     public boolean isClipping() {
-        return (CLIP_MASK & mask) != 0;
+        return isClipping;
     }
 
     /** Returns true if the operator is a Insertion or Deletion operator */
     public boolean isIndel() {
-        return (INDEL_MASK & mask) != 0;
+        return isIndel;
+    }
+
+    public boolean isSkip() {
+        return isSkip;
     }
 
     /** Returns true if the operator is a Skipped Region Insertion or Deletion operator */
     public boolean isIndelOrSkippedRegion() {
-        return (mask & INDEL_OR_SKIP_MASK) != 0;
+        return isIndelOrSkip;
     }
 
     /** Returns true if the operator is a M, a X or a EQ */
     public boolean isAlignment() {
-        return (mask & ALIGNMENT_MASK) != 0;
+        return isAlignment;
     }
     
     /** Returns true if the operator is a Padding operator */
     public boolean isPadding() {
-        return this == P;
+        return isPadding;
     }
     
     /** Returns the cigar operator as it would be seen in a SAM file. */

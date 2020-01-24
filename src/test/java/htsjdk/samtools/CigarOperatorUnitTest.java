@@ -133,7 +133,7 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "bamCode")
     public void testFromBamCode(final int bin, final CigarOperator op) {
-        Assert.assertSame(CigarOperator.fromBamCode(bin), op);
+        Assert.assertSame(CigarOperator.fromBamEncoding(bin), op);
     }
 
     @Test(dataProvider = "bamCode")
@@ -144,7 +144,7 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "bamCode")
     public void testBamCode(final int bin, final CigarOperator op) {
-        Assert.assertEquals(op.bamCode(), bin);
+        Assert.assertEquals(op.getBamEncoding(), bin);
     }
 
     @DataProvider
@@ -165,7 +165,7 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
     @Test(dataProvider = "illegalBinary", expectedExceptions = IllegalArgumentException.class)
     public void testIllegalFromBamCode(final int bin) {
         @SuppressWarnings("unused")
-        final CigarOperator op = CigarOperator.fromBamCode(bin);
+        final CigarOperator op = CigarOperator.fromBamEncoding(bin);
     }
 
     @DataProvider
@@ -190,6 +190,7 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
             final boolean isPadding) {
         Assert.assertEquals(op.isClipping(), isClipping);
         Assert.assertEquals(op.isIndel(), isIndel);
+        Assert.assertEquals(op.isSkip(), isSkip);
         Assert.assertEquals(op.isIndelOrSkippedRegion(), isIndel || isSkip);
         Assert.assertEquals(op.isAlignment(), isAlignment);
         Assert.assertEquals(op.isPadding(), isPadding);

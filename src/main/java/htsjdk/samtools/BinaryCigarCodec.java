@@ -46,7 +46,7 @@ class BinaryCigarCodec {
         int binaryCigarLength = 0;
         for (int i = 0; i < cigar.numCigarElements(); ++i) {
             final CigarElement cigarElement = cigar.getCigarElement(i);
-            final int op = cigarElement.getOperator().bamCode();
+            final int op = cigarElement.getOperator().getBamEncoding();
             binaryCigar[binaryCigarLength++] = cigarElement.getLength() << 4 | op;
         }
         return binaryCigar;
@@ -84,6 +84,6 @@ class BinaryCigarCodec {
     private static CigarElement binaryCigarToCigarElement(final int cigarette) {
         final int binaryOp = cigarette & 0xf;
         final int length = cigarette >>> 4;
-        return new CigarElement(length, CigarOperator.fromBamCode(binaryOp));
+        return new CigarElement(length, CigarOperator.fromBamEncoding(binaryOp));
     }
 }
