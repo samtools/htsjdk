@@ -82,9 +82,9 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     @Override
     public Gff3Feature decode(final LineIterator lineIterator) throws IOException {
         /*
-        Basic strategy: Load top-level features (those with no parent) into linked list, and all features with ID into map.  For each feature, link to parents using this map.
-        When reaching flush directive, fasta, or end of file, prepare to flush top level features by moving all active top level features to linked list of features to flush, and clearing
-        list of active top level features and map of active features with IDs.  Always poll featuresToFlush to return any completed top level features.
+        Basic strategy: Load features into deque, create maps from a features ID to it, and from a features parents' IDs to it.  For each feature, link to parents using these maps.
+        When reaching flush directive, fasta, or end of file, prepare to flush features by moving all active features to deque of features to flush, and clearing
+        list of active features and both maps.  Always poll featuresToFlush to return any completed top level features.
          */
         if (!lineIterator.hasNext()) {
             //no more lines, flush whatever is active
