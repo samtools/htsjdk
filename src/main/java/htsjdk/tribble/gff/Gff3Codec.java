@@ -1,6 +1,5 @@
 package htsjdk.tribble.gff;
 
-import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -24,15 +23,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 /**
  * Codec for parsing Gff3 files, as defined in https://github.com/The-Sequence-Ontology/Specifications/blob/31f62ad469b31769b43af42e0903448db1826925/gff3.md
  * Note that while spec states that all feature types must be defined in sequence ontology, this implementation makes no check on feature types, and allows any string as feature type
  *
- * Only features with no parents will be directly emitted, with other features contained in these "top-level" features accessible through {@link Gff3FeatureImpl#getChildren()}, {@link Gff3FeatureImpl#getDescendents()}, or {@link Gff3FeatureImpl#flatten()}.
- * For example, for a gene with a single transcript, with two exons each with one CDS, only the single gene feature will be directly emitted from this codec.  The transcript will be accessible as a child of the gene, and the
- * exons and CDS as children of the transcript.  The transcript, exons, and CDS will be accessible as descendents of the gene.  All six feature will be accessible through {@link Gff3FeatureImpl#flatten()}.
+ * Each feature line in the Gff3 file will be emitted as a separate feature.  Features linked together through the "Parent" attribute will be linked through {@link Gff3Feature#getParents()}, {@link Gff3Feature#getChildren()},
+ * {@link Gff3Feature#getAncestors()}, {@link Gff3Feature#getDescendents()}, amd {@link Gff3Feature#flatten()}.  This linking is not guaranteed to be comprehensive when the file is read for only features overlapping a particular
+ * region, using a tribble index.  In this case, a particular feature will only be linked to the subgroup of features it is linked to in the input file which overlap the given region.
  */
 
 public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
@@ -57,14 +57,15 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     private static final String DIRECTIVE_START = "##";
 
-    private static final String PARENT_ATTRIBUTE_KEY = "Parent";
+    static final String PARENT_ATTRIBUTE_KEY = "Parent";
     private static final String IS_CIRCULAR_ATTRIBUTE_KEY = "Is_circular";
 
     private static final String ARTEMIS_FASTA_MARKER = ">";
 
-    private final Queue<Gff3FeatureImpl> activeTopLevelFeatures = new ArrayDeque<>();
+    private final Queue<Gff3FeatureImpl> activeFeatures = new ArrayDeque<>();
     private final Queue<Gff3FeatureImpl> featuresToFlush = new ArrayDeque<>();
     private final Map<String, Set<Gff3FeatureImpl>> activeFeaturesWithIDs = new HashMap<>();
+    private final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
 
     private int currentLineNum = 0;
 
@@ -74,7 +75,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     private boolean reachedFasta = false;
 
-    Gff3Codec() {
+    public Gff3Codec() {
         super(Gff3Feature.class);
     }
 
@@ -85,7 +86,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         When reaching flush directive, fasta, or end of file, prepare to flush top level features by moving all active top level features to linked list of features to flush, and clearing
         list of active top level features and map of active features with IDs.  Always poll featuresToFlush to return any completed top level features.
          */
-        if(!lineIterator.hasNext()) {
+        if (!lineIterator.hasNext()) {
             //no more lines, flush whatever is active
             prepareToFlushFeatures();
             return featuresToFlush.poll();
@@ -135,20 +136,25 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final String parentIDAttribute = attributes.get(PARENT_ATTRIBUTE_KEY);
             final List<String> parentIDs = parentIDAttribute != null? ParsingUtils.split(attributes.get(PARENT_ATTRIBUTE_KEY),VALUE_DELIMITER) : new ArrayList<>();
 
-            final LinkedHashSet<Gff3FeatureImpl> parents = new LinkedHashSet<>();
-            for (final String parentID : parentIDs) {
-                final Set<Gff3FeatureImpl> theseParents = activeFeaturesWithIDs.get(parentID);
-                if (theseParents == null) {
-                    throw new TribbleException("Could not find parent feature with ID " + parentID);
-                }
-
-                parents.addAll(theseParents);
-            }
-            final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(contig, source, type, start, end, strand, phase, attributes, parents);
-            if (thisFeature.isTopLevelFeature()) {
-                activeTopLevelFeatures.add(thisFeature);
-            }
+            final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(contig, source, type, start, end, strand, phase, attributes);
+            activeFeatures.add(thisFeature);
             final String id = thisFeature.getID();
+
+            for (final String parentID : parentIDs) {
+
+                final Set<Gff3FeatureImpl> theseParents = activeFeaturesWithIDs.get(parentID);
+                if (theseParents != null) {
+                    for (final Gff3FeatureImpl parent : theseParents) {
+                        thisFeature.addParent(parent);
+                    }
+                }
+                if (activeParentIDs.containsKey(parentID)) {
+                    activeParentIDs.get(parentID).add(thisFeature);
+                } else {
+                    activeParentIDs.put(parentID, new HashSet<>(Collections.singleton(thisFeature)));
+                }
+            }
+
             if (id != null) {
                 if (activeFeaturesWithIDs.containsKey(id)) {
                     for (final Gff3FeatureImpl coFeature : activeFeaturesWithIDs.get(id)) {
@@ -160,12 +166,18 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
                 }
             }
 
+            if (activeParentIDs.containsKey(thisFeature.getID())) {
+                for (final Gff3FeatureImpl child : activeParentIDs.get(thisFeature.getID())) {
+                    child.addParent(thisFeature);
+                }
+            }
             validateFeature(thisFeature);
             return featuresToFlush.poll();
-        } catch (final NumberFormatException ex ) {
+        } catch( final NumberFormatException ex ){
             throw new TribbleException("Cannot read integer value for start/end position!", ex);
         }
     }
+
 
     /**
      * Parse attributes field for gff3 feature
@@ -356,9 +368,9 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
      * move active top level features to featuresToFlush.  clear active features.
      */
     private void prepareToFlushFeatures() {
-        featuresToFlush.addAll(activeTopLevelFeatures);
+        featuresToFlush.addAll(activeFeatures);
         activeFeaturesWithIDs.clear();
-        activeTopLevelFeatures.clear();
+        activeFeatures.clear();
     }
 
     @Override
@@ -373,7 +385,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     @Override
     public boolean isDone(final LineIterator lineIterator) {
-        return !lineIterator.hasNext() && activeTopLevelFeatures.isEmpty() && featuresToFlush.isEmpty();
+        return !lineIterator.hasNext() && activeFeatures.isEmpty() && featuresToFlush.isEmpty();
     }
 
     @Override

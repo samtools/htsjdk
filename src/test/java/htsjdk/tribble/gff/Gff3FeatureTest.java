@@ -31,7 +31,8 @@ public class Gff3FeatureTest extends HtsjdkTest {
         //two features with same baseData, one with child (or parent) feature, one without
         final Gff3FeatureImpl feature1_1 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
         final Gff3FeatureImpl feature2_1 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
-        final Gff3FeatureImpl feature3_1 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature1_1));
+        final Gff3FeatureImpl feature3_1 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature3_1.addParent(feature1_1);
         final Gff3FeatureImpl feature4_1 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
 
         examples.add(new Object[] {feature1_1, feature2_1, false});
@@ -40,8 +41,10 @@ public class Gff3FeatureTest extends HtsjdkTest {
         //give both genes child feature
         final Gff3FeatureImpl feature1_2 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
         final Gff3FeatureImpl feature2_2 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
-        final Gff3FeatureImpl feature3_2 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, -0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature1_2));
-        final Gff3FeatureImpl feature4_2 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature2_2));
+        final Gff3FeatureImpl feature3_2 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, -0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature3_2.addParent(feature1_2);
+        final Gff3FeatureImpl feature4_2 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature4_2.addParent(feature2_2);
 
         examples.add(new Object[] {feature1_2, feature2_2, true});
         examples.add(new Object[] {feature3_2, feature4_2, true});
@@ -49,9 +52,12 @@ public class Gff3FeatureTest extends HtsjdkTest {
         //give one cds a co-feature
         final Gff3FeatureImpl feature1_3 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
         final Gff3FeatureImpl feature2_3 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
-        final Gff3FeatureImpl feature3_3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature1_3));
-        final Gff3FeatureImpl feature4_3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature2_3));
-        final Gff3FeatureImpl feature5_3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1080, 1150, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature1_3));
+        final Gff3FeatureImpl feature3_3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature3_3.addParent(feature1_3);
+        final Gff3FeatureImpl feature4_3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature4_3.addParent(feature2_3);
+        final Gff3FeatureImpl feature5_3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1080, 1150, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature5_3.addParent(feature1_3);
         final Gff3FeatureImpl feature6_3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1080, 1150, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
 
         feature3_3.addCoFeature(feature5_3);
@@ -63,10 +69,14 @@ public class Gff3FeatureTest extends HtsjdkTest {
         //give both cds co-features
         final Gff3FeatureImpl feature1_4 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
         final Gff3FeatureImpl feature2_4 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
-        final Gff3FeatureImpl feature3_4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature1_4));
-        final Gff3FeatureImpl feature4_4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature2_4));
-        final Gff3FeatureImpl feature5_4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1080, 1150, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature1_4));
-        final Gff3FeatureImpl feature6_4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1080, 1150, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature2_4));
+        final Gff3FeatureImpl feature3_4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature3_4.addParent(feature1_4);
+        final Gff3FeatureImpl feature4_4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature4_4.addParent(feature2_4);
+        final Gff3FeatureImpl feature5_4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1080, 1150, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature5_4.addParent(feature1_4);
+        final Gff3FeatureImpl feature6_4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1080, 1150, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature6_4.addParent(feature2_4);
 
         feature3_4.addCoFeature(feature5_4);
         feature4_4.addCoFeature(feature6_4);
@@ -90,7 +100,8 @@ public class Gff3FeatureTest extends HtsjdkTest {
     public void testChildren() {
         //test that when a feature has a parent it is added as it's parent's child
         final Gff3FeatureImpl feature1 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
-        final Gff3FeatureImpl feature2 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature1));
+        final Gff3FeatureImpl feature2 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature2.addParent(feature1);
 
         Assert.assertTrue(feature1.getChildren().contains(feature2));
         Assert.assertTrue(feature2.getParents().contains(feature1));
@@ -99,9 +110,13 @@ public class Gff3FeatureTest extends HtsjdkTest {
     @Test
     public void testCofeatures() {
         //test that when a adding a cofeature it is reciprocated
-        final Gff3FeatureImpl feature1 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
-        final Gff3FeatureImpl feature2 = new Gff3FeatureImpl("chr1", ".", "gene", 1300, 1600, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
-        final Gff3FeatureImpl feature3 = new Gff3FeatureImpl("chr1", ".", "gene", 1700, 1900, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
+        final Gff3FeatureImpl region = new Gff3FeatureImpl("chr1", ".", "region", 1, 10000, Strand.NONE, -1, ImmutableMap.of("ID", "region01"));
+        final Gff3FeatureImpl feature1 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01", "Parent", "region01"));
+        feature1.addParent(region);
+        final Gff3FeatureImpl feature2 = new Gff3FeatureImpl("chr1", ".", "gene", 1300, 1600, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01", "Parent", "region01"));
+        feature2.addParent(region);
+        final Gff3FeatureImpl feature3 = new Gff3FeatureImpl("chr1", ".", "gene", 1700, 1900, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01", "Parent", "region01"));
+        feature3.addParent(region);
 
         feature1.addCoFeature(feature2);
         feature2.addCoFeature(feature3);
@@ -115,8 +130,10 @@ public class Gff3FeatureTest extends HtsjdkTest {
     public void testCofeautresDifferentParents() {
         final Gff3FeatureImpl feature1 = new Gff3FeatureImpl("chr1", ".", "gene", 1000, 1200, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene01"));
         final Gff3FeatureImpl feature2 = new Gff3FeatureImpl("chr1", ".", "gene", 1300, 1600, Strand.NEGATIVE, -1, ImmutableMap.of("ID", "gene02"));
-        final Gff3FeatureImpl feature3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"), Collections.singletonList(feature1));
-        final Gff3FeatureImpl feature4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1310, 1350, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene02"), Collections.singletonList(feature2));
+        final Gff3FeatureImpl feature3 = new Gff3FeatureImpl("chr1", ".", "CDS", 1010, 1050, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene01"));
+        feature3.addParent(feature1);
+        final Gff3FeatureImpl feature4 = new Gff3FeatureImpl("chr1", ".", "CDS", 1310, 1350, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "cds01","Parent", "gene02"));
+        feature4.addParent(feature2);
 
         //should throw exception because feature3 and feature4 have different parents so should not be co-features
         feature3.addCoFeature(feature4);
@@ -139,7 +156,8 @@ public class Gff3FeatureTest extends HtsjdkTest {
         final List<Gff3FeatureImpl> features = new ArrayList<>(Arrays.asList(topLevelFeature));
 
         for (int i=1; i<nGenerations; i++) {
-            final Gff3FeatureImpl newFeature = new Gff3FeatureImpl("chrX", ".", "type" + i, 1, 100, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "feature" + i, "Parent", prevFeature.getID()), Collections.singletonList(prevFeature));
+            final Gff3FeatureImpl newFeature = new Gff3FeatureImpl("chrX", ".", "type" + i, 1, 100, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "feature" + i, "Parent", prevFeature.getID()));
+            newFeature.addParent(prevFeature);
             ancestorsMap.put(newFeature, new HashSet<>(ancestorsMap.get(prevFeature)));
             ancestorsMap.get(newFeature).add(prevFeature);
 
@@ -167,7 +185,8 @@ public class Gff3FeatureTest extends HtsjdkTest {
         final Map<Gff3FeatureImpl, Set<Gff3FeatureImpl>> flattenMap = new HashMap<>(Collections.singletonMap(topLevelFeature, new HashSet<>(Collections.singleton(topLevelFeature))));
 
         for (int i=1; i<nGenerations; i++) {
-            final Gff3FeatureImpl newFeature = new Gff3FeatureImpl("chrX", ".", "type" + i, 1, 100, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "feature" + i, "Parent", prevFeature.getID()), Collections.singletonList(prevFeature));
+            final Gff3FeatureImpl newFeature = new Gff3FeatureImpl("chrX", ".", "type" + i, 1, 100, Strand.NEGATIVE, 0, ImmutableMap.of("ID", "feature" + i, "Parent", prevFeature.getID()));
+            newFeature.addParent(prevFeature);
             flattenMap.forEach((k, v) -> v.add(newFeature));
             flattenMap.put(newFeature, new HashSet<>(Collections.singleton(newFeature)));
 
@@ -180,15 +199,21 @@ public class Gff3FeatureTest extends HtsjdkTest {
     public void testDerivesFrom() {
         final Gff3FeatureImpl region01 = new Gff3FeatureImpl("chrX", ".", "gene", 65, 1000, Strand.POSITIVE, -1, ImmutableMap.of("ID", "region01"));
 
-        final Gff3FeatureImpl gene01 = new Gff3FeatureImpl("chrX", ".", "gene", 1, 35, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene01", "Parent", "region01"), Collections.singletonList(region01));
+        final Gff3FeatureImpl gene01 = new Gff3FeatureImpl("chrX", ".", "gene", 1, 35, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene01", "Parent", "region01"));
+        gene01.addParent(region01);
         final Gff3FeatureImpl gene02 = new Gff3FeatureImpl("chrX", ".", "gene", 70, 100, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene02"));
 
-        final Gff3FeatureImpl mRNA01 = new Gff3FeatureImpl("chrX", ".", "mRNA", 1, 100, Strand.POSITIVE, -1 , ImmutableMap.of("ID", "mRNA01", "Parent", "gene01, gene02"), Arrays.asList(gene01, gene02));
+        final Gff3FeatureImpl mRNA01 = new Gff3FeatureImpl("chrX", ".", "mRNA", 1, 100, Strand.POSITIVE, -1 , ImmutableMap.of("ID", "mRNA01", "Parent", "gene01, gene02"));
+        mRNA01.addParent(gene01);
+        mRNA01.addParent(gene02);
 
-        final Gff3FeatureImpl cds01 = new Gff3FeatureImpl("chrX", ".", "CDS", 1, 35, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds01", "Parent", "mRNA01", "Derives_from", "gene01"), Collections.singletonList(mRNA01));
-        final Gff3FeatureImpl cds02 = new Gff3FeatureImpl("chrX", ".", "CDS", 70, 100, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds02", "Parent", "mRNA01", "Derives_from", "gene02"), Collections.singletonList(mRNA01));
+        final Gff3FeatureImpl cds01 = new Gff3FeatureImpl("chrX", ".", "CDS", 1, 35, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds01", "Parent", "mRNA01", "Derives_from", "gene01"));
+        cds01.addParent(mRNA01);
+        final Gff3FeatureImpl cds02 = new Gff3FeatureImpl("chrX", ".", "CDS", 70, 100, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds02", "Parent", "mRNA01", "Derives_from", "gene02"));
+        cds02.addParent(mRNA01);
 
-        final Gff3FeatureImpl codon01 = new Gff3FeatureImpl("chrX", ".", "codon", 1, 3, Strand.POSITIVE, 0, ImmutableMap.of("ID", "codon01", "Parent", "cds01"), Collections.singletonList(cds01));
+        final Gff3FeatureImpl codon01 = new Gff3FeatureImpl("chrX", ".", "codon", 1, 3, Strand.POSITIVE, 0, ImmutableMap.of("ID", "codon01", "Parent", "cds01"));
+        codon01.addParent(cds01);
 
         Assert.assertEquals(cds01.getAncestors(), ImmutableSet.of(mRNA01, gene01, region01));
         Assert.assertEquals(cds02.getAncestors(), ImmutableSet.of(mRNA01, gene02));

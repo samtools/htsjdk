@@ -19,48 +19,24 @@ public class Gff3FeatureImpl implements Gff3Feature {
      */
     private final Gff3BaseData baseData;
 
-    private final Set<Gff3FeatureImpl> parents;
+    private final Set<Gff3FeatureImpl> parents = new LinkedHashSet<>();
     private final LinkedHashSet<Gff3FeatureImpl> children = new LinkedHashSet<>();
     private final LinkedHashSet<Gff3FeatureImpl> coFeatures = new LinkedHashSet<>();
+
+    boolean isTopLevelFeature;
 
     /**
      * top level features are features with no parents.  Each feature maintains a list
      * of its top level features, from which it and all related features descend.
      */
     private final Set<Gff3FeatureImpl> topLevelFeatures = new HashSet<>();
-    private final boolean isTopLevelFeature;
-    private boolean topLevelFeaturesFiltered = false;
-
-
 
     public Gff3FeatureImpl(final String contig, final String source, final String type,
                            final int start, final int end, final Strand strand, final int phase,
                            final Map<String, String> attributes) {
-        this(contig, source, type, start, end, strand, phase, attributes, Collections.emptyList());
-    }
-
-    public Gff3FeatureImpl(final String contig, final String source, final String type,
-                           final int start, final int end, final Strand strand, final int phase,
-                           final Map<String, String> attributes, final Collection<Gff3FeatureImpl> parents) {
         baseData = new Gff3BaseData(contig, source, type, start, end, strand, phase, attributes);
 
-
-        this.parents = Collections.unmodifiableSet(new LinkedHashSet<>(parents));
-
-        /*build set of top level features as top level features of this feature's parents.
-        When top level features is first accessed through getTopLevelFeatures(), this set will
-        be filtered to account for Derives_from attribute if needed.
-         */
-        this.parents.forEach( p -> {
-            topLevelFeatures.addAll(p.getTopLevelFeatures());
-            p.addChild(this);
-        });
-
-        isTopLevelFeature = topLevelFeatures.isEmpty();
-
-        if(topLevelFeatures.isEmpty()) {
-            topLevelFeatures.add(this);
-        }
+        this.isTopLevelFeature = !attributes.containsKey(Gff3Codec.PARENT_ATTRIBUTE_KEY);
     }
 
     /**
@@ -69,11 +45,8 @@ public class Gff3FeatureImpl implements Gff3Feature {
      */
     @Override
     public Set<Gff3FeatureImpl> getTopLevelFeatures() {
-        if (!topLevelFeaturesFiltered) {
-            if (baseData.attributes.containsKey(DERIVES_FROM_ATTRIBUTE_KEY)) {
-                topLevelFeatures.removeIf(f -> !f.getID().equals(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY)) && f.getDescendents().stream().noneMatch(f2 -> f2.getID().equals(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY))));
-            }
-            topLevelFeaturesFiltered = true;
+        if (isTopLevelFeature()) {
+            return Collections.singleton(this);
         }
         return topLevelFeatures;
     }
@@ -172,8 +145,31 @@ public class Gff3FeatureImpl implements Gff3Feature {
     @Override
     public boolean hasCoFeatures() {return !coFeatures.isEmpty();}
 
+    public void addParent(final Gff3FeatureImpl parent) {
+        if (isTopLevelFeature) {
+            throw new IllegalStateException("cannot add a parent to a top level feature");
+        }
+        final Set<Gff3FeatureImpl> topLevelFeaturesToAdd = new HashSet<>(parent.getTopLevelFeatures());
+        if (baseData.attributes.containsKey(DERIVES_FROM_ATTRIBUTE_KEY)) {
+            topLevelFeaturesToAdd.removeIf(f -> !f.getID().equals(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY)) && f.getDescendents().stream().noneMatch(f2 -> f2.getID()== null? false:f2.getID().equals(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY))));
+        }
+        parents.add(parent);
+        parent.addChild(this);
+
+        addTopLevelFeatures(topLevelFeaturesToAdd);
+    }
+
     private void addChild(final Gff3FeatureImpl child) {
         children.add(child);
+    }
+
+    private void addTopLevelFeatures(final Collection<Gff3FeatureImpl> topLevelFeaturesToAdd) {
+        topLevelFeatures.addAll(topLevelFeaturesToAdd);
+
+        //pass topLevelFeature change through to children
+        for (final Gff3FeatureImpl child : children) {
+            child.addTopLevelFeatures(topLevelFeaturesToAdd);
+        }
     }
 
     /**
@@ -183,6 +179,10 @@ public class Gff3FeatureImpl implements Gff3Feature {
      * @param coFeature feature to add as this features coFeature
      */
     public void addCoFeature(final Gff3FeatureImpl coFeature) {
+        if (!parents.equals(coFeature.getParents())) {
+
+            throw new TribbleException("Co-featrues " + baseData.id + " do not have same parents");
+        }
         for (final Gff3FeatureImpl feature : coFeatures) {
             feature.addCoFeatureShallow(coFeature);
             coFeature.addCoFeatureShallow(feature);
@@ -195,10 +195,6 @@ public class Gff3FeatureImpl implements Gff3Feature {
         coFeatures.add(coFeature);
         if (!coFeature.getID().equals(baseData.id)) {
             throw new TribbleException("Attempting to add co-feature with id " + coFeature.getID() + " to feature with id " + baseData.id);
-        }
-        if (!parents.equals(coFeature.getParents())) {
-
-            throw new TribbleException("Co-featrues " + baseData.id + " do not have same parents");
         }
     }
 
