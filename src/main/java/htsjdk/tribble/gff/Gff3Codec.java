@@ -127,14 +127,14 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final String contig = URLDecoder.decode(splitLine.get(CHROMOSOME_NAME_INDEX), "UTF-8");
             final String source = URLDecoder.decode(splitLine.get(ANNOTATION_SOURCE_INDEX), "UTF-8");
             final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
-            final int start = Integer.valueOf(splitLine.get(START_LOCATION_INDEX));
-            final int end = Integer.valueOf(splitLine.get(END_LOCATION_INDEX));
+            final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
+            final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
             final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(".")? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
             final Map<String, String> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
 
             final String parentIDAttribute = attributes.get(PARENT_ATTRIBUTE_KEY);
-            final List<String> parentIDs = parentIDAttribute != null? ParsingUtils.split(attributes.get(PARENT_ATTRIBUTE_KEY),VALUE_DELIMITER) : new ArrayList<>();
+            final List<String> parentIDs = parentIDAttribute != null? ParsingUtils.split(parentIDAttribute, VALUE_DELIMITER) : new ArrayList<>();
 
             final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(contig, source, type, start, end, strand, phase, attributes);
             activeFeatures.add(thisFeature);
@@ -413,8 +413,8 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             public Object decode(final String line) throws IOException {
                 final String[] splitLine = line.split(" +");
                 final String contig = URLDecoder.decode(splitLine[CONTIG_INDEX], "UTF-8");
-                final int start = Integer.valueOf(splitLine[START_INDEX]);
-                final int end = Integer.valueOf(splitLine[END_INDEX]);
+                final int start = Integer.parseInt(splitLine[START_INDEX]);
+                final int end = Integer.parseInt(splitLine[END_INDEX]);
                 return new SequenceRegion(contig, start, end);
             }
         },
