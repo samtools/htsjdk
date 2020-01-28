@@ -14,7 +14,7 @@ import java.util.Set;
 public interface Gff3Feature extends Feature {
     /**
      * Get the set of top level features from which this feature is descended.
-     * Top level features are features with no parents
+     * Top level features are features with no linked parents
      * @return set of top level feature from which this feature is descended
      */
     Set<? extends Gff3Feature> getTopLevelFeatures();

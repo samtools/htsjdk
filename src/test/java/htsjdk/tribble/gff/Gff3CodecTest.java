@@ -45,29 +45,25 @@ public class Gff3CodecTest extends HtsjdkTest {
     @DataProvider(name = "basicDecodeDataProvider")
     Object[][] basicDecodeDataProvider() {
         return new Object[][]{
-                {ensembl_human_small, 33, 82},
-                {gencode_mouse_small, 16, 70},
-                {ncbi_woodpecker_small, 10, 185},
-                {with_fasta, 4, 12},
-                {with_fasta_artemis, 4, 12},
-                {ordered_cofeature, 2, 4},
-                {child_before_parent, 1, 2}
+                {ensembl_human_small, 82},
+                {gencode_mouse_small, 70},
+                {ncbi_woodpecker_small, 185},
+                {with_fasta, 12},
+                {with_fasta_artemis, 12},
+                {ordered_cofeature, 4},
+                {child_before_parent, 2}
         };
     }
 
     @Test(dataProvider = "basicDecodeDataProvider")
-    public void basicDecodeTest(final Path inputGff3, final int expectedTopLevelFeatures, final int expectedTotalFeatures) throws IOException {
+    public void basicDecodeTest(final Path inputGff3, final int expectedTotalFeatures) throws IOException {
         Assert.assertTrue((new Gff3Codec()).canDecode(inputGff3.toAbsolutePath().toString()));
         final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputGff3.toAbsolutePath().toString(), null, new Gff3Codec(), false);
-        int countTopLevelFeatures = 0;
         int countTotalFeatures = 0;
         for (final Gff3Feature feature : reader.iterator()) {
-            if (feature.isTopLevelFeature()) {
-                countTopLevelFeatures++;
-            }
             countTotalFeatures++;
         }
-        Assert.assertEquals(countTopLevelFeatures, expectedTopLevelFeatures);
+
         Assert.assertEquals(countTotalFeatures, expectedTotalFeatures);
     }
 
@@ -153,7 +149,6 @@ public class Gff3CodecTest extends HtsjdkTest {
         //canonical gene
         final ArrayList<Object> canonicalGeneExample = new ArrayList<>(Collections.singletonList(DATA_DIR + "canonical_gene.gff3"));
 
-        final Set<Gff3Feature> canonicalGeneTopLevelFeatures = new HashSet<>();
         final Set<Gff3Feature> canonicalGeneFeatures = new HashSet<>();
 
         final Gff3FeatureImpl canonicalGene_gene00001 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 9000, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene00001", "Name", "EDEN"));
@@ -268,16 +263,12 @@ public class Gff3CodecTest extends HtsjdkTest {
         canonicalGene_cds00004_3.addCoFeature(canonicalGene_cds00004_2);
         canonicalGeneFeatures.add(canonicalGene_cds00004_3);
 
-        canonicalGeneTopLevelFeatures.add(canonicalGene_gene00001);
-
-        canonicalGeneExample.add(canonicalGeneTopLevelFeatures);
         canonicalGeneExample.add(canonicalGeneFeatures);
         examples.add(canonicalGeneExample.toArray());
 
         //polycisctronic transcript
         final ArrayList<Object> polycistronicTranscriptExample = new ArrayList<>(Collections.singletonList(DATA_DIR + "polycistronic_transcript.gff3"));
 
-        final Set<Gff3Feature> polycisctronicTranscriptTopLevelFeatures = new HashSet<>();
         final Set<Gff3Feature> polycisctronicTranscriptFeatures = new HashSet<>();
 
         final Gff3FeatureImpl polycistronicTranscript_gene01 = new Gff3FeatureImpl("chrX", ".", "gene", 100, 200, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene01", "name", "resA"));
@@ -317,19 +308,12 @@ public class Gff3CodecTest extends HtsjdkTest {
         polycistronicTranscript_CDS4.addParent(polycistronicTranscript_mRNA);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_CDS4);
 
-        polycisctronicTranscriptTopLevelFeatures.add(polycistronicTranscript_gene01);
-        polycisctronicTranscriptTopLevelFeatures.add(polycistronicTranscript_gene02);
-        polycisctronicTranscriptTopLevelFeatures.add(polycistronicTranscript_gene03);
-        polycisctronicTranscriptTopLevelFeatures.add(polycistronicTranscript_gene04);
-
-        polycistronicTranscriptExample.add(polycisctronicTranscriptTopLevelFeatures);
         polycistronicTranscriptExample.add(polycisctronicTranscriptFeatures);
         examples.add(polycistronicTranscriptExample.toArray());
 
         //programmed frameshift
         final ArrayList<Object> programmedFrameshiftExample = new ArrayList<>(Collections.singletonList(DATA_DIR + "programmed_frameshift.gff3"));
 
-        final Set<Gff3Feature> programmedFrameshiftTopLevelFeatures = new HashSet<>();
         final Set<Gff3Feature> programmedFrameshiftFeatures = new HashSet<>();
 
         final Gff3FeatureImpl programmedFrameshift_gene = new Gff3FeatureImpl("chrX", ".", "gene", 100, 200, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene01", "name", "my_gene"));
@@ -353,16 +337,12 @@ public class Gff3CodecTest extends HtsjdkTest {
         programmedFrameshift_CDS1_2.addCoFeature(programmedFrameshift_CDS1_1);
         programmedFrameshiftFeatures.add(programmedFrameshift_CDS1_2);
 
-        programmedFrameshiftTopLevelFeatures.add(programmedFrameshift_gene);
-
-        programmedFrameshiftExample.add(programmedFrameshiftTopLevelFeatures);
         programmedFrameshiftExample.add(programmedFrameshiftFeatures);
         examples.add(programmedFrameshiftExample.toArray());
 
         //multiple genes
         final ArrayList<Object> multipleGenesExample = new ArrayList<>(Collections.singletonList(DATA_DIR + "multiple_genes.gff3"));
 
-        final Set<Gff3Feature> multipleGenesTopLevelFeatures = new HashSet<>();
         final Set<Gff3Feature> multipleGenesFeatures = new HashSet<>();
 
         final Gff3FeatureImpl multipleGenes_gene1 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 1500, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene00001"));
@@ -379,10 +359,6 @@ public class Gff3CodecTest extends HtsjdkTest {
         multipleGenes_mRNA2.addParent(multipleGenes_gene2);
         multipleGenesFeatures.add(multipleGenes_mRNA2);
 
-        multipleGenesTopLevelFeatures.add(multipleGenes_gene1);
-        multipleGenesTopLevelFeatures.add(multipleGenes_gene2);
-
-        multipleGenesExample.add(multipleGenesTopLevelFeatures);
         multipleGenesExample.add(multipleGenesFeatures);
         examples.add(multipleGenesExample.toArray());
 
@@ -390,21 +366,16 @@ public class Gff3CodecTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "examplesDataProvider")
-    public void examplesTest(final String inputGff, final Set<Gff3Feature> expectedTopLevelFeatures, final Set<Gff3Feature> expectedFeatures) throws IOException {
+    public void examplesTest(final String inputGff, final Set<Gff3Feature> expectedFeatures) throws IOException {
         final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputGff, null, new Gff3Codec(), false);
         int observedTopLevelFeatures = 0;
         int observedFeatures = 0;
         for (final Gff3Feature feature : reader.iterator()) {
-            if (feature.isTopLevelFeature()) {
-                observedTopLevelFeatures++;
-                Assert.assertTrue(expectedTopLevelFeatures.contains(feature));
-            }
 
             observedFeatures++;
             Assert.assertTrue(expectedFeatures.contains(feature));
         }
 
-        Assert.assertEquals(observedTopLevelFeatures, expectedTopLevelFeatures.size());
         Assert.assertEquals(observedFeatures, expectedFeatures.size());
     }
 }

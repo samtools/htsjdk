@@ -23,8 +23,6 @@ public class Gff3FeatureImpl implements Gff3Feature {
     private final LinkedHashSet<Gff3FeatureImpl> children = new LinkedHashSet<>();
     private final LinkedHashSet<Gff3FeatureImpl> coFeatures = new LinkedHashSet<>();
 
-    boolean isTopLevelFeature;
-
     /**
      * top level features are features with no parents.  Each feature maintains a list
      * of its top level features, from which it and all related features descend.
@@ -36,7 +34,6 @@ public class Gff3FeatureImpl implements Gff3Feature {
                            final Map<String, String> attributes) {
         baseData = new Gff3BaseData(contig, source, type, start, end, strand, phase, attributes);
 
-        this.isTopLevelFeature = !attributes.containsKey(Gff3Codec.PARENT_ATTRIBUTE_KEY);
     }
 
     /**
@@ -53,7 +50,7 @@ public class Gff3FeatureImpl implements Gff3Feature {
 
     @Override
     public boolean isTopLevelFeature() {
-        return isTopLevelFeature;
+        return topLevelFeatures.isEmpty();
     }
 
     /**
@@ -146,9 +143,6 @@ public class Gff3FeatureImpl implements Gff3Feature {
     public boolean hasCoFeatures() {return !coFeatures.isEmpty();}
 
     public void addParent(final Gff3FeatureImpl parent) {
-        if (isTopLevelFeature) {
-            throw new IllegalStateException("cannot add a parent to a top level feature");
-        }
         final Set<Gff3FeatureImpl> topLevelFeaturesToAdd = new HashSet<>(parent.getTopLevelFeatures());
         if (baseData.attributes.containsKey(DERIVES_FROM_ATTRIBUTE_KEY)) {
             topLevelFeaturesToAdd.removeIf(f -> !f.getID().equals(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY)) && f.getDescendents().stream().noneMatch(f2 -> f2.getID()== null? false:f2.getID().equals(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY))));
@@ -169,6 +163,15 @@ public class Gff3FeatureImpl implements Gff3Feature {
         //pass topLevelFeature change through to children
         for (final Gff3FeatureImpl child : children) {
             child.addTopLevelFeatures(topLevelFeaturesToAdd);
+            child.removeTopLevelFeature(this);
+        }
+    }
+
+    private void removeTopLevelFeature(final Gff3FeatureImpl topLevelFeatureToRemove) {
+        topLevelFeatures.remove(topLevelFeatureToRemove);
+
+        for (final Gff3FeatureImpl child : children) {
+            child.removeTopLevelFeature(topLevelFeatureToRemove);
         }
     }
 

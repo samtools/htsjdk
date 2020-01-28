@@ -230,4 +230,24 @@ public class Gff3FeatureTest extends HtsjdkTest {
         Assert.assertEquals(mRNA01.getTopLevelFeatures(), ImmutableSet.of(gene02, region01));
     }
 
+    @Test
+    public void testFeatureWithUnLoadedParent() {
+        final Gff3FeatureImpl gene01 = new Gff3FeatureImpl("chrX", ".", "gene", 1, 35, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene01", "Parent", "region01"));
+        final Gff3FeatureImpl gene02 = new Gff3FeatureImpl("chrX", ".", "gene", 1, 35, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene01", "Parent", "region01"));
+
+        Assert.assertEquals(gene01, gene02);
+
+        final Gff3FeatureImpl mRNA01 = new Gff3FeatureImpl("chrX", ".", "mRNA", 1, 100, Strand.POSITIVE, -1 , ImmutableMap.of("ID", "mRNA01", "Parent", "gene01, gene02"));
+        mRNA01.addParent(gene01);
+
+        Assert.assertNotEquals(gene01, gene02);
+
+        mRNA01.addParent(gene02);
+
+        Assert.assertEquals(gene01, gene02);
+
+
+
+    }
+
 }
