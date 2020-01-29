@@ -31,7 +31,6 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
 import htsjdk.samtools.util.Locatable;
-import htsjdk.samtools.util.Tuple;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -45,7 +44,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Simplified interface for reading from VCF/BCF files.
