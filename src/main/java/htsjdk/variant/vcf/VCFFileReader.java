@@ -305,9 +305,8 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
                 .map(vc -> {
                     String name = vc.getID();
                     final int intervalEnd = vc.getCommonInfo().getAttributeAsInt(VCFConstants.END_KEY, vc.getEnd());
-                    final int intervalIndex = intervalCount.incrementAndGet();
                     if (VCFConstants.EMPTY_ID_FIELD.equals(name) || name == null) {
-                        name = "interval-" + intervalIndex;
+                        name = "interval-" + intervalCount.incrementAndGet();;
                     }
                     return new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name);
 

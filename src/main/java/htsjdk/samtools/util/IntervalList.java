@@ -857,7 +857,7 @@ public class IntervalList implements Iterable<Interval> {
     public static class IntervalMergerIterator implements Iterator<Interval> {
 
         Iterator<Interval> inputIntervals;
-        MutableFeature current = new MutableFeature("",0,0);
+        MutableFeature current = null;
         boolean currentStrandNegative = false;
         final boolean combineAbuttingIntervals;
         final boolean enforceSameStrands;
@@ -879,7 +879,7 @@ public class IntervalList implements Iterable<Interval> {
 
         @Override
         public Interval next() {
-            if(! hasNext()){
+            if (!hasNext()) {
                 throw new NoSuchElementException("There were no more elements to give!");
             }
             return getNext();
@@ -891,7 +891,7 @@ public class IntervalList implements Iterable<Interval> {
                 next = inputIntervals.next();
                 if (current == null) {
                     toBeMerged.add(next);
-                    current.setAll(next);
+                    current = new MutableFeature(next);
                     currentStrandNegative = next.isNegativeStrand();
                 } else if (current.overlaps(next) || (combineAbuttingIntervals && current.withinDistanceOf(next,1))) {
                     if (enforceSameStrands && currentStrandNegative != next.isNegativeStrand()) {
