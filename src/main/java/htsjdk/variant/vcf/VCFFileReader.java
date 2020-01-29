@@ -26,7 +26,12 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.*;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.Locatable;
+import htsjdk.samtools.util.Tuple;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -39,6 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -270,9 +276,8 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @return an IntervalList constructed from input vcf
      */
     public static IntervalList toIntervalList(final VCFFileReader vcf, final boolean includeFiltered) {
-        final Tuple<SAMFileHeader, Iterator<Interval>> samFileHeaderIteratorTuple = toIntervals(vcf, includeFiltered);
-        final IntervalList intervalList = new IntervalList(samFileHeaderIteratorTuple.a);
-        samFileHeaderIteratorTuple.b.forEachRemaining(intervalList::add);
+        final IntervalList intervalList = new IntervalList(vcf.getFileHeader().getSequenceDictionary());
+        toIntervals(vcf, includeFiltered).forEachRemaining(intervalList::add);
         return intervalList;
     }
 
@@ -285,25 +290,28 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @param vcf the vcfReader to be used for the conversion
      * @return a Tuple<SamFileHeader,Iterator<Interval>> constructed from input vcf
      */
-    public static Tuple<SAMFileHeader,Iterator<Interval>> toIntervals(final VCFFileReader vcf, final boolean includeFiltered) {
+    public static Iterator<Interval>toIntervals(final VCFFileReader vcf, final boolean includeFiltered) {
 
         //grab the dictionary from the VCF and use it in the IntervalList
         final SAMSequenceDictionary dict = vcf.getFileHeader().getSequenceDictionary();
         final SAMFileHeader samFileHeader = new SAMFileHeader();
         samFileHeader.setSequenceDictionary(dict);
 
-        final AtomicReference<Integer> intervals = new AtomicReference<>(1);
-        final Iterator<Interval> iterator = vcf.iterator().stream().filter(vc -> includeFiltered || !vc.isFiltered()).map(vc -> {
-            String name = vc.getID();
-            final int intervalEnd = vc.getCommonInfo().getAttributeAsInt(VCFConstants.END_KEY, vc.getEnd());
-            if (VCFConstants.EMPTY_ID_FIELD.equals(name) || name == null) {
-                name = "interval-" + (intervals.getAndSet(intervals.get() + 1));
-            }
-            return new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name);
+        final AtomicInteger intervalCount = new AtomicInteger(0);
 
-        }).iterator();
+        return vcf.iterator()
+                .stream()
+                .filter(vc -> includeFiltered || !vc.isFiltered())
+                .map(vc -> {
+                    String name = vc.getID();
+                    final int intervalEnd = vc.getCommonInfo().getAttributeAsInt(VCFConstants.END_KEY, vc.getEnd());
+                    final int intervalIndex = intervalCount.incrementAndGet();
+                    if (VCFConstants.EMPTY_ID_FIELD.equals(name) || name == null) {
+                        name = "interval-" + intervalIndex;
+                    }
+                    return new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name);
 
-        return new Tuple<>(samFileHeader,iterator);
+                }).iterator();
     }
 
     /**
