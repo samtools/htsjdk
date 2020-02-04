@@ -371,6 +371,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         featuresToFlush.addAll(activeFeatures);
         activeFeaturesWithIDs.clear();
         activeFeatures.clear();
+        activeParentIDs.clear();
     }
 
     @Override
@@ -390,6 +391,11 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     @Override
     public void close(final LineIterator lineIterator) {
+        //cleanup resources
+        featuresToFlush.clear();
+        activeFeaturesWithIDs.clear();
+        activeFeatures.clear();
+        activeParentIDs.clear();
         CloserUtil.close(lineIterator);
     }
 
@@ -403,15 +409,15 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
      */
     enum Gff3Directive {
 
-        VERSION3_DIRECTIVE("##gff-version 3(?:.\\d)*(?:\\.\\d)*$"),
+        VERSION3_DIRECTIVE("##gff-version\\s+3(?:.\\d)*(?:\\.\\d)*$"),
 
-        SEQUENCE_REGION_DIRECTIVE("##sequence-region .+ \\d+ \\d+$") {
+        SEQUENCE_REGION_DIRECTIVE("##sequence-region\\s+.+ \\d+ \\d+$") {
             private int CONTIG_INDEX = 1;
             private int START_INDEX = 2;
             private int END_INDEX = 3;
             @Override
             public Object decode(final String line) throws IOException {
-                final String[] splitLine = line.split(" +");
+                final String[] splitLine = line.split("\\s+");
                 final String contig = URLDecoder.decode(splitLine[CONTIG_INDEX], "UTF-8");
                 final int start = Integer.parseInt(splitLine[START_INDEX]);
                 final int end = Integer.parseInt(splitLine[END_INDEX]);
