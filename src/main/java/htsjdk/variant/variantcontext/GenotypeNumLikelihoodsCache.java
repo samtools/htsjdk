@@ -6,38 +6,90 @@ import java.util.HashMap;
  * Hybrid dynamic cache for genotype likelihood counts
  */
 
-public class GenotypeNumLikelihoodsCache {
+class GenotypeNumLikelihoodsCache {
 
-    private final static int N_ALLELES = 5;
-    private final static int PLOIDY = 10;
+    private final static int DEFAULT_N_ALLELES = 5;
+    private final static int DEFAULT_PLOIDY = 10;
 
-    private final int[][] staticCache = new int[5][10];
-    private final HashMap<Integer, HashMap<Integer, Integer>> dynamicCache = new HashMap<>();
+    private final int[][] staticCache;
+    private final HashMap<CacheKey, Integer> dynamicCache = new HashMap<>();
 
-    public void put(final int numAlleles, final int ploidy, final int numLikelihoods) {
-        if(numAlleles < N_ALLELES && ploidy < PLOIDY) {
-            staticCache[numAlleles][ploidy] = numLikelihoods;
-        }
-        else{
-            final HashMap<Integer, Integer> cache = dynamicCache.containsKey(ploidy) ? dynamicCache.get(ploidy) : new HashMap<>();
-            if(cache.isEmpty()){
-                dynamicCache.put(ploidy, cache);
+    /**
+     * Initializes cache with default values, {@value #DEFAULT_N_ALLELES} alleles and {@value #DEFAULT_PLOIDY} ploidy
+     */
+    GenotypeNumLikelihoodsCache(){
+        this(DEFAULT_N_ALLELES, DEFAULT_PLOIDY);
+    }
+
+    GenotypeNumLikelihoodsCache(int numAlleles, int ploidy){
+        staticCache = new int[numAlleles][ploidy];
+
+        fillCache();
+    }
+
+    private void fillCache(){
+        for ( int numAlleles = 1; numAlleles < staticCache.length; numAlleles++ ) {
+            for ( int ploidy = 1; ploidy < staticCache[numAlleles].length; ploidy++ ) {
+                staticCache[numAlleles][ploidy] = GenotypeLikelihoods.calcNumLikelihoods(numAlleles, ploidy);
             }
-            cache.put(numAlleles, numLikelihoods);
         }
     }
 
-    public Integer get(final int numAlleles, final int ploidy) {
-        if(numAlleles >= 0 && numAlleles < N_ALLELES && ploidy >= 0 && ploidy < PLOIDY && staticCache[numAlleles][ploidy] != 0){
+    private void put(final int numAlleles, final int ploidy, final int numLikelihoods) {
+        dynamicCache.put(new CacheKey(numAlleles, ploidy), numLikelihoods);
+    }
+
+    /**
+     * Returns the number of likelihoods for the specified allele count and ploidy
+     * Values not present yet in the cache will be calculated and cached when get is called
+     * @param numAlleles
+     * @param ploidy
+     * @return number of likelihoods
+     */
+    int get(final int numAlleles, final int ploidy) {
+        if(numAlleles <= 0 || ploidy <= 0){
+            throw new IllegalArgumentException("numAlleles and ploidy must both exceed 0");
+        }
+        if(numAlleles < staticCache.length && ploidy < staticCache[numAlleles].length){
             return staticCache[numAlleles][ploidy];
         }
         else{
-            return dynamicCache.containsKey(ploidy) ? dynamicCache.get(ploidy).get(numAlleles) : null;
+            final Integer cachedValue = dynamicCache.get(new CacheKey(numAlleles, ploidy));
+            if(cachedValue == null){
+                final int newValue = GenotypeLikelihoods.calcNumLikelihoods(numAlleles, ploidy);
+                put(numAlleles, ploidy, newValue);
+                return newValue;
+            }
+            else{
+                return cachedValue;
+            }
         }
     }
 
-    public boolean containsKey(final int numAlleles, final int ploidy) {
-        return (numAlleles < N_ALLELES && ploidy < PLOIDY && staticCache[numAlleles][ploidy] > 0)
-                || (dynamicCache.containsKey(ploidy) && dynamicCache.get(ploidy).containsKey(numAlleles));
+    /**
+     * Key for the hash map, made up of numAlleles and ploidy
+     */
+    private class CacheKey{
+        private final int numAlleles;
+        private final int ploidy;
+
+        CacheKey(final int numAlleles, final int ploidy){
+            this.numAlleles = numAlleles;
+            this.ploidy = ploidy;
+        }
+
+        @Override
+        public boolean equals(Object object){
+            if(object != null && object instanceof CacheKey){
+                final CacheKey c = (CacheKey)object;
+                return this.numAlleles == c.numAlleles && this.ploidy == c.ploidy;
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode(){
+            return numAlleles * 31 + ploidy;
+        }
     }
 }

@@ -39,8 +39,6 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class GenotypeLikelihoods {
-    private final static int NUM_LIKELIHOODS_CACHE_N_ALLELES = 5;
-    private final static int NUM_LIKELIHOODS_CACHE_PLOIDY = 10;
     // caches likelihoods
     private final static GenotypeNumLikelihoodsCache numLikelihoodCache = new GenotypeNumLikelihoodsCache();
 
@@ -53,18 +51,6 @@ public class GenotypeLikelihoods {
     //
     private double[] log10Likelihoods = null;
     private String likelihoodsAsString_PLs = null;
-
-    /**
-     * initialize num likelihoods cache to up to 5 alleles and 10 ploidy
-     */
-    static {
-        // must be done before PLIndexToAlleleIndex
-        for ( int numAlleles = 1; numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES; numAlleles++ ) {
-            for ( int ploidy = 1; ploidy < NUM_LIKELIHOODS_CACHE_PLOIDY; ploidy++ ) {
-                numLikelihoodCache.put(numAlleles,ploidy, calcNumLikelihoods(numAlleles, ploidy));
-            }
-        }
-    }
 
     /**
      * The maximum number of diploid alternate alleles that we can represent as genotype likelihoods
@@ -442,10 +428,10 @@ public class GenotypeLikelihoods {
      * @param ploidy        number of chromosomes
      * @return  number of likelihoods
      */
-    private static final int calcNumLikelihoods(final int numAlleles, final int ploidy) {
+    static final int calcNumLikelihoods(final int numAlleles, final int ploidy) {
         //Note: Casting to int instead instead of returning long because values above Integer.MAX_VALUE would not be valid array indices,
         // and would cause other problems if a PL array needed to be that size
-        return (int)(BinomialCoefficientUtil.binomialCoefficient((numAlleles + ploidy - 1),ploidy));
+        return Math.toIntExact(BinomialCoefficientUtil.binomialCoefficient((numAlleles + ploidy - 1),ploidy));
     }
 
     /**
@@ -472,16 +458,9 @@ public class GenotypeLikelihoods {
      *   @param  ploidy          Ploidy, or number of chromosomes in set
      *   @return    Number of likelihood elements we need to hold.
      */
-    public static int numLikelihoods(final int numAlleles, final int ploidy) {
-        //Check cache
-        Integer numLikelihoods = numLikelihoodCache.get(numAlleles, ploidy);
-        if(numLikelihoods != null){
-            return numLikelihoods;
-        }
-        // have to calculate on the fly
-        numLikelihoods = calcNumLikelihoods(numAlleles, ploidy);
-        numLikelihoodCache.put(numAlleles, ploidy, numLikelihoods);
-        return numLikelihoods;
+    public static synchronized int numLikelihoods(final int numAlleles, final int ploidy) {
+        //Get the value from the cache
+        return numLikelihoodCache.get(numAlleles, ploidy);
     }
 
     // As per the VCF spec: "the ordering of genotypes for the likelihoods is given by: F(j/k) = (k*(k+1)/2)+j.

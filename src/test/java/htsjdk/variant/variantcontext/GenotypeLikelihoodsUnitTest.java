@@ -140,19 +140,37 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
         Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(10, 16), 2042975);
     }
 
-    @Test
-    public void testNumLikelihoodsCache() {
+    @DataProvider(name="testNumLikelihoodsCacheDataProvider")
+    public Object[][] testNumLikelihoodsCacheDataProvider(){
+        return new Object[][]{
+                {1, 1, 1},
+                {2, 5, 6},
+                {10, 16, 2042975}
+        };
+    }
+
+    @Test(dataProvider="testNumLikelihoodsCacheDataProvider")
+    public void testNumLikelihoodsCache(final int numAlleles, final int ploidy, final int numLikelihoods) {
         GenotypeNumLikelihoodsCache cache = new GenotypeNumLikelihoodsCache();
 
-        cache.put(2, 5, 10);
-        cache.put(10, 16, 2042975);
+        Assert.assertEquals(cache.get(numAlleles, ploidy), numLikelihoods);
+    }
 
-        Assert.assertEquals(cache.get(2, 5), new Integer(10));
-        Assert.assertEquals(cache.get(10, 16), new Integer(2042975));
-        Assert.assertNull(cache.get(4, 4));
-        Assert.assertNull(cache.get(-1, -1));
-        Assert.assertNull(cache.get(1, 0));
-        Assert.assertNull(cache.get(2, 4));
+    @DataProvider(name="testNumLikelihoodsCacheIllegalArgumentsDataProvider")
+    public Object[][] testNumLikelihoodsCacheIllegalArgumentsDataProvider(){
+        return new Object[][]{
+            {1, 0},
+            {0, 1},
+            {-1, 5},
+            {3, -4}
+        };
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, dataProvider = "testNumLikelihoodsCacheIllegalArgumentsDataProvider")
+    public void testNumLikelihoodsCacheIllegalArguments(final int numAlleles, final int ploidy){
+        GenotypeNumLikelihoodsCache cache = new GenotypeNumLikelihoodsCache();
+
+        cache.get(numAlleles, ploidy);
     }
 
     @Test

@@ -12,6 +12,10 @@ import java.lang.Math;
  * Included here for use in Genotype Likelihoods calculation, instead
  * of adding Commons Math3 as a dependency
  *
+ * Commons Math3 is licensed using the Apache License 2.0
+ * Full text of this license can be found here:
+ * https://www.apache.org/licenses/LICENSE-2.0.txt
+ *
  * This product includes software developed at
  * The Apache Software Foundation (http://www.apache.org/).
  *
