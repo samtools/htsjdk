@@ -29,6 +29,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.tribble.IntervalList.IntervalListCodec;
+import htsjdk.tribble.MutableFeature;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.BufferedReader;
@@ -41,6 +42,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
@@ -283,33 +285,11 @@ public class IntervalList implements Iterable<Interval> {
             intervals = list.intervals;
         }
 
+        final IntervalMergerIterator mergeringIterator = new IntervalMergerIterator(intervals.iterator(), combineAbuttingIntervals, enforceSameStrands, concatenateNames);
+
         final List<Interval> unique = new ArrayList<>();
-        final List<Interval> toBeMerged = new ArrayList<>();
-        Interval current = null;
-
-        for (final Interval next : intervals) {
-            if (current == null) {
-                toBeMerged.add(next);
-                current = next;
-            } else if (current.intersects(next) || (combineAbuttingIntervals && current.abuts(next))) {
-                if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) {
-                    throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
-                }
-                toBeMerged.add(next);
-                current = new Interval(current.getContig(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), current.isNegativeStrand(), null);
-            } else {
-                // Emit merged/unique interval
-                unique.add(merge(toBeMerged, concatenateNames));
-
-                // Set current == next for next iteration
-                toBeMerged.clear();
-                current = next;
-                toBeMerged.add(current);
-            }
-        }
-
-        if (!toBeMerged.isEmpty()) {
-            unique.add(merge(toBeMerged, concatenateNames));
+        while(mergeringIterator.hasNext()){
+            unique.add(mergeringIterator.next());
         }
         return unique;
     }
@@ -639,7 +619,6 @@ public class IntervalList implements Iterable<Interval> {
         return new IntervalList(header).addOther(list1).addOther(list2);
     }
 
-
     /**
      * A method for  concatenating the intervals from one list to this one, checks for equal dictionaries.
      * Does not look for overlapping intervals nor uniquify.
@@ -656,7 +635,6 @@ public class IntervalList implements Iterable<Interval> {
         this.addall(other.intervals);
         return this;
     }
-
 
     /**
      * A utility function for concatenating a list of IntervalLists, checks for equal dictionaries.
@@ -869,4 +847,75 @@ public class IntervalList implements Iterable<Interval> {
         result = 31 * result + intervals.hashCode();
         return result;
     }
+
+    /**
+     * An iterator that feeds on an {@link Iterator<Interval>} and combines consecutive intervals that need merging.
+     * Overlapping intervals will always be merged, abutting intervals are optionally merged.
+     *
+     * The iterator assumes that the intervals are sorted. Results are undefined if they are not sorted.
+     */
+    public static class IntervalMergerIterator implements Iterator<Interval> {
+
+        final Iterator<Interval> inputIntervals;
+        final boolean combineAbuttingIntervals;
+        final boolean enforceSameStrands;
+        final boolean concatenateNames;
+        final List<Interval> toBeMerged = new ArrayList<>();
+
+        MutableFeature current = null;
+        boolean currentStrandNegative = false;
+
+        public IntervalMergerIterator(Iterator<Interval> intervals, final boolean combineAbuttingIntervals, final boolean enforceSameStrand, final boolean concatenateNames) {
+            this.inputIntervals = intervals;
+
+            this.combineAbuttingIntervals = combineAbuttingIntervals;
+            this.enforceSameStrands = enforceSameStrand;
+            this.concatenateNames = concatenateNames;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return current != null || inputIntervals.hasNext();
+        }
+
+        @Override
+        public Interval next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException("There were no more elements to give!");
+            }
+            return getNext();
+        }
+
+        private Interval getNext() {
+            Interval next;
+            while (inputIntervals.hasNext()) {
+                next = inputIntervals.next();
+                if (current == null) {
+                    toBeMerged.add(next);
+                    current = new MutableFeature(next);
+                    currentStrandNegative = next.isNegativeStrand();
+                } else if (current.overlaps(next) || (combineAbuttingIntervals && current.withinDistanceOf(next,1))) {
+                    if (enforceSameStrands && currentStrandNegative != next.isNegativeStrand()) {
+                        throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
+                    }
+                    toBeMerged.add(next);
+                    current.end = Math.max(current.getEnd(), next.getEnd());
+                } else {
+                    // Emit merged/unique interval
+                    final Interval retVal = merge(toBeMerged, concatenateNames);
+                    toBeMerged.clear();
+                    current.setAll(next);
+                    currentStrandNegative = next.isNegativeStrand();
+                    toBeMerged.add(next);
+                    return retVal;
+                }
+            }
+            // Emit merged/unique interval
+            final Interval retVal = merge(toBeMerged, concatenateNames);
+            toBeMerged.clear();
+            current = null;
+            return retVal;
+        }
+    }
 }
+

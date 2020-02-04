@@ -413,17 +413,14 @@ public class IntervalListTest extends HtsjdkTest {
 
         three_overlaps_two.add(new Interval("1", 25, 400));
         three_overlaps_two.add(new Interval("2", 200, 600));
-        //three_overlaps_two.add(new Interval("3", 50, 470));
 
         three_overlaps_one.add(new Interval("1", 25, 400));
         three_overlaps_one.add(new Interval("2", 200, 600));
-        //three_overlaps_one.add(new Interval("3", 50, 470));
 
         one_overlaps_three.add(new Interval("1", 1, 100));
         one_overlaps_three.add(new Interval("1", 101, 200));
         one_overlaps_three.add(new Interval("1", 202, 300));
         one_overlaps_three.add(new Interval("2", 200, 300));
-        //one_overlaps_three.add(new Interval("2", 100, 150));
 
         return new Object[][]{
                 new Object[]{list1, list1, list1}, // should return itself
@@ -443,7 +440,6 @@ public class IntervalListTest extends HtsjdkTest {
 
         three_overlaps_one_and_two.add(new Interval("1", 25, 400));
         three_overlaps_one_and_two.add(new Interval("2", 200, 600));
-        //three_overlaps_one_and_two.add(new Interval("3", 50, 470));
 
         return new Object[][]{
                 new Object[]{CollectionUtil.makeList(list3), CollectionUtil.makeList(list1, list2), three_overlaps_one_and_two},

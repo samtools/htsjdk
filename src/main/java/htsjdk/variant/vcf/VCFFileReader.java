@@ -26,7 +26,11 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.*;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -38,6 +42,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Simplified interface for reading from VCF/BCF files.
@@ -256,13 +262,11 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      */
     @Deprecated
     public static IntervalList fromVcf(final VCFFileReader vcf, final boolean includeFiltered) {
-
-
         return toIntervalList(vcf, includeFiltered);
     }
 
     /**
-     * Converts a {@link VCFFileReader} to an IntervalList. The name field of the IntervalList is taken from the ID field
+     * Converts a {@link VCFFileReader} to an IntervalList. The name field of the Interval is taken from the ID field
      * of the variant, if it exists. If not, creates a name of the format interval-n where n is a running number that increments
      * only on un-named intervals. Will use a "END" tag in the INFO field as the end of the interval (if exists).
      *
@@ -270,25 +274,38 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @return an IntervalList constructed from input vcf
      */
     public static IntervalList toIntervalList(final VCFFileReader vcf, final boolean includeFiltered) {
+        final IntervalList intervalList = new IntervalList(vcf.getFileHeader().getSequenceDictionary());
+        toIntervals(vcf, includeFiltered).forEachRemaining(intervalList::add);
+        return intervalList;
+    }
 
-        //grab the dictionary from the VCF and use it in the IntervalList
-        final SAMSequenceDictionary dict = vcf.getFileHeader().getSequenceDictionary();
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
-        samFileHeader.setSequenceDictionary(dict);
-        final IntervalList list = new IntervalList(samFileHeader);
+    /**
+     * Converts a {@link VCFFileReader} to an {@link Iterator<Interval>}
+     * The name field of the Interval is taken from the ID field
+     * of the variant, if it exists. If not, creates a name of the format interval-n where n is a running number that increments
+     * only on un-named intervals. Will use a "END" tag in the INFO field as the end of the interval (if exists).
+     *
+     *
+     * @param vcf the vcfReader to be used for the conversion
+     * @return a Tuple<SamFileHeader,Iterator<Interval>> constructed from input vcf
+     */
+    public static Iterator<Interval> toIntervals(final VCFFileReader vcf, final boolean includeFiltered) {
 
-        int intervals = 0;
-        for (final VariantContext vc : vcf) {
-            if (includeFiltered || !vc.isFiltered()) {
-                String name = vc.getID();
-                final Integer intervalEnd = vc.getCommonInfo().getAttributeAsInt(VCFConstants.END_KEY, vc.getEnd());
-                if (VCFConstants.EMPTY_ID_FIELD.equals(name) || name == null)
-                    name = "interval-" + (++intervals);
-                list.add(new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name));
-            }
-        }
+        //intervalCount is used and incremented inside the lambda function, so it needs to be a final mutable object.
+        final AtomicInteger intervalCount = new AtomicInteger(0);
 
-        return list;
+        return vcf.iterator()
+                .stream()
+                .filter(vc -> includeFiltered || !vc.isFiltered())
+                .map(vc -> {
+                    String name = vc.getID();
+                    final int intervalEnd = vc.getCommonInfo().getAttributeAsInt(VCFConstants.END_KEY, vc.getEnd());
+                    if (VCFConstants.EMPTY_ID_FIELD.equals(name) || name == null) {
+                        name = "interval-" + intervalCount.incrementAndGet();;
+                    }
+                    return new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name);
+
+                }).iterator();
     }
 
     /**
