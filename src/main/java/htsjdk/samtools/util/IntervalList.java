@@ -849,20 +849,21 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * An iterator that feed on an Iterator<Interval> and combines consequtive intervals that need mergeing. Overlapping
-     * Intervals will always be merged, abutting intervals are optionally merged.
+     * An iterator that feeds on an {@link Iterator<Interval>} and combines consecutive intervals that need merging.
+     * Overlapping intervals will always be merged, abutting intervals are optionally merged.
      *
      * The iterator assumes that the intervals are sorted. Results are undefined if they are not sorted.
      */
     public static class IntervalMergerIterator implements Iterator<Interval> {
 
-        Iterator<Interval> inputIntervals;
-        MutableFeature current = null;
-        boolean currentStrandNegative = false;
+        final Iterator<Interval> inputIntervals;
         final boolean combineAbuttingIntervals;
         final boolean enforceSameStrands;
         final boolean concatenateNames;
         final List<Interval> toBeMerged = new ArrayList<>();
+
+        MutableFeature current = null;
+        boolean currentStrandNegative = false;
 
         public IntervalMergerIterator(Iterator<Interval> intervals, final boolean combineAbuttingIntervals, final boolean enforceSameStrand, final boolean concatenateNames) {
             this.inputIntervals = intervals;
