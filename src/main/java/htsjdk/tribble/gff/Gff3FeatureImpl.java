@@ -184,7 +184,7 @@ public class Gff3FeatureImpl implements Gff3Feature {
     public void addCoFeature(final Gff3FeatureImpl coFeature) {
         if (!parents.equals(coFeature.getParents())) {
 
-            throw new TribbleException("Co-featrues " + baseData.id + " do not have same parents");
+            throw new TribbleException("Co-features " + baseData.id + " do not have same parents");
         }
         for (final Gff3FeatureImpl feature : coFeatures) {
             feature.addCoFeatureShallow(coFeature);
