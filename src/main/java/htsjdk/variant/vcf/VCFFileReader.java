@@ -287,7 +287,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      *
      * @param vcf the vcfReader to be used for the conversion
-     * @return a Tuple<SamFileHeader,Iterator<Interval>> constructed from input vcf
+     * @return a Iterator<Interval> constructed from input vcf
      */
     public static Iterator<Interval> toIntervals(final VCFFileReader vcf, final boolean includeFiltered) {
 
