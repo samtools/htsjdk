@@ -1,0 +1,4 @@
+##gff-version 3
+##sequence-region   1 1 10
+1	.	region	1	10	.	.	.	ID=chromosome:1; Is_circular=true
+1	.	biological_region	12	14	.	.	.	

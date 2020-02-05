@@ -1,0 +1,5 @@
+##gff-version 3
+NC_000913.3	RefSeq	pseudogene	257829	257899	.	+	.	ID=gene-b0240;Dbxref=ASAP:ABE-0000821,ECOCYC:EG11092,EcoGene:EG11092,GeneID:945077;Name=crl;gbkey=Gene;gene=crl;gene_biotype=pseudogene;gene_synonym=ECK0241;locus_tag=b0240;part=1/2;pseudo=true
+NC_000913.3	RefSeq	CDS	257829	257899	.	+	0	ID=cds-gnl|b0240|CDS;Parent=gene-b0240;Dbxref=ASAP:ABE-0000821,ECOCYC:EG11092,EcoGene:EG11092,GeneID:945077;gbkey=CDS;gene=crl;locus_tag=b0240;orig_protein_id=gnl|b0240|CDS%3D288;orig_transcript_id=gnl|b0240|mrna.CDS%3D288;product=RNA polymerase holoenzyme assembly factor Crl;transl_table=11
+NC_000913.3	RefSeq	pseudogene	258676	259006	.	+	.	ID=gene-b0240;Dbxref=ASAP:ABE-0000821,ECOCYC:EG11092,EcoGene:EG11092,GeneID:945077;Name=crl;gbkey=Gene;gene=crl;gene_biotype=pseudogene;gene_synonym=ECK0241;locus_tag=b0240;part=2/2;pseudo=true
+NC_000913.3	RefSeq	CDS	258676	259006	.	+	1	ID=cds-gnl|b0240|CDS;Parent=gene-b0240;Dbxref=ASAP:ABE-0000821,ECOCYC:EG11092,EcoGene:EG11092,GeneID:945077;gbkey=CDS;gene=crl;locus_tag=b0240;orig_protein_id=gnl|b0240|CDS%3D288;orig_transcript_id=gnl|b0240|mrna.CDS%3D288;product=RNA polymerase holoenzyme assembly factor Crl;transl_table=11
