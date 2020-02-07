@@ -28,14 +28,14 @@ class GenotypeNumLikelihoodsCache {
     }
 
     private void fillCache(){
-        for ( int numAlleles = 1; numAlleles < staticCache.length; numAlleles++ ) {
-            for ( int ploidy = 1; ploidy < staticCache[numAlleles].length; ploidy++ ) {
-                staticCache[numAlleles][ploidy] = GenotypeLikelihoods.calcNumLikelihoods(numAlleles, ploidy);
+        for ( int numAlleles = 0; numAlleles < staticCache.length; numAlleles++ ) {
+            for ( int ploidy = 0; ploidy < staticCache[numAlleles].length; ploidy++ ) {
+                staticCache[numAlleles][ploidy] = GenotypeLikelihoods.calcNumLikelihoods(numAlleles+1, ploidy+1);
             }
         }
     }
 
-    private void put(final int numAlleles, final int ploidy, final int numLikelihoods) {
+    private synchronized void put(final int numAlleles, final int ploidy, final int numLikelihoods) {
         dynamicCache.put(new CacheKey(numAlleles, ploidy), numLikelihoods);
     }
 
@@ -46,12 +46,12 @@ class GenotypeNumLikelihoodsCache {
      * @param ploidy
      * @return number of likelihoods
      */
-    int get(final int numAlleles, final int ploidy) {
+    synchronized int get(final int numAlleles, final int ploidy) {
         if(numAlleles <= 0 || ploidy <= 0){
-            throw new IllegalArgumentException("numAlleles and ploidy must both exceed 0");
+            throw new IllegalArgumentException("numAlleles and ploidy must both exceed 0, but they are numAlleles: " + numAlleles + ", ploidy: " + ploidy);
         }
         if(numAlleles < staticCache.length && ploidy < staticCache[numAlleles].length){
-            return staticCache[numAlleles][ploidy];
+            return staticCache[numAlleles-1][ploidy-1];
         }
         else{
             final Integer cachedValue = dynamicCache.get(new CacheKey(numAlleles, ploidy));
