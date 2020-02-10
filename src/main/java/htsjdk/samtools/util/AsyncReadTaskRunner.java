@@ -3,7 +3,8 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Defaults;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.*;
 
 /**
@@ -50,8 +51,8 @@ public abstract class AsyncReadTaskRunner<T, U> {
     public static void setBlockingThreadpool(Executor blockingThreadpool) {
         AsyncReadTaskRunner.blockingThreadpool = blockingThreadpool;
     }
-    private final Deque<CompletableFuture<Deque<RecordOrException<U>>>> scheduledReadaheads = new ArrayDeque<>();
-    private final Deque<CompletableFuture<Deque<RecordOrException<T>>>> scheduledTransforms = new ArrayDeque<>();
+    private final BlockingDeque<CompletableFuture<Deque<RecordOrException<U>>>> scheduledReadaheads = new LinkedBlockingDeque<>();
+    private final BlockingDeque<CompletableFuture<Deque<RecordOrException<T>>>> scheduledTransforms = new LinkedBlockingDeque<>();
     private final int mTotalBatches;
     private final int mBatchBufferBudget;
     private volatile boolean asyncEnabled = true;
@@ -81,7 +82,6 @@ public abstract class AsyncReadTaskRunner<T, U> {
      */
     public void disableAsyncProcessing() {
         asyncEnabled = false;
-
     }
 
     /**
@@ -92,19 +92,23 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * The results of these tasks are discarded and any exceptions raised
      * during processing of these tasks are swallowed.
      */
-    public void flushAsyncProcessing() {
+    public synchronized void flushAsyncProcessing() {
         interruptAsyncTasks = true;
         disableAsyncProcessing();
         while (!scheduledTransforms.isEmpty()) {
             try {
-                scheduledTransforms.removeFirst().get();
+                CompletableFuture<Deque<RecordOrException<T>>> task = scheduledTransforms.removeFirst();
+                task.get();
             } catch (InterruptedException | ExecutionException | RuntimeException e) {
+                log.warn(e);
             }
         }
         while(!scheduledReadaheads.isEmpty()) {
             try {
-                scheduledReadaheads.removeFirst().get();
+                CompletableFuture<Deque<RecordOrException<U>>> task = scheduledReadaheads.removeFirst();
+                task.get();
             } catch (InterruptedException | ExecutionException | RuntimeException e) {
+                log.warn(e);
             }
         }
         interruptAsyncTasks = false;
@@ -135,7 +139,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * Upon an exception being thrown, no guarantees are made about the position of the underlying stream/iterator.
      * @return next record. null indicates end of stream
      */
-    public T nextRecord() throws IOException {
+    public synchronized T nextRecord() throws IOException {
         if (scheduledTransforms.isEmpty()) {
             scheduleFutures();
         }
@@ -172,7 +176,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
     }
 
     private void raiseAsynchronousProcessingException(Throwable e) throws IOException {
-        if (e instanceof InterruptedException){
+        if (e instanceof InterruptedException ){
             throw new RuntimeException("Interrupted waiting for asynchronous read to complete", e);
         } else if (e instanceof ExecutionException) {
             raiseAsynchronousProcessingException(e.getCause());
