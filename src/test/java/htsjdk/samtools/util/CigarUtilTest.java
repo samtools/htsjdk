@@ -26,6 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.TextCigarCodec;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -47,14 +48,14 @@ public class CigarUtilTest extends HtsjdkTest {
    @Test(dataProvider="clipData")
     public void basicTest(final String testName, final int start, final String inputCigar, final boolean negativeStrand,
                           final int clipPosition,
-                          final String expectedCigar, final int expectedAdjustedStart, final CigarUtil.Clipping clipping) throws IOException {
+                          final String expectedCigar, final int expectedAdjustedStart, final CigarOperator clippingOperator) throws IOException {
       List<CigarElement> cigar =  TextCigarCodec.decode(inputCigar).getCigarElements();
       if (negativeStrand){
           List<CigarElement> copiedList = new ArrayList<CigarElement>(cigar);
           Collections.reverse(copiedList);
           cigar = copiedList;
       }
-      List<CigarElement> result = CigarUtil.clipEndOfRead(clipPosition, cigar, clipping);
+      List<CigarElement> result = CigarUtil.clipEndOfRead(clipPosition, cigar, clippingOperator);
        Cigar newCigar = new Cigar(result);
        Cigar oldCigar = new Cigar(cigar);
        if (negativeStrand){
@@ -68,7 +69,7 @@ public class CigarUtilTest extends HtsjdkTest {
            Assert.assertTrue(sizeChange >= 0, "sizeChange >= 0. " + sizeChange);
       }
        Assert.assertEquals (TextCigarCodec.encode(newCigar), expectedCigar, testName);
-       if(clipping == CigarUtil.Clipping.SOFT_CLIP) {
+       if(clippingOperator == CigarOperator.SOFT_CLIP) {
            Assert.assertEquals(newCigar.getReadLength(), oldCigar.getReadLength());
        }
        Assert.assertNull(newCigar.isValid(testName, -1));
@@ -78,71 +79,71 @@ public class CigarUtilTest extends HtsjdkTest {
     private Object[][] getCigarClippingTestData() {
         // numClippedBases = (readLength - clipPosition) +1
         return new Object[][]{
-            {"Test 1:simple + strand", 100, "50M", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 1s:+ strand already clipped", 100, "42M8S", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 2:simple - strand", 100, "50M", true, 41, "10S40M", 110, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 3:boundary + strand", 100, "42M3D8M", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 3s:boundary + strand", 100, "42M3D8S", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 3x:stutter + strand", 100, "42M2D1D8M", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 3y:stutter + strand", 100, "42M1D2D8M", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 3a:boundary + strand", 100, "42M1D8M", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 4:boundary - strand", 98, "10M2D40M", true, 41, "10S40M", 110, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 5:deletion + strand", 100, "44M1D6M", false, 43, "42M8S", 110, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 6:deletion - strand", 98, "6M2D44M", true, 41, "10S40M", 110, CigarUtil.Clipping.SOFT_CLIP},
+            {"Test 1:simple + strand", 100, "50M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 1s:+ strand already clipped", 100, "42M8S", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 2:simple - strand", 100, "50M", true, 41, "10S40M", 110, CigarOperator.SOFT_CLIP},
+            {"Test 3:boundary + strand", 100, "42M3D8M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 3s:boundary + strand", 100, "42M3D8S", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 3x:stutter + strand", 100, "42M2D1D8M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 3y:stutter + strand", 100, "42M1D2D8M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 3a:boundary + strand", 100, "42M1D8M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 4:boundary - strand", 98, "10M2D40M", true, 41, "10S40M", 110, CigarOperator.SOFT_CLIP},
+            {"Test 5:deletion + strand", 100, "44M1D6M", false, 43, "42M8S", 110, CigarOperator.SOFT_CLIP},
+            {"Test 6:deletion - strand", 98, "6M2D44M", true, 41, "10S40M", 110, CigarOperator.SOFT_CLIP},
 
-            {"Test 7:insertion + strand", 100, "42M3I5M", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 8:insertion - strand", 102, "8M2I40M", true, 41, "10S40M", 110, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 9:insertion within + strand", 100, "44M2I4M", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 9x:insertion stutter within + strand", 100, "44M2I2I2M", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 10:insertion within - strand", 100, "3M3I44M", true, 41, "10S40M", 107, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 11:insertion straddling + strand", 100, "40M4I6M", false, 43, "40M10S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 11s:insertion straddling + strand", 100, "40M4I6S", false, 43, "40M10S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 11a:insertion straddling + strand", 100, "40M2I8M", false, 43, "40M10S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 12:insertion straddling - strand", 104, "4M4I42M", true, 41, "10S40M", 110, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 12a:insertion straddling - strand", 102, "8M2I40M", true, 41, "10S40M", 110, CigarUtil.Clipping.SOFT_CLIP},
+            {"Test 7:insertion + strand", 100, "42M3I5M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 8:insertion - strand", 102, "8M2I40M", true, 41, "10S40M", 110, CigarOperator.SOFT_CLIP},
+            {"Test 9:insertion within + strand", 100, "44M2I4M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 9x:insertion stutter within + strand", 100, "44M2I2I2M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 10:insertion within - strand", 100, "3M3I44M", true, 41, "10S40M", 107, CigarOperator.SOFT_CLIP},
+            {"Test 11:insertion straddling + strand", 100, "40M4I6M", false, 43, "40M10S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 11s:insertion straddling + strand", 100, "40M4I6S", false, 43, "40M10S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 11a:insertion straddling + strand", 100, "40M2I8M", false, 43, "40M10S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 12:insertion straddling - strand", 104, "4M4I42M", true, 41, "10S40M", 110, CigarOperator.SOFT_CLIP},
+            {"Test 12a:insertion straddling - strand", 102, "8M2I40M", true, 41, "10S40M", 110, CigarOperator.SOFT_CLIP},
 
-            {"Test 13:deletion before clip + strand", 100, "10M5D35M", false, 38, "10M5D27M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 14:deletion before clip - strand", 100, "35M5D10M", true, 36, "10S25M5D10M", 110, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 15:insertion before clip + strand", 100, "10M5I35M", false, 43, "10M5I27M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 16:insertion before clip - strand", 100, "16M5I29M", true, 41, "10S6M5I29M", 110, CigarUtil.Clipping.SOFT_CLIP},
+            {"Test 13:deletion before clip + strand", 100, "10M5D35M", false, 38, "10M5D27M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 14:deletion before clip - strand", 100, "35M5D10M", true, 36, "10S25M5D10M", 110, CigarOperator.SOFT_CLIP},
+            {"Test 15:insertion before clip + strand", 100, "10M5I35M", false, 43, "10M5I27M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 16:insertion before clip - strand", 100, "16M5I29M", true, 41, "10S6M5I29M", 110, CigarOperator.SOFT_CLIP},
 
-            {"Test 17:second, earlier clip", 100, "48M2S", false, 43, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 17s:second, earlier clip", 100, "2S48M", true, 43, "8S42M", 106, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 18:second, later clip", 100, "42M8S", false, 48, "42M8S", 100, CigarUtil.Clipping.SOFT_CLIP},
-            {"Test 18s:second, later clip", 100, "8S42M", true, 48, "8S42M", 100, CigarUtil.Clipping.SOFT_CLIP},
+            {"Test 17:second, earlier clip", 100, "48M2S", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 17s:second, earlier clip", 100, "2S48M", true, 43, "8S42M", 106, CigarOperator.SOFT_CLIP},
+            {"Test 18:second, later clip", 100, "42M8S", false, 48, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            {"Test 18s:second, later clip", 100, "8S42M", true, 48, "8S42M", 100, CigarOperator.SOFT_CLIP},
             
-            {"Test hard-clipping 1:simple + strand", 100, "50M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 1s:+ strand already clipped", 100, "42M8S", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 2:simple - strand", 100, "50M", true, 41, "10H40M", 110, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 3:boundary + strand", 100, "42M3D8M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 3s:boundary + strand", 100, "42M3D8S", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 3x:stutter + strand", 100, "42M2D1D8M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 3y:stutter + strand", 100, "42M1D2D8M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 3a:boundary + strand", 100, "42M1D8M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 4:boundary - strand", 98, "10M2D40M", true, 41, "10H40M", 110, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 5:deletion + strand", 100, "44M1D6M", false, 43, "42M8H", 110, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 6:deletion - strand", 98, "6M2D44M", true, 41, "10H40M", 110, CigarUtil.Clipping.HARD_CLIP},
+            {"Test hard-clipping 1:simple + strand", 100, "50M", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 1s:+ strand already clipped", 100, "42M8S", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 2:simple - strand", 100, "50M", true, 41, "10H40M", 110, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 3:boundary + strand", 100, "42M3D8M", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 3s:boundary + strand", 100, "42M3D8S", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 3x:stutter + strand", 100, "42M2D1D8M", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 3y:stutter + strand", 100, "42M1D2D8M", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 3a:boundary + strand", 100, "42M1D8M", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 4:boundary - strand", 98, "10M2D40M", true, 41, "10H40M", 110, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 5:deletion + strand", 100, "44M1D6M", false, 43, "42M8H", 110, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 6:deletion - strand", 98, "6M2D44M", true, 41, "10H40M", 110, CigarOperator.HARD_CLIP},
 
-            {"Test hard-clipping 7:insertion + strand", 100, "42M3I5M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 8:insertion - strand", 102, "8M2I40M", true, 41, "10H40M", 110, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 9:insertion within + strand", 100, "44M2I4M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 9x:insertion stutter within + strand", 100, "44M2I2I2M", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 10:insertion within - strand", 100, "3M3I44M", true, 41, "10H40M", 107, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 11:insertion straddling + strand", 100, "40M4I6M", false, 43, "40M10H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 11s:insertion straddling + strand", 100, "40M4I6S", false, 43, "40M10H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 11a:insertion straddling + strand", 100, "40M2I8M", false, 43, "40M10H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 12:insertion straddling - strand", 104, "4M4I42M", true, 41, "10H40M", 110, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 12a:insertion straddling - strand", 102, "8M2I40M", true, 41, "10H40M", 110, CigarUtil.Clipping.HARD_CLIP},
+            {"Test hard-clipping 7:insertion + strand", 100, "42M3I5M", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 8:insertion - strand", 102, "8M2I40M", true, 41, "10H40M", 110, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 9:insertion within + strand", 100, "44M2I4M", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 9x:insertion stutter within + strand", 100, "44M2I2I2M", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 10:insertion within - strand", 100, "3M3I44M", true, 41, "10H40M", 107, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 11:insertion straddling + strand", 100, "40M4I6M", false, 43, "40M10H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 11s:insertion straddling + strand", 100, "40M4I6S", false, 43, "40M10H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 11a:insertion straddling + strand", 100, "40M2I8M", false, 43, "40M10H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 12:insertion straddling - strand", 104, "4M4I42M", true, 41, "10H40M", 110, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 12a:insertion straddling - strand", 102, "8M2I40M", true, 41, "10H40M", 110, CigarOperator.HARD_CLIP},
 
-            {"Test hard-clipping 13:deletion before clip + strand", 100, "10M5D35M", false, 38, "10M5D27M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 14:deletion before clip - strand", 100, "35M5D10M", true, 36, "10H25M5D10M", 110, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 15:insertion before clip + strand", 100, "10M5I35M", false, 43, "10M5I27M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 16:insertion before clip - strand", 100, "16M5I29M", true, 41, "10H6M5I29M", 110, CigarUtil.Clipping.HARD_CLIP},
+            {"Test hard-clipping 13:deletion before clip + strand", 100, "10M5D35M", false, 38, "10M5D27M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 14:deletion before clip - strand", 100, "35M5D10M", true, 36, "10H25M5D10M", 110, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 15:insertion before clip + strand", 100, "10M5I35M", false, 43, "10M5I27M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 16:insertion before clip - strand", 100, "16M5I29M", true, 41, "10H6M5I29M", 110, CigarOperator.HARD_CLIP},
 
-            {"Test hard-clipping 17:second, earlier clip", 100, "48M2S", false, 43, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 17s:second, earlier clip", 100, "2S48M", true, 43, "8H42M", 106, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 18:second, later clip", 100, "42M8S", false, 48, "42M8H", 100, CigarUtil.Clipping.HARD_CLIP},
-            {"Test hard-clipping 18s:second, later clip", 100, "8S42M", true, 48, "8H42M", 100, CigarUtil.Clipping.HARD_CLIP},
+            {"Test hard-clipping 17:second, earlier clip", 100, "48M2S", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 17s:second, earlier clip", 100, "2S48M", true, 43, "8H42M", 106, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 18:second, later clip", 100, "42M8S", false, 48, "42M8H", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 18s:second, later clip", 100, "8S42M", true, 48, "8H42M", 100, CigarOperator.HARD_CLIP},
         };
     }
 
