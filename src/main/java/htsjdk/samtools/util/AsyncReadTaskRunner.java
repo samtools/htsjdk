@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.*;
+import java.util.logging.Logger;
 
 /**
  * Helper class for performing asynchronous reading.
@@ -19,6 +20,8 @@ import java.util.concurrent.*;
  * is performed in transform().
  */
 public abstract class AsyncReadTaskRunner<T, U> {
+    private static final Log log = Log.getInstance(AsyncReadTaskRunner.class);
+
     private static Executor nonblockingThreadpool = Executors.newFixedThreadPool(Defaults.ASYNC_READ_COMPUTATIONAL_THREADS, r -> {
         Thread t = Executors.defaultThreadFactory().newThread(r);
         t.setName("htsjdk-asyncio-nonblocking");
@@ -100,7 +103,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
                 CompletableFuture<Deque<RecordOrException<T>>> task = scheduledTransforms.removeFirst();
                 task.get();
             } catch (InterruptedException | ExecutionException | RuntimeException e) {
-                log.warn(e);
+              log.warn(e);
             }
         }
         while(!scheduledReadaheads.isEmpty()) {

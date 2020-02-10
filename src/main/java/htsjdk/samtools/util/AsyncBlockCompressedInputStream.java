@@ -136,7 +136,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         public CompressionBlock transform(CompressionBlock record) {
             BlockGunzipper inflater = mFreeInflaters.get();
             try {
-                inflator.setCheckCrcs(AsyncBlockCompressedInputStream.this.checkCrc);
+                inflater.setCheckCrcs(AsyncBlockCompressedInputStream.this.checkCrc);
                 record.decompress(mFreeDecompressedBlockedBuffers.poll(), inflater, AsyncBlockCompressedInputStream.this);
             } finally {
                 mFreeInflaters.recycle(inflater);
