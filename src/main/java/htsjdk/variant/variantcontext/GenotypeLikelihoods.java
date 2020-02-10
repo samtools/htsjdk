@@ -26,8 +26,10 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.tribble.TribbleException;
+import htsjdk.variant.utils.BinomialCoefficientUtil;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,13 +37,10 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Objects;
 
 public class GenotypeLikelihoods {
-    private final static int NUM_LIKELIHOODS_CACHE_N_ALLELES = 5;
-    private final static int NUM_LIKELIHOODS_CACHE_PLOIDY = 10;
-    // caches likelihoods up to 5 alleles and up to 10 ploidy
-    private final static int[][] numLikelihoodCache = new int[NUM_LIKELIHOODS_CACHE_N_ALLELES][NUM_LIKELIHOODS_CACHE_PLOIDY];
+    // caches likelihoods
+    private final static GenotypeNumLikelihoodsCache numLikelihoodCache = new GenotypeNumLikelihoodsCache();
 
     public final static int MAX_PL = Integer.MAX_VALUE;
 
@@ -52,18 +51,6 @@ public class GenotypeLikelihoods {
     //
     private double[] log10Likelihoods = null;
     private String likelihoodsAsString_PLs = null;
-
-    /**
-     * initialize num likelihoods cache
-     */
-    static {
-        // must be done before PLIndexToAlleleIndex
-        for ( int numAlleles = 1; numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES; numAlleles++ ) {
-            for ( int ploidy = 1; ploidy < NUM_LIKELIHOODS_CACHE_PLOIDY; ploidy++ ) {
-                numLikelihoodCache[numAlleles][ploidy] = calcNumLikelihoods(numAlleles, ploidy);
-            }
-        }
-    }
 
     /**
      * The maximum number of diploid alternate alleles that we can represent as genotype likelihoods
@@ -242,7 +229,7 @@ public class GenotypeLikelihoods {
     }
 
     private final static double[] parsePLsIntoLikelihoods(String likelihoodsAsString_PLs) {
-        if ( !likelihoodsAsString_PLs.equals(VCFConstants.MISSING_VALUE_v4) ) {
+        if ( likelihoodsAsString_PLs != null && !likelihoodsAsString_PLs.equals(VCFConstants.MISSING_VALUE_v4) ) {
             String[] strings = likelihoodsAsString_PLs.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
             try {
@@ -266,10 +253,21 @@ public class GenotypeLikelihoods {
         if ( !GLString.equals(VCFConstants.MISSING_VALUE_v4) ) {
             String[] strings = GLString.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
+            int missing = 0;
             for ( int i = 0; i < strings.length; i++ ) {
-                likelihoodsAsVector[i] = Double.parseDouble(strings[i]);
+                if (strings[i].equals(VCFConstants.MISSING_VALUE_v4)) {
+                  missing++;
+                } else {
+                  likelihoodsAsVector[i] = VCFUtils.parseVcfDouble(strings[i]);
+                }
             }
-            return likelihoodsAsVector;
+            if (missing == 0) {
+              return likelihoodsAsVector;
+            } else if (likelihoodsAsVector.length == missing) {
+              return null; // array of missing values 
+            } else {
+              throw new TribbleException("partial missing values for GL field");
+            }
         }
 
         return null;
@@ -430,17 +428,10 @@ public class GenotypeLikelihoods {
      * @param ploidy        number of chromosomes
      * @return  number of likelihoods
      */
-    private static final int calcNumLikelihoods(final int numAlleles, final int ploidy) {
-        if (numAlleles == 1)
-            return 1;
-        else if (ploidy == 1)
-            return numAlleles;
-        else {
-            int acc =0;
-            for (int k=0; k <= ploidy; k++ )
-                acc += calcNumLikelihoods(numAlleles - 1, ploidy - k);
-            return acc;
-        }
+    static final int calcNumLikelihoods(final int numAlleles, final int ploidy) {
+        //Note: Casting to int instead instead of returning long because values above Integer.MAX_VALUE would not be valid array indices,
+        // and would cause other problems if a PL array needed to be that size
+        return Math.toIntExact(BinomialCoefficientUtil.binomialCoefficient((numAlleles + ploidy - 1),ploidy));
     }
 
     /**
@@ -459,25 +450,17 @@ public class GenotypeLikelihoods {
      *
      * Note this method caches the value for most common num Allele / ploidy combinations for efficiency
      *
-     * Recursive implementation:
-     *   S(N,P) = sum_{k=0}^P S(N-1,P-k)
-     *  because if we have N integers, we can condition 1 integer to be = k, and then N-1 integers have to sum to P-K
-     * With initial conditions
-     *   S(N,1) = N  (only way to have N integers add up to 1 is all-zeros except one element with a one. There are N of these vectors)
-     *   S(1,P) = 1 (only way to have 1 integer add to P is with that integer P itself).
+     * For non-cached values, the result is calculated via a call to calcNumLikelihoods,
+     * which uses the Apache Commons CombinatoricsUtils class
+     * using the formula (numAlleles + ploidy - 1) choose ploidy
      *
      *   @param  numAlleles      Number of alleles (including ref)
      *   @param  ploidy          Ploidy, or number of chromosomes in set
      *   @return    Number of likelihood elements we need to hold.
      */
-    public static int numLikelihoods(final int numAlleles, final int ploidy) {
-        if ( numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES
-                && ploidy < NUM_LIKELIHOODS_CACHE_PLOIDY )
-            return numLikelihoodCache[numAlleles][ploidy];
-        else {
-            // have to calculate on the fly
-            return calcNumLikelihoods(numAlleles, ploidy);
-        }
+    public static synchronized int numLikelihoods(final int numAlleles, final int ploidy) {
+        //Get the value from the cache
+        return numLikelihoodCache.get(numAlleles, ploidy);
     }
 
     // As per the VCF spec: "the ordering of genotypes for the likelihoods is given by: F(j/k) = (k*(k+1)/2)+j.
@@ -600,4 +583,5 @@ public class GenotypeLikelihoods {
         indexes[2] = calculatePLindex(allele2Index, allele2Index);
         return indexes;
     }
+
 }

@@ -28,7 +28,9 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class SAMUtilsTest extends HtsjdkTest {
@@ -283,5 +285,47 @@ public class SAMUtilsTest extends HtsjdkTest {
         final byte[] expectedBases = new byte[]{'=', 'A', 'A', 'C', 'C', 'G', 'G', 'T', 'T', 'N', 'N', 'N', 'M', 'M',
                 'R', 'R', 'S', 'S', 'V', 'V', 'W', 'W', 'Y', 'Y', 'H', 'H', 'K', 'K', 'D', 'D', 'B', 'B'};
         Assert.assertEquals(new String(bytes), new String(expectedBases));
+    }
+
+
+    @DataProvider()
+    public Iterator<Object[]> getOAValues(){
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+        final List<Object[]> tests = new ArrayList<>();
+
+        {
+            final SAMRecord record = builder.addFrag("test1", 0, 15, false, false, "36M", null, 45);
+
+            tests.add(new Object[]{record, "chr1,15,+,36M,255,"});
+        }
+        {
+            final SAMRecord record = builder.addFrag("test2", 0, 15, true, true, "36M", null, 45);
+            record.setMappingQuality(60);
+            // builder ignores this request....
+            record.setReadNegativeStrandFlag(true);
+            tests.add(new Object[]{record, "*,0,-,*,60,"});
+        }
+        {
+            final SAMRecord record = builder.addFrag("test3", 2, 15, false, false, "36M", null, 45);
+            record.setAttribute(SAMTag.NM.name(),33);
+
+            tests.add(new Object[]{record, "chr3,15,+,36M,255,33"});
+        }
+        {
+            final SAMRecord record = builder.addFrag("test4", 1, 115, true, false, "12S12M12I", null, 45);
+            record.setAttribute(SAMTag.NM.name(),0);
+            record.setMappingQuality(60);
+
+            tests.add(new Object[]{record, "chr2,115,-,12S12M12I,60,0"});
+        }
+
+        return tests.iterator();
+
+    }
+
+
+    @Test(dataProvider = "getOAValues")
+    public void testOAValues(final SAMRecord record, final String expectedOA){
+        Assert.assertEquals(SAMUtils.calculateOATagValue(record), expectedOA);
     }
 }

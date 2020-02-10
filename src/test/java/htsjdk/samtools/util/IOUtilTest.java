@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.spi.FileSystemProvider;
 
-import htsjdk.samtools.BamFileIoUtils;
 import htsjdk.samtools.SAMException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -44,15 +43,12 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.lang.IllegalArgumentException;
-import java.nio.file.Path;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Random;
-import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
 
@@ -318,13 +314,29 @@ public class IOUtilTest extends HtsjdkTest {
     public void testDeletePathLocal(final List<String> fileNames) throws Exception {
         final File tmpDir = IOUtil.createTempDir("testDeletePath", "");
         final List<Path> paths = createLocalFiles(tmpDir, fileNames);
-        testDeletePath(paths);
+        testDeletePaths(paths);
+    }
+
+    @Test
+    public void testDeleteSinglePath() throws Exception {
+        final Path toDelete = Files.createTempFile("file",".bad");
+        Assert.assertTrue(Files.exists(toDelete));
+        IOUtil.deletePath(toDelete);
+        Assert.assertFalse(Files.exists(toDelete));
+    }
+
+    @Test
+    public void testDeleteSingleWithDeletePaths() throws Exception {
+        final Path toDelete = Files.createTempFile("file",".bad");
+        Assert.assertTrue(Files.exists(toDelete));
+        IOUtil.deletePaths(toDelete);
+        Assert.assertFalse(Files.exists(toDelete));
     }
 
     @Test(dataProvider = "fileNamesForDelete")
     public void testDeletePathJims(final List<String> fileNames) throws Exception {
         final List<Path> paths = createJimfsFiles("testDeletePath", fileNames);
-        testDeletePath(paths);
+        testDeletePaths(paths);
     }
 
     @Test(dataProvider = "fileNamesForDelete")
@@ -340,7 +352,8 @@ public class IOUtilTest extends HtsjdkTest {
         testDeletePathArray(paths);
     }
 
-    private static void testDeletePath(final List<Path> paths) {
+
+    private static void testDeletePaths(final List<Path> paths) {
         paths.forEach(p -> Assert.assertTrue(Files.exists(p)));
         IOUtil.deletePaths(paths);
         paths.forEach(p -> Assert.assertFalse(Files.exists(p)));

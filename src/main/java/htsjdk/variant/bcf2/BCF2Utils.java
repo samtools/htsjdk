@@ -25,7 +25,7 @@
 
 package htsjdk.variant.bcf2;
 
-import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.*;
 
@@ -184,10 +184,10 @@ public final class BCF2Utils {
      */
     public static final File shadowBCF(final File vcfFile) {
         final String path = vcfFile.getAbsolutePath();
-        if ( path.contains(IOUtil.VCF_FILE_EXTENSION) )
-            return new File(path.replace(IOUtil.VCF_FILE_EXTENSION, IOUtil.BCF_FILE_EXTENSION));
+        if ( path.contains(FileExtensions.VCF) )
+            return new File(path.replace(FileExtensions.VCF, FileExtensions.BCF));
         else {
-            final File bcf = new File( path + IOUtil.BCF_FILE_EXTENSION );
+            final File bcf = new File( path + FileExtensions.BCF );
             if ( bcf.canRead() )
                 return bcf;
             else {

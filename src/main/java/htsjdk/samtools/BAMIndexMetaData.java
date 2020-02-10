@@ -88,6 +88,13 @@ public class BAMIndexMetaData {
         }
     }
 
+    private BAMIndexMetaData(final long firstOffset, final long lastOffset, final int alignedRecords, final int unAlignedRecords) {
+        this.firstOffset = firstOffset;
+        this.lastOffset = lastOffset;
+        this.alignedRecords = alignedRecords;
+        this.unAlignedRecords = unAlignedRecords;
+    }
+
     /**
      * @return the count of aligned records associated with this reference
      */
@@ -159,7 +166,7 @@ public class BAMIndexMetaData {
             unAlignedRecords += slice.unmappedReadsCount;
         }
 
-        final long start = slice.offset;
+        final long start = slice.byteOffsetFromCompressionHeaderStart;
 
         if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
             this.firstOffset = start;
@@ -205,6 +212,19 @@ public class BAMIndexMetaData {
      */
     long getLastOffset() {
         return lastOffset;
+    }
+
+    /**
+     * Return a new metadata object shifted by a given (non-virtual) offset.
+     *
+     * @param offset the offset in bytes
+     * @return a new metadata object shifted by the given offset
+     * @see BlockCompressedFilePointerUtil#shift(long, long)
+     */
+    BAMIndexMetaData shift(final long offset) {
+        final long newFirstOffset = firstOffset == -1 ? firstOffset : BlockCompressedFilePointerUtil.shift(firstOffset, offset); // -1 is unset
+        final long newLastOffset = lastOffset == 0 ? lastOffset : BlockCompressedFilePointerUtil.shift(lastOffset, offset); // 0 is unset
+        return new BAMIndexMetaData(newFirstOffset, newLastOffset, alignedRecords, unAlignedRecords);
     }
 
     /**

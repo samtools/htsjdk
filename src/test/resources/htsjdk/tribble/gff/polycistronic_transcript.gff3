@@ -1,0 +1,11 @@
+##gff-version 3.2.1
+chrX	.	gene	100	200	.	+	.	ID=gene01;name=resA
+chrX	.	gene	250	350	.	+	.	ID=gene02;name=resB
+chrX	.	gene	400	500	.	+	.	ID=gene03;name=resX
+chrX	.	gene	550	650	.	+	.	ID=gene04;name=resZ
+chrX	.	mRNA	100	650	.	+	.	ID=tran01;Parent=gene01,gene02,gene03,gene04
+chrX	.	exon	100	650	.	+	.	Parent=tran01
+chrX	.	CDS	100	200	.	+	0	Parent=tran01;Derives_from=gene01
+chrX	.	CDS	250	350	.	+	0	Parent=tran01;Derives_from=gene02
+chrX	.	CDS	400	500	.	+	0	Parent=tran01;Derives_from=gene03
+chrX	.	CDS	550	650	.	+	0	Parent=tran01;Derives_from=gene04

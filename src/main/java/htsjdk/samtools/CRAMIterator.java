@@ -177,8 +177,7 @@ public class CRAMIterator implements SAMRecordIterator {
                 }
         }
 
-        for (int i = 0; i < container.slices.length; i++) {
-            final Slice slice = container.slices[i];
+        for (final Slice slice : container.getSlices()) {
             final ReferenceContext sliceContext = slice.getReferenceContext();
 
             if (! sliceContext.isMappedSingleRef())
@@ -212,8 +211,8 @@ public class CRAMIterator implements SAMRecordIterator {
             samRecord.setValidationStringency(validationStringency);
 
             if (mReader != null) {
-                final long chunkStart = (container.offset << 16) | cramRecord.sliceIndex;
-                final long chunkEnd = ((container.offset << 16) | cramRecord.sliceIndex) + 1;
+                final long chunkStart = (container.byteOffset << 16) | cramRecord.sliceIndex;
+                final long chunkEnd = ((container.byteOffset << 16) | cramRecord.sliceIndex) + 1;
                 samRecord.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
             

@@ -99,10 +99,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
                     throw new RuntimeException("No more containers in this boundary.");
                 }
                 
-                final long offset = seekableStream.position();
-                final Container c = ContainerIO.readContainer(cramHeader.getVersion(), seekableStream);
-                c.offset = offset;
-                return c;
+                return ContainerIO.readContainer(cramHeader.getVersion(), seekableStream);
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);
             }

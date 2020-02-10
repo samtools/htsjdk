@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -55,7 +56,7 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
             }).forEach(writer::addAlignment);
         }
 
-        final File indexFile = new File(outBam.getParent(), IOUtil.basename(outBam) + BAMIndex.BAMIndexSuffix);
+        final File indexFile = new File(outBam.getParent(), IOUtil.basename(outBam) + FileExtensions.BAI_INDEX);
         indexFile.deleteOnExit();
         outBam.deleteOnExit();
         return new CachingBAMFileIndex(indexFile, dict);
@@ -120,4 +121,34 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
         Assert.assertEquals(index.getCacheMisses(), misses, "cache misses didn't match expected");
     }
 
+
+    /**
+     * This tests that the optimization for querying forwards in https://github.com/samtools/htsjdk/pull/1396
+     * returns the same results as the unoptimized queries going backwards.
+     */
+    @Test
+    public void testSequentialCachingOptimizationDoesntBreakThings() throws IOException {
+        final BAMIndexContent[] forward = new BAMIndexContent[200];
+        final BAMIndexContent[] reverse = new BAMIndexContent[200];
+
+        try(final CachingBAMFileIndex index = getIndexWith200Contigs()) {
+            //iterate forward which triggers the optimized path
+            for (int i = 1; i <= 200; i++) {
+                final BAMIndexContent query = index.query(i, 1, -1);
+                forward[i - 1] = query;
+            }
+        }
+
+        try(final CachingBAMFileIndex index = getIndexWith200Contigs()) {
+            //iterate backwards which doesn't use the optimized path
+            for (int i = 200; i > 0; i--) {
+                final BAMIndexContent query = index.query(i, 1, -1);
+                reverse[i - 1] = query;
+            }
+        }
+
+        for( int i = 0; i < 200; i++){
+               Assert.assertEquals(forward[i], reverse[i]);
+        }
+    }
 }

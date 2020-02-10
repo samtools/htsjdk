@@ -24,8 +24,7 @@
 
 package htsjdk.samtools.util;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ByteChannel;
@@ -55,7 +54,11 @@ import java.util.List;
 public final class GZIIndex {
 
     /** Default extension for the files storing a {@link GZIIndex}. */
-    public static final String DEFAULT_EXTENSION = ".gzi";
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#GZI} instead.
+     */
+    @Deprecated
+    public static final String DEFAULT_EXTENSION = FileExtensions.GZI;
 
     /**
      * Index entry mapping the block-offset (compressed offset) to the uncompressed offset where the
@@ -221,31 +224,44 @@ public final class GZIIndex {
     /**
      * Writes this index into the requested path.
      *
-     * @param output the output file.
+     * @param output the output path.
      *
      * @throws IOException if an I/O error occurs.
      */
     public void writeIndex(final Path output) throws IOException {
+        writeIndex(Files.newOutputStream(output));
+    }
+
+    /**
+     * Writes this index into the requested path.
+     *
+     * NOTE: This method will close out the provided output stream when it finishes writing the index
+     *
+     * @param output the output file.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
+    public void writeIndex(final OutputStream output) throws IOException {
         if (output == null) {
             throw new IllegalArgumentException("null output path");
         }
+        BinaryCodec codec = new BinaryCodec(output);
 
         // the first entry is never written - 0, 0
         final int numberOfBlocksToWrite = entries.size();
 
-        final ByteBuffer buffer = allocateBuffer(numberOfBlocksToWrite, true);
         // put the number of entries
-        buffer.putLong(Integer.toUnsignedLong(numberOfBlocksToWrite));
+        codec.writeLong(Integer.toUnsignedLong(numberOfBlocksToWrite));
 
         // except the first, iterate over all the entries
         for (final IndexEntry entry : entries) {
             // implementation of entry ensures that the offsets are no negative
-            buffer.putLong(entry.getCompressedOffset());
-            buffer.putLong(entry.getUncompressedOffset());
+            codec.writeLong(entry.getCompressedOffset());
+            codec.writeLong(entry.getUncompressedOffset());
         }
 
-        // write into the output
-        Files.write(output, buffer.array());
+        // Close the codec to ensure the output is written
+        codec.close();
     }
 
     /**
@@ -360,7 +376,7 @@ public final class GZIIndex {
     /**
      * Builds a {@link GZIIndex} on the fly from a BGZIP file.
      *
-     * <p>Note that this method does not write the index on disk. Use {@link #writeIndex(Path)} on
+     * <p>Note that this method does not write the index on disk. Use {@link #writeIndex(OutputStream)} on
      * the returned object to save the index.
      *
      * @param bgzipFile the bgzip file.
@@ -413,13 +429,13 @@ public final class GZIIndex {
         }
         // build the index, write and return
         final GZIIndex index = buildIndex(bgzipFile);
-        index.writeIndex(indexFile);
+        index.writeIndex(new BufferedOutputStream(Files.newOutputStream(indexFile)));
         return index;
     }
 
     /** Gets the default index path for the bgzip file. */
     public static Path resolveIndexNameForBgzipFile(final Path bgzipFile) {
-        return bgzipFile.resolveSibling(bgzipFile.getFileName().toString() + DEFAULT_EXTENSION);
+        return bgzipFile.resolveSibling(bgzipFile.getFileName().toString() + FileExtensions.GZI);
     }
 
     // helper method for allocate a buffer for read/write
@@ -430,5 +446,38 @@ public final class GZIIndex {
         size += numberOfEntries * 2 * Long.BYTES;
         // creates a byte buffer in little-endian
         return ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * Helper class for constructing the GZIindex.
+     *
+     * In order to construct a GZI index addGzipBlock() should be called every time a new Gzip Block is written out and
+     * the entire index will be written out when close() is called.
+     */
+    public static final class GZIIndexer implements Closeable {
+        private int uncompressedFileOffset;
+        private final OutputStream output;
+        private final List<IndexEntry> entries = new ArrayList<>();
+
+        public GZIIndexer(final OutputStream outputStream) {
+            output = outputStream;
+        }
+
+        public GZIIndexer(final Path outputFile) throws IOException {
+            output = Files.newOutputStream(outputFile);
+        }
+
+        // Adds a new index location given the compressed file offset and a running tally based on the uncompressed block sizes
+        public void addGzipBlock(final long compressedFileOffset, final long uncompressedBlockSize) {
+            IndexEntry indexEntry = new IndexEntry(compressedFileOffset, uncompressedFileOffset);
+            uncompressedFileOffset += uncompressedBlockSize;
+            entries.add(indexEntry);
+        }
+
+        @Override
+        public void close() throws IOException {
+            GZIIndex index = new GZIIndex(entries);
+            index.writeIndex(output); //NOTE this relies on writeIndex closing the output stream for it
+        }
     }
 }

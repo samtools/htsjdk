@@ -71,7 +71,7 @@ public class GZIIndexTest extends HtsjdkTest {
         final GZIIndex index = GZIIndex.loadIndex(indexFile.toPath());
         final File temp = File.createTempFile("testWriteIndex", indexFile.getName());
         temp.deleteOnExit();
-        index.writeIndex(temp.toPath());
+        index.writeIndex(Files.newOutputStream(temp.toPath()));
 
         // test equal byte representation on disk
         final byte[] expected = Files.readAllBytes(indexFile.toPath());

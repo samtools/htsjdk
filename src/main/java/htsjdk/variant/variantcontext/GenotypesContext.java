@@ -26,7 +26,6 @@
 package htsjdk.variant.variantcontext;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -244,9 +243,9 @@ public class GenotypesContext implements List<Genotype>, Serializable {
         return ! immutable;
     }
 
-    public final void checkImmutability() {
+    public final void checkImmutability() throws  UnsupportedOperationException {
         if ( immutable )
-            throw new IllegalAccessError("GenotypeMap is currently immutable, but a mutator method was invoked on it");
+            throw new UnsupportedOperationException("GenotypeMap is currently immutable, but a mutator method was invoked on it");
     }
 
     // ---------------------------------------------------------------------------
@@ -346,9 +345,10 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      *
      * @param genotype
      * @return
+     * @throws UnsupportedOperationException if the context has been made immutable
      */
     @Override
-    public boolean add(final Genotype genotype) {
+    public boolean add(final Genotype genotype) throws UnsupportedOperationException {
         checkImmutability();
         invalidateSampleOrdering();
 

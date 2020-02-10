@@ -89,9 +89,24 @@ public final class VCFConstants {
     public static final String FILTER_HEADER_START = "##FILTER";
     public static final String FORMAT_HEADER_START = "##FORMAT";
     public static final String INFO_HEADER_START = "##INFO";
-    public static final String ALT_HEADER_START = "##ALT";
+    public static final String ALT_HEADER_KEY = "ALT";
+    public static final String ALT_HEADER_START = VCFHeader.METADATA_INDICATOR + ALT_HEADER_KEY ;
     public static final String CONTIG_HEADER_KEY = "contig";
     public static final String CONTIG_HEADER_START = "##" + CONTIG_HEADER_KEY;
+
+    public static final int ALT_HEADER_OFFSET = ALT_HEADER_START.length() + 1;
+
+    public static final String PEDIGREE_HEADER_KEY = "PEDIGREE";
+    public static final String PEDIGREE_HEADER_START = VCFHeader.METADATA_INDICATOR + PEDIGREE_HEADER_KEY;
+    public static final int PEDIGREE_HEADER_OFFSET = PEDIGREE_HEADER_START.length() + 1;
+
+    public static final String SAMPLE_HEADER_KEY = "SAMPLE";
+    public static final String SAMPLE_HEADER_START = VCFHeader.METADATA_INDICATOR + SAMPLE_HEADER_KEY;
+    public static final int SAMPLE_HEADER_OFFSET = SAMPLE_HEADER_START.length() + 1;
+
+    public static final String META_HEADER_KEY = "META";
+    public static final String META_HEADER_START = VCFHeader.METADATA_INDICATOR + META_HEADER_KEY;
+    public static final int META_HEADER_OFFSET = META_HEADER_START.length() + 1;
 
     // old indel alleles
     public static final char DELETION_ALLELE_v3 = 'D';

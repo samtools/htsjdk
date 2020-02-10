@@ -37,7 +37,7 @@ import java.util.Arrays;
  * Date: 8/2/12
  * Time: 2:16 PM
  */
-public class BCFVersion {
+public final class BCFVersion {
     /**
      * BCF2 begins with the MAGIC info BCF_M_m where M is the major version (currently 2)
      * and m is the minor version, currently 1
@@ -85,6 +85,24 @@ public class BCFVersion {
             return new BCFVersion( majorByte, minorByte );
         } else
             return null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BCFVersion that = (BCFVersion) o;
+
+        if (getMajorVersion() != that.getMajorVersion()) return false;
+        return getMinorVersion() == that.getMinorVersion();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getMajorVersion();
+        result = 31 * result + getMinorVersion();
+        return result;
     }
 
     /**

@@ -41,6 +41,7 @@ import org.testng.annotations.Test;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.variant.VariantBaseTest;
@@ -94,8 +95,8 @@ public class VCFIteratorTest extends VariantBaseTest {
          * https://github.com/samtools/htsjdk/pull/837#discussion_r139490218
          * https://github.com/samtools/htsjdk/issues/946
          */
-        if( tmp.getName().endsWith(IOUtil.VCF_FILE_EXTENSION)) {
-            tmp = File.createTempFile("tmp",IOUtil.COMPRESSED_VCF_FILE_EXTENSION);
+        if( tmp.getName().endsWith(FileExtensions.VCF)) {
+            tmp = File.createTempFile("tmp",FileExtensions.COMPRESSED_VCF);
             tmp.deleteOnExit();
             try(    FileInputStream in = new FileInputStream(filepath);
                     OutputStream out =  outputStreamProvider.apply(tmp); ) {

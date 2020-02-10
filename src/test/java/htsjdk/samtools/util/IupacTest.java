@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.BamFileIoUtils;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
@@ -71,7 +70,7 @@ public class IupacTest extends HtsjdkTest {
     @DataProvider(name = "basicDataProvider")
     public Object[][] basicDataProvider() {
         return new Object[][]{
-                {BamFileIoUtils.BAM_FILE_EXTENSION},
+                {FileExtensions.BAM},
                 {".sam"}
         };
     }

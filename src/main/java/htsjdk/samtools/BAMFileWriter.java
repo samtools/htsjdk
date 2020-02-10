@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
@@ -109,9 +110,9 @@ public class BAMFileWriter extends SAMFileWriterImpl {
 
     private BAMIndexer createBamIndex(final String pathURI) {
         try {
-            final String indexFileBase = pathURI.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION) ?
+            final String indexFileBase = pathURI.endsWith(FileExtensions.BAM) ?
                     pathURI.substring(0, pathURI.lastIndexOf('.')) : pathURI;
-            final Path indexPath = IOUtil.getPath(indexFileBase + BAMIndex.BAI_INDEX_SUFFIX);
+            final Path indexPath = IOUtil.getPath(indexFileBase + FileExtensions.BAI_INDEX);
             if (Files.exists(indexPath)) {
                 if (!Files.isWritable(indexPath)) {
                     throw new SAMException("Not creating BAM index since unable to write index file " + indexPath.toUri());
@@ -187,16 +188,12 @@ public class BAMFileWriter extends SAMFileWriterImpl {
     }
 
     /**
-     * Writes a header to a BAM file. Might need to regenerate the String version of the header, if one already has both the
-     * samFileHeader and the String, use the version of this method which takes both.
+     * Writes a header to a BAM file.
      */
     protected static void writeHeader(final BinaryCodec outputBinaryCodec, final SAMFileHeader samFileHeader) {
-        // Do not use SAMFileHeader.getTextHeader() as it is not updated when changes to the underlying object are made
-        final String headerString;
         final Writer stringWriter = new StringWriter();
         new SAMTextHeaderCodec().encode(stringWriter, samFileHeader, true);
-        headerString = stringWriter.toString();
-
+        final String headerString = stringWriter.toString();
         writeHeader(outputBinaryCodec, samFileHeader, headerString);
     }
 

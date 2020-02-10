@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
+import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
 
 import java.util.Collection;
@@ -33,7 +34,7 @@ import java.util.Collection;
  *
  * @author Tim Fennell
  */
-public class Interval implements Comparable<Interval>, Cloneable, Locatable {
+public class Interval implements Comparable<Interval>, Cloneable, Feature {
     private final boolean negativeStrand;
     private final String name;
     private final String contig;
@@ -169,12 +170,9 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
      * Counts the total number of bases a collection of intervals.
      */
     public static long countBases(final Collection<Interval> intervals) {
-        long total = 0;
-        for (final Interval i : intervals) {
-            total += i.length();
-        }
-
-        return total;
+        return intervals.stream()
+                .mapToLong(Interval::length)
+                .sum();
     }
 
     /**
@@ -207,6 +205,22 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
             Interval that = (Interval) other;
             return (this.compareTo(that) == 0);
         }
+    }
+
+    /**
+     * Equals method that also checks strand and name
+     */
+    public boolean equalsWithStrandAndName(final Object other) {
+        if (!this.equals(other)) {
+            return false;
+        }
+
+        final Interval that = (Interval) other;
+        if (this.negativeStrand != that.negativeStrand) {
+            return false;
+        }
+
+        return this.name.equals(that.name);
     }
 
     @Override

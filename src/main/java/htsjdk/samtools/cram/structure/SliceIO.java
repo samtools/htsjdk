@@ -137,7 +137,13 @@ class SliceIO {
     }
 
     public static void write(final int major, final Slice slice, final OutputStream outputStream) {
+        // TODO: ensure that the Slice blockCount stays in sync with the
+        // Container's blockCount in ContainerIO.writeContainer()
 
+        // 1 Core Data Block per Slice
+        // Each Slice has a variable number of External Data Blocks
+        // TODO: should we count the embedded reference block as an additional block?
+        
         slice.nofBlocks = 1 + slice.external.size() + (slice.embeddedRefBlock == null ? 0 : 1);
 
         {

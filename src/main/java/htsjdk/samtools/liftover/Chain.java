@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
+
 /**
  * Holds a single chain from a UCSC chain file.  Chain file format is described here: http://genome.ucsc.edu/goldenPath/help/chain.html
  *
@@ -309,26 +310,36 @@ class Chain {
     /**
      * Read all the chains and load into an OverlapDetector.
      * @param chainFile File in UCSC chain format.
-     * @return OverlapDetector will all Chains from reader loaded into it.
+     * @return OverlapDetector with all Chains from reader loaded into it.
      */
     static OverlapDetector<Chain> loadChains(final File chainFile) {
-        final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile));
+        IOUtil.assertFileIsReadable(chainFile);
+        try(final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile))){
+            return loadChains(reader, chainFile.toString());
+        }
+    }
+
+    /**
+     * Read all the chains and load into an OverlapDetector.
+     * @param reader reader of file in UCSC chain format.
+     * @return OverlapDetector with all Chains from reader loaded into it.
+     */
+    static OverlapDetector<Chain> loadChains(final BufferedLineReader reader, String sourceName) {
         final OverlapDetector<Chain> ret = new OverlapDetector<Chain>(0, 0);
         Chain chain;
-        while ((chain = Chain.loadChain(reader, chainFile.toString())) != null) {
+        while ((chain = Chain.loadChain(reader, sourceName)) != null) {
             ret.addLhs(chain, chain.interval);
         }
-        reader.close();
         return ret;
     }
 
     /**
      * Read a single Chain from reader.
      * @param reader Text representation of chains.
-     * @param chainFile For error messages only.
+     * @param sourceName For error messages only.
      * @return New Chain with associated ContinuousBlocks.
      */
-    private static Chain loadChain(final BufferedLineReader reader, final String chainFile) {
+    private static Chain loadChain(final BufferedLineReader reader, final String sourceName) {
         String line;
         while (true) {
             line = reader.readLine();
@@ -342,10 +353,10 @@ class Chain {
         }
         final String[] chainFields = SPLITTER.split(line);
         if (chainFields.length != 13) {
-            throwChainFileParseException("chain line has wrong number of fields", chainFile, reader.getLineNumber());
+            throwChainFileParseException("chain line has wrong number of fields", sourceName, reader.getLineNumber());
         }
         if (!"chain".equals(chainFields[0])) {
-            throwChainFileParseException("chain line does not start with 'chain'", chainFile, reader.getLineNumber());
+            throwChainFileParseException("chain line does not start with 'chain'", sourceName, reader.getLineNumber());
         }
         double score = 0;
         String fromSequenceName = null;
@@ -372,7 +383,7 @@ class Chain {
             toChainEnd = Integer.parseInt(chainFields[11]);
             id = Integer.parseInt(chainFields[12]);
         } catch (NumberFormatException e) {
-            throwChainFileParseException("Invalid field", chainFile, reader.getLineNumber());
+            throwChainFileParseException("Invalid field", sourceName, reader.getLineNumber());
         }
         final Chain chain = new Chain(score, fromSequenceName, fromSequenceSize, fromChainStart, fromChainEnd, toSequenceName, toSequenceSize, toNegativeStrand, toChainStart,
                 toChainEnd, id);
@@ -383,18 +394,18 @@ class Chain {
             line = reader.readLine();
             if (line == null || line.equals("")) {
                 if (!sawLastLine) {
-                    throwChainFileParseException("Reached end of chain without seeing terminal block", chainFile, reader.getLineNumber());
+                    throwChainFileParseException("Reached end of chain without seeing terminal block", sourceName, reader.getLineNumber());
                 }
                 break;
             }
             if (sawLastLine) {
-                throwChainFileParseException("Terminal block seen before end of chain", chainFile, reader.getLineNumber());
+                throwChainFileParseException("Terminal block seen before end of chain", sourceName, reader.getLineNumber());
             }
             String[] blockFields = SPLITTER.split(line);
             if (blockFields.length == 1) {
                 sawLastLine = true;
             } else if (blockFields.length != 3) {
-                throwChainFileParseException("Block line has unexpected number of fields", chainFile, reader.getLineNumber());
+                throwChainFileParseException("Block line has unexpected number of fields", sourceName, reader.getLineNumber());
             }
             int size = Integer.parseInt(blockFields[0]);
             chain.addBlock(fromBlockStart, toBlockStart, size);
@@ -408,7 +419,7 @@ class Chain {
         return chain;
     }
 
-    private static void throwChainFileParseException(final String message, final String chainFile, final int lineNumber) {
-        throw new SAMException(message + " in chain file " + chainFile + " at line " + lineNumber);
+    private static void throwChainFileParseException(final String message, final String sourceName, final int lineNumber) {
+        throw new SAMException(message + " in chain file " + sourceName + " at line " + lineNumber);
     }
 }

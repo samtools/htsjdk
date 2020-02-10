@@ -50,7 +50,7 @@ public class ContainerParser {
             records = new ArrayList<>(container.nofRecords);
         }
 
-        for (final Slice slice : container.slices) {
+        for (final Slice slice : container.getSlices()) {
             records.addAll(getRecords(slice, container.compressionHeader, validationStringency));
         }
 

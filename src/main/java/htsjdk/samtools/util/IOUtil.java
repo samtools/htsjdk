@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools.util;
 
-
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
@@ -31,17 +30,48 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.nio.DeleteOnExitPathHook;
-import htsjdk.tribble.Tribble;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.file.*;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.Deflater;
@@ -62,30 +92,69 @@ public class IOUtil {
     public static final long TWO_GBS = 2 * ONE_GB;
     public static final long FIVE_GBS = 5 * ONE_GB;
 
-    public static final String VCF_FILE_EXTENSION = ".vcf";
-    public static final String VCF_INDEX_EXTENSION = Tribble.STANDARD_INDEX_EXTENSION;
-
-    public static final String BCF_FILE_EXTENSION = ".bcf";
-    public static final String COMPRESSED_VCF_FILE_EXTENSION = ".vcf.gz";
-    public static final String COMPRESSED_VCF_INDEX_EXTENSION = ".tbi";
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF} instead.
+     */
+    @Deprecated
+    public static final String VCF_FILE_EXTENSION = FileExtensions.VCF;
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF_INDEX} instead.
+     */
+    @Deprecated
+    public static final String VCF_INDEX_EXTENSION = FileExtensions.VCF_INDEX;
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#BCF} instead.
+     */
+    @Deprecated
+    public static final String BCF_FILE_EXTENSION = FileExtensions.BCF;
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#COMPRESSED_VCF} instead.
+     */
+    @Deprecated
+    public static final String COMPRESSED_VCF_FILE_EXTENSION = FileExtensions.COMPRESSED_VCF;
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#COMPRESSED_VCF_INDEX} instead.
+     */
+    @Deprecated
+    public static final String COMPRESSED_VCF_INDEX_EXTENSION = FileExtensions.COMPRESSED_VCF_INDEX;
 
     /** Possible extensions for VCF files and related formats. */
-    public static final List<String> VCF_EXTENSIONS_LIST = Collections.unmodifiableList(Arrays.asList(VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION));
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF_LIST} instead.
+     */
+    @Deprecated
+    public static final List<String> VCF_EXTENSIONS_LIST = FileExtensions.VCF_LIST;
 
     /**
      * Possible extensions for VCF files and related formats.
-     * @deprecated Use {@link #VCF_EXTENSIONS_LIST} instead.
+     * @deprecated since June 2019 Use {@link FileExtensions#VCF_LIST} instead.
      */
     @Deprecated
-    public static final String[] VCF_EXTENSIONS = VCF_EXTENSIONS_LIST.toArray(new String[0]);
+    public static final String[] VCF_EXTENSIONS = FileExtensions.VCF_LIST.toArray(new String[0]);
 
-    public static final String INTERVAL_LIST_FILE_EXTENSION = IntervalList.INTERVAL_LIST_FILE_EXTENSION;
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#INTERVAL_LIST} instead.
+     */
+    @Deprecated
+    public static final String INTERVAL_LIST_FILE_EXTENSION = FileExtensions.INTERVAL_LIST;
 
-    public static final String SAM_FILE_EXTENSION = ".sam";
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#SAM} instead.
+     */
+    @Deprecated
+    public static final String SAM_FILE_EXTENSION = FileExtensions.SAM;
 
-    public static final String DICT_FILE_EXTENSION = ".dict";
+    /**
+     * @deprecated since June 2019 Use {@link FileExtensions#DICT} instead.
+     */
+    @Deprecated
+    public static final String DICT_FILE_EXTENSION = FileExtensions.DICT;
 
-    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
+    /**
+     * @deprecated Use since June 2019 {@link FileExtensions#BLOCK_COMPRESSED} instead.
+     */
+    @Deprecated
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = FileExtensions.BLOCK_COMPRESSED;
 
     /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
     public static final int GZIP_HEADER_READ_LENGTH = 8000;
@@ -232,16 +301,33 @@ public class IOUtil {
     }
 
     public static void deletePaths(final Path... paths) {
-        deletePaths(Arrays.asList(paths));
+        for(Path path: paths){
+            deletePath(path);
+        }
     }
 
+    /**
+     * Iterate through Paths and delete each one.
+     * Note: Path is itself an Iterable<Path>.  This method special cases that and deletes the single Path rather than
+     * Iterating the Path for targets to delete.
+     * @param paths an iterable of Paths to delete
+     */
     public static void deletePaths(final Iterable<Path> paths) {
-        for (final Path p : paths) {
-            try {
-                Files.delete(p);
-            } catch (IOException e) {
-                System.err.println("Could not delete file " + p);
-            }
+        //Path is itself an Iterable<Path> which causes very confusing behavior if we don't explicitly check here.
+        if( paths instanceof Path){
+            deletePath((Path)paths);
+        }
+        paths.forEach(IOUtil::deletePath);
+    }
+
+    /**
+     * Attempt to delete a single path and log an error if it is not deleted.
+     */
+    public static void deletePath(Path path){
+        try {
+            Files.delete(path);
+        } catch (IOException e) {
+            System.err.println("Could not delete file " + path);
         }
     }
 
@@ -687,7 +773,7 @@ public class IOUtil {
     /**
      * check if the file name ends with .gz, .gzip, or .bfq
      */
-    private static boolean hasGzipFileExtension(Path path) {
+    public static boolean hasGzipFileExtension(Path path) {
         final List<String> gzippedEndings = Arrays.asList(".gz", ".gzip", ".bfq");
         final String fileName = path.getFileName().toString();
         return gzippedEndings.stream().anyMatch(fileName::endsWith);
@@ -1079,7 +1165,7 @@ public class IOUtil {
      */
     public static List<File> unrollFiles(final Collection<File> inputs, final String... extensions) {
         Collection<Path> paths = unrollPaths(filesToPaths(inputs), extensions);
-        return paths.stream().map(p->p.toFile()).collect(Collectors.toList());
+        return paths.stream().map(Path::toFile).collect(Collectors.toList());
     }
 
     /**
@@ -1107,8 +1193,6 @@ public class IOUtil {
 
             // If the file didn't match a given extension, treat it as a list of files
             if (!matched) {
-                IOUtil.assertFileIsReadable(p);
-
                 try {
                     Files.lines(p)
                             .map(String::trim)
@@ -1119,16 +1203,16 @@ public class IOUtil {
                                             innerPath = getPath(s);
                                             stack.push(innerPath);
                                         } catch (IOException e) {
-                                            throw new IllegalArgumentException("cannot convert " + s + " to a Path.");
+                                            throw new IllegalArgumentException("cannot convert " + s + " to a Path.", e);
                                         }
                                     }
                             );
 
                 } catch (IOException e) {
-                    throw new IllegalArgumentException("had trouble reading from " + p.toUri().toString());
+                    throw new IllegalArgumentException("had trouble reading from " + p.toUri().toString(), e);
                 }
             }
-    }
+        }
 
         // Preserve input order (since we're using a stack above) for things that care
         Collections.reverse(output);
@@ -1268,7 +1352,7 @@ public class IOUtil {
     /**
      * Checks if the provided path is block-compressed (including extension).
      *
-     * <p>Note that block-compressed file extensions {@link #BLOCK_COMPRESSED_EXTENSIONS} are not
+     * <p>Note that block-compressed file extensions {@link FileExtensions#BLOCK_COMPRESSED} are not
      * checked by this method.
      *
      * @param path file to check if it is block-compressed.
@@ -1280,7 +1364,7 @@ public class IOUtil {
     }
 
     /**
-     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     * Checks if a file ends in one of the {@link FileExtensions#BLOCK_COMPRESSED}.
      *
      * @param fileName string name for the file. May be an HTTP/S url.
      *
@@ -1288,7 +1372,7 @@ public class IOUtil {
      */
     public static boolean hasBlockCompressedExtension (final String fileName) {
         String cleanedPath = stripQueryStringIfPathIsAnHttpUrl(fileName);
-        for (final String extension : BLOCK_COMPRESSED_EXTENSIONS) {
+        for (final String extension : FileExtensions.BLOCK_COMPRESSED) {
             if (cleanedPath.toLowerCase().endsWith(extension))
                 return true;
         }
@@ -1296,7 +1380,7 @@ public class IOUtil {
     }
 
     /**
-     * Checks if a path ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     * Checks if a path ends in one of the {@link FileExtensions#BLOCK_COMPRESSED}.
      *
      * @param path object to extract the name from.
      *
@@ -1307,7 +1391,7 @@ public class IOUtil {
     }
 
     /**
-     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     * Checks if a file ends in one of the {@link FileExtensions#BLOCK_COMPRESSED}.
      *
      * @param file object to extract the name from.
      *
@@ -1318,7 +1402,7 @@ public class IOUtil {
     }
 
     /**
-     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     * Checks if a file ends in one of the {@link FileExtensions#BLOCK_COMPRESSED}.
      *
      * @param uri file as an URI.
      *

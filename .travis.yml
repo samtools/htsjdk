@@ -8,6 +8,9 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
     - $HOME/.m2
+env:
+  global:
+    - HTSJDK_SAMTOOLS_BIN=/usr/bin/samtools
 jdk:
   - oraclejdk8
   - openjdk8
@@ -25,6 +28,9 @@ matrix:
      - jdk: openjdk8
        env: SPOT_BUGS=true
 
+before_install:
+  - scripts/install-samtools.sh
+
 script:
   - if [[ $SPOT_BUGS == "true" ]]; then
       ./gradlew spotBugsMain spotBugsTest;
@@ -41,5 +47,7 @@ after_success:
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";
     echo "JAVA_HOME='$JAVA_HOME'";
     if [ "$TRAVIS_BRANCH" == "master" ]; then
-       ./gradlew publish;
-    fi
+        if [[ $JAVA_HOME = *java-8-openjdk* ]]; then
+            ./gradlew publish;
+        fi;
+    fi;

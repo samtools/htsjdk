@@ -75,16 +75,34 @@ public class Slice {
 
     // for indexing purposes
 
-    // the Slice's offset in bytes from the beginning of its Container
-    // equal to Container.landmarks[Slice.index] of its enclosing Container
-    public int offset = -1;
-    // this Slice's Container's offset in bytes from the beginning of the stream
-    // equal to Container.offset of its enclosing Container
-    public long containerOffset = -1;
-    // this Slice's size in bytes
-    public int size = -1;
-    // this Slice's index within its Container
-    public int index = -1;
+    public static final int UNINITIALIZED_INDEXING_PARAMETER = -1;
+
+    /**
+     * The Slice's offset in bytes from the beginning of the Container's Compression Header
+     * (or the end of the Container Header), equal to {@link Container#landmarks}
+     *
+     * Used by BAI and CRAI indexing
+     */
+    public int byteOffsetFromCompressionHeaderStart = UNINITIALIZED_INDEXING_PARAMETER;
+    /**
+     * The Slice's Container's offset in bytes from the beginning of the stream
+     * equal to {@link Container#byteOffset}
+     *
+     * Used by BAI and CRAI indexing
+     */
+    public long containerByteOffset = UNINITIALIZED_INDEXING_PARAMETER;
+    /**
+     * The Slice's size in bytes
+     *
+     * Used by CRAI indexing only
+     */
+    public int byteSize = UNINITIALIZED_INDEXING_PARAMETER;
+    /**
+     * The Slice's index number within its Container
+     *
+     * Used by BAI indexing only
+     */
+    public int index = UNINITIALIZED_INDEXING_PARAMETER;
 
     // to pass this to the container:
     public long bases;
@@ -111,6 +129,56 @@ public class Slice {
 
     public ReferenceContext getReferenceContext() {
         return referenceContext;
+    }
+
+    /**
+     * Confirm that we have initialized the 3 BAI index parameters:
+     * byteOffsetFromCompressionHeaderStart, containerByteOffset, and index
+     */
+    public void baiIndexInitializationCheck() {
+        final StringBuilder error = new StringBuilder();
+
+        if (byteOffsetFromCompressionHeaderStart == UNINITIALIZED_INDEXING_PARAMETER) {
+            error.append("Cannot index this Slice for BAI because its byteOffsetFromCompressionHeaderStart is unknown.").append(System.lineSeparator());
+        }
+
+        if (containerByteOffset == UNINITIALIZED_INDEXING_PARAMETER) {
+            error.append("Cannot index this Slice for BAI because its containerByteOffset is unknown.").append(System.lineSeparator());
+        }
+
+        if (index == UNINITIALIZED_INDEXING_PARAMETER) {
+            error.append("Cannot index this Slice for BAI because its index is unknown.").append(System.lineSeparator());
+        }
+
+        if (error.length() > 0) {
+            throw new CRAMException(error.toString());
+        }
+    }
+
+    /**
+     * Confirm that we have initialized the 3 CRAI index parameters:
+     * byteOffsetFromCompressionHeaderStart, containerByteOffset, and byteSize
+     *
+     * NOTE: this is currently unused because we always use BAI
+     */
+    void craiIndexInitializationCheck() {
+        final StringBuilder error = new StringBuilder();
+
+        if (byteOffsetFromCompressionHeaderStart == UNINITIALIZED_INDEXING_PARAMETER) {
+            error.append("Cannot index this Slice for CRAI because its byteOffsetFromCompressionHeaderStart is unknown.").append(System.lineSeparator());
+        }
+
+        if (containerByteOffset == UNINITIALIZED_INDEXING_PARAMETER) {
+            error.append("Cannot index this Slice for CRAI because its containerByteOffset is unknown.").append(System.lineSeparator());
+        }
+
+        if (byteSize == UNINITIALIZED_INDEXING_PARAMETER) {
+            error.append("Cannot index this Slice for CRAI because its byteSize is unknown.").append(System.lineSeparator());
+        }
+
+        if (error.length() > 0) {
+            throw new CRAMException(error.toString());
+        }
     }
 
     private void alignmentBordersSanityCheck(final byte[] ref) {
@@ -327,7 +395,7 @@ public class Slice {
      * @param validationStringency how strict to be when reading CRAM records
      */
     public Map<ReferenceContext, AlignmentSpan> getMultiRefAlignmentSpans(final CompressionHeader header,
-                                                                 final ValidationStringency validationStringency) {
+                                                                          final ValidationStringency validationStringency) {
         final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(getCoreBlockInputStream(),
                 getExternalBlockInputMap(),
                 header,
@@ -338,33 +406,18 @@ public class Slice {
     }
 
     /**
-     * Generate a CRAI Index entry from this Slice
-     * @return a new CRAI Index Entry derived from this Slice
-     */
-    public CRAIEntry getCRAIEntry() {
-        return new CRAIEntry(referenceContext.getSerializableId(), alignmentStart, alignmentSpan, containerOffset, offset, size);
-    }
-
-    /**
      * Generate a CRAI Index entry from this Slice and other container parameters,
      * splitting Multiple Reference slices into constituent reference sequence entries.
      *
-     * TODO: investigate why we sometimes need to pass in an external containerStartByteOffset
-     * because this Slice's containerOffset is incorrect
-     *
-     * TODO: investigate why we sometimes split multi-ref and sometimes do not
-     *
      * @param compressionHeader the enclosing {@link Container}'s CompressionHeader
-     * @param landmarks the enclosing {@link Container}'s landmarks
-     * @param containerStartByteOffset the byte offset of the enclosing {@link Container}
      * @return a list of CRAI Index Entries derived from this Slice
      */
-    public List<CRAIEntry> getCRAIEntriesSplittingMultiRef(final CompressionHeader compressionHeader,
-                                                           final int[] landmarks,
-                                                           final long containerStartByteOffset) {
+    public List<CRAIEntry> getCRAIEntries(final CompressionHeader compressionHeader) {
         if (! compressionHeader.isCoordinateSorted()) {
             throw new CRAMException("Cannot construct index if the CRAM is not Coordinate Sorted");
         }
+
+        craiIndexInitializationCheck();
 
         if (referenceContext.isMultiRef()) {
             final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(compressionHeader, ValidationStringency.DEFAULT_STRINGENCY);
@@ -373,15 +426,21 @@ public class Slice {
                     .map(e -> new CRAIEntry(e.getKey().getSerializableId(),
                             e.getValue().getStart(),
                             e.getValue().getSpan(),
-                            containerStartByteOffset,
-                            landmarks[index],
-                            size))
+                            containerByteOffset,
+                            byteOffsetFromCompressionHeaderStart,
+                            byteSize))
                     .sorted()
                     .collect(Collectors.toList());
         } else {
             // single ref or unmapped
             final int sequenceId = referenceContext.getSerializableId();
-            return Collections.singletonList(new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, containerStartByteOffset, offset, size));
+            return Collections.singletonList(new CRAIEntry(
+                    sequenceId,
+                    alignmentStart,
+                    alignmentSpan,
+                    containerByteOffset,
+                    byteOffsetFromCompressionHeaderStart,
+                    byteSize));
         }
     }
 
@@ -474,18 +533,15 @@ public class Slice {
 
             if (record.isPlaced()) {
                 referenceContexts.add(new ReferenceContext(record.sequenceId));
-
                 singleRefAlignmentStart = Math.min(record.alignmentStart, singleRefAlignmentStart);
                 singleRefAlignmentEnd = Math.max(record.getAlignmentEnd(), singleRefAlignmentEnd);
 
                 if (record.isSegmentUnmapped()) {
                     unmappedReadsCount++;
-                }
-                else {
+                } else {
                     mappedReadsCount++;
                 }
-            }
-            else {
+            } else {
                 referenceContexts.add(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
             }
 

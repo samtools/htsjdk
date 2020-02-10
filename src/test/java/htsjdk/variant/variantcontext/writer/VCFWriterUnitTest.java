@@ -27,7 +27,7 @@ package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
@@ -90,8 +90,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     public void testBasicWriteAndRead(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testBasicWriteAndRead.", extension, tempDir);
         fakeVCFFile.deleteOnExit();
-        if (IOUtil.COMPRESSED_VCF_FILE_EXTENSION.equals(extension)) {
-            new File(fakeVCFFile.getAbsolutePath() + IOUtil.VCF_INDEX_EXTENSION);
+        if (FileExtensions.COMPRESSED_VCF.equals(extension)) {
+            new File(fakeVCFFile.getAbsolutePath() + FileExtensions.VCF_INDEX);
         } else {
             Tribble.indexFile(fakeVCFFile).deleteOnExit();
         }
@@ -136,7 +136,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     public void testWriteAndReadVCFHeaderless(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
         fakeVCFFile.deleteOnExit();
-        if (IOUtil.COMPRESSED_VCF_FILE_EXTENSION.equals(extension)) {
+        if (FileExtensions.COMPRESSED_VCF.equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
             Tribble.indexFile(fakeVCFFile).deleteOnExit();
@@ -172,7 +172,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testWriteHeaderTwice() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", IOUtil.VCF_FILE_EXTENSION);
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
         fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
@@ -189,7 +189,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testChangeHeaderAfterWritingHeader() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", IOUtil.VCF_FILE_EXTENSION);
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
         fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
@@ -205,7 +205,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testChangeHeaderAfterWritingBody() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", IOUtil.VCF_FILE_EXTENSION);
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
         fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
@@ -300,10 +300,10 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         final File vcf = new File(tempDir, "test" + extension);
         final String indexExtension;
-        if (extension.equals(IOUtil.COMPRESSED_VCF_FILE_EXTENSION)) {
-            indexExtension = TabixUtils.STANDARD_INDEX_EXTENSION;
+        if (extension.equals(FileExtensions.COMPRESSED_VCF)) {
+            indexExtension = FileExtensions.TABIX_INDEX;
         } else {
-            indexExtension = Tribble.STANDARD_INDEX_EXTENSION;
+            indexExtension = FileExtensions.TRIBBLE_INDEX;
         }
         final File vcfIndex = new File(vcf.getAbsolutePath() + indexExtension);
         vcfIndex.deleteOnExit();
@@ -332,8 +332,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         return new Object[][] {
                 // TODO: BCF doesn't work because header is not properly constructed.
                 // {".bcf"},
-                {IOUtil.VCF_FILE_EXTENSION},
-                {IOUtil.COMPRESSED_VCF_FILE_EXTENSION}
+                {FileExtensions.VCF},
+                {FileExtensions.COMPRESSED_VCF}
         };
     }
 
@@ -351,7 +351,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         header.addMetaDataLine(new VCFHeaderLine("FOOBAR", "foovalue"));
 
-        final File outputVCF = createTempFile("testModifyHeader", IOUtil.VCF_FILE_EXTENSION);
+        final File outputVCF = createTempFile("testModifyHeader", FileExtensions.VCF);
         final VariantContextWriter writer = new VariantContextWriterBuilder().setOutputFile(outputVCF).setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER)).build();
         writer.writeHeader(header);
         writer.close();

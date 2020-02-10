@@ -208,6 +208,10 @@ public class TabixIndex implements Index {
         return formatSpec;
     }
 
+    public BinningIndexContent[] getIndices() {
+        return indices;
+    }
+
     /**
      * Writes the index with BGZF.
      *

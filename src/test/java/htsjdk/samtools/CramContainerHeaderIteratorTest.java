@@ -38,7 +38,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
         for (int i = 0; i < fullContainers.size(); i++) {
             Container fullContainer = fullContainers.get(i);
             Container headerOnlyContainer = headerOnlyContainers.get(i);
-            Assert.assertEquals(headerOnlyContainer.containerByteSize, fullContainer.containerByteSize);
+            Assert.assertEquals(headerOnlyContainer.containerBlocksByteSize, fullContainer.containerBlocksByteSize);
             Assert.assertEquals(headerOnlyContainer.getReferenceContext(), fullContainer.getReferenceContext());
             Assert.assertEquals(headerOnlyContainer.alignmentStart, fullContainer.alignmentStart);
             Assert.assertEquals(headerOnlyContainer.alignmentSpan, fullContainer.alignmentSpan);
@@ -48,14 +48,14 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Assert.assertEquals(headerOnlyContainer.blockCount, fullContainer.blockCount);
             Assert.assertEquals(headerOnlyContainer.landmarks, fullContainer.landmarks);
             Assert.assertEquals(headerOnlyContainer.checksum, fullContainer.checksum);
-            Assert.assertEquals(headerOnlyContainer.offset, fullContainer.offset);
+            Assert.assertEquals(headerOnlyContainer.byteOffset, fullContainer.byteOffset);
             // unpopulated fields
             Assert.assertNull(headerOnlyContainer.blocks);
             Assert.assertNull(headerOnlyContainer.compressionHeader);
-            Assert.assertNull(headerOnlyContainer.slices);
+            Assert.assertNull(headerOnlyContainer.getSlices());
             // try to read a container from the offset to check it's correct
             try (SeekableFileStream seekableFileStream = new SeekableFileStream(cramFile)) {
-                seekableFileStream.seek(headerOnlyContainer.offset);
+                seekableFileStream.seek(headerOnlyContainer.byteOffset);
                 Container container = ContainerIO.readContainer(actualHeader.getVersion(), seekableFileStream);
                 Assert.assertEquals(container.alignmentStart, fullContainer.alignmentStart);
                 Assert.assertEquals(container.alignmentSpan, fullContainer.alignmentSpan);

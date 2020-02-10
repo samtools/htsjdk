@@ -103,7 +103,34 @@ public class BlockCompressedFilePointerUtil {
         return (int) (virtualFilePointer & OFFSET_MASK);
     }
 
+    /**
+     * Move a virtual file pointer by a given (non-virtual) offset.
+     *
+     * @param virtualFilePointer the original virtual file pointer
+     * @param offset the offset in bytes
+     * @return a new virtual file pointer shifted by the given offset
+     */
+    public static long shift(final long virtualFilePointer, final long offset) {
+        if (virtualFilePointer < 0) {
+            return virtualFilePointer; // no op if not valid
+        }
+        final long blockAddress = getBlockAddress(virtualFilePointer);
+        final int blockOffset = getBlockOffset(virtualFilePointer);
+        return makeFilePointer(blockAddress + offset, blockOffset);
+    }
+
     public static String asString(final long vfp) {
         return String.format("%d(0x%x): (block address: %d, offset: %d)", vfp, vfp, getBlockAddress(vfp), getBlockOffset(vfp));
+    }
+
+    /**
+     * Return a String with the file pointer in "address:offset" form.
+     * @param vfp virtual file pointer to format
+     * @return {@code vfp} formatted as string in address:offset form
+     */
+    public static String asAddressOffsetString(final long vfp) {
+        return String.format("%d:%d",
+                BlockCompressedFilePointerUtil.getBlockAddress(vfp),
+                BlockCompressedFilePointerUtil.getBlockOffset(vfp));
     }
 }

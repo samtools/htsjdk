@@ -4,9 +4,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.IOUtilTest;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
@@ -21,7 +19,6 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
@@ -52,7 +49,6 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
 
     //wrapper which skips the first byte of a file and leaves the rest unchanged
     private static final Function<SeekableByteChannel, SeekableByteChannel> WRAPPER = SkippingByteChannel::new;
-    public static final String REDIRECTING_CODEC_TEST_FILES = "src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/redirectingCodecTest/";
 
     /**
      * Asserts readability and correctness of VCF over HTTP.  The VCF is indexed and requires and index.
@@ -120,7 +116,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     @Test(dataProvider = "vcfFileAndWrapperCombinations")
     public void testGetFeatureReaderWithPathAndWrappers(String file, String index,
                                                         Function<SeekableByteChannel, SeekableByteChannel> wrapper,
-                                                        Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException, URISyntaxException {
+                                                        Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
         try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
             final AbstractFeatureReader<VariantContext, ?> featureReader = getFeatureReader(file, index, wrapper,
                                                                                             indexWrapper,
@@ -147,7 +143,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "failsWithoutWrappers", expectedExceptions = {TribbleException.class, FileTruncatedException.class})
-    public void testFailureIfNoWrapper(String file, String index) throws IOException, URISyntaxException {
+    public void testFailureIfNoWrapper(String file, String index) throws IOException {
         try(final FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
             final FeatureReader<?> reader = getFeatureReader(file, index, null, null, new VCFCodec(), fs)){
             // should have exploded by now
@@ -158,7 +154,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
                                                                                     Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                                                                     Function<SeekableByteChannel, SeekableByteChannel> indexWrapper,
                                                                                     FeatureCodec<T, ?> codec,
-                                                                                    FileSystem fileSystem) throws IOException, URISyntaxException {
+                                                                                    FileSystem fileSystem) throws IOException {
         final Path vcfInJimfs = TestUtils.getTribbleFileInJimfs(vcf, index, fileSystem);
         return AbstractFeatureReader.getFeatureReader(
                 vcfInJimfs.toUri().toString(),
@@ -233,8 +229,8 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     @DataProvider
     public Object[][] getVcfRedirects(){
         return new Object[][]{
-          {REDIRECTING_CODEC_TEST_FILES + "vcf.redirect"},
-          {REDIRECTING_CODEC_TEST_FILES + "vcf.gz.redirect"}
+          {VCFRedirectCodec.REDIRECTING_CODEC_TEST_FILE_ROOT + "vcf.redirect"},
+          {VCFRedirectCodec.REDIRECTING_CODEC_TEST_FILE_ROOT + "vcf.gz.redirect"}
         };
     }
 
@@ -244,8 +240,8 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
      */
     @Test(dataProvider = "getVcfRedirects")
     public void testCodecWithGetPathToDataFile(String vcfRedirect) throws IOException {
-        final VcfRedirectCodec vcfRedirectCodec = new VcfRedirectCodec();
-        final String vcf = REDIRECTING_CODEC_TEST_FILES + "dataFiles/test.vcf";
+        final VCFRedirectCodec vcfRedirectCodec = new VCFRedirectCodec();
+        final String vcf = VCFRedirectCodec.REDIRECTING_CODEC_TEST_FILE_ROOT + "dataFiles/test.vcf";
         Assert.assertTrue(vcfRedirectCodec.canDecode(vcfRedirect), "should have been able to decode " + vcfRedirect);
         try(FeatureReader<VariantContext> redirectReader = AbstractFeatureReader.getFeatureReader(vcfRedirect, vcfRedirectCodec, false);
             FeatureReader<VariantContext> directReader = AbstractFeatureReader.getFeatureReader(vcf, new VCFCodec(), false)){
@@ -260,22 +256,4 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         }
     }
 
-    /**
-     * codec which redirects to another location after reading the input file
-     */
-    private static class VcfRedirectCodec extends VCFCodec{
-        @Override
-        public boolean canDecode(String potentialInput) {
-            return super.canDecode(this.getPathToDataFile(potentialInput));
-        }
-
-        @Override
-        public String getPathToDataFile(String path) {
-            try {
-                return Files.readAllLines(IOUtil.getPath(path)).get(0);
-            } catch (IOException e) {
-                throw new RuntimeIOException(e);
-            }
-        }
-    }
 }

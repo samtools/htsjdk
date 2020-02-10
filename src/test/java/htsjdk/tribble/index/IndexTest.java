@@ -3,6 +3,7 @@ package htsjdk.tribble.index;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TestUtils;
@@ -85,7 +86,7 @@ public class IndexTest extends HtsjdkTest {
     @Test(dataProvider = "writeIndexData")
     public void testWriteIndex(final File inputFile, final IndexFactory.IndexType type, final  FeatureCodec codec) throws Exception {
         // temp index file for this test
-        final File tempIndex = File.createTempFile("index", (type == IndexFactory.IndexType.TABIX) ? TabixUtils.STANDARD_INDEX_EXTENSION : Tribble.STANDARD_INDEX_EXTENSION);
+        final File tempIndex = File.createTempFile("index", (type == IndexFactory.IndexType.TABIX) ? FileExtensions.TABIX_INDEX : FileExtensions.TRIBBLE_INDEX);
         tempIndex.delete();
         tempIndex.deleteOnExit();
         // create the index

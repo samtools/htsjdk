@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext;
 
 
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -105,7 +106,7 @@ public final class CommonInfo implements Serializable {
     }
 
     public boolean isFiltered() {
-        return filters == null ? false : !filters.isEmpty();
+        return filters != null && !filters.isEmpty();
     }
 
     public boolean isNotFiltered() {
@@ -114,7 +115,7 @@ public final class CommonInfo implements Serializable {
 
     public void addFilter(String filter) {
         if ( filters == null ) // immutable -> mutable
-            filters = new HashSet<String>();
+            filters = new HashSet<>();
 
         if ( filter == null ) throw new IllegalArgumentException("BUG: Attempting to add null filter " + this);
         if ( getFilters().contains(filter) ) throw new IllegalArgumentException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
@@ -296,7 +297,7 @@ public final class CommonInfo implements Serializable {
             } else if (x instanceof Number) {
                 return ((Number) x).doubleValue();
             } else {
-                return Double.valueOf((String)x); // throws an exception if this isn't a string
+                return VCFUtils.parseVcfDouble((String)x); // throws an exception if this isn't a string
             }
         });
     }
@@ -320,7 +321,7 @@ public final class CommonInfo implements Serializable {
         if ( x == null ) return defaultValue;
         if ( x instanceof Double ) return (Double)x;
         if ( x instanceof Integer ) return (Integer)x;
-        return Double.valueOf((String)x); // throws an exception if this isn't a string
+        return VCFUtils.parseVcfDouble((String)x); // throws an exception if this isn't a string
     }
 
     public boolean getAttributeAsBoolean(String key, boolean defaultValue) {

@@ -25,6 +25,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqConstants;
+import htsjdk.tribble.annotation.Strand;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.File;

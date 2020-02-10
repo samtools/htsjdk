@@ -298,7 +298,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
                 "one_end_mapped\t73\tchr7\t100\t255\t101M\t*\t0\t0\tCAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN\t)'.*.+2,))&&'&*/)-&*-)&.-)&)&),/-&&..)./.,.).*&&,&.&&-)&&&0*&&&&&&&&/32/,01460&&/6/*0*/2/283//36868/&\tRG:Z:0\n" +
                 "one_end_mapped\t133\tchr7\t100\t0\t*\t=\t100\t0\tNCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA\t&/15445666651/566666553+2/14/&/555512+3/)-'/-&-'*+))*''13+3)'//++''/'))/3+&*5++)&'2+&+/*&-&&*)&-./1'1\tRG:Z:0\n";
         final ByteArrayInputStream bis = new ByteArrayInputStream(StringUtil.stringToBytes(samText));
-        final File bamFile = File.createTempFile("BAMFileIndexTest.", BamFileIoUtils.BAM_FILE_EXTENSION);
+        final File bamFile = File.createTempFile("BAMFileIndexTest.", FileExtensions.BAM);
         bamFile.deleteOnExit();
         final SamReader textReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bis));
         SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();

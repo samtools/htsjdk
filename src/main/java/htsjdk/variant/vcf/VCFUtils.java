@@ -27,7 +27,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -37,19 +37,26 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class VCFUtils {
+
+    private static final Pattern INF_OR_NAN_PATTERN = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
 
     public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
         // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
         // This will cause problems for VCFHeader.getSequenceDictionary and anything else that implicitly relies on the line ordering.
         final LinkedHashMap<String, VCFHeaderLine> map = new LinkedHashMap<>(); // from KEY.NAME -> line
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
+        final Set<VCFHeaderVersion> headerVersions = new HashSet<>(2);
 
         // todo -- needs to remove all version headers from sources and add its own VCF version line
         for (final VCFHeader source : headers) {
             for (final VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
 
+                enforceHeaderVersionMergePolicy(headerVersions, source.getVCFHeaderVersion());
                 String key = line.getKey();
                 if (line instanceof VCFIDHeaderLine)
                     key = key + "-" + ((VCFIDHeaderLine) line).getID();
@@ -101,8 +108,27 @@ public class VCFUtils {
                 }
             }
         }
+
         // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
         return new LinkedHashSet<>(map.values());
+    }
+
+    // Reject attempts to merge a VCFv4.3 header with any other version
+    private static void enforceHeaderVersionMergePolicy(
+            final Set<VCFHeaderVersion> headerVersions,
+            final VCFHeaderVersion candidateVersion) {
+        if (candidateVersion != null) {
+            headerVersions.add(candidateVersion);
+            if (headerVersions.size() > 1 && headerVersions.contains(VCFHeaderVersion.VCF4_3)) {
+                throw new IllegalArgumentException(
+                        String.format("Attempt to merge version %s header with incompatible header version %s",
+                                VCFHeaderVersion.VCF4_3.getVersionString(),
+                                headerVersions.stream()
+                                        .filter(hv -> !hv.equals(VCFHeaderVersion.VCF4_3))
+                                        .map(VCFHeaderVersion::getVersionString)
+                                        .collect(Collectors.joining(" "))));
+            }
+        }
     }
 
     /**
@@ -183,10 +209,10 @@ public class VCFUtils {
         final File out = File.createTempFile(prefix, suffix);
         out.deleteOnExit();
         String indexFileExtension = null;
-        if (suffix.endsWith(IOUtil.COMPRESSED_VCF_FILE_EXTENSION)) {
-            indexFileExtension = IOUtil.COMPRESSED_VCF_INDEX_EXTENSION;
-        } else if (suffix.endsWith(IOUtil.VCF_FILE_EXTENSION)) {
-            indexFileExtension = IOUtil.VCF_INDEX_EXTENSION;
+        if (suffix.endsWith(FileExtensions.COMPRESSED_VCF)) {
+            indexFileExtension = FileExtensions.COMPRESSED_VCF_INDEX;
+        } else if (suffix.endsWith(FileExtensions.VCF)) {
+            indexFileExtension = FileExtensions.VCF_INDEX;
         }
         if (indexFileExtension != null) {
             final File indexOut = new File(out.getAbsolutePath() + indexFileExtension);
@@ -206,11 +232,11 @@ public class VCFUtils {
     public static File createTemporaryIndexedVcfFromInput(final File vcfFile, final String tempFilePrefix) throws IOException {
         final String extension;
 
-        if (vcfFile.getAbsolutePath().endsWith(IOUtil.VCF_FILE_EXTENSION)) extension = IOUtil.VCF_FILE_EXTENSION;
-        else if (vcfFile.getAbsolutePath().endsWith(IOUtil.COMPRESSED_VCF_FILE_EXTENSION))
-            extension = IOUtil.COMPRESSED_VCF_FILE_EXTENSION;
+        if (vcfFile.getAbsolutePath().endsWith(FileExtensions.VCF)) extension = FileExtensions.VCF;
+        else if (vcfFile.getAbsolutePath().endsWith(FileExtensions.COMPRESSED_VCF))
+            extension = FileExtensions.COMPRESSED_VCF;
         else
-            throw new IllegalArgumentException("couldn't find a " + IOUtil.VCF_FILE_EXTENSION + " or " + IOUtil.COMPRESSED_VCF_FILE_EXTENSION + " ending for input file " + vcfFile.getAbsolutePath());
+            throw new IllegalArgumentException("couldn't find a " + FileExtensions.VCF + " or " + FileExtensions.COMPRESSED_VCF + " ending for input file " + vcfFile.getAbsolutePath());
 
         File output = createTemporaryIndexedVcfFile(tempFilePrefix, extension);
 
@@ -226,6 +252,31 @@ public class VCFUtils {
         }
 
         return output;
+    }
+
+    /**
+     * Parses a String as a Double, being tolerant for case-insensitive NaN and Inf/Infinity.
+     */
+    public static double parseVcfDouble(final String str) {
+        try {
+            return Double.parseDouble(str);
+        } catch (NumberFormatException e) {
+            final Matcher matcher = INF_OR_NAN_PATTERN.matcher(str);
+            if (matcher.matches()) {
+                final double ret;
+                if (matcher.group("inf") == null) {
+                    ret = Double.NaN;
+                } else {
+                    if (matcher.group("sign").equals("-")) {
+                        ret = Double.NEGATIVE_INFINITY;
+                    } else {
+                        ret = Double.POSITIVE_INFINITY;
+                    }
+                }
+                return ret;
+            }
+            throw e;
+        }
     }
 
     private static String getReferenceAssembly(final String refPath) {

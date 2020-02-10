@@ -470,7 +470,8 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
         return query(referenceSequence, 1, -1);
     }
 
-    private void skipToSequence(final int sequenceIndex) {
+    @Override
+    protected void skipToSequence(final int sequenceIndex) {
         if(sequenceIndex > getNumberOfReferences()) {
             throw new SAMException("Sequence index (" + sequenceIndex + ") is greater than maximum (" + getNumberOfReferences() + ").");
         }

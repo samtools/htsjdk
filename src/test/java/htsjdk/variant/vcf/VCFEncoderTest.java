@@ -23,7 +23,7 @@ public class VCFEncoderTest extends HtsjdkTest {
 
 	@DataProvider(name = "VCFWriterDoubleFormatTestData")
 	public Object[][] makeVCFWriterDoubleFormatTestData() {
-		final List<Object[]> tests = new ArrayList<Object[]>();
+		final List<Object[]> tests = new ArrayList<>();
 		tests.add(new Object[]{1.0, "1.00"});
 		tests.add(new Object[]{10.1, "10.10"});
 		tests.add(new Object[]{10.01, "10.01"});
@@ -56,19 +56,19 @@ public class VCFEncoderTest extends HtsjdkTest {
 
     @DataProvider(name = "MissingFormatTestData")
     public Object[][] makeMissingFormatTestData() {
-        final VCFHeader header = createSyntheticHeader(Arrays.asList("Sample1"));
+        final VCFHeader header = createSyntheticHeader(Collections.singletonList("Sample1"));
 
         final VCFEncoder dropMissing = new VCFEncoder(header, false, false);
         final VCFEncoder keepMissing = new VCFEncoder(header, false, true);
         final VariantContextBuilder baseVC = new VariantContextBuilder().chr("1").start(1).stop(1).noID().passFilters().log10PError(1).alleles("A", "C");
         final GenotypeBuilder baseGT = new GenotypeBuilder("Sample1").alleles(Arrays.asList(Allele.NO_CALL, Allele.NO_CALL));
-        final Map<Allele, String> alleleMap = new HashMap<Allele, String>(3);
+        final Map<Allele, String> alleleMap = new HashMap<>(3);
         final List<String> formatKeys = Arrays.asList("GT", "AA", "BB");
         alleleMap.put(Allele.NO_CALL, VCFConstants.EMPTY_ALLELE);
         alleleMap.put(Allele.create("A", true), "0");
         alleleMap.put(Allele.create("C", false), "1");
 
-        final List<Object[]> tests = new ArrayList<Object[]>();
+        final List<Object[]> tests = new ArrayList<>();
 
         VariantContext vc = baseVC.genotypes(baseGT.attribute("AA", "a").make()).make();
         tests.add(new Object[]{dropMissing, vc, "./.:a", alleleMap, formatKeys});
@@ -90,6 +90,11 @@ public class VCFEncoderTest extends HtsjdkTest {
         tests.add(new Object[]{keepMissing, vc, "./.:.:2", alleleMap, formatKeys});
         baseGT.noAttributes();
 
+        // check that we only produce a single . when writing attributes with multiple values instead of .,.
+        vc = baseVC.genotypes(baseGT.attribute("CC", VCFConstants.MISSING_VALUE_v4).make()).make();
+        tests.add(new Object[]{keepMissing, vc, "./.:.", alleleMap, Arrays.asList("GT", "CC")});
+        baseGT.noAttributes();
+
         return tests.toArray(new Object[][]{});
     }
 
@@ -103,22 +108,19 @@ public class VCFEncoderTest extends HtsjdkTest {
         Assert.assertEquals(columns[nCol-1], expectedLastColumn, "Format fields don't handle missing data in the expected way");
     }
 
-    private Set<VCFHeaderLine> createSyntheticMetadata() {
-        final Set<VCFHeaderLine> metaData = new TreeSet<VCFHeaderLine>();
+    private static Set<VCFHeaderLine> createSyntheticMetadata() {
+        final Set<VCFHeaderLine> metaData = new TreeSet<>();
 
         metaData.add(new VCFContigHeaderLine(Collections.singletonMap("ID", "1"), 0));
 
         metaData.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "x"));
         metaData.add(new VCFFormatHeaderLine("AA", 1, VCFHeaderLineType.String, "aa"));
         metaData.add(new VCFFormatHeaderLine("BB", 1, VCFHeaderLineType.Integer, "bb"));
+        metaData.add(new VCFFormatHeaderLine("CC", 3, VCFHeaderLineType.Integer, "CC"));
         return metaData;
     }
 
-    private VCFHeader createSyntheticHeader() {
-        return new VCFHeader(createSyntheticMetadata());
-    }
-
-    private VCFHeader createSyntheticHeader(final List<String> samples) {
+    private static VCFHeader createSyntheticHeader(final List<String> samples) {
         return new VCFHeader(createSyntheticMetadata(), samples);
     }
 

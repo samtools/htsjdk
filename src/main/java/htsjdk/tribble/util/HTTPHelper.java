@@ -63,7 +63,7 @@ public class HTTPHelper implements URLHelper {
     }
 
     /**
-     * @return content length of the resource
+     * @return content length of the resource, or -1 if not available
      * @throws IOException
      */
     @Override
@@ -88,30 +88,35 @@ public class HTTPHelper implements URLHelper {
 
     @Override
     public InputStream openInputStream() throws IOException {
-
         HttpURLConnection connection = openConnection();
         return new WrapperInputStream(connection, connection.getInputStream());
     }
 
 
     /**
-     * Open an input stream for the requested byte range.  Its the client's responsibility to close the stream.
+     * Open an InputStream to stream a slice (range) of the resource.  The host server must support
+     * range byte requests and return a 206 response code (partial response).  If it does not an IOException will
+     * be thrown.
+     *
+     * Its the client's responsibility to close the stream.
      *
      * @param start start of range in bytes
      * @param end   end of range ni bytes
      * @return
      * @throws IOException
-     *
-     * @deprecated  since 12/10/14  Will be removed in a future release, as is somewhat fragile
-     * and not used.
      */
     @Override
-    @Deprecated
     public InputStream openInputStreamForRange(long start, long end) throws IOException {
 
         HttpURLConnection connection = openConnection();
         String byteRange = "bytes=" + start + "-" + end;
         connection.setRequestProperty("Range", byteRange);
+
+        if (connection.getResponseCode() != 206) {
+            String msg = "Error: range requested, expected response code 206 but found " + connection.getResponseCode();
+            throw new IOException(msg);
+        }
+
         return new WrapperInputStream(connection, connection.getInputStream());
     }
 

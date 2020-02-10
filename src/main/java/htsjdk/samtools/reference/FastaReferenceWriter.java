@@ -122,9 +122,11 @@ public final class FastaReferenceWriter implements AutoCloseable {
     private final CountingOutputStream fastaStream;
 
     /**
-     * Writer for the index file.
+     * Writer for the FAI index file.
+     *
+     * NOTE: GZI index writing (if necessary) is handled to BlockCompressedOutputStream class and thus is not controlled here.
      */
-    private final Writer indexWriter;
+    private final Writer faiIndexWriter;
 
     /**
      * Output writer to the output dictionary.
@@ -209,7 +211,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
 
         this.defaultBasePerLine = basesPerLine;
         this.fastaStream = new CountingOutputStream(fastaOutput);
-        this.indexWriter = indexOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(indexOutput, CHARSET);
+        this.faiIndexWriter = indexOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(indexOutput, CHARSET);
         this.dictWriter = dictOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(dictOutput, CHARSET);
         this.dictCodec = new SAMSequenceDictionaryCodec(dictWriter);
         this.dictCodec.encodeHeaderLine(false);
@@ -440,7 +442,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
 
     private void writeIndexEntry()
             throws IOException {
-        indexWriter.append(currentSequenceName).append(INDEX_FIELD_SEPARATOR_CHR)
+        faiIndexWriter.append(currentSequenceName).append(INDEX_FIELD_SEPARATOR_CHR)
                 .append(String.valueOf(currentBasesCount)).append(INDEX_FIELD_SEPARATOR_CHR)
                 .append(String.valueOf(currentSequenceOffset)).append(INDEX_FIELD_SEPARATOR_CHR)
                 .append(String.valueOf(currentBasesPerLine)).append(INDEX_FIELD_SEPARATOR_CHR)
@@ -635,7 +637,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
             } finally {
                 closed = true;
                 fastaStream.close();
-                indexWriter.close();
+                faiIndexWriter.close();
                 dictWriter.close();
             }
         }

@@ -103,12 +103,12 @@ public class SAMSequenceDictionary implements Serializable {
     }
 
     /**
-     * @return The index for the given sequence name, or -1 if the name is not found.
+     * @return The index for the given sequence name, or {@value SAMSequenceRecord#UNAVAILABLE_SEQUENCE_INDEX} if the name is not found.
      */
     public int getSequenceIndex(final String sequenceName) {
         final SAMSequenceRecord record = mSequenceMap.get(sequenceName);
         if (record == null) {
-            return -1;
+            return UNAVAILABLE_SEQUENCE_INDEX;
         }
         return record.getSequenceIndex();
     }
@@ -124,11 +124,10 @@ public class SAMSequenceDictionary implements Serializable {
      * @return The sum of the lengths of the sequences in this dictionary
      */
     public long getReferenceLength() {
-        long len = 0L;
-        for (final SAMSequenceRecord seq : getSequences()) {
-            len += seq.getSequenceLength();
-        }
-        return len;
+        return getSequences()
+                .stream()
+                .mapToLong(SAMSequenceRecord::getSequenceLength)
+                .sum();
     }
 
     /**

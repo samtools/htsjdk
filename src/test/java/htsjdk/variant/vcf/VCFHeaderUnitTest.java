@@ -25,7 +25,10 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
@@ -238,6 +241,21 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void testVCFHeaderContigLineMissingLength() {
+        final VCFHeader header = getHiSeqVCFHeader();
+        final VCFContigHeaderLine contigLine = new VCFContigHeaderLine(
+                "<ID=chr1>", VCFHeaderVersion.VCF4_0, VCFHeader.CONTIG_KEY, 0);
+        header.addMetaDataLine(contigLine);
+        Assert.assertTrue(header.getContigLines().contains(contigLine), "Test contig line not found in contig header lines");
+        Assert.assertTrue(header.getMetaDataInInputOrder().contains(contigLine), "Test contig line not found in set of all header lines");
+
+        final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
+        Assert.assertNotNull(sequenceDictionary);
+        Assert.assertEquals(sequenceDictionary.getSequence("chr1").getSequenceLength(), SAMSequenceRecord.UNKNOWN_SEQUENCE_LENGTH);
+
+    }
+
+        @Test
     public void testVCFHeaderHonorContigLineOrder() throws IOException {
         try (final VCFFileReader vcfReader = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
             // start with a header with a bunch of contig lines
@@ -351,6 +369,51 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(numHeaderLinesBefore, numHeaderLinesAfter);
     }
 
+    @DataProvider(name="validHeaderVersionTransitions")
+    public Object[][] validHeaderVersionTransitions() {
+        // v4.3 can never transition, all other version transitions are allowed
+        return new Object[][] {
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_0},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_3}
+        };
+    }
+
+    @DataProvider(name="invalidHeaderVersionTransitions")
+    public Object[][] invalidHeaderVersionTransitions() {
+        // v4.3 can never transition with, all other version transitions are allowed
+        return new Object[][] {
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_0},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_3},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_3},
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_3},
+        };
+    }
+
+    @Test(dataProvider="validHeaderVersionTransitions")
+    public void testValidHeaderVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        doHeaderTransition(fromVersion, toVersion);
+    }
+
+    @Test(dataProvider="invalidHeaderVersionTransitions", expectedExceptions = TribbleException.class)
+    public void testInvalidHeaderVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        doHeaderTransition(fromVersion, toVersion);
+    }
+
+    private void doHeaderTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        final VCFHeader vcfHeader =
+                fromVersion == null ?
+                        new VCFHeader() :
+                        new VCFHeader(fromVersion, Collections.EMPTY_SET, Collections.EMPTY_SET);
+        vcfHeader.setVCFHeaderVersion(toVersion);
+    }
+
     @Test
     public void testVCFHeaderSerialization() throws Exception {
         final VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
@@ -413,7 +476,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(originalEscapingNonQuoteOrBackslashInfoLine.getDescription(), "This other value has a \\n newline in it");
 
         // write the file out into a new copy
-        final File firstCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes1.", IOUtil.VCF_FILE_EXTENSION);
+        final File firstCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes1.", FileExtensions.VCF);
         firstCopyVCFFile.deleteOnExit();
 
         final VariantContextWriter firstCopyWriter = new VariantContextWriterBuilder()
@@ -457,7 +520,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
 
         // write one more copy to make sure things don't get double escaped
-        final File secondCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes2.", IOUtil.VCF_FILE_EXTENSION);
+        final File secondCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes2.", FileExtensions.VCF);
         secondCopyVCFFile.deleteOnExit();
         final VariantContextWriter secondCopyWriter = new VariantContextWriterBuilder()
                 .setOutputFile(secondCopyVCFFile)
@@ -519,7 +582,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         File expectedFile = new File("src/test/resources/htsjdk/variant/Vcf4.2WithSourceVersionInfoFields.vcf");
 
         // write the file out into a new copy
-        final File actualFile = File.createTempFile("testVcf4.2roundtrip.", IOUtil.VCF_FILE_EXTENSION);
+        final File actualFile = File.createTempFile("testVcf4.2roundtrip.", FileExtensions.VCF);
         actualFile.deleteOnExit();
 
         try (final VCFFileReader originalFileReader = new VCFFileReader(expectedFile, false);

@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Scanner;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -27,7 +26,7 @@ import java.util.zip.GZIPOutputStream;
  * <li>read an existing index from an input stream</li>
  * </ul><p>
  */
-public class CRAMCRAIIndexer {
+public class CRAMCRAIIndexer implements CRAMIndexer {
 
     final private CRAIIndex craiIndex = new CRAIIndex();
     final private GZIPOutputStream os;
@@ -73,9 +72,15 @@ public class CRAMCRAIIndexer {
         craiIndex.processContainer(container);
     }
 
+    @Override
+    public void processContainer(final Container container, final ValidationStringency validationStringency) {
+        processContainer(container);
+    }
+
     /**
      * Finish creating the index by writing the accumulated entries out to the stream.
      */
+    @Override
     public void finish() {
         try {
             craiIndex.writeIndex(os);
@@ -94,27 +99,19 @@ public class CRAMCRAIIndexer {
      * @param craiStream stream for output index
      */
     public static void writeIndex(final SeekableStream cramStream, OutputStream craiStream) {
-        try {
-            final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
-            final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, cramHeader.getSamFileHeader());
-            final Version cramVersion = cramHeader.getVersion();
+        final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
+        final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, cramHeader.getSamFileHeader());
+        final Version cramVersion = cramHeader.getVersion();
 
-            // get the first container and its offset
-            long offset = cramStream.position();
-            Container container = ContainerIO.readContainer(cramVersion, cramStream);
+        // get the first container
+        Container container = ContainerIO.readContainer(cramVersion, cramStream);
 
-            while (container != null && !container.isEOF()) {
-                container.offset = offset;
-                indexer.processContainer(container);
-                offset = cramStream.position();
-                container = ContainerIO.readContainer(cramVersion, cramStream);
-            }
-
-            indexer.finish();
+        while (container != null && !container.isEOF()) {
+            indexer.processContainer(container);
+            container = ContainerIO.readContainer(cramVersion, cramStream);
         }
-        catch (IOException e) {
-            throw new RuntimeIOException("Error writing CRAI index to output stream");
-        }
+
+        indexer.finish();
     }
 
     /**

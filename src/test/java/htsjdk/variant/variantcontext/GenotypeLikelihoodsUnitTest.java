@@ -82,6 +82,19 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
         Assert.assertEquals(gl.getAsString(), vPLString);
     }
 
+    @Test
+    public void testFromStringMultipleMissing() {
+        String missingWithPloidy2AltAllele1 = ".,.,.";
+        GenotypeLikelihoods gl = GenotypeLikelihoods.fromGLField(missingWithPloidy2AltAllele1);
+        Assert.assertNull(gl.getAsPLs());
+    }
+
+    @Test (expectedExceptions = TribbleException.class)
+    public void testFromStringOneMissing() {
+        String oneMissingFromPloidy2AltAllele1 = "-3.0,.,-1.2";
+        GenotypeLikelihoods.fromGLField(oneMissingFromPloidy2AltAllele1);
+    }
+
     @Test (expectedExceptions = TribbleException.class)
     public void testErrorBadFormat() {
         GenotypeLikelihoods gl = GenotypeLikelihoods.fromPLField("adf,b,c");
@@ -112,16 +125,54 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void testCalculateNumLikelihoods() {    
-        
+    public void testCalculateNumLikelihoods() {
+
         for (int nAlleles=2; nAlleles<=5; nAlleles++)
-            // simplest case: diploid
+        {
             Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(nAlleles, 2), nAlleles*(nAlleles+1)/2);
+        }
 
         // some special cases: ploidy = 20, #alleles = 4
         Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(4, 20), 1771);
+        // ploidy = 10, alleles = 5
+        Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(5, 10), 1001);
+        // ploidy = 16, alleles = 10
+        Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(10, 16), 2042975);
     }
-    
+
+    @DataProvider(name="testNumLikelihoodsCacheDataProvider")
+    public Object[][] testNumLikelihoodsCacheDataProvider(){
+        return new Object[][]{
+                {1, 1, 1},
+                {2, 5, 6},
+                {10, 16, 2042975}
+        };
+    }
+
+    @Test(dataProvider="testNumLikelihoodsCacheDataProvider")
+    public void testNumLikelihoodsCache(final int numAlleles, final int ploidy, final int numLikelihoods) {
+        GenotypeNumLikelihoodsCache cache = new GenotypeNumLikelihoodsCache();
+
+        Assert.assertEquals(cache.get(numAlleles, ploidy), numLikelihoods);
+    }
+
+    @DataProvider(name="testNumLikelihoodsCacheIllegalArgumentsDataProvider")
+    public Object[][] testNumLikelihoodsCacheIllegalArgumentsDataProvider(){
+        return new Object[][]{
+            {1, 0},
+            {0, 1},
+            {-1, 5},
+            {3, -4}
+        };
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, dataProvider = "testNumLikelihoodsCacheIllegalArgumentsDataProvider")
+    public void testNumLikelihoodsCacheIllegalArguments(final int numAlleles, final int ploidy){
+        GenotypeNumLikelihoodsCache cache = new GenotypeNumLikelihoodsCache();
+
+        cache.get(numAlleles, ploidy);
+    }
+
     @Test
     public void testGetLog10GQ(){
         GenotypeLikelihoods gl = GenotypeLikelihoods.fromPLField(vPLString);
@@ -333,5 +384,11 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     public void testGetAllelesUnitialized() {
         GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.clear();
         final List<Integer> alleles = GenotypeLikelihoods.getAlleles(0, 3);
+    }
+
+    @Test
+    public void testFromCaseInsensitiveString() {
+        GenotypeLikelihoods gl = GenotypeLikelihoods.fromGLField("nan,Infinity,-inf");
+        assertDoubleArraysAreEqual(gl.getAsVector(), new double[]{Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY});
     }
 }

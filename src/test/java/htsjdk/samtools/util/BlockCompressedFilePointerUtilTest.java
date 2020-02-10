@@ -33,13 +33,14 @@ import java.util.List;
 
 
 public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
+    final static long BIG_BLOCK_ADDRESS = 1L << 46;
+
     @Test
     public void basicTest() 
     {
         List<Long> pointers = new ArrayList<Long>();
         pointers.add(makeFilePointer(0, 0));
         pointers.add(makeFilePointer(0, BlockCompressedFilePointerUtil.MAX_OFFSET));
-        final long BIG_BLOCK_ADDRESS = 1L << 46;
         pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS-1, 0));
         pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS-1, BlockCompressedFilePointerUtil.MAX_OFFSET));
         pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS, 0));
@@ -89,6 +90,45 @@ public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
                 {0L, BlockCompressedFilePointerUtil.MAX_OFFSET+1}
         };
     }
+    
+    @Test(dataProvider = "shiftInputs")
+    public void shiftTest(long blockAddress, int blockOffset) {
+        final long shift = 100;
+        long virtualFilePointer = makeFilePointer(blockAddress, blockOffset);
+        long shiftedVfp = BlockCompressedFilePointerUtil.shift(virtualFilePointer, shift);
+        Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(shiftedVfp), BlockCompressedFilePointerUtil.getBlockAddress(virtualFilePointer) + shift);
+        Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(shiftedVfp), BlockCompressedFilePointerUtil.getBlockOffset(virtualFilePointer));
+    }
+
+    @DataProvider(name="shiftInputs")
+    public Object[][]  shiftInputs() {
+        return new Object[][]{
+                {0L, 0},
+                {0L, BlockCompressedFilePointerUtil.MAX_OFFSET},
+                {1L << 46, 0},
+                {1L << 46, BlockCompressedFilePointerUtil.MAX_OFFSET}
+        };
+    }
+    
+    @DataProvider(name="virtualFilePointerStrings")
+    public Object[][] getFilePointers() {
+        return new Object[][] {
+                { makeFilePointer(0, 0), "0:0" },
+                { makeFilePointer(0, BlockCompressedFilePointerUtil.MAX_OFFSET), "0:65535" },
+                { makeFilePointer(BIG_BLOCK_ADDRESS-1, 0), "70368744177663:0" },
+                { makeFilePointer(BIG_BLOCK_ADDRESS-1, BlockCompressedFilePointerUtil.MAX_OFFSET), "70368744177663:65535" },
+                { makeFilePointer(BIG_BLOCK_ADDRESS, 0), "70368744177664:0" },
+                { makeFilePointer(BIG_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET), "70368744177664:65535" },
+                { makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, 0), "281474976710655:0" },
+                { makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET), "281474976710655:65535" }
+        };
+    }
+
+    @Test(dataProvider = "virtualFilePointerStrings")
+    public void testAsAddressOffsetString(final long vfp, final String addressOffset) {
+        Assert.assertEquals(BlockCompressedFilePointerUtil.asAddressOffsetString(vfp), addressOffset);
+    }
+
 }
 
 /******************************************************************/

@@ -128,7 +128,7 @@ public class SliceTests extends HtsjdkTest {
                                final ReferenceContext expectedReferenceContext,
                                final int expectedAlignmentStart,
                                final int expectedAlignmentSpan) {
-        final CompressionHeader header = new CompressionHeaderFactory().build(records, null, coordinateSorted);
+        final CompressionHeader header = new CompressionHeaderFactory().build(records, coordinateSorted);
         final Slice slice = Slice.buildSlice(records, header);
         final int expectedBaseCount = TEST_RECORD_COUNT * READ_LENGTH_FOR_TEST_RECORDS;
         CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,
@@ -181,7 +181,7 @@ public class SliceTests extends HtsjdkTest {
         unmapped.readLength = 35;
         records.add(unmapped);
 
-        final CompressionHeader header = new CompressionHeaderFactory().build(records, null, true);
+        final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
 
         final Slice slice = Slice.buildSlice(records, header);
         final int expectedBaseCount = single.readLength + unmapped.readLength;
@@ -189,11 +189,21 @@ public class SliceTests extends HtsjdkTest {
                 Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN, records.size(), expectedBaseCount);
     }
 
+    @Test(dataProvider = "uninitializedBAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
+    public void uninitializedBAIParameterTest(final Slice s) {
+        s.baiIndexInitializationCheck();
+    }
+
+    @Test(dataProvider = "uninitializedCRAIParameterTestCases", dataProviderClass = CRAMStructureTestUtil.class, expectedExceptions = CRAMException.class)
+    public void uninitializedCRAIParameterTest(final Slice s) {
+        s.craiIndexInitializationCheck();
+    }
+
     private static void buildSliceAndAssert(final List<CramCompressionRecord> records,
                                             final ReferenceContext expectedReferenceContext,
                                             final int expectedAlignmentStart,
                                             final int expectedAlignmentSpan) {
-        final CompressionHeader header = new CompressionHeaderFactory().build(records, null, true);
+        final CompressionHeader header = new CompressionHeaderFactory().build(records, true);
         final Slice slice = Slice.buildSlice(records, header);
         final int expectedBaseCount = records.size() * READ_LENGTH_FOR_TEST_RECORDS;
         CRAMStructureTestUtil.assertSliceState(slice, expectedReferenceContext,

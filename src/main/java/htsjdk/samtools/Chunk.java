@@ -126,6 +126,19 @@ public class Chunk implements Cloneable, Serializable,Comparable<Chunk> {
                 BlockCompressedFilePointerUtil.getBlockOffset(this.getChunkStart()) == BlockCompressedFilePointerUtil.getBlockOffset(other.getChunkEnd()));
     }
 
+    /**
+     * Return a new chunk shifted by a given (non-virtual) offset.
+     *
+     * @param offset the offset in bytes
+     * @return a new chunk shifted by the given offset
+     * @see BlockCompressedFilePointerUtil#shift(long, long)
+     */
+    Chunk shift(final long offset) {
+        final long start = BlockCompressedFilePointerUtil.shift(getChunkStart(), offset);
+        final long end = BlockCompressedFilePointerUtil.shift(getChunkEnd(), offset);
+        return new Chunk(start, end);
+    }
+
     @Override
     public int hashCode() {
         int result = (int) (mChunkStart ^ (mChunkStart >>> 32));
