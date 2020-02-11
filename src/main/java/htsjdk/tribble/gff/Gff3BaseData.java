@@ -20,6 +20,7 @@ public class Gff3BaseData {
     final String id;
     final String name;
     final String alias;
+    final int hashCode;
 
     Gff3BaseData(final String contig, final String source, final String type,
                  final int start, final int end, final Strand strand, final int phase,
@@ -35,6 +36,7 @@ public class Gff3BaseData {
         this.id = attributes.get(ID_ATTRIBUTE_KEY);
         this.name = attributes.get(NAME_ATTRIBUTE_KEY);
         this.alias = attributes.get(ALIAS_ATTRIBUTE_KEY);
+        hashCode = computeHashCode();
     }
 
     @Override
@@ -78,6 +80,10 @@ public class Gff3BaseData {
 
     @Override
     public int hashCode() {
+        return hashCode;
+    }
+
+    private int computeHashCode() {
         int hash = contig.hashCode();
         hash = 31 * hash + source.hashCode();
         hash = 31 * hash + type.hashCode();
