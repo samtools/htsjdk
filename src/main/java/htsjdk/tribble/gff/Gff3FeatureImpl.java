@@ -80,7 +80,7 @@ public class Gff3FeatureImpl implements Gff3Feature {
     public Set<Gff3FeatureImpl> getAncestors() {
         final List<Gff3FeatureImpl> ancestors = new ArrayList<>(parents);
         for (final Gff3FeatureImpl parent : parents) {
-            ancestors.addAll(baseData.attributes.containsKey(DERIVES_FROM_ATTRIBUTE_KEY)? parent.getAncestors(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY)) : parent.getAncestors());
+            ancestors.addAll(baseData.getAttributes().containsKey(DERIVES_FROM_ATTRIBUTE_KEY)? parent.getAncestors(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY)) : parent.getAncestors());
         }
         return new LinkedHashSet<>(ancestors);
     }
@@ -103,7 +103,7 @@ public class Gff3FeatureImpl implements Gff3Feature {
     @Override
     public Set<Gff3FeatureImpl> getDescendents() {
         final List<Gff3FeatureImpl> descendants = new ArrayList<>(children);
-        final Set<String> idsInLineage = new HashSet<>(Collections.singleton(baseData.id));
+        final Set<String> idsInLineage = new HashSet<>(Collections.singleton(baseData.getId()));
         idsInLineage.addAll(children.stream().map(Gff3Feature::getID).collect(Collectors.toSet()));
         for(final Gff3FeatureImpl child : children) {
             descendants.addAll(child.getDescendents(idsInLineage));
@@ -144,8 +144,8 @@ public class Gff3FeatureImpl implements Gff3Feature {
 
     public void addParent(final Gff3FeatureImpl parent) {
         final Set<Gff3FeatureImpl> topLevelFeaturesToAdd = new HashSet<>(parent.getTopLevelFeatures());
-        if (baseData.attributes.containsKey(DERIVES_FROM_ATTRIBUTE_KEY)) {
-            topLevelFeaturesToAdd.removeIf(f -> !f.getID().equals(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY)) && f.getDescendents().stream().noneMatch(f2 -> f2.getID()== null? false:f2.getID().equals(baseData.attributes.get(DERIVES_FROM_ATTRIBUTE_KEY))));
+        if (baseData.getAttributes().containsKey(DERIVES_FROM_ATTRIBUTE_KEY)) {
+            topLevelFeaturesToAdd.removeIf(f -> !f.getID().equals(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY)) && f.getDescendents().stream().noneMatch(f2 -> f2.getID()== null? false:f2.getID().equals(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY))));
         }
         parents.add(parent);
         parent.addChild(this);
@@ -184,7 +184,7 @@ public class Gff3FeatureImpl implements Gff3Feature {
     public void addCoFeature(final Gff3FeatureImpl coFeature) {
         if (!parents.equals(coFeature.getParents())) {
 
-            throw new TribbleException("Co-features " + baseData.id + " do not have same parents");
+            throw new TribbleException("Co-features " + baseData.getId() + " do not have same parents");
         }
         for (final Gff3FeatureImpl feature : coFeatures) {
             feature.addCoFeatureShallow(coFeature);
@@ -196,8 +196,8 @@ public class Gff3FeatureImpl implements Gff3Feature {
 
     private void addCoFeatureShallow(final Gff3FeatureImpl coFeature) {
         coFeatures.add(coFeature);
-        if (!coFeature.getID().equals(baseData.id)) {
-            throw new TribbleException("Attempting to add co-feature with id " + coFeature.getID() + " to feature with id " + baseData.id);
+        if (!coFeature.getID().equals(baseData.getId())) {
+            throw new TribbleException("Attempting to add co-feature with id " + coFeature.getID() + " to feature with id " + baseData.getId());
         }
     }
 
