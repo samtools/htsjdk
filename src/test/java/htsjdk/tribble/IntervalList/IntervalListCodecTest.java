@@ -26,6 +26,8 @@ package htsjdk.tribble.IntervalList;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
@@ -38,6 +40,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -86,6 +89,21 @@ public class IntervalListCodecTest extends HtsjdkTest {
         }
     }
 
+    @Test(dataProvider = "TribbleDecodeData")
+    public void testTribbleDecodeCompressed(final File file) throws IOException {
+        // compress 'file' to bgzf
+        File tmpGz = File.createTempFile("htsjdk.", FileExtensions.COMPRESSED_INTERVAL_LIST, IOUtil.getDefaultTmpDir());
+        try(BlockCompressedOutputStream bgz = new BlockCompressedOutputStream(tmpGz);
+            FileInputStream fis = new FileInputStream(file)) {
+            IOUtil.copyStream(fis,bgz);
+            bgz.flush();
+        }
+        //test dictonary can be extracted
+        Assert.assertNotNull(SAMSequenceDictionaryExtractor.extractDictionary(tmpGz));
+        testTribbleDecode(tmpGz);
+        tmpGz.delete();
+    }
+
     /**
      * Test reading a IntervalList file which is malformed.
      */
@@ -106,11 +124,17 @@ public class IntervalListCodecTest extends HtsjdkTest {
         new IntervalListCodec().getTabixFormat();
     }
 
-
-    @Test
-    public void testCanDecode() {
+    @DataProvider
+    Object[][] Suffixes(){
+        return new Object[][]{
+                {"filename.interval_list"},
+                {"filename.interval_list.gz"}
+        };
+    }
+    
+    @Test(dataProvider = "Suffixes")
+    public void testCanDecode(final String pattern) {
         final IntervalListCodec codec = new IntervalListCodec();
-        final String pattern = "filename.interval_list";
         Assert.assertTrue(codec.canDecode(pattern));
     }
 }

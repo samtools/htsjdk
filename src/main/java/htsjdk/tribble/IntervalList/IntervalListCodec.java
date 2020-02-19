@@ -25,6 +25,7 @@
 package htsjdk.tribble.IntervalList;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.LineReader;
@@ -158,7 +159,8 @@ public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
     }
 
     @Override
-    public boolean canDecode(String s) {
-        return s.endsWith(".interval_list");
+    public boolean canDecode(final String s) {
+        return s.endsWith(FileExtensions.INTERVAL_LIST) ||
+               s.endsWith(FileExtensions.COMPRESSED_INTERVAL_LIST);
     }
 }
