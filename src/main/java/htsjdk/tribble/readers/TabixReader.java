@@ -29,7 +29,6 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.util.ParsingUtils;
-import htsjdk.tribble.util.TabixUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +45,7 @@ import java.util.function.Function;
 /**
  * @author Heng Li <hengli@broadinstitute.org>
  */
-public class TabixReader {
+public class TabixReader implements AutoCloseable {
     private final String mFilePath;
     private final String mIndexPath;
     private final Function<SeekableByteChannel, SeekableByteChannel> mIndexWrapper;
@@ -532,7 +531,8 @@ public class TabixReader {
    }
 
     // ADDED BY JTR
-    public void close() {
+   @Override 
+   public void close() {
         if(mFp != null) {
             try {
                 mFp.close();
@@ -542,8 +542,8 @@ public class TabixReader {
         }
     }
 
-    @Override
-    public String toString() {
+   @Override
+   public String toString() {
         return "TabixReader: filename:"+getSource();
-    }
+   }
 }

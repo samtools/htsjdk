@@ -172,18 +172,18 @@ public class TabixReaderTest extends HtsjdkTest {
     public void testRemoteQuery() throws IOException {
         String tabixFile = TestUtil.BASE_URL_FOR_HTTP_TESTS +"igvdata/tabix/trioDup.vcf.gz";
 
-        TabixReader tabixReader = new TabixReader(tabixFile);
-
-        TabixIteratorLineReader lineReader = new TabixIteratorLineReader(
-                tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
-
-        int nRecords = 0;
-        String nextLine;
-        while ((nextLine = lineReader.readLine()) != null) {
-            Assert.assertTrue(nextLine.startsWith("4"));
-            nRecords++;
+        try(TabixReader tabixReader = new TabixReader(tabixFile)) {
+            TabixIteratorLineReader lineReader = new TabixIteratorLineReader(
+                    tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
+    
+            int nRecords = 0;
+            String nextLine;
+            while ((nextLine = lineReader.readLine()) != null) {
+                Assert.assertTrue(nextLine.startsWith("4"));
+                nRecords++;
+            }
+            Assert.assertTrue(nRecords > 0);
         }
-        Assert.assertTrue(nRecords > 0);
     }
     
     /**
@@ -193,8 +193,8 @@ public class TabixReaderTest extends HtsjdkTest {
      */
     @Test
     public void testTabixReaderReadLine() throws IOException {
-        TabixReader tabixReader = new TabixReader(tabixFile);
-        Assert.assertNotNull(tabixReader.readLine());
-        tabixReader.close();
+        try(TabixReader tabixReader = new TabixReader(tabixFile)) {
+            Assert.assertNotNull(tabixReader.readLine());
+        }
     }
 }
