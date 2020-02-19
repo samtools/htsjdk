@@ -105,7 +105,7 @@ public class SAMSequenceDictionaryExtractor {
                 }
             }
         },
-        INTERVAL_LIST(FileExtensions.INTERVAL_LIST) {
+        INTERVAL_LIST(FileExtensions.INTERVAL_LIST, FileExtensions.COMPRESSED_INTERVAL_LIST) {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path intervalList) {
