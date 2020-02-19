@@ -24,22 +24,20 @@
 package htsjdk.samtools;
 
 
-import htsjdk.variant.variantcontext.VariantContext;
 
 import java.math.BigInteger;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import htsjdk.samtools.util.Locatable;
 
 /**
  * Header information about a reference sequence.  Corresponds to @SQ header record in SAM text header.
  */
 
-public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Cloneable
+public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Cloneable, Locatable
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
     public final static int UNAVAILABLE_SEQUENCE_INDEX = -1;
@@ -227,6 +225,27 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     @Override
     public String getSAMString() {
         return new SAMTextHeaderCodec().getSQLine(this);
+    }
+    /** always returns <code>getSequenceName()</code> 
+     * @see #getSequenceName()
+     * */
+    @Override
+    public final String getContig() {
+        return this.getSequenceName();
+    }
+    
+    /** always returns 1 */
+    @Override
+    public final int getStart() {
+        return 1;
+    }
+    
+    /** always returns <code>getSequenceLength()</code> 
+     * @see #getSequenceLength()
+     * */
+    @Override
+    public final int getEnd() {
+        return this.getSequenceLength();
     }
 }
 
