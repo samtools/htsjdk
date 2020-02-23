@@ -131,7 +131,7 @@ public class CRAMContainerStreamWriter {
                 writeContainer(container);
             }
             if (writeEOFContainer) {
-                CramIO.writeCRAMEOF(CramVersions.DEFAULT_CRAM_VERSION, outputStream);
+                CramIO.writeCramEOF(CramVersions.DEFAULT_CRAM_VERSION, outputStream);
             }
             outputStream.flush();
             if (cramIndexer != null) {

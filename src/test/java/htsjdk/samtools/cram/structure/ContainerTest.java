@@ -192,7 +192,7 @@ public class ContainerTest extends HtsjdkTest {
     public void testEOF(final CRAMVersion cramVersion) throws IOException {
         byte[] eofBytes;
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            CramIO.writeCRAMEOF(cramVersion, baos);
+            CramIO.writeCramEOF(cramVersion, baos);
             eofBytes = baos.toByteArray();
         }
 

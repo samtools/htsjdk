@@ -35,7 +35,7 @@ public class CramIOTest extends HtsjdkTest {
         file.deleteOnExit();
         try (final FileOutputStream fos = new FileOutputStream(file)) {
             CramIO.writeCramHeader(cramHeader, fos);
-            CramIO.writeCRAMEOF(cramHeader.getCRAMVersion(), fos);
+            CramIO.writeCramEOF(cramHeader.getCRAMVersion(), fos);
         }
         Assert.assertTrue(checkHeaderAndEOF(file));
     }

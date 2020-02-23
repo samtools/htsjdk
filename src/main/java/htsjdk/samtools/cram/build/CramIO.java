@@ -73,7 +73,7 @@ public final class CramIO {
      * @param outputStream the stream to write to
      * @return the number of bytes written out
      */
-    public static long writeCRAMEOF(final CRAMVersion cramVersion, final OutputStream outputStream) {
+    public static long writeCramEOF(final CRAMVersion cramVersion, final OutputStream outputStream) {
         try {
             if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
                 outputStream.write(ZERO_F_EOF_MARKER);
