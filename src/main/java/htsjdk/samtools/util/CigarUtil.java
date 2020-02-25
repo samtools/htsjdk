@@ -161,7 +161,7 @@ public class CigarUtil {
         if(clippingOperator == CigarOperator.HARD_CLIP) {
             byte[] bases = rec.getReadBases();
             if(rec.getReadNegativeStrandFlag()) {
-                rec.setReadBases(Arrays.copyOfRange(bases, clipFrom, bases.length));
+                rec.setReadBases(Arrays.copyOfRange(bases, bases.length - clipFrom, bases.length));
             } else {
                 rec.setReadBases(Arrays.copyOf(bases, clipFrom - 1));
             }
