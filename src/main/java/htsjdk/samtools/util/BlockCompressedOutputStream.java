@@ -25,6 +25,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.model.CompressedBlock;
 import htsjdk.samtools.model.TempBlock;
+import htsjdk.samtools.util.async.CompressProducer;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 
 import java.io.File;
@@ -32,8 +33,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.*;
-import java.util.function.Consumer;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
@@ -179,7 +178,6 @@ public class BlockCompressedOutputStream
         this.file = path;
         codec = new BinaryCodec(path, true);
         deflater = deflaterFactory.makeDeflater(compressionLevel, true);
-        compressProducer = new CompressProducer(deflater, noCompressionDeflater, crc32, indexer, codec);
         log.debug("Using deflater: " + deflater.getClass().getSimpleName());
     }
 
@@ -246,8 +244,8 @@ public class BlockCompressedOutputStream
             codec.setOutputFileName(file.toAbsolutePath().toUri().toString());
         }
         deflater = deflaterFactory.makeDeflater(compressionLevel, true);
-        compressProducer = new CompressProducer(deflater, noCompressionDeflater, crc32, indexer, codec);
         log.debug("Using deflater: " + deflater.getClass().getSimpleName());
+        compressProducer = new CompressProducer(deflater, noCompressionDeflater, crc32, indexer, codec);
     }
 
     /**
@@ -401,7 +399,6 @@ public class BlockCompressedOutputStream
      * If the entire uncompressedBuffer does not fit in the maximum allowed size, reduce the amount
      * of data to be compressed, and slide the excess down in uncompressedBuffer so it can be picked
      * up in the next deflate event.
-     * @return size of gzip block that was written.
      */
     private void processBlock(TempBlock block) {
         CompressedBlock compressedBlock = deflateBlock(block.getBytesToCompress(), block.getUncompressedBuffer(),
@@ -416,12 +413,11 @@ public class BlockCompressedOutputStream
     private void processBlockAsync(TempBlock block) {
         try {
             compressProducer.put(block);
+            numUncompressedBytes = 0;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
-
-
 
     private void writeCompressedBlock(CompressedBlock compressedBlock) {
         final int bytesToCompress = compressedBlock.getBytesToCompress();
@@ -435,8 +431,8 @@ public class BlockCompressedOutputStream
         mBlockAddress += totalBlockSize;
     }
 
-    static CompressedBlock deflateBlock(Deflater deflater, Deflater noCompressionDeflater, CRC32 crc32,
-                                        byte[] compressedBuffer, int bytesToCompress, byte[] uncompressedBuffer) {
+    public static CompressedBlock deflateBlock(Deflater deflater, Deflater noCompressionDeflater, CRC32 crc32,
+                                               byte[] compressedBuffer, int bytesToCompress, byte[] uncompressedBuffer) {
         if (bytesToCompress == 0) {
             return new CompressedBlock(0,0, new byte[0]);
         }
@@ -472,7 +468,7 @@ public class BlockCompressedOutputStream
      * Writes the entire gzip block, assuming the compressed data is stored in compressedBuffer
      * @return  size of gzip block that was written.
      */
-    static int writeGzipBlock(final int compressedSize, final int uncompressedSize, final long crc, final byte[] compressedBuffer,
+    public static int writeGzipBlock(final int compressedSize, final int uncompressedSize, final long crc, final byte[] compressedBuffer,
                               BinaryCodec codec) {
         // Init gzip header
         codec.writeByte(BlockCompressedStreamConstants.GZIP_ID1);
@@ -496,172 +492,4 @@ public class BlockCompressedOutputStream
         codec.writeInt(uncompressedSize);
         return totalBlockSize;
     }
-
-    private static class CompressProducer {
-        private static final TempBlock poisonPill = new TempBlock();
-
-        private final BlockingQueue<TempBlock> resultQueue;
-        private final ExecutorService compressorExecutor;
-        private final CompressingTask compressingTask;
-
-        private CompressProducer(Deflater deflater, Deflater noCompressionDeflater, CRC32 crc32, GZIIndex.GZIIndexer indexer,
-                                 BinaryCodec codec) {
-            int compressingThreads = Runtime.getRuntime().availableProcessors();
-            int queueCapacity = compressingThreads * 2;
-            this.resultQueue = new ArrayBlockingQueue<>(queueCapacity);
-            this.compressorExecutor = Executors.newSingleThreadExecutor();
-            compressingTask = new CompressingTask(resultQueue, deflater, noCompressionDeflater, crc32, indexer, codec, compressingThreads);
-            compressorExecutor.execute(compressingTask);
-        }
-
-        public void close() throws InterruptedException {
-            compressingTask.close();
-            compressorExecutor.shutdown();
-        }
-
-        public void put(TempBlock block) throws InterruptedException {
-            resultQueue.put(block);
-        }
-
-        private static class CompressingTask implements Runnable {
-
-            private final BlockingQueue<TempBlock> resultQueue;
-            private final WriteConsumer<Future<CompressedBlock>> writeConsumer;
-            private final ExecutorService compressorExecutor;
-
-            private final Deflater deflater;
-            private final Deflater noCompressionDeflater;
-
-            private final CRC32 crc32;
-            private GZIIndex.GZIIndexer indexer;
-            private final BinaryCodec codec;
-            private long mBlockAddress = 0;
-
-
-            private CompressingTask(BlockingQueue<TempBlock> resultQueue, Deflater deflater, Deflater noCompressionDeflater, CRC32 crc32,
-                                    GZIIndex.GZIIndexer indexer, BinaryCodec codec, int nThreads) {
-                this.resultQueue = resultQueue;
-                this.deflater = deflater;
-                this.noCompressionDeflater = noCompressionDeflater;
-                this.crc32 = crc32;
-                this.indexer = indexer;
-                this.codec = codec;
-
-                compressorExecutor = Executors.newFixedThreadPool(nThreads);
-                writeConsumer = makeWriteConsumer();
-            }
-
-            public void close() throws InterruptedException {
-                resultQueue.put(poisonPill);
-                compressorExecutor.shutdown();
-                writeConsumer.close();
-            }
-
-            private WriteConsumer<Future<CompressedBlock>> makeWriteConsumer() {
-                return new WriteConsumer<>(this::writeCompressedBlock);
-            }
-
-            private void writeCompressedBlock(Future<CompressedBlock> compressedBlockFuture) {
-                try {
-                    writeCompressedBlock(compressedBlockFuture.get());
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException("CompressedBlock hasn't written", e);
-                }
-            }
-
-            private void writeCompressedBlock(CompressedBlock compressedBlock) {
-                final int bytesToCompress = compressedBlock.getBytesToCompress();
-                final int totalBlockSize = writeGzipBlock(compressedBlock.getCompressedSize(), bytesToCompress, crc32.getValue(),
-                        compressedBlock.getCompressedBuffer(), codec);
-
-                // Call out to the indexer if it exists
-                if (indexer != null) {
-                    indexer.addGzipBlock(mBlockAddress, bytesToCompress);
-                }
-                mBlockAddress += totalBlockSize;
-            }
-
-            private CompressedBlock compressBlock(TempBlock block) {
-                return deflateBlock(deflater, noCompressionDeflater, crc32, block.getCompressedBuffer(), block.getBytesToCompress(),
-                        block.getUncompressedBuffer());
-            }
-
-            @Override
-            public void run() {
-                boolean isNotInterrupted = true;
-                while (isNotInterrupted) {
-                    try {
-                        TempBlock block = resultQueue.take();
-                        if (block == poisonPill) {
-                            break;
-                        }
-
-                        writeConsumer.put(compressorExecutor.submit(() -> compressBlock(block)));
-                    } catch (InterruptedException e) {
-                        isNotInterrupted = false;
-                        log.error(e,"CompressingTask has interrupted");
-                    }
-                }
-            }
-        }
-    }
-
-    private static class WriteConsumer<T> {
-        private final BlockingQueue<T> resultQueue;
-        private final ExecutorService writerExecutor;
-        private final CountDownLatch downLatch;
-        private static final CompressedBlock poisonPill = new CompressedBlock();
-
-        private WriteConsumer(Consumer<T> consumer) {
-            this.resultQueue = new ArrayBlockingQueue<>(24);
-            this.downLatch = new CountDownLatch(1);
-            this.writerExecutor = Executors.newSingleThreadExecutor();
-
-            writerExecutor.execute(new WritingTask<>(resultQueue, consumer, downLatch));
-            writerExecutor.shutdown();
-        }
-
-        public void close() throws InterruptedException {
-            resultQueue.put((T) poisonPill);
-            downLatch.await();
-            writerExecutor.shutdown();
-        }
-
-        public void put(T t) throws InterruptedException {
-            resultQueue.put(t);
-        }
-
-        private static class WritingTask<T> implements Runnable {
-
-            private final BlockingQueue<T> futuresQueue;
-            private final Consumer<T> consumer;
-            private final CountDownLatch latch;
-
-            private WritingTask(BlockingQueue<T> futuresQueue, Consumer<T> consumer, CountDownLatch latch) {
-                this.futuresQueue = futuresQueue;
-                this.consumer = consumer;
-                this.latch = latch;
-            }
-
-            @Override
-            public void run() {
-                boolean isNotInterrupted = true;
-                while (isNotInterrupted) {
-                    try {
-                        T compressedBlock = futuresQueue.take();
-                        if (compressedBlock == poisonPill) {
-                            break;
-                        }
-
-                        consumer.accept(compressedBlock);
-                    } catch (InterruptedException e) {
-                        isNotInterrupted = false;
-                        log.error(e,"WritingTask has interrupted");
-                    }
-                }
-                latch.countDown();
-            }
-        }
-    }
-
 }
