@@ -4,10 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.Log.LogLevel;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -23,13 +20,8 @@ import java.util.List;
 
 public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
-    @BeforeClass
-    public void initClass() {
-        Log.setGlobalLogLevel(LogLevel.ERROR);
-    }
-
     private List<SAMRecord> createRecords(int count) {
-        final List<SAMRecord> list = new ArrayList<SAMRecord>(count);
+        final List<SAMRecord> list = new ArrayList<>(count);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         if (builder.getHeader().getReadGroups().isEmpty()) {
             throw new IllegalStateException("Read group expected in the header");
@@ -70,7 +62,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         final ReferenceSource refSource = createReferenceSource();
 
         final CRAMContainerStreamWriter containerStream = new CRAMContainerStreamWriter(outStream, indexStream, refSource, header, "test");
-        containerStream.writeHeader(header);
+        containerStream.writeHeader();
 
         writeThenReadRecords(samRecords, outStream, refSource, containerStream);
     }
@@ -79,7 +71,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         final ReferenceSource refSource = createReferenceSource();
 
         final CRAMContainerStreamWriter containerStream = new CRAMContainerStreamWriter(outStream, refSource, header, "test", indexer);
-        containerStream.writeHeader(header);
+        containerStream.writeHeader();
 
         writeThenReadRecords(samRecords, outStream, refSource, containerStream);
     }
@@ -95,7 +87,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         final SAMRecordIterator iterator = cReader.getIterator();
         int count = 0;
         while (iterator.hasNext()) {
-            SAMRecord actualRecord = iterator.next();
+            iterator.next();
             count++;
         }
         Assert.assertEquals(count, samRecords.size());
@@ -137,7 +129,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         // time with a CRAM and SAM header at the front and an EOF container at the end
         final ByteArrayOutputStream aggregateStream = new ByteArrayOutputStream();
         final CRAMContainerStreamWriter aggregateContainerStreamWriter = new CRAMContainerStreamWriter(aggregateStream, null, refSource, header, "test");
-        aggregateContainerStreamWriter .writeHeader(header); // write out one CRAM and SAM header
+        aggregateContainerStreamWriter.writeHeader(); // write out one CRAM and SAM header
         for (int j = 0; j < nPartitions; j++) {
             byteStreamArray.get(j).writeTo(aggregateStream);
         }
@@ -203,7 +195,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         final CloseableIterator<SAMRecord> iterator = reader.query(new QueryInterval[]{new QueryInterval(1, 10, 10)}, false);
         int count = 0;
         while (iterator.hasNext()) {
-            SAMRecord actualRecord = iterator.next();
+            iterator.next();
             count++;
         }
         Assert.assertEquals(count, 2);

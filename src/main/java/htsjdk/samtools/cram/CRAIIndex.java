@@ -4,9 +4,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.CRAMCRAIIndexer;
-import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
@@ -25,7 +23,8 @@ public class CRAIIndex {
      */
     @Deprecated
     public static final String CRAI_INDEX_SUFFIX = FileExtensions.CRAM_INDEX;
-    final private List<CRAIEntry> entries = new ArrayList<>();
+    private final  List<CRAIEntry> entries = new ArrayList<>();
+    private final CompressorCache compressorCache = new CompressorCache();
 
     /**
      * Add a single entry to the CRAI index.
@@ -64,7 +63,7 @@ public class CRAIIndex {
      * @param container the container to index
      */
     public void processContainer(final Container container) {
-        addEntries(container.getCRAIEntries());
+        addEntries(container.getCRAIEntries(compressorCache));
     }
 
     public static SeekableStream openCraiFileAsBaiStream(final File cramIndexFile, final SAMSequenceDictionary dictionary) {
@@ -86,30 +85,17 @@ public class CRAIIndex {
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(baos, header);
-
-        for (final CRAIEntry entry : full) {
-            final Slice slice = new Slice(new ReferenceContext(entry.getSequenceId()));
-            slice.containerByteOffset = entry.getContainerStartByteOffset();
-            slice.alignmentStart = entry.getAlignmentStart();
-            slice.alignmentSpan = entry.getAlignmentSpan();
-            slice.byteOffsetFromCompressionHeaderStart = entry.getSliceByteOffsetFromCompressionHeaderStart();
-
-            // NOTE: the sliceIndex and read count fields can't be derived from the CRAM index
-            // so we can only set them to zero
-            // see https://github.com/samtools/htsjdk/issues/531
-
-            slice.mappedReadsCount = 0;
-            slice.unmappedReadsCount = 0;
-            slice.unplacedReadsCount = 0;
-            slice.index = 0;
-
-            indexer.processAsSingleReferenceSlice(slice);
+        for (final CRAIEntry craiEntry : full) {
+            indexer.processBAIEntry(new BAIEntry(craiEntry));
         }
         indexer.finish();
 
         return new SeekableMemoryStream(baos.toByteArray(), "CRAI to BAI converter");
     }
 
+    /**
+     * Currently unused, but retained for the native rai query implementation
+     */
     public static List<CRAIEntry> find(final List<CRAIEntry> list, final int seqId, final int start, final int span) {
         final boolean matchEntireSequence = start < 1 || span < 1;
         final int dummyValue = 1;
@@ -122,6 +108,9 @@ public class CRAIIndex {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Currently unused, but retained for the native rai query implementation
+     */
     public static CRAIEntry getLeftmost(final List<CRAIEntry> list) {
         if (list == null || list.isEmpty()) {
             return null;
@@ -139,6 +128,9 @@ public class CRAIIndex {
      *
      * @param list a list of CRAI entries
      * @return integer index of the last entry with sequence id not equal to -1
+     */
+    /**
+     * Currently unused, but retained for the native rai query implementation
      */
     public static int findLastAlignedEntry(final List<CRAIEntry> list) {
         if (list.isEmpty()) {
@@ -166,14 +158,4 @@ public class CRAIIndex {
         return low;
     }
 
-    public static class CRAIIndexException extends RuntimeException {
-
-        public CRAIIndexException(final String s) {
-            super(s);
-        }
-
-        public CRAIIndexException(final NumberFormatException e) {
-            super(e);
-        }
-    }
 }

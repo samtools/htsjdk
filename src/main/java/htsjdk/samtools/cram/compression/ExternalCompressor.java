@@ -1,69 +1,89 @@
 package htsjdk.samtools.cram.compression;
 
+import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-import htsjdk.samtools.cram.compression.rans.RANS.ORDER;
+import htsjdk.utils.ValidationUtils;
 
 public abstract class ExternalCompressor {
-    private final BlockCompressionMethod method;
+    final public static int NO_COMPRESSION_ARG = -1;
+    final private static String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compressor";
 
-    private ExternalCompressor(final BlockCompressionMethod method) {
+    private BlockCompressionMethod method;
+
+    protected ExternalCompressor(final BlockCompressionMethod method) {
         this.method = method;
-    }
-
-    public BlockCompressionMethod getMethod() {
-        return method;
     }
 
     public abstract byte[] compress(byte[] data);
 
-    public static ExternalCompressor createRAW() {
-        return new ExternalCompressor(BlockCompressionMethod.RAW) {
+    public abstract byte[] uncompress(byte[] data);
 
-            @Override
-            public byte[] compress(final byte[] data) {
-                return data;
-            }
-        };
+    public BlockCompressionMethod getMethod() { return method; }
+
+    @Override
+    public String toString() {
+        return this.getMethod().toString();
     }
 
-    public static ExternalCompressor createGZIP() {
-        return new ExternalCompressor(BlockCompressionMethod.GZIP) {
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-            @Override
-            public byte[] compress(final byte[] data) {
-                return ExternalCompression.gzip(data);
-            }
-        };
+        ExternalCompressor that = (ExternalCompressor) o;
+
+        return getMethod() == that.getMethod();
     }
 
-    public static ExternalCompressor createLZMA() {
-        return new ExternalCompressor(BlockCompressionMethod.LZMA) {
-
-            @Override
-            public byte[] compress(final byte[] data) {
-                return ExternalCompression.xz(data);
-            }
-        };
+    @Override
+    public int hashCode() {
+        return getMethod().hashCode();
     }
 
-    public static ExternalCompressor createBZIP2() {
-        return new ExternalCompressor(BlockCompressionMethod.BZIP2) {
+    /**
+     * Return an ExternalCompressor subclass based on the BlockCompressionMethod. Compressor-specific arguments
+     * must be populated by the caller.
+     * @param compressionMethod the type of compressor required ({@link BlockCompressionMethod})
+     * @param compressorSpecificArg the required order for RANS compressors; or the desired write compression
+     *                             level for GZIP
+     * @return an ExternalCompressor of the requested type, populated with an compressor-specific args
+     */
+    public static ExternalCompressor getCompressorForMethod(
+            final BlockCompressionMethod compressionMethod,
+            final int compressorSpecificArg) {
+        switch (compressionMethod) {
+            case RAW:
+                ValidationUtils.validateArg(
+                        compressorSpecificArg == NO_COMPRESSION_ARG,
+                        String.format(argErrorMessage, compressorSpecificArg, compressionMethod));
+                return new RAWExternalCompressor();
 
-            @Override
-            public byte[] compress(final byte[] data) {
-                return ExternalCompression.bzip2(data);
-            }
-        };
+            case GZIP:
+                return compressorSpecificArg == NO_COMPRESSION_ARG ?
+                        new GZIPExternalCompressor() :
+                        new GZIPExternalCompressor(compressorSpecificArg);
 
+            case LZMA:
+                ValidationUtils.validateArg(
+                        compressorSpecificArg == NO_COMPRESSION_ARG,
+                        String.format(argErrorMessage, compressorSpecificArg, compressionMethod));
+                return new LZMAExternalCompressor();
+
+            case RANS:
+                return compressorSpecificArg == NO_COMPRESSION_ARG ?
+                        new RANSExternalCompressor(new RANS()) :
+                        new RANSExternalCompressor(compressorSpecificArg, new RANS());
+
+            case BZIP2:
+                ValidationUtils.validateArg(
+                        compressorSpecificArg == NO_COMPRESSION_ARG,
+                        String.format(argErrorMessage, compressorSpecificArg, compressionMethod));
+                return new BZIP2ExternalCompressor();
+
+            default:
+                throw new IllegalArgumentException(String.format("Unknown compression method %s", compressionMethod));
+        }
     }
 
-    public static ExternalCompressor createRANS(final ORDER order) {
-        return new ExternalCompressor(BlockCompressionMethod.RANS) {
-
-            @Override
-            public byte[] compress(final byte[] data) {
-                return ExternalCompression.rans(data, order);
-            }
-        };
-    }
 }
+

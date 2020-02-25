@@ -22,11 +22,8 @@ import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.encoding.reader.DataSeriesReader;
-import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.structure.EncodingParams;
-
-import java.io.ByteArrayOutputStream;
-import java.util.Map;
+import htsjdk.samtools.cram.structure.EncodingDescriptor;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
 /**
  * <p>A CRAM Data Series writer for a particular Encoding, DataSeriesType and associated parameters</p>
@@ -44,18 +41,15 @@ public class DataSeriesWriter<T> {
      * Initialize a Data Series writer
      *
      * @param valueType type of the data to write
-     * @param params encoding-specific parameters
-     * @param bitOutputStream Core data block bit stream, to be written by non-external Encodings
-     * @param outputMap External data block byte stream map, to be written by external Encodings
+     * @param encodingDecriptor encoding-specific parameters
+     * @param sliceBlocksWriteStreams SliceBlocksWriteStreams
      */
     public DataSeriesWriter(final DataSeriesType valueType,
-                            final EncodingParams params,
-                            final BitOutputStream bitOutputStream,
-                            final Map<Integer, ByteArrayOutputStream> outputMap) {
+                            final EncodingDescriptor encodingDecriptor,
+                            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
 
-        final CRAMEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
-
-        this.codec = encoding.buildWriteCodec(bitOutputStream, outputMap);
+        final CRAMEncoding<T> encoding = EncodingFactory.createCRAMEncoding(valueType, encodingDecriptor);
+        this.codec = encoding.buildWriteCodec(sliceBlocksWriteStreams);
     }
 
     /**

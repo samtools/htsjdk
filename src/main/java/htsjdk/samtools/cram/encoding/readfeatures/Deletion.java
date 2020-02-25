@@ -23,14 +23,11 @@ import java.util.Objects;
 /**
  * A read feature representing a deletion of one or more bases similar to {@link htsjdk.samtools.CigarOperator#D}.
  */
-public class Deletion implements Serializable, ReadFeature {
+public final class Deletion implements Serializable, ReadFeature {
 
     private int position;
     private int length;
     public static final byte operator = 'D';
-
-    public Deletion() {
-    }
 
     public Deletion(final int position, final int length) {
         this.position = position;
@@ -47,17 +44,8 @@ public class Deletion implements Serializable, ReadFeature {
         return position;
     }
 
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
-    }
-
     public int getLength() {
         return length;
-    }
-
-    public void setLength(final int length) {
-        this.length = length;
     }
 
     @Override

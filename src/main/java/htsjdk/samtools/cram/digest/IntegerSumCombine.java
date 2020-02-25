@@ -1,6 +1,6 @@
 package htsjdk.samtools.cram.digest;
 
-class IntegerSumCombine implements Combine<Integer> {
+final class IntegerSumCombine implements Combine<Integer> {
 
     @Override
     public Integer combine(final Integer state, final Integer update) {

@@ -25,7 +25,7 @@ import java.io.ByteArrayOutputStream;
 /**
  * Encode Integers using an External Data Block
  */
-class ExternalIntegerCodec extends ExternalCodec<Integer> {
+final class ExternalIntegerCodec extends ExternalCodec<Integer> {
     /**
      * Construct an External Codec for Integers
      *

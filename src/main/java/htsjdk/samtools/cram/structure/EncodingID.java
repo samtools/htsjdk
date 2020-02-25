@@ -90,4 +90,14 @@ public enum EncodingID {
     public int getId() {
         return id;
     }
+
+    /**
+     * Return true if this encoding can be used in an external block. This returns true
+     * even for BYTE_ARRAY_LEN, even though BYTE_ARRAY_LEN is not entirely restricted to
+     * external, since it can use a core encoding for the array length sub-encoding.
+     * @return true if the encoding is EXTERNAL, BYTE_ARRAY_STOP, or BYTE_ARRAY_LEN.
+     */
+    public boolean isExternalEncoding() {
+        return this == EXTERNAL || this == BYTE_ARRAY_LEN || this == BYTE_ARRAY_STOP;
+    }
 }

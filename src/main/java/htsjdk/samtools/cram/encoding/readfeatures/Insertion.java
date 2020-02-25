@@ -30,9 +30,6 @@ public class Insertion implements Serializable, ReadFeature {
     private byte[] sequence;
     public static final byte operator = 'I';
 
-    public Insertion() {
-    }
-
     public Insertion(final int position, final byte[] sequence) {
         this.position = position;
         this.sequence = sequence;
@@ -48,17 +45,8 @@ public class Insertion implements Serializable, ReadFeature {
         return position;
     }
 
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
-    }
-
     public byte[] getSequence() {
         return sequence;
-    }
-
-    public void setSequence(final byte[] sequence) {
-        this.sequence = sequence;
     }
 
     @Override

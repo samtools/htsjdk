@@ -1,6 +1,6 @@
 package htsjdk.samtools.cram.digest;
 
-class ByteSumCombine implements Combine<byte[]> {
+final class ByteSumCombine implements Combine<byte[]> {
 
     @Override
     public byte[] combine(final byte[] state, final byte[] update) {

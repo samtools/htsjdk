@@ -17,15 +17,74 @@
  */
 package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
-public abstract class HuffmanTree<T> implements Comparable<HuffmanTree<T>> {
+import htsjdk.samtools.cram.common.MutableInt;
+import htsjdk.utils.ValidationUtils;
+
+import java.util.*;
+
+/**
+ * HuffmanTree class for creating huffman codes from a set of frequencies for symbols in an alphabet.
+ * @param <T> type of the symbols in the alphabet being huffman-encoded
+ */
+abstract class HuffmanTree<T> implements Comparable<HuffmanTree<T>> {
     public final int frequency;
 
-    HuffmanTree(final int freq) {
+    protected HuffmanTree(final int freq) {
         frequency = freq;
     }
 
+    /**
+     * Return the {@link HuffmanTree} for the given alphabet symbol frequencies
+     * @param symbolFrequencies
+     * @param <T> type param of symbols int he alphabet
+     * @return the {@link HuffmanTree} for the given alphabet symbol frequencies
+     */
+    public static <T> HuffmanTree<T> buildTree(final HashMap<T, MutableInt> symbolFrequencies) {
+        ValidationUtils.nonNull(symbolFrequencies, "non-null symbol frequencies required");
+        ValidationUtils.nonNull(symbolFrequencies.size() > 0, "non-zero symbol frequencies required");
+
+        final LinkedList<HuffmanTree> list = new LinkedList<>();
+        symbolFrequencies.forEach((s, f) -> list.add(new HuffmanLeaf(s, f.value)));
+
+        while (list.size() > 1) {
+            Collections.sort(list);
+            final HuffmanTree left = list.remove();
+            final HuffmanTree right = list.remove();
+            list.add(new HuffmanNode(left, right));
+        }
+        return list.isEmpty() ? null : list.remove();
+    }
+
+    /**
+     * Get the (non-canonical) huffman params (alphabet symbols and codeword lengths) for the the symbols in this
+     * tree's alphabet.
+     */
+    public HuffmanParams<T> getHuffmanParams() {
+        final TreeMap<T, HuffmanBitCode<T>> codeWords = new TreeMap<>();
+        getCodeWords(0,0, codeWords);
+
+        final List<T> symbols = new ArrayList();
+        final List<Integer> codeWordLengths = new ArrayList();
+        for (final T symbol : codeWords.keySet()) {
+            final HuffmanBitCode code = codeWords.get(symbol);
+            symbols.add(symbol);
+            codeWordLengths.add(code.getCodeWordBitLength());
+        }
+
+        return new HuffmanParams<T>(symbols, codeWordLengths);
+    }
+
+    /**
+     * Traverse the huffman tree and get a map of symbols to {@link HuffmanBitCode}
+     * @param codeWord starting codeword
+     * @param codeWordLength starting codeword bit length
+     * @param symbolsToCodes map to populate
+     */
+    public abstract void getCodeWords(int codeWord, int codeWordLength, final Map<T, HuffmanBitCode<T>> symbolsToCodes);
+
     @Override
-    public int compareTo(@SuppressWarnings("NullableProblems") final HuffmanTree<T> tree) {
+    public int compareTo(final HuffmanTree tree) {
         return frequency - tree.frequency;
     }
+
 }

@@ -15,19 +15,15 @@
  ******************************************************************************/
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.lossy.PreservationPolicy;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
-import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.Log;
 
 import java.io.OutputStream;
-import java.util.List;
-import java.util.Set;
 
-@SuppressWarnings("UnusedDeclaration")
 public class CRAMFileWriter extends SAMFileWriterImpl {
-    private CRAMContainerStreamWriter cramContainerStream;
+    private final CRAMContainerStreamWriter cramContainerStream;
     private final SAMFileHeader samFileHeader;
     private final String fileName;
 
@@ -89,6 +85,30 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      */
     public CRAMFileWriter(final OutputStream outputStream, final OutputStream indexOS, final boolean presorted,
                           final CRAMReferenceSource referenceSource, final SAMFileHeader samFileHeader, final String fileName) {
+        this( new CRAMEncodingStrategy(), outputStream, indexOS, presorted, referenceSource, samFileHeader, fileName);
+    }
+
+    /**
+      * Create a CRAMFileWriter and optional index on output streams.
+      *
+      * @param encodingStrategy encoding strategy to use when writing
+      * @param outputStream where to write the output. Can not be null.
+      * @param indexOS where to write the output index. Can be null if no index is required.
+      * @param presorted if true records written to this writer must already be sorted in the order specified by the header
+      * @param referenceSource reference source
+      * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
+      * @param fileName used for display in error message display
+      *
+      * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
+      */
+    public CRAMFileWriter(
+            final CRAMEncodingStrategy encodingStrategy,
+            final OutputStream outputStream,
+            final OutputStream indexOS,
+            final boolean presorted,
+            final CRAMReferenceSource referenceSource,
+            final SAMFileHeader samFileHeader,
+            final String fileName) {
         if (outputStream == null) {
             throw new IllegalArgumentException("CRAMWriter output stream can not be null.");
         }
@@ -101,7 +121,13 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         this.samFileHeader = samFileHeader;
         this.fileName = fileName;
         setSortOrder(samFileHeader.getSortOrder(), presorted);
-        cramContainerStream = new CRAMContainerStreamWriter(outputStream, indexOS, referenceSource, samFileHeader, fileName);
+        cramContainerStream = new CRAMContainerStreamWriter(
+                encodingStrategy,
+                referenceSource,
+                samFileHeader,
+                outputStream,
+                indexOS == null ? null : new CRAMBAIIndexer(indexOS, samFileHeader),
+                fileName);
         setHeader(samFileHeader);
     }
 
@@ -121,7 +147,12 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void writeHeader(final SAMFileHeader header) {
-        cramContainerStream.writeHeader(header);
+        // the header must have been previously provided the container stream writer, so this
+        // header is unused
+        if (!header.equals(samFileHeader)) {
+            throw new IllegalArgumentException("Attempt to write a differetn file header than was previously provided");
+        }
+        cramContainerStream.writeHeader();
     }
 
     @Override
@@ -134,39 +165,4 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         return fileName;
     }
 
-    public boolean isPreserveReadNames() {
-        return cramContainerStream.isPreserveReadNames();
-    }
-
-    public void setPreserveReadNames(final boolean preserveReadNames) {
-        cramContainerStream.setPreserveReadNames(preserveReadNames);
-    }
-
-    public List<PreservationPolicy> getPreservationPolicies() {
-        return cramContainerStream.getPreservationPolicies();
-    }
-
-    public boolean isCaptureAllTags() {
-        return cramContainerStream.isCaptureAllTags();
-    }
-
-    public void setCaptureAllTags(final boolean captureAllTags) {
-        cramContainerStream.setCaptureAllTags(captureAllTags);
-    }
-
-    public Set<String> getCaptureTags() {
-        return cramContainerStream.getCaptureTags();
-    }
-
-    public void setCaptureTags(final Set<String> captureTags) {
-        cramContainerStream.setCaptureTags(captureTags);
-    }
-
-    public Set<String> getIgnoreTags() {
-        return cramContainerStream.getIgnoreTags();
-    }
-
-    public void setIgnoreTags(final Set<String> ignoreTags) {
-        cramContainerStream.setIgnoreTags(ignoreTags);
-    }
 }

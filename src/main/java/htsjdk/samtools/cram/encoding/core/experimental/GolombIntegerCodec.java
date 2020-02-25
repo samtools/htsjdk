@@ -21,13 +21,13 @@ import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 
 class GolombIntegerCodec extends ExperimentalCodec<Integer> {
+    private final boolean QUOTIENT_BIT = true;
     private final int m;
-    private final boolean quotientBit = true;
     private final int offset;
 
     public GolombIntegerCodec(final BitInputStream coreBlockInputStream,
                               final BitOutputStream coreBlockOutputStream,
-                              final int m, final Integer offset) {
+                              final int offset, final int m) {
         super(coreBlockInputStream, coreBlockOutputStream);
         if (m < 2) {
             throw new IllegalArgumentException(
@@ -41,7 +41,7 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
     public final Integer read() {
         int quotient = 0;
 
-        while (coreBlockInputStream.readBit() == quotientBit) {
+        while (coreBlockInputStream.readBit() == QUOTIENT_BIT) {
             quotient++;
         }
 
@@ -63,8 +63,8 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
         final int reminder = newValue % m;
         final int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
 
-        coreBlockOutputStream.write(quotientBit, quotient);
-        coreBlockOutputStream.write(!quotientBit);
+        coreBlockOutputStream.write(QUOTIENT_BIT, quotient);
+        coreBlockOutputStream.write(!QUOTIENT_BIT);
 
         if (reminder < Math.pow(2, ceiling) - m) {
             coreBlockOutputStream.write(reminder, ceiling - 1);
@@ -77,6 +77,11 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
     @Override
     public Integer read(final int length) {
         throw new RuntimeException("Multi-value read method not defined.");
+    }
+
+    @Override
+    public String toString() {
+        return String.format("m: %d", m);
     }
 
 }

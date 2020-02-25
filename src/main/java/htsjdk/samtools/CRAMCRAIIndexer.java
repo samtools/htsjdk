@@ -3,7 +3,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.common.Version;
+import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -73,7 +73,9 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
     }
 
     @Override
-    public void processContainer(final Container container, final ValidationStringency validationStringency) {
+    public void processContainer(
+            final Container container,
+            final ValidationStringency validationStringency) {
         processContainer(container);
     }
 
@@ -100,15 +102,25 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
      */
     public static void writeIndex(final SeekableStream cramStream, OutputStream craiStream) {
         final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
-        final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, cramHeader.getSamFileHeader());
-        final Version cramVersion = cramHeader.getVersion();
+        final SAMFileHeader samFileHeader = Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), cramStream, null);
+        if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
+            throw new SAMException(String.format(
+                    "Input must be coordinate sorted (found %s) to create an index.",
+                    samFileHeader.getSortOrder()));
+        }
+        final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, samFileHeader);
+        final CRAMVersion cramVersion = cramHeader.getCRAMVersion();
 
         // get the first container
-        Container container = ContainerIO.readContainer(cramVersion, cramStream);
+        try {
+            Container container = new Container(cramVersion, cramStream, cramStream.position());
 
-        while (container != null && !container.isEOF()) {
-            indexer.processContainer(container);
-            container = ContainerIO.readContainer(cramVersion, cramStream);
+            while (container != null && !container.isEOF()) {
+                indexer.processContainer(container);
+                container = new Container(cramVersion, cramStream, cramStream.position());
+            }
+        } catch (final IOException e) {
+            throw new RuntimeIOException("error getting stream position", e);
         }
 
         indexer.finish();

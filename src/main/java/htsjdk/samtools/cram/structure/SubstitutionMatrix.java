@@ -44,7 +44,9 @@ import java.util.List;
     // substitution bases, in the order in which they're stored in the substitution matrix
     private static List<SubstitutionBase> BASES = Arrays.asList(SubstitutionBase.values());
 
-    private static final int BASES_SIZE = BASES.size();
+    // Cache this value eliminate the need to repeatedly retrieve the SubstitutionBase enum's
+    // values array just to determine it's size.
+    public static final int BASES_SIZE = BASES.size();
 
     private static final byte NO_BASE = 0;
 
@@ -80,7 +82,7 @@ import java.util.List;
      * Create a SubstitutionMatrix given a list of CramCompressionRecord
      * @param records array of CramCompressionRecord with Substitutions
      */
-    public SubstitutionMatrix(final List<CramCompressionRecord> records) {
+    public SubstitutionMatrix(final List<CRAMCompressionRecord> records) {
         final long[][] frequencies = buildFrequencies(records);
         for (final SubstitutionBase b : BASES) {
             // substitutionCodeVector has a side effect of updating codeByBase
@@ -218,11 +220,11 @@ import java.util.List;
     }
 
     // populate a matrix of substitution frequencies from a list of CramCompressionRecords with Substitution features
-    private static long[][] buildFrequencies(final List<CramCompressionRecord> cramRecords) {
+    private static long[][] buildFrequencies(final List<CRAMCompressionRecord> cramCompressionRecords) {
         final long[][] frequencies = new long[SYMBOL_SPACE_SIZE][SYMBOL_SPACE_SIZE];
-        for (final CramCompressionRecord record : cramRecords) {
-            if (record.readFeatures != null) {
-                for (final ReadFeature readFeature : record.readFeatures) {
+        for (final CRAMCompressionRecord record : cramCompressionRecords) {
+            if (record.getReadFeatures() != null) {
+                for (final ReadFeature readFeature : record.getReadFeatures()) {
                     if (readFeature.getOperator() == Substitution.operator) {
                         final Substitution substitution = ((Substitution) readFeature);
                         final byte refBase = substitution.getReferenceBase();

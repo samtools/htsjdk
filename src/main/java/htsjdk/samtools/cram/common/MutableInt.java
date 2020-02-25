@@ -17,11 +17,49 @@
  */
 package htsjdk.samtools.cram.common;
 
-public class MutableInt {
-    public int value = 0;
+/**
+ * Mutable integer class suitable for use with collection classes that take a type parameter.
+ */
+public final class MutableInt {
+    public int value;
+
+    /**
+     * Create a mutable integer with initial value 0.
+     */
+    public MutableInt() {
+        this(0);
+    }
+
+    /**
+     * Create a mutable integer with initial value {@code initialValue}.
+     * @param initialValue
+     */
+    public MutableInt(final int initialValue) {
+        value = initialValue;
+    }
+
+    /**
+     * Increment the current value by {@code initialValue}.
+     * @param increment
+     * @return The updated object
+     */
+    public MutableInt incrementValue(final int increment) {
+        value += increment;
+        return this;
+    }
 
     @Override
     public int hashCode() {
         return value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MutableInt that = (MutableInt) o;
+
+        return value == that.value;
     }
 }

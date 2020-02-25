@@ -135,7 +135,7 @@ public class CRAMMergerTest extends HtsjdkTest {
             }
             // write terminator
             try (OutputStream out = Files.newOutputStream(outputDir.resolve("terminator"))) {
-                CramIO.issueEOF(CramVersions.DEFAULT_CRAM_VERSION, out);
+                CramIO.writeCramEOF(CramVersions.DEFAULT_CRAM_VERSION, out);
             } catch (IOException e) {
                 throw new RuntimeIOException(e);
             }

@@ -18,32 +18,34 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.Map;
 
-public class ExternalIntegerEncoding extends ExternalEncoding<Integer> {
+public final class ExternalIntegerEncoding extends ExternalEncoding<Integer> {
+
     public ExternalIntegerEncoding(final int externalBlockContentId) {
         super(externalBlockContentId);
     }
 
-    public static ExternalIntegerEncoding fromParams(byte[] params) {
-        final int contentId = ITF8.readUnsignedITF8(params);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return ExternalIntegerEncoding with parameters populated from serializedParams
+     */
+    public static ExternalIntegerEncoding fromSerializedEncodingParams(byte[] serializedParams) {
+        final int contentId = ITF8.readUnsignedITF8(serializedParams);
         return new ExternalIntegerEncoding(contentId);
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final BitInputStream coreBlockInputStream,
-                                         final BitOutputStream coreBlockOutputStream,
-                                         final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                         final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        final ByteArrayInputStream inputStream = externalBlockInputMap == null ? null : externalBlockInputMap.get(externalBlockContentId);
-        final ByteArrayOutputStream outputStream = externalBlockOutputMap == null ? null : externalBlockOutputMap.get(externalBlockContentId);
-        return new ExternalIntegerCodec(inputStream, outputStream);
+    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        final ByteArrayInputStream is = sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getExternalInputStream(externalBlockContentId);
+        final ByteArrayOutputStream os = sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getExternalOutputStream(externalBlockContentId);
+        return new ExternalIntegerCodec(is, os);
     }
 
 }

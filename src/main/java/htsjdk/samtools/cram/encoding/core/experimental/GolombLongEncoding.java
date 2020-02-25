@@ -18,35 +18,37 @@
 package htsjdk.samtools.cram.encoding.core.experimental;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
-public class GolombLongEncoding extends ExperimentalEncoding<Long> {
+public final class GolombLongEncoding extends ExperimentalEncoding<Long> {
     private final int offset;
     private final int m;
 
-    private GolombLongEncoding(final int offset, final int m) {
+    public GolombLongEncoding(final int offset, final int m) {
         super(EncodingID.GOLOMB);
         this.offset = offset;
         this.m = m;
     }
 
-    public static GolombLongEncoding fromParams(final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
+    /**
+     * Create a new instance of this encoding using the (ITF8 encoded) serializedParams.
+     * @param serializedParams
+     * @return GolombLongEncoding with parameters populated from serializedParams
+     */
+    public static GolombLongEncoding fromSerializedEncodingParams(final byte[] serializedParams) {
+        final ByteBuffer buffer = ByteBuffer.wrap(serializedParams);
         final int offset = ITF8.readUnsignedITF8(buffer);
         final int m = ITF8.readUnsignedITF8(buffer);
         return new GolombLongEncoding(offset, m);
     }
 
     @Override
-    public byte[] toByteArray() {
+    public byte[] toSerializedEncodingParams() {
         final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES * 2);
         ITF8.writeUnsignedITF8(offset, buffer);
         ITF8.writeUnsignedITF8(m, buffer);
@@ -57,10 +59,17 @@ public class GolombLongEncoding extends ExperimentalEncoding<Long> {
     }
 
     @Override
-    public CRAMCodec<Long> buildCodec(final BitInputStream coreBlockInputStream,
-                                      final BitOutputStream coreBlockOutputStream,
-                                      final Map<Integer, ByteArrayInputStream> externalBlockInputMap,
-                                      final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        return new GolombLongCodec(coreBlockInputStream, coreBlockOutputStream, offset, m);
+    public CRAMCodec<Long> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        return new GolombLongCodec(
+                sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
+                sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
+                offset,
+                m);
     }
+
+    @Override
+    public String toString() {
+        return String.format("Offset: %d m: %d", offset, m);
+    }
+
 }

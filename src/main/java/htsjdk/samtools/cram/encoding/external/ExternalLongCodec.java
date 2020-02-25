@@ -25,7 +25,7 @@ import java.io.ByteArrayOutputStream;
 /**
  * Encode Longs using an External Data Block
  */
-class ExternalLongCodec extends ExternalCodec<Long> {
+final class ExternalLongCodec extends ExternalCodec<Long> {
     /**
      * Construct an External Codec for Longs
      *

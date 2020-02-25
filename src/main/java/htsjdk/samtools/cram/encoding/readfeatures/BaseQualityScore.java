@@ -23,7 +23,7 @@ import java.util.Objects;
 /**
  * A read feature representing a single quality score in a read.
  */
-public class BaseQualityScore implements Serializable, ReadFeature {
+public final class BaseQualityScore implements Serializable, ReadFeature {
 
     private int position;
     private byte qualityScore;
@@ -45,17 +45,8 @@ public class BaseQualityScore implements Serializable, ReadFeature {
         return position;
     }
 
-    @Override
-    public void setPosition(final int position) {
-        this.position = position;
-    }
-
     public byte getQualityScore() {
         return qualityScore;
-    }
-
-    public void setQualityScore(final byte qualityScore) {
-        this.qualityScore = qualityScore;
     }
 
     @Override
