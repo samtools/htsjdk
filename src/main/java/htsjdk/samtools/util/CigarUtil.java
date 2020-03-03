@@ -40,16 +40,16 @@ import java.util.*;
 public class CigarUtil {
         private static final Log log = Log.getInstance(CigarUtil.class);
 
-    /** adjust the cigar based on adapter clipping.
+    /** Adjust the cigar based on adapter clipping.
      * TODO: If there is hard clipping at the end of the input CIGAR, it is lost.  It should not be. 
      * *
-     * @param clipFrom       1-based position where the clipping starts
-     * @param oldCigar       The existing unclipped cigar
-     * @return               New adjusted list of cigar elements
+     * @param clipFrom           1-based position where the clipping starts
+     * @param oldCigar           The existing unclipped cigar
+     * @param clippingOperator   Type of clipping to use, either soft or hard.  If non-clipping operator is used an exception is thrown
+     * @return                   New adjusted list of cigar elements
      */
-    // package visible so can be unit-tested
     public static List<CigarElement> clipEndOfRead(final int clipFrom, final List<CigarElement> oldCigar, final CigarOperator clippingOperator) {
-        ValidationUtils.validateArg(clippingOperator.isClipping(), "Clipping operator should be SOFT or HARD clip, found " + clippingOperator.toString());
+        ValidationUtils.validateArg(clippingOperator.isClipping(), () -> "Clipping operator should be SOFT or HARD clip, found " + clippingOperator.toString());
         final int clippedBases = (int)CoordMath.getLength(clipFrom, Cigar.getReadLength(oldCigar));
         List<CigarElement> newCigar = new LinkedList<CigarElement>();
         int pos = 1;
@@ -70,8 +70,8 @@ public class CigarUtil {
 
             } else if (endPos >= (clipFrom - 1)) {
                 // handle adjacent or straddling element
-                elementStraddlesClippedRead(newCigar, c,
-                        (clipFrom -1) - (pos -1) , clippedBases, clippingOperator);
+                addClippingCigarElement(newCigar, c,
+                        (clipFrom - 1) - (pos - 1) , clippedBases, clippingOperator);
                 break;
             }
 
@@ -80,22 +80,20 @@ public class CigarUtil {
         return newCigar;
     }
 
+    /** Adjust the cigar based on adapter clipping
+     * @param clipFrom           1-based position where the clipping starts
+     * @param oldCigar           The existing unclipped cigar
+     * @return                   New adjusted list of cigar elements
+     */
     public static List<CigarElement> softClipEndOfRead(final int clipFrom, final List<CigarElement> oldCigar) {
         return clipEndOfRead(clipFrom, oldCigar, CigarOperator.SOFT_CLIP);
     }
 
-    // a cigar element occurs in the middle of an adapter clipping
-    static private void elementStraddlesClippedRead(List<CigarElement> newCigar, CigarElement c,
-                                                    int relativeClippedPosition,
-                                                    int clippedBases){
-        elementStraddlesClippedRead(newCigar, c, relativeClippedPosition, clippedBases, CigarOperator.SOFT_CLIP);
-    }
-
-    // a cigar element occurs in the middle of an adapter clipping
-    static private void elementStraddlesClippedRead(List<CigarElement> newCigar, CigarElement c,
-                                                    int relativeClippedPosition,
-                                                    int clippedBases, final CigarOperator clippingOperator) {
-        ValidationUtils.validateArg(clippingOperator.isClipping(), "Clipping operator should be SOFT or HARD clip, found " + clippingOperator.toString());
+    // Add a clipping cigar element to an existing list of cigar elements
+    static private void addClippingCigarElement(List<CigarElement> newCigar, CigarElement c,
+                                                int relativeClippedPosition,
+                                                int clippedBases, final CigarOperator clippingOperator) {
+        ValidationUtils.validateArg(clippingOperator.isClipping(), () -> "Clipping operator should be SOFT or HARD clip, found " + clippingOperator.toString());
 
         final CigarOperator op = c.getOperator();
         int clipAmount = clippedBases;
@@ -109,20 +107,26 @@ public class CigarUtil {
         } else if (relativeClippedPosition != 0){
             throw new SAMException("Unexpected non-0 relativeClippedPosition " + relativeClippedPosition);
         }
-        newCigar.add(new CigarElement(clipAmount, clippingOperator));  // S is always last element
+          newCigar.add(new CigarElement(clipAmount, clippingOperator));  // clippingOperator is always last element
     }
 
-
+    /** Adjust the cigar of <code>rec</code> based on adapter clipping using soft-clipping
+     * @param clipFrom           1-based position where the soft-clipping starts
+     */
     public static void softClip3PrimeEndOfRead(SAMRecord rec, final int clipFrom) {
         clip3PrimeEndOfRead(rec, clipFrom, CigarOperator.SOFT_CLIP);
     }
 
     /**
-     * Adds a soft-clip, based on <code>clipFrom</code>, to the SAM record's existing cigar
+     * Adds a soft- or hard-clip, based on <code>clipFrom</code> and <code>clippingOperator</code>, to the SAM record's existing cigar
      * and, for negative strands, also adjusts the SAM record's start position.
-     * Soft clips the end of the read as the read came off the sequencer.
+     * Clips the end of the read as the read came off the sequencer.
+     * @param rec               SAMRecord to clip
+     * @param clipFrom          Position to clip from
+     * @param clippingOperator  Type of clipping to use, either soft or hard.  If non-clipping operator is used an exception is thrown
      */
     public static void clip3PrimeEndOfRead(SAMRecord rec, final int clipFrom, final CigarOperator clippingOperator) {
+        ValidationUtils.validateArg(clippingOperator.isClipping(), () -> "Clipping operator should be SOFT or HARD clip, found " + clippingOperator.toString());
 
         final Cigar cigar = rec.getCigar();
         // we don't worry about SEED_REGION_LENGTH in clipFrom
@@ -161,7 +165,7 @@ public class CigarUtil {
         if(clippingOperator == CigarOperator.HARD_CLIP) {
             byte[] bases = rec.getReadBases();
             if(rec.getReadNegativeStrandFlag()) {
-                rec.setReadBases(Arrays.copyOfRange(bases, clipFrom, bases.length));
+                rec.setReadBases(Arrays.copyOfRange(bases, bases.length - clipFrom + 1, bases.length));
             } else {
                 rec.setReadBases(Arrays.copyOf(bases, clipFrom - 1));
             }
@@ -240,17 +244,11 @@ public class CigarUtil {
      * @param negativeStrand    Whether the read is on the negative strand
      * @param threePrimeEnd     number of soft-clipped bases to add to the 3' end of the read
      * @param fivePrimeEnd      number of soft-clipped bases to add to the 5' end of the read
+     * @param clippingOperator  Type of clipping to use, either soft or hard.  If non-clipping operator is used an exception is thrown
      */
-    public static Cigar addClippedBasesToEndsOfCigar(Cigar cigar, boolean negativeStrand,
-                                                         final int threePrimeEnd, final int fivePrimeEnd, final boolean useSoftClips) {
-        final CigarOperator clippingOperator;
-
-        if(useSoftClips) {
-            clippingOperator = CigarOperator.SOFT_CLIP;
-        } else {
-            clippingOperator = CigarOperator.HARD_CLIP;
-        }
-
+    public static Cigar addClippedBasesToEndsOfCigar(final Cigar cigar, final boolean negativeStrand,
+                                                         final int threePrimeEnd, final int fivePrimeEnd, final CigarOperator clippingOperator) {
+        ValidationUtils.validateArg(clippingOperator.isClipping(), () -> "Clipping operator should be SOFT or HARD clip, found " + clippingOperator.toString());
         List<CigarElement> newCigar = new ArrayList<CigarElement>(cigar.getCigarElements());
         if (negativeStrand) {
             Collections.reverse(newCigar);
@@ -259,9 +257,9 @@ public class CigarUtil {
         if (threePrimeEnd > 0) {
             int last = newCigar.size()-1;
             int bases = threePrimeEnd;
-            if(newCigar.get(last).getOperator().isClipping()) {
-                CigarElement oldSoftClip = newCigar.remove(last);
-                bases += oldSoftClip.getLength();
+            if(newCigar.get(last).getOperator() == clippingOperator) {
+                final CigarElement oldClip = newCigar.remove(last);
+                bases += oldClip.getLength();
             }
             newCigar.add(new CigarElement(bases, clippingOperator));
         }
@@ -269,8 +267,8 @@ public class CigarUtil {
         if (fivePrimeEnd > 0) {
             int bases = fivePrimeEnd;
             if (newCigar.get(0).getOperator().isClipping()) {
-                CigarElement oldSoftClip = newCigar.remove(0);
-                bases += oldSoftClip.getLength();
+                final CigarElement oldClip = newCigar.remove(0);
+                bases += oldClip.getLength();
             }
             newCigar.add(0, new CigarElement(bases, clippingOperator));
         }
@@ -281,9 +279,21 @@ public class CigarUtil {
         return new Cigar(newCigar);
     }
 
-    public static Cigar addSoftClippedBasesToEndsOfCigar(Cigar cigar, boolean negativeStrand,
+    /**
+     * Adds additional soft-clipped bases at the 3' and/or 5' end of the cigar.  Does not
+     * change the existing cigar except to merge the newly added soft-clipped bases if the
+     * element at the end of the cigar being modified is also a soft-clip.
+     *
+     * @param cigar             The cigar on which to base the new cigar
+     * @param negativeStrand    Whether the read is on the negative strand
+     * @param threePrimeEnd     number of soft-clipped bases to add to the 3' end of the read
+     * @param fivePrimeEnd      number of soft-clipped bases to add to the 5' end of the read
+     *
+     * @return                  New cigar with additional soft-clipped bases
+     */
+    public static Cigar addSoftClippedBasesToEndsOfCigar(final Cigar cigar, final boolean negativeStrand,
                                                          final int threePrimeEnd, final int fivePrimeEnd) {
-        return addClippedBasesToEndsOfCigar(cigar, negativeStrand,threePrimeEnd, fivePrimeEnd, true);
+        return addClippedBasesToEndsOfCigar(cigar, negativeStrand, threePrimeEnd, fivePrimeEnd, CigarOperator.SOFT_CLIP);
     }
 
     // unpack a cigar string into an array of cigarOperators

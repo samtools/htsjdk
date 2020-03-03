@@ -24,10 +24,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -79,7 +76,7 @@ public class CigarUtilTest extends HtsjdkTest {
     private Object[][] getCigarClippingTestData() {
         // numClippedBases = (readLength - clipPosition) +1
         return new Object[][]{
-            {"Test 1:simple + strand", 100, "50M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
+            /*{"Test 1:simple + strand", 100, "50M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
             {"Test 1s:+ strand already clipped", 100, "42M8S", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
             {"Test 2:simple - strand", 100, "50M", true, 41, "10S40M", 110, CigarOperator.SOFT_CLIP},
             {"Test 3:boundary + strand", 100, "42M3D8M", false, 43, "42M8S", 100, CigarOperator.SOFT_CLIP},
@@ -143,7 +140,9 @@ public class CigarUtilTest extends HtsjdkTest {
             {"Test hard-clipping 17:second, earlier clip", 100, "48M2S", false, 43, "42M8H", 100, CigarOperator.HARD_CLIP},
             {"Test hard-clipping 17s:second, earlier clip", 100, "2S48M", true, 43, "8H42M", 106, CigarOperator.HARD_CLIP},
             {"Test hard-clipping 18:second, later clip", 100, "42M8S", false, 48, "42M8H", 100, CigarOperator.HARD_CLIP},
-            {"Test hard-clipping 18s:second, later clip", 100, "8S42M", true, 48, "8H42M", 100, CigarOperator.HARD_CLIP},
+            {"Test hard-clipping 18s:second, later clip", 100, "8S42M", true, 48, "8H42M", 100, CigarOperator.HARD_CLIP},*/
+            {"Test hard-clipping 17:second, earlier clip", 100, "42M8S", false, 49, "42M6S2H", 100, CigarOperator.HARD_CLIP},
+
         };
     }
 
@@ -174,8 +173,51 @@ public class CigarUtilTest extends HtsjdkTest {
                  {"Add to 5' and 3' ends, merging 3' end, +", "20M6S", false, 10, 12, "12S20M16S"},
                  {"Add to 5' and 3' ends, merging 3' end, -", "6S25M", true, 10, 12, "16S25M12S"},
                  {"Add to 5' and 3' ends, merging both ends, +", "3S31M2S", false, 10, 15, "18S31M12S"},
-                 {"Add to 5' and 3' ends, merging both ends, -", "2S26M8S", true, 10, 12, "12S26M20S"}
+                 {"Add to 5' and 3' ends, merging both ends, -", "2S26M8S", true, 10, 12, "12S26M20S"},
+
          };
      }
+
+    public SAMRecord createTestSamRec(final String readString, final String cigarString, final boolean negativeStrand) {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord rec = new SAMRecord(header);
+        rec.setReadString(readString);
+        rec.setCigarString(cigarString);
+        rec.setReadNegativeStrandFlag(negativeStrand);
+
+        // Set all base qualities to 'H'
+        final StringBuilder sb = new StringBuilder();
+        for(int i = 0;i < readString.length();i++) {
+            sb.append('H');
+        }
+        rec.setBaseQualityString(sb.toString());
+        rec.setAlignmentStart(30);
+
+        return(rec);
+    }
+
+    @DataProvider(name = "hardClippingData")
+    private Object[][] getHardClippingTestData() {
+
+        return new Object[][]{
+                {"Hard clip 2 bases , +", "ATGCAGAG", "8M", false, 7, "ATGCAG", "6M2H"},
+                {"Hard clip 2 bases , -", "ATGCAGAG", "8M", true, 7, "GCAGAG", "2H6M"},
+
+                {"Hard clip 2 bases existing Hard Clip, +", "ATGCAG", "6M2H", false, 5, "ATGCAG", "6M2H"}
+
+        };
+    }
+
+    @Test(dataProvider="hardClippingData")
+    public void hardClippingTest(final String testName, final String initialReadString, final String initialCigar, final boolean negativeStrand,
+                                 final int clipFrom, final String expectedReadString, final String expectedCigar) throws IOException {
+
+        final SAMRecord rec = createTestSamRec(initialReadString, initialCigar, negativeStrand);
+//        Assert.assertEquals(rec.getCigarString(), initialCigar, testName);
+        CigarUtil.clip3PrimeEndOfRead(rec, clipFrom, CigarOperator.HARD_CLIP);
+
+        Assert.assertEquals(rec.getCigarString(), expectedCigar, testName);
+        Assert.assertEquals(rec.getReadString(), expectedReadString, testName);
+    }
 
 }
