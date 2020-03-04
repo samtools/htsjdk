@@ -31,6 +31,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -184,20 +185,15 @@ public class CigarUtilTest extends HtsjdkTest {
         };
     }
 
-    public SAMRecord createTestSamRec(final String readString, final String cigarString, final boolean negativeStrand) {
+    public SAMRecord createTestSamRec(final String readString, final byte[] baseQualities, final String cigarString, final int startPos, final boolean negativeStrand) {
         final SAMFileHeader header = new SAMFileHeader();
         final SAMRecord rec = new SAMRecord(header);
         rec.setReadString(readString);
         rec.setCigarString(cigarString);
         rec.setReadNegativeStrandFlag(negativeStrand);
 
-        // Set all base qualities to 'H'
-        final StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < readString.length(); i++) {
-            sb.append('H');
-        }
-        rec.setBaseQualityString(sb.toString());
-        rec.setAlignmentStart(30);
+        rec.setBaseQualities(baseQualities);
+        rec.setAlignmentStart(startPos);
 
         return (rec);
     }
@@ -205,26 +201,38 @@ public class CigarUtilTest extends HtsjdkTest {
     @DataProvider(name = "hardClippingData")
     private Object[][] getHardClippingTestData() {
 
-        return new Object[][]{
-                {"Hard clip 2 bases , +", "ATGCAGAG", "8M", false, 7, "ATGCAG", "6M2H"},
-                {"Hard clip 2 bases , -", "ATGCAGAG", "8M", true, 7, "GCAGAG", "2H6M"},
+        final byte[] baseQualities1To8 = new byte[]{(byte)31, (byte)32, (byte)33, (byte)34, (byte)35, (byte)36, (byte)37, (byte)38};
+        final byte[] baseQualities1To6 = Arrays.copyOf(baseQualities1To8, 6);
+        final byte[] baseQualities3To8 = Arrays.copyOfRange(baseQualities1To8, 2, 8);
+        final byte[] baseQualities1To4 = Arrays.copyOf(baseQualities1To8, 4);
+        final byte[] baseQualities5To8 = Arrays.copyOfRange(baseQualities1To8, 4, 8);
 
-                {"Hard clip 2 bases existing Hard Clip, +", "ATGCAG", "6M2H", false, 5, "ATGC", "4M4H"},
-                {"Hard clip 2 bases existing Hard Clip, -", "ATGCAG", "2H6M", true, 5, "GCAG", "4H4M"}
+
+        return new Object[][]{
+                {"Hard clip 2 bases , +", "ATGCAGAG", baseQualities1To8, "8M", 100, false, 7, "ATGCAG", baseQualities1To6, "6M2H", 100, 105},
+                {"Hard clip 2 bases , -", "ATGCAGAG", baseQualities1To8, "8M", 100, true, 7, "GCAGAG", baseQualities3To8,  "2H6M", 102, 107},
+
+                {"Hard clip 2 bases existing Hard Clip, +", "ATGCAG", baseQualities1To6, "6M2H", 100, false, 5, "ATGC", baseQualities1To4, "4M4H", 100, 103},
+                {"Hard clip 2 bases existing Hard Clip, -", "ATGCAG", baseQualities3To8, "2H6M", 102, true, 5, "GCAG", baseQualities5To8, "4H4M", 104, 107}
 
         };
     }
 
     @Test(dataProvider = "hardClippingData")
-    public void hardClippingTest(final String testName, final String initialReadString, final String initialCigar, final boolean negativeStrand,
-                                 final int clipFrom, final String expectedReadString, final String expectedCigar) throws IOException {
+    public void hardClippingTest(final String testName, final String initialReadString, final byte[] initialBaseQualities, final String initialCigar, final int initialStartPosition, final boolean negativeStrand,
+                                 final int clipFrom, final String expectedReadString, final byte[] expectedBaseQualities, final String expectedCigar, final int expectedStartPosition, final int expectedEndPosition) throws IOException {
 
-        final SAMRecord rec = createTestSamRec(initialReadString, initialCigar, negativeStrand);
+        final SAMRecord rec = createTestSamRec(initialReadString, initialBaseQualities, initialCigar, initialStartPosition, negativeStrand);
 
         CigarUtil.clip3PrimeEndOfRead(rec, clipFrom, CigarOperator.HARD_CLIP);
 
         Assert.assertEquals(rec.getCigarString(), expectedCigar, testName);
         Assert.assertEquals(rec.getReadString(), expectedReadString, testName);
+
+        Assert.assertEquals(rec.getBaseQualities(), expectedBaseQualities);
+
+        Assert.assertEquals(rec.getAlignmentStart(), expectedStartPosition);
+        Assert.assertEquals(rec.getAlignmentEnd(), expectedEndPosition);
 
     }
 }

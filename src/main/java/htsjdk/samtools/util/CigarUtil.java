@@ -180,11 +180,14 @@ public class CigarUtil {
 
         // If hard-clipping, remove the hard-clipped bases from the read
         if(clippingOperator == CigarOperator.HARD_CLIP) {
-            byte[] bases = rec.getReadBases();
+            final byte[] bases = rec.getReadBases();
+            final byte[] baseQualities = rec.getBaseQualities();
             if(rec.getReadNegativeStrandFlag()) {
                 rec.setReadBases(Arrays.copyOfRange(bases, bases.length - clipFrom + 1, bases.length));
+                rec.setBaseQualities(Arrays.copyOfRange(baseQualities, baseQualities.length - clipFrom + 1, baseQualities.length));
             } else {
                 rec.setReadBases(Arrays.copyOf(bases, clipFrom - 1));
+                rec.setBaseQualities(Arrays.copyOf(baseQualities, clipFrom - 1));
             }
         }
 
