@@ -53,6 +53,8 @@ public class CigarUtil {
         final int clippedBases = (int)CoordMath.getLength(clipFrom, Cigar.getReadLength(oldCigar));
         List<CigarElement> newCigar = new LinkedList<CigarElement>();
         int pos = 1;
+        final CigarElement oldCigarFinalElement = oldCigar.get(oldCigar.size() - 1);
+        final int trailingHardClipBases = oldCigarFinalElement.getOperator() == CigarOperator.HARD_CLIP? oldCigarFinalElement.getLength() : 0;
 
         for (CigarElement c : oldCigar) {
             // Distinguish two cases:
@@ -70,8 +72,8 @@ public class CigarUtil {
 
             } else if (endPos >= (clipFrom - 1)) {
                 // handle adjacent or straddling element
-                addClippingCigarElement(newCigar, c,
-                        (clipFrom - 1) - (pos - 1) , clippedBases, clippingOperator);
+                mergeClippingCigarElement(newCigar, c,
+                        (clipFrom - 1) - (pos - 1) , clippedBases, clippingOperator, trailingHardClipBases);
                 break;
             }
 
@@ -89,25 +91,40 @@ public class CigarUtil {
         return clipEndOfRead(clipFrom, oldCigar, CigarOperator.SOFT_CLIP);
     }
 
-    // Add a clipping cigar element to an existing list of cigar elements
-    static private void addClippingCigarElement(List<CigarElement> newCigar, CigarElement c,
+    /**
+     * Merge clipping cigar element into end of cigar
+     * @param newCigar the list of cigar elements to which the merged elements are to be added (modified in place)
+     * @param c the cigar element of the original cigar which first overlaps with bases to be clipped
+     * @param relativeClippedPosition number of bases in c after which clipping element is to be merged
+     * @param clippedBases total number of clipping bases to be merged
+     * @param clippingOperator clipping operator to be merged
+     * @param trailingHardClippedBases number of hardClippedBases which were on the end of the original cigar
+     */
+    static private void mergeClippingCigarElement(List<CigarElement> newCigar, CigarElement c,
                                                 int relativeClippedPosition,
-                                                int clippedBases, final CigarOperator clippingOperator) {
+                                                int clippedBases, final CigarOperator clippingOperator,
+                                                final int trailingHardClippedBases) {
         ValidationUtils.validateArg(clippingOperator.isClipping(), () -> "Clipping operator should be SOFT or HARD clip, found " + clippingOperator.toString());
 
         final CigarOperator op = c.getOperator();
         int clipAmount = clippedBases;
+        if (clippingOperator == CigarOperator.HARD_CLIP) {
+            clipAmount += trailingHardClippedBases;
+        }
         if (op.consumesReadBases()){
-            if (op.consumesReferenceBases() && relativeClippedPosition > 0){
+            if ((op.consumesReferenceBases() || clippingOperator == CigarOperator.HARD_CLIP ) && relativeClippedPosition > 0){
                 newCigar.add(new CigarElement(relativeClippedPosition, op));
             }
-            if (!op.consumesReferenceBases()){
+            if (!(op.consumesReferenceBases() || clippingOperator == CigarOperator.HARD_CLIP ) || op == clippingOperator) {
                 clipAmount = clippedBases + relativeClippedPosition;
             }
         } else if (relativeClippedPosition != 0){
             throw new SAMException("Unexpected non-0 relativeClippedPosition " + relativeClippedPosition);
         }
-          newCigar.add(new CigarElement(clipAmount, clippingOperator));  // clippingOperator is always last element
+        newCigar.add(new CigarElement(clipAmount, clippingOperator));  // add clipping operator
+        if(clippingOperator == CigarOperator.SOFT_CLIP && trailingHardClippedBases > 0) {
+            newCigar.add(new CigarElement(trailingHardClippedBases, CigarOperator.HARD_CLIP)); //add in trailing hard-clipped bases
+        }
     }
 
     /** Adjust the cigar of <code>rec</code> based on adapter clipping using soft-clipping
