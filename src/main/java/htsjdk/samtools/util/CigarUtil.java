@@ -28,6 +28,7 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMValidationError;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.utils.ValidationUtils;
@@ -94,35 +95,35 @@ public class CigarUtil {
     /**
      * Merge clipping cigar element into end of cigar
      * @param newCigar the list of cigar elements to which the merged elements are to be added (modified in place)
-     * @param c the cigar element of the original cigar which first overlaps with bases to be clipped
-     * @param relativeClippedPosition number of bases in c after which clipping element is to be merged
+     * @param originalElement the cigar element of the original cigar which first overlaps with bases to be clipped
+     * @param relativeClippedPosition number of bases in originalElement after which clipping element is to be merged
      * @param clippedBases total number of clipping bases to be merged
-     * @param clippingOperator clipping operator to be merged
+     * @param newClippingOperator clipping operator to be merged
      * @param trailingHardClippedBases number of hardClippedBases which were on the end of the original cigar
      */
-    static private void mergeClippingCigarElement(List<CigarElement> newCigar, CigarElement c,
+    static private void mergeClippingCigarElement(List<CigarElement> newCigar, CigarElement originalElement,
                                                 int relativeClippedPosition,
-                                                int clippedBases, final CigarOperator clippingOperator,
+                                                int clippedBases, final CigarOperator newClippingOperator,
                                                 final int trailingHardClippedBases) {
-        ValidationUtils.validateArg(clippingOperator.isClipping(), () -> "Clipping operator should be SOFT or HARD clip, found " + clippingOperator.toString());
+        ValidationUtils.validateArg(newClippingOperator.isClipping(), () -> "Clipping operator should be SOFT or HARD clip, found " + newClippingOperator.toString());
 
-        final CigarOperator op = c.getOperator();
+        final CigarOperator originalOperator = originalElement.getOperator();
         int clipAmount = clippedBases;
-        if (clippingOperator == CigarOperator.HARD_CLIP) {
+        if (newClippingOperator == CigarOperator.HARD_CLIP) {
             clipAmount += trailingHardClippedBases;
         }
-        if (op.consumesReadBases()){
-            if ((op.consumesReferenceBases() || clippingOperator == CigarOperator.HARD_CLIP ) && relativeClippedPosition > 0){
-                newCigar.add(new CigarElement(relativeClippedPosition, op));
+        if (originalOperator.consumesReadBases()){
+            if ((originalOperator.consumesReferenceBases() || newClippingOperator == CigarOperator.HARD_CLIP ) && relativeClippedPosition > 0){
+                newCigar.add(new CigarElement(relativeClippedPosition, originalOperator));
             }
-            if (!(op.consumesReferenceBases() || clippingOperator == CigarOperator.HARD_CLIP ) || op == clippingOperator) {
+            if (!(originalOperator.consumesReferenceBases() || newClippingOperator == CigarOperator.HARD_CLIP ) || originalOperator == newClippingOperator) {
                 clipAmount = clippedBases + relativeClippedPosition;
             }
         } else if (relativeClippedPosition != 0){
             throw new SAMException("Unexpected non-0 relativeClippedPosition " + relativeClippedPosition);
         }
-        newCigar.add(new CigarElement(clipAmount, clippingOperator));  // add clipping operator
-        if(clippingOperator == CigarOperator.SOFT_CLIP && trailingHardClippedBases > 0) {
+        newCigar.add(new CigarElement(clipAmount, newClippingOperator));  // add clipping operator
+        if(newClippingOperator == CigarOperator.SOFT_CLIP && trailingHardClippedBases > 0) {
             newCigar.add(new CigarElement(trailingHardClippedBases, CigarOperator.HARD_CLIP)); //add in trailing hard-clipped bases
         }
     }
@@ -153,6 +154,8 @@ public class CigarUtil {
         if (!isValidCigar(rec, cigar, true)){
             return; // log message already issued
         }
+
+        final int originalReadLength = rec.getReadLength();
         if (negativeStrand){
             // Can't just use Collections.reverse() here because oldCigar is unmodifiable
             oldCigar = new ArrayList<CigarElement>(oldCigar);
@@ -182,9 +185,17 @@ public class CigarUtil {
         if(clippingOperator == CigarOperator.HARD_CLIP) {
             final byte[] bases = rec.getReadBases();
             final byte[] baseQualities = rec.getBaseQualities();
+
+            if (originalReadLength != bases.length) {
+                throw new SAMException("length of bases array (" + bases.length + ") does not match length expected based on cigar (" + cigar+ ")");
+            }
+
+            if (originalReadLength != baseQualities.length) {
+                throw new SAMException("length of baseQualities array (" + baseQualities.length + ") does not match length expected based on cigar (" + cigar+ ")");
+            }
             if(rec.getReadNegativeStrandFlag()) {
-                rec.setReadBases(Arrays.copyOfRange(bases, bases.length - clipFrom + 1, bases.length));
-                rec.setBaseQualities(Arrays.copyOfRange(baseQualities, baseQualities.length - clipFrom + 1, baseQualities.length));
+                rec.setReadBases(Arrays.copyOfRange(bases, bases.length - clipFrom + 1, originalReadLength));
+                rec.setBaseQualities(Arrays.copyOfRange(baseQualities, baseQualities.length - clipFrom + 1, originalReadLength));
             } else {
                 rec.setReadBases(Arrays.copyOf(bases, clipFrom - 1));
                 rec.setBaseQualities(Arrays.copyOf(baseQualities, clipFrom - 1));
@@ -201,6 +212,13 @@ public class CigarUtil {
             }
         }
 
+        if (rec.getReadLength() != originalReadLength) {
+            //invalidate NM, UQ, MD tags if we have changed the length of the read.
+            rec.setAttribute(SAMTag.NM.name(), null);
+            rec.setAttribute(SAMTag.MD.name(), null);
+            rec.setAttribute(SAMTag.UQ.name(), null);
+        }
+
         if (!hasMappedBases) {
             rec.setReadUnmappedFlag(true);
             rec.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
@@ -213,6 +231,12 @@ public class CigarUtil {
             // log message already issued
             throw new IllegalStateException("Invalid new Cigar: " + newCigar  + " (" + oldCigar + ") for " +
                     rec.getReadName());
+        }
+        else if (rec.getReadLength() != newCigar.getReadLength()) {
+            throw new IllegalStateException("new Cigar: " + newCigar + " implies different read base than record (" + rec.getReadLength() +")");
+        }
+        else if (rec.getReadBases().length != rec.getBaseQualities().length) {
+            throw new IllegalStateException("new read bases have different length (" + rec.getReadBases().length + ") than new base qualities (" + rec.getBaseQualities() + ")");
         }
 
     }
