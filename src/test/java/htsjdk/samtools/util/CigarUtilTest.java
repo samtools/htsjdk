@@ -235,4 +235,61 @@ public class CigarUtilTest extends HtsjdkTest {
         Assert.assertEquals(rec.getAlignmentEnd(), expectedEndPosition);
 
     }
+
+    @DataProvider(name = "tagInvalidationData")
+    private Object[][] getTagInvalidationData() {
+        return new Object[][] {
+                {"8M", false, 7, CigarOperator.HARD_CLIP, true},
+                {"8M", true, 7, CigarOperator.HARD_CLIP, true},
+                {"8M", false, 7, CigarOperator.SOFT_CLIP, true},
+                {"8M", true, 7, CigarOperator.SOFT_CLIP, true},
+
+                {"6M2S", false, 7, CigarOperator.HARD_CLIP, false},
+                {"6M2S", true, 7, CigarOperator.HARD_CLIP, true},
+                {"2S6M", false, 7, CigarOperator.HARD_CLIP, true},
+                {"2S6M", true, 7, CigarOperator.HARD_CLIP, false},
+
+                {"6M2S", false, 7, CigarOperator.SOFT_CLIP, false},
+                {"6M2S", true, 7, CigarOperator.SOFT_CLIP, true},
+                {"2S6M", false, 7, CigarOperator.SOFT_CLIP, true},
+                {"2S6M", true, 7, CigarOperator.SOFT_CLIP, false},
+
+                {"6M2S", false, 6, CigarOperator.HARD_CLIP, true},
+                {"6M2S", true, 6, CigarOperator.HARD_CLIP, true},
+                {"2S6M", false, 6, CigarOperator.HARD_CLIP, true},
+                {"2S6M", true, 6, CigarOperator.HARD_CLIP, true},
+
+                {"6M2S", false, 6, CigarOperator.SOFT_CLIP, true},
+                {"6M2S", true, 6, CigarOperator.SOFT_CLIP, true},
+                {"2S6M", false, 6, CigarOperator.SOFT_CLIP, true},
+                {"2S6M", true, 6, CigarOperator.SOFT_CLIP, true},
+
+                {"8M2H", false, 7, CigarOperator.HARD_CLIP, true},
+                {"2H8M", true, 7, CigarOperator.HARD_CLIP, true},
+                {"8M2H", false, 7, CigarOperator.SOFT_CLIP, true},
+                {"2H8M", true, 7, CigarOperator.SOFT_CLIP, true}
+        };
+    }
+
+    @Test(dataProvider = "tagInvalidationData")
+    public void testTagsInvalidation(final String initialCigarString, final boolean negativeStrand, final int clipFrom, final CigarOperator clippingOperator, final boolean expectInvalidated) {
+        final byte[] baseQualities1To8 = new byte[]{(byte)31, (byte)32, (byte)33, (byte)34, (byte)35, (byte)36, (byte)37, (byte)38};
+        final SAMRecord rec = createTestSamRec("ACTGACTG", baseQualities1To8, initialCigarString, 100, negativeStrand);
+        rec.setAttribute(SAMTag.NM.name(), 0);
+        rec.setAttribute(SAMTag.MD.name(), 0);
+        rec.setAttribute(SAMTag.UQ.name(), 0);
+
+        CigarUtil.clip3PrimeEndOfRead(rec, clipFrom, clippingOperator);
+
+        if (expectInvalidated) {
+            Assert.assertNull(rec.getAttribute(SAMTag.NM.name()));
+            Assert.assertNull(rec.getAttribute(SAMTag.MD.name()));
+            Assert.assertNull(rec.getAttribute(SAMTag.UQ.name()));
+        } else {
+            Assert.assertEquals(rec.getAttribute(SAMTag.NM.name()), 0);
+            Assert.assertEquals(rec.getAttribute(SAMTag.MD.name()), 0);
+            Assert.assertEquals(rec.getAttribute(SAMTag.UQ.name()), 0);
+        }
+
+    }
 }

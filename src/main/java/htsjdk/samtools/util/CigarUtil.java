@@ -137,7 +137,8 @@ public class CigarUtil {
 
     /**
      * Adds a soft- or hard-clip, based on <code>clipFrom</code> and <code>clippingOperator</code>, to the SAM record's existing cigar
-     * and, for negative strands, also adjusts the SAM record's start position.
+     * and, for negative strands, also adjusts the SAM record's start position.  If clipping changes the number of unclipped bases,
+     * the the NM, MD, and UQ tags will be invalidated.
      * Clips the end of the read as the read came off the sequencer.
      * @param rec               SAMRecord to clip
      * @param clipFrom          Position to clip from
@@ -156,6 +157,7 @@ public class CigarUtil {
         }
 
         final int originalReadLength = rec.getReadLength();
+        final int originalReferenceLength = cigar.getReferenceLength();
         if (negativeStrand){
             // Can't just use Collections.reverse() here because oldCigar is unmodifiable
             oldCigar = new ArrayList<CigarElement>(oldCigar);
@@ -212,7 +214,7 @@ public class CigarUtil {
             }
         }
 
-        if (rec.getReadLength() != originalReadLength) {
+        if (newCigar.getReferenceLength() != originalReferenceLength) {
             //invalidate NM, UQ, MD tags if we have changed the length of the read.
             rec.setAttribute(SAMTag.NM.name(), null);
             rec.setAttribute(SAMTag.MD.name(), null);
