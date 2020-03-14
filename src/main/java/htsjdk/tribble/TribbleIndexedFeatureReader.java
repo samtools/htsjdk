@@ -314,7 +314,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      */
     class WFIterator implements CloseableTribbleIterator<T> {
         private T currentRecord;
-        private SOURCE source;
+        private final SOURCE source;
 
         /**
          * Constructor for iterating over the entire file (seekableStream).
@@ -365,6 +365,8 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
          * @throws IOException
          */
         private void readNextRecord() throws IOException {
+            // for error reporting only
+            final T previousRecord = currentRecord;
             currentRecord = null;
 
             while (!codec.isDone(source)) {
@@ -383,7 +385,14 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                     e.setSource(path);
                     throw e;
                 } catch (NumberFormatException e) {
-                    final String error = "Error parsing line at byte position: " + source;
+
+                    final String error;
+                    if (previousRecord == null) {
+                        error = String.format("Error parsing %s at the first record", source);
+                    } else {
+                        error = String.format("Error parsing %s just after record at: %s:%d-%d",
+                                source.toString(), previousRecord.getContig(), previousRecord.getStart(), previousRecord.getEnd());
+                    }
                     throw new TribbleException.MalformedFeatureFile(error, path, e);
                 }
             }
