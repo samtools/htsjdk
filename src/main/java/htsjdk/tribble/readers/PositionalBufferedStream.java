@@ -19,12 +19,8 @@ package htsjdk.tribble.readers;
 
 import htsjdk.tribble.TribbleException;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 
 /**
  * A wrapper around an {@code InputStream} which performs it's own buffering, and keeps track of the position.
@@ -36,6 +32,7 @@ import java.io.InputStreamReader;
  * @author depristo
  */
 public final class PositionalBufferedStream extends InputStream implements Positional {
+    public static final int DEFAULT_BUFFER_SIZE = 512000;
     final InputStream is;
     final byte[] buffer;
     int nextChar;
@@ -43,7 +40,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
     long position;
 
     public PositionalBufferedStream(final InputStream is) {
-        this(is, 512000);
+        this(is, DEFAULT_BUFFER_SIZE);
     }
 
     public PositionalBufferedStream(final InputStream is, final int bufferSize) {
@@ -128,7 +125,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         return byteToInt(buffer[nextChar]);
     }
 
-    private final int fill() throws IOException {
+    private int fill() throws IOException {
         nChars = is.read(buffer);
         nextChar = 0;
         return nChars;
@@ -166,71 +163,13 @@ public final class PositionalBufferedStream extends InputStream implements Posit
     public final void close() {
         try {
             is.close();
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             throw new TribbleException("Failed to close PositionalBufferedStream", ex);
         }
     }
 
-    private final static int byteToInt(byte b) {
+    private static int byteToInt(final byte b) {
         return b & 0xFF;
-    }
-
-    public static void main(String[] args) throws Exception {
-        final File testFile = new File(args[0]);
-        final int iterations = Integer.parseInt(args[1]);
-        final boolean includeInputStream = Boolean.valueOf(args[2]);
-        final boolean doReadFileInChunks = Boolean.valueOf(args[3]);
-
-        System.out.printf("Testing %s%n", args[0]);
-        for (int i = 0; i < iterations; i++) {
-            if ( includeInputStream ) {
-                final InputStream is = new FileInputStream(testFile);
-                if ( doReadFileInChunks )
-                    readFileInChunks("InputStream", is);
-                else
-                    readFileByLine("InputStream", is);
-                is.close();
-            }
-
-            final PositionalBufferedStream pbs = new PositionalBufferedStream(new FileInputStream(testFile));
-            if ( doReadFileInChunks )
-                readFileInChunks("PositionalBufferedStream", pbs);
-            else
-                readFileByLine("PositionalBufferedStream", pbs);
-            pbs.close();
-        }
-    }
-
-    private static void readFileByLine(final String name, final InputStream is) throws IOException {
-        final BufferedReader reader2 = new BufferedReader(new InputStreamReader(is));
-        final long t0 = System.currentTimeMillis();
-        long lineCount = 0;
-        while (reader2.readLine() != null) {
-            lineCount++;
-        }
-        final long dt = System.currentTimeMillis() - t0;
-        final double rate = ((double) lineCount) / dt;
-        printStatus(name, lineCount, rate, dt);
-        reader2.close();
-    }
-
-    private static void readFileInChunks(final String name, final InputStream is) throws IOException {
-        final long t0 = System.currentTimeMillis();
-        long chunk = 0;
-        final byte[] bytes = new byte[4096];
-        while (is.read(bytes) != -1) {
-            chunk++;
-        }
-        final long dt = System.currentTimeMillis() - t0;
-        final double rate = ((double) chunk) / dt;
-        printStatus(name, chunk, rate, dt);
-        is.close();
-    }
-
-
-    private static final void printStatus(final String name, long lineCount, double rate, long dt) {
-        System.out.printf("%30s: %d lines read.  Rate = %.2e lines per second.  DT = %d%n", name, lineCount, rate, dt);
-        System.out.flush();
     }
 }
 
