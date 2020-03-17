@@ -144,7 +144,7 @@ class VCFWriter extends IndexingVariantContextWriter {
      */
     private void writeAndResetBuffer() throws IOException {
         writer.flush();
-        getOutputStream().write(lineBuffer.toByteArray());
+        lineBuffer.writeTo(getOutputStream());
         lineBuffer.reset();
     }
 
