@@ -45,7 +45,7 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "createIntervalFileStrings")
-    public void testIndexedIntervalList(final File testPath, final int expectedCount) throws IOException {
+    public void testUnIndexedIntervalList(final File testPath, final int expectedCount) throws IOException {
         final IntervalListCodec codec = new IntervalListCodec();
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
                      new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
@@ -54,12 +54,28 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "createIntervalFileStrings", expectedExceptions = TribbleException.class)
-    public void testIndexedIntervalListWithQuery(final File testPath, final int ignored) throws IOException {
+    public void testUnIndexedIntervalListWithQuery(final File testPath, final int ignored) throws IOException {
         final IntervalListCodec codec = new IntervalListCodec();
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
                      new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
 
             Assert.assertEquals(featureReader.query("1", 17032814, 17032814).stream().count(), 1);
+        }
+    }
+
+    @Test(expectedExceptions = TribbleException.MalformedFeatureFile.class)
+    public void testPoolyFormatedIntervalListWithQuery() throws IOException {
+        final IntervalListCodec codec = new IntervalListCodec();
+        final File testPath = new File(TestUtils.DATA_DIR, "interval_list/badExample.interval_list");
+        try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
+                     new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
+            final CloseableTribbleIterator<Interval> iterator = featureReader.iterator();
+            int numberOfRecords=0;
+            while(iterator.hasNext()){
+                iterator.next();
+                numberOfRecords++;
+            }
+            Assert.assertEquals(numberOfRecords, 4);
         }
     }
 }
