@@ -418,9 +418,9 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * Iterator for a query interval
      */
     class QueryIterator implements CloseableTribbleIterator<T> {
-        private String chrAlias;
-        int start;
-        int end;
+        String chrAlias;
+        private final int start;
+        private final int end;
         private T currentRecord;
         private SOURCE source;
         private SeekableStream mySeekableStream;
@@ -429,6 +429,8 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         public QueryIterator(final String chr, final int start, final int end, final List<Block> blocks) throws IOException {
             this.start = start;
             this.end = end;
+            // for error message
+            chrAlias = chr;
             mySeekableStream = getSeekableStream();
             blockIterator = blocks.iterator();
             advanceBlock();
@@ -437,7 +439,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             // The feature chromosome might not be the query chromosome, due to alias definitions.  We assume
             // the chromosome of the first record is correct and record it here.  This is not pretty.
             chrAlias = (currentRecord == null ? chr : currentRecord.getContig());
-
         }
 
         @Override
@@ -461,7 +462,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             while (blockIterator != null && blockIterator.hasNext()) {
                 final Block block = blockIterator.next();
                 if (block.getSize() > 0) {
-                    final int bufferSize = Math.min(2000000, block.getSize() > 100000000 ? 10000000 : (int) block.getSize());
+                    final int bufferSize = Math.min(2_000_000, block.getSize() > 100_000_000 ? 10_000_000 : (int) block.getSize());
                     source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockStreamWrapper(mySeekableStream, block), bufferSize));
                     // note we don't have to skip the header here as the block should never start in the header
                     return;
@@ -481,6 +482,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
          * @throws IOException
          */
         private void readNextRecord() throws IOException {
+            final T previousRecord = currentRecord;
 
             if (source == null) {
                 return;  // <= no more features to read
@@ -515,7 +517,14 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                         e.setSource(path);
                         throw e;
                     } catch (NumberFormatException e) {
-                        final String error = "Error parsing line: " + source;
+
+                        final String error;
+                        if (previousRecord == null) {
+                            error = String.format("Error parsing %s at the first queried after %s:%d", source, this.chrAlias, this.start);
+                        } else {
+                            error = String.format("Error parsing %s just after record at: %s:%d-%d",
+                                    source.toString(), previousRecord.getContig(), previousRecord.getStart(), previousRecord.getEnd());
+                        }
                         throw new TribbleException.MalformedFeatureFile(error, path, e);
                     }
                 }
@@ -583,8 +592,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
             final int bytesToRead = (int) Math.min(len, Math.min(maxBytes, Integer.MAX_VALUE));
             return seekableStream.read(bytes, off, bytesToRead);
-
         }
     }
-
 }
