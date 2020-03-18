@@ -14,7 +14,6 @@
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
 ##FORMAT=<ID=TP,Number=1,Type=Integer,Description="Phred score of the genotype combination and phase given that the genotypes are correct">
-##FORMAT=<ID=PSL,Number=.,Type=String,Description="test test">
 ##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as listed">
 ##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency, for each ALT allele, in the same order as listed">
 ##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
