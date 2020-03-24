@@ -3,6 +3,8 @@ package htsjdk.tribble;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Interval;
 import htsjdk.tribble.IntervalList.IntervalListCodec;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
@@ -14,7 +16,7 @@ import java.io.File;
 import java.io.IOException;
 
 
-public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
+public class TribbleIndexedFeatureReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "featureFileStrings")
     public Object[][] createFeatureFileStrings() {
@@ -27,7 +29,7 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "featureFileStrings")
-    public void testIndexedGZIPVCF(final String testPath, final int expectedCount) throws IOException {
+    public void testUnindexedVCF(final String testPath, final int expectedCount) throws IOException {
         final VCFCodec codec = new VCFCodec();
         try (final TribbleIndexedFeatureReader<VariantContext, LineIterator> featureReader =
                      new TribbleIndexedFeatureReader<>(testPath, codec, false)) {
@@ -35,6 +37,28 @@ public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
             Assert.assertEquals(featureReader.iterator().stream().count(), expectedCount);
         }
     }
+
+    @DataProvider()
+    public Object[][] createIndexedFeatureFileStrings() {
+        return new Object[][]{
+                {TestUtils.DATA_DIR + "test.tabix.bed",  100000},
+                {TestUtils.DATA_DIR + "test.tabix.bed",  100020},
+        };
+    }
+
+    @Test(dataProvider = "createIndexedFeatureFileStrings", expectedExceptions = TribbleException.MalformedFeatureFile.class)
+    public void testIndexedTribble(final String testPath, final int start) throws IOException {
+        final BEDCodec codec = new BEDCodec();
+        try (final TribbleIndexedFeatureReader<BEDFeature, LineIterator> featureReader =
+                     new TribbleIndexedFeatureReader<>(testPath, codec, true)) {
+
+            featureReader
+                    .query("chr1", start, 100040)
+                    .stream()
+                    .count();
+        }
+    }
+
 
 
     @DataProvider()
