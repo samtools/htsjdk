@@ -418,7 +418,9 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * Iterator for a query interval
      */
     class QueryIterator implements CloseableTribbleIterator<T> {
-        String chrAlias;
+        private final String chrAlias;
+
+        private final String queryChr;
         private final int start;
         private final int end;
         private T currentRecord;
@@ -429,8 +431,10 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         public QueryIterator(final String chr, final int start, final int end, final List<Block> blocks) throws IOException {
             this.start = start;
             this.end = end;
-            // for error message
-            chrAlias = chr;
+
+            // For a meaningful error message when an exception is thrown in readNextRecord below.
+            queryChr = chr;
+
             mySeekableStream = getSeekableStream();
             blockIterator = blocks.iterator();
             advanceBlock();
@@ -520,7 +524,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
                         final String error;
                         if (previousRecord == null) {
-                            error = String.format("Error parsing %s at the first queried after %s:%d", source, this.chrAlias, this.start);
+                            error = String.format("Error parsing %s at the first queried after %s:%d", source, this.chrAlias == null ? this.queryChr : this.chrAlias, this.start);
                         } else {
                             error = String.format("Error parsing %s just after record at: %s:%d-%d",
                                     source.toString(), previousRecord.getContig(), previousRecord.getStart(), previousRecord.getEnd());
