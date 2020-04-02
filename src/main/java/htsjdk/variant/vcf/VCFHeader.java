@@ -625,6 +625,10 @@ public class VCFHeader implements Serializable {
         this.writeCommandLine = writeCommandLine;
     }
 
+    /**
+     * Get the genotype sample names, sorted in ascending order. Note: this will not necessarily match the order in the VCF.
+     * @return The sorted genotype samples. May be empty if hasGenotypingData() returns false.
+     */
     public ArrayList<String> getSampleNamesInOrder() {
         return sampleNamesInOrder;
     }
