@@ -243,18 +243,18 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             }
             rec.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
         }
-        rec.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
+        rec.setAttribute(SAMTag.RG, READ_GROUP_ID);
 
         if (useNmFlag) {
-            rec.setAttribute(SAMTag.NM.name(), SequenceUtil.calculateSamNmTagFromCigar(rec));
+            rec.setAttribute(SAMTag.NM, SequenceUtil.calculateSamNmTagFromCigar(rec));
         }
 
         if (programRecord != null) {
-            rec.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
+            rec.setAttribute(SAMTag.PG, programRecord.getProgramGroupId());
         }
 
         if (readGroup != null) {
-            rec.setAttribute(SAMTag.RG.name(), readGroup.getReadGroupId());
+            rec.setAttribute(SAMTag.RG, readGroup.getReadGroupId());
         }
 
         if (!recordUnmapped || this.unmappedHasBasesAndQualities) {
@@ -377,12 +377,12 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end1.setProperPairFlag(true);
         end1.setFirstOfPairFlag(end1IsFirstOfPair);
         end1.setSecondOfPairFlag(!end1IsFirstOfPair);
-        end1.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
+        end1.setAttribute(SAMTag.RG, READ_GROUP_ID);
         if (programRecord != null) {
-            end1.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
+            end1.setAttribute(SAMTag.PG, programRecord.getProgramGroupId());
         }
         if (readGroup != null) {
-            end1.setAttribute(SAMTag.RG.name(), readGroup.getReadGroupId());
+            end1.setAttribute(SAMTag.RG, readGroup.getReadGroupId());
         }
         fillInBasesAndQualities(end1);
 
@@ -399,12 +399,12 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end2.setProperPairFlag(true);
         end2.setFirstOfPairFlag(!end1IsFirstOfPair);
         end2.setSecondOfPairFlag(end1IsFirstOfPair);
-        end2.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
+        end2.setAttribute(SAMTag.RG, READ_GROUP_ID);
         if (programRecord != null) {
-            end2.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
+            end2.setAttribute(SAMTag.PG, programRecord.getProgramGroupId());
         }
         if (readGroup != null) {
-            end2.setAttribute(SAMTag.RG.name(), readGroup.getReadGroupId());
+            end2.setAttribute(SAMTag.RG, readGroup.getReadGroupId());
         }
         fillInBasesAndQualities(end2);
 
@@ -497,14 +497,14 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end1.setReadName(name);
         end1.setReadPairedFlag(true);
         end1.setReadUnmappedFlag(true);
-        end1.setAttribute(SAMTag.MC.name(), null);
+        end1.setAttribute(SAMTag.MC, null);
         end1.setProperPairFlag(false);
         end1.setFirstOfPairFlag(end1IsFirstOfPair);
         end1.setSecondOfPairFlag(!end1IsFirstOfPair);
         end1.setMateUnmappedFlag(true);
-        end1.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
+        end1.setAttribute(SAMTag.RG, READ_GROUP_ID);
         if (programRecord != null) {
-            end1.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
+            end1.setAttribute(SAMTag.PG, programRecord.getProgramGroupId());
         }
         if (this.unmappedHasBasesAndQualities) {
             fillInBasesAndQualities(end1);
@@ -513,14 +513,14 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end2.setReadName(name);
         end2.setReadPairedFlag(true);
         end2.setReadUnmappedFlag(true);
-        end2.setAttribute(SAMTag.MC.name(), null);
+        end2.setAttribute(SAMTag.MC, null);
         end2.setProperPairFlag(false);
         end2.setFirstOfPairFlag(!end1IsFirstOfPair);
         end2.setSecondOfPairFlag(end1IsFirstOfPair);
         end2.setMateUnmappedFlag(true);
-        end2.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
+        end2.setAttribute(SAMTag.RG, READ_GROUP_ID);
         if (programRecord != null) {
-            end2.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
+            end2.setAttribute(SAMTag.PG, programRecord.getProgramGroupId());
         }
         if (this.unmappedHasBasesAndQualities) {
             fillInBasesAndQualities(end2);

@@ -125,7 +125,7 @@ public class SAMTextReaderTest extends HtsjdkTest {
         samBuilder.addUnmappedFragment("Hi,Mom!");
         final SAMRecord rec = samBuilder.iterator().next();
         final String valueWithColons = "A:B::C:::";
-        rec.setAttribute(SAMTag.CQ.name(), valueWithColons);
+        rec.setAttribute(SAMTag.CQ, valueWithColons);
         // Write the record as SAM Text
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
         final SAMFileWriter textWriter = new SAMFileWriterFactory().makeSAMWriter(samBuilder.getHeader(),
@@ -135,7 +135,7 @@ public class SAMTextReaderTest extends HtsjdkTest {
 
         final SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(os.toByteArray())));
         final SAMRecord recFromText = reader.iterator().next();
-        Assert.assertEquals(recFromText.getAttribute(SAMTag.CQ.name()), valueWithColons);
+        Assert.assertEquals(recFromText.getAttribute(SAMTag.CQ), valueWithColons);
         CloserUtil.close(reader);
     }
 

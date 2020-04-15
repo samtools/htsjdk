@@ -216,9 +216,9 @@ public class CigarUtil {
 
         if (newCigar.getReferenceLength() != originalReferenceLength) {
             //invalidate NM, UQ, MD tags if we have changed the length of the read.
-            rec.setAttribute(SAMTag.NM.name(), null);
-            rec.setAttribute(SAMTag.MD.name(), null);
-            rec.setAttribute(SAMTag.UQ.name(), null);
+            rec.setAttribute(SAMTag.NM, null);
+            rec.setAttribute(SAMTag.MD, null);
+            rec.setAttribute(SAMTag.UQ, null);
         }
 
         if (!hasMappedBases) {

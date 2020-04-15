@@ -206,7 +206,7 @@ public class SAMUtilsTest extends HtsjdkTest {
         Assert.assertEquals(SAMUtils.getOtherCanonicalAlignments(record).size(),0);
 
 
-        record.setAttribute(SAMTag.SA.getBinaryTag(),
+        record.setAttribute(SAMTag.SA,
                 "2,500,+,3S2=1X2=2S,60,1;" +
                 "1,191,-,8M2S,60,*;");
 
@@ -235,7 +235,7 @@ public class SAMUtilsTest extends HtsjdkTest {
         Assert.assertEquals(other.getAlignmentStart(),500);
         Assert.assertFalse(other.getReadNegativeStrandFlag());
         Assert.assertEquals(other.getMappingQuality(), 60);
-        Assert.assertEquals(other.getAttribute(SAMTag.NM.getBinaryTag()),1);
+        Assert.assertEquals(other.getAttribute(SAMTag.NM),1);
         Assert.assertEquals(other.getCigarString(),"3S2=1X2=2S");
         Assert.assertEquals(other.getInferredInsertSize(),0);
 
@@ -246,7 +246,7 @@ public class SAMUtilsTest extends HtsjdkTest {
         Assert.assertEquals(other.getAlignmentStart(),191);
         Assert.assertTrue(other.getReadNegativeStrandFlag());
         Assert.assertEquals(other.getMappingQuality(), 60);
-        Assert.assertEquals(other.getAttribute(SAMTag.NM.getBinaryTag()),null);
+        Assert.assertEquals(other.getAttribute(SAMTag.NM),null);
         Assert.assertEquals(other.getCigarString(),"8M2S");
         Assert.assertEquals(other.getInferredInsertSize(),-91);//100(mate) - 191(other)
     }
@@ -307,13 +307,13 @@ public class SAMUtilsTest extends HtsjdkTest {
         }
         {
             final SAMRecord record = builder.addFrag("test3", 2, 15, false, false, "36M", null, 45);
-            record.setAttribute(SAMTag.NM.name(),33);
+            record.setAttribute(SAMTag.NM,33);
 
             tests.add(new Object[]{record, "chr3,15,+,36M,255,33"});
         }
         {
             final SAMRecord record = builder.addFrag("test4", 1, 115, true, false, "12S12M12I", null, 45);
-            record.setAttribute(SAMTag.NM.name(),0);
+            record.setAttribute(SAMTag.NM,0);
             record.setMappingQuality(60);
 
             tests.add(new Object[]{record, "chr2,115,-,12S12M12I,60,0"});

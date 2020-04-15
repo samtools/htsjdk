@@ -101,15 +101,15 @@ public class SAMRecordQueryNameComparatorTest extends HtsjdkTest {
                 {copyAndSet(record, r -> r.setSupplementaryAlignmentFlag(true)), record, 1},
 
                 // the one with HI tag is first if the other is null
-                {record, copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)), -1},
-                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)), record, 1},
+                {record, copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)), -1},
+                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)), record, 1},
                 // if both have HI tag, order by it
-                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)),
-                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)), 0},
-                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)),
-                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 2)), -1},
-                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 16)),
-                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 5)), 1}
+                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)),
+                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)), 0},
+                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)),
+                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 2)), -1},
+                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 16)),
+                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 5)), 1}
         };
     }
 

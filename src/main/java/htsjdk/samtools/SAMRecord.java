@@ -23,17 +23,23 @@
  */
 package htsjdk.samtools;
 
-
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
-import htsjdk.samtools.util.BinaryCodec;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -861,7 +867,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws ClassCastException if RG tag does not have a String value.
      */
     public SAMReadGroupRecord getReadGroup() {
-        final String rgId = (String)getAttribute(SAMTag.RG.getBinaryTag());
+        final String rgId = (String)getAttribute(SAMTag.RG);
         if (rgId == null || getHeader() == null) {
             return null;
         } else {
@@ -1142,6 +1148,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
+     * @return {@code true} if the SAM record has the requested attribute set, {@code false} otherwise.
+     */
+    public boolean hasAttribute(final SAMTag tag) {
+        return getAttribute(tag.name())!=null;
+    }
+
+
+    /**
      * Get the value for a SAM tag.
      * WARNING: Some value types (e.g. byte[]) are mutable.  It is dangerous to change one of these values in
      * place, because some SAMRecord implementations keep track of when attributes have been changed.  If you
@@ -1155,6 +1169,29 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
+     * Get the value for a SAM tag.
+     * WARNING: Some value types (e.g. byte[]) are mutable.  It is dangerous to change one of these values in
+     * place, because some SAMRecord implementations keep track of when attributes have been changed.  If you
+     * want to change an attribute value, call setAttribute() to replace the value.
+     *
+     * @param tag Two-character tag name.
+     * @return Appropriately typed tag value, or null if the requested tag is not present.
+     */
+    public Object getAttribute(final SAMTag tag) {
+        return getAttribute(tag.getBinaryTag());
+    }
+
+    /**
+     * Get the tag value and attempt to coerce it into the requested type.
+     * @param tag The requested tag.
+     * @return The value of a tag, converted into a signed Integer if possible.
+     * @throws RuntimeException If the value is not an integer type, or will not fit in a signed Integer.
+     */
+    public Integer getIntegerAttribute(final SAMTag tag) {
+        return getIntegerAttribute(tag.name());
+    }
+
+     /**
      * Get the tag value and attempt to coerce it into the requested type.
      * @param tag The requested tag.
      * @return The value of a tag, converted into a signed Integer if possible.
@@ -1182,7 +1219,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *
      * @param tag Two-character tag name.
      * @return valid unsigned integer associated with the tag, as a Long
-     * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
+     * @throws htsjdk.samtools.SAMException if the value is out of range for a 32-bit unsigned value, or not a Number
      */
     public Long getUnsignedIntegerAttribute(final String tag) throws SAMException {
         return getUnsignedIntegerAttribute(SAMTag.makeBinaryTag(tag));
@@ -1192,9 +1229,21 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * A convenience method that will return a valid unsigned integer as a Long,
      * or fail with an exception if the tag value is invalid.
      *
+     * @param tag Two-character tag name.
+     * @return valid unsigned integer associated with the tag, as a Long
+     * @throws htsjdk.samtools.SAMException if the value is out of range for a 32-bit unsigned value, or not a Number
+     */
+    public Long getUnsignedIntegerAttribute(final SAMTag tag) throws SAMException {
+        return getUnsignedIntegerAttribute(tag.getBinaryTag());
+    }
+
+    /**
+     * A convenience method that will return a valid unsigned integer as a Long,
+     * or fail with an exception if the tag value is invalid.
+     *
      * @param tag Binary representation of a 2-char String tag as created by SAMTagUtil.
      * @return valid unsigned integer associated with the tag, as a Long
-     * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
+     * @throws htsjdk.samtools.SAMException if the value is out of range for a 32-bit unsigned value, or not a Number
      */
     public Long getUnsignedIntegerAttribute(final short tag) throws SAMException {
         final Object value = getAttribute(tag);
@@ -1216,6 +1265,15 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
     }
 
+    /**
+     * Get the tag value and attempt to coerce it into the requested type.
+     * @param tag The requested tag.
+     * @return The value of a tag, converted into a Short if possible.
+     * @throws RuntimeException If the value is not an integer type, or will not fit in a Short.
+     */
+    public Short getShortAttribute(final SAMTag tag) {
+        return getShortAttribute(tag.name());
+    }
     /**
      * Get the tag value and attempt to coerce it into the requested type.
      * @param tag The requested tag.
@@ -1244,6 +1302,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return The value of a tag, converted into a Byte if possible.
      * @throws RuntimeException If the value is not an integer type, or will not fit in a Byte.
      */
+    public Byte getByteAttribute(final SAMTag tag) {
+        return getByteAttribute(tag.name());
+
+    }
+     /**
+     * Get the tag value and attempt to coerce it into the requested type.
+     * @param tag The requested tag.
+     * @return The value of a tag, converted into a Byte if possible.
+     * @throws RuntimeException If the value is not an integer type, or will not fit in a Byte.
+     */
     public Byte getByteAttribute(final String tag) {
         final Object val = getAttribute(tag);
         if (val == null) return null;
@@ -1260,6 +1328,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return (byte)longVal;
     }
 
+    public String getStringAttribute(final SAMTag tag) {
+        return getStringAttribute(tag.name());
+    }
     public String getStringAttribute(final String tag) {
         final Object val = getAttribute(tag);
         if (val == null) return null;
@@ -1269,6 +1340,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         throw new SAMException("Value for tag " + tag + " is not a String: " + val.getClass());
     }
 
+    public Character getCharacterAttribute(final SAMTag tag) {
+        return getCharacterAttribute(tag.name());
+    }
+
     public Character getCharacterAttribute(final String tag) {
         final Object val = getAttribute(tag);
         if (val == null) return null;
@@ -1276,6 +1351,11 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             return (Character)val;
         }
         throw new SAMException("Value for tag " + tag + " is not a Character: " + val.getClass());
+    }
+
+
+    public Float getFloatAttribute(final SAMTag tag) {
+        return getFloatAttribute(tag.name());
     }
 
     public Float getFloatAttribute(final String tag) {
@@ -1288,6 +1368,11 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /** Will work for signed byte array, unsigned byte array, or old-style hex array */
+    public byte[] getByteArrayAttribute(final SAMTag tag) {
+        return getByteArrayAttribute(tag.name());
+    }
+
+    /** Will work for signed byte array, unsigned byte array, or old-style hex array */
     public byte[] getByteArrayAttribute(final String tag) {
         final Object val = getAttribute(tag);
         if (val == null) return null;
@@ -1297,19 +1382,35 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         throw new SAMException("Value for tag " + tag + " is not a byte[]: " + val.getClass());
     }
 
+    public byte[] getUnsignedByteArrayAttribute(final SAMTag tag) {
+        return getUnsignedByteArrayAttribute(tag.name());
+    }
+
     public byte[] getUnsignedByteArrayAttribute(final String tag) {
         final byte[] ret = getByteArrayAttribute(tag);
         if (ret != null) requireUnsigned(tag);
         return ret;
     }
 
-    /** Will work for signed byte array or old-style hex array */
+    /**
+     * Will work for signed byte array or old-style hex array
+     */
+    public byte[] getSignedByteArrayAttribute(final SAMTag tag) {
+        return getSignedByteArrayAttribute(tag.name());
+    }
+
+    /**
+     * Will work for signed byte array or old-style hex array
+     */
     public byte[] getSignedByteArrayAttribute(final String tag) {
         final byte[] ret = getByteArrayAttribute(tag);
         if (ret != null) requireSigned(tag);
         return ret;
     }
 
+    public short[] getUnsignedShortArrayAttribute(final SAMTag tag) {
+        return getUnsignedShortArrayAttribute(tag.name());
+    }
     public short[] getUnsignedShortArrayAttribute(final String tag) {
         final Object val = getAttribute(tag);
         if (val == null) return null;
@@ -1318,6 +1419,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             return (short[]) val;
         }
         throw new SAMException("Value for tag " + tag + " is not a short[]: " + val.getClass());
+    }
+
+    public short[] getSignedShortArrayAttribute(final SAMTag tag) {
+        return getSignedShortArrayAttribute(tag.name());
     }
 
     public short[] getSignedShortArrayAttribute(final String tag) {
@@ -1330,6 +1435,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         throw new SAMException("Value for tag " + tag + " is not a short[]: " + val.getClass());
     }
 
+    public int[] getUnsignedIntArrayAttribute(final SAMTag tag) {
+        return  getUnsignedIntArrayAttribute(tag.name());
+    }
+
     public int[] getUnsignedIntArrayAttribute(final String tag) {
         final Object val = getAttribute(tag);
         if (val == null) return null;
@@ -1340,6 +1449,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         throw new SAMException("Value for tag " + tag + " is not a int[]: " + val.getClass());
     }
 
+    public int[] getSignedIntArrayAttribute(final SAMTag tag) {
+        return getSignedIntArrayAttribute(tag.name());
+    }
+
     public int[] getSignedIntArrayAttribute(final String tag) {
         final Object val = getAttribute(tag);
         if (val == null) return null;
@@ -1348,6 +1461,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             return (int[]) val;
         }
         throw new SAMException("Value for tag " + tag + " is not a int[]: " + val.getClass());
+    }
+
+    public float[] getFloatArrayAttribute(final SAMTag tag) {
+        return getFloatArrayAttribute(tag.name());
     }
 
     public float[] getFloatArrayAttribute(final String tag) {
@@ -1436,6 +1553,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
+     * @see htsjdk.samtools.SAMRecord#setAttribute(java.lang.String, java.lang.Object)
+     * @param tag Binary representation of a 2-char String tag as created by SAMTagUtil.
+     */
+    public void setAttribute(final SAMTag tag, final Object value){
+        setAttribute(tag, value, false);
+    }
+
+    /**
      * Checks if the value is allowed as an attribute value.
      *
      * @param value the value to be checked
@@ -1448,6 +1573,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated
     protected static boolean isAllowedAttributeValue(final Object value) {
         return SAMBinaryTagAndValue.isAllowedAttributeValue(value);
+    }
+
+    protected void setAttribute(final SAMTag tag, final Object value, final boolean isUnsignedArray) {
+        setAttribute(tag.getBinaryTag(), value, isUnsignedArray);
     }
 
     protected void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
@@ -2030,7 +2159,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 */
         }
         // Validate the RG ID is found in header
-        final String rgId = (String)getAttribute(SAMTag.RG.getBinaryTag());
+        final String rgId = (String)getAttribute(SAMTag.RG);
         if (rgId != null && getHeader() != null && getHeader().getReadGroup(rgId) == null) {
                 if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.READ_GROUP_NOT_FOUND,
