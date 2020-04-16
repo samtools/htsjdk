@@ -24,13 +24,11 @@
 
 package htsjdk.variant.vcf;
 
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
-import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -38,7 +36,6 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Simplified interface for reading from VCF/BCF files.
  */
-public class VCFFileReader implements Closeable, Iterable<VariantContext> {
+public class VCFFileReader implements VCFReader {
 
     private final FeatureReader<VariantContext> reader;
 
@@ -311,8 +308,16 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Returns the VCFHeader associated with this VCF/BCF file.
      */
-    public VCFHeader getFileHeader() {
+    @Override
+    public VCFHeader getHeader() {
         return (VCFHeader) reader.getHeader();
+    }
+ 
+    /**
+     * Synonym of {@link #getHeader()}
+     */
+    public final VCFHeader getFileHeader() {
+        return getHeader();
     }
 
     /**
@@ -344,16 +349,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         }
     }
 
-    /**
-     * Queries for records overlapping the {@link Locatable} specified.
-     * Note that this method requires VCF files with an associated index.  If no index exists a TribbleException will be thrown.
-     *
-     * @return non-null iterator over VariantContexts
-     */
-    public CloseableIterator<VariantContext> query(final Locatable locatable) {
-        return query(locatable.getContig(), locatable.getStart(), locatable.getEnd());
-    }
-
     @Override
     public void close() {
         try {
@@ -369,6 +364,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      * @return true if the reader can be queried, i.e. if the underlying Tribble reader is queryable.
      */
+    @Override
     public boolean isQueryable() {
         return reader.isQueryable();
     }
