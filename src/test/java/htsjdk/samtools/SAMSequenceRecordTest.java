@@ -31,6 +31,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -117,8 +118,10 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         final List<String> chr1AltNames = Arrays.asList("chr1","chr01","01","CM000663");
         chr1.setAlternativeSequenceName(chr1AltNames);
         Assert.assertTrue(chr1.hasAlternativeSequenceNames());
-        Assert.assertEquals(chr1.getAlternativeSequenceNames(),  chr1AltNames);
-        Assert.assertEquals("@SQ\tSN:1\tLN:100\tAN:chr1,chr01,01,CM000663", chr1.getSAMString());
+        Assert.assertEquals( chr1.getAlternativeSequenceNames(), new HashSet<>(chr1AltNames));
+
+        //alt names are sorted now
+        Assert.assertEquals(chr1.getSAMString(), "@SQ\tSN:1\tLN:100\tAN:01,CM000663,chr01,chr1");
     }
 
     @DataProvider
@@ -147,19 +150,7 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         Assert.assertEquals(contig.getAlternativeSequenceNames(), Collections.singleton(altName));
     }
 
-    @DataProvider
-    public Object[][] invalidAlternativeSequences() {
-        return new Object[][] {
-                // invalid start
-                {"@chr1"}, {",chr1"},
-                // comma-separated
-                {"chr1,alt"},
-                // coordinate-like
-                {"chr1:1000"}, {"chr1:100-200"}
-        };
-    }
-
-    @Test(dataProvider = "invalidAlternativeSequences")
+    @Test(dataProvider = "illegalSequenceNames")
     public void testInvalidAlternativeSequences(final String altName) {
         final SAMSequenceRecord chr1 = new SAMSequenceRecord("1", 100);
         Assert.assertThrows(IllegalArgumentException.class, () -> chr1.addAlternativeSequenceName(altName));
@@ -176,8 +167,11 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] illegalSequenceNames(){
+    public Object[][] illegalSequenceNames() {
         return new Object[][]{
+                {",chr1"},
+                // comma-separated
+                {"chr1,alt"},
                 {"space "},
                 {"comma,"},
                 {"lbrace["},
