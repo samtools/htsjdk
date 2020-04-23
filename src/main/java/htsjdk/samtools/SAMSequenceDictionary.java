@@ -67,21 +67,12 @@ public class SAMSequenceDictionary implements Serializable {
      * Replaces the existing list of SAMSequenceRecords with the given list.
      * Reset the aliases
      *
-     * @param list This value is used directly, rather than being copied.
+     * @param list This value is copied and validated.
      */
     public void setSequences(final List<SAMSequenceRecord> list) {
-        mSequences = list;
+        mSequences = new ArrayList<>(list.size());
         mSequenceMap.clear();
-        int index = 0;
-        for (final SAMSequenceRecord record : list) {
-            record.setSequenceIndex(index++);
-            if (mSequenceMap.put(record.getSequenceName(), record) != null) {
-                throw new IllegalArgumentException("Cannot add sequence that already exists in SAMSequenceDictionary: " +
-                        record.getSequenceName());
-            } else {
-                record.getAlternativeSequenceNames().forEach(an -> addSequenceAlias(record.getSequenceName(), an));
-            }
-        }
+        list.forEach(this::addSequence);
     }
 
     public void addSequence(final SAMSequenceRecord sequenceRecord) {
@@ -238,7 +229,7 @@ public class SAMSequenceDictionary implements Serializable {
             // alias was already set to the same record
             if (altSeqRecord.equals(originalSeqRecord)) return originalSeqRecord;
             // alias was already set to another record
-            throw new IllegalArgumentException("Alias " + altName +
+            throw new IllegalArgumentException("Alias " + altName + " for " + originalSeqRecord +
                     " was already set to " + altSeqRecord.getSequenceName());
         }
         mSequenceMap.put(altName, originalSeqRecord);
