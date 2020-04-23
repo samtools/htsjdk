@@ -97,7 +97,7 @@ public class SAMSequenceDictionaryTest extends HtsjdkTest {
                 new Object[]{rec2, rec2, true},
                 new Object[]{rec3, rec3, true},
                 new Object[]{rec4, rec4, true},
-                new Object[]{rec1, rec2, false},//since 100 != 101 in Length
+                new Object[]{rec1, rec2, false}, //since 100 != 101 in Length
                 new Object[]{rec1, rec3, true},
                 new Object[]{rec1, rec4, true},
                 new Object[]{rec2, rec3, false}, // since MD5 is not equal

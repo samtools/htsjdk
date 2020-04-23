@@ -324,7 +324,7 @@ public class SAMSequenceDictionary implements Serializable {
      * @param tagsToMatch list of tags that must be equal if present in both sequence. Must contain MD, and LN
      * @return dictionary consisting of the same sequences as the two inputs with the merged values of tags.
      */
-    static public SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1,
+    public static SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1,
                                                           final SAMSequenceDictionary dict2,
                                                           final List<String> tagsToMatch) {
 
