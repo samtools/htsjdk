@@ -19,24 +19,12 @@ import java.util.Arrays;
  * @author mccowan
  */
 public class SamStreams {
-    private static int readBytes(final InputStream stream, final byte[] buffer, final int offset, final int length)
-            throws IOException {
-        int bytesRead = 0;
-        while (bytesRead < length) {
-            final int count = stream.read(buffer, offset + bytesRead, length - bytesRead);
-            if (count <= 0) {
-                break;
-            }
-            bytesRead += count;
-        }
-        return bytesRead;
-    }
 
     public static boolean isCRAMFile(final InputStream stream) throws IOException {
         stream.mark(4);
         final int buffSize = CramHeader.MAGIC.length;
         final byte[] buffer = new byte[buffSize];
-        readBytes(stream, buffer, 0, buffSize);
+        IOUtil.readBytes(stream, buffer, 0, buffSize);
         stream.reset();
 
         return Arrays.equals(buffer, CramHeader.MAGIC);
@@ -54,11 +42,11 @@ public class SamStreams {
         final int buffSize = BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE;
         stream.mark(buffSize);
         final byte[] buffer = new byte[buffSize];
-        readBytes(stream, buffer, 0, buffSize);
+        IOUtil.readBytes(stream, buffer, 0, buffSize);
         stream.reset();
         try(final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer))){
             final byte[] magicBuf = new byte[4];
-            final int magicLength = readBytes(bcis, magicBuf, 0, 4);
+            final int magicLength = IOUtil.readBytes(bcis, magicBuf, 0, 4);
             return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
         }
     }

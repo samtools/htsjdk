@@ -15,7 +15,7 @@ import java.util.TreeMap;
  * @author Tim Fennell
  */
 public class Defaults {
-      private static final Log log = Log.getInstance(Defaults.class);
+    private static final Log log = Log.getInstance(Defaults.class);
     
     /** Should BAM index files be created when writing out coordinate sorted BAM files?  Default = false. */
     public static final boolean CREATE_INDEX;
@@ -37,6 +37,14 @@ public class Defaults {
      *  Default = false.
      */
     public static final boolean USE_ASYNC_IO_WRITE_FOR_TRIBBLE;
+
+    /**
+     * Maximum number of threads in the thread pool for asynchronous read non-block computational jobs.
+     * When asynchronous reading is enabled, decompression and record parsing jobs are scheduled on this
+     * thread pool.
+     * Default = number of cores available to the JVM.
+     */
+    public static final int ASYNC_READ_COMPUTATIONAL_THREADS;
 
     /** Compression level to be used for writing BAM and other block-compressed outputs.  Default = 5. */
     public static final int COMPRESSION_LEVEL;
@@ -118,6 +126,7 @@ public class Defaults {
         USE_ASYNC_IO_READ_FOR_SAMTOOLS = getBooleanProperty("use_async_io_read_samtools", false);
         USE_ASYNC_IO_WRITE_FOR_SAMTOOLS = getBooleanProperty("use_async_io_write_samtools", false);
         USE_ASYNC_IO_WRITE_FOR_TRIBBLE = getBooleanProperty("use_async_io_write_tribble", false);
+        ASYNC_READ_COMPUTATIONAL_THREADS = getIntProperty("async_io_read_threads", Runtime.getRuntime().availableProcessors());
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
         DEFAULT_SAM_EXTENSION = getStringProperty("default_sam_type", "bam");
         DEFAULT_VCF_EXTENSION = getStringProperty("default_vcf_type", "vcf");
