@@ -777,9 +777,16 @@ public final class SAMUtils {
         if (includeHardClips || includeSoftClips) {
             for (final CigarElement cig : cigar.getCigarElements()) {
                 final CigarOperator op = cig.getOperator();
-                if ((op == CigarOperator.SOFT_CLIP && includeSoftClips) || (op == CigarOperator.HARD_CLIP && includeHardClips)) {
-                    start -= cig.getLength();
-                } else {
+                if (op == CigarOperator.SOFT_CLIP) {
+                    if (includeSoftClips) {
+                        start -= cig.getLength();
+                    }
+                } else if (op == CigarOperator.HARD_CLIP) {
+                    if (includeHardClips) {
+                        start -= cig.getLength();
+                    }
+                }
+                else {
                     break;
                 }
             }

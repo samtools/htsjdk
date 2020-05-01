@@ -1793,10 +1793,15 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * deleted bases (vs. the reference) are not represented in the alignment blocks.
      */
     public List<AlignmentBlock> getAlignmentBlocks(final boolean includeSoftClips) {
-        if (this.mAlignmentBlocks == null) {
-            this.mAlignmentBlocks = SAMUtils.getAlignmentBlocks(getCigar(), includeSoftClips? getStartWithClips(true, false) : getAlignmentStart(), "read cigar", includeSoftClips);
+        if (!includeSoftClips) {
+            if (this.mAlignmentBlocks == null) {
+                this.mAlignmentBlocks = SAMUtils.getAlignmentBlocks(getCigar(), getAlignmentStart(), "read cigar");
+            }
+            return this.mAlignmentBlocks;
         }
-        return this.mAlignmentBlocks;
+
+        return SAMUtils.getAlignmentBlocks(getCigar(), includeSoftClips? getStartWithClips(true, false) : getAlignmentStart(), "read cigar", includeSoftClips);
+
     }
 
     public List<AlignmentBlock> getAlignmentBlocks() {

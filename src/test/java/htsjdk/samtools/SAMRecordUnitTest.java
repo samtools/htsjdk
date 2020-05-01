@@ -89,6 +89,10 @@ public class SAMRecordUnitTest extends HtsjdkTest {
                 {"4M1D6M", 105,  4, true, false},
                 {"4M1I6M", 105,  6, false, false},
                 {"4M1I6M", 111, 0, false, false},
+                {"4H3S6M", 101,  4, false, false},
+                {"4H3S6M", 99,  0, false, false},
+                {"4H3S6M", 96,  0, false, false},
+                {"4H3S6M", 107,  0, false, false},
                 // Including soft clips
                 {"3S9M",   107, 10, false, true},
                 {"3S9M",   100,  3, false, true},
@@ -112,6 +116,10 @@ public class SAMRecordUnitTest extends HtsjdkTest {
                 {"4M1D6M", 105,  4, true, true},
                 {"4M1I6M", 105,  6, false, true},
                 {"4M1I6M", 111, 0, false, true},
+                {"4H3S6M", 101,  4, false, true},
+                {"4H3S6M", 99,  2, false, true},
+                {"4H3S6M", 96,  0, false, true},
+                {"4H3S6M", 107,  0, false, true},
         };
     }
 
