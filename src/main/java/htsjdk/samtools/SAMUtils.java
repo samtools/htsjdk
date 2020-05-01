@@ -706,11 +706,11 @@ public final class SAMUtils {
      * are not represented in the alignment blocks.
      *
      * @param cigar          The cigar containing the alignment information
-     * @param alignmentStart The start (1-based) of the alignment
+     * @param alignmentStart The start (1-based) of the alignment (if includingSoftClips this should be the unclipped start)
      * @param cigarTypeName  The type of cigar passed - for error logging.
      * @return List of alignment blocks
      */
-    public static List<AlignmentBlock> getAlignmentBlocks(final Cigar cigar, final int alignmentStart, final String cigarTypeName) {
+    public static List<AlignmentBlock> getAlignmentBlocks(final Cigar cigar, final int alignmentStart, final String cigarTypeName, final boolean includeSoftClips) {
         if (cigar == null) return Collections.emptyList();
 
         final List<AlignmentBlock> alignmentBlocks = new ArrayList<>();
@@ -718,13 +718,18 @@ public final class SAMUtils {
         int refBase = alignmentStart;
 
         for (final CigarElement e : cigar.getCigarElements()) {
+            final int length = e.getLength();
             switch (e.getOperator()) {
                 case H:
                     break; // ignore hard clips
                 case P:
                     break; // ignore pads
                 case S:
-                    readBase += e.getLength();
+                    if (includeSoftClips) {
+                        alignmentBlocks.add(new AlignmentBlock(readBase, refBase, length));
+                        refBase += length;
+                    }
+                    readBase += length;
                     break; // soft clip read bases
                 case N:
                     refBase += e.getLength();
@@ -738,7 +743,6 @@ public final class SAMUtils {
                 case M:
                 case EQ:
                 case X:
-                    final int length = e.getLength();
                     alignmentBlocks.add(new AlignmentBlock(readBase, refBase, length));
                     readBase += length;
                     refBase += length;
@@ -748,6 +752,10 @@ public final class SAMUtils {
             }
         }
         return Collections.unmodifiableList(alignmentBlocks);
+    }
+
+    public static List<AlignmentBlock> getAlignmentBlocks(final Cigar cigar, final int alignmentStart, final String cigarTypeName) {
+        return getAlignmentBlocks(cigar, alignmentStart, cigarTypeName, false);
     }
 
     /**
@@ -761,19 +769,23 @@ public final class SAMUtils {
      * Invalid to call with cigar = null
      */
     public static int getUnclippedStart(final int alignmentStart, final Cigar cigar) {
-        int unClippedStart = alignmentStart;
-        for (final CigarElement cig : cigar.getCigarElements()) {
-            final CigarOperator op = cig.getOperator();
-            if (op == CigarOperator.SOFT_CLIP || op == CigarOperator.HARD_CLIP) {
-                unClippedStart -= cig.getLength();
-            } else {
-                break;
-            }
-        }
-
-        return unClippedStart;
+        return getStartWithClips(alignmentStart, cigar, true, true);
     }
 
+    public static int getStartWithClips(final int alignmentStart, final Cigar cigar, final boolean includeSoftClips, final boolean includeHardClips) {
+        int start = alignmentStart;
+        if (includeHardClips || includeSoftClips) {
+            for (final CigarElement cig : cigar.getCigarElements()) {
+                final CigarOperator op = cig.getOperator();
+                if ((op == CigarOperator.SOFT_CLIP && includeSoftClips) || (op == CigarOperator.HARD_CLIP && includeHardClips)) {
+                    start -= cig.getLength();
+                } else {
+                    break;
+                }
+            }
+        }
+        return start;
+    }
     /**
      * @param alignmentEnd The end (1-based) of the alignment
      * @param cigar        The cigar containing the alignment information

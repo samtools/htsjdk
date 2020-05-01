@@ -621,6 +621,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return SAMUtils.getUnclippedStart(getAlignmentStart(), getCigar());
     }
 
+    public int getStartWithClips(final boolean includeSoftClips, final boolean includeHardClips) {
+        return SAMUtils.getStartWithClips(getAlignmentStart(), getCigar(), includeSoftClips, includeHardClips);
+    }
+
     /**
      * @return the alignment end (1-based, inclusive) adjusted for clipped bases.  For example if the read
      * has an alignment end of 100 but the last 7 bases were clipped (hard or soft clipped)
@@ -703,7 +707,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *         in the preceding block.
      */
     public int getReadPositionAtReferencePosition(final int pos, final boolean returnLastBaseIfDeleted) {
-        return getReadPositionAtReferencePosition(this, pos, returnLastBaseIfDeleted);
+        return getReadPositionAtReferencePosition(this, pos, returnLastBaseIfDeleted, false);
     }
 
     /**
@@ -725,20 +729,21 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @param pos 1-based reference position
      * @param returnLastBaseIfDeleted if positive, and reference position matches a deleted base in the read,
      *                                function will return the position of the last non-deleted base
+     * @param includeSoftClips include soft clips as aligning to reference
      * @return 1-based (to match getReferencePositionAtReadPosition behavior) inclusive position into the
      *         unclipped sequence at a given reference position, or 0 if there is no such position. If
      *         returnLastBaseIfDeleted is true deletions are assumed to "live" on the last read base
      *         in the preceding block.
      *
      */
-    public static int getReadPositionAtReferencePosition(final SAMRecord rec, final int pos, final boolean returnLastBaseIfDeleted) {
+    public static int getReadPositionAtReferencePosition(final SAMRecord rec, final int pos, final boolean returnLastBaseIfDeleted, final boolean includeSoftClips) {
 
         if (pos <= 0) {
             return 0;
         }
 
         int lastAlignmentOffset = 0;
-        for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
+        for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks(includeSoftClips)) {
             if (CoordMath.getEnd(alignmentBlock.getReferenceStart(), alignmentBlock.getLength()) >= pos) {
                 if (pos < alignmentBlock.getReferenceStart()) {
                     //There must have been a deletion block that skipped
@@ -753,6 +758,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
         // if we are here, the reference position was not overlapping the read at all
         return 0;
+    }
+
+    public static int getReadPositionAtReferencePosition(final SAMRecord rec, final int pos, final boolean returnLastBaseIfDeleted) {
+        return getReadPositionAtReferencePosition(rec, pos, returnLastBaseIfDeleted, false);
     }
 
     /**
@@ -1783,11 +1792,15 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * reference sequence. Note that clipped portions of the read and inserted and
      * deleted bases (vs. the reference) are not represented in the alignment blocks.
      */
-    public List<AlignmentBlock> getAlignmentBlocks() {
+    public List<AlignmentBlock> getAlignmentBlocks(final boolean includeSoftClips) {
         if (this.mAlignmentBlocks == null) {
-            this.mAlignmentBlocks = SAMUtils.getAlignmentBlocks(getCigar(), getAlignmentStart(), "read cigar");
+            this.mAlignmentBlocks = SAMUtils.getAlignmentBlocks(getCigar(), includeSoftClips? getStartWithClips(true, false) : getAlignmentStart(), "read cigar", includeSoftClips);
         }
         return this.mAlignmentBlocks;
+    }
+
+    public List<AlignmentBlock> getAlignmentBlocks() {
+        return getAlignmentBlocks(false);
     }
 
     /**

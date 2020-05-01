@@ -66,24 +66,59 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @DataProvider
     public Object [][] offsetAtReferenceData() {
         return new Object[][]{
-                {"3S9M",   7, 10, false},
-                {"3S9M",   0,  0, false},
-                {"3S9M",  -1,  0, false},
-                {"3S9M",  13,  0, false},
-                {"4M1D6M", 4,  4, false},
-                {"4M1D6M", 4,  4, true},
-                {"4M1D6M", 5,  0, false},
-                {"4M1D6M", 5,  4, true},
-                {"4M1I6M", 5,  6, false},
-                {"4M1I6M", 11, 0, false},
+                // Excluding soft clips
+                {"3S9M",   107, 10, false, false},
+                {"3S9M",   100,  0, false, false},
+                {"3S9M",  99,  0, false, false},
+                {"3S9M",  113,  0, false, false},
+                {"9M3S",   107, 7, false, false},
+                {"9M3S",   100,  0, false, false},
+                {"9M3S",  99,  0, false, false},
+                {"9M3S",  111,  0, false, false},
+                {"3H9M",   107, 7, false, false},
+                {"3H9M",   100,  0, false, false},
+                {"3H9M",  99,  0, false, false},
+                {"3H9M",  113,  0, false, false},
+                {"9M3H",   107, 7, false, false},
+                {"9M3H",   100,  0, false, false},
+                {"9M3H",  99,  0, false, false},
+                {"9M3H",  111,  0, false, false},
+                {"4M1D6M", 104,  4, false, false},
+                {"4M1D6M", 104,  4, true, false},
+                {"4M1D6M", 105,  0, false, false},
+                {"4M1D6M", 105,  4, true, false},
+                {"4M1I6M", 105,  6, false, false},
+                {"4M1I6M", 111, 0, false, false},
+                // Including soft clips
+                {"3S9M",   107, 10, false, true},
+                {"3S9M",   100,  3, false, true},
+                {"3S9M",  99,  2, false, true},
+                {"3S9M",  113,  0, false, true},
+                {"9M3S",   107, 7, false, true},
+                {"9M3S",   100,  0, false, true},
+                {"9M3S",  99,  0, false, true},
+                {"9M3S",  111,  11, false, true},
+                {"3H9M",   107, 7, false, true},
+                {"3H9M",   100,  0, false, true},
+                {"3H9M",  99,  0, false, true},
+                {"3H9M",  113,  0, false, true},
+                {"9M3H",   107, 7, false, true},
+                {"9M3H",   100,  0, false, true},
+                {"9M3H",  99,  0, false, true},
+                {"9M3H",  111,  0, false, true},
+                {"4M1D6M", 104,  4, false, true},
+                {"4M1D6M", 104,  4, true, true},
+                {"4M1D6M", 105,  0, false, true},
+                {"4M1D6M", 105,  4, true, true},
+                {"4M1I6M", 105,  6, false, true},
+                {"4M1I6M", 111, 0, false, true},
         };
     }
 
     @Test(dataProvider = "offsetAtReferenceData")
-    public void testOffsetAtReference(String cigar, int posInReference, int expectedPosInRead, boolean returnLastBaseIfDeleted) {
-
-            SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
-            Assert.assertEquals(SAMRecord.getReadPositionAtReferencePosition(sam, posInReference, returnLastBaseIfDeleted), expectedPosInRead);
+    public void testOffsetAtReference(String cigar, int posInReference, int expectedPosInRead, boolean returnLastBaseIfDeleted, boolean includeSoftClips) {
+            SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 101, false, false, cigar, null, 2);
+            Assert.assertEquals(SAMRecord.getReadPositionAtReferencePosition(sam, posInReference, returnLastBaseIfDeleted, includeSoftClips), expectedPosInRead);
     }
 
     @DataProvider
