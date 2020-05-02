@@ -1,8 +1,8 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
-import org.junit.Assert;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.concurrent.*;
@@ -122,6 +122,7 @@ public class AsyncReadTaskRunnerTest {
             this.getTransformSleepIncrement = getTransformSleepIncrement;
         }
     }
+    @Test
     public void testDisableAsyncProcessingLetsExistingTasksComplete() throws Exception {
         Executor existingNonBlockThreadpool = AsyncReadTaskRunner.getNonBlockingThreadpool();
         Executor existingBlockingThreadpool = AsyncReadTaskRunner.getBlockingThreadpool();
