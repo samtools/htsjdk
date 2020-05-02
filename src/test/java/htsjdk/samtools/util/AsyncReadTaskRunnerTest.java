@@ -1,15 +1,14 @@
 package htsjdk.samtools.util;
 
-import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import htsjdk.samtools.Defaults;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.IOException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class AsyncReadTaskRunnerTest extends HtsjdkTest {
+public class AsyncReadTaskRunnerTest {
     private static final Log log = Log.getInstance(AsyncReadTaskRunnerTest.class);
     public class CountingAsyncReadTaskRunner extends AsyncReadTaskRunner<Integer, Integer> {
         private AtomicInteger readCalledCount = new AtomicInteger();
@@ -57,6 +56,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                     Assert.fail("Transform exception should have been raised");
                 }
             }
+            log.error("nextRecord() complete");
             return x;
         }
 
@@ -70,14 +70,17 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                 try {
                     Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
+                    log.error("performReadAhead interrupt");
                 }
             }
             int complete = readCompleteCount.incrementAndGet();
             //log.error(String.format("performReadAhead complete %d @ %d", count, System.nanoTime()));
             Assert.assertEquals(count, complete);
             if (count == readExceptionOn) {
+                log.error("throw readException");
                 throw readException;
             }
+            log.error("performReadAhead() complete");
             return new Tuple<>(count <= stopAfter ? count : null, 1L);
         }
 
@@ -90,13 +93,16 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                 try {
                     Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
+                    log.error("performReadAhead interrupt");
                 }
             }
             transformCompleteCount.incrementAndGet();
             int rec = record;
             if (rec == transformExceptionOn) {
+                log.error("throw transformException");
                 throw transformException;
             }
+            log.error("transform() complete");
             return record;
         }
 
@@ -116,21 +122,43 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
             this.getTransformSleepIncrement = getTransformSleepIncrement;
         }
     }
-    @Test
     public void testDisableAsyncProcessingLetsExistingTasksComplete() throws Exception {
-        CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(1, 10);
-        runner.setGetTransformSleepIncrement(10);
-        runner.setStopAfter(4);
-        runner.nextRecord();
-        Thread.sleep(1);
-        // 4 records + EOF
-        Assert.assertEquals(runner.readCompleteCount.get(), 5);
-        // should have up to 3 transform tasks still running
-        // Assert.assertEquals(runner.sync(() -> runner.transformCompleteCount), 1);
-        runner.flushAsyncProcessing();
-        // should have let the background task run to completion
-        // Transform is not called on the EOF indicator
-        Assert.assertEquals(runner.transformCompleteCount.get(), 4);
+        Executor existingNonBlockThreadpool = AsyncReadTaskRunner.getNonBlockingThreadpool();
+        Executor existingBlockingThreadpool = AsyncReadTaskRunner.getBlockingThreadpool();
+        try {
+            ThreadPoolExecutor testNonBlockingThreadpool = new ThreadPoolExecutor(0, 1,
+                    0, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>());
+            ThreadPoolExecutor testBlockingThreadpool = new ThreadPoolExecutor(0, 1,
+                    0, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>());
+            AsyncReadTaskRunner.setNonblockingThreadpool(testNonBlockingThreadpool);
+            AsyncReadTaskRunner.setBlockingThreadpool(testBlockingThreadpool);
+            for (int i = 0; i < 16; i++) {
+                CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(1, 10);
+                runner.setGetTransformSleepIncrement(10);
+                runner.setStopAfter(4);
+                runner.nextRecord();
+                Thread.sleep(1);
+                // 4 records + EOF
+                Assert.assertEquals(runner.readCompleteCount.get(), 5);
+                // should have up to 3 transform tasks still running
+                // Assert.assertEquals(runner.sync(() -> runner.transformCompleteCount), 1);
+                runner.flushAsyncProcessing();
+                // should have let the background task run to completion
+                // we can't just check runner.transformCompleteCount.get() == 4
+                // since we may have aborted before the call the transform()
+                Assert.assertEquals(0, testNonBlockingThreadpool.getActiveCount());
+                Assert.assertEquals(0, testBlockingThreadpool.getActiveCount());
+                Assert.assertEquals(0, testNonBlockingThreadpool.getQueue().size());
+                Assert.assertEquals(0, testBlockingThreadpool.getQueue().size());
+            }
+            testNonBlockingThreadpool.shutdownNow();
+            testBlockingThreadpool.shutdownNow();
+        } finally {
+            AsyncReadTaskRunner.setNonblockingThreadpool(existingNonBlockThreadpool);
+            AsyncReadTaskRunner.setBlockingThreadpool(existingBlockingThreadpool);
+        }
     }
     @Test
     public void testReadAheadExceptionIsPassedToCaller() throws Exception {
