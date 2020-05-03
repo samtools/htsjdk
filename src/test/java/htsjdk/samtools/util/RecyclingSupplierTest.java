@@ -1,11 +1,10 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
-
-public class RecyclingSupplierTest extends HtsJdkTest {
+public class RecyclingSupplierTest extends HtsjdkTest {
     @Test
     public void testExistingInstancesAreReused() {
         RecyclingSupplier<Object> rs = new RecyclingSupplier<Object>(() -> new Object());

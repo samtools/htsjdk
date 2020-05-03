@@ -1,6 +1,6 @@
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.Defaults;
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class AsyncReadTaskRunnerTest extends HtsJdkTest {
+public class AsyncReadTaskRunnerTest extends HtsjdkTest {
     private static final Log log = Log.getInstance(AsyncReadTaskRunnerTest.class);
     public class CountingAsyncReadTaskRunner extends AsyncReadTaskRunner<Integer, Integer> {
         private AtomicInteger readCalledCount = new AtomicInteger();
