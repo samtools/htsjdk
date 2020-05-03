@@ -1800,7 +1800,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             return this.mAlignmentBlocks;
         }
 
-        return SAMUtils.getAlignmentBlocks(getCigar(), includeSoftClips? getStartWithClips(true, false) : getAlignmentStart(), "read cigar", includeSoftClips);
+        return SAMUtils.getAlignmentBlocks(getCigar(), getStartWithClips(true, false), "read cigar", includeSoftClips);
 
     }
 
