@@ -5,7 +5,7 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
 
-public class RecyclingSupplierTest {
+public class RecyclingSupplierTest extends HtsJdkTest {
     @Test
     public void testExistingInstancesAreReused() {
         RecyclingSupplier<Object> rs = new RecyclingSupplier<Object>(() -> new Object());

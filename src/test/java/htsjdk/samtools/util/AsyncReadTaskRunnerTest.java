@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class AsyncReadTaskRunnerTest {
+public class AsyncReadTaskRunnerTest extends HtsJdkTest {
     private static final Log log = Log.getInstance(AsyncReadTaskRunnerTest.class);
     public class CountingAsyncReadTaskRunner extends AsyncReadTaskRunner<Integer, Integer> {
         private AtomicInteger readCalledCount = new AtomicInteger();
