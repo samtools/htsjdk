@@ -56,7 +56,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                     Assert.fail("Transform exception should have been raised");
                 }
             }
-            log.error("nextRecord() complete");
+            //log.error("nextRecord() complete");
             return x;
         }
 
@@ -70,17 +70,17 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                 try {
                     Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
-                    log.error("performReadAhead interrupt");
+                    //log.error("performReadAhead interrupt");
                 }
             }
             int complete = readCompleteCount.incrementAndGet();
             //log.error(String.format("performReadAhead complete %d @ %d", count, System.nanoTime()));
             Assert.assertEquals(count, complete);
             if (count == readExceptionOn) {
-                log.error("throw readException");
+                //log.error("throw readException");
                 throw readException;
             }
-            log.error("performReadAhead() complete");
+            //log.error("performReadAhead() complete");
             return new Tuple<>(count <= stopAfter ? count : null, 1L);
         }
 
@@ -93,16 +93,16 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                 try {
                     Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
-                    log.error("performReadAhead interrupt");
+                    //log.error("performReadAhead interrupt");
                 }
             }
             transformCompleteCount.incrementAndGet();
             int rec = record;
             if (rec == transformExceptionOn) {
-                log.error("throw transformException");
+                //log.error("throw transformException");
                 throw transformException;
             }
-            log.error("transform() complete");
+            //log.error("transform() complete");
             return record;
         }
 
