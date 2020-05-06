@@ -135,16 +135,14 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                     new LinkedBlockingQueue<>());
             AsyncReadTaskRunner.setNonblockingThreadpool(testNonBlockingThreadpool);
             AsyncReadTaskRunner.setBlockingThreadpool(testBlockingThreadpool);
-            for (int i = 0; i < 16; i++) {
+            // we're at the mercy of the scheduler here so this is test is non-deterministic
+            // we loop to increase the likelihood of hitting a potentially problematic edge case
+            for (int i = 0; i < 32; i++) {
                 CountingAsyncReadTaskRunner runner = new CountingAsyncReadTaskRunner(1, 10);
                 runner.setGetTransformSleepIncrement(10);
                 runner.setStopAfter(4);
                 runner.nextRecord();
                 Thread.sleep(1);
-                // 4 records + EOF
-                Assert.assertEquals(runner.readCompleteCount.get(), 5);
-                // should have up to 3 transform tasks still running
-                // Assert.assertEquals(runner.sync(() -> runner.transformCompleteCount), 1);
                 runner.flushAsyncProcessing();
                 // should have let the background task run to completion
                 // we can't just check runner.transformCompleteCount.get() == 4
