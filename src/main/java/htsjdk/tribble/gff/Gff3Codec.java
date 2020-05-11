@@ -10,6 +10,7 @@ import htsjdk.tribble.AbstractFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.SimpleFeature;
+import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -116,27 +117,13 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             return featuresToFlush.poll();
         }
 
-        final List<String> splitLine = ParsingUtils.split(line, FIELD_DELIMITER);
-
-        if (splitLine.size() != NUM_FIELDS) {
-            throw new TribbleException("Found an invalid number of columns in the given Gff3 file on line "
-                    + currentLineNum + " - Given: " + splitLine.size() + " Expected: " + NUM_FIELDS + " : " + line);
-        }
-
         try {
-            final String contig = URLDecoder.decode(splitLine.get(CHROMOSOME_NAME_INDEX), "UTF-8");
-            final String source = URLDecoder.decode(splitLine.get(ANNOTATION_SOURCE_INDEX), "UTF-8");
-            final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
-            final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
-            final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
-            final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(".")? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
-            final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
-            final Map<String, String> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
+            final Gff3BaseData baseData = parseLine(line);
 
-            final String parentIDAttribute = attributes.get(PARENT_ATTRIBUTE_KEY);
+            final String parentIDAttribute = baseData.getAttributes().get(PARENT_ATTRIBUTE_KEY);
             final List<String> parentIDs = parentIDAttribute != null? ParsingUtils.split(parentIDAttribute, VALUE_DELIMITER) : new ArrayList<>();
 
-            final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(contig, source, type, start, end, strand, phase, attributes);
+            final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(baseData);
             activeFeatures.add(thisFeature);
             final String id = thisFeature.getID();
 
@@ -198,6 +185,30 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         return attributes;
     }
 
+    static private Gff3BaseData parseLine(final String line) {
+        final List<String> splitLine = ParsingUtils.split(line, FIELD_DELIMITER);
+
+        if (splitLine.size() != NUM_FIELDS) {
+            throw new TribbleException("Found an invalid number of columns in the given Gff3 file- Given: " + splitLine.size() + " Expected: " + NUM_FIELDS + " : " + line);
+        }
+
+        try {
+            final String contig = URLDecoder.decode(splitLine.get(CHROMOSOME_NAME_INDEX), "UTF-8");
+            final String source = URLDecoder.decode(splitLine.get(ANNOTATION_SOURCE_INDEX), "UTF-8");
+            final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
+            final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
+            final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
+            final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(".") ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
+            final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
+            final Map<String, String> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
+            return new Gff3BaseData(contig, source, type, start, end, strand, phase, attributes);
+        } catch (final NumberFormatException ex ) {
+            throw new TribbleException("Cannot read integer value for start/end position!", ex);
+        } catch (final IOException ex) {
+            throw new TribbleException("Cannot decode feature info", ex);
+        }
+    }
+
     /**
      * If sequence region of feature's contig has been specified with sequence region directive, validates that
      * feature's coordinates are within the specified sequence region.  TribbleException is thrown if invalid.
@@ -220,19 +231,22 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     @Override
     public Feature decodeLoc(LineIterator lineIterator) {
+        return decodeShallow(lineIterator);
+    }
+
+    /**
+     * Shallow decoding of gff3 file.  Gff3BaseData features are returned, with no linking to parent, child or co-features.
+     * @param lineIterator
+     * @return
+     */
+    public Gff3BaseData decodeShallow(final LineIterator lineIterator) {
         final String line = lineIterator.next();
 
         if (line.startsWith(COMMENT_START)) {
             return null;
         }
 
-        final List<String> splitLine = ParsingUtils.split(line,FIELD_DELIMITER);
-
-        try {
-            return new SimpleFeature(splitLine.get(CHROMOSOME_NAME_INDEX), Integer.parseInt(splitLine.get(START_LOCATION_INDEX)), Integer.parseInt(splitLine.get(END_LOCATION_INDEX)));
-        } catch (final NumberFormatException ex ) {
-            throw new TribbleException("Cannot read integer value for start/end position!", ex);
-        }
+        return parseLine(line);
     }
 
     @Override

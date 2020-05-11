@@ -36,6 +36,10 @@ public class Gff3FeatureImpl implements Gff3Feature {
 
     }
 
+    public Gff3FeatureImpl(final Gff3BaseData baseData) {
+        this.baseData = baseData;
+    }
+
     /**
      * Get the set of top level features from which this feature is descended
      * @return set of top level feature from which this feature is descended
