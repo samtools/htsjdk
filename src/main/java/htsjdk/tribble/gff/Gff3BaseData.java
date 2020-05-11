@@ -1,7 +1,5 @@
 package htsjdk.tribble.gff;
 
-import htsjdk.samtools.util.Locatable;
-import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
 
 import java.util.Collections;
@@ -22,7 +20,7 @@ public class Gff3BaseData {
     private final String id;
     private final String name;
     private final String alias;
-    final int hashCode;
+    private final int hashCode;
 
     public Gff3BaseData(final String contig, final String source, final String type,
                  final int start, final int end, final Strand strand, final int phase,
