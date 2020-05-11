@@ -9,8 +9,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.tribble.AbstractFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
-import htsjdk.tribble.SimpleFeature;
-import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -24,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -68,8 +65,6 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private final Map<String, Set<Gff3FeatureImpl>> activeFeaturesWithIDs = new HashMap<>();
     private final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
 
-    private int currentLineNum = 0;
-
     private final Map<String, SequenceRegion> sequenceRegionMap = new HashMap<>();
 
     private final static Log logger = Log.getInstance(Gff3Codec.class);
@@ -94,7 +89,6 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         }
 
         final String line = lineIterator.next();
-        currentLineNum++;
 
         if (reachedFasta) {
             //previously reached fasta, flush whatever is active
