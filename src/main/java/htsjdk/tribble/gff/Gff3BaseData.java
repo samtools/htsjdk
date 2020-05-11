@@ -1,13 +1,14 @@
 package htsjdk.tribble.gff;
 
 import htsjdk.samtools.util.Locatable;
+import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class Gff3BaseData implements Locatable {
+public class Gff3BaseData {
     private static final String ID_ATTRIBUTE_KEY = "ID";
     private static final String NAME_ATTRIBUTE_KEY = "Name";
     private static final String ALIAS_ATTRIBUTE_KEY = "Alias";
