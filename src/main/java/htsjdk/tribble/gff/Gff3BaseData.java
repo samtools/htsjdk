@@ -1,7 +1,5 @@
 package htsjdk.tribble.gff;
 
-import htsjdk.samtools.util.Locatable;
-import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
 
 import java.util.Collections;
