@@ -239,14 +239,14 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
      * @param lineIterator
      * @return
      */
-    public Gff3BaseData decodeShallow(final LineIterator lineIterator) {
+    public Gff3Feature decodeShallow(final LineIterator lineIterator) {
         final String line = lineIterator.next();
 
         if (line.startsWith(COMMENT_START)) {
             return null;
         }
 
-        return parseLine(line);
+        return new Gff3FeatureImpl(parseLine(line));
     }
 
     @Override
