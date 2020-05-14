@@ -14,6 +14,7 @@ public class Gff3BaseData {
     private final String type;
     private final int start;
     private final int end;
+    private final Double score;
     private final Strand strand;
     private final int phase;
     private final Map<String, String> attributes;
@@ -23,13 +24,14 @@ public class Gff3BaseData {
     private final int hashCode;
 
     public Gff3BaseData(final String contig, final String source, final String type,
-                 final int start, final int end, final Strand strand, final int phase,
+                 final int start, final int end, final Double score, final Strand strand, final int phase,
                  final Map<String, String> attributes) {
         this.contig = contig;
         this.source = source;
         this.type = type;
         this.start = start;
         this.end = end;
+        this.score = score;
         this.phase = phase;
         this.strand = strand;
         this.attributes = Collections.unmodifiableMap(attributes);
@@ -54,6 +56,7 @@ public class Gff3BaseData {
                 otherBaseData.getType().equals(getType()) &&
                 otherBaseData.getStart() == getStart() &&
                 otherBaseData.getEnd() == getEnd() &&
+                otherBaseData.getScore().equals(score) &&
                 otherBaseData.getPhase() == getPhase() &&
                 otherBaseData.getStrand().equals(getStrand()) &&
                 otherBaseData.getAttributes().equals(getAttributes());
@@ -89,6 +92,7 @@ public class Gff3BaseData {
         hash = 31 * hash + getType().hashCode();
         hash = 31 * hash + getStart();
         hash = 31 * hash + getEnd();
+        hash = 31 * hash + getScore().hashCode();
         hash = 31 * hash + getPhase();
         hash = 31 * hash + getStrand().hashCode();
         hash = 31 * hash + getAttributes().hashCode();
@@ -126,6 +130,8 @@ public class Gff3BaseData {
     public int getEnd() {
         return end;
     }
+
+    public Double getScore() {return score;}
 
     public Strand getStrand() {
         return strand;

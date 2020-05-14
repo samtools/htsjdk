@@ -30,9 +30,9 @@ public class Gff3FeatureImpl implements Gff3Feature {
     private final Set<Gff3FeatureImpl> topLevelFeatures = new HashSet<>();
 
     public Gff3FeatureImpl(final String contig, final String source, final String type,
-                           final int start, final int end, final Strand strand, final int phase,
+                           final int start, final int end, final Double score, final Strand strand, final int phase,
                            final Map<String, String> attributes) {
-        baseData = new Gff3BaseData(contig, source, type, start, end, strand, phase, attributes);
+        baseData = new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
 
     }
 

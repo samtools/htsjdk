@@ -47,6 +47,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private static final int FEATURE_TYPE_INDEX = 2;
     private static final int START_LOCATION_INDEX = 3;
     private static final int END_LOCATION_INDEX = 4;
+    private static final int SCORE_INDEX = 5;
     private static final int GENOMIC_STRAND_INDEX = 6;
     private static final int GENOMIC_PHASE_INDEX = 7;
     private static final int EXTRA_FIELDS_INDEX = 8;
@@ -192,10 +193,11 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
             final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
             final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
+            final Double score = splitLine.get(SCORE_INDEX).equals(".") ? -1 : Double.parseDouble(splitLine.get(SCORE_INDEX));
             final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(".") ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
             final Map<String, String> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
-            return new Gff3BaseData(contig, source, type, start, end, strand, phase, attributes);
+            return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
         } catch (final NumberFormatException ex ) {
             throw new TribbleException("Cannot read integer value for start/end position!", ex);
         } catch (final IOException ex) {

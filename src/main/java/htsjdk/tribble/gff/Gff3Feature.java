@@ -62,6 +62,8 @@ public interface Gff3Feature extends Feature {
 
     default String getAlias() { return getBaseData().getAlias();}
 
+    default double getScore() { return getBaseData().getScore();}
+
     /**
      * Get BaseData object which contains all the basic information of the feature
      * @return
