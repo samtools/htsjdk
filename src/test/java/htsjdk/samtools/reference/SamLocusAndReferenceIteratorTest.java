@@ -53,4 +53,31 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
         final SamLocusIterator samLocusIterator = new SamLocusIterator(samReader);
         new SamLocusAndReferenceIterator(referenceSequenceFileWalker, samLocusIterator); // should throw
     }
+
+    @Test
+    public void testSamLocusAndReferenceIteratorLeadingInsertion() {
+        final File reference = new File(TEST_DATA_DIR, "Homo_sapiens_assembly18.trimmed.fasta");
+        final File samFile = new File(TEST_DATA_DIR, "leading_insertion.sam");
+        final ReferenceSequenceFile referenceSequenceFile = new FastaSequenceFile(reference, false);
+        final ReferenceSequenceFileWalker referenceSequenceFileWalker = new ReferenceSequenceFileWalker(referenceSequenceFile);
+
+        final SamReader samReader = SamReaderFactory.makeDefault().open(samFile);
+        final SamLocusIterator samLocusIterator = new SamLocusIterator(samReader);
+        samLocusIterator.setIncludeIndels(true);
+        final SamLocusAndReferenceIterator samLocusAndReferences = new SamLocusAndReferenceIterator(referenceSequenceFileWalker, samLocusIterator);
+
+
+        IntervalList intervalList = new IntervalList(samReader.getFileHeader());
+        intervalList.add(new Interval("chrM", 1, 26));
+
+        OverlapDetector<Interval> overlapDetector = new OverlapDetector<>(0, 0);
+        overlapDetector.addAll(intervalList.getIntervals(), intervalList.getIntervals());
+
+        for (final SamLocusAndReferenceIterator.SAMLocusAndReference samLocusAndReference : samLocusAndReferences) {
+            if (samLocusAndReference.getLocus().getContig() == "chrM" && overlapDetector.overlapsAny(samLocusAndReference.getLocus())) {
+                System.err.println(samLocusAndReference.getLocus());
+            }
+        }
+        Assert.assertTrue(false);
+    }
 }
