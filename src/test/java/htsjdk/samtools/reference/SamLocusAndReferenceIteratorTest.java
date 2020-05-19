@@ -66,18 +66,39 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
         samLocusIterator.setIncludeIndels(true);
         final SamLocusAndReferenceIterator samLocusAndReferences = new SamLocusAndReferenceIterator(referenceSequenceFileWalker, samLocusIterator);
 
-
         IntervalList intervalList = new IntervalList(samReader.getFileHeader());
         intervalList.add(new Interval("chrM", 1, 26));
+        intervalList.add(new Interval("chrM", 16546, 16571));
 
         OverlapDetector<Interval> overlapDetector = new OverlapDetector<>(0, 0);
         overlapDetector.addAll(intervalList.getIntervals(), intervalList.getIntervals());
 
+        // Developer note: these are the # of loci that we have (1) a read base mapped to a reference base, (2) a read
+        // base inserted relative the reference, and (3) a read base deleted relative to the reference.  For read bases
+        // inserted prior to or after the reference (ex.. at position 1 of a contig), they are counted only once!
+        int totalMappedRecords = 0;
+        int totalInsertedRecords = 0;
+        int totalDeletedRecords = 0;
         for (final SamLocusAndReferenceIterator.SAMLocusAndReference samLocusAndReference : samLocusAndReferences) {
-            if (samLocusAndReference.getLocus().getContig() == "chrM" && overlapDetector.overlapsAny(samLocusAndReference.getLocus())) {
+
+            totalMappedRecords += samLocusAndReference.getRecordAndOffsets().size();
+            totalInsertedRecords += samLocusAndReference.getLocus().getInsertedInRecord().size();
+            totalDeletedRecords += samLocusAndReference.getLocus().getDeletedInRecord().size();
+
+            if (samLocusAndReference.getLocus().getInsertedInRecord().size() > 0) {
                 System.err.println(samLocusAndReference.getLocus());
             }
+
+            if (overlapDetector.overlapsAny(samLocusAndReference.getLocus())) {
+                Assert.assertEquals(samLocusAndReference.getRecordAndOffsets().size(), 2);
+            }
+            else {
+                Assert.assertEquals(samLocusAndReference.getRecordAndOffsets().size(), 0);
+            }
         }
-        Assert.assertTrue(false);
+        Assert.assertEquals(totalMappedRecords, (36 - 10) * 4);
+        // Developer note: not 10 * 4, since we count all inserted bases prior to or after the reference only once
+        Assert.assertEquals(totalInsertedRecords, 4);
+        Assert.assertEquals(totalDeletedRecords, 0);
     }
 }

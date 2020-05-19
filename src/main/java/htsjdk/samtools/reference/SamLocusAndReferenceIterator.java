@@ -78,8 +78,12 @@ public class SamLocusAndReferenceIterator extends IterableOnceIterator<SamLocusA
         final ReferenceSequence referenceSequence = referenceSequenceFileWalker.get(locus.getSequenceIndex(), locus.getSequenceName(),
                 locus.getSequenceLength());
 
-        //position is 1-based...arrays are 0-based!
-        return new SAMLocusAndReference(locus, referenceSequence.getBases()[locus.getPosition() - 1]);
+        // Developer notes:
+        // 1. position is 1-based...arrays are 0-based!
+        // 2. We must guard against insertions before the reference
+        final int position = locus.getPosition();
+        final byte referenceBase = 0 == position ? (byte)'N' : referenceSequence.getBases()[locus.getPosition() - 1];
+        return new SAMLocusAndReference(locus, referenceBase);
     }
 
     /** Small class to hold together
