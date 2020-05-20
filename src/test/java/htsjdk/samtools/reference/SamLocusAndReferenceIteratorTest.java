@@ -79,15 +79,16 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
         int totalMappedRecords = 0;
         int totalInsertedRecords = 0;
         int totalDeletedRecords = 0;
+        byte positionAtZeroBase = (byte) '?';
         for (final SamLocusAndReferenceIterator.SAMLocusAndReference samLocusAndReference : samLocusAndReferences) {
+            final SamLocusIterator.LocusInfo locus = samLocusAndReference.getLocus();
+            if (locus.getContig() == "chrM" && locus.getPosition() == 0) {
+                positionAtZeroBase = samLocusAndReference.getReferenceBase();
+            }
 
             totalMappedRecords += samLocusAndReference.getRecordAndOffsets().size();
             totalInsertedRecords += samLocusAndReference.getLocus().getInsertedInRecord().size();
             totalDeletedRecords += samLocusAndReference.getLocus().getDeletedInRecord().size();
-
-            if (samLocusAndReference.getLocus().getInsertedInRecord().size() > 0) {
-                System.err.println(samLocusAndReference.getLocus());
-            }
 
             if (overlapDetector.overlapsAny(samLocusAndReference.getLocus())) {
                 Assert.assertEquals(samLocusAndReference.getRecordAndOffsets().size(), 2);
@@ -96,6 +97,7 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
                 Assert.assertEquals(samLocusAndReference.getRecordAndOffsets().size(), 0);
             }
         }
+        Assert.assertEquals(positionAtZeroBase, SamLocusAndReferenceIterator.BASE_BEFORE_REFERENCE_START);
         Assert.assertEquals(totalMappedRecords, (36 - 10) * 4);
         // Developer note: not 10 * 4, since we count all inserted bases prior to or after the reference only once
         Assert.assertEquals(totalInsertedRecords, 4);
