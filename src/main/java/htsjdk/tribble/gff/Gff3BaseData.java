@@ -1,9 +1,11 @@
 package htsjdk.tribble.gff;
 
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Gff3BaseData {
@@ -18,15 +20,15 @@ public class Gff3BaseData {
     private final double score;
     private final Strand strand;
     private final int phase;
-    private final Map<String, String> attributes;
+    private final Map<String, List<String>> attributes;
     private final String id;
     private final String name;
-    private final String alias;
+    private final List<String> aliases;
     private final int hashCode;
 
     public Gff3BaseData(final String contig, final String source, final String type,
                  final int start, final int end, final Double score, final Strand strand, final int phase,
-                 final Map<String, String> attributes) {
+                 final Map<String, List<String>> attributes) {
         this.contig = contig;
         this.source = source;
         this.type = type;
@@ -36,10 +38,9 @@ public class Gff3BaseData {
         this.phase = phase;
         this.strand = strand;
         this.attributes = Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
-        this.id = attributes.get(ID_ATTRIBUTE_KEY);
-        this.name = attributes.get(NAME_ATTRIBUTE_KEY);
-        this.alias = attributes.get(ALIAS_ATTRIBUTE_KEY);
-        this.hashCode = computeHashCode();
+        this.id = Gff3Codec.extractSingleAttribute(attributes.get(ID_ATTRIBUTE_KEY));
+        this.name = Gff3Codec.extractSingleAttribute(attributes.get(NAME_ATTRIBUTE_KEY));
+        this.aliases = attributes.containsKey(ALIAS_ATTRIBUTE_KEY)? attributes.get(ALIAS_ATTRIBUTE_KEY) : Collections.emptyList();   this.hashCode = computeHashCode();
     }
 
     @Override
@@ -73,11 +74,7 @@ public class Gff3BaseData {
             ret = ret && otherBaseData.getName() != null && otherBaseData.getName().equals(getName());
         }
 
-        if (getAlias() == null) {
-            ret = ret && otherBaseData.getAlias() == null;
-        } else {
-            ret = ret && otherBaseData.getAlias() != null && otherBaseData.getAlias().equals(getAlias());
-        }
+        ret = ret && otherBaseData.getAliases().equals(getAliases());
 
         return ret;
     }
@@ -105,8 +102,8 @@ public class Gff3BaseData {
             hash = 31 * hash + getName().hashCode();
         }
 
-        if (getAlias() != null) {
-            hash = 31 * hash + getAlias().hashCode();
+        for (final String alias : aliases) {
+            hash = 31 * hash + alias.hashCode();
         }
 
         return hash;
@@ -144,8 +141,12 @@ public class Gff3BaseData {
         return phase;
     }
 
-    public Map<String, String> getAttributes() {
+    public Map<String, List<String>> getAttributes() {
         return attributes;
+    }
+
+    public List<String> getAttribute(final String key) {
+        return attributes.containsKey(key)? attributes.get(key) : Collections.emptyList();
     }
 
     public String getId() {
@@ -156,7 +157,7 @@ public class Gff3BaseData {
         return name;
     }
 
-    public String getAlias() {
-        return alias;
+    public List<String> getAliases() {
+        return aliases;
     }
 }

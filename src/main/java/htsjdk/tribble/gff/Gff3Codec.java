@@ -9,6 +9,7 @@ import htsjdk.samtools.util.Log;
 import htsjdk.tribble.AbstractFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -17,11 +18,14 @@ import htsjdk.tribble.util.ParsingUtils;
 
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -67,6 +71,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
 
     private final Map<String, SequenceRegion> sequenceRegionMap = new HashMap<>();
+    private final List<String> comments = new ArrayList<>();
 
     private final static Log logger = Log.getInstance(Gff3Codec.class);
 
@@ -123,6 +128,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         }
 
         if (line.startsWith(COMMENT_START) && !line.startsWith(DIRECTIVE_START)) {
+            comments.add(line.substring(1));
             return featuresToFlush.poll();
         }
 
@@ -190,15 +196,15 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
      * @return map of keys to values for attributes of this feature
      * @throws UnsupportedEncodingException
      */
-    static private Map<String,String> parseAttributes(final String attributesString) throws UnsupportedEncodingException {
-        final Map<String, String> attributes = new LinkedHashMap<>();
+    static private Map<String, List<String>> parseAttributes(final String attributesString) throws UnsupportedEncodingException {
+        final Map<String, List<String>> attributes = new LinkedHashMap<>();
         final List<String> splitLine = ParsingUtils.split(attributesString,ATTRIBUTE_DELIMITER);
         for(String attribute : splitLine) {
             final List<String> key_value = ParsingUtils.split(attribute,KEY_VALUE_SEPARATOR);
             if (key_value.size()<2) {
                 continue;
             }
-            attributes.put(URLDecoder.decode(key_value.get(0).trim(), "UTF-8"), URLDecoder.decode(key_value.get(1).trim(), "UTF-8"));
+            attributes.put(URLDecoder.decode(key_value.get(0).trim(), "UTF-8"), decodeAttributeValue(key_value.get(1).trim()));
         }
         return attributes;
     }
@@ -219,7 +225,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final double score = splitLine.get(SCORE_INDEX).equals(".") ? -1 : Double.parseDouble(splitLine.get(SCORE_INDEX));
             final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(".") ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
-            final Map<String, String> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
+            final Map<String, List<String>> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
             return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
         } catch (final NumberFormatException ex ) {
             throw new TribbleException("Cannot read integer value for start/end position from line " + currentLine + ".  Line is: " + line, ex);
@@ -227,6 +233,12 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             throw new TribbleException("Cannot decode feature info from line " + currentLine + ".  Line is: " + line, ex);
         }
     }
+
+    public Collection<SequenceRegion> getSequenceRegions() {
+        return sequenceRegionMap.values();
+    }
+
+    public List<String> getComments() {return comments;}
 
     /**
      * If sequence region of feature's contig has been specified with sequence region directive, validates that
@@ -238,7 +250,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final SequenceRegion region = sequenceRegionMap.get(feature.getContig());
             if (feature.getStart() == region.getStart() && feature.getEnd() == region.getEnd()) {
                 //landmark feature
-                final boolean isCircular = Boolean.parseBoolean(feature.getAttribute(IS_CIRCULAR_ATTRIBUTE_KEY));
+                final boolean isCircular = Boolean.parseBoolean(extractSingleAttribute(feature.getAttribute(IS_CIRCULAR_ATTRIBUTE_KEY)));
                 region.setCircular(isCircular);
             }
             if (region.isCircular()? !region.overlaps(feature) : !region.contains(feature)) {
@@ -316,6 +328,30 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         }
 
         return canDecode;
+    }
+
+    static List<String> decodeAttributeValue(final String attributeValue) {
+        //split on VALUE_DELIMITER, then decode
+        return ParsingUtils.split(attributeValue, VALUE_DELIMITER).stream().
+                map(a -> {
+                            try {
+                                return URLDecoder.decode(a, "UTF-8");
+                            } catch (final UnsupportedEncodingException ex) {
+                                throw new TribbleException("Error decoding attribute", ex);
+                            }
+                         }).
+                collect(Collectors.toList());
+    }
+
+    static String extractSingleAttribute(final List<String> values) {
+        if (values.isEmpty()) {
+            return null;
+        }
+
+        if (values.size() != 1) {
+            throw new TribbleException("Attribute has multiple values when only one expected");
+        }
+        return values.get(0);
     }
 
     @Override
@@ -427,7 +463,26 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
      */
     enum Gff3Directive {
 
-        VERSION3_DIRECTIVE("##gff-version\\s+3(?:.\\d)*(?:\\.\\d)*$"),
+        VERSION3_DIRECTIVE("##gff-version\\s+3(?:.\\d)*(?:\\.\\d)*$") {
+            @Override
+            public String encode(final Object object) {
+                if (!(object instanceof String)) {
+                    throw new TribbleException("Cannot encode object of type " + object.getClass() + " in VERSION3_DIRECTIVE");
+                }
+
+                final String versionLine = "##gff-version " + (String)object;
+                if (regexPattern.matcher(versionLine).matches()) {
+                    throw new TribbleException("Version " + (String)object + " is not a valid version");
+                }
+
+                return versionLine;
+            }
+
+            @Override
+            public String encode() {
+                throw new UnsupportedOperationException("Must specify version to encode");
+            }
+        },
 
         SEQUENCE_REGION_DIRECTIVE("##sequence-region\\s+.+ \\d+ \\d+$") {
             private int CONTIG_INDEX = 1;
@@ -441,13 +496,43 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
                 final int end = Integer.parseInt(splitLine[END_INDEX]);
                 return new SequenceRegion(contig, start, end);
             }
+
+            @Override
+            public String encode(final Object object) {
+                if (!(object instanceof SequenceRegion)) {
+                    throw new TribbleException("Cannot encode object of type " + object.getClass() + " in SEQUENCE_REGION_DIRECTIVE");
+                }
+
+                final SequenceRegion sequenceRegion = (SequenceRegion) object;
+                try {
+                    final URI contigURI = new URI(sequenceRegion.getContig());
+                    return "##sequence-region " + contigURI.toASCIIString() + " " + sequenceRegion.getStart() + sequenceRegion.getEnd();
+                } catch (final URISyntaxException ex) {
+                    throw new TribbleException("Cannot encode contig " + sequenceRegion.getContig(), ex);
+                }
+            }
+
+            @Override
+            public String encode() {
+                throw new UnsupportedOperationException("Must specify sequence region object to encode");
+            }
         },
 
-        FLUSH_DIRECTIVE("###$"),
+        FLUSH_DIRECTIVE("###$") {
+            @Override
+            public String encode(final Object object) {
+                return "###";
+            }
+        },
 
-        FASTA_DIRECTIVE("##FASTA$");
+        FASTA_DIRECTIVE("##FASTA$") {
+            @Override
+            public String encode(final Object object) {
+                return "##FASTA";
+            }
+        };
 
-        private final Pattern regexPattern;
+        protected final Pattern regexPattern;
 
         Gff3Directive(String regex) {
             this.regexPattern = Pattern.compile(regex);
@@ -464,6 +549,12 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
         public Object decode(final String line) throws IOException {
             return null;
+        }
+
+        abstract public String encode(final Object object);
+
+        public String encode() {
+            return encode(null);
         }
     }
 

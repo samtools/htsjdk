@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -104,7 +105,6 @@ public class Gff3CodecTest extends HtsjdkTest {
         final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputGff3.toAbsolutePath().toString(), null, new Gff3Codec(), false);
         final AbstractFeatureReader<Gff3Feature, LineIterator> readerGZipped = AbstractFeatureReader.getFeatureReader(inputGff3GZipped.toAbsolutePath().toString(), null, new Gff3Codec(), false);
 
-
         final Set<Gff3Feature> topLevelFeatures = new HashSet<>();
         final Set<Gff3Feature> topLevelFeaturesGZipped = new HashSet<>();
 
@@ -178,7 +178,8 @@ public class Gff3CodecTest extends HtsjdkTest {
         Assert.assertEquals(feature.getSource(), "a source & also a str*)%nge source");
         Assert.assertEquals(feature.getType(), "a region");
         Assert.assertEquals(feature.getID(), "this is the ID of this wacky feature^&%##$%*&>,. ,.");
-        Assert.assertEquals(feature.getAttribute("Another key"), "Another=value");
+        Assert.assertEquals(feature.getAttribute("Another key"), "Another%3Dvalue,And%20a%20second%2C%20value");
+        Assert.assertEquals(Gff3Codec.decodeAttributeValue(feature.getAttribute("Another key")), Arrays.asList("Another=value", "And a second, value"));
     }
 
 

@@ -3,6 +3,7 @@ package htsjdk.tribble.gff;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,17 +51,18 @@ public interface Gff3Feature extends Feature {
         return getBaseData().getStart();
     }
 
-    default String getAttribute(final String key) {
-        return getBaseData().getAttributes().get(key);
+
+    default List<String> getAttribute(final String key) {
+        return getBaseData().getAttribute(key);
     }
 
-    default Map<String, String> getAttributes() { return getBaseData().getAttributes();}
+    default Map<String, List<String>> getAttributes() { return getBaseData().getAttributes();}
 
     default String getID() { return getBaseData().getId();}
 
     default String getName() { return getBaseData().getName();}
 
-    default String getAlias() { return getBaseData().getAlias();}
+    default List<String> getAliases() { return getBaseData().getAliases();}
 
     default double getScore() { return getBaseData().getScore();}
 
