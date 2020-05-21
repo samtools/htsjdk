@@ -15,7 +15,6 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
@@ -33,6 +32,15 @@ public class Gff3Writer implements Closeable {
         final OutputStream outputStream = IOUtil.hasGzipFileExtension(path)? new GZIPOutputStream(Files.newOutputStream(path)) : Files.newOutputStream(path);
         out = new PrintStream(outputStream);
         //start with version directive
+        initialize();
+    }
+
+    Gff3Writer(final PrintStream stream) {
+        out = stream;
+        initialize();
+    }
+
+    private void initialize() {
         out.println(Gff3Codec.Gff3Directive.VERSION3_DIRECTIVE.encode(version));
     }
 
