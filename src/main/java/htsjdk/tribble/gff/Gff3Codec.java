@@ -72,12 +72,28 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     private boolean reachedFasta = false;
 
+    private DecodeDepth decodeDepth;
+
     public Gff3Codec() {
+        this(DecodeDepth.DEEP);
+    }
+
+    public Gff3Codec(final DecodeDepth decodeDepth) {
         super(Gff3Feature.class);
+        this.decodeDepth = decodeDepth;
+    }
+
+    public enum DecodeDepth {
+        DEEP ,
+        SHALLOW
     }
 
     @Override
     public Gff3Feature decode(final LineIterator lineIterator) throws IOException {
+        return decode(lineIterator, decodeDepth);
+    }
+
+    private Gff3Feature decode(final LineIterator lineIterator, final DecodeDepth depth) throws IOException {
         /*
         Basic strategy: Load features into deque, create maps from a features ID to it, and from a features parents' IDs to it.  For each feature, link to parents using these maps.
         When reaching flush directive, fasta, or end of file, prepare to flush features by moving all active features to deque of features to flush, and clearing
@@ -112,14 +128,15 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             return featuresToFlush.poll();
         }
 
-        try {
-            final Gff3BaseData baseData = parseLine(line);
 
-            final String parentIDAttribute = baseData.getAttributes().get(PARENT_ATTRIBUTE_KEY);
+
+        final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(parseLine(line));
+        activeFeatures.add(thisFeature);
+        if (depth == DecodeDepth.DEEP) {
+            //link to parents/children/co-features
+            final String parentIDAttribute = thisFeature.getAttribute(PARENT_ATTRIBUTE_KEY);
             final List<String> parentIDs = parentIDAttribute != null? ParsingUtils.split(parentIDAttribute, VALUE_DELIMITER) : new ArrayList<>();
 
-            final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(baseData);
-            activeFeatures.add(thisFeature);
             final String id = thisFeature.getID();
 
             for (final String parentID : parentIDs) {
@@ -153,11 +170,14 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
                     child.addParent(thisFeature);
                 }
             }
-            validateFeature(thisFeature);
-            return featuresToFlush.poll();
-        } catch( final NumberFormatException ex ){
-            throw new TribbleException("Cannot read integer value for start/end position!", ex);
         }
+
+        validateFeature(thisFeature);
+        if (depth == DecodeDepth.SHALLOW) {
+            //flush all features immediatly
+            prepareToFlushFeatures();
+        }
+        return featuresToFlush.poll();
     }
 
 
@@ -226,23 +246,8 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     }
 
     @Override
-    public Feature decodeLoc(LineIterator lineIterator) {
-        return decodeShallow(lineIterator);
-    }
-
-    /**
-     * Shallow decoding of gff3 file.  Gff3BaseData features are returned, with no linking to parent, child or co-features.
-     * @param lineIterator
-     * @return
-     */
-    public Gff3Feature decodeShallow(final LineIterator lineIterator) {
-        final String line = lineIterator.next();
-
-        if (line.startsWith(COMMENT_START)) {
-            return null;
-        }
-
-        return new Gff3FeatureImpl(parseLine(line));
+    public Feature decodeLoc(LineIterator lineIterator) throws IOException {
+        return decode(lineIterator, DecodeDepth.SHALLOW);
     }
 
     @Override
