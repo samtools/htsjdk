@@ -41,6 +41,9 @@ import static htsjdk.samtools.util.SamLocusIterator.*;
  */
 public class SamLocusAndReferenceIterator extends IterableOnceIterator<SamLocusAndReferenceIterator.SAMLocusAndReference> {
 
+    /** The base to use to indicate the locus is prior to the reference start (i.e. position zero). */
+    final static byte BASE_BEFORE_REFERENCE_START = (byte) '-';
+
     private final ReferenceSequenceFileWalker referenceSequenceFileWalker;
     private final SamLocusIterator locusIterator;
 
@@ -78,8 +81,15 @@ public class SamLocusAndReferenceIterator extends IterableOnceIterator<SamLocusA
         final ReferenceSequence referenceSequence = referenceSequenceFileWalker.get(locus.getSequenceIndex(), locus.getSequenceName(),
                 locus.getSequenceLength());
 
-        //position is 1-based...arrays are 0-based!
-        return new SAMLocusAndReference(locus, referenceSequence.getBases()[locus.getPosition() - 1]);
+        // Developer notes:
+        // 1. position is 1-based...arrays are 0-based!
+        // 2. We must guard against insertions before the reference
+        if (locus.getPosition() == 0) {
+            return new SAMLocusAndReference(locus, BASE_BEFORE_REFERENCE_START);
+        }
+        else {
+            return new SAMLocusAndReference(locus, referenceSequence.getBases()[locus.getPosition() - 1]);
+        }
     }
 
     /** Small class to hold together
