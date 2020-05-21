@@ -344,7 +344,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     }
 
     static String extractSingleAttribute(final List<String> values) {
-        if (values.isEmpty()) {
+        if (values == null || values.isEmpty()) {
             return null;
         }
 

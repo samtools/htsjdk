@@ -84,15 +84,15 @@ public class Gff3FeatureImpl implements Gff3Feature {
     public Set<Gff3FeatureImpl> getAncestors() {
         final List<Gff3FeatureImpl> ancestors = new ArrayList<>(parents);
         for (final Gff3FeatureImpl parent : parents) {
-            ancestors.addAll(baseData.getAttributes().containsKey(DERIVES_FROM_ATTRIBUTE_KEY)? parent.getAncestors(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY)) : parent.getAncestors());
+            ancestors.addAll(getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty()? parent.getAncestors() : parent.getAncestors(new HashSet<>(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY))));
         }
         return new LinkedHashSet<>(ancestors);
     }
 
-    private Set<Gff3FeatureImpl> getAncestors(final String derivingFrom) {
+    private Set<Gff3FeatureImpl> getAncestors(final Collection<String> derivingFrom) {
         final List<Gff3FeatureImpl> ancestors = new ArrayList<>();
         for (final Gff3FeatureImpl parent : parents) {
-            if (parent.getID().equals(derivingFrom) || parent.getAncestors().stream().anyMatch(f -> f.getID().equals(derivingFrom))) {
+            if (derivingFrom.contains(parent.getID()) || parent.getAncestors().stream().anyMatch(f -> derivingFrom.contains(f.getID()))) {
                 ancestors.add(parent);
                 ancestors.addAll(parent.getAncestors());
             }
@@ -116,8 +116,8 @@ public class Gff3FeatureImpl implements Gff3Feature {
     }
 
     private Set<Gff3FeatureImpl> getDescendents(final Set<String> idsInLineage) {
-        final List<Gff3FeatureImpl> childrenToAdd = children.stream().filter(c -> c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY) == null ||
-                idsInLineage.contains(c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY))).
+        final List<Gff3FeatureImpl> childrenToAdd = children.stream().filter(c -> c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty() ||
+                !Collections.disjoint(idsInLineage, new HashSet<>(c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY)))).
                 collect(Collectors.toList());
         final List<Gff3FeatureImpl> descendants = new ArrayList<>(childrenToAdd);
 
@@ -148,8 +148,8 @@ public class Gff3FeatureImpl implements Gff3Feature {
 
     public void addParent(final Gff3FeatureImpl parent) {
         final Set<Gff3FeatureImpl> topLevelFeaturesToAdd = new HashSet<>(parent.getTopLevelFeatures());
-        if (baseData.getAttributes().containsKey(DERIVES_FROM_ATTRIBUTE_KEY)) {
-            topLevelFeaturesToAdd.removeIf(f -> !f.getID().equals(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY)) && f.getDescendents().stream().noneMatch(f2 -> f2.getID()== null? false:f2.getID().equals(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY))));
+        if (!getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty()) {
+            topLevelFeaturesToAdd.removeIf(f -> !getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).contains(f.getID()) && f.getDescendents().stream().noneMatch(f2 -> f2.getID()!= null && getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).contains(f2.getID())));
         }
         parents.add(parent);
         parent.addChild(this);

@@ -178,8 +178,7 @@ public class Gff3CodecTest extends HtsjdkTest {
         Assert.assertEquals(feature.getSource(), "a source & also a str*)%nge source");
         Assert.assertEquals(feature.getType(), "a region");
         Assert.assertEquals(feature.getID(), "this is the ID of this wacky feature^&%##$%*&>,. ,.");
-        Assert.assertEquals(feature.getAttribute("Another key"), "Another%3Dvalue,And%20a%20second%2C%20value");
-        Assert.assertEquals(Gff3Codec.decodeAttributeValue(feature.getAttribute("Another key")), Arrays.asList("Another=value", "And a second, value"));
+        Assert.assertEquals(feature.getAttribute("Another key"), Arrays.asList("Another=value", "And a second, value"));
     }
 
 
@@ -198,113 +197,113 @@ public class Gff3CodecTest extends HtsjdkTest {
 
         final Set<Gff3Feature> canonicalGeneFeatures = new HashSet<>();
 
-        final Gff3FeatureImpl canonicalGene_gene00001 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 9000, 1030d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene00001", "Name", "EDEN"));
+        final Gff3FeatureImpl canonicalGene_gene00001 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene00001"), "Name", Collections.singletonList("EDEN")));
         canonicalGeneFeatures.add(canonicalGene_gene00001);
 
-        final Gff3FeatureImpl canonicalGene_tfbs00001 = new Gff3FeatureImpl("ctg123", ".", "TF_binding_site", 1000, 1012, 0.999d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "tfbs00001", "Parent", "gene00001"));
+        final Gff3FeatureImpl canonicalGene_tfbs00001 = new Gff3FeatureImpl("ctg123", ".", "TF_binding_site", 1000, 1012, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("tfbs00001"), "Parent", Collections.singletonList("gene00001")));
         canonicalGene_tfbs00001.addParent(canonicalGene_gene00001);
         canonicalGeneFeatures.add(canonicalGene_tfbs00001);
 
-        final Gff3FeatureImpl canonicalGene_mRNA00001 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 9000, 1.37d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "mRNA00001", "Name", "EDEN.1", "Parent", "gene00001"));
+        final Gff3FeatureImpl canonicalGene_mRNA00001 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("mRNA00001"), "Name", Collections.singletonList("EDEN.1"), "Parent", Collections.singletonList("gene00001")));
         canonicalGene_mRNA00001.addParent(canonicalGene_gene00001);
         canonicalGeneFeatures.add(canonicalGene_mRNA00001);
 
-        final Gff3FeatureImpl canonicalGene_mRNA00002 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "mRNA00002", "Name", "EDEN.2", "Parent", "gene00001"));
+        final Gff3FeatureImpl canonicalGene_mRNA00002 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("mRNA00002"), "Name", Collections.singletonList("EDEN.2"), "Parent", Collections.singletonList("gene00001")));
         canonicalGene_mRNA00002.addParent(canonicalGene_gene00001);
         canonicalGeneFeatures.add(canonicalGene_mRNA00002);
 
-        final Gff3FeatureImpl canonicalGene_mRNA00003 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1300, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "mRNA00003", "Name", "EDEN.3", "Parent", "gene00001"));
+        final Gff3FeatureImpl canonicalGene_mRNA00003 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1300, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("mRNA00003"), "Name", Collections.singletonList("EDEN.3"), "Parent", Collections.singletonList("gene00001")));
         canonicalGene_mRNA00003.addParent(canonicalGene_gene00001);
         canonicalGeneFeatures.add(canonicalGene_mRNA00003);
 
-        final Gff3FeatureImpl canonicalGene_exon00001 = new Gff3FeatureImpl("ctg123", ".", "exon", 1300, 1500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "exon00001", "Parent", "mRNA00003"));
+        final Gff3FeatureImpl canonicalGene_exon00001 = new Gff3FeatureImpl("ctg123", ".", "exon", 1300, 1500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("exon00001"), "Parent", Collections.singletonList("mRNA00003")));
         canonicalGene_exon00001.addParent(canonicalGene_mRNA00003);
         canonicalGeneFeatures.add(canonicalGene_exon00001);
 
-        final Gff3FeatureImpl canonicalGene_exon00002 = new Gff3FeatureImpl("ctg123", ".", "exon", 1050, 1500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "exon00002", "Parent", "mRNA00001,mRNA00002"));
+        final Gff3FeatureImpl canonicalGene_exon00002 = new Gff3FeatureImpl("ctg123", ".", "exon", 1050, 1500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("exon00002"), "Parent", Arrays.asList("mRNA00001", "mRNA00002")));
         canonicalGene_exon00002.addParent(canonicalGene_mRNA00001);
         canonicalGene_exon00002.addParent(canonicalGene_mRNA00002);
         canonicalGeneFeatures.add(canonicalGene_exon00002);
 
-        final Gff3FeatureImpl canonicalGene_exon00003 = new Gff3FeatureImpl("ctg123", ".", "exon", 3000, 3902, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "exon00003", "Parent", "mRNA00001,mRNA00003"));
+        final Gff3FeatureImpl canonicalGene_exon00003 = new Gff3FeatureImpl("ctg123", ".", "exon", 3000, 3902, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("exon00003"), "Parent", Arrays.asList("mRNA00001", "mRNA00003")));
         canonicalGene_exon00003.addParent(canonicalGene_mRNA00001);
         canonicalGene_exon00003.addParent(canonicalGene_mRNA00003);
         canonicalGeneFeatures.add(canonicalGene_exon00003);
 
-        final Gff3FeatureImpl canonicalGene_exon00004 = new Gff3FeatureImpl("ctg123", ".", "exon", 5000, 5500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "exon00004", "Parent", "mRNA00001,mRNA00002,mRNA00003"));
+        final Gff3FeatureImpl canonicalGene_exon00004 = new Gff3FeatureImpl("ctg123", ".", "exon", 5000, 5500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("exon00004"), "Parent", Arrays.asList("mRNA00001", "mRNA00002", "mRNA00003")));
         canonicalGene_exon00004.addParent(canonicalGene_mRNA00001);
         canonicalGene_exon00004.addParent(canonicalGene_mRNA00002);
         canonicalGene_exon00004.addParent(canonicalGene_mRNA00003);
         canonicalGeneFeatures.add(canonicalGene_exon00004);
 
-        final Gff3FeatureImpl canonicalGene_exon00005 = new Gff3FeatureImpl("ctg123", ".", "exon", 7000, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "exon00005", "Parent", "mRNA00001,mRNA00002,mRNA00003"));
+        final Gff3FeatureImpl canonicalGene_exon00005 = new Gff3FeatureImpl("ctg123", ".", "exon", 7000, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("exon00005"), "Parent", Arrays.asList("mRNA00001", "mRNA00002", "mRNA00003")));
         canonicalGene_exon00005.addParent(canonicalGene_mRNA00001);
         canonicalGene_exon00005.addParent(canonicalGene_mRNA00002);
         canonicalGene_exon00005.addParent(canonicalGene_mRNA00003);
         canonicalGeneFeatures.add(canonicalGene_exon00005);
 
-        final Gff3FeatureImpl canonicalGene_cds00001_1 = new Gff3FeatureImpl("ctg123", ".", "CDS", 1201, 1500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00001", "Parent", "mRNA00001", "Name", "edenprotein.1"));
+        final Gff3FeatureImpl canonicalGene_cds00001_1 = new Gff3FeatureImpl("ctg123", ".", "CDS", 1201, 1500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00001"), "Parent", Collections.singletonList("mRNA00001"), "Name", Collections.singletonList("edenprotein.1")));
         canonicalGene_cds00001_1.addParent(canonicalGene_mRNA00001);
         canonicalGeneFeatures.add(canonicalGene_cds00001_1);
 
-        final Gff3FeatureImpl canonicalGene_cds00001_2 = new Gff3FeatureImpl("ctg123", ".", "CDS", 3000, 3902, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00001", "Parent", "mRNA00001", "Name", "edenprotein.1"));
+        final Gff3FeatureImpl canonicalGene_cds00001_2 = new Gff3FeatureImpl("ctg123", ".", "CDS", 3000, 3902, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00001"), "Parent", Collections.singletonList("mRNA00001"), "Name", Collections.singletonList("edenprotein.1")));
         canonicalGene_cds00001_2.addParent(canonicalGene_mRNA00001);
         canonicalGene_cds00001_2.addCoFeature(canonicalGene_cds00001_1);
         canonicalGeneFeatures.add(canonicalGene_cds00001_2);
 
-        final Gff3FeatureImpl canonicalGene_cds00001_3 = new Gff3FeatureImpl("ctg123", ".", "CDS", 5000, 5500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00001", "Parent", "mRNA00001", "Name", "edenprotein.1"));
+        final Gff3FeatureImpl canonicalGene_cds00001_3 = new Gff3FeatureImpl("ctg123", ".", "CDS", 5000, 5500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00001"), "Parent", Collections.singletonList("mRNA00001"), "Name", Collections.singletonList("edenprotein.1")));
         canonicalGene_cds00001_3.addParent(canonicalGene_mRNA00001);
         canonicalGene_cds00001_3.addCoFeature(canonicalGene_cds00001_1);
         canonicalGene_cds00001_3.addCoFeature(canonicalGene_cds00001_2);
         canonicalGeneFeatures.add(canonicalGene_cds00001_3);
 
-        final Gff3FeatureImpl canonicalGene_cds00001_4 = new Gff3FeatureImpl("ctg123", ".", "CDS", 7000, 7600, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00001", "Parent", "mRNA00001", "Name", "edenprotein.1"));
+        final Gff3FeatureImpl canonicalGene_cds00001_4 = new Gff3FeatureImpl("ctg123", ".", "CDS", 7000, 7600, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00001"), "Parent", Collections.singletonList("mRNA00001"), "Name", Collections.singletonList("edenprotein.1")));
         canonicalGene_cds00001_4.addParent(canonicalGene_mRNA00001);
         canonicalGene_cds00001_4.addCoFeature(canonicalGene_cds00001_1);
         canonicalGene_cds00001_4.addCoFeature(canonicalGene_cds00001_2);
         canonicalGene_cds00001_4.addCoFeature(canonicalGene_cds00001_3);
         canonicalGeneFeatures.add(canonicalGene_cds00001_4);
 
-        final Gff3FeatureImpl canonicalGene_cds00002_1 = new Gff3FeatureImpl("ctg123", ".", "CDS", 1201, 1500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00002", "Parent", "mRNA00002", "Name", "edenprotein.2"));
+        final Gff3FeatureImpl canonicalGene_cds00002_1 = new Gff3FeatureImpl("ctg123", ".", "CDS", 1201, 1500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00002"), "Parent", Collections.singletonList("mRNA00002"), "Name", Collections.singletonList("edenprotein.2")));
         canonicalGene_cds00002_1.addParent(canonicalGene_mRNA00002);
         canonicalGeneFeatures.add(canonicalGene_cds00002_1);
 
-        final Gff3FeatureImpl canonicalGene_cds00002_2 = new Gff3FeatureImpl("ctg123", ".", "CDS", 5000, 5500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00002", "Parent", "mRNA00002", "Name", "edenprotein.2"));
+        final Gff3FeatureImpl canonicalGene_cds00002_2 = new Gff3FeatureImpl("ctg123", ".", "CDS", 5000, 5500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00002"), "Parent", Collections.singletonList("mRNA00002"), "Name", Collections.singletonList("edenprotein.2")));
         canonicalGene_cds00002_2.addParent(canonicalGene_mRNA00002);
         canonicalGene_cds00002_2.addCoFeature(canonicalGene_cds00002_1);
         canonicalGeneFeatures.add(canonicalGene_cds00002_2);
 
-        final Gff3FeatureImpl canonicalGene_cds00002_3 = new Gff3FeatureImpl("ctg123", ".", "CDS", 7000, 7600, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00002", "Parent", "mRNA00002", "Name", "edenprotein.2"));
+        final Gff3FeatureImpl canonicalGene_cds00002_3 = new Gff3FeatureImpl("ctg123", ".", "CDS", 7000, 7600, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00002"), "Parent", Collections.singletonList("mRNA00002"), "Name", Collections.singletonList("edenprotein.2")));
         canonicalGene_cds00002_3.addParent(canonicalGene_mRNA00002);
         canonicalGene_cds00002_3.addCoFeature(canonicalGene_cds00002_1);
         canonicalGene_cds00002_3.addCoFeature(canonicalGene_cds00002_2);
         canonicalGeneFeatures.add(canonicalGene_cds00002_3);
 
-        final Gff3FeatureImpl canonicalGene_cds00003_1 = new Gff3FeatureImpl("ctg123", ".", "CDS", 3301, 3902, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00003", "Parent", "mRNA00003", "Name", "edenprotein.3"));
+        final Gff3FeatureImpl canonicalGene_cds00003_1 = new Gff3FeatureImpl("ctg123", ".", "CDS", 3301, 3902, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00003"), "Parent", Collections.singletonList("mRNA00003"), "Name", Collections.singletonList("edenprotein.3")));
         canonicalGene_cds00003_1.addParent(canonicalGene_mRNA00003);
         canonicalGeneFeatures.add(canonicalGene_cds00003_1);
 
-        final Gff3FeatureImpl canonicalGene_cds00003_2 = new Gff3FeatureImpl("ctg123", ".", "CDS", 5000, 5500, -1d, Strand.POSITIVE, 1, ImmutableMap.of("ID", "cds00003", "Parent", "mRNA00003", "Name", "edenprotein.3"));
+        final Gff3FeatureImpl canonicalGene_cds00003_2 = new Gff3FeatureImpl("ctg123", ".", "CDS", 5000, 5500, -1d, Strand.POSITIVE, 1, ImmutableMap.of("ID", Collections.singletonList("cds00003"), "Parent", Collections.singletonList("mRNA00003"), "Name", Collections.singletonList("edenprotein.3")));
         canonicalGene_cds00003_2.addParent(canonicalGene_mRNA00003);
         canonicalGene_cds00003_2.addCoFeature(canonicalGene_cds00003_1);
         canonicalGeneFeatures.add(canonicalGene_cds00003_2);
 
-        final Gff3FeatureImpl canonicalGene_cds00003_3 = new Gff3FeatureImpl("ctg123", ".", "CDS", 7000, 7600, -1d, Strand.POSITIVE, 1, ImmutableMap.of("ID", "cds00003", "Parent", "mRNA00003", "Name", "edenprotein.3"));
+        final Gff3FeatureImpl canonicalGene_cds00003_3 = new Gff3FeatureImpl("ctg123", ".", "CDS", 7000, 7600, -1d, Strand.POSITIVE, 1, ImmutableMap.of("ID", Collections.singletonList("cds00003"), "Parent", Collections.singletonList("mRNA00003"), "Name", Collections.singletonList("edenprotein.3")));
         canonicalGene_cds00003_3.addParent(canonicalGene_mRNA00003);
         canonicalGene_cds00003_3.addCoFeature(canonicalGene_cds00003_1);
         canonicalGene_cds00003_3.addCoFeature(canonicalGene_cds00003_2);
         canonicalGeneFeatures.add(canonicalGene_cds00003_3);
 
-        final Gff3FeatureImpl canonicalGene_cds00004_1 = new Gff3FeatureImpl("ctg123", ".", "CDS", 3391, 3902, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds00004", "Parent", "mRNA00003", "Name", "edenprotein.4"));
+        final Gff3FeatureImpl canonicalGene_cds00004_1 = new Gff3FeatureImpl("ctg123", ".", "CDS", 3391, 3902, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds00004"), "Parent", Collections.singletonList("mRNA00003"), "Name", Collections.singletonList("edenprotein.4")));
         canonicalGene_cds00004_1.addParent(canonicalGene_mRNA00003);
         canonicalGeneFeatures.add(canonicalGene_cds00004_1);
         
-        final Gff3FeatureImpl canonicalGene_cds00004_2 = new Gff3FeatureImpl("ctg123", ".", "CDS", 5000, 5500, -1d, Strand.POSITIVE, 1, ImmutableMap.of("ID", "cds00004", "Parent", "mRNA00003", "Name", "edenprotein.4"));
+        final Gff3FeatureImpl canonicalGene_cds00004_2 = new Gff3FeatureImpl("ctg123", ".", "CDS", 5000, 5500, -1d, Strand.POSITIVE, 1, ImmutableMap.of("ID", Collections.singletonList("cds00004"), "Parent", Collections.singletonList("mRNA00003"), "Name", Collections.singletonList("edenprotein.4")));
         canonicalGene_cds00004_2.addParent(canonicalGene_mRNA00003);
         canonicalGene_cds00004_2.addCoFeature(canonicalGene_cds00004_1);
         canonicalGeneFeatures.add(canonicalGene_cds00004_2);
 
-        final Gff3FeatureImpl canonicalGene_cds00004_3 = new Gff3FeatureImpl("ctg123", ".", "CDS", 7000, 7600, -1d, Strand.POSITIVE, 1, ImmutableMap.of("ID", "cds00004", "Parent", "mRNA00003", "Name", "edenprotein.4"));
+        final Gff3FeatureImpl canonicalGene_cds00004_3 = new Gff3FeatureImpl("ctg123", ".", "CDS", 7000, 7600, -1d, Strand.POSITIVE, 1, ImmutableMap.of("ID", Collections.singletonList("cds00004"), "Parent", Collections.singletonList("mRNA00003"), "Name", Collections.singletonList("edenprotein.4")));
         canonicalGene_cds00004_3.addParent(canonicalGene_mRNA00003);
         canonicalGene_cds00004_3.addCoFeature(canonicalGene_cds00004_1);
         canonicalGene_cds00004_3.addCoFeature(canonicalGene_cds00004_2);
@@ -318,40 +317,40 @@ public class Gff3CodecTest extends HtsjdkTest {
 
         final Set<Gff3Feature> polycisctronicTranscriptFeatures = new HashSet<>();
 
-        final Gff3FeatureImpl polycistronicTranscript_gene01 = new Gff3FeatureImpl("chrX", ".", "gene", 100, 200, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene01", "name", "resA"));
-        final Gff3FeatureImpl polycistronicTranscript_gene02 = new Gff3FeatureImpl("chrX", ".", "gene", 250, 350, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene02", "name", "resB"));
-        final Gff3FeatureImpl polycistronicTranscript_gene03 = new Gff3FeatureImpl("chrX", ".", "gene", 400, 500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene03", "name", "resX"));
-        final Gff3FeatureImpl polycistronicTranscript_gene04 = new Gff3FeatureImpl("chrX", ".", "gene", 550, 650, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene04", "name", "resZ"));
+        final Gff3FeatureImpl polycistronicTranscript_gene01 = new Gff3FeatureImpl("chrX", ".", "gene", 100, 200, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene01"), "name", Collections.singletonList("resA")));
+        final Gff3FeatureImpl polycistronicTranscript_gene02 = new Gff3FeatureImpl("chrX", ".", "gene", 250, 350, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene02"), "name", Collections.singletonList("resB")));
+        final Gff3FeatureImpl polycistronicTranscript_gene03 = new Gff3FeatureImpl("chrX", ".", "gene", 400, 500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene03"), "name", Collections.singletonList("resX")));
+        final Gff3FeatureImpl polycistronicTranscript_gene04 = new Gff3FeatureImpl("chrX", ".", "gene", 550, 650, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene04"), "name", Collections.singletonList("resZ")));
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_gene01);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_gene02);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_gene03);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_gene04);
 
-        final Gff3FeatureImpl polycistronicTranscript_mRNA = new Gff3FeatureImpl("chrX", ".", "mRNA", 100, 650, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "tran01", "Parent", "gene01,gene02,gene03,gene04"));
+        final Gff3FeatureImpl polycistronicTranscript_mRNA = new Gff3FeatureImpl("chrX", ".", "mRNA", 100, 650, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("tran01"), "Parent", Arrays.asList("gene01", "gene02", "gene03", "gene04")));
         polycistronicTranscript_mRNA.addParent(polycistronicTranscript_gene01);
         polycistronicTranscript_mRNA.addParent(polycistronicTranscript_gene02);
         polycistronicTranscript_mRNA.addParent(polycistronicTranscript_gene03);
         polycistronicTranscript_mRNA.addParent(polycistronicTranscript_gene04);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_mRNA);
 
-        final Gff3FeatureImpl polycistronicTranscript_exon = new Gff3FeatureImpl("chrX", ".", "exon", 100, 650, -1d, Strand.POSITIVE, -1, ImmutableMap.of("Parent", "tran01"));
+        final Gff3FeatureImpl polycistronicTranscript_exon = new Gff3FeatureImpl("chrX", ".", "exon", 100, 650, -1d, Strand.POSITIVE, -1, ImmutableMap.of("Parent", Collections.singletonList("tran01")));
         polycistronicTranscript_exon.addParent(polycistronicTranscript_mRNA);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_exon);
 
 
-        final Gff3FeatureImpl polycistronicTranscript_CDS1 = new Gff3FeatureImpl("chrX", ".", "CDS", 100, 200, -1d, Strand.POSITIVE, 0, ImmutableMap.of("Parent", "tran01", "Derives_from", "gene01"));
+        final Gff3FeatureImpl polycistronicTranscript_CDS1 = new Gff3FeatureImpl("chrX", ".", "CDS", 100, 200, -1d, Strand.POSITIVE, 0, ImmutableMap.of("Parent", Collections.singletonList("tran01"), "Derives_from", Collections.singletonList("gene01")));
         polycistronicTranscript_CDS1.addParent(polycistronicTranscript_mRNA);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_CDS1);
 
-        final Gff3FeatureImpl polycistronicTranscript_CDS2 = new Gff3FeatureImpl("chrX", ".", "CDS", 250, 350, -1d, Strand.POSITIVE, 0, ImmutableMap.of("Parent", "tran01", "Derives_from", "gene02"));
+        final Gff3FeatureImpl polycistronicTranscript_CDS2 = new Gff3FeatureImpl("chrX", ".", "CDS", 250, 350, -1d, Strand.POSITIVE, 0, ImmutableMap.of("Parent", Collections.singletonList("tran01"), "Derives_from", Collections.singletonList("gene02")));
         polycistronicTranscript_CDS2.addParent(polycistronicTranscript_mRNA);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_CDS2);
 
-        final Gff3FeatureImpl polycistronicTranscript_CDS3 = new Gff3FeatureImpl("chrX", ".", "CDS", 400, 500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("Parent", "tran01", "Derives_from", "gene03"));
+        final Gff3FeatureImpl polycistronicTranscript_CDS3 = new Gff3FeatureImpl("chrX", ".", "CDS", 400, 500, -1d, Strand.POSITIVE, 0, ImmutableMap.of("Parent", Collections.singletonList("tran01"), "Derives_from", Collections.singletonList("gene03")));
         polycistronicTranscript_CDS3.addParent(polycistronicTranscript_mRNA);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_CDS3);
 
-        final Gff3FeatureImpl polycistronicTranscript_CDS4 = new Gff3FeatureImpl("chrX", ".", "CDS", 550, 650, -1d, Strand.POSITIVE, 0, ImmutableMap.of("Parent", "tran01", "Derives_from", "gene04"));
+        final Gff3FeatureImpl polycistronicTranscript_CDS4 = new Gff3FeatureImpl("chrX", ".", "CDS", 550, 650, -1d, Strand.POSITIVE, 0, ImmutableMap.of("Parent", Collections.singletonList("tran01"), "Derives_from", Collections.singletonList("gene04")));
         polycistronicTranscript_CDS4.addParent(polycistronicTranscript_mRNA);
         polycisctronicTranscriptFeatures.add(polycistronicTranscript_CDS4);
 
@@ -363,23 +362,23 @@ public class Gff3CodecTest extends HtsjdkTest {
 
         final Set<Gff3Feature> programmedFrameshiftFeatures = new HashSet<>();
 
-        final Gff3FeatureImpl programmedFrameshift_gene = new Gff3FeatureImpl("chrX", ".", "gene", 100, 200, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene01", "name", "my_gene"));
+        final Gff3FeatureImpl programmedFrameshift_gene = new Gff3FeatureImpl("chrX", ".", "gene", 100, 200, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene01"), "name", Collections.singletonList("my_gene")));
         programmedFrameshiftFeatures.add(programmedFrameshift_gene);
 
-        final Gff3FeatureImpl programmedFrameshift_mRNA = new Gff3FeatureImpl("chrX", ".", "mRNA", 100, 200, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "tran01", "Parent", "gene01", "Ontology_term", "SO:1000069"));
+        final Gff3FeatureImpl programmedFrameshift_mRNA = new Gff3FeatureImpl("chrX", ".", "mRNA", 100, 200, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("tran01"), "Parent", Collections.singletonList("gene01"), "Ontology_term", Collections.singletonList("SO:1000069")));
         programmedFrameshift_mRNA.addParent(programmedFrameshift_gene);
         programmedFrameshiftFeatures.add(programmedFrameshift_mRNA);
 
-        final Gff3FeatureImpl programmedFrameshift_exon = new Gff3FeatureImpl("chrX", ".", "exon", 100, 200, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "exon01", "Parent", "tran01"));
+        final Gff3FeatureImpl programmedFrameshift_exon = new Gff3FeatureImpl("chrX", ".", "exon", 100, 200, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("exon01"), "Parent", Collections.singletonList("tran01")));
         programmedFrameshift_exon.addParent(programmedFrameshift_mRNA);
         programmedFrameshiftFeatures.add(programmedFrameshift_exon);
 
 
-        final Gff3FeatureImpl programmedFrameshift_CDS1_1 = new Gff3FeatureImpl("chrX", ".", "CDS", 100, 150, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds01", "Parent", "tran01"));
+        final Gff3FeatureImpl programmedFrameshift_CDS1_1 = new Gff3FeatureImpl("chrX", ".", "CDS", 100, 150, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds01"), "Parent",Collections.singletonList( "tran01")));
         programmedFrameshift_CDS1_1.addParent(programmedFrameshift_mRNA);
         programmedFrameshiftFeatures.add(programmedFrameshift_CDS1_1);
 
-        final Gff3FeatureImpl programmedFrameshift_CDS1_2 = new Gff3FeatureImpl("chrX", ".", "CDS", 149, 200, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", "cds01", "Parent", "tran01"));
+        final Gff3FeatureImpl programmedFrameshift_CDS1_2 = new Gff3FeatureImpl("chrX", ".", "CDS", 149, 200, -1d, Strand.POSITIVE, 0, ImmutableMap.of("ID", Collections.singletonList("cds01"), "Parent", Collections.singletonList("tran01")));
         programmedFrameshift_CDS1_2.addParent(programmedFrameshift_mRNA);
         programmedFrameshift_CDS1_2.addCoFeature(programmedFrameshift_CDS1_1);
         programmedFrameshiftFeatures.add(programmedFrameshift_CDS1_2);
@@ -392,17 +391,17 @@ public class Gff3CodecTest extends HtsjdkTest {
 
         final Set<Gff3Feature> multipleGenesFeatures = new HashSet<>();
 
-        final Gff3FeatureImpl multipleGenes_gene1 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 1500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene00001"));
+        final Gff3FeatureImpl multipleGenes_gene1 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 1500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene00001")));
         multipleGenesFeatures.add(multipleGenes_gene1);
 
-        final Gff3FeatureImpl multipleGenes_mRNA1 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 1400, -1d, Strand.POSITIVE, -1, ImmutableMap.of("Parent", "gene00001"));
+        final Gff3FeatureImpl multipleGenes_mRNA1 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 1400, -1d, Strand.POSITIVE, -1, ImmutableMap.of("Parent", Collections.singletonList("gene00001")));
         multipleGenes_mRNA1.addParent(multipleGenes_gene1);
         multipleGenesFeatures.add(multipleGenes_mRNA1);
 
-        final Gff3FeatureImpl multipleGenes_gene2 = new Gff3FeatureImpl("ctg123", ".", "gene", 2000, 2500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene00002"));
+        final Gff3FeatureImpl multipleGenes_gene2 = new Gff3FeatureImpl("ctg123", ".", "gene", 2000, 2500, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene00002")));
         multipleGenesFeatures.add(multipleGenes_gene2);
 
-        final Gff3FeatureImpl multipleGenes_mRNA2 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 2050, 2400, -1d, Strand.POSITIVE, -1, ImmutableMap.of("Parent", "gene00002"));
+        final Gff3FeatureImpl multipleGenes_mRNA2 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 2050, 2400, -1d, Strand.POSITIVE, -1, ImmutableMap.of("Parent", Collections.singletonList("gene00002")));
         multipleGenes_mRNA2.addParent(multipleGenes_gene2);
         multipleGenesFeatures.add(multipleGenes_mRNA2);
 

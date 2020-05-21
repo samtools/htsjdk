@@ -48,14 +48,7 @@ public class Gff3Writer implements Closeable {
                     feature.getStrand().toString(),
                     feature.getPhase() < 0 ? "." : Integer.toString(feature.getPhase())
             );
-            final List<String> attributesStrings = feature.getAttributes().entrySet().stream().map(e -> {
-                        try {
-                            return String.join("=", new String[]{encodeForNinthColumn(e.getKey()), encodeForNinthColumn(e.getValue())});
-                        } catch (final URISyntaxException ex) {
-                            throw new TribbleException("Exception writing out gff",ex);
-                        }
-                    }
-            ).collect(Collectors.toList());
+            final List<String> attributesStrings = feature.getAttributes().entrySet().stream().map(e -> String.join("=", new String[]{e.getKey(), encodeForNinthColumn(e.getValue())})).collect(Collectors.toList());
             final String attributesString = attributesStrings.isEmpty() ? "." : String.join(";", attributesStrings);
 
             final String lineString = lineNoAttributes + "\t" + attributesString;
@@ -65,16 +58,18 @@ public class Gff3Writer implements Closeable {
         }
     }
 
-    private String encodeForNinthColumn(final String decodedString) throws URISyntaxException {
-        //in the ninth column of Gff certain characters have special meaning
-        final List<String> splitString = ParsingUtils.split(decodedString, ',');
-        final List<String> encodedSplitString = new ArrayList<>();
-        for (final String string : splitString) {
-            final URI uri = new URI(string);
-            encodedSplitString.add(uri.toASCIIString());
-        }
 
-        return String.join(",", encodedSplitString);
+    private String encodeForNinthColumn(final List<String> values) {
+        final List<String> encodedValues = values.stream().map(v -> {
+                    try {
+                        return new URI(v);
+                    } catch (final URISyntaxException ex) {
+                        throw new TribbleException("Error encoding ninth column value " + v, ex);
+                    }
+                }
+        ).map(URI::toASCIIString).collect(Collectors.toList());
+
+        return String.join(",", encodedValues);
     }
 
     public void addFlushDirective() {
