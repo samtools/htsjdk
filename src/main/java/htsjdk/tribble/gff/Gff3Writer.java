@@ -3,15 +3,12 @@ package htsjdk.tribble.gff;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,8 +21,8 @@ public class Gff3Writer implements Closeable {
     final private PrintStream out;
     final static String version = "3.1.25";
 
-    Gff3Writer(final Path path) throws IOException {
-        if (!FileExtensions.GFF3.stream().anyMatch(path::endsWith)) {
+    public Gff3Writer(final Path path) throws IOException {
+        if (!FileExtensions.GFF3.stream().anyMatch(e -> path.toString().endsWith(e))) {
             throw new TribbleException("File " + path + " does not have extension consistent with gff3");
         }
 
@@ -35,7 +32,7 @@ public class Gff3Writer implements Closeable {
         initialize();
     }
 
-    Gff3Writer(final PrintStream stream) {
+    public Gff3Writer(final PrintStream stream) {
         out = stream;
         initialize();
     }
@@ -70,12 +67,12 @@ public class Gff3Writer implements Closeable {
     private String encodeForNinthColumn(final List<String> values) {
         final List<String> encodedValues = values.stream().map(v -> {
                     try {
-                        return new URI(v);
-                    } catch (final URISyntaxException ex) {
+                        return URLEncoder.encode(v, "UTF-8");
+                    } catch (final UnsupportedEncodingException ex) {
                         throw new TribbleException("Error encoding ninth column value " + v, ex);
                     }
                 }
-        ).map(URI::toASCIIString).collect(Collectors.toList());
+        ).collect(Collectors.toList());
 
         return String.join(",", encodedValues);
     }

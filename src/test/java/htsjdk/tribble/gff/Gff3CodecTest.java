@@ -423,4 +423,31 @@ public class Gff3CodecTest extends HtsjdkTest {
 
         Assert.assertEquals(observedFeatures, expectedFeatures.size());
     }
+
+    @DataProvider(name = "directiveDataProvider")
+    public Object[][] directiveDataProvider() {
+        return new Object[][] {
+                {"##gff-version 3.1.25", Gff3Codec.Gff3Directive.VERSION3_DIRECTIVE, "3.1.25"},
+                {"##gff-version 3.7", Gff3Codec.Gff3Directive.VERSION3_DIRECTIVE, "3.7"},
+                {"##gff-version 3", Gff3Codec.Gff3Directive.VERSION3_DIRECTIVE, "3"},
+                {"##gff-version 3.112.25.4.2", Gff3Codec.Gff3Directive.VERSION3_DIRECTIVE, "3.112.25.4.2"},
+                {"##gff-version 2.7", null, null},
+                {"##sequence-region chr10 250 277", Gff3Codec.Gff3Directive.SEQUENCE_REGION_DIRECTIVE, new SequenceRegion("chr10", 250, 277)},
+                {"###", Gff3Codec.Gff3Directive.FLUSH_DIRECTIVE, null},
+                {"####", null, null},
+                {"##FASTA", Gff3Codec.Gff3Directive.FASTA_DIRECTIVE, null}
+        };
+    }
+
+    @Test(dataProvider = "directiveDataProvider")
+    public void directiveTest(final String line, final Gff3Codec.Gff3Directive expectedDirectiveType, final Object expectedDecodedDirective) throws IOException {
+        final Gff3Codec.Gff3Directive directive = Gff3Codec.Gff3Directive.toDirective(line);
+        Assert.assertEquals(directive, expectedDirectiveType);
+        if (directive != null) {
+            Assert.assertEquals(directive.decode(line), expectedDecodedDirective);
+            if (expectedDecodedDirective != null) {
+                Assert.assertEquals(directive.encode(expectedDecodedDirective), line);
+            }
+        }
+    }
 }

@@ -463,7 +463,13 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
      */
     enum Gff3Directive {
 
-        VERSION3_DIRECTIVE("##gff-version\\s+3(?:.\\d)*(?:\\.\\d)*$") {
+        VERSION3_DIRECTIVE("##gff-version\\s+3(?:\\.\\d*)*$") {
+            @Override
+            public Object decode(final String line) throws IOException {
+                final String[] splitLine = line.split("\\s+");
+                return splitLine[1];
+            }
+
             @Override
             public String encode(final Object object) {
                 if (!(object instanceof String)) {
@@ -471,7 +477,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
                 }
 
                 final String versionLine = "##gff-version " + (String)object;
-                if (regexPattern.matcher(versionLine).matches()) {
+                if (!regexPattern.matcher(versionLine).matches()) {
                     throw new TribbleException("Version " + (String)object + " is not a valid version");
                 }
 
@@ -506,7 +512,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
                 final SequenceRegion sequenceRegion = (SequenceRegion) object;
                 try {
                     final URI contigURI = new URI(sequenceRegion.getContig());
-                    return "##sequence-region " + contigURI.toASCIIString() + " " + sequenceRegion.getStart() + sequenceRegion.getEnd();
+                    return "##sequence-region " + contigURI.toASCIIString() + " " + sequenceRegion.getStart() + " " + sequenceRegion.getEnd();
                 } catch (final URISyntaxException ex) {
                     throw new TribbleException("Cannot encode contig " + sequenceRegion.getContig(), ex);
                 }
