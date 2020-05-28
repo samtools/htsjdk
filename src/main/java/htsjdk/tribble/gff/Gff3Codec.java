@@ -74,6 +74,8 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     private DecodeDepth decodeDepth;
 
+    private int currentLine = 0;
+
     public Gff3Codec() {
         this(DecodeDepth.DEEP);
     }
@@ -94,6 +96,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     }
 
     private Gff3Feature decode(final LineIterator lineIterator, final DecodeDepth depth) throws IOException {
+        currentLine++;
         /*
         Basic strategy: Load features into deque, create maps from a features ID to it, and from a features parents' IDs to it.  For each feature, link to parents using these maps.
         When reaching flush directive, fasta, or end of file, prepare to flush features by moving all active features to deque of features to flush, and clearing
@@ -130,7 +133,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
 
 
-        final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(parseLine(line));
+        final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(parseLine(line, currentLine));
         activeFeatures.add(thisFeature);
         if (depth == DecodeDepth.DEEP) {
             //link to parents/children/co-features
@@ -200,11 +203,11 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         return attributes;
     }
 
-    static private Gff3BaseData parseLine(final String line) {
+    static private Gff3BaseData parseLine(final String line, final int currentLine) {
         final List<String> splitLine = ParsingUtils.split(line, FIELD_DELIMITER);
 
         if (splitLine.size() != NUM_FIELDS) {
-            throw new TribbleException("Found an invalid number of columns in the given Gff3 file- Given: " + splitLine.size() + " Expected: " + NUM_FIELDS + " : " + line);
+            throw new TribbleException("Found an invalid number of columns in the given Gff3 file at line + " + currentLine + " - Given: " + splitLine.size() + " Expected: " + NUM_FIELDS + " : " + line);
         }
 
         try {
@@ -213,15 +216,15 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
             final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
             final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
-            final Double score = splitLine.get(SCORE_INDEX).equals(".") ? -1 : Double.parseDouble(splitLine.get(SCORE_INDEX));
+            final double score = splitLine.get(SCORE_INDEX).equals(".") ? -1 : Double.parseDouble(splitLine.get(SCORE_INDEX));
             final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(".") ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
             final Map<String, String> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
             return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
         } catch (final NumberFormatException ex ) {
-            throw new TribbleException("Cannot read integer value for start/end position!", ex);
+            throw new TribbleException("Cannot read integer value for start/end position from line " + currentLine + ".  Line is: " + line, ex);
         } catch (final IOException ex) {
-            throw new TribbleException("Cannot decode feature info", ex);
+            throw new TribbleException("Cannot decode feature info from line " + currentLine + ".  Line is: " + line, ex);
         }
     }
 

@@ -3,6 +3,7 @@ package htsjdk.tribble.gff;
 import htsjdk.tribble.annotation.Strand;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class Gff3BaseData {
@@ -14,7 +15,7 @@ public class Gff3BaseData {
     private final String type;
     private final int start;
     private final int end;
-    private final Double score;
+    private final double score;
     private final Strand strand;
     private final int phase;
     private final Map<String, String> attributes;
@@ -34,11 +35,11 @@ public class Gff3BaseData {
         this.score = score;
         this.phase = phase;
         this.strand = strand;
-        this.attributes = Collections.unmodifiableMap(attributes);
+        this.attributes = Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
         this.id = attributes.get(ID_ATTRIBUTE_KEY);
         this.name = attributes.get(NAME_ATTRIBUTE_KEY);
         this.alias = attributes.get(ALIAS_ATTRIBUTE_KEY);
-        hashCode = computeHashCode();
+        this.hashCode = computeHashCode();
     }
 
     @Override
@@ -56,7 +57,7 @@ public class Gff3BaseData {
                 otherBaseData.getType().equals(getType()) &&
                 otherBaseData.getStart() == getStart() &&
                 otherBaseData.getEnd() == getEnd() &&
-                otherBaseData.getScore().equals(score) &&
+                ((Double)otherBaseData.getScore()).equals(score) &&
                 otherBaseData.getPhase() == getPhase() &&
                 otherBaseData.getStrand().equals(getStrand()) &&
                 otherBaseData.getAttributes().equals(getAttributes());
@@ -92,7 +93,7 @@ public class Gff3BaseData {
         hash = 31 * hash + getType().hashCode();
         hash = 31 * hash + getStart();
         hash = 31 * hash + getEnd();
-        hash = 31 * hash + getScore().hashCode();
+        hash = 31 * hash + Double.hashCode(getScore());
         hash = 31 * hash + getPhase();
         hash = 31 * hash + getStrand().hashCode();
         hash = 31 * hash + getAttributes().hashCode();
@@ -131,7 +132,9 @@ public class Gff3BaseData {
         return end;
     }
 
-    public Double getScore() {return score;}
+    public double getScore() {
+        return score;
+    }
 
     public Strand getStrand() {
         return strand;

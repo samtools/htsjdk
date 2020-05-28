@@ -197,14 +197,14 @@ public class Gff3CodecTest extends HtsjdkTest {
 
         final Set<Gff3Feature> canonicalGeneFeatures = new HashSet<>();
 
-        final Gff3FeatureImpl canonicalGene_gene00001 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene00001", "Name", "EDEN"));
+        final Gff3FeatureImpl canonicalGene_gene00001 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 9000, 1030d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "gene00001", "Name", "EDEN"));
         canonicalGeneFeatures.add(canonicalGene_gene00001);
 
-        final Gff3FeatureImpl canonicalGene_tfbs00001 = new Gff3FeatureImpl("ctg123", ".", "TF_binding_site", 1000, 1012, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "tfbs00001", "Parent", "gene00001"));
+        final Gff3FeatureImpl canonicalGene_tfbs00001 = new Gff3FeatureImpl("ctg123", ".", "TF_binding_site", 1000, 1012, 0.999d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "tfbs00001", "Parent", "gene00001"));
         canonicalGene_tfbs00001.addParent(canonicalGene_gene00001);
         canonicalGeneFeatures.add(canonicalGene_tfbs00001);
 
-        final Gff3FeatureImpl canonicalGene_mRNA00001 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "mRNA00001", "Name", "EDEN.1", "Parent", "gene00001"));
+        final Gff3FeatureImpl canonicalGene_mRNA00001 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 9000, 1.37d, Strand.POSITIVE, -1, ImmutableMap.of("ID", "mRNA00001", "Name", "EDEN.1", "Parent", "gene00001"));
         canonicalGene_mRNA00001.addParent(canonicalGene_gene00001);
         canonicalGeneFeatures.add(canonicalGene_mRNA00001);
 
@@ -414,7 +414,6 @@ public class Gff3CodecTest extends HtsjdkTest {
     @Test(dataProvider = "examplesDataProvider")
     public void examplesTest(final String inputGff, final Set<Gff3Feature> expectedFeatures) throws IOException {
         final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputGff, null, new Gff3Codec(), false);
-        int observedTopLevelFeatures = 0;
         int observedFeatures = 0;
         for (final Gff3Feature feature : reader.iterator()) {
 
