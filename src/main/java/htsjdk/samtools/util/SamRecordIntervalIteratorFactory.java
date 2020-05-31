@@ -77,6 +77,43 @@ public class SamRecordIntervalIteratorFactory {
         }
     }
 
+
+    /**
+     * @param samReader
+     * @param uniqueIntervals list of intervals of interest, with overlaps merged, in coordinate order
+     * @param useIndex        if false, do not use a BAM index even if it is present.
+     * @return an iterator that will be filtered so that only SAMRecords overlapping the intervals
+     * in uniqueIntervals will be returned.  If a BAM index is available, it will be used to improve performance.
+     * Note however that if there are many intervals that cover a great deal of the genome, using the BAM
+     * index may actually make performance worse.
+     */
+    public CloseableIterator<SAMRecord> makeSamRecordIntervalIterator(final SamReader.ReaderImplementation samReader,
+                                                                      final List<Interval> uniqueIntervals,
+                                                                      final boolean useIndex) {
+        if (!samReader.hasIndex() || !useIndex) {
+            final int stopAfterSequence;
+            final int stopAfterPosition;
+            if (uniqueIntervals.isEmpty()) {
+                stopAfterSequence = -1;
+                stopAfterPosition = -1;
+            } else {
+                final Interval lastInterval = uniqueIntervals.get(uniqueIntervals.size() - 1);
+                stopAfterSequence = samReader.getFileHeader().getSequenceIndex(lastInterval.getContig());
+                stopAfterPosition = lastInterval.getEnd();
+            }
+            final IntervalFilter intervalFilter = new IntervalFilter(uniqueIntervals, samReader.getFileHeader());
+            return new StopAfterFilteringIterator(samReader.getIterator(), intervalFilter, stopAfterSequence, stopAfterPosition);
+        } else {
+            final QueryInterval[] queryIntervals = new QueryInterval[uniqueIntervals.size()];
+            for (int i = 0; i < queryIntervals.length; ++i) {
+                final Interval inputInterval = uniqueIntervals.get(i);
+                queryIntervals[i] = new QueryInterval(samReader.getFileHeader().getSequenceIndex(inputInterval.getContig()),
+                        inputInterval.getStart(), inputInterval.getEnd());
+            }
+            return samReader.query(queryIntervals, false);
+        }
+    }
+
     /**
      * Halt iteration after a read is encountered that starts after the given sequence and position.
      * Note that most of this code is copied from FilteringSamIterator.  It would be nice just to override getNextRecord,
