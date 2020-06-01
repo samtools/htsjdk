@@ -144,7 +144,7 @@ public class AbstractRecordAndOffset {
     protected void validateOffset(int offset, final byte[] array) {
         if (offset < 0 || offset >= array.length) {
             throw new IllegalArgumentException("The requested position is not covered by this " + this.getClass().getSimpleName() +
-                    " object.");
+                    " object. \n Offset = " + offset + " Array length = " + array.length + "");
         }
     }
 }
