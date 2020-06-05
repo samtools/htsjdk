@@ -3,7 +3,6 @@ package htsjdk.tribble.gff;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,45 +22,47 @@ public interface Gff3Feature extends Feature {
 
 
     default String getSource() {
-        return getBaseData().source;
+        return getBaseData().getSource();
     }
 
     @Override
     default int getEnd() {
-        return getBaseData().end;
+        return getBaseData().getEnd();
     }
 
     default Strand getStrand() {
-        return getBaseData().strand;
+        return getBaseData().getStrand();
     }
 
     default int getPhase() {
-        return getBaseData().phase;
+        return getBaseData().getPhase();
     }
 
-    default String getType() {return getBaseData().type;}
+    default String getType() {return getBaseData().getType();}
 
     @Override
     default String getContig() {
-        return getBaseData().contig;
+        return getBaseData().getContig();
     }
 
      @Override
     default int getStart() {
-        return getBaseData().start;
+        return getBaseData().getStart();
     }
 
     default String getAttribute(final String key) {
-        return getBaseData().attributes.get(key);
+        return getBaseData().getAttributes().get(key);
     }
 
-    default Map<String, String> getAttributes() { return getBaseData().attributes;}
+    default Map<String, String> getAttributes() { return getBaseData().getAttributes();}
 
-    default String getID() { return getBaseData().id;}
+    default String getID() { return getBaseData().getId();}
 
-    default String getName() { return getBaseData().name;}
+    default String getName() { return getBaseData().getName();}
 
-    default String getAlias() { return getBaseData().alias;}
+    default String getAlias() { return getBaseData().getAlias();}
+
+    default double getScore() { return getBaseData().getScore();}
 
     /**
      * Get BaseData object which contains all the basic information of the feature
