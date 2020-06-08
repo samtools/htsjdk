@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.*;
-import java.util.logging.Logger;
 
 /**
  * Helper class for performing asynchronous reading.
@@ -61,6 +60,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
     private volatile boolean asyncEnabled = true;
     private volatile boolean interruptAsyncTasks = false;
     private volatile boolean eosReached = false;
+    private Deque<RecordOrException<T>> currentBuffer = null;
 
     /**
      * @param batchBufferBudget buffer budget per batch in bytes.
@@ -143,31 +143,33 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * @return next record. null indicates end of stream
      */
     public synchronized T nextRecord() throws IOException {
-        if (scheduledTransforms.isEmpty()) {
-            scheduleFutures();
-        }
-        if (scheduledTransforms.isEmpty()) {
-            if (eosReached) {
-                return null;
+        if (currentBuffer == null) {
+            if (scheduledTransforms.isEmpty()) {
+                scheduleFutures();
             }
-            throw new IllegalStateException("No async processing");
+            if (scheduledTransforms.isEmpty()) {
+                if (eosReached) {
+                    return null;
+                }
+                throw new IllegalStateException("No async processing");
+            }
+            try {
+                // block until we have a result
+                currentBuffer = scheduledTransforms.getFirst().get();
+            } catch (InterruptedException | ExecutionException e) {
+                raiseAsynchronousProcessingException(e);
+            }
+            if (currentBuffer.isEmpty()) {
+                throw new IllegalStateException("Async processing returned zero records");
+            }
         }
-        Deque<RecordOrException<T>> batch = null;
-        try {
-            // block until we have a result
-            batch = scheduledTransforms.getFirst().get();
-        } catch (InterruptedException | ExecutionException e) {
-            raiseAsynchronousProcessingException(e);
-        }
-        if (batch.isEmpty()) {
-            throw new IllegalStateException("Async processing returned zero records");
-        }
-        RecordOrException<T> record = batch.removeFirst();
+        RecordOrException<T> record = currentBuffer.removeFirst();
         if (record.exception != null) {
             asyncEnabled = false;
         }
-        if (batch.isEmpty()) {
+        if (currentBuffer.isEmpty()) {
             // end of batch
+            currentBuffer = null;
             scheduledTransforms.removeFirst();
             scheduledReadaheads.removeFirst();
             scheduleFutures();
