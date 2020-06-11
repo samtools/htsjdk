@@ -45,8 +45,7 @@ public class Gff3WriterTest extends HtsjdkTest {
         final HashSet<String> comments1 = new HashSet<>();
         final HashSet<SequenceRegion> regions1 = new HashSet<>();
         final LinkedHashSet<Gff3Feature> features1 = readFromFile(path, comments1, regions1);
-
-
+        
             //write out to temp files (one gzipped, on not)
         try {
             final Path tempFile = Files.createTempFile("gff3Writer", ".gff3");

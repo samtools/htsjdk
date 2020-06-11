@@ -197,14 +197,14 @@ public class Gff3CodecTest extends HtsjdkTest {
 
         final Set<Gff3Feature> canonicalGeneFeatures = new HashSet<>();
 
-        final Gff3FeatureImpl canonicalGene_gene00001 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene00001"), "Name", Collections.singletonList("EDEN")));
+        final Gff3FeatureImpl canonicalGene_gene00001 = new Gff3FeatureImpl("ctg123", ".", "gene", 1000, 9000, 1030d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("gene00001"), "Name", Collections.singletonList("EDEN")));
         canonicalGeneFeatures.add(canonicalGene_gene00001);
 
-        final Gff3FeatureImpl canonicalGene_tfbs00001 = new Gff3FeatureImpl("ctg123", ".", "TF_binding_site", 1000, 1012, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("tfbs00001"), "Parent", Collections.singletonList("gene00001")));
+        final Gff3FeatureImpl canonicalGene_tfbs00001 = new Gff3FeatureImpl("ctg123", ".", "TF_binding_site", 1000, 1012, 0.999d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("tfbs00001"), "Parent", Collections.singletonList("gene00001")));
         canonicalGene_tfbs00001.addParent(canonicalGene_gene00001);
         canonicalGeneFeatures.add(canonicalGene_tfbs00001);
 
-        final Gff3FeatureImpl canonicalGene_mRNA00001 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 9000, -1d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("mRNA00001"), "Name", Collections.singletonList("EDEN.1"), "Parent", Collections.singletonList("gene00001")));
+        final Gff3FeatureImpl canonicalGene_mRNA00001 = new Gff3FeatureImpl("ctg123", ".", "mRNA", 1050, 9000, 1.37d, Strand.POSITIVE, -1, ImmutableMap.of("ID", Collections.singletonList("mRNA00001"), "Name", Collections.singletonList("EDEN.1"), "Parent", Collections.singletonList("gene00001")));
         canonicalGene_mRNA00001.addParent(canonicalGene_gene00001);
         canonicalGeneFeatures.add(canonicalGene_mRNA00001);
 

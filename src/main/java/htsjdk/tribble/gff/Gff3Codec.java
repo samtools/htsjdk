@@ -143,9 +143,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         activeFeatures.add(thisFeature);
         if (depth == DecodeDepth.DEEP) {
             //link to parents/children/co-features
-            final String parentIDAttribute = thisFeature.getAttribute(PARENT_ATTRIBUTE_KEY);
-            final List<String> parentIDs = parentIDAttribute != null? ParsingUtils.split(parentIDAttribute, VALUE_DELIMITER) : new ArrayList<>();
-
+            final List<String> parentIDs = thisFeature.getAttribute(PARENT_ATTRIBUTE_KEY);
             final String id = thisFeature.getID();
 
             for (final String parentID : parentIDs) {
