@@ -27,7 +27,13 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.Iso8601Date;
 import htsjdk.samtools.util.SamConstants;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Header information about a read group.
@@ -53,13 +59,13 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     /* Platform values for the @RG-PL tag */
     public enum PlatformValue {
-        CAPILLARY, LS454, ILLUMINA,
+        BGI, CAPILLARY, LS454, ILLUMINA,
         SOLID, HELICOS, IONTORRENT, 
-        ONT, PACBIO
+        ONT, PACBIO, OTHER
     }
 
     public static final Set<String> STANDARD_TAGS =
-            new HashSet<String>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
+            new HashSet<>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
                     DATE_RUN_PRODUCED_TAG, FLOW_ORDER_TAG, KEY_SEQUENCE_TAG, LIBRARY_TAG,
                     PROGRAM_GROUP_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, PLATFORM_TAG, PLATFORM_MODEL_TAG,
                     PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG, BARCODE_TAG));
@@ -121,8 +127,11 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     public Date getRunDate() {
         final String dt = getAttribute(DATE_RUN_PRODUCED_TAG);
-        if (dt == null) return null;
-        else return new Iso8601Date(dt);
+        if (dt == null) {
+            return null;
+        } else {
+            return new Iso8601Date(dt);
+        }
     }
 
     public String getFlowOrder() { return getAttribute(FLOW_ORDER_TAG); }
@@ -149,7 +158,9 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     public Integer getPredictedMedianInsertSize() {
         final String stringRep = getAttribute(PREDICTED_MEDIAN_INSERT_SIZE_TAG);
-        if (stringRep == null) return null;
+        if (stringRep == null) {
+            return null;
+        }
         return Integer.parseInt(stringRep); 
     }
     public void setPredictedMedianInsertSize(final Integer predictedMedianInsertSize) {
@@ -173,12 +184,18 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final SAMReadGroupRecord that = (SAMReadGroupRecord) o;
 
-        if (!attributesEqual(that)) return false;
-        if (mReadGroupId != null ? !mReadGroupId.equals(that.mReadGroupId) : that.mReadGroupId != null) return false;
+        if (!attributesEqual(that)) {
+            return false;
+        }
+        if (mReadGroupId != null ? !mReadGroupId.equals(that.mReadGroupId) : that.mReadGroupId != null) {
+            return false;
+        }
 
         return true;
     }
