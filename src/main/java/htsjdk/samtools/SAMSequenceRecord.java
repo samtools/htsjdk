@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Header information about a reference sequence.  Corresponds to @SQ header record in SAM text header.
@@ -169,7 +170,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public Set<String> getAlternativeSequenceNames() {
         final String anTag = getAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG);
         return (anTag == null) ? Collections.emptySet()
-                : Collections.unmodifiableSet(new HashSet<>(Arrays.asList(anTag.split(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR))));
+                : Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(anTag.split(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR))));
     }
 
     /**
@@ -207,10 +208,11 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     private void encodeAltSequences(final Collection<String> alternativeSequences) {
 
         //make sure that the order in which alternate names are joined is determined
-        List<String> orderedAltSeqs = new ArrayList<>(alternativeSequences);
-        orderedAltSeqs.sort(String::compareTo);
-
-        setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, StringUtil.join(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR, orderedAltSeqs));
+        setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, alternativeSequences.isEmpty() ? null : alternativeSequences.stream()
+                .sorted()
+                .distinct()
+                .peek(SAMSequenceRecord::validateAltRegExp)
+                .collect(Collectors.joining(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR)));
     }
 
     /**

@@ -182,7 +182,9 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
                 {"lparen("},
                 {"rparen)"},
                 {"lbracket{"},
-                {"rbracket}"}};
+                {"rbracket}"},
+                {""}
+        };
     }
 
     @Test(dataProvider = "illegalSequenceNames", expectedExceptions = SAMException.class)
