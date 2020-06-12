@@ -16,8 +16,10 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Gff3WriterTest extends HtsjdkTest {
@@ -45,7 +47,7 @@ public class Gff3WriterTest extends HtsjdkTest {
         final HashSet<String> comments1 = new HashSet<>();
         final HashSet<SequenceRegion> regions1 = new HashSet<>();
         final LinkedHashSet<Gff3Feature> features1 = readFromFile(path, comments1, regions1);
-        
+
             //write out to temp files (one gzipped, on not)
         try {
             final Path tempFile = Files.createTempFile("gff3Writer", ".gff3");
@@ -58,8 +60,8 @@ public class Gff3WriterTest extends HtsjdkTest {
                 }
 
                 for (final SequenceRegion region : regions1) {
-                    writer.addSequenceRegionDirective(region);
-                    writerGzip.addSequenceRegionDirective(region);
+                    writer.addDirective(Gff3Codec.Gff3Directive.SEQUENCE_REGION_DIRECTIVE, region);
+                    writerGzip.addDirective(Gff3Codec.Gff3Directive.SEQUENCE_REGION_DIRECTIVE, region);
                 }
 
                 for (final Gff3Feature feature : features1) {
@@ -112,6 +114,21 @@ public class Gff3WriterTest extends HtsjdkTest {
         }
 
         return features;
+    }
+
+    @DataProvider(name = "encodeForNinthColumnDataProvider")
+    public Object[][] encodeForNinthColumnDataProvider() {
+        return new Object[][] {
+                {Arrays.asList("value1", "value2", "value3"), "value1,value2,value3"},
+                {Arrays.asList("value1", "value ; with = special & encoded , characters", "value3"), "value1,value %3B with %3D special %26 encoded %2C characters,value3"}
+        };
+    }
+
+    @Test(dataProvider = "encodeForNinthColumnDataProvider")
+    public void testEncodeForNinthColumn(final List<String> decoded, final String expectedEncoded) {
+        final String encoded = Gff3Writer.encodeForNinthColumn(decoded);
+
+        Assert.assertEquals(encoded, expectedEncoded);
     }
 
 }

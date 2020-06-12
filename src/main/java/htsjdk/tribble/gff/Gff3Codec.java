@@ -21,6 +21,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -333,7 +334,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         return ParsingUtils.split(attributeValue, VALUE_DELIMITER).stream().
                 map(a -> {
                             try {
-                                return URLDecoder.decode(a, "UTF-8");
+                                return URLDecoder.decode(a.trim(), "UTF-8");
                             } catch (final UnsupportedEncodingException ex) {
                                 throw new TribbleException("Error decoding attribute", ex);
                             }
@@ -459,7 +460,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     /**
      * Enum for parsing directive lines.  If information in directive line needs to be parsed beyond specifying directive type, decode method should be overriden
      */
-    enum Gff3Directive {
+    public enum Gff3Directive {
 
         VERSION3_DIRECTIVE("##gff-version\\s+3(?:\\.\\d*)*$") {
             @Override
@@ -508,12 +509,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
                 }
 
                 final SequenceRegion sequenceRegion = (SequenceRegion) object;
-                try {
-                    final URI contigURI = new URI(sequenceRegion.getContig());
-                    return "##sequence-region " + contigURI.toASCIIString() + " " + sequenceRegion.getStart() + " " + sequenceRegion.getEnd();
-                } catch (final URISyntaxException ex) {
-                    throw new TribbleException("Cannot encode contig " + sequenceRegion.getContig(), ex);
-                }
+                return "##sequence-region " + Gff3Writer.encodeString(sequenceRegion.getContig()) + " " + sequenceRegion.getStart() + " " + sequenceRegion.getEnd();
             }
 
             @Override

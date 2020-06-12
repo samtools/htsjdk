@@ -12,14 +12,17 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
+
 public class Gff3Writer implements Closeable {
 
-    final private PrintStream out;
-    final static String version = "3.1.25";
+    private final PrintStream out;
+    private final static String version = "3.1.25";
 
     public Gff3Writer(final Path path) throws IOException {
         if (!FileExtensions.GFF3.stream().anyMatch(e -> path.toString().endsWith(e))) {
@@ -42,47 +45,50 @@ public class Gff3Writer implements Closeable {
     }
 
     public void addFeature(final Gff3Feature feature) {
-        try {
-            final String lineNoAttributes = String.join("\t",
-                    URLEncoder.encode(feature.getContig(), "UTF-8"),
-                    URLEncoder.encode(feature.getSource(), "UTF-8"),
-                    URLEncoder.encode(feature.getType(), "UTF-8"),
-                    Integer.toString(feature.getStart()),
-                    Integer.toString(feature.getEnd()),
-                    feature.getScore() < 0 ? "." : Double.toString(feature.getScore()),
-                    feature.getStrand().toString(),
-                    feature.getPhase() < 0 ? "." : Integer.toString(feature.getPhase())
-            );
-            final List<String> attributesStrings = feature.getAttributes().entrySet().stream().map(e -> String.join("=", new String[]{e.getKey(), encodeForNinthColumn(e.getValue())})).collect(Collectors.toList());
-            final String attributesString = attributesStrings.isEmpty() ? "." : String.join(";", attributesStrings);
+        final String lineNoAttributes = String.join("\t",
+                encodeString(feature.getContig()),
+                encodeString(feature.getSource()),
+                encodeString(feature.getType()),
+                Integer.toString(feature.getStart()),
+                Integer.toString(feature.getEnd()),
+                feature.getScore() < 0 ? "." : Double.toString(feature.getScore()),
+                feature.getStrand().toString(),
+                feature.getPhase() < 0 ? "." : Integer.toString(feature.getPhase())
+        );
+        final List<String> attributesStrings = new ArrayList<>();
 
-            final String lineString = lineNoAttributes + "\t" + attributesString;
-            out.println(lineString);
-        } catch(final UnsupportedEncodingException ex) {
-            throw new TribbleException("Exception writing out gff",ex);
+        for (final Map.Entry<String, List<String>> entry : feature.getAttributes().entrySet()) {
+            final String attributeString = String.join("=", new String[]{encodeString(entry.getKey()), encodeForNinthColumn(entry.getValue())});
+            attributesStrings.add(attributeString);
         }
+        final String attributesString = attributesStrings.isEmpty() ? "." : String.join(";", attributesStrings);
+
+        final String lineString = lineNoAttributes + "\t" + attributesString;
+        out.println(lineString);
     }
 
 
-    private String encodeForNinthColumn(final List<String> values) {
-        final List<String> encodedValues = values.stream().map(v -> {
-                    try {
-                        return URLEncoder.encode(v, "UTF-8");
-                    } catch (final UnsupportedEncodingException ex) {
-                        throw new TribbleException("Error encoding ninth column value " + v, ex);
-                    }
-                }
-        ).collect(Collectors.toList());
+    static String encodeForNinthColumn(final List<String> values) {
+        final List<String> encodedValues = values.stream().map(Gff3Writer::encodeString).collect(Collectors.toList());
 
         return String.join(",", encodedValues);
     }
 
-    public void addFlushDirective() {
-        out.println(Gff3Codec.Gff3Directive.FLUSH_DIRECTIVE.encode());
+
+    static String encodeString(final String s) {
+        try {
+            return URLEncoder.encode(s, "UTF-8").replace("+", " ");
+        } catch (final UnsupportedEncodingException ex) {
+            throw new TribbleException("Encoding failure", ex);
+        }
     }
 
-    public void addSequenceRegionDirective(final SequenceRegion sequenceRegion) {
-        out.println(Gff3Codec.Gff3Directive.SEQUENCE_REGION_DIRECTIVE.encode(sequenceRegion));
+    public void addDirective(final Gff3Codec.Gff3Directive directive, final Object object) {
+        out.println(directive.encode(object));
+    }
+
+    public void addDirective(final Gff3Codec.Gff3Directive directive) {
+        addDirective(directive, null);
     }
 
 

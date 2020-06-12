@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import htsjdk.HtsjdkTest;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.readers.LineIterator;
 import org.testng.Assert;
@@ -448,6 +449,73 @@ public class Gff3CodecTest extends HtsjdkTest {
             if (expectedDecodedDirective != null) {
                 Assert.assertEquals(directive.encode(expectedDecodedDirective), line);
             }
+        }
+    }
+
+    @DataProvider(name = "directiveEncodingDataProvider")
+    public Object [][] directiveEncodingDataProvider() {
+        return new Object[][] {
+                {Gff3Codec.Gff3Directive.VERSION3_DIRECTIVE, "3.1.3", "##gff-version 3.1.3"},
+                {Gff3Codec.Gff3Directive.SEQUENCE_REGION_DIRECTIVE, new SequenceRegion("theContig", 101, 170), "##sequence-region theContig 101 170"},
+                {Gff3Codec.Gff3Directive.FLUSH_DIRECTIVE, null, "###"},
+                {Gff3Codec.Gff3Directive.FASTA_DIRECTIVE, null, "##FASTA"}
+        };
+    }
+
+    @Test(dataProvider = "directiveEncodingDataProvider")
+    public void directiveEncodingTest(final Gff3Codec.Gff3Directive directive, final Object object, final String expectedEncoding) {
+        final String encoding = directive.encode(object);
+
+        Assert.assertEquals(encoding, expectedEncoding);
+    }
+
+    @DataProvider(name = "version3InvalidDirectives")
+    public Object[][] version3InvalidDirectivesDataProvider() {
+        return new Object[][] {
+                {"3.1.a"},
+                {"2"},
+                {"2.1"},
+                {".3.1"}
+        };
+    }
+
+    @Test(dataProvider = "version3InvalidDirectives", expectedExceptions = TribbleException.class)
+    public void version3InvalidDirectivesTest(final String v3Directive) {
+        Gff3Codec.Gff3Directive.VERSION3_DIRECTIVE.encode(v3Directive);
+    }
+
+    @DataProvider(name = "decodeAttributeValueDataProvider")
+    public Object[][] decodeAttributeValueDataProvider() {
+        return new Object[][] {
+                {"value1, value2, value3", Arrays.asList("value1", "value2", "value3")},
+                {"value1, value %3B with %3D special %26 encoded %2C characters, value3", Arrays.asList("value1", "value ; with = special & encoded , characters", "value3")}
+        };
+    }
+
+    @Test(dataProvider = "decodeAttributeValueDataProvider")
+    public void decodeAttributeValueTest(final String attributeValueString, final List<String> expectedAttributeValues) {
+        final List<String> attributeValues = Gff3Codec.decodeAttributeValue(attributeValueString);
+
+        Assert.assertEquals(attributeValues, expectedAttributeValues);
+    }
+
+    @DataProvider(name = "extractSingleAttributeDataProvider")
+    public Object[][] extractSingleAttributeDataProvider() {
+        return new Object[][] {
+                {null, null, false}, //null returns null
+                {Collections.emptyList(), null, false}, //empty returns null
+                {Collections.singletonList("single value"), "single value", false}, //single value returns single value
+                {Arrays.asList("value1", "value2"), null, true} //multiple values throws exception
+        };
+    }
+
+    @Test(dataProvider = "extractSingleAttributeDataProvider")
+    public void extractSingleAttributeTest(final List<String> attributes, final String expectedSingleAttribute, final boolean expectException) {
+        if (expectException) {
+            Assert.assertThrows(() -> Gff3Codec.extractSingleAttribute(attributes));
+        } else {
+            final String singleAttribute = Gff3Codec.extractSingleAttribute(attributes);
+            Assert.assertEquals(singleAttribute, expectedSingleAttribute);
         }
     }
 }
