@@ -339,8 +339,8 @@ public class SAMSequenceDictionary implements Serializable {
 
             throw new IllegalArgumentException(String.format("Do not use this function to merge dictionaries with " +
                             "different sequences in them. Sequences must be in the same order as well. Found [%s] and [%s].",
-                    String.join(", ", dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(toList())),
-                    String.join(", ", dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(toList()))));
+                    dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.joining(", ")),
+                    dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.joining(", "))));
         }
 
         final SAMSequenceDictionary finalDict = new SAMSequenceDictionary();
