@@ -26,13 +26,17 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Interval;
 import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Test for SAMReadGroupRecordTest
@@ -99,6 +103,44 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         }
     }
 
+    @DataProvider
+    Object[][] testAccessFileWithAlternateContigNameData() {
+        return new Object[][]{
+                new Object[]{"chr1", 4},
+                new Object[]{"1", 4},
+                new Object[]{"chr2", 3},
+                new Object[]{"chr3", 2},
+                new Object[]{"3", 2},
+        };
+    }
+
+    File AccessFileWithAlternateContigName;
+
+    @BeforeTest
+    void setup() throws IOException {
+        File input = new File("src/test/resources/htsjdk/samtools/SamSequenceRecordTest/alternate_contig_names.sam");
+
+        final File outputFile = File.createTempFile("tmp.", ".bam");
+        outputFile.deleteOnExit();
+
+        final SamReader samReader = SamReaderFactory.make().open(input);
+        final SAMFileHeader fileHeader = samReader.getFileHeader().clone();
+        fileHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+
+        try (SAMFileWriter samWriter = new SAMFileWriterFactory().setCreateIndex(true).makeWriter(fileHeader, false, outputFile, null)) {
+            samReader.forEach(samWriter::addAlignment);
+        }
+        AccessFileWithAlternateContigName = outputFile;
+    }
+
+    @Test(dataProvider = "testAccessFileWithAlternateContigNameData")
+    public void testAccessFileWithAlternateContigName(final String contigName, final int expectedRecords) throws IOException {
+        try(SamReader bamReader = SamReaderFactory.make().open(AccessFileWithAlternateContigName);
+            Stream<SAMRecord> recordStream = bamReader.query(contigName, 1, 101, false).stream()) {
+            Assert.assertEquals(recordStream.count(), expectedRecords);
+        }
+    }
+
     @Test
     public void testAlternativeSequences() {
         final SAMSequenceRecord chr1 = new SAMSequenceRecord("1", 100);
@@ -123,6 +165,8 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         //alt names are sorted now
         Assert.assertEquals(chr1.getSAMString(), "@SQ\tSN:1\tLN:100\tAN:01,CM000663,chr01,chr1");
     }
+
+
 
     @DataProvider
     public Object[][] validAlternativeSequences() {
