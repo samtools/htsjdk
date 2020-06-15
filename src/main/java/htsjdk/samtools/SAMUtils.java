@@ -943,13 +943,16 @@ public final class SAMUtils {
                         cigarTypeName + " A non-null SAMHeader is required to validate cigar elements for: ", rec.getReadName(), recordNumber));
             } else {
                 final SAMSequenceRecord sequence = samHeader.getSequence(referenceIndex);
-                final int referenceSequenceLength = sequence.getSequenceLength();
-                for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
-                    if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
-                        if (ret == null) ret = new ArrayList<>();
-                        ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
-                                cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
-                        break;
+                final SAMSequenceRecord.Topology topology = sequence.getTopology();
+                if (topology != SAMSequenceRecord.Topology.circular) {
+                    final int referenceSequenceLength = sequence.getSequenceLength();
+                    for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
+                        if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
+                            if (ret == null) ret = new ArrayList<>();
+                            ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
+                                    cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
+                            break;
+                        }
                     }
                 }
             }

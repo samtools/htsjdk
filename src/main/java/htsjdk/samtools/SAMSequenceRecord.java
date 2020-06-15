@@ -51,6 +51,14 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public static final String URI_TAG = "UR";
     public static final String SPECIES_TAG = "SP";
     public static final String DESCRIPTION_TAG = "DS";
+    public static final String TOPOLOGY_TAG = "TP";
+
+    /**
+     * Topology values.
+     */
+    public enum Topology {
+        linear, circular
+    }
 
     /** If one sequence has this length, and another sequence had a different length, isSameSequence will
      * not complain that they are different sequences. */
@@ -112,8 +120,15 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public String getMd5() { return (String) getAttribute(MD5_TAG); }
     public void setMd5(final String value) { setAttribute(MD5_TAG, value); }
 
-    public String getDescription() { return getAttribute(DESCRIPTION_TAG);}
-    public void setDescription(final String value) { setAttribute(DESCRIPTION_TAG, value);}
+    public String getDescription() { return getAttribute(DESCRIPTION_TAG); }
+    public void setDescription(final String value) { setAttribute(DESCRIPTION_TAG, value); }
+
+    public Topology getTopology() {
+        final String value = getAttribute(TOPOLOGY_TAG);
+        return (value == null) ? null : Topology.valueOf(value);
+    }
+    public void setTopology(final Topology value) { setAttribute(TOPOLOGY_TAG, (value == null) ? null : value.name()); }
+    public boolean isCircular() { return getTopology() == Topology.circular; }
 
     /**
      * @return Index of this record in the sequence dictionary it lives in. 
