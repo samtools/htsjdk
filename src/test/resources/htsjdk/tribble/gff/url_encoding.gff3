@@ -1,3 +1,3 @@
 ##gff-version 3
 ##sequence-region   1 1 10
-the%20contig	a%20source%20%26%20also%20a%20str*)%25nge%20source	a%20region	1	10	.	.	.	ID=this%20is%20the%20ID%20of%20this%20wacky%20feature%5E%26%25%23%23%24%25*%26%3E%2C.%20%2C.; Another%20key=Another%3Dvalue,And%20a%20second%2C%20value
+the contig	a source %26 also a str*)%25nge source	a region	1	10	.	.	.	ID=this is the ID of this wacky feature%5E%26%25%23%23%24%25*%26%3E%2C. %2C.; Another key=Another%3Dvalue,And a second%2C value

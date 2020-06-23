@@ -67,6 +67,4 @@ public class SequenceRegion implements Locatable {
 
     @Override
     public int hashCode() { return hashCode;}
-
-
 }

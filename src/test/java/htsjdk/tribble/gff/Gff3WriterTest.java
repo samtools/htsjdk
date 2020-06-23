@@ -32,12 +32,13 @@ public class Gff3WriterTest extends HtsjdkTest {
     private final Path with_fasta_artemis = Paths.get(DATA_DIR + "fasta_test_artemis.gff3");
     private final Path ordered_cofeature = Paths.get(DATA_DIR, "ordered_cofeatures.gff3");
     private final Path child_before_parent = Paths.get(DATA_DIR, "child_before_parent.gff3");
+    private final Path url_encoding = Paths.get(DATA_DIR, "url_encoding.gff3");
 
     @DataProvider(name = "roundTripDataProvider")
     public Object[][] roundTripDataProvider() {
         return new Object[][] {
                 {ensembl_human_small , 5}, {gencode_mouse_small, 7}, {ncbi_woodpecker_small, 7}, {feature_extends_past_circular_region, 1}, {with_fasta, 2}, {with_fasta_artemis, 2},
-                {ordered_cofeature, 3}, {child_before_parent, 1}
+                {ordered_cofeature, 3}, {child_before_parent, 1}, {url_encoding, 1}
         };
     }
 
@@ -127,6 +128,26 @@ public class Gff3WriterTest extends HtsjdkTest {
     @Test(dataProvider = "encodeForNinthColumnDataProvider")
     public void testEncodeForNinthColumn(final List<String> decoded, final String expectedEncoded) {
         final String encoded = Gff3Writer.encodeForNinthColumn(decoded);
+
+        Assert.assertEquals(encoded, expectedEncoded);
+    }
+
+    @DataProvider(name = "encodeStringDataProvider")
+    public Object[][] encodeStringDataProvider() {
+        return new Object[][] {
+                {"%", "%25"},
+                {";", "%3B"},
+                {"=", "%3D"},
+                {"&", "%26"},
+                {",", "%2C"},
+                {" ", " "},
+                {"qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM", "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM"} //these should remain unchanged
+        };
+    }
+
+    @Test(dataProvider = "encodeStringDataProvider")
+    public void testEncodeString(final String decoded, final String expectedEncoded) {
+        final String encoded = Gff3Writer.encodeString(decoded);
 
         Assert.assertEquals(encoded, expectedEncoded);
     }
