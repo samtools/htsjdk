@@ -67,7 +67,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private final Map<String, Set<Gff3FeatureImpl>> activeFeaturesWithIDs = new HashMap<>();
     private final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
 
-    private final Map<String, SequenceRegion> sequenceRegionMap = new HashMap<>();
+    private final Map<String, SequenceRegion> sequenceRegionMap = new LinkedHashMap<>();
     private final List<String> comments = new ArrayList<>();
 
     private final static Log logger = Log.getInstance(Gff3Codec.class);
