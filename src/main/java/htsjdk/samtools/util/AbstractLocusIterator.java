@@ -91,7 +91,8 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      * ii) any uncovered positions between the last AbstractLocusInfo and the first aligned base of the new read
      * have LocusInfos created and added to {@link #complete} if we are emitting uncovered loci
      */
-    final ArrayList<K> accumulator = new ArrayList<>(100);
+    //TODO: convert this to using a CircularArrayList so that the remove and random access operations will be fast.
+    final ArrayList<K> accumulator = new ArrayList<K>(100);
 
     private int qualityScoreCutoff = Integer.MIN_VALUE;
     private int mappingQualityScoreCutoff = Integer.MIN_VALUE;

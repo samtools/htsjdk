@@ -98,13 +98,14 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
             // 0-based offset from the aligned position of the first base in the read to the aligned position
             // of the current base.
             final int refOffset = refPos - rec.getAlignmentStart();
-            final int refOffsetEnd = refPos - rec.getAlignmentStart() + alignmentBlock.getLength();
+            final int refOffsetEnd = refOffset + alignmentBlock.getLength();
 
+            final int accumulatorStartAdjust = accumulator.isEmpty() ? 0 : rec.getAlignmentStart() - accumulator.get(0).getPosition();
 
             // Ensure there are AbstractLocusInfos up to and including this position
-            for (int j = accumulator.size(); j <= refOffsetEnd; ++j) {
+            for (int j = accumulator.size() - accumulatorStartAdjust; j <= refOffsetEnd; ++j) {
                 accumulator.add(createLocusInfo(getReferenceSequence(rec.getReferenceIndex()),
-                        rec.getAlignmentStart() + j));
+                        rec.getAlignmentStart() + j ));
             }
 
             /* Let's assume an alignment block starts in some locus. 
@@ -133,7 +134,7 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
                     }
                     // if the alignment block ends out of an interval, shift the ending position
                     final int readEnd = refPos + alignmentBlock.getLength();
-                    if (refPos + alignmentBlock.getLength() > intervalEnd) {
+                    if (readEnd > intervalEnd) {
                         refOffsetEndInterval = refOffsetEndInterval - (readEnd - intervalEnd) + 1;
                     }
                 }
