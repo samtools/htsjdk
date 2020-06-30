@@ -26,6 +26,7 @@ package htsjdk.samtools.seekablestream;
 import htsjdk.samtools.util.IOUtil;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.util.function.Function;
@@ -96,7 +97,14 @@ public class SeekableStreamFactory{
             } else if (path.startsWith("ftp:")) {
                 return new SeekableFTPStream(new URL(path));
             } else if (path.startsWith("file:")) {
-                return new SeekableFileStream(new File(new URL(path).getPath()));
+                try {
+                    // convert to URI in order to obtain a decoded version of the path string suitable
+                    // for use with the File constructor
+                    final String decodedPath = new URI(path).getPath();
+                    return new SeekableFileStream(new File(decodedPath));
+                } catch (java.net.URISyntaxException e) {
+                    throw new IllegalArgumentException(String.format("The input string %s contains a URI scheme but is not a valid URI", path), e);
+                }
             } else if (IOUtil.hasScheme(path)) {
                 return new SeekablePathStream(IOUtil.getPath(path), wrapper);
             } else {
