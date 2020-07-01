@@ -26,6 +26,7 @@ public class SequenceRegion implements Locatable {
 
     void setCircular(final boolean isCircular) {
         this.isCircular = isCircular;
+        hashCode = computeHashCode();
     }
 
     void setCircular() {

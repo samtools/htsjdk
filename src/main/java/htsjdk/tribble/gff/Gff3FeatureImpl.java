@@ -117,7 +117,7 @@ public class Gff3FeatureImpl implements Gff3Feature {
 
     private Set<Gff3FeatureImpl> getDescendents(final Set<String> idsInLineage) {
         final List<Gff3FeatureImpl> childrenToAdd = children.stream().filter(c -> c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty() ||
-                !Collections.disjoint(idsInLineage, new HashSet<>(c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY)))).
+                !Collections.disjoint(idsInLineage, c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY))).
                 collect(Collectors.toList());
         final List<Gff3FeatureImpl> descendants = new ArrayList<>(childrenToAdd);
 

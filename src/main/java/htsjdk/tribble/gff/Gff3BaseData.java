@@ -1,8 +1,8 @@
 package htsjdk.tribble.gff;
 
-import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,10 +37,22 @@ public class Gff3BaseData {
         this.score = score;
         this.phase = phase;
         this.strand = strand;
-        this.attributes = Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
+        this.attributes = copyAttributesSafely(attributes);
         this.id = Gff3Codec.extractSingleAttribute(attributes.get(ID_ATTRIBUTE_KEY));
         this.name = Gff3Codec.extractSingleAttribute(attributes.get(NAME_ATTRIBUTE_KEY));
-        this.aliases = attributes.containsKey(ALIAS_ATTRIBUTE_KEY)? attributes.get(ALIAS_ATTRIBUTE_KEY) : Collections.emptyList();   this.hashCode = computeHashCode();
+        this.aliases = attributes.getOrDefault(ALIAS_ATTRIBUTE_KEY, Collections.emptyList());
+        this.hashCode = computeHashCode();
+    }
+
+    private static Map<String, List<String>> copyAttributesSafely(final Map<String, List<String>> attributes) {
+        final Map<String, List<String>> modifiableDeepMap = new LinkedHashMap<>();
+
+        for (final Map.Entry<String, List<String>> entry : attributes.entrySet()) {
+            final List<String> unmodifiableDeepList = Collections.unmodifiableList(new ArrayList<>(entry.getValue()));
+            modifiableDeepMap.put(entry.getKey(), unmodifiableDeepList);
+        }
+
+        return Collections.unmodifiableMap(modifiableDeepMap);
     }
 
     @Override
@@ -102,9 +114,7 @@ public class Gff3BaseData {
             hash = 31 * hash + getName().hashCode();
         }
 
-        for (final String alias : aliases) {
-            hash = 31 * hash + alias.hashCode();
-        }
+        hash = 31 * hash + aliases.hashCode();
 
         return hash;
     }
@@ -146,7 +156,7 @@ public class Gff3BaseData {
     }
 
     public List<String> getAttribute(final String key) {
-        return attributes.containsKey(key)? attributes.get(key) : Collections.emptyList();
+        return attributes.getOrDefault(key, Collections.emptyList());
     }
 
     public String getId() {
