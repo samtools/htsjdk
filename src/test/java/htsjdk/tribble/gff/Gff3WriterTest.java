@@ -1,13 +1,13 @@
 package htsjdk.tribble.gff;
 
 import com.google.common.collect.ImmutableMap;
-import com.sun.tools.javac.util.Pair;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
+import javafx.util.Pair;
 import org.testng.Assert;
 import org.testng.TestException;
 import org.testng.annotations.DataProvider;
@@ -81,9 +81,9 @@ public class Gff3WriterTest extends HtsjdkTest {
             Assert.assertEquals(features1, features2);
             Assert.assertEquals(features1, features3);
 
-            final Set<String> comments1Strings = comments1.stream().map(p -> p.fst).collect(Collectors.toSet());
-            final Set<String> comments2Strings = comments2.stream().map(p -> p.fst).collect(Collectors.toSet());
-            final Set<String> comments3Strings = comments3.stream().map(p -> p.fst).collect(Collectors.toSet());
+            final Set<String> comments1Strings = comments1.stream().map(p -> p.getKey()).collect(Collectors.toSet());
+            final Set<String> comments2Strings = comments2.stream().map(p -> p.getKey()).collect(Collectors.toSet());
+            final Set<String> comments3Strings = comments3.stream().map(p -> p.getKey()).collect(Collectors.toSet());
             Assert.assertEquals(comments1Strings, comments2Strings);
             Assert.assertEquals(comments1Strings, comments3Strings);
             Assert.assertEquals(regions1, regions2);
@@ -96,7 +96,7 @@ public class Gff3WriterTest extends HtsjdkTest {
     private void writeToFile(final Path path, final Set<Pair<String, Integer>> comments, final Set<SequenceRegion> regions, final Set<Gff3Feature> features) {
         try (final Gff3Writer writer = new Gff3Writer(path)) {
             for (final Pair<String, Integer> comment : comments) {
-                writer.addComment(comment.fst);
+                writer.addComment(comment.getKey());
             }
 
             for (final SequenceRegion region : regions) {

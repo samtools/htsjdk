@@ -1,6 +1,5 @@
 package htsjdk.tribble.gff;
 
-import com.sun.tools.javac.util.Pair;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -15,6 +14,7 @@ import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.*;
 import htsjdk.tribble.util.ParsingUtils;
+import javafx.util.Pair;
 
 
 import java.io.*;
@@ -118,7 +118,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         }
 
         if (line.startsWith(Gff3Constants.COMMENT_START) && !line.startsWith(Gff3Constants.DIRECTIVE_START)) {
-            comments.add(Pair.of(line.substring(Gff3Constants.COMMENT_START.length()), currentLine));
+            comments.add(new Pair<>(line.substring(Gff3Constants.COMMENT_START.length()), currentLine));
             return featuresToFlush.poll();
         }
 
