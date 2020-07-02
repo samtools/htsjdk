@@ -342,13 +342,16 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         final EdgeReadIterator iterator = new EdgeReadIterator(reader, null);
 
         AbstractLocusInfo<EdgingRecordAndOffset> previous = null;
+        int counter = 0;
         while (iterator.hasNext() && (previous == null || previous.getPosition() < 1_000_000)) {
+            counter++;
             final AbstractLocusInfo<EdgingRecordAndOffset> next = iterator.next();
             if (previous != null) {
                 Assert.assertEquals(next.getPosition(), previous.getPosition() + 1);
             }
             previous = next;
         }
+        Assert.assertEquals(counter, 1_000_000);
     }
 
     /**
