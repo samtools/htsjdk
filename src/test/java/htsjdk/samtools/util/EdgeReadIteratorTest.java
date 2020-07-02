@@ -341,7 +341,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         final SamReader reader = SamReaderFactory.make().open(new File("src/test/resources/htsjdk/samtools/util/sliver.sam"));
         final EdgeReadIterator iterator = new EdgeReadIterator(reader, null);
 
-        AbstractLocusInfo<EdgingRecordAndOffset> previous=null;
+        AbstractLocusInfo<EdgingRecordAndOffset> previous = null;
         while (iterator.hasNext() && (previous == null || previous.getPosition() < 1_000_000)) {
             final AbstractLocusInfo<EdgingRecordAndOffset> next = iterator.next();
             if (previous != null) {

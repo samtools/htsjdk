@@ -3,9 +3,10 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.annotations.Test;
-import static org.testng.Assert.assertEquals;
 
 import java.io.File;
+
+import static org.testng.Assert.assertEquals;
 
 /**
  * Test the fix of a bug reported by s-andrews in which the use of an arithmetic rather than a logical right shift in BinaryCigarCodec.binaryCigarToCigarElement()
