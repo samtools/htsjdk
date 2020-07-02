@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  */
 public class Gff3Writer implements Closeable {
 
-    private final BufferedOutputStream out;
+    private final OutputStream out;
     private final static String version = "3.1.25";
 
     public Gff3Writer(final Path path) throws IOException {
@@ -41,7 +41,7 @@ public class Gff3Writer implements Closeable {
     }
 
     public Gff3Writer(final OutputStream stream) {
-        out = new BufferedOutputStream(stream);
+        out = stream;
         initialize();
     }
 

@@ -7,7 +7,6 @@ import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
-import javafx.util.Pair;
 import org.testng.Assert;
 import org.testng.TestException;
 import org.testng.annotations.DataProvider;
@@ -19,6 +18,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -26,7 +26,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 public class Gff3WriterTest extends HtsjdkTest {
@@ -54,7 +53,7 @@ public class Gff3WriterTest extends HtsjdkTest {
     @Test(dataProvider = "roundTripDataProvider")
     public void testRoundTrip(final Path path) {
 
-        final HashSet<Pair<String, Integer>> comments1 = new HashSet<>();
+        final List<String> comments1 = new ArrayList<>();
         final HashSet<SequenceRegion> regions1 = new HashSet<>();
         final LinkedHashSet<Gff3Feature> features1 = readFromFile(path, comments1, regions1);
 
@@ -69,23 +68,20 @@ public class Gff3WriterTest extends HtsjdkTest {
             //read temp files back in
 
             Assert.assertTrue(isGZipped(tempFileGzip.toFile()));
-            final HashSet<Pair<String, Integer>> comments2 = new HashSet<>();
+            final List<String> comments2 = new ArrayList<>();
             final HashSet<SequenceRegion> regions2 = new HashSet<>();
             final LinkedHashSet<Gff3Feature> features2 = readFromFile(tempFile, comments2, regions2);
 
 
-            final HashSet<Pair<String, Integer>> comments3 = new HashSet<>();
+            final List<String> comments3 = new ArrayList<>();
             final HashSet<SequenceRegion> regions3 = new HashSet<>();
             final LinkedHashSet<Gff3Feature> features3 = readFromFile(path, comments3, regions3);
 
             Assert.assertEquals(features1, features2);
             Assert.assertEquals(features1, features3);
 
-            final Set<String> comments1Strings = comments1.stream().map(p -> p.getKey()).collect(Collectors.toSet());
-            final Set<String> comments2Strings = comments2.stream().map(p -> p.getKey()).collect(Collectors.toSet());
-            final Set<String> comments3Strings = comments3.stream().map(p -> p.getKey()).collect(Collectors.toSet());
-            Assert.assertEquals(comments1Strings, comments2Strings);
-            Assert.assertEquals(comments1Strings, comments3Strings);
+            Assert.assertEquals(comments1, comments2);
+            Assert.assertEquals(comments1, comments3);
             Assert.assertEquals(regions1, regions2);
             Assert.assertEquals(regions1, regions3);
         } catch (final IOException ex) {
@@ -93,10 +89,10 @@ public class Gff3WriterTest extends HtsjdkTest {
         }
     }
 
-    private void writeToFile(final Path path, final Set<Pair<String, Integer>> comments, final Set<SequenceRegion> regions, final Set<Gff3Feature> features) {
+    private void writeToFile(final Path path, final List<String> comments, final Set<SequenceRegion> regions, final Set<Gff3Feature> features) {
         try (final Gff3Writer writer = new Gff3Writer(path)) {
-            for (final Pair<String, Integer> comment : comments) {
-                writer.addComment(comment.getKey());
+            for (final String comment : comments) {
+                writer.addComment(comment);
             }
 
             for (final SequenceRegion region : regions) {
@@ -111,7 +107,7 @@ public class Gff3WriterTest extends HtsjdkTest {
         }
     }
 
-    private LinkedHashSet<Gff3Feature> readFromFile(final Path path, Set<Pair<String, Integer>> commentsStore, Set<SequenceRegion> regionsStore) {
+    private LinkedHashSet<Gff3Feature> readFromFile(final Path path, List<String> commentsStore, Set<SequenceRegion> regionsStore) {
         final Gff3Codec codec = new Gff3Codec();
         final LinkedHashSet<Gff3Feature> features = new LinkedHashSet<>();
         try (final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(path.toAbsolutePath().toString(), null, codec, false)) {
@@ -119,7 +115,7 @@ public class Gff3WriterTest extends HtsjdkTest {
                 features.add(feature);
             }
 
-            commentsStore.addAll(codec.getComments());
+            commentsStore.addAll(codec.getCommentTexts());
             regionsStore.addAll(codec.getSequenceRegions());
         } catch (final IOException ex) {
             throw new TribbleException("Error reading gff3 file " + path);

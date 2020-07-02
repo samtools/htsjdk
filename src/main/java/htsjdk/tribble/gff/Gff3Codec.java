@@ -14,7 +14,7 @@ import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.*;
 import htsjdk.tribble.util.ParsingUtils;
-import javafx.util.Pair;
+
 
 
 import java.io.*;
@@ -61,7 +61,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
 
     private final Map<String, SequenceRegion> sequenceRegionMap = new LinkedHashMap<>();
-    private final List<Pair<String, Integer>> comments = new ArrayList<>();
+    private final Map<Integer, String> commentsWithLineNumbers = new LinkedHashMap<>();
 
     private final static Log logger = Log.getInstance(Gff3Codec.class);
 
@@ -118,7 +118,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         }
 
         if (line.startsWith(Gff3Constants.COMMENT_START) && !line.startsWith(Gff3Constants.DIRECTIVE_START)) {
-            comments.add(new Pair<>(line.substring(Gff3Constants.COMMENT_START.length()), currentLine));
+            commentsWithLineNumbers.put(currentLine, line.substring(Gff3Constants.COMMENT_START.length()));
             return featuresToFlush.poll();
         }
 
@@ -234,12 +234,19 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     }
 
     /**
-     * Get list of comments parsed by the codec.  Each entry in the list is a pair of the text of the comment along with the line number where the
-     * comment was found.  The text of the comment EXCLUDES the leading # which indicates a comment line.
-     * @return list of comments/line number pairs
+     * Gets map from line number to comment found on that line.  The text of the comment EXCLUDES the leading # which indicates a comment line.
+     * @return Map from line number to comment found on line
      */
-    public List<Pair<String, Integer>> getComments() {
-        return Collections.unmodifiableList(new ArrayList<>(comments));
+    public Map<Integer, String> getCommentsWithLineNumbers() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(commentsWithLineNumbers));
+    }
+
+    /**
+     * Gets list of comments parsed by the codec.  Excludes leading # which indicates a comment line.
+     * @return
+     */
+    public List<String> getCommentTexts() {
+        return Collections.unmodifiableList(new ArrayList<>(commentsWithLineNumbers.values()));
     }
 
     /**
