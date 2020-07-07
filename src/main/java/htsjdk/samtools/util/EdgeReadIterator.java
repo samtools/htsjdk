@@ -95,24 +95,33 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
             // 1-based reference position that the current base aligns to
             final int refPos = alignmentBlock.getReferenceStart();
 
-            // 0-based offset from the aligned position of the first base in the read to the aligned position
-            // of the current base.
-            final int refOffset = refPos - rec.getAlignmentStart();
-            final int refOffsetEnd = refPos - rec.getAlignmentStart() + alignmentBlock.getLength();
+            if (accumulator.isEmpty()) {
+                accumulator.add(createLocusInfo(getReferenceSequence(rec.getReferenceIndex()), rec.getAlignmentStart()));
+            }
 
+            // The accumulator should always have LocusInfos that correspond to one consecutive segment of loci from one reference
+            // sequence. So
+            // accumulator.get(0).getPosition() + accumulator.size() == accumulator.get(accumulator.size()-1).getPosition()+1
+            final int accumulatorNextPosition = accumulator.get(0).getPosition() + accumulator.size();
+
+            if (accumulatorNextPosition != accumulator.get(accumulator.size() - 1).getPosition() + 1) {
+                throw new IllegalStateException("The accumulator has gotten into a funk. Cannot continue");
+            }
 
             // Ensure there are AbstractLocusInfos up to and including this position
-            for (int j = accumulator.size(); j <= refOffsetEnd; ++j) {
-                accumulator.add(createLocusInfo(getReferenceSequence(rec.getReferenceIndex()),
-                        rec.getAlignmentStart() + j));
+            for (int locusPos = accumulatorNextPosition; locusPos <= refPos + alignmentBlock.getLength(); ++locusPos) {
+                accumulator.add(createLocusInfo(getReferenceSequence(rec.getReferenceIndex()), locusPos));
             }
 
             /* Let's assume an alignment block starts in some locus. 
              * We put two records to the accumulator. The first one has the "begin" type which corresponds to the locus 
              * where the block starts. The second one has the "end" type which corresponds to the other locus where the block ends. 
             */
-            int refOffsetInterval = refOffset; // corresponds to the beginning of the alignment block 
-            int refOffsetEndInterval = refOffsetEnd;
+
+            // 0-based offset from the aligned position of the first base in the read to the aligned position
+            // of the current base.
+            int refOffsetInterval = refPos - rec.getAlignmentStart(); // corresponds to the beginning of the alignment block
+            int refOffsetEndInterval = refOffsetInterval + alignmentBlock.getLength();;
             int startShift = 0;
 
             // intersect intervals and alignment block
@@ -133,7 +142,7 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
                     }
                     // if the alignment block ends out of an interval, shift the ending position
                     final int readEnd = refPos + alignmentBlock.getLength();
-                    if (refPos + alignmentBlock.getLength() > intervalEnd) {
+                    if (readEnd > intervalEnd) {
                         refOffsetEndInterval = refOffsetEndInterval - (readEnd - intervalEnd) + 1;
                     }
                 }
