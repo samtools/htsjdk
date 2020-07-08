@@ -3,6 +3,9 @@ package htsjdk.variant.vcf;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -12,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -97,4 +101,29 @@ public class VCFFileReaderTest extends HtsjdkTest {
         // fail if a test that should have thrown didn't
         Assert.assertTrue(shouldSucceed, "Test should have failed but succeeded");
     }
+
+    @Test
+    public void testTabixFileWithEmbeddedSpaces() throws IOException {
+        final File testVCF =  new File(TEST_DATA_DIR, "HiSeq.10000.vcf.bgz");
+        final File testTBI =  new File(TEST_DATA_DIR, "HiSeq.10000.vcf.bgz.tbi");
+
+        // Copy the input files into a temporary directory with embedded spaces in the name.
+        // This test needs to include the associated .tbi file because we want to force execution
+        // of the tabix code path.
+        final File tempDir = IOUtil.createTempDir("test spaces", "");
+        Assert.assertTrue(tempDir.getAbsolutePath().contains(" "));
+        tempDir.deleteOnExit();
+        final File inputVCF = new File(tempDir, "HiSeq.10000.vcf.bgz");
+        inputVCF.deleteOnExit();
+        final File inputTBI = new File(tempDir, "HiSeq.10000.vcf.bgz.tbi");
+        inputTBI.deleteOnExit();
+        IOUtil.copyFile(testVCF, inputVCF);
+        IOUtil.copyFile(testTBI, inputTBI);
+
+        try (final VCFFileReader vcfFileReader = new VCFFileReader(inputVCF)) {
+            Assert.assertNotNull(vcfFileReader.getFileHeader());
+        }
+
+    }
+
 }
