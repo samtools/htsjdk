@@ -148,8 +148,10 @@ task testExternalApis(type: Test) {
     }
 }
 
-wrapper {
-    gradleVersion = '5.2.1'
+if(project == rootProject) {
+    wrapper {
+        gradleVersion = '5.2.1'
+    }
 }
 
 tasks.withType(Javadoc) {
