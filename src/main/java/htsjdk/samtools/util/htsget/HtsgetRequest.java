@@ -198,7 +198,7 @@ public class HtsgetRequest {
             // Do not insert start and end for unmapped reads or if we are requesting the entire contig
             if (!(this.interval.getContig().equals("*"))) {
                 queryParams.put("start", String.valueOf(this.interval.getStart() - 1));
-                if (this.interval.getEnd() != Integer.MAX_VALUE & this.interval.getEnd() != -1) {
+                if (this.interval.getEnd() != Integer.MAX_VALUE && this.interval.getEnd() != -1) {
                     queryParams.put("end", String.valueOf(this.interval.getEnd()));
                 }
             }
