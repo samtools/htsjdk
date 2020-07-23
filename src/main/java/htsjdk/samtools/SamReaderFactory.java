@@ -34,6 +34,8 @@ import htsjdk.samtools.util.zip.InflaterFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -199,7 +201,7 @@ public abstract class SamReaderFactory {
             this.customReaderFactory = CustomReaderFactory.getInstance();
             this.inflaterFactory = inflaterFactory;
         }
-   
+
         @Override
         public SamReader open(final File file) {
             final SamInputResource r = SamInputResource.of(file);
@@ -323,7 +325,23 @@ public abstract class SamReaderFactory {
                     return reader;
                   }
                 }
-                if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.URL) {
+                if (type == InputResource.Type.URI) {
+                    final URI uri = ((UriInputResource) data).uri;
+                    if (uri.getScheme().equalsIgnoreCase("htsget")) {
+                        final URI httpUri = new URI("http", uri.getHost(), uri.getPath(), uri.getFragment());
+
+                        primitiveSamReader = new HtsgetBAMFileReader(
+                            httpUri,
+                            false,
+                            this.validationStringency,
+                            this.samRecordFactory,
+                            this.asynchronousIO,
+                            this.inflaterFactory
+                        );
+                    } else {
+                        return open(new SamInputResource(new UrlInputResource(uri.toURL())));
+                    }
+                } else if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.URL) {
                     if (SamStreams.sourceLikeBam(data.asUnbufferedSeekableStream())) {
                         final SeekableStream bufferedIndexStream;
                         if (indexDefined && indexMaybe.asUnbufferedSeekableStream() != null) {
@@ -444,7 +462,7 @@ public abstract class SamReaderFactory {
                 }
 
                 return reader;
-            } catch (final IOException e) {
+            } catch (final IOException | URISyntaxException e) {
                 throw new RuntimeIOException(e);
             }
         }
@@ -494,6 +512,11 @@ public abstract class SamReaderFactory {
             void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableFileSource(reader, true);
             }
+
+            @Override
+            void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.enableFileSource(reader, true);
+            }
         },
 
         /**
@@ -522,6 +545,11 @@ public abstract class SamReaderFactory {
             @Override
             void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableIndexCaching(true);
+            }
+
+            @Override
+            void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader) {
+                logDebugIgnoringOption(reader, this);
             }
         },
 
@@ -552,6 +580,11 @@ public abstract class SamReaderFactory {
             void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableIndexMemoryMapping(false);
             }
+
+            @Override
+            void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader) {
+                logDebugIgnoringOption(reader, this);
+            }
         },
 
         /**
@@ -577,6 +610,11 @@ public abstract class SamReaderFactory {
             @Override
             void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
                 logDebugIgnoringOption(reader, this);
+            }
+
+            @Override
+            void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.setEagerDecode(true);
             }
         },
 
@@ -605,6 +643,10 @@ public abstract class SamReaderFactory {
                 logDebugIgnoringOption(reader, this);
             }
 
+            @Override
+            void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.enableCrcChecking(true);
+            }
         };
 
         public static final EnumSet<Option> DEFAULTS = EnumSet.noneOf(Option.class);
@@ -620,6 +662,8 @@ public abstract class SamReaderFactory {
                 applyTo((CRAMFileReader) underlyingReader, reader);
             } else if (underlyingReader instanceof SRAFileReader) {
                 applyTo((SRAFileReader) underlyingReader, reader);
+            } else if (underlyingReader instanceof HtsgetBAMFileReader) {
+                applyTo((HtsgetBAMFileReader) underlyingReader, reader);
             } else {
                 throw new IllegalArgumentException(String.format("Unrecognized reader type: %s.", underlyingReader.getClass()));
             }
@@ -639,5 +683,7 @@ public abstract class SamReaderFactory {
         abstract void applyTo(final CRAMFileReader underlyingReader, final SamReader reader);
 
         abstract void applyTo(final SRAFileReader underlyingReader, final SamReader reader);
+
+        abstract void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader);
     }
 }

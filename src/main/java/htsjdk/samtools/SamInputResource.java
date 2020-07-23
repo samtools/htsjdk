@@ -35,6 +35,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemNotFoundException;
@@ -130,6 +131,10 @@ public class SamInputResource {
 
     public static SamInputResource of(final SRAAccession acc) { return new SamInputResource(new SRAInputResource(acc)); }
 
+    public static SamInputResource of(final URI uri) {
+        return new SamInputResource(new UriInputResource(uri));
+    }
+
     /** Creates a {@link SamInputResource} from a string specifying *either* a url or a file path */
     public static SamInputResource of(final String string) { 
       try {
@@ -188,7 +193,7 @@ abstract class InputResource {
     protected InputResource(final Type type) {this.type = type;}
 
     enum Type {
-        FILE, PATH, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION
+        FILE, PATH, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION, URI
     }
 
     private final Type type;
@@ -549,5 +554,50 @@ class SRAInputResource extends InputResource {
     @Override
     public SRAAccession asSRAAccession() {
         return accession;
+    }
+}
+
+// TODO: replace this with an InputResource type taking PathSpecifier once this interface is pushed down to htsjdk
+class UriInputResource extends InputResource {
+
+    final URI uri;
+
+    public UriInputResource(final URI uri) {
+        super(Type.URI);
+        this.uri = uri;
+    }
+
+    @Override
+    File asFile() {
+        return null;
+    }
+
+    @Override
+    Path asPath() {
+        return null;
+    }
+
+    @Override
+    URL asUrl() {
+        try {
+            return this.uri.toURL();
+        } catch (final MalformedURLException e) {
+            return null;
+        }
+    }
+
+    @Override
+    SeekableStream asUnbufferedSeekableStream() {
+        return null;
+    }
+
+    @Override
+    InputStream asUnbufferedInputStream() {
+        return null;
+    }
+
+    @Override
+    SRAAccession asSRAAccession() {
+        return null;
     }
 }
