@@ -1,3 +1,4 @@
+#!/bin/sh
 WORKING_DIR=/home/travis/build/samtools/htsjdk
 
 sudo docker pull ga4gh/htsget-ref:1.1.0
