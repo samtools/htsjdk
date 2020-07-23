@@ -12,10 +12,10 @@ import java.io.IOException;
 import java.net.URI;
 
 public class HtsgetBAMFileReaderTest extends HtsjdkTest {
-    private static final String ENDPOINT = "http://127.0.0.1:3000/reads/";
-    private static final String LOCAL_PREFIX = "htsjdktest.";
+    private static final String HTSGET_ENDPOINT = "http://127.0.0.1:3000/reads/";
+    private static final String LOCAL_PREFIX = "htsjdk_test.";
 
-    private final static URI htsgetBAM = URI.create(ENDPOINT + LOCAL_PREFIX + "index_test.bam");
+    private final static URI htsgetBAM = URI.create(HTSGET_ENDPOINT + LOCAL_PREFIX + "index_test.bam");
 
     private final static File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final static File csiFileIndex = new File(bamFile.getPath() + ".csi");
@@ -130,7 +130,6 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
 
                 final SAMRecord r1 = htsgetIterator.next();
                 final SAMRecord r2 = csiIterator.next();
-                System.err.println(r1);
                 Assert.assertEquals(r1.getReadName(), r2.getReadName());
                 Assert.assertEquals(r1.getBaseQualityString(), r2.getBaseQualityString());
 

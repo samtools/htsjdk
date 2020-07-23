@@ -242,6 +242,9 @@ abstract class InputResource {
             case SRA_ACCESSION:
                 childToString = asSRAAccession().toString();
                 break;
+            case URI:
+                childToString = ((UriInputResource) this).uri.toString();
+                break;
             default:
                 throw new IllegalStateException();
         }

@@ -328,7 +328,9 @@ public abstract class SamReaderFactory {
                 if (type == InputResource.Type.URI) {
                     final URI uri = ((UriInputResource) data).uri;
                     if (uri.getScheme().equalsIgnoreCase("htsget")) {
-                        final URI httpUri = new URI("http", uri.getHost(), uri.getPath(), uri.getFragment());
+                        final URI httpUri = new URI(
+                            "http", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(),
+                            uri.getQuery(), uri.getFragment());
 
                         primitiveSamReader = new HtsgetBAMFileReader(
                             httpUri,

@@ -238,8 +238,8 @@ public class HtsgetRequest {
      * @return the response from the htsget server if request is successful as an HtsgetResponse object
      */
     public HtsgetResponse getResponse() {
+        final URI reqURI = this.toURI();
         try {
-            final URI reqURI = this.toURI();
             final HttpURLConnection conn = (HttpURLConnection) reqURI.toURL().openConnection();
             conn.setRequestMethod("GET");
             conn.connect();
@@ -267,7 +267,7 @@ public class HtsgetRequest {
                 throw new IllegalArgumentException("Unrecognized status code: " + statusCode);
             }
         } catch (final IOException e) {
-            throw new RuntimeIOException("IOException while attempting htsget download", e);
+            throw new RuntimeIOException("IOException while attempting htsget download, request: " + reqURI, e);
         }
     }
 }
