@@ -32,7 +32,7 @@ matrix:
 
 before_install:
   - scripts/install-samtools.sh
-  - sudo scripts/start-htsget-test-server.sh
+  - scripts/start-htsget-test-server.sh
 
 script:
   - if [[ $SPOT_BUGS == "true" ]]; then
