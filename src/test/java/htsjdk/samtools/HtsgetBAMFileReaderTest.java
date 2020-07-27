@@ -36,6 +36,13 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     }
 
     @Test
+    public static void testGetHeader() {
+        final SAMFileHeader expectedHeader = bamFileReaderCSI.getFileHeader();
+        final SAMFileHeader actualHeader = bamFileReaderHtsget.getFileHeader();
+        Assert.assertEquals(actualHeader, expectedHeader);
+    }
+
+    @Test
     public static void testQueryMapped() throws IOException {
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
              final SAMRecordIterator samRecordIterator = samReader.iterator()) {
