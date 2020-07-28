@@ -239,4 +239,17 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
             Assert.assertFalse(csiIterator.hasNext());
         }
     }
+
+    @Test
+    public static void testEnableFileSource() {
+        final SamReader reader = SamReaderFactory.makeDefault().open(new SamInputResource(new FileInputResource(bamFile)));
+        bamFileReaderHtsget.enableFileSource(reader, true);
+        try (final CloseableIterator<SAMRecord> htsgetIterator = bamFileReaderHtsget.getIterator()) {
+            htsgetIterator.forEachRemaining(record -> Assert.assertEquals(record.getFileSource().getReader(), reader));
+        }
+        bamFileReaderHtsget.enableFileSource(reader, false);
+        try (final CloseableIterator<SAMRecord> htsgetIterator = bamFileReaderHtsget.getIterator()) {
+            htsgetIterator.forEachRemaining(record -> Assert.assertNull(record.getFileSource()));
+        }
+    }
 }

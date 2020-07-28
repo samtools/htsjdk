@@ -46,7 +46,7 @@ public class QueryIntervalTest extends HtsjdkTest {
     public Object[][] nonOptimizedIntervalsProvider() {
         return new Object[][]{
             {new QueryInterval[]{new QueryInterval(0, 10, 20), new QueryInterval(0, 15, 25)}},
-            {new QueryInterval[]{new QueryInterval(0, 10, 20), new QueryInterval(0, 20, 30)}},
+            {new QueryInterval[]{new QueryInterval(0, 10, 19), new QueryInterval(0, 20, 30)}},
             {new QueryInterval[]{new QueryInterval(0, 20, 30), new QueryInterval(0, 10, 20)}},
         };
     }

@@ -72,7 +72,7 @@ public class HtsgetRequestUnitTest extends HtsjdkTest {
                 .withNotag("NH")},
             // tags and notags overlap
             {new HtsgetRequest(new URI(endpoint + 1))
-                .withDataClass(HtsgetClass.header)
+                .withDataClass(HtsgetClass.body)
                 .withTag("NH")
                 .withNotag("NH")},
             // .bam file requested while format is variant
