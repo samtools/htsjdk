@@ -38,6 +38,8 @@ public final class FileExtensions {
     public static final Set<String> FASTA = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         ".fasta",
         ".fasta.gz",
+        ".fas",
+        ".fas.gz",
         ".fa",
         ".fa.gz",
         ".fna",
