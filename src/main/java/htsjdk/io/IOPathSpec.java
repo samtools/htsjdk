@@ -1,7 +1,6 @@
-package org.broadinstitute.hellbender.engine;
+package htsjdk.io;
 
-import org.broadinstitute.hellbender.exceptions.UserException;
-import org.broadinstitute.hellbender.utils.Utils;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,7 +8,12 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.*;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.ProviderNotFoundException;
 import java.nio.file.spi.FileSystemProvider;
 
 /**
@@ -63,13 +67,13 @@ import java.nio.file.spi.FileSystemProvider;
  *         opaque_part   = uric_no_slash *uric
  *         uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" | "&" | "=" | "+" | "$" | ","
  */
-public class PathSpecifier implements PathURI, Serializable {
+public class IOPathSpec implements IOPath, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final String    rawInputString;     // raw input string provided by th user; may or may not have a scheme
-    private final URI       uri;                // working URI; always has a scheme (assume "file" if not provided)
+    private final URI uri;                // working URI; always has a scheme (assume "file" if not provided)
     private transient String pathFailureReason; // cache the reason for "toPath" conversion failure
-    private transient Path  cachedPath;         // cache the Path associated with this URI if its "Path-able"
+    private transient Path cachedPath;         // cache the Path associated with this URI if its "Path-able"
 
     /**
      * If the raw input string already contains a scheme (including a "file" scheme), assume its already
@@ -80,8 +84,8 @@ public class PathSpecifier implements PathURI, Serializable {
      * URI characters (such as the URI fragment delimiter "#") are properly escape/encoded.
      * @param rawInputString
      */
-    public PathSpecifier(final String rawInputString) {
-        Utils.nonNull(rawInputString);
+    public IOPathSpec(final String rawInputString) {
+        ValidationUtils.nonNull(rawInputString);
         this.rawInputString = rawInputString;
 
         URI tempURI;
@@ -112,7 +116,7 @@ public class PathSpecifier implements PathURI, Serializable {
         }
         if (!tempURI.isAbsolute()) {
             // assert the invariant that every URI we create has a scheme, even if the raw input string does not
-            throw new UserException("URI has no scheme");
+            throw new RuntimeException("URI has no scheme");
         }
 
         uri = tempURI;
@@ -152,7 +156,6 @@ public class PathSpecifier implements PathURI, Serializable {
         } catch (ProviderNotFoundException |
                 FileSystemNotFoundException |
                 IllegalArgumentException |
-                UserException |
                 AssertionError e) {
             // jimfs throws an AssertionError that wraps a URISyntaxException when trying to create path where
             // the scheme-specific part is missing or incorrect
@@ -165,7 +168,7 @@ public class PathSpecifier implements PathURI, Serializable {
      * Resolve the URI to a {@link Path} object.
      *
      * @return the resulting {@code Path}
-     * @throws UserException if an I/O error occurs when creating the file system
+     * @throws RuntimeException if an I/O error occurs when creating the file system
      */
     @Override
     public Path toPath() {
@@ -190,7 +193,7 @@ public class PathSpecifier implements PathURI, Serializable {
                 return String.format("FileSystemNotFoundException: %s", e.getMessage());
             } catch (IllegalArgumentException e) {
                 return String.format("IllegalArgumentException: %s", e.getMessage());
-            } catch (UserException e) {
+            } catch (RuntimeException e) {
                 return String.format("UserException: %s", e.getMessage());
             }
         }
@@ -200,14 +203,14 @@ public class PathSpecifier implements PathURI, Serializable {
     @Override
     public InputStream getInputStream() {
         if (!isPath()) {
-            throw new UserException(getToPathFailureReason());
+            throw new RuntimeException(getToPathFailureReason());
         }
 
         final Path resourcePath = toPath();
         try {
             return Files.newInputStream(resourcePath);
         } catch (IOException e) {
-            throw new UserException(
+            throw new RuntimeException(
                     String.format("Could not create open input stream for %s (as URI %s)", getRawInputString(), getURIString()), e);
         }
     }
@@ -215,14 +218,14 @@ public class PathSpecifier implements PathURI, Serializable {
     @Override
     public OutputStream getOutputStream() {
         if (!isPath()) {
-            throw new UserException(getToPathFailureReason());
+            throw new RuntimeException(getToPathFailureReason());
         }
 
         final Path resourcePath = toPath();
         try {
             return Files.newOutputStream(resourcePath);
         } catch (IOException e) {
-            throw new UserException(String.format("Could not open output stream for %s (as URI %s)", getRawInputString(), getURIString()), e);
+            throw new RuntimeException(String.format("Could not open output stream for %s (as URI %s)", getRawInputString(), getURIString()), e);
         }
     }
 
@@ -241,9 +244,9 @@ public class PathSpecifier implements PathURI, Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof PathSpecifier)) return false;
+        if (!(o instanceof IOPathSpec)) return false;
 
-        PathSpecifier that = (PathSpecifier) o;
+        IOPathSpec that = (IOPathSpec) o;
 
         if (!getRawInputString().equals(that.getRawInputString())) return false;
         if (!getURI().equals(that.getURI())) return false;
@@ -258,4 +261,3 @@ public class PathSpecifier implements PathURI, Serializable {
     }
 
 }
-

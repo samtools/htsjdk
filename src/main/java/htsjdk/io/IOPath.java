@@ -1,7 +1,7 @@
-package org.broadinstitute.hellbender.engine;
+package htsjdk.io;
 
 import htsjdk.samtools.util.FileExtensions;
-import org.broadinstitute.hellbender.utils.Utils;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,9 +11,9 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * Interface for htsjdk input/output URIs.
+ * Interface for htsjdk input/output paths/URIs.
  */
-public interface PathURI {
+public interface IOPath {
 
     /**
      * Get a {@code java.net.URI} object for this {@code PathURI}. Will not be null.
@@ -118,9 +118,9 @@ public interface PathURI {
      * @return true if the path component of this specifier ends with the extension, otherwise false.
      */
     default boolean hasExtension(final String extension) {
-        Utils.nonNull(extension, "Target extension must not be null");
-        Utils.validateArg(extension.length() > 1, "Target extension must be length > 1");
-        Utils.validateArg(extension.charAt(0) == '.', "Target extension must include the leading '.'");
+        ValidationUtils.nonNull(extension, "Target extension must not be null");
+        ValidationUtils.validateArg(extension.length() > 1, "Target extension must be length > 1");
+        ValidationUtils.validateArg(extension.charAt(0) == '.', "Target extension must include the leading '.'");
 
         // We don't want to use {@code #getExtension} here, since it won't work correctly if we're comparing an
         // extension that uses multiple . chars, such as .fasta.gz.
