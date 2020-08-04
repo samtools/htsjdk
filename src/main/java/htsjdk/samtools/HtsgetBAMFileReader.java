@@ -149,17 +149,27 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     }
 
     /**
-     * Note that this source is queryable by interval, but does NOT have an actual index
+     * Note that this source is queryable by interval despite NOT having an index
      *
-     * @return true, but calls to {@link #getIndex} will return null
+     * @return true
      */
     @Override
-    public boolean hasIndex() {
+    public boolean isQueryable() {
         return true;
     }
 
     /**
-     * Note that this method never returns an index despite {@link #hasIndex} being true
+     * Always false as htsget sources do not have indices
+     *
+     * @return false
+     */
+    @Override
+    public boolean hasIndex() {
+        return false;
+    }
+
+    /**
+     * Always null as htsget sources do not have indices
      *
      * @return null
      */
@@ -272,7 +282,7 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
         } else {
             final HtsgetRequest req = new HtsgetRequest(this.mSource)
                 .withFormat(HtsgetFormat.BAM)
-                .withInterval(new Interval(sequence, start, Integer.MAX_VALUE));
+                .withInterval(new Interval(sequence, start, start + 1));
             final CloseableIterator<SAMRecord> iterator = new HtsgetBAMFileIterator(req);
             final BAMStartingAtIteratorFilter filter = new BAMStartingAtIteratorFilter(referenceIndex, start);
             final CloseableIterator<SAMRecord> filteringIterator = new BAMQueryFilteringIterator(iterator, filter);

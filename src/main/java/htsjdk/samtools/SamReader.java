@@ -151,6 +151,11 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public String getResourceDescription();
 
     /**
+     * @return true if this source can be queried by interval, regardless of whether it has an index
+     */
+    public boolean isQueryable();
+
+    /**
      * @return true if ths is a BAM file, and has an index
      */
     public boolean hasIndex();
@@ -348,6 +353,10 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public interface PrimitiveSamReader {
         Type type();
 
+        default boolean isQueryable() {
+            return this.hasIndex();
+        }
+
         boolean hasIndex();
 
         BAMIndex getIndex();
@@ -512,6 +521,11 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         @Override
         public String getResourceDescription() {
             return this.resource.toString();
+        }
+
+        @Override
+        public boolean isQueryable() {
+            return p.isQueryable();
         }
 
         @Override
