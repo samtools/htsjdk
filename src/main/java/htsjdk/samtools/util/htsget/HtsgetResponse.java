@@ -83,7 +83,7 @@ public class HtsgetResponse {
                 case "data":
                     final String dataUri = this.uri.toString();
                     if (!dataUri.matches("^data:.*;base64,.*")) {
-                        throw new IllegalArgumentException("data URI must be base64 encoded: " + dataUri);
+                        throw new IllegalStateException(new HtsgetMalformedResponseException("data URI must be base64 encoded: " + dataUri));
                     }
                     return new ByteArrayInputStream(
                         Base64.getDecoder().decode(dataUri.replaceFirst("^data:.*;base64,", "")));
@@ -101,7 +101,7 @@ public class HtsgetResponse {
         public static Block parse(final mjson.Json blockJson) {
             final mjson.Json uriJson = blockJson.at("url");
             if (uriJson == null) {
-                throw new IllegalArgumentException(
+                throw new IllegalStateException(
                     blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())),
                     new HtsgetMalformedResponseException("No URI found in Htsget data block"));
             }
@@ -109,7 +109,7 @@ public class HtsgetResponse {
             try {
                 uri = new URI(uriJson.asString());
             } catch (final URISyntaxException e) {
-                throw new IllegalArgumentException(
+                throw new IllegalStateException(
                     blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())),
                     new HtsgetMalformedResponseException("Could not parse URI in Htsget data block", e));
             }
@@ -180,7 +180,7 @@ public class HtsgetResponse {
 
         final mjson.Json blocksJson = htsget.at("urls");
         if (blocksJson == null) {
-            throw new IllegalArgumentException("No urls field found in Htsget Response");
+            throw new IllegalStateException(new HtsgetMalformedResponseException("No urls field found in Htsget Response"));
         }
 
         final List<Block> blocks = blocksJson.asJsonList().stream()

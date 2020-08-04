@@ -1,10 +1,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.util.htsget.HtsgetClass;
-import htsjdk.samtools.util.htsget.HtsgetErrorResponse;
-import htsjdk.samtools.util.htsget.HtsgetFormat;
-import htsjdk.samtools.util.htsget.HtsgetResponse;
+import htsjdk.samtools.util.htsget.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -39,7 +36,7 @@ public class HtsgetResponseUnitTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "missingRequiredFieldsProvider", expectedExceptions = IllegalArgumentException.class)
+    @Test(dataProvider = "missingRequiredFieldsProvider", expectedExceptions = IllegalStateException.class)
     public void testMissingRequiredFields(final String json) {
         HtsgetResponse.parse(json);
     }
@@ -52,7 +49,7 @@ public class HtsgetResponseUnitTest extends HtsjdkTest {
         Assert.assertEquals(err.getMessage(), "No such accession 'ENS16232164'");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     @SuppressWarnings("StatementWithEmptyBody")
     public void testNonBase64EncodedDataURI() throws IOException {
         final String respJson = "{\"htsget\":{\"format\":\"BAM\",\"urls\":[{\"url\":\"data:application/vnd.ga4gh.bam;base64,ZW5jb2RlZCA=\",\"class\":\"header\"},{\"url\":\"data:application/vnd.ga4gh.bam;base64,dGVzdCA=\",\"class\":\"body\"},{\"url\":\"data:application/vnd.ga4gh.bam;somethingelse,ZGF0YQ==\",\"class\":\"body\"}]}}";
@@ -62,7 +59,7 @@ public class HtsgetResponseUnitTest extends HtsjdkTest {
         while (data.read() != -1) ;
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     @SuppressWarnings("StatementWithEmptyBody")
     public void testUnrecognizedURIScheme() throws IOException {
         final String respJson = "{\"htsget\":{\"format\":\"BAM\",\"urls\":[{\"url\":\"data:application/vnd.ga4gh.bam;base64,ZW5jb2RlZCA=\",\"class\":\"header\"},{\"url\":\"data:application/vnd.ga4gh.bam;base64,dGVzdCA=\",\"class\":\"body\"},{\"url\":\"hmmm:application/vnd.ga4gh.bam;base64,ZGF0YQ==\",\"class\":\"body\"}]}}";

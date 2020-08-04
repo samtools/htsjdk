@@ -29,6 +29,7 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
     private void prefetch() {
         while (this.inner.hasNext()) {
             if (!this.running.get()) {
+                this.inner.close();
                 return;
             }
             final SAMRecord next = this.inner.peek();
@@ -59,7 +60,6 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
     public void close() {
         this.running.set(false);
         this.exec.shutdownNow();
-        this.inner.close();
     }
 
     @Override
