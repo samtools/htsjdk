@@ -2,8 +2,8 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CoordMath;
 import org.testng.Assert;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.net.URI;
 
 public class HtsgetBAMFileReaderTest extends HtsjdkTest {
-    private static final String HTSGET_ENDPOINT = "http://127.0.0.1:3000/reads/";
-    private static final String LOCAL_PREFIX = "htsjdk_test.";
+    public static final String HTSGET_ENDPOINT = "http://127.0.0.1:3000/reads/";
+    public static final String LOCAL_PREFIX = "htsjdk_test.";
 
     private final static URI htsgetBAM = URI.create(HTSGET_ENDPOINT + LOCAL_PREFIX + "index_test.bam");
 
@@ -31,8 +31,14 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
 
     @BeforeTest
     public void init() throws IOException {
-        bamFileReaderHtsget = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
+        bamFileReaderHtsget = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), true);
         bamFileReaderCSI = new BAMFileReader(bamFile, csiFileIndex, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
+    }
+
+    @AfterTest
+    public void tearDown() {
+        bamFileReaderHtsget.close();
+        bamFileReaderCSI.close();
     }
 
     @Test
@@ -69,12 +75,7 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
                 Assert.assertEquals(samRecord.getReferenceName(), bamRecord.getReferenceName(), sam1 + sam2);
 
                 // default 'overlap' is true, so test records intersect the query:
-                Assert.assertTrue(CoordMath.overlaps(
-                    bamRecord.getAlignmentStart(),
-                    bamRecord.getAlignmentEnd(),
-                    samRecord.getAlignmentStart(),
-                    samRecord.getAlignmentEnd()),
-                    sam1 + sam2);
+                Assert.assertTrue(bamRecord.overlaps(samRecord), sam1 + sam2);
 
                 iterator.close();
             }

@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.Locatable;
 
 import java.util.ArrayList;
 import java.util.Arrays;

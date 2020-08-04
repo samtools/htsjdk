@@ -10,15 +10,45 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Class allowing deserialization from json htsget response
+ * Class allowing deserialization from json htsget response, as defined in https://samtools.github.io/hts-specs/htsget.html
+ * <p>
+ * This class currently supports version 1.2.0 of the spec
+ * <p>
+ * An example response could be as follows
+ * {
+ * "htsget" : {
+ * "format" : "BAM",
+ * "urls" : [
+ * {
+ * "url" : "data:application/vnd.ga4gh.bam;base64,QkFNAQ==",
+ * "class" : "header"
+ * },
+ * {
+ * "url" : "https://htsget.blocksrv.example/sample1234/run1.bam",
+ * "headers" : {
+ * "Authorization" : "Bearer xxxx",
+ * "Range" : "bytes=65536-1003750"
+ * },
+ * "class" : "body"
+ * }
+ * ],
+ * "md5": "abcd"
+ * }
+ * }
  */
 public class HtsgetResponse {
     public static class Block {
-        private URI uri;
+        private final URI uri;
 
-        private Map<String, String> headers;
+        private final Map<String, String> headers;
 
-        private HtsgetClass dataClass;
+        private final HtsgetClass dataClass;
+
+        public Block(final URI uri, final Map<String, String> headers, final HtsgetClass dataClass) {
+            this.uri = uri;
+            this.headers = headers;
+            this.dataClass = dataClass;
+        }
 
         public URI getUri() {
             return this.uri;
@@ -58,7 +88,7 @@ public class HtsgetResponse {
                     return new ByteArrayInputStream(
                         Base64.getDecoder().decode(dataUri.replaceFirst("^data:.*;base64,", "")));
                 default:
-                    throw new IllegalArgumentException("Unrecognized URI scheme in data block: " + this.uri.getScheme());
+                    throw new IllegalStateException(new HtsgetMalformedResponseException("Unrecognized URI scheme in data block: " + this.uri.getScheme()));
             }
         }
 
@@ -69,41 +99,56 @@ public class HtsgetResponse {
          * @return parsed block object
          */
         public static Block parse(final mjson.Json blockJson) {
-            final Block block = new Block();
-
-            final mjson.Json uri = blockJson.at("url");
-            if (uri == null) {
-                throw new IllegalArgumentException("No URI found in Htsget data block");
+            final mjson.Json uriJson = blockJson.at("url");
+            if (uriJson == null) {
+                throw new IllegalArgumentException(
+                    blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())),
+                    new HtsgetMalformedResponseException("No URI found in Htsget data block"));
             }
+            final URI uri;
             try {
-                block.uri = new URI(uri.asString());
+                uri = new URI(uriJson.asString());
             } catch (final URISyntaxException e) {
-                throw new IllegalArgumentException("Failed to parse URI in Htsget data block", e);
+                throw new IllegalArgumentException(
+                    blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())),
+                    new HtsgetMalformedResponseException("Could not parse URI in Htsget data block", e));
             }
 
-            final mjson.Json dataClass = blockJson.at("class");
-            if (dataClass != null) {
-                block.dataClass = HtsgetClass.valueOf(dataClass.asString().toLowerCase());
-            }
+            blockJson.asJsonMap().entrySet().stream()
+                .filter(e -> e.getKey().equalsIgnoreCase("nnsr"))
+                .map(Map.Entry::getValue)
+                .findFirst().orElse(null);
 
-            final mjson.Json headers = blockJson.at("headers");
-            if (headers != null) {
-                block.headers = headers.asJsonMap().entrySet().stream()
-                    .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue().asString()
-                    ));
-            }
+            final mjson.Json dataClassJson = blockJson.at("class");
+            final HtsgetClass dataClass = dataClassJson == null
+                ? null
+                : HtsgetClass.valueOf(dataClassJson.asString().toLowerCase());
 
-            return block;
+
+            final mjson.Json headersJson = blockJson.at("headers");
+            final Map<String, String> headers = headersJson == null
+                ? null
+                : headersJson.asJsonMap().entrySet().stream()
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> e.getValue().asString()
+                ));
+
+            return new Block(uri, headers, dataClass);
         }
     }
 
-    private HtsgetFormat format;
+    public HtsgetResponse(final HtsgetFormat format, final List<Block> blocks, final String md5) {
+        this.format = format;
+        this.blocks = blocks;
+        this.md5 = md5;
+    }
 
-    private List<Block> blocks;
+    private final HtsgetFormat format;
 
-    private String md5;
+    private final List<Block> blocks;
+
+    private final String md5;
 
     public HtsgetFormat getFormat() {
         return this.format;
@@ -124,30 +169,29 @@ public class HtsgetResponse {
      * @return parsed HtsgetResponse object
      */
     public static HtsgetResponse parse(final String s) {
-        final HtsgetResponse resp = new HtsgetResponse();
         final mjson.Json j = mjson.Json.read(s);
         final mjson.Json htsget = j.at("htsget");
-
-        final mjson.Json md5 = htsget.at("md5");
-        if (md5 != null) {
-            resp.md5 = md5.asString();
+        if (htsget == null) {
+            throw new IllegalStateException(new HtsgetMalformedResponseException("No htsget key found in response"));
         }
 
-        final mjson.Json htsgetClass = htsget.at("format");
-        if (htsgetClass != null) {
-            resp.format = HtsgetFormat.valueOf(htsgetClass.asString().toUpperCase());
-        }
+        final mjson.Json md5Json = htsget.at("md5");
+        final mjson.Json formatJson = htsget.at("format");
 
         final mjson.Json blocksJson = htsget.at("urls");
         if (blocksJson == null) {
             throw new IllegalArgumentException("No urls field found in Htsget Response");
         }
 
-        resp.blocks = blocksJson.asJsonList().stream()
+        final List<Block> blocks = blocksJson.asJsonList().stream()
             .map(Block::parse)
             .collect(Collectors.toList());
 
-        return resp;
+        return new HtsgetResponse(
+            formatJson == null ? null : HtsgetFormat.valueOf(formatJson.asString().toUpperCase()),
+            blocks,
+            md5Json == null ? null : md5Json.asString()
+        );
     }
 
     /**

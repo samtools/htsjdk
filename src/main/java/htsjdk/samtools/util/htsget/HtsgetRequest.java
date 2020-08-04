@@ -1,6 +1,7 @@
 package htsjdk.samtools.util.htsget;
 
-import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,27 +13,35 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.RuntimeIOException;
-
 
 /**
  * Builder for an htsget request that allows converting the request
  * to a URI after validating that it is properly formed
+ *
+ * This class currently supports version 1.2.0 of the spec as defined in https://samtools.github.io/hts-specs/htsget.html
  */
 public class HtsgetRequest {
+    private final static Log log = Log.getInstance(HtsgetRequest.class);
     public static final Interval UNMAPPED_UNPLACED_INTERVAL = new Interval("*", 1, Integer.MAX_VALUE);
+    private static final String PROTOCOL_VERSION = "vnd.ga4gh.htsget.v1.2.0";
+    private static final String ACCEPT_TYPE = "application/" + PROTOCOL_VERSION + "+json";
 
     private final URI endpoint;
 
     // Query parameters
     private HtsgetFormat format;
     private HtsgetClass dataClass;
-    private Interval interval;
+    private Locatable interval;
     private final EnumSet<HtsgetRequestField> fields;
     private final Set<String> tags;
     private final Set<String> notags;
 
+    /**
+     * Construct an HtsgetRequest from a URI identifying a valid resource on a htsget server
+     *
+     * @param endpoint the full URI including both server path and the ID of the htsget resource,
+     *                 without the filtering parameters defined in the htsget spec such as start or referenceName
+     */
     public HtsgetRequest(final URI endpoint) {
         this.endpoint = endpoint;
         this.fields = EnumSet.noneOf(HtsgetRequestField.class);
@@ -52,7 +61,7 @@ public class HtsgetRequest {
         return this.dataClass;
     }
 
-    public Interval getInterval() {
+    public Locatable getInterval() {
         return this.interval;
     }
 
@@ -114,7 +123,7 @@ public class HtsgetRequest {
         return this;
     }
 
-    public HtsgetRequest withInterval(final Interval interval) {
+    public HtsgetRequest withInterval(final Locatable interval) {
         this.interval = interval;
         return this;
     }
@@ -163,12 +172,13 @@ public class HtsgetRequest {
 
         if (this.format != null) {
             final String path = this.endpoint.getPath();
-            if ((path.endsWith(FileExtensions.BAM) || path.endsWith(FileExtensions.SAM) && (
-                this.format != HtsgetFormat.BAM && this.format != HtsgetFormat.CRAM))
-                ||
-                FileExtensions.VCF_LIST.stream().anyMatch(path::endsWith) && (
-                    this.format != HtsgetFormat.VCF && this.format != HtsgetFormat.BCF)) {
-                throw new IllegalArgumentException("Specified format: " + this.format + " is incompatible with id's file extension");
+            if ((path.endsWith(FileExtensions.BAM) || path.endsWith(FileExtensions.CRAM)) && (
+                this.format != HtsgetFormat.BAM && this.format != HtsgetFormat.CRAM)) {
+                throw new IllegalArgumentException("Specified reads format: " + this.format + " is incompatible with id's file extension " + path);
+            }
+            if (FileExtensions.VCF_LIST.stream().anyMatch(path::endsWith) && (
+                this.format != HtsgetFormat.VCF && this.format != HtsgetFormat.BCF)) {
+                throw new IllegalArgumentException("Specified variant format: " + this.format + " is incompatible with id's file extension " + path);
             }
         }
 
@@ -193,10 +203,11 @@ public class HtsgetRequest {
         if (this.dataClass != null) {
             queryParams.put("class", String.valueOf(this.dataClass));
         }
-        if (this.interval != null) {
+        if (this.interval != null && this.interval.getContig() != null) {
             queryParams.put("referenceName", this.interval.getContig());
             // Do not insert start and end for unmapped reads or if we are requesting the entire contig
-            if (!(this.interval.getContig().equals("*"))) {
+            if (!(this.interval.getContig().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME))) {
+                // getStart() - 1 is necessary as GA4GH standards use 0-based coordinates while Locatables are 1-based
                 queryParams.put("start", String.valueOf(this.interval.getStart() - 1));
                 if (this.interval.getEnd() != Integer.MAX_VALUE && this.interval.getEnd() != -1) {
                     queryParams.put("end", String.valueOf(this.interval.getEnd()));
@@ -228,7 +239,7 @@ public class HtsgetRequest {
                 this.endpoint.getPath(), updatedQuery,
                 this.endpoint.getFragment());
         } catch (final URISyntaxException e) {
-            throw new IllegalArgumentException("Could not create URI for request");
+            throw new IllegalArgumentException("Could not create URI for request", e);
         }
     }
 
@@ -242,10 +253,18 @@ public class HtsgetRequest {
         try {
             final HttpURLConnection conn = (HttpURLConnection) reqURI.toURL().openConnection();
             conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", HtsgetRequest.ACCEPT_TYPE);
             conn.connect();
 
             final InputStream is = conn.getInputStream();
             final int statusCode = conn.getResponseCode();
+            final String respContentType = conn.getContentType();
+            if (respContentType != null &&
+                !respContentType.isEmpty() &&
+                !respContentType.contains(HtsgetRequest.PROTOCOL_VERSION)) {
+                log.warn("Supported htsget protocol version: " + HtsgetRequest.PROTOCOL_VERSION +
+                    "may not be compatible with received content type: " + respContentType);
+            }
 
             final BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             final StringBuilder out = new StringBuilder();
@@ -264,7 +283,7 @@ public class HtsgetRequest {
             } else if (statusCode == 200) {
                 return HtsgetResponse.parse(json);
             } else {
-                throw new IllegalArgumentException("Unrecognized status code: " + statusCode);
+                throw new IllegalStateException("Unrecognized status code: " + statusCode);
             }
         } catch (final IOException e) {
             throw new RuntimeIOException("IOException while attempting htsget download, request: " + reqURI, e);

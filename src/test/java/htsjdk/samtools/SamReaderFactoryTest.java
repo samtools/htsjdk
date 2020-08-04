@@ -38,10 +38,6 @@ import java.util.zip.Inflater;
 
 public class SamReaderFactoryTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
-
-    private static final String HTSGET_ENDPOINT = "htsget://127.0.0.1:3000/reads/";
-    private static final String LOCAL_PREFIX = "htsjdk_test.";
-
     private static final Log LOG = Log.getInstance(SamReaderFactoryTest.class);
 
     @Test(dataProvider = "variousFormatReaderTestCases")
@@ -254,7 +250,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
             sources.add(new SamInputResource(composeInputResourceForType(dataType, false)));
             for (final InputResource.Type indexType : InputResource.Type.values()) {
-                if (indexType.equals(InputResource.Type.SRA_ACCESSION) || indexType.equals(InputResource.Type.URI))
+                if (indexType.equals(InputResource.Type.SRA_ACCESSION) || indexType.equals(InputResource.Type.HTSGET))
                     continue;
 
                 sources.add(new SamInputResource(
@@ -289,8 +285,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                 } catch (final FileNotFoundException e) {
                     throw new RuntimeIOException(e);
                 }
-            case URI:
-                return new UriInputResource(URI.create(HTSGET_ENDPOINT + LOCAL_PREFIX + f.getName()));
+            case HTSGET:
+                return new HtsgetInputResource(URI.create(
+                    HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + f.getName()));
             default:
                 throw new IllegalStateException();
         }
@@ -334,6 +331,31 @@ public class SamReaderFactoryTest extends HtsjdkTest {
             Assert.assertEquals(records, expectedRecords);
             Assert.assertEquals(fileHeader, expectedFileHeader);
         }
+    }
+
+    @DataProvider(name = "URIFallbackProvider")
+    public Object[][] URIFallbackProvider() throws MalformedURLException {
+        return new Object[][]{
+            {
+                URI.create("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"),
+                InputResource.Type.HTSGET,
+            },
+            {
+                localBam.toURI(),
+                InputResource.Type.PATH,
+            },
+            {
+                URI.create("http://test.url"),
+                InputResource.Type.URL,
+            },
+        };
+    }
+
+    @Test(dataProvider = "URIFallbackProvider")
+    public void testOpenURIFallback(final URI uri, final InputResource.Type type) {
+        System.err.println(uri);
+        final SamInputResource resource = SamInputResource.of(uri);
+        Assert.assertEquals(resource.data().type(), type);
     }
 
     final Set<List<SAMRecord>> observedRecordOrdering1 = new HashSet<>();

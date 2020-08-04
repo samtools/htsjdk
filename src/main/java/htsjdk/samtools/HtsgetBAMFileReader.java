@@ -3,20 +3,25 @@ package htsjdk.samtools;
 import htsjdk.samtools.filter.FilteringSamIterator;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.util.*;
-import htsjdk.samtools.util.htsget.HtsgetClass;
-import htsjdk.samtools.util.htsget.HtsgetRequest;
+import htsjdk.samtools.util.htsget.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * Class for reading and querying BAM files from an htsget source
  */
-public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
+public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
+    public static final String HTSGET_SCHEME = "htsget";
+
     private final URI mSource;
 
     private final SAMFileHeader mFileHeader;
@@ -36,6 +41,7 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
     // For creating BAMRecords
     private SAMRecordFactory mSamRecordFactory;
 
+    // Only used for attaching as a source to SAMRecords so ok to share between iterators
     private SamReader mReader;
 
     // Hold on to all query iterators we've given out so we can close them
@@ -130,21 +136,38 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
     }
 
     @Override
+    void enableIndexCaching(final boolean enabled) {
+        throw new UnsupportedOperationException("Cannot enable index caching in HtsgetBAMFileReader");
+    }
+
+    @Override
+    void enableIndexMemoryMapping(final boolean enabled) {
+        throw new UnsupportedOperationException("Cannot enable index memory mapping in HtsgetBAMFileReader");
+    }
+
+    @Override
     public SamReader.Type type() {
-        return SamReader.Type.BAM_TYPE;
+        return SamReader.Type.BAM_HTSGET_TYPE;
     }
 
     /**
-     * @return false, since htsget sources never have indices
+     * Note that this source is queryable by interval, but does NOT have an actual index
+     *
+     * @return true, but calls to {@link #getIndex} will return null
      */
     @Override
     public boolean hasIndex() {
-        return false;
+        return true;
     }
 
+    /**
+     * Note that this method never returns an index despite {@link #hasIndex} being true
+     *
+     * @return null
+     */
     @Override
     public BAMIndex getIndex() {
-        throw new UnsupportedOperationException("Cannot retrieve index from Htsget data source");
+        return null;
     }
 
     @Override
@@ -158,7 +181,7 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
      */
     @Override
     public CloseableIterator<SAMRecord> getIterator() {
-        final HtsgetRequest req = new HtsgetRequest(this.mSource);
+        final HtsgetRequest req = new HtsgetRequest(this.mSource).withFormat(HtsgetFormat.BAM);
         final CloseableIterator<SAMRecord> queryIterator = new HtsgetBAMFileIterator(req);
         this.iterators.add(queryIterator);
         return queryIterator;
@@ -201,14 +224,16 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
     @Override
     public CloseableIterator<SAMRecord> query(final QueryInterval[] intervals, final boolean contained) {
         QueryInterval.assertIntervalsOptimized(intervals);
-        final Interval[] namedIntervals = Arrays.stream(intervals)
+        final List<Locatable> namedIntervals = Arrays.stream(intervals)
             .map(i -> new Interval(this.mFileHeader.getSequence(i.referenceIndex).getSequenceName(), i.start, i.end))
-            .toArray(Interval[]::new);
+            .collect(Collectors.toList());
         return this.query(namedIntervals, contained);
     }
 
     public CloseableIterator<SAMRecord> query(final String sequence, final int start, final int end, final boolean contained) {
-        return this.query(new Interval[]{new Interval(sequence, start, end == -1 ? Integer.MAX_VALUE : end)}, contained);
+        return this.query(
+            Collections.singletonList(new Interval(sequence, start, end == -1 ? Integer.MAX_VALUE : end)),
+            contained);
     }
 
     /**
@@ -220,8 +245,11 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
      * @param intervals intervals to query by
      * @param contained only return reads that are fully contained and not just overlapping if this is true
      */
-    public CloseableIterator<SAMRecord> query(final Interval[] intervals, final boolean contained) {
-        final CloseableIterator<SAMRecord> queryIterator = new BAMQueryChainingIterator(intervals, contained);
+    public CloseableIterator<SAMRecord> query(final List<Locatable> intervals, final boolean contained) {
+        final CloseableIterator<SAMRecord> chainingIterator = new BAMQueryChainingIterator(intervals, contained);
+        final CloseableIterator<SAMRecord> queryIterator = this.mUseAsynchronousIO
+            ? chainingIterator
+            : new SAMRecordPrefetchingIterator(chainingIterator, 5_000_000);
         this.iterators.add(queryIterator);
         return queryIterator;
     }
@@ -242,28 +270,19 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
     public CloseableIterator<SAMRecord> queryAlignmentStart(final String sequence, final int start) {
         final int referenceIndex = this.mFileHeader.getSequenceIndex(sequence);
         if (referenceIndex == -1) {
-            return new CloseableIterator<SAMRecord>() {
-                @Override
-                public void close() {
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return false;
-                }
-
-                @Override
-                public SAMRecord next() {
-                    return null;
-                }
-            };
+            return new EmptyBamIterator();
         } else {
-            final HtsgetRequest req = new HtsgetRequest(this.mSource).withInterval(new Interval(sequence, start, Integer.MAX_VALUE));
-            final CloseableIterator<SAMRecord> queryIterator = new HtsgetBAMFileIterator(req);
-            final BAMStartingAtIteratorFilter filter = new BAMStartingAtIteratorFilter(this.mFileHeader.getSequenceIndex(sequence), start);
-            final CloseableIterator<SAMRecord> filteredIterator = new BAMQueryFilteringIterator(queryIterator, filter);
-            this.iterators.add(filteredIterator);
-            return filteredIterator;
+            final HtsgetRequest req = new HtsgetRequest(this.mSource)
+                .withFormat(HtsgetFormat.BAM)
+                .withInterval(new Interval(sequence, start, Integer.MAX_VALUE));
+            final CloseableIterator<SAMRecord> iterator = new HtsgetBAMFileIterator(req);
+            final BAMStartingAtIteratorFilter filter = new BAMStartingAtIteratorFilter(referenceIndex, start);
+            final CloseableIterator<SAMRecord> filteringIterator = new BAMQueryFilteringIterator(iterator, filter);
+            final CloseableIterator<SAMRecord> queryIterator = this.mUseAsynchronousIO
+                ? filteringIterator
+                : new SAMRecordPrefetchingIterator(filteringIterator, 5_000_000);
+            this.iterators.add(queryIterator);
+            return queryIterator;
         }
     }
 
@@ -276,8 +295,13 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
      */
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
-        final HtsgetRequest req = new HtsgetRequest(this.mSource).withInterval(HtsgetRequest.UNMAPPED_UNPLACED_INTERVAL);
-        final CloseableIterator<SAMRecord> queryIterator = new HtsgetBAMFileIterator(req);
+        final HtsgetRequest req = new HtsgetRequest(this.mSource)
+            .withFormat(HtsgetFormat.BAM)
+            .withInterval(HtsgetRequest.UNMAPPED_UNPLACED_INTERVAL);
+        final CloseableIterator<SAMRecord> unmappedIterator = new HtsgetBAMFileIterator(req);
+        final CloseableIterator<SAMRecord> queryIterator = this.mUseAsynchronousIO
+            ? unmappedIterator
+            : new SAMRecordPrefetchingIterator(unmappedIterator, 5_000_000);
         this.iterators.add(queryIterator);
         return queryIterator;
     }
@@ -301,8 +325,13 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
      * @return the inflated stream with header skipped
      */
     private BlockCompressedInputStream getRequestStream(final HtsgetRequest req) {
-        final InputStream stream = req.getResponse().getDataStream();
+        final HtsgetResponse resp = req.getResponse();
 
+        if (resp.getFormat() != HtsgetFormat.BAM) {
+            throw new IllegalStateException("Expected format of response to be BAM but received + " + resp.getFormat());
+        }
+
+        final InputStream stream = resp.getDataStream();
         final BlockCompressedInputStream compressedInputStream = this.mUseAsynchronousIO
             ? new AsyncBlockCompressedInputStream(stream, this.mInflaterFactory)
             : new BlockCompressedInputStream(stream, this.mInflaterFactory);
@@ -317,6 +346,14 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
             throw new RuntimeIOException(e);
         }
         return compressedInputStream;
+    }
+
+    public static URI convertHtsgetUriToHttps(final URI uri) throws URISyntaxException {
+        return new URI("https", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
+    }
+
+    public static URI convertHtsgetUriToHttp(final URI uri) throws URISyntaxException {
+        return new URI("http", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
     }
 
     private class HtsgetBAMFileIterator implements CloseableIterator<SAMRecord> {
@@ -356,14 +393,12 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
         }
 
         private SAMRecord getNextRecord() {
-            final long startCoordinate = this.stream.getFilePointer();
             final SAMRecord next = this.bamRecordCodec.decode();
-            final long stopCoordinate = this.stream.getFilePointer();
 
             if (HtsgetBAMFileReader.this.mReader != null && next != null) {
                 next.setFileSource(new SAMFileSource(
                     HtsgetBAMFileReader.this.mReader,
-                    new BAMFileSpan(new Chunk(startCoordinate, stopCoordinate))));
+                    null));
             }
             return next;
         }
@@ -397,7 +432,7 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
      */
     // TODO: remove this class and replace with HtsgetBAMFileIterator reading from htsget POST api once implemented
     private class BAMQueryChainingIterator implements CloseableIterator<SAMRecord> {
-        private final Interval[] intervals;
+        private final List<Locatable> intervals;
         private final boolean contained;
         private final Iterator<Lazy<HtsgetBAMFileIterator>> iterators;
 
@@ -405,12 +440,14 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
         private SAMRecord currentRecord;
         private int currentIntervalIndex = 0;
 
-        public BAMQueryChainingIterator(final Interval[] intervals, final boolean contained) {
+        public BAMQueryChainingIterator(final List<Locatable> intervals, final boolean contained) {
             this.intervals = intervals;
             this.contained = contained;
-            this.iterators = Arrays.stream(intervals)
+            this.iterators = intervals.stream()
                 .map(i -> new Lazy<>(() -> {
-                    final HtsgetRequest req = new HtsgetRequest(HtsgetBAMFileReader.this.mSource).withInterval(i);
+                    final HtsgetRequest req = new HtsgetRequest(HtsgetBAMFileReader.this.mSource)
+                        .withFormat(HtsgetFormat.BAM)
+                        .withInterval(i);
                     return new HtsgetBAMFileIterator(req);
                 }))
                 .iterator();
@@ -454,45 +491,66 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
                 this.currentIterator = null;
                 return;
             }
-            final Interval currInterval = this.intervals[this.currentIntervalIndex];
-            final Interval prevInterval = this.currentIntervalIndex == 0 ? null : this.intervals[this.currentIntervalIndex - 1];
-            final SamRecordFilter filter = new SamRecordFilter() {
-                @Override
-                public boolean filterOut(final SAMRecord record) {
-                    return record.getReadUnmappedFlag() && record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START
-                        ? !this.acceptUnmappedRecord(record)
-                        : !this.acceptRecord(record);
-                }
-
-                @Override
-                public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-                    throw new UnsupportedOperationException();
-                }
-
-                private boolean acceptRecord(final SAMRecord rec) {
-                    return BAMQueryChainingIterator.this.contained
-                        ? currInterval.contains(rec) && (prevInterval == null || !prevInterval.contains(rec))
-                        : currInterval.overlaps(rec) && (prevInterval == null || !prevInterval.overlaps(rec));
-                }
-
-                private boolean acceptUnmappedRecord(final SAMRecord rec) {
-                    final int start = rec.getStart();
-                    final boolean matchesCurrInterval =
-                        rec.contigsMatch(currInterval) &&
-                            CoordMath.encloses(currInterval.getStart(), currInterval.getEnd(), start, start);
-                    final boolean matchesPrevInterval =
-                        prevInterval != null &&
-                            rec.contigsMatch(prevInterval) &&
-                            CoordMath.encloses(prevInterval.getStart(), prevInterval.getEnd(), start, start);
-                    return matchesCurrInterval && !matchesPrevInterval;
-                }
-            };
-            this.currentIterator = new FilteringSamIterator(this.iterators.next().get(), filter, false);
+            final Locatable currInterval = this.intervals.get(this.currentIntervalIndex);
+            final Locatable prevInterval = this.currentIntervalIndex == 0 ? null : this.intervals.get(this.currentIntervalIndex - 1);
+            this.currentIterator = new FilteringSamIterator(
+                this.iterators.next().get(),
+                new ConsecutiveDuplicateRecordFilter(currInterval, prevInterval, contained));
             this.currentIntervalIndex++;
         }
     }
 
-    public static class BAMQueryFilteringIterator implements CloseableIterator<SAMRecord> {
+    /**
+     * Filters out records which are duplicated across consecutive intervals
+     * <p>
+     * This is necessary as the htsget protocol makes no guarantee that all reads returned by an interval query will
+     * be contained by or even overlap the given interval, meaning the result of a query for an earlier interval
+     * may contain reads logically "belonging" to a later interval, which will be duplicated in that later interval
+     */
+    // TODO: remove this class once htsget POST api is implemented
+    private static class ConsecutiveDuplicateRecordFilter implements SamRecordFilter {
+        private final Locatable prevInterval;
+        private final Locatable currInterval;
+        private final boolean contained;
+
+        public ConsecutiveDuplicateRecordFilter(final Locatable currInterval, final Locatable prevInterval, final boolean contained) {
+            this.currInterval = currInterval;
+            this.prevInterval = prevInterval;
+            this.contained = contained;
+        }
+
+        @Override
+        public boolean filterOut(final SAMRecord record) {
+            return record.getReadUnmappedFlag() && record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START
+                ? !this.acceptUnmappedRecord(record)
+                : !this.acceptRecord(record);
+        }
+
+        @Override
+        public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+            throw new UnsupportedOperationException();
+        }
+
+        private boolean acceptRecord(final SAMRecord rec) {
+            return this.contained
+                ? currInterval.contains(rec) && (prevInterval == null || !prevInterval.contains(rec))
+                : currInterval.overlaps(rec) && (prevInterval == null || !prevInterval.overlaps(rec));
+        }
+
+        private boolean acceptUnmappedRecord(final SAMRecord rec) {
+            final int start = rec.getStart();
+            final boolean matchesCurrInterval =
+                rec.contigsMatch(currInterval) &&
+                    CoordMath.encloses(currInterval.getStart(), currInterval.getEnd(), start, start);
+            final boolean matchesPrevInterval =
+                prevInterval != null &&
+                    rec.contigsMatch(prevInterval) &&
+                    CoordMath.encloses(prevInterval.getStart(), prevInterval.getEnd(), start, start);
+            return matchesCurrInterval && !matchesPrevInterval;
+        }
+    }
+
+    private static class BAMQueryFilteringIterator implements CloseableIterator<SAMRecord> {
         /**
          * The wrapped iterator.
          */
@@ -500,13 +558,13 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
         /**
          * The next record to be returned.  Will be null if no such record exists.
          */
-        private SAMRecord mNextRecord;
+        private SAMRecord nextRecord;
         private final BAMIteratorFilter iteratorFilter;
 
         public BAMQueryFilteringIterator(final CloseableIterator<SAMRecord> iterator, final BAMIteratorFilter iteratorFilter) {
             this.wrappedIterator = iterator;
             this.iteratorFilter = iteratorFilter;
-            this.mNextRecord = this.advance();
+            this.nextRecord = this.advance();
         }
 
         /**
@@ -514,7 +572,7 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
          */
         @Override
         public boolean hasNext() {
-            return this.mNextRecord != null;
+            return this.nextRecord != null;
         }
 
         /**
@@ -527,8 +585,8 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
             if (!this.hasNext()) {
                 throw new NoSuchElementException("BAMQueryFilteringIterator: no next element available");
             }
-            final SAMRecord currentRead = this.mNextRecord;
-            this.mNextRecord = this.advance();
+            final SAMRecord currentRead = this.nextRecord;
+            this.nextRecord = this.advance();
             return currentRead;
         }
 
@@ -556,6 +614,23 @@ public class HtsgetBAMFileReader implements SamReader.PrimitiveSamReader {
         @Override
         public void close() {
             this.wrappedIterator.close();
+        }
+    }
+
+    private static class EmptyBamIterator implements CloseableIterator<SAMRecord> {
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public SAMRecord next() {
+            throw new NoSuchElementException("next called on empty iterator");
+        }
+
+        @Override
+        public void close() {
+
         }
     }
 }

@@ -325,24 +325,31 @@ public abstract class SamReaderFactory {
                     return reader;
                   }
                 }
-                if (type == InputResource.Type.URI) {
-                    final URI uri = ((UriInputResource) data).uri;
-                    if (uri.getScheme().equalsIgnoreCase("htsget")) {
-                        final URI httpUri = new URI(
-                            "http", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(),
-                            uri.getQuery(), uri.getFragment());
-
-                        primitiveSamReader = new HtsgetBAMFileReader(
-                            httpUri,
+                if (type == InputResource.Type.HTSGET) {
+                    HtsgetBAMFileReader reader;
+                    try {
+                        final URI htsgetUri = HtsgetBAMFileReader.convertHtsgetUriToHttps(((HtsgetInputResource) data).uri);
+                        reader = new HtsgetBAMFileReader(
+                            htsgetUri,
                             false,
                             this.validationStringency,
                             this.samRecordFactory,
                             this.asynchronousIO,
                             this.inflaterFactory
                         );
-                    } else {
-                        return open(new SamInputResource(new UrlInputResource(uri.toURL())));
+                    } catch (final RuntimeIOException e) {
+                        // Fall back to http if htsget server does not support https
+                        final URI htsgetUri = HtsgetBAMFileReader.convertHtsgetUriToHttp(((HtsgetInputResource) data).uri);
+                        reader = new HtsgetBAMFileReader(
+                            htsgetUri,
+                            false,
+                            this.validationStringency,
+                            this.samRecordFactory,
+                            this.asynchronousIO,
+                            this.inflaterFactory
+                        );
                     }
+                    primitiveSamReader = reader;
                 } else if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.URL) {
                     if (SamStreams.sourceLikeBam(data.asUnbufferedSeekableStream())) {
                         final SeekableStream bufferedIndexStream;

@@ -38,10 +38,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -132,7 +129,28 @@ public class SamInputResource {
     public static SamInputResource of(final SRAAccession acc) { return new SamInputResource(new SRAInputResource(acc)); }
 
     public static SamInputResource of(final URI uri) {
-        return new SamInputResource(new UriInputResource(uri));
+        return of(uri, null);
+    }
+    public static SamInputResource of(final URI uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
+        // See if this is an Htsget source first
+        if (uri.getScheme().equalsIgnoreCase(HtsgetBAMFileReader.HTSGET_SCHEME)) {
+            return new SamInputResource(new HtsgetInputResource(uri));
+        }
+        // Check if this URI represents a path we can open
+        try {
+            final Path path = IOUtil.getPath(uri.toString());
+            return wrapper == null
+                ? of(path)
+                : of(path, wrapper);
+        } catch (final ProviderNotFoundException | IOException e) {
+            // If this URI cannot be opened as a path, try treating it as a URL
+            try {
+                final URL url = uri.toURL();
+                return new SamInputResource(new UrlInputResource(url));
+            } catch (final MalformedURLException malformedURLException) {
+                throw new RuntimeIOException("URI could not be interpreted as any known input resource type", malformedURLException);
+            }
+        }
     }
 
     /** Creates a {@link SamInputResource} from a string specifying *either* a url or a file path */
@@ -193,7 +211,7 @@ abstract class InputResource {
     protected InputResource(final Type type) {this.type = type;}
 
     enum Type {
-        FILE, PATH, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION, URI
+        FILE, PATH, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION, HTSGET
     }
 
     private final Type type;
@@ -242,8 +260,8 @@ abstract class InputResource {
             case SRA_ACCESSION:
                 childToString = asSRAAccession().toString();
                 break;
-            case URI:
-                childToString = ((UriInputResource) this).uri.toString();
+            case HTSGET:
+                childToString = ((HtsgetInputResource) this).uri.toString();
                 break;
             default:
                 throw new IllegalStateException();
@@ -561,12 +579,12 @@ class SRAInputResource extends InputResource {
 }
 
 // TODO: replace this with an InputResource type taking PathSpecifier once this interface is pushed down to htsjdk
-class UriInputResource extends InputResource {
+class HtsgetInputResource extends InputResource {
 
     final URI uri;
 
-    public UriInputResource(final URI uri) {
-        super(Type.URI);
+    public HtsgetInputResource(final URI uri) {
+        super(Type.HTSGET);
         this.uri = uri;
     }
 
