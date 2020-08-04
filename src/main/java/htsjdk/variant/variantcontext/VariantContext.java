@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.beta.plugin.HtsRecord;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -222,7 +223,7 @@ import java.util.stream.Collectors;
  * <!-- </s3> -->
  *
  */
-public class VariantContext implements Feature, Serializable {
+public class VariantContext implements HtsRecord, Feature, Serializable {
     public static final long serialVersionUID = 1L;
 
     private static final boolean WARN_ABOUT_BAD_END = true;

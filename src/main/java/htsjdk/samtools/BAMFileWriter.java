@@ -78,7 +78,8 @@ public class BAMFileWriter extends SAMFileWriterImpl {
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }
 
-    protected BAMFileWriter(final OutputStream os, final String absoluteFilename, final int compressionLevel, final DeflaterFactory deflaterFactory) {
+    //TODO: factor this out
+    public BAMFileWriter(final OutputStream os, final String absoluteFilename, final int compressionLevel, final DeflaterFactory deflaterFactory) {
       blockCompressedOutputStream = new BlockCompressedOutputStream(os, (Path)null, compressionLevel, deflaterFactory);
       outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
       outputBinaryCodec.setOutputFileName(absoluteFilename);

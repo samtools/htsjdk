@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekableStream;
 
@@ -42,6 +43,22 @@ public interface BundleResource {
      * BundleResource#isOutput()} is false for this resource
      */
     Optional<OutputStream> getOutputStream();
+
+
+    /**
+     * @return a {@link SignatureProbingInputStream} stream over the first "prefixSize" bytes of this
+     * resource to support signature probing.
+     *
+     * Once this method is called on a {@link BundleResource} object using a given {@code prefixSize},
+     * subsequent calls to the method on the same object must use the same {@code prefixSize} or smaller.
+     *
+     * Note that resources for which the underlying stream cannot be reconstructed, this method must be
+     * called before any of the underlying stream has been consumed.
+     *
+     * @throws IllegalArgumentException if this method has previously been called on this object
+     * with a smaller prefixSize.
+     */
+    public SignatureProbingInputStream getSignatureProbingStream(final int prefixSize) { return null; }
 
     /**
      * @return an {@link SeekableStream} for this resource, or Optional.empty if this is

@@ -25,6 +25,7 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.beta.plugin.HtsHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.TribbleException;
@@ -55,7 +56,7 @@ import java.util.TreeSet;
  * NOTE: This class stores header lines in lots of places. The original author noted that this should
  * be cleaned up at some point in the future (jgentry - 5/2013)
  */
-public class VCFHeader implements Serializable {
+public class VCFHeader implements HtsHeader, Serializable {
     public static final long serialVersionUID = 1L;
 
     // the mandatory header fields
