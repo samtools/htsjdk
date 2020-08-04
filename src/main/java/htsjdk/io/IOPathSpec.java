@@ -17,7 +17,7 @@ import java.nio.file.ProviderNotFoundException;
 import java.nio.file.spi.FileSystemProvider;
 
 /**
- * Default implementation for PathURI.
+ * Default implementation for IOPath.
  *
  * This class takes a raw string that is to be interpreted as a path specifier, and converts it internally to a
  * URI and/or Path object. If no scheme is provided as part of the raw string used in the constructor(s), the

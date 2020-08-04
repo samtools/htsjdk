@@ -16,14 +16,14 @@ import java.util.Optional;
 public interface IOPath {
 
     /**
-     * Get a {@code java.net.URI} object for this {@code PathURI}. Will not be null.
-     * @return The {@code URI} object for this PathURI.
+     * Get a {@code java.net.URI} object for this {@code IOPath}. Will not be null.
+     * @return The {@code URI} object for this {@code IOPath}.
      */
     URI getURI();
 
     /**
-     * Returns the string from which this {@code PathURI} was originally created. This string may differ from
-     * the normalized string returned from a {@code java.nio.file.Path} that has been object resolved from this PathURI.
+     * Returns the string from which this {@code IOPath} was originally created. This string may differ from
+     * the normalized string returned from a {@code java.nio.file.Path} that has been object resolved from this {@code IOPath}.
      * @return string from which this URI as originally created. Will not be null.
      */
     String getURIString();
@@ -42,7 +42,7 @@ public interface IOPath {
     boolean hasFileSystemProvider();
 
     /**
-     * Return true if this {code PathURI} can be resolved to an {@code java.nio} Path. If true, {@code #toPath()} can be
+     * Return true if this {code IOPath} can be resolved to an {@code java.nio} Path. If true, {@code #toPath()} can be
      * safely called.
      *
      * There are cases where a valid URI with a valid scheme backed by an installed {@code java.nio File System
@@ -57,7 +57,7 @@ public interface IOPath {
     boolean isPath();
 
     /**
-     * Resolve this PathURI to an NIO {@code java.nio.file.Path}. Can be safely called only if {@code #isPath()} returns true.
+     * Resolve this {@code IOPath} to an NIO {@code java.nio.file.Path}. Can be safely called only if {@code #isPath()} returns true.
      */
     Path toPath();
 
@@ -69,7 +69,7 @@ public interface IOPath {
     String getToPathFailureReason();
 
     /**
-     * Return the scheme for this PathURI. For file URIs (URIs that have no explicit scheme), this will return
+     * Return the scheme for this {@code IOPath}. For file URIs (URIs that have no explicit scheme), this will return
      * the scheme "file".
      * @return the scheme String or this URI, if any. May be null.
      */

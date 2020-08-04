@@ -127,35 +127,35 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "validPathSpecifiers")
     public void testPathSpecifier(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath pathURI = new IOPathSpec(referenceString);
-        Assert.assertNotNull(pathURI);
-        Assert.assertEquals(pathURI.getURI().toString(), expectedURIString);
+        final IOPath IOPath = new IOPathSpec(referenceString);
+        Assert.assertNotNull(IOPath);
+        Assert.assertEquals(IOPath.getURI().toString(), expectedURIString);
     }
 
     @Test(dataProvider = "validPathSpecifiers")
     public void testIsNIO(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath pathURI = new IOPathSpec(referenceString);
-        Assert.assertEquals(pathURI.hasFileSystemProvider(), hasFileSystemProvider);
+        final IOPath IOPath = new IOPathSpec(referenceString);
+        Assert.assertEquals(IOPath.hasFileSystemProvider(), hasFileSystemProvider);
     }
 
     @Test(dataProvider = "validPathSpecifiers")
     public void testIsPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath pathURI = new IOPathSpec(referenceString);
+        final IOPath IOPath = new IOPathSpec(referenceString);
         if (isPath) {
-            Assert.assertEquals(pathURI.isPath(), isPath, pathURI.getToPathFailureReason());
+            Assert.assertEquals(IOPath.isPath(), isPath, IOPath.getToPathFailureReason());
         } else {
-            Assert.assertEquals(pathURI.isPath(), isPath);
+            Assert.assertEquals(IOPath.isPath(), isPath);
         }
     }
 
     @Test(dataProvider = "validPathSpecifiers")
     public void testToPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath pathURI = new IOPathSpec(referenceString);
+        final IOPath IOPath = new IOPathSpec(referenceString);
         if (isPath) {
-            final Path path = pathURI.toPath();
-            Assert.assertEquals(path != null, isPath, pathURI.getToPathFailureReason());
+            final Path path = IOPath.toPath();
+            Assert.assertEquals(path != null, isPath, IOPath.getToPathFailureReason());
         } else {
-            Assert.assertEquals(pathURI.isPath(), isPath);
+            Assert.assertEquals(IOPath.isPath(), isPath);
         }
     }
 
@@ -289,8 +289,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
             // stdout is not addressable as a device in the file system namespace on Windows, so skip
             throw new SkipException(("No stdout test on Windows"));
         } else {
-            final IOPath pathURI = new IOPathSpec("/dev/stdout");
-            try (final OutputStream os = pathURI.getOutputStream();
+            final IOPath IOPath = new IOPathSpec("/dev/stdout");
+            try (final OutputStream os = IOPath.getOutputStream();
                  final DataOutputStream dos = new DataOutputStream(os)) {
                 dos.write("some stuff".getBytes());
             }
@@ -561,14 +561,14 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     private void doStreamRoundTrip(final String referenceString) throws IOException {
         final String expectedFileContents = "Test contents";
 
-        final IOPath pathURI = new IOPathSpec(referenceString);
-        try (final OutputStream os = pathURI.getOutputStream();
+        final IOPath IOPath = new IOPathSpec(referenceString);
+        try (final OutputStream os = IOPath.getOutputStream();
              final DataOutputStream dos = new DataOutputStream(os)) {
             dos.write(expectedFileContents.getBytes());
         }
 
         // read it back in and make sure it matches expected contents
-        try (final  InputStream is = pathURI.getInputStream();
+        try (final InputStream is = IOPath.getInputStream();
              final DataInputStream dis = new DataInputStream(is)) {
             final byte[] actualFileContents = new byte[expectedFileContents.length()];
             dis.readFully(actualFileContents);
