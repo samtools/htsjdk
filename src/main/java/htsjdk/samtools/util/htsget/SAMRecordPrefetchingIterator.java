@@ -29,13 +29,12 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
     private void prefetch() {
         while (this.inner.hasNext()) {
             if (!this.running.get()) {
-                this.inner.close();
-                return;
+                break;
             }
             final SAMRecord next = this.inner.peek();
             final int reads = next.getReadLength();
             // If the number of reads in this record is greater than the limit allowed, we will only acquire
-            // the maximum number of
+            // as many permits as the limit allows, then acquire the remainder after
             final int toAcquire = Math.min(reads, this.readLimit);
             try {
                 this.sem.acquire(toAcquire);
@@ -51,9 +50,10 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
                     this.sem.acquire(reads - toAcquire);
                 }
             } catch (final InterruptedException e) {
-                return;
+                break;
             }
         }
+        this.inner.close();
     }
 
     @Override
