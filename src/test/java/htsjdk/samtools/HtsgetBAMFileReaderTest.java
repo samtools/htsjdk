@@ -11,8 +11,6 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 
 public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     public static final String HTSGET_ENDPOINT = "http://127.0.0.1:3000/reads/";
@@ -21,7 +19,6 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     private final static URI htsgetBAM = URI.create(HTSGET_ENDPOINT + LOCAL_PREFIX + "index_test.bam");
 
     private final static File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-//    private final static File csiFileIndex = new File(bamFile.getPath() + ".csi");
 
     private final static int nofMappedReads = 9721;
     private final static int nofUnmappedReads = 279;
