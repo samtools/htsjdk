@@ -353,7 +353,6 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @Test(dataProvider = "URIFallbackProvider")
     public void testOpenURIFallback(final URI uri, final InputResource.Type type) {
-        System.err.println(uri);
         final SamInputResource resource = SamInputResource.of(uri);
         Assert.assertEquals(resource.data().type(), type);
     }
