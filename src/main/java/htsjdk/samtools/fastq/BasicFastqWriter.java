@@ -62,6 +62,9 @@ public class BasicFastqWriter implements FastqWriter,Flushable {
         FastqEncoder.write(writer, rec);
         // and print a new line
         writer.println();
+    }
+
+    private void checkError() {
         if (writer.checkError()) {
             throw new SAMException("Error in writing fastq file " + path);
         }
@@ -69,11 +72,13 @@ public class BasicFastqWriter implements FastqWriter,Flushable {
 
     @Override
     public void flush() {
+        checkError();
         writer.flush();
     }
 
     @Override
     public void close() {
+        flush();
         writer.close();
     }
 
