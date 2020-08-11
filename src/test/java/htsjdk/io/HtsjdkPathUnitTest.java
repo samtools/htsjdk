@@ -23,14 +23,14 @@ import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
 import java.util.Optional;
 
-public class IOPathSpecUnitTest extends HtsjdkTest {
+public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     final static String FS_SEPARATOR = FileSystems.getDefault().getSeparator();
 
     @DataProvider
-    public Object[][] validPathSpecifiers() {
+    public Object[][] validHtsjdkPath() {
         return new Object[][] {
-                // Paths specifiers that ar syntactically valid as either a file name or a URI and can be
+                // HtsjdkPath strings that are syntactically valid as either a file name or a URI and can be
                 // represented internally as a URI, but which may fail hasFileSystemProvider or isPath
 
                 // input String, expected resulting URI String, expected hasFileSystemProvider, expected isPath
@@ -110,7 +110,7 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
 
                 //*****************************************************************************************
                 // Reference that contain characters that require URI-encoding. If the input string is presented
-                // with no scheme, it will be be automatically encoded by PathSpecifier, otherwise it
+                // with no scheme, it will be be automatically encoded by HtsjdkPath, otherwise it
                 // must already be URI-encoded.
                 //*****************************************************************************************
 
@@ -125,22 +125,22 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "validPathSpecifiers")
-    public void testPathSpecifier(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath IOPath = new IOPathSpec(referenceString);
+    @Test(dataProvider = "validHtsjdkPath")
+    public void testValidHtsjdkPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
+        final IOPath IOPath = new HtsjdkPath(referenceString);
         Assert.assertNotNull(IOPath);
         Assert.assertEquals(IOPath.getURI().toString(), expectedURIString);
     }
 
-    @Test(dataProvider = "validPathSpecifiers")
+    @Test(dataProvider = "validHtsjdkPath")
     public void testIsNIO(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath IOPath = new IOPathSpec(referenceString);
+        final IOPath IOPath = new HtsjdkPath(referenceString);
         Assert.assertEquals(IOPath.hasFileSystemProvider(), hasFileSystemProvider);
     }
 
-    @Test(dataProvider = "validPathSpecifiers")
+    @Test(dataProvider = "validHtsjdkPath")
     public void testIsPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath IOPath = new IOPathSpec(referenceString);
+        final IOPath IOPath = new HtsjdkPath(referenceString);
         if (isPath) {
             Assert.assertEquals(IOPath.isPath(), isPath, IOPath.getToPathFailureReason());
         } else {
@@ -148,9 +148,9 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
         }
     }
 
-    @Test(dataProvider = "validPathSpecifiers")
+    @Test(dataProvider = "validHtsjdkPath")
     public void testToPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath IOPath = new IOPathSpec(referenceString);
+        final IOPath IOPath = new HtsjdkPath(referenceString);
         if (isPath) {
             final Path path = IOPath.toPath();
             Assert.assertEquals(path != null, isPath, IOPath.getToPathFailureReason());
@@ -160,17 +160,17 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] invalidPathSpecifiers() {
+    public Object[][] invalidHtsjdkPath() {
         return new Object[][] {
                 // the nul character is rejected on all of the supported platforms in both local
-                // filenames and URIs, so use it to test PathSpecifier constructor failure on all platforms
+                // filenames and URIs, so use it to test HtsjdkPath constructor failure on all platforms
                 {"\0"},
         };
     }
 
-    @Test(dataProvider = "invalidPathSpecifiers", expectedExceptions = {IllegalArgumentException.class})
-    public void testPathSpecifierInvalid(final String referenceString) {
-        new IOPathSpec(referenceString);
+    @Test(dataProvider = "invalidHtsjdkPath", expectedExceptions = {IllegalArgumentException.class})
+    public void testInvalidHtsjdkPath(final String referenceString) {
+        new HtsjdkPath(referenceString);
     }
 
     @DataProvider
@@ -198,20 +198,20 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "invalidPath")
     public void testIsPathInvalid(final String invalidPathString) {
-        final IOPath htsURI = new IOPathSpec(invalidPathString);
+        final IOPath htsURI = new HtsjdkPath(invalidPathString);
         Assert.assertFalse(htsURI.isPath());
     }
 
     @Test(dataProvider = "invalidPath", expectedExceptions = {
             IllegalArgumentException.class, FileSystemNotFoundException.class, ProviderNotFoundException.class})
     public void testToPathInvalid(final String invalidPathString) {
-        final IOPath htsURI = new IOPathSpec(invalidPathString);
+        final IOPath htsURI = new HtsjdkPath(invalidPathString);
         htsURI.toPath();
     }
 
     @Test
     public void testInstalledNonDefaultFileSystem() throws IOException {
-        // create a jimfs file system and round trip through PathSpecifier/stream
+        // create a jimfs file system and round trip through HtsjdkPath/stream
         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path outputPath = jimfs.getPath("alternateFileSystemTest.txt");
             doStreamRoundTrip(outputPath.toUri().toString());
@@ -219,7 +219,7 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] inputStreamSpecifiers() {
+    public Object[][] inputStreamPaths() {
         return new Object[][]{
                 // references that can be resolved to an actual test file that can be read
 
@@ -235,17 +235,17 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
 
                 // reference to a local file with an embedded fragment delimiter ("#") in the name; if the file
                 // scheme is included, the rest of the path must already be encoded; if no file scheme is
-                // included, the path is encoded by the PathSpecifier class
+                // included, the path is encoded by the HtsjdkPath class
                 {joinWithFSSeparator("src", "test", "resources", "htsjdk", "io", "testDirWith#InName", "testTextFile.txt"), "Test file."},
                 {"file://" + getCWDAsURIPathString() + "src/test/resources/htsjdk/io/testTextFile.txt", "Test file."},
         };
     }
 
-    @Test(dataProvider = "inputStreamSpecifiers")
+    @Test(dataProvider = "inputStreamPaths")
     public void testGetInputStream(final String referenceString, final String expectedFileContents) throws IOException {
-        final IOPath htsURI = new IOPathSpec(referenceString);
+        final IOPath ioPath = new HtsjdkPath(referenceString);
 
-        try (final InputStream is = htsURI.getInputStream();
+        try (final InputStream is = ioPath.getInputStream();
              final DataInputStream dis = new DataInputStream(is)) {
             final byte[] actualFileContents = new byte[expectedFileContents.length()];
             dis.readFully(actualFileContents);
@@ -255,7 +255,7 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] outputStreamSpecifiers() throws IOException {
+    public Object[][] outputStreamPaths() throws IOException {
         return new Object[][]{
                 // output URIs that can be resolved to an actual test file
                 {File.createTempFile("testOutputStream", ".txt").toString()},
@@ -263,18 +263,18 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "outputStreamSpecifiers")
+    @Test(dataProvider = "outputStreamPaths")
     public void testGetOutputStream(final String referenceString) throws IOException {
         doStreamRoundTrip(referenceString);
     }
 
     @Test
     public void testStdIn() throws IOException {
-        final IOPath htsURI = new IOPathSpec(
+        final IOPath ioPath = new HtsjdkPath(
                 SystemUtils.IS_OS_WINDOWS ?
                         "-" :
                         "/dev/stdin");
-        try (final InputStream is = htsURI.getInputStream();
+        try (final InputStream is = ioPath.getInputStream();
              final DataInputStream dis = new DataInputStream(is)) {
             final byte[] actualFileContents = new byte[0];
             dis.readFully(actualFileContents);
@@ -289,8 +289,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
             // stdout is not addressable as a device in the file system namespace on Windows, so skip
             throw new SkipException(("No stdout test on Windows"));
         } else {
-            final IOPath IOPath = new IOPathSpec("/dev/stdout");
-            try (final OutputStream os = IOPath.getOutputStream();
+            final IOPath ioPath = new HtsjdkPath("/dev/stdout");
+            try (final OutputStream os = ioPath.getOutputStream();
                  final DataOutputStream dos = new DataOutputStream(os)) {
                 dos.write("some stuff".getBytes());
             }
@@ -319,13 +319,13 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "getExtensionTestCases")
-    public void testGetExtension(final String spec, final String expectedExtension) {
-        final IOPath pathSpec = new IOPathSpec(spec);
-        final Optional<String> actualExtension = pathSpec.getExtension();
+    public void testGetExtension(final String pathString, final String expectedExtension) {
+        final IOPath ioPath = new HtsjdkPath(pathString);
+        final Optional<String> actualExtension = ioPath.getExtension();
 
         Assert.assertEquals(actualExtension.get(), expectedExtension);
         // also verify that hasExtension(getExtension()) is always true
-        Assert.assertTrue(pathSpec.hasExtension(actualExtension.get()));
+        Assert.assertTrue(ioPath.hasExtension(actualExtension.get()));
     }
 
     @DataProvider(name="negativeGetExtensionTestCases")
@@ -347,8 +347,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "negativeGetExtensionTestCases")
-    public void testNegativeGetExtension(final String spec) {
-        Assert.assertFalse(new IOPathSpec(spec).getExtension().isPresent());
+    public void testNegativeGetExtension(final String pathString) {
+        Assert.assertFalse(new HtsjdkPath(pathString).getExtension().isPresent());
     }
 
     @DataProvider(name = "hasExtensionTestCases")
@@ -374,8 +374,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "hasExtensionTestCases")
-    public void testHasExtension(final String spec, final String extension) {
-        Assert.assertTrue(new IOPathSpec(spec).hasExtension(extension));
+    public void testHasExtension(final String pathString, final String extension) {
+        Assert.assertTrue(new HtsjdkPath(pathString).hasExtension(extension));
     }
 
     @DataProvider(name = "negativeHasExtensionTestCases")
@@ -397,8 +397,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "negativeHasExtensionTestCases")
-    public void testNegativeHasExtension(final String spec, final String extension) {
-        Assert.assertFalse(new IOPathSpec(spec).hasExtension(extension));
+    public void testNegativeHasExtension(final String pathString, final String extension) {
+        Assert.assertFalse(new HtsjdkPath(pathString).hasExtension(extension));
     }
 
     @DataProvider(name = "illegalHasExtensionTestCases")
@@ -412,8 +412,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "illegalHasExtensionTestCases", expectedExceptions = IllegalArgumentException.class)
-    public void testIllegalHasExtension(final String spec, final String extension) {
-        new IOPathSpec(spec).hasExtension(extension);
+    public void testIllegalHasExtension(final String pathString, final String extension) {
+        new HtsjdkPath(pathString).hasExtension(extension);
     }
 
     @DataProvider(name = "getBaseNameTestCases")
@@ -445,8 +445,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "getBaseNameTestCases")
-    public void testGetBaseName(final String spec, final String baseName) {
-        final Optional<String> actualBaseName = new IOPathSpec(spec).getBaseName();
+    public void testGetBaseName(final String pathString, final String baseName) {
+        final Optional<String> actualBaseName = new HtsjdkPath(pathString).getBaseName();
         Assert.assertTrue(actualBaseName.isPresent());
         Assert.assertEquals(actualBaseName.get(), baseName);
     }
@@ -469,8 +469,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "negativeGetBaseNameTestCases")
-    public void testNegativeGetBaseName(final String spec) {
-        final Optional<String> actualBaseName = new IOPathSpec(spec).getBaseName();
+    public void testNegativeGetBaseName(final String pathString) {
+        final Optional<String> actualBaseName = new HtsjdkPath(pathString).getBaseName();
         Assert.assertFalse(actualBaseName.isPresent());
     }
 
@@ -489,8 +489,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "isFastaTestCases")
-    public void testIsFasta(final String referenceSpec, final boolean expectedIsFasta) {
-        Assert.assertEquals(new IOPathSpec(referenceSpec).isFasta(), expectedIsFasta);
+    public void testIsFasta(final String referencePathString, final boolean expectedIsFasta) {
+        Assert.assertEquals(new HtsjdkPath(referencePathString).isFasta(), expectedIsFasta);
     }
 
     @DataProvider(name="isSamTestCases")
@@ -507,8 +507,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "isSamTestCases")
-    public void testIsSam(final String pathSpec, final boolean expectedMatch) {
-        Assert.assertEquals(new IOPathSpec(pathSpec).isSam(), expectedMatch);
+    public void testIsSam(final String pathString, final boolean expectedMatch) {
+        Assert.assertEquals(new HtsjdkPath(pathString).isSam(), expectedMatch);
     }
 
     @DataProvider(name="isBamTestCases")
@@ -525,8 +525,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "isBamTestCases")
-    public void testIsBam(final String pathSpec, final boolean expectedMatch) {
-        Assert.assertEquals(new IOPathSpec(pathSpec).isBam(), expectedMatch);
+    public void testIsBam(final String pathString, final boolean expectedMatch) {
+        Assert.assertEquals(new HtsjdkPath(pathString).isBam(), expectedMatch);
     }
 
     @DataProvider(name="isCramTestCases")
@@ -543,8 +543,8 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "isCramTestCases")
-    public void testIsCram(final String pathSpec, final boolean expectedMatch) {
-        Assert.assertEquals(new IOPathSpec(pathSpec).isCram(), expectedMatch);
+    public void testIsCram(final String pathString, final boolean expectedMatch) {
+        Assert.assertEquals(new HtsjdkPath(pathString).isCram(), expectedMatch);
     }
 
     /**
@@ -561,7 +561,7 @@ public class IOPathSpecUnitTest extends HtsjdkTest {
     private void doStreamRoundTrip(final String referenceString) throws IOException {
         final String expectedFileContents = "Test contents";
 
-        final IOPath IOPath = new IOPathSpec(referenceString);
+        final IOPath IOPath = new HtsjdkPath(referenceString);
         try (final OutputStream os = IOPath.getOutputStream();
              final DataOutputStream dos = new DataOutputStream(os)) {
             dos.write(expectedFileContents.getBytes());

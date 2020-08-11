@@ -32,7 +32,7 @@ import java.nio.file.spi.FileSystemProvider;
  *
  * There are 3 succeeding levels of input validation/conversion:
  *
- * 1) PathSpecifier constructor: requires a syntactically valid URI, possibly containing a scheme (if no scheme
+ * 1) HtsjdkPath constructor: requires a syntactically valid URI, possibly containing a scheme (if no scheme
  *    is present the path part will be escaped/encoded), or a valid local file reference
  * 2) hasFileSystemProvider: true if the input string is an identifier that is syntactically valid, and is backed by
  *    an installed {@code java.nio} file system provider that matches the URI scheme
@@ -67,13 +67,13 @@ import java.nio.file.spi.FileSystemProvider;
  *         opaque_part   = uric_no_slash *uric
  *         uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" | "&" | "=" | "+" | "$" | ","
  */
-public class IOPathSpec implements IOPath, Serializable {
+public class HtsjdkPath implements IOPath, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final String    rawInputString;     // raw input string provided by th user; may or may not have a scheme
-    private final URI uri;                // working URI; always has a scheme (assume "file" if not provided)
+    private final URI       uri;                // working URI; always has a scheme ("file" if not otherwise specified)
     private transient String pathFailureReason; // cache the reason for "toPath" conversion failure
-    private transient Path cachedPath;         // cache the Path associated with this URI if its "Path-able"
+    private transient Path  cachedPath;         // cache the Path associated with this URI if its "Path-able"
 
     /**
      * If the raw input string already contains a scheme (including a "file" scheme), assume its already
@@ -84,7 +84,7 @@ public class IOPathSpec implements IOPath, Serializable {
      * URI characters (such as the URI fragment delimiter "#") are properly escape/encoded.
      * @param rawInputString
      */
-    public IOPathSpec(final String rawInputString) {
+    public HtsjdkPath(final String rawInputString) {
         ValidationUtils.nonNull(rawInputString);
         this.rawInputString = rawInputString;
 
@@ -244,9 +244,9 @@ public class IOPathSpec implements IOPath, Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof IOPathSpec)) return false;
+        if (!(o instanceof HtsjdkPath)) return false;
 
-        IOPathSpec that = (IOPathSpec) o;
+        HtsjdkPath that = (HtsjdkPath) o;
 
         if (!getRawInputString().equals(that.getRawInputString())) return false;
         if (!getURI().equals(that.getURI())) return false;
