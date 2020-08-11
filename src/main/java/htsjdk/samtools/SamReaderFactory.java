@@ -34,7 +34,6 @@ import htsjdk.samtools.util.zip.InflaterFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -326,30 +325,14 @@ public abstract class SamReaderFactory {
                   }
                 }
                 if (type == InputResource.Type.HTSGET) {
-                    HtsgetBAMFileReader reader;
-                    try {
-                        final URI htsgetUri = HtsgetBAMFileReader.convertHtsgetUriToHttps(((HtsgetInputResource) data).uri);
-                        reader = new HtsgetBAMFileReader(
-                            htsgetUri,
-                            false,
-                            this.validationStringency,
-                            this.samRecordFactory,
-                            this.asynchronousIO,
-                            this.inflaterFactory
-                        );
-                    } catch (final RuntimeIOException e) {
-                        // Fall back to http if htsget server does not support https
-                        final URI htsgetUri = HtsgetBAMFileReader.convertHtsgetUriToHttp(((HtsgetInputResource) data).uri);
-                        reader = new HtsgetBAMFileReader(
-                            htsgetUri,
-                            false,
-                            this.validationStringency,
-                            this.samRecordFactory,
-                            this.asynchronousIO,
-                            this.inflaterFactory
-                        );
-                    }
-                    primitiveSamReader = reader;
+                    primitiveSamReader = HtsgetBAMFileReader.fromHtsgetURI(
+                        (HtsgetInputResource) data,
+                        false,
+                        this.validationStringency,
+                        this.samRecordFactory,
+                        this.asynchronousIO,
+                        this.inflaterFactory
+                    );
                 } else if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.URL) {
                     if (SamStreams.sourceLikeBam(data.asUnbufferedSeekableStream())) {
                         final SeekableStream bufferedIndexStream;

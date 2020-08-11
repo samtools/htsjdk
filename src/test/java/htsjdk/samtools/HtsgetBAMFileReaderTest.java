@@ -49,10 +49,10 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
         };
     }
 
-    @Test
-    public static void testGetHeader() {
+    @Test(dataProvider = "readerProvider")
+    public static void testGetHeader(final HtsgetBAMFileReader htsgetReader) {
         final SAMFileHeader expectedHeader = SamReaderFactory.makeDefault().open(bamFile).getFileHeader();
-        final SAMFileHeader actualHeader = bamFileReaderHtsget.getFileHeader();
+        final SAMFileHeader actualHeader = htsgetReader.getFileHeader();
         Assert.assertEquals(actualHeader, expectedHeader);
     }
 

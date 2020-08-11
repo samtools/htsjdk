@@ -19,7 +19,8 @@ import java.util.stream.Collectors;
  */
 public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     public static final String HTSGET_SCHEME = "htsget";
-    private static final int READAHEAD_LIMIT = 50_000;
+    // Number of bases to read ahead by if using asynchronous IO
+    private static final int READAHEAD_LIMIT = 500_000;
 
     private final URI mSource;
 
@@ -47,13 +48,56 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     private final List<CloseableIterator<SAMRecord>> iterators;
 
     /**
-     * Prepare to read BAM from an htsget source
+     * Instantiate an HtsgetBAMFileReader from an HtsgetInputResource,
+     * attempting to convert it to an https resource then a http resource if the server does not support https
      *
      * @param source               source of bytes.
      * @param eagerDecode          if true, decode all BAM fields as reading rather than lazily.
      * @param validationStringency Controls how to handle invalidate reads or header lines.
      * @param samRecordFactory     SAM record factory
-     * @param useAsynchronousIO    if true, use asynchronous I/O
+     * @param useAsynchronousIO    if true, use asynchronous I/O and prefetching
+     * @param inflaterFactory      InflaterFactory used by BlockCompressedInputStream
+     */
+    public static HtsgetBAMFileReader fromHtsgetURI(final HtsgetInputResource source,
+                                                    final boolean eagerDecode,
+                                                    final ValidationStringency validationStringency,
+                                                    final SAMRecordFactory samRecordFactory,
+                                                    final boolean useAsynchronousIO,
+                                                    final InflaterFactory inflaterFactory) throws IOException, URISyntaxException {
+        HtsgetBAMFileReader reader;
+        try {
+            final URI htsgetUri = HtsgetBAMFileReader.convertHtsgetUriToHttps(source.uri);
+            reader = new HtsgetBAMFileReader(
+                htsgetUri,
+                eagerDecode,
+                validationStringency,
+                samRecordFactory,
+                useAsynchronousIO,
+                inflaterFactory
+            );
+        } catch (final RuntimeIOException e) {
+            // Fall back to http if htsget server does not support https
+            final URI htsgetUri = HtsgetBAMFileReader.convertHtsgetUriToHttp(source.uri);
+            reader = new HtsgetBAMFileReader(
+                htsgetUri,
+                eagerDecode,
+                validationStringency,
+                samRecordFactory,
+                useAsynchronousIO,
+                inflaterFactory
+            );
+        }
+        return reader;
+    }
+
+    /**
+     * Prepare to read BAM from an htsget source
+     *
+     * @param source               http(s) URI of htsget resource including ID
+     * @param eagerDecode          if true, decode all BAM fields as reading rather than lazily.
+     * @param validationStringency Controls how to handle invalidate reads or header lines.
+     * @param samRecordFactory     SAM record factory
+     * @param useAsynchronousIO    if true, use asynchronous I/O and prefetching
      */
     public HtsgetBAMFileReader(final URI source,
                                final boolean eagerDecode,
@@ -70,7 +114,7 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
      * @param eagerDecode          if true, decode all BAM fields as reading rather than lazily.
      * @param validationStringency Controls how to handle invalidate reads or header lines.
      * @param samRecordFactory     SAM record factory
-     * @param useAsynchronousIO    if true, use asynchronous I/O
+     * @param useAsynchronousIO    if true, use asynchronous I/O and prefetching
      * @param inflaterFactory      InflaterFactory used by BlockCompressedInputStream
      */
     public HtsgetBAMFileReader(final URI source,
@@ -516,7 +560,7 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
      * be contained by or even overlap the given interval, meaning the result of a query for an earlier interval
      * may contain reads logically "belonging" to a later interval, which will be duplicated in that later interval
      */
-    // TODO: remove this class once htsget POST api is implemented
+    // TODO: remove this class once htsget POST api is implemented, see https://github.com/samtools/hts-specs/pull/285
     private static class ConsecutiveDuplicateRecordFilter implements SamRecordFilter {
         private final Locatable prevInterval;
         private final Locatable currInterval;

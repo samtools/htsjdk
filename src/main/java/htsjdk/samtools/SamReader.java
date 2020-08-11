@@ -153,7 +153,9 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /**
      * @return true if this source can be queried by interval, regardless of whether it has an index
      */
-    public boolean isQueryable();
+    default public boolean isQueryable() {
+        return this.hasIndex();
+    }
 
     /**
      * @return true if ths is a BAM file, and has an index

@@ -36,7 +36,7 @@ public class HtsgetResponseUnitTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "missingRequiredFieldsProvider", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "missingRequiredFieldsProvider", expectedExceptions = HtsgetMalformedResponseException.class)
     public void testMissingRequiredFields(final String json) {
         HtsgetResponse.parse(json);
     }
@@ -49,7 +49,7 @@ public class HtsgetResponseUnitTest extends HtsjdkTest {
         Assert.assertEquals(err.getMessage(), "No such accession 'ENS16232164'");
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = HtsgetMalformedResponseException.class)
     @SuppressWarnings("StatementWithEmptyBody")
     public void testNonBase64EncodedDataURI() throws IOException {
         final String respJson = "{\"htsget\":{\"format\":\"BAM\",\"urls\":[{\"url\":\"data:application/vnd.ga4gh.bam;base64,ZW5jb2RlZCA=\",\"class\":\"header\"},{\"url\":\"data:application/vnd.ga4gh.bam;base64,dGVzdCA=\",\"class\":\"body\"},{\"url\":\"data:application/vnd.ga4gh.bam;somethingelse,ZGF0YQ==\",\"class\":\"body\"}]}}";
@@ -59,7 +59,7 @@ public class HtsgetResponseUnitTest extends HtsjdkTest {
         while (data.read() != -1) ;
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = HtsgetMalformedResponseException.class)
     @SuppressWarnings("StatementWithEmptyBody")
     public void testUnrecognizedURIScheme() throws IOException {
         final String respJson = "{\"htsget\":{\"format\":\"BAM\",\"urls\":[{\"url\":\"data:application/vnd.ga4gh.bam;base64,ZW5jb2RlZCA=\",\"class\":\"header\"},{\"url\":\"data:application/vnd.ga4gh.bam;base64,dGVzdCA=\",\"class\":\"body\"},{\"url\":\"hmmm:application/vnd.ga4gh.bam;base64,ZGF0YQ==\",\"class\":\"body\"}]}}";

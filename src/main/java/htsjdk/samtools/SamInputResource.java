@@ -128,9 +128,26 @@ public class SamInputResource {
 
     public static SamInputResource of(final SRAAccession acc) { return new SamInputResource(new SRAInputResource(acc)); }
 
+    /**
+     * Creates a {@link SamInputResource} from a URI which may represent an htsget path,
+     * or some other resource such as a filesystem path or a URL, with no index.
+     *
+     * This method will first attempt to treat the resource as an htsget resource, then fall back to
+     * treating it as a file system path, then as a URL
+     */
     public static SamInputResource of(final URI uri) {
         return of(uri, null);
     }
+
+    /**
+     * Creates a {@link SamInputResource} with no index from a URI which may represent an htsget path,
+     * or some other resource such as a filesystem path or a URL,
+     * with no index, and with a wrapper to apply to the SeekableByteChannel for custom prefetching/buffering.
+     *
+     * This method will first attempt to treat the resource as an htsget resource, then fall back to
+     * treating it as a file system path, then as a URL
+     */
+    // TODO: this method can likely be replaced by one taking an HtsjdkPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
     public static SamInputResource of(final URI uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
         // See if this is an Htsget source first
         if (uri.getScheme().equalsIgnoreCase(HtsgetBAMFileReader.HTSGET_SCHEME)) {
@@ -578,7 +595,7 @@ class SRAInputResource extends InputResource {
     }
 }
 
-// TODO: replace this with an InputResource type taking PathSpecifier once this interface is pushed down to htsjdk
+// TODO: replace this with an InputResource type taking HtsjdkPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
 class HtsgetInputResource extends InputResource {
 
     final URI uri;

@@ -83,12 +83,12 @@ public class HtsgetResponse {
                 case "data":
                     final String dataUri = this.uri.toString();
                     if (!dataUri.matches("^data:.*;base64,.*")) {
-                        throw new IllegalStateException(new HtsgetMalformedResponseException("data URI must be base64 encoded: " + dataUri));
+                        throw new HtsgetMalformedResponseException("data URI must be base64 encoded: " + dataUri);
                     }
                     return new ByteArrayInputStream(
                         Base64.getDecoder().decode(dataUri.replaceFirst("^data:.*;base64,", "")));
                 default:
-                    throw new IllegalStateException(new HtsgetMalformedResponseException("Unrecognized URI scheme in data block: " + this.uri.getScheme()));
+                    throw new HtsgetMalformedResponseException("Unrecognized URI scheme in data block: " + this.uri.getScheme());
             }
         }
 
@@ -101,23 +101,15 @@ public class HtsgetResponse {
         public static Block parse(final mjson.Json blockJson) {
             final mjson.Json uriJson = blockJson.at("url");
             if (uriJson == null) {
-                throw new IllegalStateException(
-                    blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())),
-                    new HtsgetMalformedResponseException("No URI found in Htsget data block"));
+                throw new HtsgetMalformedResponseException("No URI found in Htsget data block: " +
+                    blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())));
             }
             final URI uri;
             try {
                 uri = new URI(uriJson.asString());
             } catch (final URISyntaxException e) {
-                throw new IllegalStateException(
-                    blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())),
-                    new HtsgetMalformedResponseException("Could not parse URI in Htsget data block", e));
+                throw new HtsgetMalformedResponseException("Could not parse URI in Htsget data block: " + uriJson.asString(), e);
             }
-
-            blockJson.asJsonMap().entrySet().stream()
-                .filter(e -> e.getKey().equalsIgnoreCase("nnsr"))
-                .map(Map.Entry::getValue)
-                .findFirst().orElse(null);
 
             final mjson.Json dataClassJson = blockJson.at("class");
             final HtsgetClass dataClass = dataClassJson == null
@@ -172,7 +164,7 @@ public class HtsgetResponse {
         final mjson.Json j = mjson.Json.read(s);
         final mjson.Json htsget = j.at("htsget");
         if (htsget == null) {
-            throw new IllegalStateException(new HtsgetMalformedResponseException("No htsget key found in response"));
+            throw new HtsgetMalformedResponseException("No htsget key found in response");
         }
 
         final mjson.Json md5Json = htsget.at("md5");
@@ -180,7 +172,7 @@ public class HtsgetResponse {
 
         final mjson.Json blocksJson = htsget.at("urls");
         if (blocksJson == null) {
-            throw new IllegalStateException(new HtsgetMalformedResponseException("No urls field found in Htsget Response"));
+            throw new HtsgetMalformedResponseException("No urls field found in Htsget Response");
         }
 
         final List<Block> blocks = blocksJson.asJsonList().stream()
