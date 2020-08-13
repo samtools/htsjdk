@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
-public class BasicFastqWriterTest {
+public class BasicFastqWriterTest extends HtsjdkTest {
     public class OutputStreamWrapper extends ByteArrayOutputStream {
         public int flushCalled = 0;
         public int writeCalled = 0;
