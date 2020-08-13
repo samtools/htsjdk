@@ -1,5 +1,6 @@
 package htsjdk.samtools.fastq;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
