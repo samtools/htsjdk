@@ -11,16 +11,16 @@ import java.util.stream.IntStream;
 public class SAMRecordPrefetchingIteratorTest extends HtsjdkTest {
 
     private static class MockSAMRecord extends SAMRecord {
-        final int reads;
+        final int bases;
 
-        public MockSAMRecord(final int reads) {
+        public MockSAMRecord(final int bases) {
             super(null);
-            this.reads = reads;
+            this.bases = bases;
         }
 
         @Override
         public int getReadLength() {
-            return reads;
+            return bases;
         }
     }
 

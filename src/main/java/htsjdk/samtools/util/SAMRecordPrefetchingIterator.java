@@ -46,11 +46,13 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
             final int bases = next.getReadLength();
             try {
                 synchronized (this.basesAllowed) {
-                    while (this.basesAllowed.get() < bases && this.basesAllowed.get() < this.basePrefetchLimit) {
+                    int basesAllowed = this.basesAllowed.get();
+                    while (basesAllowed < bases && basesAllowed < this.basePrefetchLimit) {
                         if (Thread.currentThread().isInterrupted()) {
                             return;
                         }
                         this.basesAllowed.wait();
+                        basesAllowed = this.basesAllowed.get();
                     }
                     this.basesAllowed.addAndGet(-bases);
                 }
@@ -65,6 +67,7 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
                 // InterruptedException is expected if the iterator is being closed
                 return;
             } catch (final Throwable t) {
+                t.printStackTrace();
                 // Other exceptions are placed onto the queue so they can be reported when accessed by the main thread
                 this.queue.add(new Either(t));
             }
