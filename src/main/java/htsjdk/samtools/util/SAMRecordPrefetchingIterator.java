@@ -67,8 +67,12 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
                 // InterruptedException is expected if the iterator is being closed
                 return;
             } catch (final Throwable t) {
-                t.printStackTrace();
-                // Other exceptions are placed onto the queue so they can be reported when accessed by the main thread
+                // All other exceptions are placed onto the queue so they can be reported when accessed by the main thread
+                // Errors are immediately printed so their information is propagated to the user and not lost
+                // in the case that the JVM dies before the Error is passed up through the queue
+                if (t instanceof Error) {
+                    t.printStackTrace();
+                }
                 this.queue.add(new Either(t));
             }
         }
