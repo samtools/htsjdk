@@ -379,7 +379,7 @@ public class VariantContext implements Feature, Serializable {
                     for (int j = 0, size = alleles.size(); j < size; j++) {
                         final Allele gAllele = alleles.get(j);
                         if (!variantContext.hasAllele(gAllele) && gAllele.isCalled()) {
-                            throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
+                            throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + variantContext.getAlleles());
                         }
                     }
                 }
