@@ -1,0 +1,10 @@
+{
+  "readsDataSourceRegistry": {
+    "sources": [
+      {
+        "pattern": "^htsjdk_test\\.(?P<accession>.*)$",
+        "path": "/data/{accession}"
+      }
+    ]
+  }
+}

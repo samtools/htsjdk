@@ -902,27 +902,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     }
 
     /**
-     * @throws java.lang.IllegalArgumentException if the intervals are not optimized
-     * @see QueryInterval#optimizeIntervals(QueryInterval[])
-     */
-    private void assertIntervalsOptimized(final QueryInterval[] intervals) {
-        if (intervals.length == 0) return;
-        for (int i = 1; i < intervals.length; ++i) {
-        final QueryInterval prev = intervals[i-1];
-        final QueryInterval thisInterval = intervals[i];
-            if (prev.compareTo(thisInterval) >= 0) {
-                throw new IllegalArgumentException(String.format("List of intervals is not sorted: %s >= %s", prev, thisInterval));
-            }
-            if (prev.overlaps(thisInterval)) {
-                throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s intersects %s", prev, thisInterval));
-            }
-            if (prev.endsAtStartOf(thisInterval)) {
-                throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s abuts %s", prev, thisInterval));
-            }
-        }
-    }
-
-    /**
      * Use the index to determine the chunk boundaries for the required intervals.
      * @param intervals the intervals to restrict reads to
      * @param fileIndex the BAM index to use
@@ -947,7 +926,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     private CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
                                                              final boolean contained) {
 
-        assertIntervalsOptimized(intervals);
+        QueryInterval.assertIntervalsOptimized(intervals);
 
         BAMFileSpan span = getFileSpan(intervals, getIndex());
 
@@ -971,7 +950,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                                                             final boolean contained,
                                                             final long[] filePointers) {
 
-        assertIntervalsOptimized(intervals);
+        QueryInterval.assertIntervalsOptimized(intervals);
 
         // Create an iterator over the above chunk boundaries.
         final BAMFileIndexIterator iterator = new BAMFileIndexIterator(filePointers);

@@ -86,6 +86,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         public static final Type BAM_TYPE = new TypeImpl("BAM", "bam", "bai");
         public static final Type SAM_TYPE = new TypeImpl("SAM", "sam", null);
         public static final Type BAM_CSI_TYPE = new TypeImpl("BAM", "bam", "csi");
+        public static final Type BAM_HTSGET_TYPE = new TypeImpl("BAM", "bam", null);
 
         public boolean hasValidFileExtension(final String fileName) {
             return fileName != null && fileName.endsWith("." + fileExtension());
@@ -148,6 +149,13 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * @return a human readable description of the resource backing this sam reader
      */
     public String getResourceDescription();
+
+    /**
+     * @return true if this source can be queried by interval, regardless of whether it has an index
+     */
+    default public boolean isQueryable() {
+        return this.hasIndex();
+    }
 
     /**
      * @return true if ths is a BAM file, and has an index
@@ -347,6 +355,10 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public interface PrimitiveSamReader {
         Type type();
 
+        default boolean isQueryable() {
+            return this.hasIndex();
+        }
+
         boolean hasIndex();
 
         BAMIndex getIndex();
@@ -511,6 +523,11 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         @Override
         public String getResourceDescription() {
             return this.resource.toString();
+        }
+
+        @Override
+        public boolean isQueryable() {
+            return p.isQueryable();
         }
 
         @Override

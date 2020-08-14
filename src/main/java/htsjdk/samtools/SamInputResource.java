@@ -35,12 +35,10 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -130,6 +128,48 @@ public class SamInputResource {
 
     public static SamInputResource of(final SRAAccession acc) { return new SamInputResource(new SRAInputResource(acc)); }
 
+    /**
+     * Creates a {@link SamInputResource} from a URI which may represent an htsget path,
+     * or some other resource such as a filesystem path or a URL, with no index.
+     *
+     * This method will first attempt to treat the resource as an htsget resource, then fall back to
+     * treating it as a file system path, then as a URL
+     */
+    public static SamInputResource of(final URI uri) {
+        return of(uri, null);
+    }
+
+    /**
+     * Creates a {@link SamInputResource} with no index from a URI which may represent an htsget path,
+     * or some other resource such as a filesystem path or a URL,
+     * with no index, and with a wrapper to apply to the SeekableByteChannel for custom prefetching/buffering.
+     *
+     * This method will first attempt to treat the resource as an htsget resource, then fall back to
+     * treating it as a file system path, then as a URL
+     */
+    // TODO: this method can likely be replaced by one taking an HtsjdkPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
+    public static SamInputResource of(final URI uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
+        // See if this is an Htsget source first
+        if (uri.getScheme().equalsIgnoreCase(HtsgetBAMFileReader.HTSGET_SCHEME)) {
+            return new SamInputResource(new HtsgetInputResource(uri));
+        }
+        // Check if this URI represents a path we can open
+        try {
+            final Path path = IOUtil.getPath(uri.toString());
+            return wrapper == null
+                ? of(path)
+                : of(path, wrapper);
+        } catch (final ProviderNotFoundException | IOException e) {
+            // If this URI cannot be opened as a path, try treating it as a URL
+            try {
+                final URL url = uri.toURL();
+                return new SamInputResource(new UrlInputResource(url));
+            } catch (final MalformedURLException malformedURLException) {
+                throw new RuntimeIOException("URI could not be interpreted as any known input resource type", malformedURLException);
+            }
+        }
+    }
+
     /** Creates a {@link SamInputResource} from a string specifying *either* a url or a file path */
     public static SamInputResource of(final String string) { 
       try {
@@ -188,7 +228,7 @@ abstract class InputResource {
     protected InputResource(final Type type) {this.type = type;}
 
     enum Type {
-        FILE, PATH, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION
+        FILE, PATH, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION, HTSGET
     }
 
     private final Type type;
@@ -236,6 +276,9 @@ abstract class InputResource {
                 break;
             case SRA_ACCESSION:
                 childToString = asSRAAccession().toString();
+                break;
+            case HTSGET:
+                childToString = ((HtsgetInputResource) this).uri.toString();
                 break;
             default:
                 throw new IllegalStateException();
@@ -549,5 +592,50 @@ class SRAInputResource extends InputResource {
     @Override
     public SRAAccession asSRAAccession() {
         return accession;
+    }
+}
+
+// TODO: replace this with an InputResource type taking HtsjdkPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
+class HtsgetInputResource extends InputResource {
+
+    final URI uri;
+
+    public HtsgetInputResource(final URI uri) {
+        super(Type.HTSGET);
+        this.uri = uri;
+    }
+
+    @Override
+    File asFile() {
+        return null;
+    }
+
+    @Override
+    Path asPath() {
+        return null;
+    }
+
+    @Override
+    URL asUrl() {
+        try {
+            return this.uri.toURL();
+        } catch (final MalformedURLException e) {
+            return null;
+        }
+    }
+
+    @Override
+    SeekableStream asUnbufferedSeekableStream() {
+        return null;
+    }
+
+    @Override
+    InputStream asUnbufferedInputStream() {
+        return null;
+    }
+
+    @Override
+    SRAAccession asSRAAccession() {
+        return null;
     }
 }

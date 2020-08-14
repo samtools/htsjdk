@@ -95,6 +95,27 @@ public class QueryInterval implements Comparable<QueryInterval> {
         return unique.toArray(EMPTY_QUERY_INTERVAL_ARRAY);
     }
 
+    /**
+     * @throws java.lang.IllegalArgumentException if the intervals are not optimized
+     * @see QueryInterval#optimizeIntervals(QueryInterval[])
+     */
+    public static void assertIntervalsOptimized(final QueryInterval[] intervals) {
+        if (intervals.length == 0) return;
+        for (int i = 1; i < intervals.length; ++i) {
+            final QueryInterval prev = intervals[i-1];
+            final QueryInterval thisInterval = intervals[i];
+            if (prev.compareTo(thisInterval) >= 0) {
+                throw new IllegalArgumentException(String.format("List of intervals is not sorted: %s >= %s", prev, thisInterval));
+            }
+            if (prev.overlaps(thisInterval)) {
+                throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s intersects %s", prev, thisInterval));
+            }
+            if (prev.endsAtStartOf(thisInterval)) {
+                throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s abuts %s", prev, thisInterval));
+            }
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
