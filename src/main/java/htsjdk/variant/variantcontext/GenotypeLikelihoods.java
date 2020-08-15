@@ -31,8 +31,11 @@ import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFUtils;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +70,7 @@ public class GenotypeLikelihoods {
      * For example, for a ploidy of 3, the allele lists for each PL index is:
      * {0,0,0}, {0,0,1}, {0,1,1}, {1,1,1}, {0,0,2}, {0,1,2}, {1,1,2}, {0,2,2}, {1,2,2}, {2,2,2}
      */
-    protected final static Map<Integer, List<List<Integer>>> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<Integer, List<List<Integer>>>();
+    protected final static Map<Integer, PLIndexAllelesList> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<>();
 
     public final static GenotypeLikelihoods fromPLField(String PLs) {
         return new GenotypeLikelihoods(PLs);
@@ -496,15 +499,8 @@ public class GenotypeLikelihoods {
      * @param ploidy    number of chromosomes
      * @throws IllegalArgumentException if altAlleles or ploidy &lt= 0
      */
+    @Deprecated
     public static synchronized void initializeAnyploidPLIndexToAlleleIndices(final int altAlleles, final int ploidy) {
-        if ( altAlleles <= 0 )
-            throw new IllegalArgumentException("Must have at least one alternate allele, not " + altAlleles );
-
-        if ( ploidy <= 0 )
-            throw new IllegalArgumentException("Ploidy must be at least 1, not " + ploidy);
-
-        // create the allele indices for each PL index for a ploidy
-        anyploidPloidyToPLIndexToAlleleIndices.put(ploidy, calculateAnyploidPLcache(altAlleles, ploidy));
     }
 
     /**
@@ -517,20 +513,58 @@ public class GenotypeLikelihoods {
      * @throws IllegalStateException if @see #anyploidPloidyToPLIndexToAlleleIndices does not contain the requested ploidy or PL index
      */
     public static synchronized List<Integer> getAlleles(final int PLindex, final int ploidy) {
+        if ( PLindex < 0) {
+            throw new IllegalStateException("The PL index " + PLindex + " cannot be negative");
+        }
+
+        if (ploidy < 0) {
+            throw new IllegalStateException("The ploidy " + ploidy + " cannot be negative");
+        }
+
         if ( ploidy == 2 ) { // diploid
             final GenotypeLikelihoodsAllelePair pair = getAllelePair(PLindex);
             return Arrays.asList(pair.alleleIndex1, pair.alleleIndex2);
         } else { // non-diploid
-            if (!anyploidPloidyToPLIndexToAlleleIndices.containsKey(ploidy))
-                throw new IllegalStateException("Must initialize the cache of allele anyploid indices for ploidy " + ploidy);
+            PLIndexAllelesList plIndexAllelesList = anyploidPloidyToPLIndexToAlleleIndices.computeIfAbsent(ploidy, k -> new PLIndexAllelesList(ploidy));
+            return plIndexAllelesList.getAlleles(PLindex);
+        }
+    }
 
-            if (PLindex < 0 || PLindex >= anyploidPloidyToPLIndexToAlleleIndices.get(ploidy).size()) {
-                final String msg = "The PL index " + PLindex + " does not exist for " + ploidy + " ploidy, " +
-                        (PLindex < 0 ? "cannot have a negative value." : "initialized the cache of allele anyploid indices with the incorrect number of alternate alleles.");
-                throw new IllegalStateException(msg);
+    private static class PLIndexAllelesList {
+        final List<List<Integer>> allelesList = new ArrayList<>();
+        int alleleToIncrementForNextIndex;
+        final Deque<Integer> availableAllelesToIncrementDeque = new ArrayDeque<>();
+        int ploidy;
+
+        PLIndexAllelesList(final int ploidy) {
+            this.ploidy = ploidy;
+            this.alleleToIncrementForNextIndex = ploidy - 1;
+            this.allelesList.add(new ArrayList<>(Collections.nCopies(ploidy, 0)));
+        }
+
+        private List<Integer> getAlleles(final int PLIndex) {
+
+            while(PLIndex >= allelesList.size()) {
+                final List<Integer> nextPLs;
+                final int alleleToIncrement;
+                if (alleleToIncrementForNextIndex < 0) {
+                    alleleToIncrement = availableAllelesToIncrementDeque.isEmpty() ? ploidy - 1 : availableAllelesToIncrementDeque.pollLast();
+
+                    nextPLs = new ArrayList<>(Collections.nCopies(alleleToIncrement, 0));
+                    nextPLs.addAll(allelesList.get(allelesList.size() - 1).subList(alleleToIncrement, ploidy));
+                } else {
+                    alleleToIncrement = alleleToIncrementForNextIndex;
+                    nextPLs = new ArrayList<>(allelesList.get(allelesList.size() - 1));
+                }
+                final int incrementedValue = nextPLs.get(alleleToIncrement) + 1;
+                nextPLs.set(alleleToIncrement, incrementedValue);
+                alleleToIncrementForNextIndex = alleleToIncrement - 1;
+                if (alleleToIncrement < ploidy - 1 && nextPLs.get(alleleToIncrement) < nextPLs.get(alleleToIncrement + 1)) {
+                    availableAllelesToIncrementDeque.add(alleleToIncrement);
+                }
+                allelesList.add(nextPLs);
             }
-
-            return anyploidPloidyToPLIndexToAlleleIndices.get(ploidy).get(PLindex);
+            return allelesList.get(PLIndex);
         }
     }
 

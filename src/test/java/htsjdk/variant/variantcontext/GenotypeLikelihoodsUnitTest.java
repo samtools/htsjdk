@@ -53,14 +53,6 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     final static String vPLString = "93,0,39";
     double[] triAllelic = new double[]{-4.2,-2.0,-3.0,-1.6,0.0,-4.0}; //AA,AB,AC,BB,BC,CC
 
-    @BeforeMethod
-    public void initializeAnyploidPLIndexToAlleleIndices() {
-        GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.clear();
-        GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(1, 1);
-        GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(2, 2);
-        GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(2, 3);
-    }
-
     @Test
     public void testFromVector2() {
         GenotypeLikelihoods gl = GenotypeLikelihoods.fromLog10Likelihoods(v);
@@ -318,50 +310,37 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
             Assert.assertEquals(anyploidPLIndexToAlleleIndices.get(i), expected.get(i));
     }
 
-    @Test(dataProvider = "testCalculateAnyploidPLcacheData")
-    public void testInitializeAnyploidPLIndexToAlleleIndices(final int altAlleles, final int ploidy, final List<List<Integer>> expected) {
-        if ( altAlleles >= 1 && ploidy >= 1 ) { // Bypass test with bad data
-            Map<Integer, List<List<Integer>>> expectedMap = new HashMap<Integer, List<List<Integer>>>();
-            expectedMap.put(ploidy, expected);
-            for (Map.Entry<Integer, List<List<Integer>>> entry : GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.entrySet()) {
-                if (expectedMap.containsKey(entry.getKey()))
-                    Assert.assertEquals(entry.getValue(), expectedMap.get(entry.getKey()));
-            }
-        }
-    }
-
-    @DataProvider
-    public Object[][] testInitializeAnyploidPLIndexToAlleleIndiceseBadData() {
-        return new Object[][]{
-                { 2, -1 },
-                { -1, 2 }
-        };
-    }
-
-    @Test(dataProvider = "testInitializeAnyploidPLIndexToAlleleIndiceseBadData", expectedExceptions = IllegalArgumentException.class)
-    public void testInitializeAnyploidPLIndexToAlleleIndicesBadData(final int altAlleles, final int ploidy) {
-        GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(altAlleles, ploidy);
-    }
-
     @DataProvider
     public Object[][] testGetAllelesData() {
         return new Object[][]{
-                {0, 2, 3, Arrays.asList(0,0,0)},
-                {1, 2, 3, Arrays.asList(0,0,1)},
-                {2, 2, 3, Arrays.asList(0,1,1)},
-                {3, 2, 3, Arrays.asList(1,1,1)},
-                {4, 2, 3, Arrays.asList(0,0,2)},
-                {5, 2, 3, Arrays.asList(0,1,2)},
-                {6, 2, 3, Arrays.asList(1,1,2)},
-                {7, 2, 3, Arrays.asList(0,2,2)},
-                {8, 2, 3, Arrays.asList(1,2,2)},
-                {9, 2, 3, Arrays.asList(2,2,2)},
-                {1, 2, 1, Arrays.asList(1)}
+                {0, 3, Arrays.asList(0,0,0)},
+                {1, 3, Arrays.asList(0,0,1)},
+                {2, 3, Arrays.asList(0,1,1)},
+                {3, 3, Arrays.asList(1,1,1)},
+                {4, 3, Arrays.asList(0,0,2)},
+                {5, 3, Arrays.asList(0,1,2)},
+                {6, 3, Arrays.asList(1,1,2)},
+                {7, 3, Arrays.asList(0,2,2)},
+                {8, 3, Arrays.asList(1,2,2)},
+                {9, 3, Arrays.asList(2,2,2)},
+                {10, 3, Arrays.asList(0,0,3)},
+                {11, 3, Arrays.asList(0,1,3)},
+                {12, 3, Arrays.asList(1,1,3)},
+                {13, 3, Arrays.asList(0,2,3)},
+                {14, 3, Arrays.asList(1,2,3)},
+                {15, 3, Arrays.asList(2,2,3)},
+                {16, 3, Arrays.asList(0,3,3)},
+                {17, 3, Arrays.asList(1,3,3)},
+                {18, 3, Arrays.asList(2,3,3)},
+                {19, 3, Arrays.asList(3,3,3)},
+                {1, 1, Arrays.asList(1)},
+                {1539, 5, Arrays.asList(1,3,5,7,9)}, // These tests were derived in reverse, allele arrays we chosen, and index was derived as Index(k_1,k_2,...,k_p) = Sum_m=1^p choose(k_m+m-1, m)
+                {1988400, 12, Arrays.asList(0,0,0,0,0,1,3,8,11,11,11,12)}
         };
     }
 
     @Test(dataProvider = "testGetAllelesData")
-    public void testGetAlleles(final int PLindex, final int altAlleles, final int ploidy, final List<Integer> expected ) {
+    public void testGetAlleles(final int PLindex, final int ploidy, final List<Integer> expected ) {
         Assert.assertEquals(GenotypeLikelihoods.getAlleles(PLindex, ploidy), expected);
     }
 
@@ -369,21 +348,15 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     public Object[][] testGetAllelesIndexOutOfBoundsData() {
         return new Object[][]{
                 {-1, 3},  // PL index too small, non-diploid
-                {10, 3},  // PL index too large, non-diploid
                 {-1, 2},  // PL index too small, diploid
-                {GenotypeLikelihoods.numLikelihoods(GenotypeLikelihoods.MAX_DIPLOID_ALT_ALLELES_THAT_CAN_BE_GENOTYPED+1,2), 2} // PL index too large, diploid
+                {GenotypeLikelihoods.numLikelihoods(GenotypeLikelihoods.MAX_DIPLOID_ALT_ALLELES_THAT_CAN_BE_GENOTYPED+1,2), 2}, // PL index too large, diploid
+                {3, -1} // negative ploidy
         };
     }
 
     @Test(dataProvider = "testGetAllelesIndexOutOfBoundsData", expectedExceptions = IllegalStateException.class)
     public void testGetAllelesOutOfBounds(final int PLindex, final int ploidy) {
         final List<Integer> alleles = GenotypeLikelihoods.getAlleles(PLindex, ploidy);
-    }
-
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void testGetAllelesUnitialized() {
-        GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.clear();
-        final List<Integer> alleles = GenotypeLikelihoods.getAlleles(0, 3);
     }
 
     @Test
