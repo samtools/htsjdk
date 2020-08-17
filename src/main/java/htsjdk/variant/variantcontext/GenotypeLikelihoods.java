@@ -502,7 +502,8 @@ public class GenotypeLikelihoods {
      * Initialize cache of allele anyploid indices
      * If initialized multiple times with the same ploidy, the alternate alleles from the last initialization will be used
      *
-     * This method is no longer necessary for this class, and in general should be avoided.  However it reamins
+     * This method is no longer necessary for this class, and in general should be avoided.  However it remains to avoid
+     * breaking the API
      *
      * @param altAlleles number of alternate alleles
      * @param ploidy    number of chromosomes
@@ -522,7 +523,6 @@ public class GenotypeLikelihoods {
 
     /**
      * Get the allele ploidy indices for the given PL index
-     * Must use the same ploidy as @see #initializeAnyploidPLIndexToAlleleIndices
      *
      * @param PLindex   the PL index
      * @param ploidy    number of chromosomes
