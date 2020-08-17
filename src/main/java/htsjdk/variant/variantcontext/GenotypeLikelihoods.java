@@ -527,7 +527,7 @@ public class GenotypeLikelihoods {
      * @param PLindex   the PL index
      * @param ploidy    number of chromosomes
      * @return the ploidy allele indices
-     * @throws IllegalStateException if @see #anyploidPloidyToPLIndexAllelesList does not contain the requested ploidy or PL index
+     * @throws IllegalStateException if PLindex < 0 or ploidy < 0
      */
     public static synchronized List<Integer> getAlleles(final int PLindex, final int ploidy) {
         if ( PLindex < 0) {

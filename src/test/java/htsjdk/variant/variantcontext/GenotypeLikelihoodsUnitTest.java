@@ -53,6 +53,14 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     final static String vPLString = "93,0,39";
     double[] triAllelic = new double[]{-4.2,-2.0,-3.0,-1.6,0.0,-4.0}; //AA,AB,AC,BB,BC,CC
 
+    @BeforeMethod
+    public void initializeAnyploidPLIndexToAlleleIndices() {
+        GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.clear();
+        GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(1, 1);
+        GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(2, 2);
+        GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(2, 3);
+    }
+
     @Test
     public void testFromVector2() {
         GenotypeLikelihoods gl = GenotypeLikelihoods.fromLog10Likelihoods(v);
@@ -308,6 +316,31 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
         List<List<Integer>> anyploidPLIndexToAlleleIndices = GenotypeLikelihoods.calculateAnyploidPLcache(altAlleles, ploidy);
         for ( int i=0; i < anyploidPLIndexToAlleleIndices.size(); i++ )
             Assert.assertEquals(anyploidPLIndexToAlleleIndices.get(i), expected.get(i));
+    }
+
+    @Test(dataProvider = "testCalculateAnyploidPLcacheData")
+    public void testInitializeAnyploidPLIndexToAlleleIndices(final int altAlleles, final int ploidy, final List<List<Integer>> expected) {
+        if ( altAlleles >= 1 && ploidy >= 1 ) { // Bypass test with bad data
+            Map<Integer, List<List<Integer>>> expectedMap = new HashMap<Integer, List<List<Integer>>>();
+            expectedMap.put(ploidy, expected);
+            for (Map.Entry<Integer, List<List<Integer>>> entry : GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.entrySet()) {
+                if (expectedMap.containsKey(entry.getKey()))
+                    Assert.assertEquals(entry.getValue(), expectedMap.get(entry.getKey()));
+            }
+        }
+    }
+
+    @DataProvider
+    public Object[][] testInitializeAnyploidPLIndexToAlleleIndiceseBadData() {
+        return new Object[][]{
+                { 2, -1 },
+                { -1, 2 }
+        };
+    }
+
+    @Test(dataProvider = "testInitializeAnyploidPLIndexToAlleleIndiceseBadData", expectedExceptions = IllegalArgumentException.class)
+    public void testInitializeAnyploidPLIndexToAlleleIndicesBadData(final int altAlleles, final int ploidy) {
+        GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(altAlleles, ploidy);
     }
 
     @DataProvider
