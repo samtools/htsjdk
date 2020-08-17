@@ -492,8 +492,7 @@ public class GenotypeLikelihoods {
     }
 
     /**
-     * Initialize cache of allele anyploid indices
-     * If initialized multiple times with the same ploidy, the alternate alleles from the last initialization will be used
+     * This method is no longer needed and no longer does anything.  It remains to avoid breaking the API.
      *
      * @param altAlleles number of alternate alleles
      * @param ploidy    number of chromosomes
@@ -525,7 +524,7 @@ public class GenotypeLikelihoods {
             final GenotypeLikelihoodsAllelePair pair = getAllelePair(PLindex);
             return Arrays.asList(pair.alleleIndex1, pair.alleleIndex2);
         } else { // non-diploid
-            PLIndexAllelesList plIndexAllelesList = anyploidPloidyToPLIndexToAlleleIndices.computeIfAbsent(ploidy, k -> new PLIndexAllelesList(ploidy));
+            final PLIndexAllelesList plIndexAllelesList = anyploidPloidyToPLIndexToAlleleIndices.computeIfAbsent(ploidy, k -> new PLIndexAllelesList(ploidy));
             return plIndexAllelesList.getAlleles(PLindex);
         }
     }
@@ -541,6 +540,39 @@ public class GenotypeLikelihoods {
             this.alleleToIncrementForNextIndex = ploidy - 1;
             this.allelesList.add(new ArrayList<>(Collections.nCopies(ploidy, 0)));
         }
+
+        /**
+         * Calculate the alleles for the given PL index for a ploidy.
+         * Creates the ordering for all PL indecies less than or equal to PLIndex, and stores them for future use.
+         *
+         * The implementation is described in The Variant Call Format Specification VCF 4.3, Section 1.6.2 Genotype fields
+         * The likelihoods are ordered for ploidy P and N alternate alleles as follows:
+         * for aP = 0...N
+         *  for aP-1 = 0...aP
+         *      ...
+         *      for a1 = 0...a2
+         *          a1,a2..aP
+         *
+         * However, instead of having a set number of alternate alleles, we allow the outer loop to continue indefinitely, and break out
+         * once the correct PLIndex has been reached.  The state of the looping is stored, so that calculating higher indecies can start
+         * from where we left off, instead of going back the the beginning.
+         *
+         * To do this, we do not keep track of the indicies of each of the P loops explicitly.  In the loop pseudocode, we note that writing a new allele list
+         * corresponds to incrementing one loop, leaving the indicies in the loops above it unchanged, and resetting the indicies in the loops below it to zero.
+         * After incrementing the index of a particular loop, we next increment the index of the loop just below it, unless we have just incremented the lowest loop,
+         * in which case we next incremented whichever is the lowest loop that can still be incremented.  Thus, we note that we can write the list of alleles for the
+         * PLIndex pl_i based on the PLIndex pl_i - 1 if we know which single allele must be incremented. If we know we incremented allele a_i to
+         * create the list of alleles for pl_i - 1 from the list of alleles for pl_i - 2, then, if the index a_i is not 0 (ie. the leftmost allele),
+         * we simply increment allele a_i - 1 to create the list of alleles for pl_i, and leave the other alleles unchanged (by construction, only alleles to
+         * the right of allele a_i - 1 will be nonzero).  If allele a_i - 1 is less than allele a_i, then we know that it can further be incremented before
+         * allele a_i, so we add the index a_i to a deque D_a (by construction, D_a will always be sorted in descending order).  If the index a_i is 0, then we poll from the end of D_a to find the next allele to increment
+         * (or set the next allele to ploidy - 1, ie the rightmost allele,  if D_a is empty).  In this case, all alleles to the left of the incremented allele
+         * are reset to 0, and all alleles to the right are left unchanged.
+         *
+         * The algorithm is initialized in thr constructor for PLIndex 0 with a list of P 0's and by setting the next allele to increment as ploidy - 1 (ie, the rightmost allele).
+         * @param PLIndex
+         * @return
+         */
 
         private List<Integer> getAlleles(final int PLIndex) {
 
