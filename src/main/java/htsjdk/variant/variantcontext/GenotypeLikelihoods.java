@@ -70,11 +70,10 @@ public class GenotypeLikelihoods {
      * For example, for a ploidy of 3, the allele lists for each PL index is:
      * {0,0,0}, {0,0,1}, {0,1,1}, {1,1,1}, {0,0,2}, {0,1,2}, {1,1,2}, {0,2,2}, {1,2,2}, {2,2,2}
      */
-    protected final static Map<Integer, PLIndexAllelesList> anyploidPloidyToPLIndexAllelesList = new HashMap<>();
+    private final static Map<Integer, PLIndexAllelesList> anyploidPloidyToPLIndexAllelesList = new HashMap<>();
 
     /**
-     * This field is no longer used in this class, and in general should be avoided in favor of anyploidPloidyToPLIndexAllelesList.  However, it remains to
-     * avoid breaking API since it is protected.
+     * This field is no longer used in this class.  However, it remains to avoid breaking API since it is protected.
      */
     @Deprecated
     protected final static Map<Integer, List<List<Integer>>> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<Integer, List<List<Integer>>>();
