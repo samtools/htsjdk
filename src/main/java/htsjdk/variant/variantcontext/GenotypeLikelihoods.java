@@ -70,7 +70,14 @@ public class GenotypeLikelihoods {
      * For example, for a ploidy of 3, the allele lists for each PL index is:
      * {0,0,0}, {0,0,1}, {0,1,1}, {1,1,1}, {0,0,2}, {0,1,2}, {1,1,2}, {0,2,2}, {1,2,2}, {2,2,2}
      */
-    protected final static Map<Integer, PLIndexAllelesList> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<>();
+    protected final static Map<Integer, PLIndexAllelesList> anyploidPloidyToPLIndexAllelesList = new HashMap<>();
+
+    /**
+     * This field is no longer used in this class, and in general should be avoided in favor of anyploidPloidyToPLIndexAllelesList.  However, it remains to
+     * avoid breaking API since it is protected.
+     */
+    @Deprecated
+    protected final static Map<Integer, List<List<Integer>>> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<Integer, List<List<Integer>>>();
 
     public final static GenotypeLikelihoods fromPLField(String PLs) {
         return new GenotypeLikelihoods(PLs);
@@ -492,7 +499,10 @@ public class GenotypeLikelihoods {
     }
 
     /**
-     * This method is no longer needed and no longer does anything.  It remains to avoid breaking the API.
+     * Initialize cache of allele anyploid indices
+     * If initialized multiple times with the same ploidy, the alternate alleles from the last initialization will be used
+     *
+     * This method is no longer necessary for this class, and in general should be avoided.  However it reamins
      *
      * @param altAlleles number of alternate alleles
      * @param ploidy    number of chromosomes
@@ -500,6 +510,14 @@ public class GenotypeLikelihoods {
      */
     @Deprecated
     public static synchronized void initializeAnyploidPLIndexToAlleleIndices(final int altAlleles, final int ploidy) {
+        if ( altAlleles <= 0 )
+            throw new IllegalArgumentException("Must have at least one alternate allele, not " + altAlleles );
+
+        if ( ploidy <= 0 )
+            throw new IllegalArgumentException("Ploidy must be at least 1, not " + ploidy);
+
+        // create the allele indices for each PL index for a ploidy
+        anyploidPloidyToPLIndexToAlleleIndices.put(ploidy, calculateAnyploidPLcache(altAlleles, ploidy));
     }
 
     /**
@@ -509,7 +527,7 @@ public class GenotypeLikelihoods {
      * @param PLindex   the PL index
      * @param ploidy    number of chromosomes
      * @return the ploidy allele indices
-     * @throws IllegalStateException if @see #anyploidPloidyToPLIndexToAlleleIndices does not contain the requested ploidy or PL index
+     * @throws IllegalStateException if @see #anyploidPloidyToPLIndexAllelesList does not contain the requested ploidy or PL index
      */
     public static synchronized List<Integer> getAlleles(final int PLindex, final int ploidy) {
         if ( PLindex < 0) {
@@ -524,7 +542,7 @@ public class GenotypeLikelihoods {
             final GenotypeLikelihoodsAllelePair pair = getAllelePair(PLindex);
             return Arrays.asList(pair.alleleIndex1, pair.alleleIndex2);
         } else { // non-diploid
-            final PLIndexAllelesList plIndexAllelesList = anyploidPloidyToPLIndexToAlleleIndices.computeIfAbsent(ploidy, k -> new PLIndexAllelesList(ploidy));
+            final PLIndexAllelesList plIndexAllelesList = anyploidPloidyToPLIndexAllelesList.computeIfAbsent(ploidy, k -> new PLIndexAllelesList(ploidy));
             return plIndexAllelesList.getAlleles(PLindex);
         }
     }
@@ -543,7 +561,7 @@ public class GenotypeLikelihoods {
 
         /**
          * Calculate the alleles for the given PL index for a ploidy.
-         * Creates the ordering for all PL indecies less than or equal to PLIndex, and stores them for future use.
+         * Creates the ordering for all PL indices less than or equal to PLIndex, and stores them for future use.
          *
          * The implementation is described in The Variant Call Format Specification VCF 4.3, Section 1.6.2 Genotype fields
          * The likelihoods are ordered for ploidy P and N alternate alleles as follows:
@@ -554,11 +572,11 @@ public class GenotypeLikelihoods {
          *          a1,a2..aP
          *
          * However, instead of having a set number of alternate alleles, we allow the outer loop to continue indefinitely, and break out
-         * once the correct PLIndex has been reached.  The state of the looping is stored, so that calculating higher indecies can start
+         * once the correct PLIndex has been reached.  The state of the looping is stored, so that calculating higher indices can start
          * from where we left off, instead of going back the the beginning.
          *
-         * To do this, we do not keep track of the indicies of each of the P loops explicitly.  In the loop pseudocode, we note that writing a new allele list
-         * corresponds to incrementing one loop, leaving the indicies in the loops above it unchanged, and resetting the indicies in the loops below it to zero.
+         * To do this, we do not keep track of the indices of each of the P loops explicitly.  In the loop pseudocode, we note that writing a new allele list
+         * corresponds to incrementing one loop, leaving the indices in the loops above it unchanged, and resetting the indices in the loops below it to zero.
          * After incrementing the index of a particular loop, we next increment the index of the loop just below it, unless we have just incremented the lowest loop,
          * in which case we next incremented whichever is the lowest loop that can still be incremented.  Thus, we note that we can write the list of alleles for the
          * PLIndex pl_i based on the PLIndex pl_i - 1 if we know which single allele must be incremented. If we know we incremented allele a_i to
