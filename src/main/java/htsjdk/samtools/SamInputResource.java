@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -35,7 +36,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
@@ -135,7 +135,7 @@ public class SamInputResource {
      * This method will first attempt to treat the resource as an htsget resource, then fall back to
      * treating it as a file system path, then as a URL
      */
-    public static SamInputResource of(final URI uri) {
+    public static SamInputResource of(final IOPath uri) {
         return of(uri, null);
     }
 
@@ -148,22 +148,21 @@ public class SamInputResource {
      * treating it as a file system path, then as a URL
      */
     // TODO: this method can likely be replaced by one taking an HtsPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
-    public static SamInputResource of(final URI uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
+    public static SamInputResource of(final IOPath ioPath, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
         // See if this is an Htsget source first
-        if (uri.getScheme().equalsIgnoreCase(HtsgetBAMFileReader.HTSGET_SCHEME)) {
-            return new SamInputResource(new HtsgetInputResource(uri));
+        if (ioPath.getScheme().equalsIgnoreCase(HtsgetBAMFileReader.HTSGET_SCHEME)) {
+            return new SamInputResource(new HtsgetInputResource(ioPath));
         }
         // Check if this URI represents a path we can open
         try {
-            final Path path = IOUtil.getPath(uri.toString());
+            final Path path = IOUtil.getPath(ioPath.toString());
             return wrapper == null
                 ? of(path)
                 : of(path, wrapper);
         } catch (final ProviderNotFoundException | IOException e) {
             // If this URI cannot be opened as a path, try treating it as a URL
             try {
-                final URL url = uri.toURL();
-                return new SamInputResource(new UrlInputResource(url));
+                return new SamInputResource(new UrlInputResource(ioPath.getURI().toURL()));
             } catch (final MalformedURLException malformedURLException) {
                 throw new RuntimeIOException("URI could not be interpreted as any known input resource type", malformedURLException);
             }
@@ -278,7 +277,7 @@ abstract class InputResource {
                 childToString = asSRAAccession().toString();
                 break;
             case HTSGET:
-                childToString = ((HtsgetInputResource) this).uri.toString();
+                childToString = this.toString();
                 break;
             default:
                 throw new IllegalStateException();
@@ -388,7 +387,7 @@ class PathInputResource extends InputResource {
     public File asFile() {
         try {
             return asPath().toFile();
-        } catch (UnsupportedOperationException e) {
+        } catch (final UnsupportedOperationException e) {
             return null;
         }
     }
@@ -402,7 +401,7 @@ class PathInputResource extends InputResource {
     public URL asUrl() {
         try {
             return asPath().toUri().toURL();
-        } catch (MalformedURLException e) {
+        } catch (final MalformedURLException e) {
             return null;
         }
     }
@@ -598,11 +597,15 @@ class SRAInputResource extends InputResource {
 // TODO: replace this with an InputResource type taking HtsPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
 class HtsgetInputResource extends InputResource {
 
-    final URI uri;
+    private final IOPath path;
 
-    public HtsgetInputResource(final URI uri) {
+    public HtsgetInputResource(final IOPath path) {
         super(Type.HTSGET);
-        this.uri = uri;
+        this.path = path;
+    }
+
+    IOPath getPath(){
+        return path;
     }
 
     @Override
@@ -618,7 +621,7 @@ class HtsgetInputResource extends InputResource {
     @Override
     URL asUrl() {
         try {
-            return this.uri.toURL();
+            return this.path.getURI().toURL();
         } catch (final MalformedURLException e) {
             return null;
         }

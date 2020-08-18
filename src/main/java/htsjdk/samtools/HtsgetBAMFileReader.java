@@ -64,30 +64,27 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
                                                     final SAMRecordFactory samRecordFactory,
                                                     final boolean useAsynchronousIO,
                                                     final InflaterFactory inflaterFactory) throws IOException, URISyntaxException {
-        HtsgetBAMFileReader reader;
+         HtsgetBAMFileReader reader;
         try {
-            final URI htsgetUri = HtsgetBAMFileReader.convertHtsgetUriToHttps(source.uri);
-            reader = new HtsgetBAMFileReader(
-                htsgetUri,
-                eagerDecode,
-                validationStringency,
-                samRecordFactory,
-                useAsynchronousIO,
-                inflaterFactory
-            );
+            final URI htsgetUri = replaceHtsgetScheme(source.getPath().getURI(), "https");
+            reader = getHtsgetBAMFileReaderWithResolvedAddress(eagerDecode, validationStringency, samRecordFactory, useAsynchronousIO, inflaterFactory, htsgetUri);
         } catch (final RuntimeIOException e) {
             // Fall back to http if htsget server does not support https
-            final URI htsgetUri = HtsgetBAMFileReader.convertHtsgetUriToHttp(source.uri);
-            reader = new HtsgetBAMFileReader(
+            final URI htsgetUri = HtsgetBAMFileReader.replaceHtsgetScheme(source.getPath().getURI(), "http");
+            reader = getHtsgetBAMFileReaderWithResolvedAddress(eagerDecode, validationStringency, samRecordFactory, useAsynchronousIO, inflaterFactory, htsgetUri);
+        }
+        return reader;
+    }
+
+    private static HtsgetBAMFileReader getHtsgetBAMFileReaderWithResolvedAddress(final boolean eagerDecode, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory, final boolean useAsynchronousIO, final InflaterFactory inflaterFactory, final URI htsgetUri) throws IOException {
+        return new HtsgetBAMFileReader(
                 htsgetUri,
                 eagerDecode,
                 validationStringency,
                 samRecordFactory,
                 useAsynchronousIO,
                 inflaterFactory
-            );
-        }
-        return reader;
+        );
     }
 
     /**
@@ -401,12 +398,15 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
         return compressedInputStream;
     }
 
-    public static URI convertHtsgetUriToHttps(final URI uri) throws URISyntaxException {
-        return new URI("https", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
-    }
-
-    public static URI convertHtsgetUriToHttp(final URI uri) throws URISyntaxException {
-        return new URI("http", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
+    /**
+     * Replace the sh
+     * @param uri
+     * @param newScheme
+     * @return
+     * @throws URISyntaxException
+     */
+    public static URI replaceHtsgetScheme(final URI uri, final String newScheme) throws URISyntaxException {
+        return new URI(newScheme, uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
     }
 
     private class HtsgetBAMFileIterator implements CloseableIterator<SAMRecord> {
