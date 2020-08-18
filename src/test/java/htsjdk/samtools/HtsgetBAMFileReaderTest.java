@@ -2,7 +2,9 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.RuntimeIOException;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -11,6 +13,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     public static final String HTSGET_ENDPOINT = "http://127.0.0.1:3000/reads/";
@@ -32,17 +35,20 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
 
     @BeforeTest
     public void init() throws IOException {
-        bamFileReaderHtsgetGET = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
-        bamFileReaderHtsgetGET.setUsingPOST(false);
+        try {
+            bamFileReaderHtsgetGET = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
+            bamFileReaderHtsgetGET.setUsingPOST(false);
 
-        bamFileReaderHtsgetAsync = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), true);
-        bamFileReaderHtsgetAsync.setUsingPOST(false);
+            bamFileReaderHtsgetAsync = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), true);
+            bamFileReaderHtsgetAsync.setUsingPOST(false);
 
-        bamFileReaderHtsgetPOST = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
-
-        Assert.assertTrue(bamFileReaderHtsgetPOST.isUsingPOST());
-        Assert.assertFalse(bamFileReaderHtsgetGET.isUsingPOST());
-        Assert.assertFalse(bamFileReaderHtsgetAsync.isUsingPOST());
+            bamFileReaderHtsgetPOST = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
+            Assert.assertTrue(bamFileReaderHtsgetPOST.isUsingPOST());
+            Assert.assertFalse(bamFileReaderHtsgetGET.isUsingPOST());
+            Assert.assertFalse(bamFileReaderHtsgetAsync.isUsingPOST());
+        } catch (final Exception e) {
+            throw new SkipException("Skipping HtsgetBAMFileReaderTests beceause we couldn't configure and connect to the local server", e);
+        }
     }
 
     @AfterTest
@@ -283,5 +289,11 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
         try (final CloseableIterator<SAMRecord> htsgetIterator = bamFileReaderHtsgetGET.getIterator()) {
             htsgetIterator.forEachRemaining(record -> Assert.assertNull(record.getFileSource()));
         }
+    }
+
+    @Test
+    public void testReplaceSchemeWithEncodedCharacters() throws URISyntaxException {
+        final URI actual = HtsgetBAMFileReader.replaceScheme(new URI("htsget://some.server.org/with%20spaces"), "http");
+        Assert.assertEquals(actual, new URI("http://some.server.org/with%20spaces"));
     }
 }

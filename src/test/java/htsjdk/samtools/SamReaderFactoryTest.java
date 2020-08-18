@@ -4,6 +4,8 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
@@ -286,8 +288,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                     throw new RuntimeIOException(e);
                 }
             case HTSGET:
-                return new HtsgetInputResource(URI.create(
-                    HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + f.getName()));
+                return new HtsgetInputResource(new HtsPath(HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + f.getName()), true);
             default:
                 throw new IllegalStateException();
         }
@@ -334,26 +335,26 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "URIFallbackProvider")
-    public Object[][] URIFallbackProvider() throws MalformedURLException {
+    public Object[][] URIFallbackProvider() {
         return new Object[][]{
             {
-                URI.create("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"),
+                new HtsPath("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"),
                 InputResource.Type.HTSGET,
             },
             {
-                localBam.toURI(),
+                new HtsPath(localBam.getAbsolutePath()),
                 InputResource.Type.PATH,
             },
             {
-                URI.create("http://test.url"),
+                new HtsPath("http://test.url"),
                 InputResource.Type.URL,
             },
         };
     }
 
     @Test(dataProvider = "URIFallbackProvider")
-    public void testOpenURIFallback(final URI uri, final InputResource.Type type) {
-        final SamInputResource resource = SamInputResource.of(uri);
+    public void testOpenURIFallback(final IOPath uri, final InputResource.Type type) {
+        final SamInputResource resource = SamInputResource.of(uri, null, true);
         Assert.assertEquals(resource.data().type(), type);
     }
 

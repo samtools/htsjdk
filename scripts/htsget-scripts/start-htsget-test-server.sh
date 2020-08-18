@@ -1,18 +1,31 @@
 #!/bin/sh
 
 set -e
+set -v
 
 DOCKER_NAME='ga4gh/htsget-refserver'
 SERVER_VERSION='1.4.1'
 DOCKER_COORDINATE=${DOCKER_NAME}:${SERVER_VERSION}
 
-WORKING_DIR=/home/travis/build/samtools/htsjdk
+CONTAINER_NAME="htsget-test-server"
+
 docker pull ${DOCKER_COORDINATE}
-docker container run -d --name htsget-server -p 3000:3000 --env HTSGET_PORT=3000 --env HTSGET_HOST=http://127.0.0.1:3000 \
-      -v $WORKING_DIR/src/test/resources/htsjdk/samtools/BAMFileIndexTest/:/data \
-      -v $WORKING_DIR/scripts/htsget-scripts:/data/scripts \
+
+#Remove the container if it already exists
+docker rm -f ${CONTAINER_NAME} || true
+
+#Run the container set port mapping and mount in the data
+docker container run -d --name ${CONTAINER_NAME} -p 3000:3000 --env HTSGET_PORT=3000 --env HTSGET_HOST=http://127.0.0.1:3000 \
+      -v ${PWD}/src/test/resources/htsjdk/samtools/BAMFileIndexTest/:/data \
+      -v ${PWD}/scripts/htsget-scripts:/data/scripts \
       ${DOCKER_COORDINATE} \
       ./htsget-refserver -config /data/scripts/htsget_config.json
-docker container ls -a
 
+#give it a second(s) to start
+sleep 2
+
+#List running containers
+docker ps
+
+#Check that we can connect
 curl http://localhost:3000
