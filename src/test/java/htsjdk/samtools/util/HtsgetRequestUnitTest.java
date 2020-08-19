@@ -1,30 +1,28 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.util.htsget.HtsgetClass;
-import htsjdk.samtools.util.htsget.HtsgetFormat;
-import htsjdk.samtools.util.htsget.HtsgetRequest;
-import htsjdk.samtools.util.htsget.HtsgetRequestField;
+import htsjdk.samtools.util.htsget.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.Arrays;
 
 public class HtsgetRequestUnitTest extends HtsjdkTest {
 
     private static final String endpoint = "http://localhost:3000/reads/";
+    private static final URI testRead = URI.create(endpoint + "1");
 
     @Test
-    public void testOnlyId() throws URISyntaxException {
-        final HtsgetRequest req = new HtsgetRequest(new URI(endpoint + 1));
-        Assert.assertEquals(req.toURI(), new URI("http://localhost:3000/reads/1"));
+    public void testOnlyId() {
+        final HtsgetRequest req = new HtsgetRequest(testRead);
+        Assert.assertEquals(req.toURI(), URI.create("http://localhost:3000/reads/1"));
     }
 
     @Test
-    public void testBasicFields() throws URISyntaxException {
-        final HtsgetRequest req = new HtsgetRequest(new URI(endpoint + 1))
+    public void testBasicFields() {
+        final HtsgetRequest req = new HtsgetRequest(testRead)
             .withFormat(HtsgetFormat.BAM)
             .withDataClass(HtsgetClass.body)
             .withInterval(new Interval("chr1", 1, 16));
@@ -37,8 +35,8 @@ public class HtsgetRequestUnitTest extends HtsjdkTest {
     }
 
     @Test
-    public void testCompositeFields() throws URISyntaxException {
-        final HtsgetRequest req = new HtsgetRequest(new URI(endpoint + 1))
+    public void testCompositeFields() {
+        final HtsgetRequest req = new HtsgetRequest(testRead)
             .withField(HtsgetRequestField.QNAME)
             .withField(HtsgetRequestField.FLAG)
             .withTag("tag1")
@@ -52,35 +50,35 @@ public class HtsgetRequestUnitTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "invalidParams")
-    public Object[][] invalidParams() throws URISyntaxException {
+    public Object[][] invalidParams() {
         return new Object[][]{
             // class=header while interval also specified
-            {new HtsgetRequest(new URI(endpoint + 1))
+            {new HtsgetRequest(testRead)
                 .withDataClass(HtsgetClass.header)
                 .withInterval(new Interval("chr1", 1, 16))},
             // class=header while field also specified
-            {new HtsgetRequest(new URI(endpoint + 1))
+            {new HtsgetRequest(testRead)
                 .withDataClass(HtsgetClass.header)
                 .withField(HtsgetRequestField.QNAME)},
             // class=header while tag also specified
-            {new HtsgetRequest(new URI(endpoint + 1))
+            {new HtsgetRequest(testRead)
                 .withDataClass(HtsgetClass.header)
                 .withTag("NH")},
             // class=header while notag also specified
-            {new HtsgetRequest(new URI(endpoint + 1))
+            {new HtsgetRequest(testRead)
                 .withDataClass(HtsgetClass.header)
                 .withNotag("NH")},
             // tags and notags overlap
-            {new HtsgetRequest(new URI(endpoint + 1))
+            {new HtsgetRequest(testRead)
                 .withDataClass(HtsgetClass.body)
                 .withTag("NH")
                 .withNotag("NH")},
             // .bam file requested while format is variant
-            {new HtsgetRequest(new URI(endpoint + "example.bam"))
+            {new HtsgetRequest(URI.create(endpoint + "example.bam"))
                 .withFormat(HtsgetFormat.VCF)
             },
             // .vcf file requested while format is read
-            {new HtsgetRequest(new URI(endpoint + "example.vcf"))
+            {new HtsgetRequest(URI.create(endpoint + "example.vcf"))
                 .withFormat(HtsgetFormat.BAM)
             }
         };
@@ -89,6 +87,61 @@ public class HtsgetRequestUnitTest extends HtsjdkTest {
     // Expect a validation failure for invalid combinations of query parameters
     @Test(dataProvider = "invalidParams", expectedExceptions = IllegalArgumentException.class)
     public void testValidationFailure(final HtsgetRequest query) {
-        query.toURI();
+        query.validateRequest();
+    }
+
+    @Test(dataProvider = "invalidParams", expectedExceptions = IllegalArgumentException.class)
+    public void testPOSTValidationFailure(final HtsgetRequest req) {
+        new HtsgetPOSTRequest(req).validateRequest();
+    }
+
+    @Test
+    public void testPOSTjsonBody() {
+        final HtsgetPOSTRequest req = new HtsgetPOSTRequest(testRead);
+        req.setFormat(HtsgetFormat.BAM);
+        req.setDataClass(HtsgetClass.header);
+
+        req.addField(HtsgetRequestField.QNAME);
+        req.addField(HtsgetRequestField.CIGAR);
+
+        req.addTag("tag1");
+        req.addTag("tag3");
+        req.addNotag("tag2");
+
+        req.addInterval(new Interval("chr1", 1, 16));
+        req.addInterval(new Interval("chr1", 17, 32));
+        req.addIntervals(Arrays.asList(
+            new Interval("chrM", 1, 16),
+            new Interval("chrM", 17, 32))
+        );
+
+        final mjson.Json postBody = req.queryBody();
+
+        Assert.assertEquals(postBody.at("format").asString(), "BAM");
+        Assert.assertEquals(postBody.at("class").asString(), "header");
+
+        Assert.assertEqualsNoOrder(
+            postBody.at("fields").asList().stream().map(Object::toString).toArray(String[]::new),
+            new String[]{"QNAME", "CIGAR"}
+        );
+        Assert.assertEqualsNoOrder(
+            postBody.at("tags").asList().stream().map(Object::toString).toArray(String[]::new),
+            new String[]{"tag1", "tag3"}
+        );
+        Assert.assertEqualsNoOrder(
+            postBody.at("notags").asList().stream().map(Object::toString).toArray(String[]::new),
+            new String[]{"tag2"}
+        );
+
+        final mjson.Json[] expectedRegions = new mjson.Json[]{
+            mjson.Json.object("referenceName", "chr1", "start", 0, "end", 16),
+            mjson.Json.object("referenceName", "chr1", "start", 16, "end", 32),
+            mjson.Json.object("referenceName", "chrM", "start", 0, "end", 16),
+            mjson.Json.object("referenceName", "chrM", "start", 16, "end", 32),
+        };
+        Assert.assertEqualsNoOrder(
+            postBody.at("regions").asJsonList().toArray(new mjson.Json[0]),
+            expectedRegions
+        );
     }
 }
