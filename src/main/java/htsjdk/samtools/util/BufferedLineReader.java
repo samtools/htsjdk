@@ -41,6 +41,25 @@ import java.nio.charset.Charset;
  */
 public class BufferedLineReader extends LineNumberReader implements LineReader {
 
+    private static class StringBackedInputStream extends InputStream {
+        private int idx = 0;
+        private final String str;
+        private final int len;
+
+        StringBackedInputStream(String str) {
+            this.str = str;
+            this.len = str.length();
+        }
+
+        @Override
+        public int read() throws IOException {
+            if(idx >= len) {
+                return -1;
+            }
+            return (byte) str.charAt(idx++);
+        }
+    }
+
     public BufferedLineReader(final InputStream is) {
         this(is, Defaults.NON_ZERO_BUFFER_SIZE);
     }
@@ -54,7 +73,14 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
      * is necessary because the String is in unicode.
      */
     public static BufferedLineReader fromString(final String s) {
-        return new BufferedLineReader(new ByteArrayInputStream(s.getBytes()));
+        final InputStream is;
+        if (s.length() >= Integer.MAX_VALUE - 8) {
+           is = new StringBackedInputStream(s);
+        }
+        else {
+            is = new ByteArrayInputStream(s.getBytes());
+        }
+        return new BufferedLineReader(is);
     }
 
     /**
