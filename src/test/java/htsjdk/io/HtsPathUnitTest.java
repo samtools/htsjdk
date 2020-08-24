@@ -23,14 +23,14 @@ import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
 import java.util.Optional;
 
-public class HtsjdkPathUnitTest extends HtsjdkTest {
+public class HtsPathUnitTest extends HtsjdkTest {
 
     final static String FS_SEPARATOR = FileSystems.getDefault().getSeparator();
 
     @DataProvider
-    public Object[][] validHtsjdkPath() {
+    public Object[][] validHtsPath() {
         return new Object[][] {
-                // HtsjdkPath strings that are syntactically valid as either a file name or a URI and can be
+                // HtsPath strings that are syntactically valid as either a file name or a URI and can be
                 // represented internally as a URI, but which may fail hasFileSystemProvider or isPath
 
                 // input String, expected resulting URI String, expected hasFileSystemProvider, expected isPath
@@ -110,7 +110,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
                 //*****************************************************************************************
                 // Reference that contain characters that require URI-encoding. If the input string is presented
-                // with no scheme, it will be be automatically encoded by HtsjdkPath, otherwise it
+                // with no scheme, it will be be automatically encoded by HtsPath, otherwise it
                 // must already be URI-encoded.
                 //*****************************************************************************************
 
@@ -125,22 +125,22 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "validHtsjdkPath")
-    public void testValidHtsjdkPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath IOPath = new HtsjdkPath(referenceString);
+    @Test(dataProvider = "validHtsPath")
+    public void testValidHtsPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
+        final IOPath IOPath = new HtsPath(referenceString);
         Assert.assertNotNull(IOPath);
         Assert.assertEquals(IOPath.getURI().toString(), expectedURIString);
     }
 
-    @Test(dataProvider = "validHtsjdkPath")
+    @Test(dataProvider = "validHtsPath")
     public void testIsNIO(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath IOPath = new HtsjdkPath(referenceString);
+        final IOPath IOPath = new HtsPath(referenceString);
         Assert.assertEquals(IOPath.hasFileSystemProvider(), hasFileSystemProvider);
     }
 
-    @Test(dataProvider = "validHtsjdkPath")
+    @Test(dataProvider = "validHtsPath")
     public void testIsPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath IOPath = new HtsjdkPath(referenceString);
+        final IOPath IOPath = new HtsPath(referenceString);
         if (isPath) {
             Assert.assertEquals(IOPath.isPath(), isPath, IOPath.getToPathFailureReason());
         } else {
@@ -148,9 +148,9 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
         }
     }
 
-    @Test(dataProvider = "validHtsjdkPath")
+    @Test(dataProvider = "validHtsPath")
     public void testToPath(final String referenceString, final String expectedURIString, final boolean hasFileSystemProvider, final boolean isPath) {
-        final IOPath IOPath = new HtsjdkPath(referenceString);
+        final IOPath IOPath = new HtsPath(referenceString);
         if (isPath) {
             final Path path = IOPath.toPath();
             Assert.assertEquals(path != null, isPath, IOPath.getToPathFailureReason());
@@ -160,17 +160,17 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] invalidHtsjdkPath() {
+    public Object[][] invalidHtsPath() {
         return new Object[][] {
                 // the nul character is rejected on all of the supported platforms in both local
-                // filenames and URIs, so use it to test HtsjdkPath constructor failure on all platforms
+                // filenames and URIs, so use it to test HtsPath constructor failure on all platforms
                 {"\0"},
         };
     }
 
-    @Test(dataProvider = "invalidHtsjdkPath", expectedExceptions = {IllegalArgumentException.class})
-    public void testInvalidHtsjdkPath(final String referenceString) {
-        new HtsjdkPath(referenceString);
+    @Test(dataProvider = "invalidHtsPath", expectedExceptions = {IllegalArgumentException.class})
+    public void testInvalidHtsPath(final String referenceString) {
+        new HtsPath(referenceString);
     }
 
     @DataProvider
@@ -198,21 +198,21 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "invalidPath")
     public void testIsPathInvalid(final String invalidPathString) {
-        final IOPath htsURI = new HtsjdkPath(invalidPathString);
-        Assert.assertFalse(htsURI.isPath());
+        final IOPath ioPath = new HtsPath(invalidPathString);
+        Assert.assertFalse(ioPath.isPath());
     }
 
     @Test(dataProvider = "invalidPath", expectedExceptions = {
             IllegalArgumentException.class, FileSystemNotFoundException.class, ProviderNotFoundException.class})
     public void testToPathInvalid(final String invalidPathString) {
-        final IOPath htsURI = new HtsjdkPath(invalidPathString);
-        htsURI.toPath();
+        final IOPath ioPath = new HtsPath(invalidPathString);
+        ioPath.toPath();
     }
 
     @Test
     public void testInstalledNonDefaultFileSystem() throws IOException {
-        // create a jimfs file system and round trip through HtsjdkPath/stream
-        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+        // create a jimfs file system and round trip through HtsPath/stream
+        try (final FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path outputPath = jimfs.getPath("alternateFileSystemTest.txt");
             doStreamRoundTrip(outputPath.toUri().toString());
         }
@@ -235,7 +235,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
                 // reference to a local file with an embedded fragment delimiter ("#") in the name; if the file
                 // scheme is included, the rest of the path must already be encoded; if no file scheme is
-                // included, the path is encoded by the HtsjdkPath class
+                // included, the path is encoded by the HtsPath class
                 {joinWithFSSeparator("src", "test", "resources", "htsjdk", "io", "testDirWith#InName", "testTextFile.txt"), "Test file."},
                 {"file://" + getCWDAsURIPathString() + "src/test/resources/htsjdk/io/testTextFile.txt", "Test file."},
         };
@@ -243,7 +243,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "inputStreamPaths")
     public void testGetInputStream(final String referenceString, final String expectedFileContents) throws IOException {
-        final IOPath ioPath = new HtsjdkPath(referenceString);
+        final IOPath ioPath = new HtsPath(referenceString);
 
         try (final InputStream is = ioPath.getInputStream();
              final DataInputStream dis = new DataInputStream(is)) {
@@ -270,7 +270,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test
     public void testStdIn() throws IOException {
-        final IOPath ioPath = new HtsjdkPath(
+        final IOPath ioPath = new HtsPath(
                 SystemUtils.IS_OS_WINDOWS ?
                         "-" :
                         "/dev/stdin");
@@ -289,7 +289,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
             // stdout is not addressable as a device in the file system namespace on Windows, so skip
             throw new SkipException(("No stdout test on Windows"));
         } else {
-            final IOPath ioPath = new HtsjdkPath("/dev/stdout");
+            final IOPath ioPath = new HtsPath("/dev/stdout");
             try (final OutputStream os = ioPath.getOutputStream();
                  final DataOutputStream dos = new DataOutputStream(os)) {
                 dos.write("some stuff".getBytes());
@@ -320,7 +320,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "getExtensionTestCases")
     public void testGetExtension(final String pathString, final String expectedExtension) {
-        final IOPath ioPath = new HtsjdkPath(pathString);
+        final IOPath ioPath = new HtsPath(pathString);
         final Optional<String> actualExtension = ioPath.getExtension();
 
         Assert.assertEquals(actualExtension.get(), expectedExtension);
@@ -348,7 +348,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "negativeGetExtensionTestCases")
     public void testNegativeGetExtension(final String pathString) {
-        Assert.assertFalse(new HtsjdkPath(pathString).getExtension().isPresent());
+        Assert.assertFalse(new HtsPath(pathString).getExtension().isPresent());
     }
 
     @DataProvider(name = "hasExtensionTestCases")
@@ -375,7 +375,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "hasExtensionTestCases")
     public void testHasExtension(final String pathString, final String extension) {
-        Assert.assertTrue(new HtsjdkPath(pathString).hasExtension(extension));
+        Assert.assertTrue(new HtsPath(pathString).hasExtension(extension));
     }
 
     @DataProvider(name = "negativeHasExtensionTestCases")
@@ -398,7 +398,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "negativeHasExtensionTestCases")
     public void testNegativeHasExtension(final String pathString, final String extension) {
-        Assert.assertFalse(new HtsjdkPath(pathString).hasExtension(extension));
+        Assert.assertFalse(new HtsPath(pathString).hasExtension(extension));
     }
 
     @DataProvider(name = "illegalHasExtensionTestCases")
@@ -413,7 +413,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "illegalHasExtensionTestCases", expectedExceptions = IllegalArgumentException.class)
     public void testIllegalHasExtension(final String pathString, final String extension) {
-        new HtsjdkPath(pathString).hasExtension(extension);
+        new HtsPath(pathString).hasExtension(extension);
     }
 
     @DataProvider(name = "getBaseNameTestCases")
@@ -446,7 +446,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "getBaseNameTestCases")
     public void testGetBaseName(final String pathString, final String baseName) {
-        final Optional<String> actualBaseName = new HtsjdkPath(pathString).getBaseName();
+        final Optional<String> actualBaseName = new HtsPath(pathString).getBaseName();
         Assert.assertTrue(actualBaseName.isPresent());
         Assert.assertEquals(actualBaseName.get(), baseName);
     }
@@ -470,7 +470,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "negativeGetBaseNameTestCases")
     public void testNegativeGetBaseName(final String pathString) {
-        final Optional<String> actualBaseName = new HtsjdkPath(pathString).getBaseName();
+        final Optional<String> actualBaseName = new HtsPath(pathString).getBaseName();
         Assert.assertFalse(actualBaseName.isPresent());
     }
 
@@ -490,7 +490,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "isFastaTestCases")
     public void testIsFasta(final String referencePathString, final boolean expectedIsFasta) {
-        Assert.assertEquals(new HtsjdkPath(referencePathString).isFasta(), expectedIsFasta);
+        Assert.assertEquals(new HtsPath(referencePathString).isFasta(), expectedIsFasta);
     }
 
     @DataProvider(name="isSamTestCases")
@@ -508,7 +508,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "isSamTestCases")
     public void testIsSam(final String pathString, final boolean expectedMatch) {
-        Assert.assertEquals(new HtsjdkPath(pathString).isSam(), expectedMatch);
+        Assert.assertEquals(new HtsPath(pathString).isSam(), expectedMatch);
     }
 
     @DataProvider(name="isBamTestCases")
@@ -526,7 +526,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "isBamTestCases")
     public void testIsBam(final String pathString, final boolean expectedMatch) {
-        Assert.assertEquals(new HtsjdkPath(pathString).isBam(), expectedMatch);
+        Assert.assertEquals(new HtsPath(pathString).isBam(), expectedMatch);
     }
 
     @DataProvider(name="isCramTestCases")
@@ -544,7 +544,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "isCramTestCases")
     public void testIsCram(final String pathString, final boolean expectedMatch) {
-        Assert.assertEquals(new HtsjdkPath(pathString).isCram(), expectedMatch);
+        Assert.assertEquals(new HtsPath(pathString).isCram(), expectedMatch);
     }
 
     /**
@@ -561,7 +561,7 @@ public class HtsjdkPathUnitTest extends HtsjdkTest {
     private void doStreamRoundTrip(final String referenceString) throws IOException {
         final String expectedFileContents = "Test contents";
 
-        final IOPath IOPath = new HtsjdkPath(referenceString);
+        final IOPath IOPath = new HtsPath(referenceString);
         try (final OutputStream os = IOPath.getOutputStream();
              final DataOutputStream dos = new DataOutputStream(os)) {
             dos.write(expectedFileContents.getBytes());
