@@ -4,6 +4,8 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.io.HtsjdkPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
@@ -286,8 +288,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                     throw new RuntimeIOException(e);
                 }
             case HTSGET:
-                return new HtsgetInputResource(URI.create(
-                    HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + f.getName()));
+                return new HtsgetInputResource(new HtsjdkPath(HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + f.getName()));
             default:
                 throw new IllegalStateException();
         }
@@ -337,7 +338,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public Object[][] URIFallbackProvider() throws MalformedURLException {
         return new Object[][]{
             {
-                URI.create("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"),
+                new HtsjdkPath("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"),
                 InputResource.Type.HTSGET,
             },
             {
@@ -345,14 +346,14 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                 InputResource.Type.PATH,
             },
             {
-                URI.create("http://test.url"),
+                new HtsjdkPath("http://test.url"),
                 InputResource.Type.URL,
             },
         };
     }
 
     @Test(dataProvider = "URIFallbackProvider")
-    public void testOpenURIFallback(final URI uri, final InputResource.Type type) {
+    public void testOpenURIFallback(final IOPath uri, final InputResource.Type type) {
         final SamInputResource resource = SamInputResource.of(uri);
         Assert.assertEquals(resource.data().type(), type);
     }
