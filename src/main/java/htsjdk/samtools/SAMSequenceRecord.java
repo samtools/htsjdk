@@ -177,7 +177,6 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      * Adds an alternative sequence name if it is not the same as the sequence name or it is not present already.
      */
     public void addAlternativeSequenceName(final String name) {
-        validateAltRegExp(name);
         final Set<String> altSequences = new HashSet<>(getAlternativeSequenceNames());
 
         if (!mSequenceName.equals(name)) {
@@ -193,8 +192,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         if (alternativeSequences == null) {
             setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, null);
         } else {
-            // validate all the names and encode afterwards
-            alternativeSequences.forEach(SAMSequenceRecord::validateAltRegExp);
+            // encode all alt sequence names
             encodeAltSequences(alternativeSequences);
         }
     }
