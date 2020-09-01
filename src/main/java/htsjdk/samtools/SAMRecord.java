@@ -1188,7 +1188,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws RuntimeException If the value is not an integer type, or will not fit in a signed Integer.
      */
     public Integer getIntegerAttribute(final SAMTag tag) {
-        return getIntegerAttribute(tag);
+        return getIntegerAttribute(tag.name());
     }
 
      /**
