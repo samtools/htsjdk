@@ -1144,14 +1144,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return {@code true} if the SAM record has the requested attribute set, {@code false} otherwise.
      */
     public boolean hasAttribute(final String tag) {
-        return getAttribute(tag)!=null;
+        return getAttribute(tag) != null;
     }
 
     /**
      * @return {@code true} if the SAM record has the requested attribute set, {@code false} otherwise.
      */
     public boolean hasAttribute(final SAMTag tag) {
-        return getAttribute(tag.name())!=null;
+        return getAttribute(tag) != null;
     }
 
 
@@ -1174,7 +1174,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * place, because some SAMRecord implementations keep track of when attributes have been changed.  If you
      * want to change an attribute value, call setAttribute() to replace the value.
      *
-     * @param tag Two-character tag name.
+     * @param tag the SAM tag.
      * @return Appropriately typed tag value, or null if the requested tag is not present.
      */
     public Object getAttribute(final SAMTag tag) {
@@ -1188,7 +1188,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws RuntimeException If the value is not an integer type, or will not fit in a signed Integer.
      */
     public Integer getIntegerAttribute(final SAMTag tag) {
-        return getIntegerAttribute(tag.name());
+        return getIntegerAttribute(tag);
     }
 
      /**
@@ -1331,6 +1331,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     public String getStringAttribute(final SAMTag tag) {
         return getStringAttribute(tag.name());
     }
+
     public String getStringAttribute(final String tag) {
         final Object val = getAttribute(tag);
         if (val == null) return null;

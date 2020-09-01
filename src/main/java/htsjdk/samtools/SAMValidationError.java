@@ -31,8 +31,7 @@ import java.io.Serializable;
  *
  * @author Doug Voet
  */
-public class
-SAMValidationError implements Serializable {
+public class SAMValidationError implements Serializable {
     public static final long serialVersionUID = 1L;
 
     public enum Severity {
