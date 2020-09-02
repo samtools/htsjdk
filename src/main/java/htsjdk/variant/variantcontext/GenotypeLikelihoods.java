@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
-public class GenotypeLikelihoods {
+public final class GenotypeLikelihoods {
     // caches likelihoods
     private final static GenotypeNumLikelihoodsCache numLikelihoodCache = new GenotypeNumLikelihoodsCache();
 
@@ -72,11 +72,6 @@ public class GenotypeLikelihoods {
      */
     private final static Map<Integer, PLIndexAllelesList> anyploidPloidyToPLIndexAllelesList = new HashMap<>();
 
-    /**
-     * This field is no longer used in this class.  However, it remains to avoid breaking API since it is protected.
-     */
-    @Deprecated
-    protected final static Map<Integer, List<List<Integer>>> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<Integer, List<List<Integer>>>();
 
     public final static GenotypeLikelihoods fromPLField(String PLs) {
         return new GenotypeLikelihoods(PLs);
@@ -370,60 +365,6 @@ public class GenotypeLikelihoods {
         return cache;
     }
 
-
-    /**
-     * Calculate the alleles for each PL index for a ploidy.
-     * Creates the ordering for all possible combinations of ploidy alleles. Computed recursively and the
-     * result is stored in a cache.
-     *
-     * The implementation is described in The Variant Call Format Specification VCF 4.3, Section 1.6.2 Genotype fields
-     * The likelihoods are ordered for ploidy P and N alternate alleles as follows:
-     * for aP = 0...N
-     *  for aP-1 = 0...aP
-     *      ...
-     *      for a1 = 0...a2
-     *          a1,a2..aP
-     *
-     * This is implemented recursively:
-     *
-     * PLIndexToAlleleIndices(N, P, suffix=empty):
-     *      for a in 0...N
-     *          if (P == 1) accum += (a + suffix)  // have all the alleles for a PL index
-     *          if (P > 1) PLIndexToAlleleIndices(a, P-1, a + suffix )
-     *
-     * @param altAlleles     Number of alternate alleles
-     * @param ploidy         Number of chromosomes in set
-     * @param anyploidPLIndexToAlleleIndices PL index to the alleles of general ploidy over all possible alternate alleles
-     * @param genotype       An entry of ploidy alleles
-     */
-    private static void calculatePLIndexToAlleleIndices(final int altAlleles, final int ploidy, final List<List<Integer>> anyploidPLIndexToAlleleIndices,
-                                                   final List<Integer> genotype) {
-        for (int a=0; a <= altAlleles; a++) {
-            final List<Integer> gt = new ArrayList<Integer>(Arrays.asList(a));
-            gt.addAll(genotype);
-            if ( ploidy == 1 ) {// have all ploidy alleles for a PL index
-                anyploidPLIndexToAlleleIndices.add(gt);
-            } else if ( ploidy > 1 ) {
-                calculatePLIndexToAlleleIndices(a, ploidy - 1, anyploidPLIndexToAlleleIndices, gt);
-            }
-        }
-    }
-
-    /**
-     * Calculate the cache of allele indices for each PL index for a ploidy.
-     * Calculation in @see #calculatePLIndexToAlleleIndices
-     *
-     * @param altAlleles Number of alternate alleles
-     * @param ploidy    Number of chromosomes in set
-     * @return PL index to the alleles of general ploidy over all possible alternate alleles
-     * @return The alleles for each PL index for a ploidy
-     */
-    protected static List<List<Integer>> calculateAnyploidPLcache(final int altAlleles, final int ploidy) {
-        List<List<Integer>> anyploidPLIndexToAlleleIndices = new ArrayList<List<Integer>>();
-        calculatePLIndexToAlleleIndices(altAlleles, ploidy, anyploidPLIndexToAlleleIndices, new ArrayList<Integer>());
-        return anyploidPLIndexToAlleleIndices;
-    }
-
     // -------------------------------------------------------------------------------------
     //
     // num likelihoods given number of alleles and ploidy
@@ -498,26 +439,12 @@ public class GenotypeLikelihoods {
     }
 
     /**
-     * Initialize cache of allele anyploid indices
-     * If initialized multiple times with the same ploidy, the alternate alleles from the last initialization will be used
-     *
-     * This method is no longer necessary for this class, and in general should be avoided.  However it remains to avoid
-     * breaking the API
-     *
-     * @param altAlleles number of alternate alleles
-     * @param ploidy    number of chromosomes
+     * This method is no longer necessary and is now a no-op
      * @throws IllegalArgumentException if altAlleles or ploidy &lt= 0
+     * @deprecated as of sept 2020, this method is no longer necessary
      */
     @Deprecated
     public static synchronized void initializeAnyploidPLIndexToAlleleIndices(final int altAlleles, final int ploidy) {
-        if ( altAlleles <= 0 )
-            throw new IllegalArgumentException("Must have at least one alternate allele, not " + altAlleles );
-
-        if ( ploidy <= 0 )
-            throw new IllegalArgumentException("Ploidy must be at least 1, not " + ploidy);
-
-        // create the allele indices for each PL index for a ploidy
-        anyploidPloidyToPLIndexToAlleleIndices.put(ploidy, calculateAnyploidPLcache(altAlleles, ploidy));
     }
 
     /**
@@ -534,7 +461,7 @@ public class GenotypeLikelihoods {
         }
 
         if (ploidy <= 0) {
-            throw new IllegalStateException("The ploidy " + ploidy + " must be greater than zero");
+            throw new IllegalStateException("The ploidy must be greater than zero");
         }
 
         if ( ploidy == 2 ) { // diploid
@@ -597,7 +524,7 @@ public class GenotypeLikelihoods {
                 final List<Integer> nextPLs;
                 final int alleleToIncrement;
                 if (alleleToIncrementForNextIndex < 0) {
-                    alleleToIncrement = availableAllelesToIncrementDeque.isEmpty() ? ploidy - 1 : availableAllelesToIncrementDeque.pollLast();
+                    alleleToIncrement = availableAllelesToIncrementDeque.isEmpty() ? ploidy - 1 : availableAllelesToIncrementDeque.removeLast();
 
                     nextPLs = new ArrayList<>(Collections.nCopies(alleleToIncrement, 0));
                     nextPLs.addAll(allelesList.get(allelesList.size() - 1).subList(alleleToIncrement, ploidy));
