@@ -38,10 +38,12 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 
 /**
@@ -347,28 +349,29 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     public Object[][] testGetAllelesData() {
         return new Object[][]{
                 {0, 3, Arrays.asList(0,0,0)},
+                {3, 3, Arrays.asList(1,1,1)},
                 {1, 3, Arrays.asList(0,0,1)},
                 {2, 3, Arrays.asList(0,1,1)},
-                {3, 3, Arrays.asList(1,1,1)},
+                {9, 3, Arrays.asList(2,2,2)},
+                {6, 3, Arrays.asList(1,1,2)},
                 {4, 3, Arrays.asList(0,0,2)},
                 {5, 3, Arrays.asList(0,1,2)},
-                {6, 3, Arrays.asList(1,1,2)},
                 {7, 3, Arrays.asList(0,2,2)},
                 {8, 3, Arrays.asList(1,2,2)},
-                {9, 3, Arrays.asList(2,2,2)},
                 {10, 3, Arrays.asList(0,0,3)},
+                {14, 3, Arrays.asList(1,2,3)},
+                {13, 3, Arrays.asList(0,2,3)},
                 {11, 3, Arrays.asList(0,1,3)},
                 {12, 3, Arrays.asList(1,1,3)},
-                {13, 3, Arrays.asList(0,2,3)},
-                {14, 3, Arrays.asList(1,2,3)},
+                {18, 3, Arrays.asList(2,3,3)},
                 {15, 3, Arrays.asList(2,2,3)},
                 {16, 3, Arrays.asList(0,3,3)},
                 {17, 3, Arrays.asList(1,3,3)},
-                {18, 3, Arrays.asList(2,3,3)},
                 {19, 3, Arrays.asList(3,3,3)},
-                {1, 1, Arrays.asList(1)},
+                {1, 1, Collections.singletonList(1)},
                 {1539, 5, Arrays.asList(1,3,5,7,9)}, // These tests were derived in reverse, allele arrays we chosen, and index was derived as Index(k_1,k_2,...,k_p) = Sum_m=1^p choose(k_m+m-1, m)
-                {1988400, 12, Arrays.asList(0,0,0,0,0,1,3,8,11,11,11,12)}
+                {1988400, 12, Arrays.asList(0,0,0,0,0,1,3,8,11,11,11,12)},
+                {8573,7, Arrays.asList(3,3,5,6,6,8,9)}
         };
     }
 
