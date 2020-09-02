@@ -57,8 +57,8 @@ public class SAMRecordQueryNameComparator implements SAMRecordComparator, Serial
         if (samRecord1.getSupplementaryAlignmentFlag() != samRecord2.getSupplementaryAlignmentFlag()) {
             return samRecord2.getSupplementaryAlignmentFlag() ? -1 : 1;
         }
-        final Integer hitIndex1 = samRecord1.getIntegerAttribute(SAMTag.HI.name());
-        final Integer hitIndex2 = samRecord2.getIntegerAttribute(SAMTag.HI.name());
+        final Integer hitIndex1 = samRecord1.getIntegerAttribute(SAMTag.HI);
+        final Integer hitIndex2 = samRecord2.getIntegerAttribute(SAMTag.HI);
         if (hitIndex1 != null) {
             if (hitIndex2 == null) return 1;
             else {

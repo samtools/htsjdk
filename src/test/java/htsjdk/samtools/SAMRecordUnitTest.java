@@ -429,12 +429,12 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     public void test_setAttribute_empty_string() {
         final SAMFileHeader header = new SAMFileHeader();
         final SAMRecord record = new SAMRecord(header);
-        Assert.assertNull(record.getStringAttribute(SAMTag.MD.name()));
-        record.setAttribute(SAMTag.MD.name(), "");
-        Assert.assertNotNull(record.getStringAttribute(SAMTag.MD.name()));
-        Assert.assertEquals(record.getStringAttribute(SAMTag.MD.name()),"");
-        record.setAttribute(SAMTag.MD.name(), null);
-        Assert.assertNull(record.getStringAttribute(SAMTag.MD.name()));
+        Assert.assertNull(record.getStringAttribute(SAMTag.MD));
+        record.setAttribute(SAMTag.MD, "");
+        Assert.assertNotNull(record.getStringAttribute(SAMTag.MD));
+        Assert.assertEquals(record.getStringAttribute(SAMTag.MD),"");
+        record.setAttribute(SAMTag.MD, null);
+        Assert.assertNull(record.getStringAttribute(SAMTag.MD));
     }
 
 

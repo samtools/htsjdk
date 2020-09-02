@@ -594,10 +594,10 @@ public final class SAMUtils {
      */
     public static void makeReadUnmappedWithOriginalTags(final SAMRecord rec) {
         if (!hasOriginalMappingInformation(rec)) {
-            rec.setAttribute(SAMTag.OP.name(), rec.getAlignmentStart());
-            rec.setAttribute(SAMTag.OC.name(), rec.getCigarString());
-            rec.setAttribute(SAMTag.OF.name(), rec.getFlags());
-            rec.setAttribute(SAMTag.OR.name(), rec.getReferenceName());
+            rec.setAttribute(SAMTag.OP, rec.getAlignmentStart());
+            rec.setAttribute(SAMTag.OC, rec.getCigarString());
+            rec.setAttribute(SAMTag.OF, rec.getFlags());
+            rec.setAttribute(SAMTag.OR, rec.getReferenceName());
         }
         makeReadUnmapped(rec);
     }
@@ -606,10 +606,10 @@ public final class SAMUtils {
      * See if any tags pertaining to original mapping information have been set.
      */
     public static boolean hasOriginalMappingInformation(final SAMRecord rec) {
-        return rec.getAttribute(SAMTag.OP.name()) != null
-                || rec.getAttribute(SAMTag.OC.name()) != null
-                || rec.getAttribute(SAMTag.OF.name()) != null
-                || rec.getAttribute(SAMTag.OR.name()) != null;
+        return rec.getAttribute(SAMTag.OP) != null
+                || rec.getAttribute(SAMTag.OC) != null
+                || rec.getAttribute(SAMTag.OF) != null
+                || rec.getAttribute(SAMTag.OR) != null;
     }
 
     /**
@@ -808,7 +808,7 @@ public final class SAMUtils {
      * @return Mate Cigar String, or null if there is none.
      */
     public static String getMateCigarString(final SAMRecord rec) {
-        return rec.getStringAttribute(SAMTag.MC.name());
+        return rec.getStringAttribute(SAMTag.MC);
     }
 
     /**
@@ -1142,7 +1142,7 @@ public final class SAMUtils {
         if (record == null) throw new IllegalArgumentException("record is null");
         if (record.getHeader() == null) throw new IllegalArgumentException("record.getHeader() is null");
         /* extract value of SA tag */
-        final Object saValue = record.getAttribute(SAMTag.SA.getBinaryTag());
+        final Object saValue = record.getAttribute(SAMTag.SA);
         if (saValue == null) return Collections.emptyList();
         if (!(saValue instanceof String)) throw new SAMException(
                 "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record);
@@ -1235,7 +1235,7 @@ public final class SAMUtils {
             /* fill NM */
             try {
                 if (!commaStrs[5].equals("*")) {
-                    otherRec.setAttribute(SAMTag.NM.getBinaryTag(), Integer.parseInt(commaStrs[5]));
+                    otherRec.setAttribute(SAMTag.NM, Integer.parseInt(commaStrs[5]));
                 }
             } catch (final NumberFormatException err) {
                 throw new SAMException("bad NM in " + semiColonStr + ". Record: " + record, err);
@@ -1290,7 +1290,7 @@ public final class SAMUtils {
                     record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
                     record.getCigarString(),
                     record.getMappingQuality(),
-                    Optional.ofNullable(record.getAttribute(SAMTag.NM.name())).orElse(""));
+                    Optional.ofNullable(record.getAttribute(SAMTag.NM)).orElse(""));
         }
         return oaValue;
 

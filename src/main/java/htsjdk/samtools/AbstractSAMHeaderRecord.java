@@ -57,6 +57,16 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
     }
 
     /**
+     * Set the given value for the SAMTag 'tag'.  Replaces an existing value, if any.
+     * If value is null, the attribute is removed.
+     * @param tag attribute name
+     * @param value attribute value
+     */
+    public void setAttribute(final SAMTag tag, final String value) {
+        setAttribute(tag.name(), value);
+    }
+
+    /**
      * Set the given value for the attribute named 'key'.  Replaces an existing value, if any.
      * If value is null, the attribute is removed.
      * @param key attribute name

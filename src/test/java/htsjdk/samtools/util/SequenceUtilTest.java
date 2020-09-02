@@ -114,7 +114,7 @@ public class SequenceUtilTest extends HtsjdkTest {
         rec.setReadName("test");
         rec.setReadString(seq);
         rec.setCigarString(cigar);
-        rec.setAttribute(SAMTag.MD.name(), md);
+        rec.setAttribute(SAMTag.MD, md);
         final byte[] refBases = SequenceUtil.makeReferenceFromAlignment(rec, includeReferenceBasesForDeletions);
         Assert.assertEquals(StringUtil.bytesToString(refBases), expectedReference);
     }
@@ -497,13 +497,13 @@ public class SequenceUtilTest extends HtsjdkTest {
 
         reader.iterator().stream().forEach(r -> {
             Integer nm = SequenceUtil.calculateSamNmTag(r, ref.getSequence(r.getContig()).getBases());
-            String md = r.getStringAttribute(SAMTag.MD.name());
-            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM.name()), nm, "problem with NM in read \'" + r.getReadName() + "\':");
+            String md = r.getStringAttribute(SAMTag.MD);
+            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM), nm, "problem with NM in read \'" + r.getReadName() + "\':");
             SequenceUtil.calculateMdAndNmTags(r, ref.getSequence(r.getContig()).getBases(), true, true);
 
-            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM.name()), nm, "problem with NM in read \'" + r.getReadName() + "\':");
+            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM), nm, "problem with NM in read \'" + r.getReadName() + "\':");
             if (md != null) {
-                Assert.assertEquals(r.getStringAttribute(SAMTag.MD.name()), md, "problem with MD in read \'" + r.getReadName() + "\':");
+                Assert.assertEquals(r.getStringAttribute(SAMTag.MD), md, "problem with MD in read \'" + r.getReadName() + "\':");
             }
         });
     }

@@ -95,7 +95,7 @@ public final class FastqEncoder {
         if(record.getReadPairedFlag() && (record.getFirstOfPairFlag() || record.getSecondOfPairFlag())) {
             readName += (record.getFirstOfPairFlag()) ? FastqConstants.FIRST_OF_PAIR : FastqConstants.SECOND_OF_PAIR;
         }
-        return new FastqRecord(readName, record.getReadString(), record.getStringAttribute(SAMTag.CO.name()), record.getBaseQualityString());
+        return new FastqRecord(readName, record.getReadString(), record.getStringAttribute(SAMTag.CO), record.getBaseQualityString());
     }
 
     /**
@@ -135,7 +135,7 @@ public final class FastqEncoder {
      * <p>Note that all tabs present in the quality header are replaced by spaces.
      */
     public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_TO_COMMENT_TAG = (record, samRecord) ->
-        samRecord.setAttribute(SAMTag.CO.name(), record.getBaseQualityHeader().replaceAll("\t", " "));
+        samRecord.setAttribute(SAMTag.CO, record.getBaseQualityHeader().replaceAll("\t", " "));
 
 
     public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_PARSE_SAM_TAGS = (record, samRecord) -> {

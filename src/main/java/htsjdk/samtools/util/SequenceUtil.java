@@ -751,7 +751,7 @@ public class SequenceUtil {
      * includeReferenceBasesForDeletions==true, reference will have Ns for the skipped region.
      */
     public static byte[] makeReferenceFromAlignment(final SAMRecord rec, final boolean includeReferenceBasesForDeletions) {
-        final String md = rec.getStringAttribute(SAMTag.MD.name());
+        final String md = rec.getStringAttribute(SAMTag.MD);
         if (md == null) {
             throw new SAMException("Cannot create reference from SAMRecord with no MD tag, read: " + rec.getReadName());
         }
@@ -1016,8 +1016,8 @@ public class SequenceUtil {
         }
         mdString.append(matchCount);
 
-        if (calcMD) record.setAttribute(SAMTag.MD.name(), mdString.toString());
-        if (calcNM) record.setAttribute(SAMTag.NM.name(), nmCount);
+        if (calcMD) record.setAttribute(SAMTag.MD, mdString.toString());
+        if (calcNM) record.setAttribute(SAMTag.NM, nmCount);
     }
 
     public static byte upperCase(final byte base) {
