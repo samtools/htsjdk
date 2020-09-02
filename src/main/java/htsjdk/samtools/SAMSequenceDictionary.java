@@ -67,19 +67,12 @@ public class SAMSequenceDictionary implements Serializable {
      * Replaces the existing list of SAMSequenceRecords with the given list.
      * Reset the aliases
      *
-     * @param list This value is used directly, rather than being copied.
+     * @param list This value is copied and validated.
      */
     public void setSequences(final List<SAMSequenceRecord> list) {
-        mSequences = list;
+        mSequences = new ArrayList<>(list.size());
         mSequenceMap.clear();
-        int index = 0;
-        for (final SAMSequenceRecord record : list) {
-            record.setSequenceIndex(index++);
-            if (mSequenceMap.put(record.getSequenceName(), record) != null) {
-                throw new IllegalArgumentException("Cannot add sequence that already exists in SAMSequenceDictionary: " +
-                        record.getSequenceName());
-            }
-        }
+        list.forEach(this::addSequence);
     }
 
     public void addSequence(final SAMSequenceRecord sequenceRecord) {
@@ -90,6 +83,7 @@ public class SAMSequenceDictionary implements Serializable {
         sequenceRecord.setSequenceIndex(mSequences.size());
         mSequences.add(sequenceRecord);
         mSequenceMap.put(sequenceRecord.getSequenceName(), sequenceRecord);
+        sequenceRecord.getAlternativeSequenceNames().forEach(an -> addSequenceAlias(sequenceRecord.getSequenceName(), an));
     }
 
     /**
@@ -194,7 +188,11 @@ public class SAMSequenceDictionary implements Serializable {
         return !thatSequences.hasNext();
     }
 
-    /** returns true if the two dictionaries are the same, aliases are NOT considered */
+    /**
+     * Returns {@code true} if the two dictionaries are the same.
+     *
+     * <p>NOTE: Aliases are NOT considered, but alternative sequence names (AN tag) names ARE.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -211,10 +209,11 @@ public class SAMSequenceDictionary implements Serializable {
      * <code>1,chr1,chr01,01,CM000663,NC_000001.10</code> e.g:
      * <code>MT,chrM</code>
      *
-     * @param originalName
-     *            existing contig name
-     * @param altName
-     *            new contig name
+     * <p>NOTE: this method does not add the alias to the alternative sequence name tag (AN) in the SAMSequenceRecord.
+     * If you would like to add it to the AN tag, use {@link #addAlternativeSequenceName(String, String)} instead.
+     *
+     * @param originalName  existing contig name
+     * @param altName       new contig name
      * @return the contig associated to the 'originalName/altName'
      */
     public SAMSequenceRecord addSequenceAlias(final String originalName,
@@ -230,11 +229,30 @@ public class SAMSequenceDictionary implements Serializable {
             // alias was already set to the same record
             if (altSeqRecord.equals(originalSeqRecord)) return originalSeqRecord;
             // alias was already set to another record
-            throw new IllegalArgumentException("Alias " + altName +
+            throw new IllegalArgumentException("Alias " + altName + " for " + originalSeqRecord +
                     " was already set to " + altSeqRecord.getSequenceName());
         }
         mSequenceMap.put(altName, originalSeqRecord);
         return originalSeqRecord;
+    }
+
+    /**
+     * Add an alternative sequence name (AN tag) to a SAMSequenceRecord, including it into the aliases
+     * to retrieve the contigs (as with {@link #addSequenceAlias(String, String)}.
+     *
+     * <p>This can be use to provide some alternate names fo a given contig. e.g:
+     * <code>1,chr1,chr01,01,CM000663</code> or
+     * <code>MT,chrM</code>.
+     *
+     * @param originalName  existing contig name
+     * @param altName       new contig name
+     * @return the contig associated to the 'originalName/altName', with the AN tag including the altName
+     */
+    public SAMSequenceRecord addAlternativeSequenceName(final String originalName,
+            final String altName) {
+        final SAMSequenceRecord record = addSequenceAlias(originalName, altName);
+        record.addAlternativeSequenceName(altName);
+        return record;
     }
 
     /**
@@ -306,7 +324,7 @@ public class SAMSequenceDictionary implements Serializable {
      * @param tagsToMatch list of tags that must be equal if present in both sequence. Must contain MD, and LN
      * @return dictionary consisting of the same sequences as the two inputs with the merged values of tags.
      */
-    static public SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1,
+    public static SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1,
                                                           final SAMSequenceDictionary dict2,
                                                           final List<String> tagsToMatch) {
 
@@ -321,8 +339,8 @@ public class SAMSequenceDictionary implements Serializable {
 
             throw new IllegalArgumentException(String.format("Do not use this function to merge dictionaries with " +
                             "different sequences in them. Sequences must be in the same order as well. Found [%s] and [%s].",
-                    String.join(", ", dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(toList())),
-                    String.join(", ", dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(toList()))));
+                    dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.joining(", ")),
+                    dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.joining(", "))));
         }
 
         final SAMSequenceDictionary finalDict = new SAMSequenceDictionary();

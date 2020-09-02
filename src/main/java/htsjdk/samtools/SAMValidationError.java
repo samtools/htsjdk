@@ -72,7 +72,7 @@ public class SAMValidationError implements Serializable {
         /** supplementary alignment flag set for unmapped read */
         INVALID_FLAG_SUPPLEMENTARY_ALIGNMENT,
 
-        /** mapped read flat not set for mapped read */
+        /** mapped read flag not set for mapped read */
         INVALID_FLAG_READ_UNMAPPED,
 
         /**
