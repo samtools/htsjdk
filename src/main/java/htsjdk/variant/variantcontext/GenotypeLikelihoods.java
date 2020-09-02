@@ -533,8 +533,8 @@ public class GenotypeLikelihoods {
             throw new IllegalStateException("The PL index " + PLindex + " cannot be negative");
         }
 
-        if (ploidy < 0) {
-            throw new IllegalStateException("The ploidy " + ploidy + " cannot be negative");
+        if (ploidy <= 0) {
+            throw new IllegalStateException("The ploidy " + ploidy + " must be greater than zero");
         }
 
         if ( ploidy == 2 ) { // diploid
