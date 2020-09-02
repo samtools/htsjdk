@@ -70,16 +70,17 @@ public final class VCFConstants {
 
     // separators
     public static final String FORMAT_FIELD_SEPARATOR = ":";
-    public static final String GENOTYPE_FIELD_SEPARATOR = ":";
     public static final char   GENOTYPE_FIELD_SEPARATOR_CHAR = ':';
-    public static final String FIELD_SEPARATOR = "\t";
+    public static final String GENOTYPE_FIELD_SEPARATOR = String.valueOf(GENOTYPE_FIELD_SEPARATOR_CHAR);
     public static final char   FIELD_SEPARATOR_CHAR = '\t';
+    public static final String FIELD_SEPARATOR = String.valueOf(FIELD_SEPARATOR_CHAR);
     public static final String FILTER_CODE_SEPARATOR = ";";
-    public static final String INFO_FIELD_ARRAY_SEPARATOR = ",";
-    public static final char INFO_FIELD_ARRAY_SEPARATOR_CHAR = ',';
-    public static final String ID_FIELD_SEPARATOR = ";";
-    public static final String INFO_FIELD_SEPARATOR = ";";
-    public static final char INFO_FIELD_SEPARATOR_CHAR = ';';
+    public static final char   INFO_FIELD_ARRAY_SEPARATOR_CHAR = ',';
+    public static final String INFO_FIELD_ARRAY_SEPARATOR = String.valueOf(INFO_FIELD_ARRAY_SEPARATOR_CHAR);
+    public static final char   ID_FIELD_SEPARATOR_CHAR = ';';
+    public static final String ID_FIELD_SEPARATOR = String.valueOf(ID_FIELD_SEPARATOR_CHAR);
+    public static final char   INFO_FIELD_SEPARATOR_CHAR = ';';
+    public static final String INFO_FIELD_SEPARATOR = String.valueOf(INFO_FIELD_ARRAY_SEPARATOR_CHAR);
     public static final String UNPHASED = "/";
     public static final String PHASED = "|";
     public static final String PHASED_SWITCH_PROB_v3 = "\\";
