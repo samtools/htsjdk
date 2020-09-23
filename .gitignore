@@ -18,3 +18,4 @@ out/
 #gradle stuff
 .gradle/
 build/
+*.class

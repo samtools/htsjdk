@@ -28,19 +28,16 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Class for reading and querying BAM files.
  */
 public class BAMFileReader extends SamReader.ReaderImplementation {
+    private static final int ASYNC_BATCH_SIZE_IN_BYTES = Math.min(32 * 1024, Defaults.NON_ZERO_BUFFER_SIZE);
+
     // True if reading from a File rather than an InputStream
     private boolean mIsSeekable = false;
 
@@ -49,6 +46,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
     // Underlying compressed data stream.
     private final BlockCompressedInputStream mCompressedInputStream;
+    private final boolean useAsynchronousIO;
     private SAMFileHeader mFileHeader = null;
 
     // One of these is populated if the file is seekable and an index exists
@@ -132,6 +130,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         this.mValidationStringency = validationStringency;
         this.samRecordFactory = samRecordFactory;
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, null);
+        this.useAsynchronousIO = useAsynchronousIO;
     }
 
     /**
@@ -297,6 +296,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         this.samRecordFactory = samRecordFactory;
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, source);
         mFirstRecordPointer = mCompressedInputStream.getFilePointer();
+        this.useAsynchronousIO = useAsynchronousIO;
     }
 
     /**
@@ -327,6 +327,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         this.samRecordFactory = samRecordFactory;
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, source);
         mFirstRecordPointer = mCompressedInputStream.getFilePointer();
+        this.useAsynchronousIO = useAsynchronousIO;
     }
 
     /** Reads through the header and sequence records to find the virtual file offset of the first record in the BAM file. */
@@ -778,7 +779,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         public void remove() {
             throw new UnsupportedOperationException("Not supported: remove");
         }
-
     }
 
     private class EmptyBamIterator extends AbstractBamIterator {
@@ -800,9 +800,10 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * Starting point of iteration is wherever current file position is when the iterator is constructed.
      */
     private class BAMFileIterator extends AbstractBamIterator {
-        private SAMRecord mNextRecord = null;
-        private final BAMRecordCodec bamRecordCodec;
-        private long samRecordIndex = 0; // Records at what position (counted in records) we are at in the file
+        private BamRecordDecodingInfo mNextRecord = null;
+        private final BAMRecordCodec streamCodec;
+        private final AsyncBamDecoder mAsync;
+        private long streamSamRecordIndex = 0; // Records at what position (counted in records) we are at in the file
 
         BAMFileIterator() {
             this(true);
@@ -812,10 +813,14 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
          * @param advance Trick to enable subclass to do more setup before advancing
          */
         BAMFileIterator(final boolean advance) {
-            this.bamRecordCodec = new BAMRecordCodec(getFileHeader(), samRecordFactory);
-            this.bamRecordCodec.setInputStream(BAMFileReader.this.mStream.getInputStream(),
+            this.streamCodec = new BAMRecordCodec(getFileHeader(), samRecordFactory);
+            this.streamCodec.setInputStream(BAMFileReader.this.mStream.getInputStream(),
                     BAMFileReader.this.mStream.getInputFileName());
-
+            if (useAsynchronousIO) {
+                mAsync = new AsyncBamDecoder(ASYNC_BATCH_SIZE_IN_BYTES, Math.max(1, Defaults.NON_ZERO_BUFFER_SIZE / ASYNC_BATCH_SIZE_IN_BYTES));
+            } else {
+                mAsync = null;
+            }
             if (advance) {
                 advance();
             }
@@ -824,59 +829,162 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         @Override
         public boolean hasNext() {
             assertOpen();
-            return (mNextRecord != null);
+            return (mNextRecord != null && mNextRecord.record != null);
         }
 
         @Override
         public SAMRecord next() {
             assertOpen();
-            final SAMRecord result = mNextRecord;
+            final BamRecordDecodingInfo result = mNextRecord;
             advance();
-            return result;
+            return result.record;
+        }
+
+        /**
+         * Virtual file pointer position corresponding to the position of this reader.
+         * When asynchronous IO is enabled, the actual position of the underlying stream may be ahead of this position.
+         *
+         * @return virtual file pointer that can be passed to seek() to return to the current position.  This is
+         *  not an actual byte offset, so arithmetic on file pointers cannot be done to determine the distance between
+         *  the two.
+         */
+        public long getLogicalFilePointer() {
+            return mNextRecord == null ? mCompressedInputStream.getFilePointer() : mNextRecord.stop;
         }
 
         void advance() {
             try {
-                mNextRecord = getNextRecord();
-
-                if (mNextRecord != null) {
-                    ++this.samRecordIndex;
-                    // Because some decoding is done lazily, the record needs to remember the validation stringency.
-                    mNextRecord.setValidationStringency(mValidationStringency);
-
-                    if (mValidationStringency != ValidationStringency.SILENT) {
-                        final List<SAMValidationError> validationErrors = mNextRecord.isValid(mValidationStringency == ValidationStringency.STRICT);
-                        SAMUtils.processValidationErrors(validationErrors,
-                                this.samRecordIndex, BAMFileReader.this.getValidationStringency());
+                if (!useAsynchronousIO) {
+                    mNextRecord = readNextRecord();
+                    if (mNextRecord != null) {
+                        decode(mNextRecord);
                     }
-                }
-                if (eagerDecode && mNextRecord != null) {
-                    mNextRecord.eagerDecode();
+                } else {
+                    mNextRecord = mAsync.nextRecord();
                 }
             } catch (final IOException exc) {
                 throw new RuntimeIOException(exc.getMessage(), exc);
+            }
+        }
+        private void decode(BamRecordDecodingInfo info) {
+            if (info.buffer == null) { // decode directly from the stream codec
+                info.record = streamCodec.decode(info.recordLength);
+                // to avoid a buffer copy when performing synchronous reading, the codec decode
+                // is performed directly on the underlying stream. This means we don't know
+                // what the stop position is until we actually perform the decoding thus
+                // this is the earliest time we can find the stop position
+                info.stop = mCompressedInputStream.getFilePointer();
+            } else { // decode from the buffer supplied
+                BAMRecordCodec codec = streamCodec.clone();
+                ByteArrayInputStream is = new ByteArrayInputStream(info.buffer);
+                if (mStream == null) {
+                    codec.setInputStream(is);
+                } else {
+                    codec.setInputStream(is, mStream.getInputFileName());
+                }
+                info.record = codec.decode(info.recordLength);
+                info.buffer = null;
+            }
+            if (mReader != null) {
+                info.record.setFileSource(new SAMFileSource(mReader, new BAMFileSpan(new Chunk(info.start, info.stop))));
+            }
+            info.record.setValidationStringency(mValidationStringency);
+            if (mValidationStringency != ValidationStringency.SILENT) {
+                final List<SAMValidationError> validationErrors = info.record.isValid(mValidationStringency == ValidationStringency.STRICT);
+                SAMUtils.processValidationErrors(validationErrors,
+                        info.recordIndex, BAMFileReader.this.getValidationStringency());
+            }
+            if (eagerDecode) {
+                info.record.eagerDecode();
+            }
+        }
+        /**
+         * Encapsulates the data required for decoding of a BAM encoded SAMRecord.
+         */
+        private class BamRecordDecodingInfo {
+            private final long recordIndex;
+            private final int recordLength;
+            private final long start;
+            private byte[] buffer;
+            private Long stop;
+            private SAMRecord record;
+            public BamRecordDecodingInfo(long recordIndex, int recordLength, long start) {
+                this.recordIndex = recordIndex;
+                this.recordLength = recordLength;
+                this.start = start;
+            }
+
+            public BamRecordDecodingInfo(long recordIndex, int recordLength, long start, long stop, byte[] buffer) {
+                this(recordIndex, recordLength, start);
+                this.stop = stop;
+                this.buffer = buffer;
+            }
+        }
+        private class AsyncBamDecoder extends AsyncReadTaskRunner<BamRecordDecodingInfo, BamRecordDecodingInfo> {
+            public AsyncBamDecoder(int batchBufferBudget, int totalBufferBudget) {
+                super(batchBufferBudget, totalBufferBudget);
+            }
+
+            @Override
+            public Tuple<BamRecordDecodingInfo, Long> performReadAhead(long bufferBudget) {
+                final BamRecordDecodingInfo record = readNextRecord();
+                if (record == null) {
+                    return new Tuple<>(null, 0L);
+                } else {
+                    return new Tuple<>(record, (long)record.recordLength);
+                }
+            }
+
+            @Override
+            public BamRecordDecodingInfo transform(BamRecordDecodingInfo record) {
+                decode(record);
+                return record;
             }
         }
 
         /**
          * Read the next record from the input stream.
          */
-        SAMRecord getNextRecord() throws IOException {
-            final long startCoordinate = mCompressedInputStream.getFilePointer();
-            final SAMRecord next = bamRecordCodec.decode();
-            final long stopCoordinate = mCompressedInputStream.getFilePointer();
+        private BamRecordDecodingInfo readNextRecord() {
+            try {
+                if (!advanceToNextRecordStart()) {
+                    // effectively end of stream
+                    return null;
+                }
+                final long startCoordinate = mCompressedInputStream.getFilePointer();
+                Integer readLength = streamCodec.decodeRecordLength();
+                if (readLength == null) {
+                    // EOF returns null read length
+                    return null;
+                } else {
+                    if (useAsynchronousIO) {
+                        byte[] buffer = new byte[readLength];
+                        mCompressedInputStream.read(buffer);
+                        long stopCoordinate = mCompressedInputStream.getFilePointer();
+                        return new BamRecordDecodingInfo(++streamSamRecordIndex, readLength, startCoordinate, stopCoordinate, buffer);
+                    } else {
+                        return new BamRecordDecodingInfo(++streamSamRecordIndex, readLength, startCoordinate);
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
 
-            if(mReader != null && next != null)
-                next.setFileSource(new SAMFileSource(mReader,new BAMFileSpan(new Chunk(startCoordinate,stopCoordinate))));
-
-            return next;
+        /**
+         * Moves mCompressedInputStream to the next record start location
+         * @return true if the seek was successful, false otherwise
+         * @throws IOException
+         */
+        protected boolean advanceToNextRecordStart() throws IOException {
+            return true;
         }
 
         /**
          * @return The record that will be return by the next call to next()
          */
         protected SAMRecord peek() {
-            return mNextRecord;
+            return mNextRecord == null ? null : mNextRecord.record;
         }
     }
 
@@ -965,6 +1073,9 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @see BlockCompressedInputStream#getFilePointer()
      */
     public long getVirtualFilePointer() {
+        if (mCurrentIterator instanceof BAMFileIterator) {
+            return ((BAMFileIterator)mCurrentIterator).getLogicalFilePointer();
+        }
         return mCompressedInputStream.getFilePointer();
     }
 
@@ -987,22 +1098,22 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             advance();
         }
 
+
         @Override
-        SAMRecord getNextRecord()
+        protected boolean advanceToNextRecordStart()
             throws IOException {
             // Advance to next file block if necessary
             while (mCompressedInputStream.getFilePointer() >= mFilePointerLimit) {
                 if (mFilePointers == null ||
                         mFilePointerIndex >= mFilePointers.length) {
-                    return null;
+                    return false;
                 }
                 final long startOffset = mFilePointers[mFilePointerIndex++];
                 final long endOffset = mFilePointers[mFilePointerIndex++];
                 mCompressedInputStream.seek(startOffset);
                 mFilePointerLimit = endOffset;
             }
-            // Pull next record from stream
-            return super.getNextRecord();
+            return true;
         }
     }
 
