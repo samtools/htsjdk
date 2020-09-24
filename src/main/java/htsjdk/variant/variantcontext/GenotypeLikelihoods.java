@@ -461,7 +461,7 @@ public final class GenotypeLikelihoods {
         }
 
         if (ploidy <= 0) {
-            throw new IllegalStateException("The ploidy must be greater than zero");
+            throw new IllegalStateException("The ploidy " + ploidy +" must be greater than zero");
         }
 
         if ( ploidy == 2 ) { // diploid
