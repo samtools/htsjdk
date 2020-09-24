@@ -2,7 +2,7 @@ htsjdk.iws
 .command_tmp
 atlassian-ide-plugin.xml
 /htsjdk.version.properties
-/test-output
+/test-output/
 
 #intellij
 .idea/
@@ -10,11 +10,14 @@ src/htsjdk.iml
 *.iml
 *.ipr
 *.iws
-out/
-
-
-
+/out/
 
 #gradle stuff
-.gradle/
-build/
+/.gradle/
+/build/
+
+#jenv
+.java-version
+
+#japi-compliance-checker
+/compat_reports/
