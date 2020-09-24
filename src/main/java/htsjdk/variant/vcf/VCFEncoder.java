@@ -13,9 +13,11 @@ import htsjdk.variant.variantcontext.writer.IntGenotypeFieldAccessors;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -27,7 +29,7 @@ public class VCFEncoder {
     /**
      * The encoding used for VCF files: ISO-8859-1. When writing VCF4.3 is implemented, this should change to UTF-8.
      */
-    public static final Charset VCF_CHARSET = Charset.forName("ISO-8859-1");
+    public static final Charset VCF_CHARSET = StandardCharsets.ISO_8859_1;
     private static final String QUAL_FORMAT_STRING = "%.2f";
     private static final String QUAL_FORMAT_EXTENSION_TO_TRIM = ".00";
 
@@ -200,7 +202,7 @@ public class VCFEncoder {
     }
 
     private static String formatQualValue(final double qual) {
-        String s = String.format(QUAL_FORMAT_STRING, qual);
+        String s = String.format(Locale.US, QUAL_FORMAT_STRING, qual);
         if (s.endsWith(QUAL_FORMAT_EXTENSION_TO_TRIM)) {
             s = s.substring(0, s.length() - QUAL_FORMAT_EXTENSION_TO_TRIM.length());
         }
@@ -273,7 +275,7 @@ public class VCFEncoder {
             format = "%.2f";
         }
 
-        return String.format(format, d);
+        return String.format(Locale.US, format, d);
     }
 
     static int countOccurrences(final char c, final String s) {

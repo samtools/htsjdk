@@ -41,6 +41,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -1280,11 +1281,11 @@ public final class SAMUtils {
         }
         final String oaValue;
         if (record.getReadUnmappedFlag()) {
-            oaValue = String.format("*,0,%s,*,%s,",
+            oaValue = String.format(Locale.US, "*,0,%s,*,%s,",
                     record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
                     record.getMappingQuality());
         } else {
-            oaValue = String.format("%s,%s,%s,%s,%s,%s",
+            oaValue = String.format(Locale.US, "%s,%s,%s,%s,%s,%s",
                     record.getReferenceName(),
                     record.getAlignmentStart(),
                     record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
