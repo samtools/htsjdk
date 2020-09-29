@@ -4,7 +4,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.io.HtsjdkPath;
+import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -288,7 +288,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                     throw new RuntimeIOException(e);
                 }
             case HTSGET:
-                return new HtsgetInputResource(new HtsjdkPath(HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + f.getName()));
+                return new HtsgetInputResource(new HtsPath(HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + f.getName()));
             default:
                 throw new IllegalStateException();
         }
@@ -338,7 +338,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public Object[][] URIFallbackProvider() throws MalformedURLException {
         return new Object[][]{
             {
-                new HtsjdkPath("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"),
+                new HtsPath("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"),
                 InputResource.Type.HTSGET,
             },
             {
@@ -346,7 +346,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                 InputResource.Type.PATH,
             },
             {
-                new HtsjdkPath("http://test.url"),
+                new HtsPath("http://test.url"),
                 InputResource.Type.URL,
             },
         };
