@@ -23,11 +23,17 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.*;
+import htsjdk.samtools.AlignmentBlock;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.fastq.FastqConstants;
-import htsjdk.tribble.annotation.Strand;
 import htsjdk.utils.ValidationUtils;
-import jdk.vm.ci.meta.Local;
 
 import java.io.File;
 import java.math.BigInteger;
