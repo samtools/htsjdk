@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
  * Class for reading and querying BAM files from an htsget source
  */
 public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
+    private static final Log LOG = Log.getInstance(HtsgetBAMFileReader.class);
+
     public static final String HTSGET_SCHEME = "htsget";
     // Number of bases to read ahead by if using asynchronous IO
     private static final int READAHEAD_LIMIT = 500_000;
@@ -66,25 +68,30 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
                                                     final InflaterFactory inflaterFactory) throws IOException, URISyntaxException {
          HtsgetBAMFileReader reader;
         try {
-            final URI htsgetUri = replaceHtsgetScheme(source.getPath().getURI(), "https");
-            reader = getHtsgetBAMFileReaderWithResolvedAddress(eagerDecode, validationStringency, samRecordFactory, useAsynchronousIO, inflaterFactory, htsgetUri);
-        } catch (final RuntimeIOException e) {
+            //try https
+            reader = getReaderWithResolvedScheme("https", eagerDecode, validationStringency, samRecordFactory, useAsynchronousIO, source, inflaterFactory);
+        } catch (final IOException | RuntimeIOException e) {
             // Fall back to http if htsget server does not support https
-            final URI htsgetUri = HtsgetBAMFileReader.replaceHtsgetScheme(source.getPath().getURI(), "http");
-            reader = getHtsgetBAMFileReaderWithResolvedAddress(eagerDecode, validationStringency, samRecordFactory, useAsynchronousIO, inflaterFactory, htsgetUri);
+            LOG.warn("HtsgetReader falling back and attempting http connection because it couldn't connect using https.");
+            LOG.debug(() -> "Failed to connect with the following reason: " + e.getMessage());
+            Arrays.stream(e.getStackTrace()).forEachOrdered(LOG::debug);
+            reader = getReaderWithResolvedScheme("http", eagerDecode, validationStringency, samRecordFactory, useAsynchronousIO, source, inflaterFactory);
         }
         return reader;
     }
 
-    private static HtsgetBAMFileReader getHtsgetBAMFileReaderWithResolvedAddress(final boolean eagerDecode, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory, final boolean useAsynchronousIO, final InflaterFactory inflaterFactory, final URI htsgetUri) throws IOException {
-        return new HtsgetBAMFileReader(
-                htsgetUri,
-                eagerDecode,
-                validationStringency,
-                samRecordFactory,
-                useAsynchronousIO,
-                inflaterFactory
-        );
+    private static HtsgetBAMFileReader getReaderWithResolvedScheme(final String scheme,
+                                                                   final boolean eagerDecode,
+                                                                   final ValidationStringency validationStringency,
+                                                                   final SAMRecordFactory samRecordFactory,
+                                                                   final boolean useAsynchronousIO,
+                                                                   final HtsgetInputResource source,
+                                                                   final InflaterFactory inflaterFactory)
+            throws URISyntaxException, IOException {
+        final HtsgetBAMFileReader reader;
+        final URI htsgetUri = replaceScheme(source.asIOPath().getURI(), scheme);
+        reader = new HtsgetBAMFileReader(htsgetUri, eagerDecode, validationStringency, samRecordFactory, useAsynchronousIO, inflaterFactory);
+        return reader;
     }
 
     /**
@@ -399,13 +406,11 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     }
 
     /**
-     * Replace the sh
-     * @param uri
-     * @param newScheme
-     * @return
+     * Replaces the scheme of a URI with the given one.  Useful for converting htsget:// into the actual https:// scheme.
+     * @return a new URI with the original URI's scheme replaced by newScheme
      * @throws URISyntaxException
      */
-    public static URI replaceHtsgetScheme(final URI uri, final String newScheme) throws URISyntaxException {
+    static URI replaceScheme(final URI uri, final String newScheme) throws URISyntaxException {
         return new URI(newScheme, uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
     }
 

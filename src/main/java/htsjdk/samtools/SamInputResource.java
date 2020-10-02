@@ -277,7 +277,7 @@ abstract class InputResource {
                 childToString = asSRAAccession().toString();
                 break;
             case HTSGET:
-                childToString = this.toString();
+                childToString = ((HtsgetInputResource)this).asIOPath().toString();
                 break;
             default:
                 throw new IllegalStateException();
@@ -594,7 +594,6 @@ class SRAInputResource extends InputResource {
     }
 }
 
-// TODO: replace this with an InputResource type taking HtsPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
 class HtsgetInputResource extends InputResource {
 
     private final IOPath path;
@@ -604,7 +603,7 @@ class HtsgetInputResource extends InputResource {
         this.path = path;
     }
 
-    IOPath getPath(){
+    IOPath asIOPath(){
         return path;
     }
 
@@ -620,11 +619,7 @@ class HtsgetInputResource extends InputResource {
 
     @Override
     URL asUrl() {
-        try {
-            return this.path.getURI().toURL();
-        } catch (final MalformedURLException e) {
-            return null;
-        }
+        return null;
     }
 
     @Override

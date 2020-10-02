@@ -270,7 +270,7 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
 
     @Test
     public void testReplaceSchemeWithEncodedCharacters() throws URISyntaxException {
-        final URI actual = HtsgetBAMFileReader.replaceHtsgetScheme(new URI("htsget://some.server.org/with%20spaces"), "http");
+        final URI actual = HtsgetBAMFileReader.replaceScheme(new URI("htsget://some.server.org/with%20spaces"), "http");
         Assert.assertEquals(actual, new URI("http://some.server.org/with%20spaces"));
     }
 }
