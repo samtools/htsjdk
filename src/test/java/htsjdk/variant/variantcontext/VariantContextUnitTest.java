@@ -1913,20 +1913,20 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 context.getAttributeAsStringList("MissingList", "empty").isEmpty());
     }
 
-
     @DataProvider
-    public Object[][] getVariantsWithID(){
-        final VariantContextBuilder vcb = new VariantContextBuilder("test", "chr1", 10L, 10L, Arrays.asList(Allele.REF_A, Allele.ALT_C));
-        return new Object[][]{
-                {vcb.noID().make(), Collections.<String>emptyList()},
-                {vcb.id(".").make(), Collections.<String>emptyList()},
-                {vcb.id("rs128").make(), Collections.singletonList("rs128")},
-                {vcb.id("1;2;rs128;soManyIDs").make(), Arrays.asList("1", "2", "rs128", "soManyIDs")}
+    public Object[][] getVariantsWithID() {
+        final VariantContextBuilder vcb =
+                new VariantContextBuilder("test", "chr1", 10L, 10L, Arrays.asList(Allele.REF_A, Allele.ALT_C));
+        return new Object[][] {
+            {vcb.noID().make(), Collections.<String>emptyList()},
+            {vcb.id(".").make(), Collections.<String>emptyList()},
+            {vcb.id("rs128").make(), Collections.singletonList("rs128")},
+            {vcb.id("1;2;rs128;soManyIDs").make(), Arrays.asList("1", "2", "rs128", "soManyIDs")}
         };
     }
-    
+
     @Test(dataProvider = "getVariantsWithID")
-    public void testGetIDs(VariantContext vc, List<String> expectedIDs){
+    public void testGetIDs(VariantContext vc, List<String> expectedIDs) {
         Assert.assertEquals(vc.getIDs(), expectedIDs);
     }
 }
