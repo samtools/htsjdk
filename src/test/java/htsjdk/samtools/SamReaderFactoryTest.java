@@ -335,14 +335,14 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "URIFallbackProvider")
-    public Object[][] URIFallbackProvider() throws MalformedURLException {
+    public Object[][] URIFallbackProvider() {
         return new Object[][]{
             {
                 new HtsPath("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"),
                 InputResource.Type.HTSGET,
             },
             {
-                localBam.toURI(),
+                new HtsPath(localBam.getAbsolutePath()),
                 InputResource.Type.PATH,
             },
             {
