@@ -11,6 +11,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     public static final String HTSGET_ENDPOINT = "http://127.0.0.1:3000/reads/";
@@ -265,5 +266,11 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
         try (final CloseableIterator<SAMRecord> htsgetIterator = bamFileReaderHtsget.getIterator()) {
             htsgetIterator.forEachRemaining(record -> Assert.assertNull(record.getFileSource()));
         }
+    }
+
+    @Test
+    public void testReplaceSchemeWithEncodedCharacters() throws URISyntaxException {
+        final URI actual = HtsgetBAMFileReader.replaceHtsgetScheme(new URI("htsget://some.server.org/with%20spaces"), "http");
+        Assert.assertEquals(actual, new URI("http://some.server.org/with%20spaces"));
     }
 }
