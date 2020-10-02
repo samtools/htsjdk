@@ -80,7 +80,7 @@ public final class VCFConstants {
     public static final char   ID_FIELD_SEPARATOR_CHAR = ';';
     public static final String ID_FIELD_SEPARATOR = String.valueOf(ID_FIELD_SEPARATOR_CHAR);
     public static final char   INFO_FIELD_SEPARATOR_CHAR = ';';
-    public static final String INFO_FIELD_SEPARATOR = String.valueOf(INFO_FIELD_ARRAY_SEPARATOR_CHAR);
+    public static final String INFO_FIELD_SEPARATOR = String.valueOf(INFO_FIELD_SEPARATOR_CHAR);
     public static final String UNPHASED = "/";
     public static final String PHASED = "|";
     public static final String PHASED_SWITCH_PROB_v3 = "\\";
