@@ -29,6 +29,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Compares records based on if they should be considered PCR Duplicates (see MarkDuplicates).
@@ -58,15 +60,23 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     public SAMRecordDuplicateComparator() {}
 
     public SAMRecordDuplicateComparator(final List<SAMFileHeader> headers) {
-        // pre-populate the library names
+
+        SortedSet<String> libraryNameOrder = new TreeSet();
+
+        // Determine order of library names
         for (final SAMFileHeader header : headers) {
             for (final SAMReadGroupRecord readGroup : header.getReadGroups()) {
                 final String libraryName = readGroup.getLibrary();
                 if (null != libraryName) {
-                    final short libraryId = this.nextLibraryId++;
-                    this.libraryIds.put(libraryName, libraryId);
+                    libraryNameOrder.add(libraryName);
                 }
             }
+        }
+
+        // pre-populate library names
+        for(final String name : libraryNameOrder) {
+           final short libraryId = this.nextLibraryId++;
+           this.libraryIds.put(name, libraryId);
         }
     }
     
@@ -114,11 +124,11 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
         return updateLibraryId(library);
     }
 
+    /** Update library ID in thread-safe manner. */
     private synchronized short updateLibraryId(final String library) {
         Short libraryId = this.libraryIds.get(library);
 
         if (libraryId == null) {
-            System.out.println("library id is null" + this.nextLibraryId);
             libraryId = this.nextLibraryId++;
             this.libraryIds.put(library, libraryId);
         }
