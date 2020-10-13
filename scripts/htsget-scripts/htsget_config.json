@@ -1,10 +1,23 @@
 {
-  "readsDataSourceRegistry": {
-    "sources": [
-      {
-        "pattern": "^htsjdk_test\\.(?P<accession>.*)$",
-        "path": "/data/{accession}"
+  "htsgetconfig" : {
+    "reads": {
+      "enabled": true,
+      "dataSourceRegistry": {
+        "readsDataSourceRegistry": {
+          "sources": [
+            {
+              "pattern": "^htsjdk_test\\.(?P<accession>.*)$",
+              "path": "/data/{accession}"
+            }
+          ]
+        }
+      },
+      "serviceInfo": {
+        "name": "HTSJDK Test Data",
+        "description": "Data server for htsjdk tests",
+        "environment": "testing",
+        "version": "1.3.0"
       }
-    ]
+    }
   }
 }
