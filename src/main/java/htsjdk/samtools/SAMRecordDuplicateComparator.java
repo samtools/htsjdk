@@ -111,13 +111,17 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     /** Get the library ID for the given SAM record. */
     private short getLibraryId(final SAMRecord rec) {
         final String library = getLibraryName(rec);
+        return updateLibraryId(library);
+    }
+
+    private synchronized short updateLibraryId(final String library) {
         Short libraryId = this.libraryIds.get(library);
 
         if (libraryId == null) {
+            System.out.println("library id is null" + this.nextLibraryId);
             libraryId = this.nextLibraryId++;
             this.libraryIds.put(library, libraryId);
         }
-
         return libraryId;
     }
 
