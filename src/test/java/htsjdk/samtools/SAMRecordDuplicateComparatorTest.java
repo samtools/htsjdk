@@ -251,7 +251,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
 
         // The choice of 100000 iterations was done to be large enough to trigger a race condition in htsjdk 2.23.0 and earlier
         // with a probability > 90%.  Larger numbers of iterations could be used to increase the probability of failure.
-        final Random rand = new Random();
+        final Random rand = new Random(42);
         for (int i = 0;i < 100000;i++) {
             randomSetOfRecords.addPair("readname" + i, 1, rand.nextInt(1000) + 1, rand.nextInt(1000) + 1);
         }
