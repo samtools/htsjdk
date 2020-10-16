@@ -24,9 +24,16 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.samtools.SAMFileHeader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -229,6 +236,44 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
         }
 
         assertEquals(Arrays.asList(-1, -1, -1), records, false);
+    }
+
+    @Test()
+    public void sortAndValidate() throws IOException {
+        // Generates synthetic data that is unsorted, it sorts the data, then validates that it was sorted correctly
+
+        // Generate synthetic data
+        SAMRecordSetBuilder randomSetOfRecords = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted, true);
+        final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord("testing_read_group_id");
+        readGroupRecord.setSample("test_sample_name");
+        randomSetOfRecords.setReadGroup(readGroupRecord);
+
+        // The choice of 100000 iterations was done to be large enough to trigger a race condition in htsjdk 2.23.0 and earlier
+        // with a probability > 90%.  Larger numbers of iterations could be used to increase the probability of failure.
+        for (int i = 0;i < 100000;i++) {
+            randomSetOfRecords.addPair("readname" + i, 1, (int) Math.random() * 1000 + 1, (int) Math.random() * 1000 + 1);
+        }
+
+        // Sort Bam
+        File sortedBam = File.createTempFile("testOut",".bam");
+        final SamReader reader = randomSetOfRecords.getSamReader();
+                // SamReaderFactory.makeDefault().referenceSequence(Defaults.REFERENCE_FASTA).open(input);
+        reader.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.duplicate);
+        final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(reader.getFileHeader(), false, sortedBam);
+
+        for (final SAMRecord rec : reader) {
+            writer.addAlignment(rec);
+        }
+        CloserUtil.close(reader);
+        writer.close();
+
+        // Validate that the results are sorted
+        final SAMSortOrderChecker sortChecker = new SAMSortOrderChecker(SAMFileHeader.SortOrder.duplicate);
+        final SamReader r = SamReaderFactory.makeDefault().referenceSequence(Defaults.REFERENCE_FASTA).open(sortedBam);
+
+        for(final SAMRecord rec : r) {
+            Assert.assertTrue(sortChecker.isSorted(rec), "Simulated read with name: " + rec.getReadName() + " is not in duplicate sort order.");
+        }
     }
 
 }
