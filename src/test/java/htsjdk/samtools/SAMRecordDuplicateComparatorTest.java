@@ -25,15 +25,11 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Histogram;
-import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.SAMFileHeader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
