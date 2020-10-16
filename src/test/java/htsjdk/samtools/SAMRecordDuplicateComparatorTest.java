@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 /**
  * The tests listed here are not exhaustive, and duplicate some of the work found in Picard's MarkDuplicates test classes.
@@ -243,19 +244,20 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
         // Generates synthetic data that is unsorted, it sorts the data, then validates that it was sorted correctly
 
         // Generate synthetic data
-        SAMRecordSetBuilder randomSetOfRecords = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted, true);
+        final SAMRecordSetBuilder randomSetOfRecords = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted, true);
         final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord("testing_read_group_id");
         readGroupRecord.setSample("test_sample_name");
         randomSetOfRecords.setReadGroup(readGroupRecord);
 
         // The choice of 100000 iterations was done to be large enough to trigger a race condition in htsjdk 2.23.0 and earlier
         // with a probability > 90%.  Larger numbers of iterations could be used to increase the probability of failure.
+        final Random rand = new Random();
         for (int i = 0;i < 100000;i++) {
-            randomSetOfRecords.addPair("readname" + i, 1, (int) Math.random() * 1000 + 1, (int) Math.random() * 1000 + 1);
+            randomSetOfRecords.addPair("readname" + i, 1, rand.nextInt(1000) + 1, rand.nextInt(1000) + 1);
         }
 
         // Sort Bam
-        File sortedBam = File.createTempFile("testOut",".bam");
+        final File sortedBam = File.createTempFile("testOut",".bam");
         final SamReader reader = randomSetOfRecords.getSamReader();
                 // SamReaderFactory.makeDefault().referenceSequence(Defaults.REFERENCE_FASTA).open(input);
         reader.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.duplicate);
