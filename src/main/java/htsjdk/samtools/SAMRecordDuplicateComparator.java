@@ -99,7 +99,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     /**
      * Populates the set of transient attributes on SAMRecords if they are not already there.
      */
-    private void populateTransientAttributes(final SAMRecord... recs) {
+    synchronized private void populateTransientAttributes(final SAMRecord... recs) {
         for (final SAMRecord rec : recs) {
             if (rec.getTransientAttribute(Attr.LibraryId) != null) continue;
             rec.setTransientAttribute(Attr.LibraryId, getLibraryId(rec));
