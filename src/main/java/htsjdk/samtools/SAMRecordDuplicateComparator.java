@@ -26,6 +26,8 @@ package htsjdk.samtools;
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -63,24 +65,24 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
 
     @Deprecated // This results in sort order depending on the order in which the headers are listed.  Will be removed in future version.
     public SAMRecordDuplicateComparator(final List<SAMFileHeader> headers) {
-        for (final SAMFileHeader header : headers) {
-            populateLibraryIds(header);
-        }
+        populateLibraryIds(headers);
     }
 
     public SAMRecordDuplicateComparator(final SAMFileHeader header) {
-        populateLibraryIds(header);
+        populateLibraryIds(Collections.singletonList(header));
     }
 
-    private void populateLibraryIds(final SAMFileHeader header) {
+    private void populateLibraryIds(final List<SAMFileHeader> headers) {
         final SortedSet<String> libraryNameOrder = new TreeSet<>();
         libraryNameOrder.add(UNKNOWN_LIBRARY_STRING);
 
         // Determine order of library names
-        for (final SAMReadGroupRecord readGroup : header.getReadGroups()) {
-            final String libraryName = readGroup.getLibrary();
-            if (null != libraryName) {
-                libraryNameOrder.add(libraryName);
+        for (final SAMFileHeader header : headers) {
+            for (final SAMReadGroupRecord readGroup : header.getReadGroups()) {
+                final String libraryName = readGroup.getLibrary();
+                if (null != libraryName) {
+                    libraryNameOrder.add(libraryName);
+                }
             }
         }
 
@@ -131,7 +133,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     /** Get the library ID for the given SAM record. */
     private short getLibraryId(final SAMRecord rec) {
         if (this.libraryIds.size() == 0) {
-            populateLibraryIds(rec.getHeader());
+            populateLibraryIds(Arrays.asList(rec.getHeader()));
         }
         final String library = getLibraryName(rec);
         return updateLibraryId(library);
