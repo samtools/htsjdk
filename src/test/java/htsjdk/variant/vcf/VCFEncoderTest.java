@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -53,6 +54,42 @@ public class VCFEncoderTest extends HtsjdkTest {
 	public void testVCFWriterDoubleFormatTestData(final double d, final String expected) {
 		Assert.assertEquals(VCFEncoder.formatVCFDouble(d), expected, "Failed to pretty print double in VCFWriter");
 	}
+
+    /**
+     * test for https://github.com/samtools/htsjdk/issues/1510
+     */
+    @Test(dataProvider = "VCFWriterDoubleFormatTestData")
+    public void testWriteDoubleIsNotLocaleSensitive(final double d, final String expected) {
+        final Locale originalDefault = Locale.getDefault();
+        try {
+            //Italy locale uses "," instead of "." which produces different results than desired.
+            Locale.setDefault(Locale.ITALY);
+            Assert.assertEquals(VCFEncoder.formatVCFDouble(d), expected, "Failed to pretty print double in VCFWriter");
+        } finally {
+            Locale.setDefault(originalDefault);
+        }
+
+    }
+
+    /**
+     * test for https://github.com/samtools/htsjdk/issues/1510
+     */
+    @Test
+    public void testQualIsNotLocaleSensitive(){
+        final Locale originalDefault = Locale.getDefault();
+        try {
+            //Italy locale uses "," instead of "." which produces different results than desired.
+            Locale.setDefault(Locale.ITALY);
+            final VariantContext vc = new VariantContextBuilder("test", "1", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .log10PError(0.0)
+                    .make();
+            final VCFEncoder encoder = new VCFEncoder(createSyntheticHeader(Collections.singletonList("Sample1")), true, false);
+            final String encoded = encoder.encode(vc);
+            Assert.assertEquals(encoded, "1\t100\t.\tA\tC\t0\t.\t.\tGT\t./.");
+        } finally {
+            Locale.setDefault(originalDefault);
+        }
+    }
 
     @DataProvider(name = "MissingFormatTestData")
     public Object[][] makeMissingFormatTestData() {

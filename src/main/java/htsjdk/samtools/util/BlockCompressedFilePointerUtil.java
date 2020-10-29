@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools.util;
 
+import java.util.Locale;
+
 /**
  * Static for manipulating virtual file pointers in BGZF files.
  */
@@ -129,7 +131,7 @@ public class BlockCompressedFilePointerUtil {
      * @return {@code vfp} formatted as string in address:offset form
      */
     public static String asAddressOffsetString(final long vfp) {
-        return String.format("%d:%d",
+        return String.format(Locale.US,"%d:%d",
                 BlockCompressedFilePointerUtil.getBlockAddress(vfp),
                 BlockCompressedFilePointerUtil.getBlockOffset(vfp));
     }

@@ -24,6 +24,8 @@
 
 package htsjdk.samtools;
 
+import java.util.Locale;
+
 /**
  * This determines how flag fields are represented in the SAM file.
  *
@@ -65,7 +67,7 @@ public enum SamFlagField {
     HEXADECIMAL {
         @Override
         public String format(final int flag) {
-            return String.format("%#x", flag);
+            return String.format(Locale.US, "%#x", flag);
         }
         @Override
         protected int parseWithoutValidation(final String flag) {
@@ -75,7 +77,7 @@ public enum SamFlagField {
     OCTAL {
         @Override
         public String format(final int flag) {
-            return String.format("%#o", flag);
+            return String.format(Locale.US, "%#o", flag);
         }
         @Override
         protected int parseWithoutValidation(final String flag) {

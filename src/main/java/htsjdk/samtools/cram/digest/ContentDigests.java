@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 public final class ContentDigests {
     public static final EnumSet<KNOWN_DIGESTS> ALL = EnumSet
@@ -101,7 +102,7 @@ public final class ContentDigests {
     private static String toHex(final byte[] bytes) {
         final StringBuilder sb = new StringBuilder();
         for (final byte t : bytes) {
-            sb.append(String.format("%02x", (0xFF & t)).toUpperCase()).append(
+            sb.append(String.format(Locale.US, "%02x", (0xFF & t)).toUpperCase()).append(
                     ' ');
         }
         return sb.toString();

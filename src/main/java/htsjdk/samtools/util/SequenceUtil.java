@@ -23,9 +23,16 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.*;
+import htsjdk.samtools.AlignmentBlock;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.fastq.FastqConstants;
-import htsjdk.tribble.annotation.Strand;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.File;
@@ -35,6 +42,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -927,7 +935,7 @@ public class SequenceUtil {
      * @return string representing the md5
      */
     public static String md5DigestToString(final byte[] digest) {
-        return String.format("%032x", new BigInteger(1, digest));
+        return String.format(Locale.US, "%032x", new BigInteger(1, digest));
     }
 
 
