@@ -26,9 +26,13 @@ package htsjdk.samtools;
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Compares records based on if they should be considered PCR Duplicates (see MarkDuplicates).
@@ -42,6 +46,7 @@ import java.util.Map;
  */
 public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serializable {
     private static final long serialVersionUID = 1L;
+    public static final String UNKNOWN_LIBRARY_STRING = "Unknown Library";
 
     /** An enum to provide type-safe keys for transient attributes the comparator puts on SAMRecords. */
     private static enum Attr {
@@ -50,26 +55,43 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
 
     private static final byte FF = 0, FR = 1, F = 2, RF = 3, RR = 4, R = 5;
 
-    private final Map<String, Short> libraryIds = new HashMap<String, Short>(); // from library string to library id
+    // We use a ConcurrentHashMap to ensure thread safety
+    private final Map<String, Short> libraryIds = new ConcurrentHashMap<>(); // from library string to library id
     private short nextLibraryId = 1;
     
     private ScoringStrategy scoringStrategy = ScoringStrategy.TOTAL_MAPPED_REFERENCE_LENGTH;
     
     public SAMRecordDuplicateComparator() {}
 
+    @Deprecated // This results in sort order depending on the order in which the headers are listed.  Will be removed in future version.
     public SAMRecordDuplicateComparator(final List<SAMFileHeader> headers) {
-        // pre-populate the library names
+        populateLibraryIds(headers);
+    }
+
+    public SAMRecordDuplicateComparator(final SAMFileHeader header) {
+        populateLibraryIds(Collections.singletonList(header));
+    }
+
+    private void populateLibraryIds(final List<SAMFileHeader> headers) {
+        final SortedSet<String> libraryNameOrder = new TreeSet<>();
+        libraryNameOrder.add(UNKNOWN_LIBRARY_STRING);
+
+        // Determine order of library names
         for (final SAMFileHeader header : headers) {
             for (final SAMReadGroupRecord readGroup : header.getReadGroups()) {
                 final String libraryName = readGroup.getLibrary();
                 if (null != libraryName) {
-                    final short libraryId = this.nextLibraryId++;
-                    this.libraryIds.put(libraryName, libraryId);
+                    libraryNameOrder.add(libraryName);
                 }
             }
         }
+
+        // Pre-populate library names
+        for (final String name : libraryNameOrder) {
+            this.libraryIds.computeIfAbsent(name, (s) -> this.nextLibraryId++);
+        }
     }
-    
+
     public void setScoringStrategy(final ScoringStrategy scoringStrategy) {
         this.scoringStrategy = scoringStrategy;
     }
@@ -77,7 +99,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     /**
      * Populates the set of transient attributes on SAMRecords if they are not already there.
      */
-    private void populateTransientAttributes(final SAMRecord... recs) {
+    synchronized private void populateTransientAttributes(final SAMRecord... recs) {
         for (final SAMRecord rec : recs) {
             if (rec.getTransientAttribute(Attr.LibraryId) != null) continue;
             rec.setTransientAttribute(Attr.LibraryId, getLibraryId(rec));
@@ -105,20 +127,20 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
             }
         }
 
-        return "Unknown Library";
+        return UNKNOWN_LIBRARY_STRING;
     }
 
     /** Get the library ID for the given SAM record. */
     private short getLibraryId(final SAMRecord rec) {
-        final String library = getLibraryName(rec);
-        Short libraryId = this.libraryIds.get(library);
-
-        if (libraryId == null) {
-            libraryId = this.nextLibraryId++;
-            this.libraryIds.put(library, libraryId);
+        if (this.libraryIds.size() == 0) {
+            populateLibraryIds(Arrays.asList(rec.getHeader()));
         }
+        final String library = getLibraryName(rec);
+        return updateLibraryId(library);
+    }
 
-        return libraryId;
+    private short updateLibraryId(final String library) {
+        return this.libraryIds.computeIfAbsent(library, (s) -> this.nextLibraryId++);
     }
 
     /**
