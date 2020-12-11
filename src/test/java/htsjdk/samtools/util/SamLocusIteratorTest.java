@@ -328,7 +328,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                         Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
                     }
                 } else if (incIndels && li.getPosition() == insStart2){
-                    // Second insertion should not be included because base quality < 10
+                    // Second insertion should not be included because base quality is less than qualityScoreCutoff
                     Assert.assertEquals(li.getInsertedInRecord().size(), 0);
                 } else {
                     Assert.assertEquals(li.getInsertedInRecord().size(), 0);
