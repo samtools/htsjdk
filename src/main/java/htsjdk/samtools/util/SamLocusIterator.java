@@ -119,6 +119,9 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
      */
     @Override
     void accumulateIndels(SAMRecord rec) {
+        final int minQuality = getQualityScoreCutoff();
+        final boolean dontCheckQualities = minQuality == 0;
+        final byte[] baseQualities = dontCheckQualities ? null : rec.getBaseQualities();
         // get the cigar elements
         final List<CigarElement> cigar = rec.getCigar().getCigarElements();
         // 0-based offset into the read of the current base
@@ -131,8 +134,10 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
             final CigarOperator operator = e.getOperator();
             if (operator.equals(CigarOperator.I)) {
                 // insertions are included in the previous base
-                accumulator.get(baseAccIndex - 1).addInserted(rec, readBase);
-                readBase += e.getLength();
+                if (dontCheckQualities || baseQualities.length == 0 || baseQualities[readBase] >= minQuality){
+                    accumulator.get(baseAccIndex - 1).addInserted(rec, readBase);
+                    readBase += e.getLength();
+                }
             } else if (operator.equals(CigarOperator.D)) {
                 // accumulate for each position that spans the deletion
                 for (int i = 0; i < e.getLength(); i++) {
