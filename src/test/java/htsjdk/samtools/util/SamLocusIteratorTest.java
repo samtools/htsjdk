@@ -301,38 +301,33 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             builder.addFrag("record" + i, 0, startPosition, true, false, "10M3I17M3I3M", qualityString, 10);
         }
         final int insStart1 = 174;
-        final int insStart2 = 194;
-        // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[] {false, true}) {
-            final SamLocusIterator sli = createSamLocusIterator(builder);
-            sli.setIncludeIndels(incIndels);
-            sli.setQualityScoreCutoff(10);
-            // make sure we accumulated depth for each position
-            int pos = startPosition;
-            for (final SamLocusIterator.LocusInfo li : sli) {
-                Assert.assertEquals(li.getPosition(), pos++);
-                // make sure we are accumulating normal coverage
-                Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
-                // Check the correct assignment of the alignment type
-                for (final SamLocusIterator.RecordAndOffset rao : li.getRecordAndOffsets()) {
-                    Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Match);
-                }
-                Assert.assertEquals(li.size(), coverage);
+        final SamLocusIterator sli = createSamLocusIterator(builder);
+        sli.setQualityScoreCutoff(10);
+        sli.includeIndels = true;
+        // make sure we accumulated depth for each position
+        int pos = startPosition;
+        for (final SamLocusIterator.LocusInfo li : sli) {
+            Assert.assertEquals(li.getPosition(), pos++);
+            // make sure we are accumulating normal coverage
+            Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
+            // Check the correct assignment of the alignment type
+            for (final SamLocusIterator.RecordAndOffset rao : li.getRecordAndOffsets()) {
+                Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Match);
+            }
+            Assert.assertEquals(li.size(), coverage);
 
-                // make sure that we are not accumulating deletions
-                Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-                if (incIndels && li.getPosition() == insStart1) {
-                    Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
-                    // Check the correct assignment of the alignment type
-                    for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
-                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
-                    }
-                } else if (incIndels && li.getPosition() == insStart2){
-                    // Second insertion should not be included because base quality is less than qualityScoreCutoff
-                    Assert.assertEquals(li.getInsertedInRecord().size(), 0);
-                } else {
-                    Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+            // make sure that we are not accumulating deletions
+            Assert.assertEquals(li.getDeletedInRecord().size(), 0);
+            if (li.getPosition() == insStart1) {
+                Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
+                // Check the correct assignment of the alignment type
+                for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
+                    Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
                 }
+            }
+            // Second insertion should not be included because base quality is less than qualityScoreCutoff
+            else {
+                Assert.assertEquals(li.getInsertedInRecord().size(), 0);
             }
         }
     }
