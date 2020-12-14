@@ -28,10 +28,8 @@ import htsjdk.samtools.SAMRecord;
 import java.util.List;
 
 /**
- * Aggregates multiple filters and provides a method for applying them all to a given record with
- * one method call.
- *
- * $Id$
+ * Wraps an existing filter and inverts it.  If the wrapped
+ filter would have filtered something out this will keep it and vice versa.
  */
 public class InvertFilter implements SamRecordFilter {
 
