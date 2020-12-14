@@ -29,7 +29,7 @@ import java.util.List;
 
 /**
  * Wraps an existing filter and inverts it.  If the wrapped
- filter would have filtered something out this will keep it and vice versa.
+ * filter would have filtered something out this will keep it and vice versa.
  */
 public class InvertFilter implements SamRecordFilter {
 
