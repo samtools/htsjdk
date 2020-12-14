@@ -332,7 +332,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 else if ((qualityScoreCutoff == 0) && (li.getPosition() == insStart2)) {
                     Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
                 }
-                else{
+                else {
                     Assert.assertEquals(li.getInsertedInRecord().size(), 0);
                 }
             }
