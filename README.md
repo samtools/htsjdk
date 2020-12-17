@@ -138,7 +138,7 @@ Our current version number has 3 parts. **ex: 2.19.0**
 Please see example as follows:
 - htsjdk.samtools.example.PrintReadsExample: How to open a SAM reader and writer.
 - htsjdk.variant.example.PrintVariantsExample: How to open a VariantContextReader and writer.
-- htsjdk.tribble.example.CountRecords: How to open a "Feature" file, currently VCF, BED, and GFF3 records.
+- htsjdk.tribble.example.CountRecords: How to open a "Feature" file, currently the example can only open BED files.
 
 
 
