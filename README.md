@@ -123,7 +123,6 @@ We encourage downstream projects to use the most recent htsjdk release in order 
 * Provide explanations for the rare cases when functionality is deprecated or removed without replacement.
 
 We treat any accessible class/method/field as part of our API and attempt to minimize changes to it with the following exceptions:
-  * The `htsjdk.samtools.cram` package and subpackages are considered unstable and are undergoing major changes.
   * Code which has not yet been released in a numbered version is considered unstable and subject to change without warning.
   * We consider changes to *public* code more disruptive than changes to *protected* code in classes that we believe are not generally subclassed by the downstream community.
   
@@ -132,6 +131,14 @@ Our current version number has 3 parts. **ex: 2.19.0**
 * **Major version bumps (2.19.0 -> 3.0.0)** allow large changes to the existing API's and require substantial changes in downstream projects. These are extremely rare. 
 * **Minor versions bumps ( 2.18.2 -> 2.19.0)** may include additions to the API and well as breaking changes which may require recompiling downstream projects. We attempt to limit breaking changes as much as possible and generally most projects which depend on htsjdk should be able to update to a new minor version with no changes or only simple and obvious changes. We may introduce deprecations which suggest but don't mandate more complex code changes. Minor releases may also remove functionality which has been deprecated for a long time.
 * **Patch version changes (2.18.1 -> 2.18.2)** include additions and possibly deprecations but no breaking changes.
+
+
+
+### Getting Started
+Please see example as follows:
+htsjdk.samtools.example.PrintReadsExample: How to open a SAM reader and writer.
+htsjdk.variant.example.PrintVariantsExample: How to open a VariantContextReader and writer.
+htsjdk.tribble.example.CountRecords: How to open a "Feature" file, currently VCF, BED, and GFF3 records.
 
 
 
