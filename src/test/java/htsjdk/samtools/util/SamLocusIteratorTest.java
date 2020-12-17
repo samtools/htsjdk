@@ -812,5 +812,4 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             ++i;
         }
     }
-
 }
