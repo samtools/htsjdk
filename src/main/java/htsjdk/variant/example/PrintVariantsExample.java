@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * This is a example program showing how to use Feature readers and (optionally) writers.
  * It's also useful for measuring time.
  * An example invocation is:
- * java -cp dist/htsjdk-2.1.1.jar htsjdk.variant.example.PrintVariantsExample in.vcf out.vcf
+ * java -cp build/lib/htsjdk-VERSION.jar htsjdk.variant.example.PrintVariantsExample src/test/resources/htsjdk/tribble/test.vcf out.vcf
  * <p>
  * Arguments:
  * - the first argument is the input file (VCF)
