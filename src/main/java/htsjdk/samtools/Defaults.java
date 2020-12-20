@@ -80,6 +80,14 @@ public class Defaults {
     public static final String CUSTOM_READER_FACTORY;
 
     /**
+     * Pathname to a local disk directory housing a cache of reference files.
+     * The pathname can be constructed using %nums and %s notation, consuming num characters of the MD5sum.
+     * For example /local/ref_cache/%2s/%2s/%s will create 2 nested subdirectories with the filenames in
+     * the deepest directory being the last 28 characters of the md5sum.
+     */
+    public static final String REF_CACHE;
+
+    /**
      * Boolean describing whether downloading a reference file is allowed (for CRAM files),
      * in case the reference file is not specified by the user
      * Enabling this is not necessarily a good idea, since this process often fails.  Default = false.
@@ -128,6 +136,7 @@ public class Defaults {
             NON_ZERO_BUFFER_SIZE = BUFFER_SIZE;
         }
         REFERENCE_FASTA = getFileProperty("reference_fasta", null);
+        REF_CACHE = getStringProperty("ref_cache", "");
         USE_CRAM_REF_DOWNLOAD = getBooleanProperty("use_cram_ref_download", false);
         EBI_REFERENCE_SERVICE_URL_MASK = "https://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
@@ -152,6 +161,7 @@ public class Defaults {
         result.put("BUFFER_SIZE", BUFFER_SIZE);
         result.put("NON_ZERO_BUFFER_SIZE", NON_ZERO_BUFFER_SIZE);
         result.put("REFERENCE_FASTA", REFERENCE_FASTA);
+        result.put("REF_CACHE", REF_CACHE);
         result.put("USE_CRAM_REF_DOWNLOAD", USE_CRAM_REF_DOWNLOAD);
         result.put("EBI_REFERENCE_SERVICE_URL_MASK", EBI_REFERENCE_SERVICE_URL_MASK);
         result.put("CUSTOM_READER_FACTORY", CUSTOM_READER_FACTORY);
