@@ -36,6 +36,7 @@ public class TestUtil {
 
     public static final int RANDOM_SEED = 42;
 
+    private TestUtil(){};
 
     /**
      * Base url where all test files for http tests are found
@@ -87,6 +88,35 @@ public class TestUtil {
         out.close();
         in.close();
         return result;
+    }
+
+    /**
+     * This method creates a temporary VCF or Bam file and its appropriately named index file, and will delete them on exit.
+     *
+     * @param prefix - The prefix string to be used in generating the file's name; must be at least three characters long
+     * @param suffix - The suffix string to be used in generating the file's name; may be null, in which case the suffix ".tmp" will be used
+     * @return A File object referencing the newly created temporary file
+     * @throws IOException - if a file could not be created.
+     */
+    public static File createTemporaryIndexedFile(final String prefix, final String suffix) throws IOException {
+        final File out = File.createTempFile(prefix, suffix);
+        out.deleteOnExit();
+        String indexFileExtension = null;
+        if (suffix.endsWith(FileExtensions.COMPRESSED_VCF)) {
+            indexFileExtension = FileExtensions.TABIX_INDEX;
+        } else if (suffix.endsWith(FileExtensions.VCF)) {
+            indexFileExtension = FileExtensions.VCF_INDEX;
+        } else if (suffix.endsWith(FileExtensions.BAM)) {
+            indexFileExtension = FileExtensions.BAM_INDEX;
+        } else if (suffix.endsWith(FileExtensions.CRAM)) {
+            indexFileExtension = FileExtensions.CRAM_INDEX;
+        }
+
+        if (indexFileExtension != null) {
+            final File indexOut = new File(out.getAbsolutePath() + indexFileExtension);
+            indexOut.deleteOnExit();
+        }
+        return out;
     }
 
     /**

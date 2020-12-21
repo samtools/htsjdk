@@ -1,19 +1,10 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.IntervalList;
-import htsjdk.samtools.util.OverlapDetector;
-import htsjdk.samtools.util.SamLocusIterator;
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.vcf.SamFileUtils;
+import htsjdk.samtools.*;
+import htsjdk.samtools.util.*;
 import org.testng.Assert;
-import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -43,7 +34,7 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
         };
     }
 
-    @BeforeSuite
+    @BeforeClass
     void setup() throws IOException {
 
         simpleSmallFileSam = new File(TEST_DATA_DIR, "simpleSmallFile.sam");
@@ -59,7 +50,7 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
 
     public static File createTemporarySamFileFromInput(final File samFile, final String tempFilePrefix, final String suffix, final File reference) throws IOException {
 
-        final File output = SamFileUtils.createTemporaryIndexedFile(tempFilePrefix, suffix);
+        final File output = TestUtil.createTemporaryIndexedFile(tempFilePrefix, suffix);
 
         try (final SamReader in = SamReaderFactory.makeDefault().open(samFile);
              final SAMFileWriter out = new SAMFileWriterFactory().makeWriter(in.getFileHeader().clone(), true, output, reference)) {
