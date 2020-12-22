@@ -1,6 +1,5 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -67,7 +66,7 @@ public class SamFiles {
         Path indexPath;
         final String fileName = samPath.getFileName().toString(); // works for all path types (e.g. HDFS)
         if (fileName.endsWith(FileExtensions.BAM)) {
-            final String bai = fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.BAM_INDEX;
+            final String bai = fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.BAM_BAI_INDEX;
             final String csi = fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.CSI;
             indexPath = samPath.resolveSibling(bai);
             if (Files.isRegularFile(indexPath)) { // works for all path types (e.g. HDFS)
@@ -94,7 +93,7 @@ public class SamFiles {
         }
 
         // If foo.bai doesn't exist look for foo.bam.bai or foo.cram.bai
-        indexPath = samPath.resolveSibling(fileName + FileExtensions.BAM_INDEX);
+        indexPath = samPath.resolveSibling(fileName + FileExtensions.BAM_BAI_INDEX);
         if (Files.isRegularFile(indexPath)) {
             return indexPath;
         } else {

@@ -26,11 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMException;
 
 import java.io.*;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 
 public class TestUtil {
 
@@ -107,7 +103,7 @@ public class TestUtil {
         } else if (suffix.endsWith(FileExtensions.VCF)) {
             indexFileExtension = FileExtensions.VCF_INDEX;
         } else if (suffix.endsWith(FileExtensions.BAM)) {
-            indexFileExtension = FileExtensions.BAM_INDEX;
+            indexFileExtension = FileExtensions.BAM_BAI_INDEX;
         } else if (suffix.endsWith(FileExtensions.CRAM)) {
             indexFileExtension = FileExtensions.CRAM_INDEX;
         }
