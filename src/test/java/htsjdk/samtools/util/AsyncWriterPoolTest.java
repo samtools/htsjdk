@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 
 public class AsyncWriterPoolTest extends HtsjdkTest {
-    private static class TestWriter implements WrappedWriter<String> {
+    private static class TestWriter implements Writer<String> {
         private final BufferedWriter writer;
 
         public TestWriter(Path file) {
@@ -61,7 +61,7 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
 
     @Test
     public void testWritingToFile() throws IOException {
-        AsyncWriterPool<String> pool = new AsyncWriterPool<>(4);
+        AsyncWriterPool pool = new AsyncWriterPool(4);
         int fileNum = 8;
         ArrayList<File> files = new ArrayList<>();
         ArrayList<AsyncWriterPool.PooledWriter<String>> writers = new ArrayList<>();
@@ -70,7 +70,7 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             File file = File.createTempFile(String.format("AsyncPoolWriter_%s", i), ".tmp");
             TestWriter writer = new TestWriter(file.toPath());
             files.add(file);
-            writers.add(new AsyncWriterPool.PooledWriter<>(pool, writer, new LinkedBlockingQueue<>(), 15));
+            writers.add(pool.new PooledWriter<>(writer, new LinkedBlockingQueue<>(), 15));
             streams.add(Stream.iterate(0, val -> val + 1).iterator());
         }
 
@@ -95,10 +95,10 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
     @Test
     public void testNoSelfSuppression() throws IOException {
 
-        AsyncWriterPool<String> pool = new AsyncWriterPool<>(4);
+        AsyncWriterPool pool = new AsyncWriterPool(4);
         File file = File.createTempFile("AsyncPoolWriterTest", ".tmp");
         TestWriter writer = new TestWriter(file.toPath());
-        AsyncWriterPool.PooledWriter<String> pooledWriter = new AsyncWriterPool.PooledWriter<>(pool, writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
+        AsyncWriterPool.PooledWriter<String> pooledWriter = pool.new PooledWriter<>(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
         writer.close(); // Close the inner writer so an exception will be thrown when a thread trys to write to it
         try {
             pooledWriter.write("Exception"); // Will trigger exception in writing thread
@@ -115,4 +115,5 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             // expected
         }
     }
+
 }
