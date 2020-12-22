@@ -54,13 +54,18 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             TestWriter writer = new TestWriter(file.toPath());
             writers.add(new AsyncWriterPool.PooledWriter<>(pool, writer, new LinkedBlockingQueue<>(), 100));
         }
-        for (int i = 0; i < 8000; i++) {
+        for (int i = 0; i < fileNum * 1000; i++) {
             for (int j = 0; j < 1000; j++) {
-                writers.get(i % 8 ).write(String.format("%s-%s\n", i % 8, j));
+                writers.get(i % fileNum ).write(String.format("%s\t%s\n", i, j));
             }
         }
         pool.close();
     }
+     // TODO: Check the edge cases with similar test as bellow to make sure that:
+    // - Error throws when writing to writer in closed pool
+    // - Error throws when writing to closed writer
+    // - Outputs are ordered correctly and complete and use all threads (seems to be the case)
+    // - Check that our queue is staying a reasonable size
 
 //    @Test
 //    public void testNoSelfSuppression() {

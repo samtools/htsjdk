@@ -3,7 +3,6 @@ package htsjdk.samtools.util;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,11 +35,11 @@ public class AsyncWriterPool<A> implements Closeable {
         private final WrappedWriter<B> writer;
         private final BlockingQueue<B> queue;
         private final AtomicBoolean writing;
+        private final AtomicBoolean isClosed;
         public final AsyncWriterPool<B> outer;
 
         private final int buffsize;
-        private AtomicBoolean isClosed;
-        private Optional<Future<Integer>> currentTask;
+        private Future<Integer> currentTask;
 
 
 
@@ -53,7 +52,7 @@ public class AsyncWriterPool<A> implements Closeable {
             this.outer = outer;
             this.writing = new AtomicBoolean(false);
             this.isClosed = new AtomicBoolean(false);
-            this.currentTask = Optional.empty();
+            this.currentTask = null;
 
             // Add self to writer
             this.outer.writers.add(this);
@@ -61,14 +60,14 @@ public class AsyncWriterPool<A> implements Closeable {
 
         /** Will throw any error thrown in task */
         private void checkAndRethrow() {
-
-            this.currentTask.ifPresent(task -> {
+            if (!(this.currentTask == null)) {
                 try {
-                    Integer writtenItems = task.get();
+                    // NB: ignoring output of number of records previously written
+                    this.currentTask.get();
                 } catch (CancellationException | InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }
-            });
+            }
         }
 
         @Override
@@ -92,7 +91,7 @@ public class AsyncWriterPool<A> implements Closeable {
 
         private void drain(int toDrain) {
             // check the result of the previous task
-            Future<Integer> task = outer.executor.submit(() -> {
+            this.currentTask = outer.executor.submit(() -> {
                 int counter = 0;
 
                 try {
@@ -107,7 +106,6 @@ public class AsyncWriterPool<A> implements Closeable {
                 }
                 return counter;
             });
-            this.currentTask = Optional.of(task);
         }
 
 
