@@ -74,7 +74,7 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             streams.add(Stream.iterate(0, val -> val + 1).iterator());
         }
 
-        // Write batches of 10 integers at a team to each filehandle using a stream for each file to generate
+        // Write batches of 10 integers at a time to each filehandle using a stream for each file to generate
         // sequential integers
         for (int i = 0; i < fileNum * 10; i++) {
             for (int j = 0; j < 10; j++) {

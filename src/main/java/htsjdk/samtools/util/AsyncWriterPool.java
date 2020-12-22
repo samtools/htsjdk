@@ -11,7 +11,7 @@ public class AsyncWriterPool<A> implements Closeable {
     private final AtomicBoolean poolClosed;
     private final ArrayList<PooledWriter<A>> writers;
 
-    protected AsyncWriterPool(final int threads) {
+    public AsyncWriterPool(final int threads) {
         assert threads >= 1; // TODO: throw error
 
         this.poolClosed = new AtomicBoolean(false);
