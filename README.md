@@ -136,10 +136,9 @@ Our current version number has 3 parts. **ex: 2.19.0**
 
 ### Getting Started
 Please see example as follows:
-- htsjdk.samtools.example.PrintReadsExample: How to open a SAM reader and writer.
-- htsjdk.variant.example.PrintVariantsExample: How to open a VariantContextReader and writer.
-- htsjdk.tribble.example.CountRecords: How to open a "Feature" file, currently the example can only open BED files.
-
+- [PrintReadsExample](http://github.com/samtools/htsjdk/blob/master/src/main/java/htsjdk/samtools/example/PrintReadsExample.java): How to open a SAM reader and writer
+- [PrintVariantsExample](http://github.com/samtools/htsjdk/blob/master/src/main/java/htsjdk/variant/example/PrintVariantsExample): How to open a VariantContextReader and writer
+- [CountRecords](http://github.com/samtools/htsjdk/blob/master/src/main/java/htsjdk/tribble/example/CountRecords): How to open a "Feature" file, currently the example can only open BED files
 
 
 [1]: http://samtools.sourceforge.net
