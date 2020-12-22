@@ -23,12 +23,11 @@ public class AsyncWriterPool<A> implements Closeable {
 
     @Override
     public void close() throws IOException {
-        System.err.println("Closing down the pool");
-       this.poolClosed.set(true);
-       for (PooledWriter<A> writer : this.writers) {
-           writer.close();
-       }
-       this.executor.shutdown();
+        this.poolClosed.set(true);
+        for (PooledWriter<A> writer : this.writers) {
+            writer.close();
+        }
+        this.executor.shutdown();
     }
 
     public static class PooledWriter<B> implements WrappedWriter<B> {
@@ -40,8 +39,6 @@ public class AsyncWriterPool<A> implements Closeable {
 
         private final int buffsize;
         private Future<Integer> currentTask;
-
-
 
 
         public PooledWriter(final AsyncWriterPool<B> outer, final WrappedWriter<B> writer, final BlockingQueue<B> queue, final int buffSize) {
@@ -58,13 +55,16 @@ public class AsyncWriterPool<A> implements Closeable {
             this.outer.writers.add(this);
         }
 
-        /** Will throw any error thrown in task */
+        /**
+         * Will throw any error thrown in task
+         */
         private void checkAndRethrow() {
             if (!(this.currentTask == null)) {
                 try {
                     // NB: ignoring output of number of records previously written
                     this.currentTask.get();
                 } catch (CancellationException | InterruptedException | ExecutionException e) {
+                    this.isClosed.set(true);
                     throw new RuntimeException(e);
                 }
             }
@@ -112,17 +112,11 @@ public class AsyncWriterPool<A> implements Closeable {
         @Override
         public void close() throws IOException {
             // NB: We don't need to check on writing here since checkAndRethrow will block till writing is done
-            System.err.println("Closing down the pooled writer");
             this.checkAndRethrow();
-//            outer.writers.remove(this);
-            if(!this.isClosed.getAndSet(true)) {
-                System.err.printf("Current Task pre close drain %s\n", this.currentTask);
+            if (!this.isClosed.getAndSet(true)) {
                 this.drain(this.queue.size());
-                System.err.printf("Current Taskpost close task %s\n", this.currentTask);
                 this.checkAndRethrow(); // Wait for last write to finish
                 this.writer.close();
-            } else {
-                System.err.println("Writer is already closed");
             }
         }
     }

@@ -2,17 +2,17 @@ package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class AsyncWriterPoolTest extends HtsjdkTest {
@@ -27,19 +27,35 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             }
 
         }
+
         @Override
         public void write(String item) {
             try {
                 this.writer.write(item);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeIOException(e);
             }
         }
 
         @Override
         public void close() throws IOException {
-           this.writer.close();
+            this.writer.close();
         }
+    }
+
+    /**
+     * Helper method to check if list is sorted
+     *
+     * @param list input array
+     * @return true if sorted, false otherwise
+     */
+    private static boolean isSorted(List<Integer> list) {
+        for (int i = 0; i < list.size() - 1; i++) {
+            if (list.get(i) > list.get(i + 1)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 
@@ -47,45 +63,56 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
     public void testWritingToFile() throws IOException {
         AsyncWriterPool<String> pool = new AsyncWriterPool<>(4);
         int fileNum = 8;
+        ArrayList<File> files = new ArrayList<>();
         ArrayList<AsyncWriterPool.PooledWriter<String>> writers = new ArrayList<>();
+        ArrayList<Iterator<Integer>> streams = new ArrayList<>();
         for (int i = 0; i < fileNum; i++) {
             File file = File.createTempFile(String.format("AsyncPoolWriter_%s", i), ".tmp");
-            System.out.println(file.toPath().toString());
             TestWriter writer = new TestWriter(file.toPath());
-            writers.add(new AsyncWriterPool.PooledWriter<>(pool, writer, new LinkedBlockingQueue<>(), 100));
+            files.add(file);
+            writers.add(new AsyncWriterPool.PooledWriter<>(pool, writer, new LinkedBlockingQueue<>(), 15));
+            streams.add(Stream.iterate(0, val -> val + 1).iterator());
         }
-        for (int i = 0; i < fileNum * 1000; i++) {
-            for (int j = 0; j < 1000; j++) {
-                writers.get(i % fileNum ).write(String.format("%s\t%s\n", i, j));
+
+        // Write batches of 10 integers at a team to each filehandle using a stream for each file to generate
+        // sequential integers
+        for (int i = 0; i < fileNum * 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                writers.get(i % fileNum).write(String.format("%s\n", streams.get(i % fileNum).next()));
             }
         }
         pool.close();
-    }
-     // TODO: Check the edge cases with similar test as bellow to make sure that:
-    // - Error throws when writing to writer in closed pool
-    // - Error throws when writing to closed writer
-    // - Outputs are ordered correctly and complete and use all threads (seems to be the case)
-    // - Check that our queue is staying a reasonable size
 
-//    @Test
-//    public void testNoSelfSuppression() {
-//        try (AsyncWriterPool<W> t = new TestAsyncWriter()) {
-//            try {
-//                t.write(1); // Will trigger exception in writing thread
-//                t.write(2); // Will block if the above write has not been executed, but may not trigger checkAndRethrow()
-//                t.write(3); // Will trigger checkAndRethrow() if not already done by the above write
-//                Assert.fail("Expected exception");
-//            } catch (MyException e) {
-//                // Pre-bug fix, this was a "Self-suppression not permitted" exception from Java, rather than MyException
-//                Assert.assertEquals(1, e.item.intValue());
-//            }
-//            // Verify that attempts to write after exception will fail
-//            try {
-//                t.write(4);
-//                Assert.fail("Expected exception");
-//            } catch (RuntimeIOException e) {
-//                // Expected
-//            }
-//        }
-//    }
+        // Verify that values wrote in order and in full
+        for (int i = 0; i < fileNum; i++) {
+            File file = files.get(i);
+            List<Integer> lines = IOUtil.slurpLines(file).stream().map(Integer::parseInt).collect(Collectors.toList());
+            assert AsyncWriterPoolTest.isSorted(lines);
+            assert lines.size() == 100;
+        }
+    }
+
+    @Test
+    public void testNoSelfSuppression() throws IOException {
+
+        AsyncWriterPool<String> pool = new AsyncWriterPool<>(4);
+        File file = File.createTempFile("AsyncPoolWriterTest", ".tmp");
+        TestWriter writer = new TestWriter(file.toPath());
+        AsyncWriterPool.PooledWriter<String> pooledWriter = new AsyncWriterPool.PooledWriter<>(pool, writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
+        writer.close(); // Close the inner writer so an exception will be thrown when a thread trys to write to it
+        try {
+            pooledWriter.write("Exception"); // Will trigger exception in writing thread
+            pooledWriter.close(); // Will flush writer and check errors
+            Assert.fail("Expected exception");
+        } catch (Exception e) {
+            // expected
+        }
+        // Verify that attempts to closed pool writer will fail
+        try {
+            pooledWriter.write("Third Exception");
+            Assert.fail("Expected exception");
+        } catch (RuntimeIOException e) {
+            // expected
+        }
+    }
 }
