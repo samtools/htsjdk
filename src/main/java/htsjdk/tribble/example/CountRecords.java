@@ -44,8 +44,8 @@ import java.util.Iterator;
  * An example of how to index a bed file, and then count all the records in the file.
  * This is also useful for testing the feature reader
  *
- * * An example invocation is:
- *  * <code>java -cp build/lib/htsjdk-VERSION.jar htsjdk.tribble.example.CountRecords src/test/resources/htsjdk/tribble/test.bed 1 </code>
+ * An example invocation is:
+ * <code>java -cp build/libs/htsjdk-VERSION.jar htsjdk.tribble.example.CountRecords src/test/resources/htsjdk/tribble/test.bed 1 </code>
  */
 public class CountRecords {
 
@@ -128,7 +128,7 @@ public class CountRecords {
      */
     public static void printUsage() {
         System.err.println("Usage: java -jar CountRecords.jar <inputFile>");
-        System.err.println("    Where input can be of type: Bed (ends in .bed or .bed");
+        System.err.println("    Where input can be of type: BED (ends in .bed or .BED)");
         /**
          * you could add others here; also look in the GATK code-base for an example of a dynamic way
          * to load Tribble codecs.
