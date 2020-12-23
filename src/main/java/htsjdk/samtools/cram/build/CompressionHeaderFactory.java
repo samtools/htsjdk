@@ -17,7 +17,6 @@
  */
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.*;
@@ -423,7 +422,7 @@ public final class CompressionHeaderFactory {
                         new ExternalByteArrayEncoding(tagID)).toEncodingDescriptor();
                 return details;
             default:
-                throw new CRAMException("Unknown tag type: " + (char) type);
+                throw new IllegalArgumentException("Unknown tag type: " + (char) type);
         }
     }
 
@@ -469,9 +468,9 @@ public final class CompressionHeaderFactory {
                 if (value instanceof long[]) {
                     return 1 + 4 + ((long[]) value).length * 4;
                 }
-                throw new CRAMException("Unknown tag array class: " + value.getClass());
+                throw new RuntimeException("Unknown tag array class: " + value.getClass());
             default:
-                throw new CRAMException("Unknown tag type: " + (char) type);
+                throw new RuntimeException("Unknown tag type: " + (char) type);
         }
     }
 }

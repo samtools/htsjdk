@@ -27,7 +27,6 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 
@@ -74,7 +73,7 @@ public class CRAMReferenceRegion {
                 final SAMSequenceRecord sequence = samFileHeader.getSequence(referenceIndex);
                 referenceBases = referenceSource.getReferenceBases(sequence, true);
                 if (referenceBases == null) {
-                    throw new CRAMException(
+                    throw new IllegalArgumentException(
                             String.format(
                                     "A reference must be supplied (reference sequence %s not found).",
                                     sequence));
@@ -93,4 +92,5 @@ public class CRAMReferenceRegion {
         referenceBasesContextID = embeddedReferenceIndex;
         referenceBases = embeddedReferenceBytes;
     }
+
 }

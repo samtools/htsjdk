@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -20,7 +19,7 @@ public final class CramSpanContainerIterator extends CramContainerIterator {
     private Iterator<Boundary> containerBoundaries;
     private Boundary currentBoundary;
 
-    private CramSpanContainerIterator(final SeekableStream seekableStream, final long[] coordinates) throws CRAMException {
+    private CramSpanContainerIterator(final SeekableStream seekableStream, final long[] coordinates) throws IOException {
         super(seekableStream);
         this.seekableStream = seekableStream;
         final List<Boundary> boundaries = new ArrayList<>();
@@ -71,7 +70,7 @@ public final class CramSpanContainerIterator extends CramContainerIterator {
             this.start = start;
             this.end = end;
             if (start >= end) {
-                throw new CRAMException("Boundary start is greater than end.");
+                throw new RuntimeException("Boundary start is greater than end.");
             }
         }
 
@@ -92,7 +91,7 @@ public final class CramSpanContainerIterator extends CramContainerIterator {
                 }
 
                 if (!hasNext()) {
-                    throw new CRAMException("No more containers in this boundary.");
+                    throw new RuntimeException("No more containers in this boundary.");
                 }
 
                 return new Container(getCramHeader().getCRAMVersion(), seekableStream, seekableStream.position());
