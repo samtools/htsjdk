@@ -105,7 +105,8 @@ public class TestUtil {
         } else if (suffix.endsWith(FileExtensions.BAM)) {
             indexFileExtension = FileExtensions.BAM_BAI_INDEX;
         } else if (suffix.endsWith(FileExtensions.CRAM)) {
-            indexFileExtension = FileExtensions.CRAM_INDEX;
+            // this is what is currently being generated....we may want to change it but that's out of scope.
+            indexFileExtension = FileExtensions.BAM_BAI_INDEX;
         }
 
         if (indexFileExtension != null) {

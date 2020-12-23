@@ -40,20 +40,20 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
         simpleSmallFileSam = new File(TEST_DATA_DIR, "simpleSmallFile.sam");
         leadingInsertionSam = new File(TEST_DATA_DIR, "leading_insertion.sam");
 
-        simpleSmallFileCram = createTemporarySamFileFromInput(simpleSmallFileSam, "SamLocusAndReferenceIteratorTest", ".cram", referenceAssembly18_trimmed);
-        leadingInsertionCram = createTemporarySamFileFromInput(leadingInsertionSam, "SamLocusAndReferenceIteratorTest", ".cram", referenceAssembly18_trimmed);
+        simpleSmallFileCram = createTemporaryIndexedSamFileFromInput(simpleSmallFileSam, "SamLocusAndReferenceIteratorTest", ".cram", referenceAssembly18_trimmed);
+        leadingInsertionCram = createTemporaryIndexedSamFileFromInput(leadingInsertionSam, "SamLocusAndReferenceIteratorTest", ".cram", referenceAssembly18_trimmed);
 
-        simpleSmallFileBam = createTemporarySamFileFromInput(simpleSmallFileSam, "SamLocusAndReferenceIteratorTest", ".bam", referenceAssembly18_trimmed);
-        leadingInsertionBam = createTemporarySamFileFromInput(leadingInsertionSam, "SamLocusAndReferenceIteratorTest", ".bam", referenceAssembly18_trimmed);
+        simpleSmallFileBam = createTemporaryIndexedSamFileFromInput(simpleSmallFileSam, "SamLocusAndReferenceIteratorTest", ".bam", referenceAssembly18_trimmed);
+        leadingInsertionBam = createTemporaryIndexedSamFileFromInput(leadingInsertionSam, "SamLocusAndReferenceIteratorTest", ".bam", referenceAssembly18_trimmed);
 
     }
 
-    public static File createTemporarySamFileFromInput(final File samFile, final String tempFilePrefix, final String suffix, final File reference) throws IOException {
+    public static File createTemporaryIndexedSamFileFromInput(final File samFile, final String tempFilePrefix, final String suffix, final File reference) throws IOException {
 
         final File output = TestUtil.createTemporaryIndexedFile(tempFilePrefix, suffix);
 
         try (final SamReader in = SamReaderFactory.makeDefault().open(samFile);
-             final SAMFileWriter out = new SAMFileWriterFactory().makeWriter(in.getFileHeader().clone(), true, output, reference)) {
+             final SAMFileWriter out = new SAMFileWriterFactory().setCreateIndex(true).setCreateMd5File(false).makeWriter(in.getFileHeader().clone(), true, output, reference)) {
             for (final SAMRecord record : in) {
                 out.addAlignment(record);
             }
