@@ -88,7 +88,7 @@ public class AsyncWriterPool implements Closeable {
             if (queue.size() >= this.bufferSize && !this.writing.getAndSet(true)) {
 
                 checkAndRethrow();
-                this.drain(this.bufferSize);
+                this.drain(this.queue.size());
             }
         }
 
@@ -100,7 +100,7 @@ public class AsyncWriterPool implements Closeable {
                 try {
                     // BlockingQueue is threadsafe and uses a different lock for both reading and writing
                     // ends of the queue, so this is safe and avoids an extra copy.
-                    while (counter < toDrain && !this.queue.isEmpty()) {
+                    while (counter < toDrain) {
                         this.writer.write(this.queue.poll());
                         counter++;
                     }
