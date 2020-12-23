@@ -42,14 +42,15 @@ import java.util.function.BiConsumer;
 public final class FastqEncoder {
 
     // cannot be instantiated because it is an utility class
-    private FastqEncoder() {}
+    private FastqEncoder() {
+    }
 
     /**
      * Encodes a FastqRecord in the String FASTQ format.
      */
     public static String encode(final FastqRecord record) {
         // reserve some memory based on the read length
-        int capacity = record.getReadLength() * 2 +  5;
+        int capacity = record.getReadLength() * 2 + 5;
         // reserve some memory based on the read name
         if (record.getReadName() != null) {
             capacity += record.getReadName().length();
@@ -59,9 +60,10 @@ public final class FastqEncoder {
 
     /**
      * Writes a FastqRecord into the Appendable output.
+     *
      * @throws SAMException if any I/O error occurs.
      */
-    public static Appendable write(final Appendable out,final FastqRecord record) {
+    public static Appendable write(final Appendable out, final FastqRecord record) {
         final String readName = record.getReadName();
         final String readString = record.getReadString();
         final String qualHeader = record.getBaseQualityHeader();
@@ -72,7 +74,7 @@ public final class FastqEncoder {
                     .append(readString == null ? "" : readString).append('\n')
                     .append(FastqConstants.QUALITY_HEADER)
                     .append(qualHeader == null ? "" : qualHeader).append('\n')
-                    .append(qualityString == null ? "" : qualityString);
+                    .append(qualityString == null ? "" : qualityString).append('\n');
         } catch (IOException e) {
             throw new SAMException(e);
         }
@@ -80,6 +82,7 @@ public final class FastqEncoder {
 
     /**
      * Encodes a SAMRecord in the String FASTQ format.
+     *
      * @see #encode(FastqRecord)
      * @see #asSAMRecord(FastqRecord, SAMFileHeader)
      */
@@ -92,7 +95,7 @@ public final class FastqEncoder {
      */
     public static FastqRecord asFastqRecord(final SAMRecord record) {
         String readName = record.getReadName();
-        if(record.getReadPairedFlag() && (record.getFirstOfPairFlag() || record.getSecondOfPairFlag())) {
+        if (record.getReadPairedFlag() && (record.getFirstOfPairFlag() || record.getSecondOfPairFlag())) {
             readName += (record.getFirstOfPairFlag()) ? FastqConstants.FIRST_OF_PAIR : FastqConstants.SECOND_OF_PAIR;
         }
         return new FastqRecord(readName, record.getReadString(), record.getStringAttribute(SAMTag.CO), record.getBaseQualityString());
@@ -102,7 +105,8 @@ public final class FastqEncoder {
      * Converts a {@link FastqRecord} into a simple unmapped {@link SAMRecord}.
      */
     public static SAMRecord asSAMRecord(final FastqRecord record, final SAMFileHeader header) {
-        return asSAMRecord(record, header, (s, r) -> {});
+        return asSAMRecord(record, header, (s, r) -> {
+        });
     }
 
     /**
@@ -111,9 +115,9 @@ public final class FastqEncoder {
      * <p>This method allows to pass a {@link BiConsumer} to add the information from the record in
      * a customizable manner.
      *
-     * @param record    object to encode.
-     * @param header    header for the returned object.
-     * @param custom    function to customize encoding. Note that default information might be overriden.
+     * @param record object to encode.
+     * @param header header for the returned object.
+     * @param custom function to customize encoding. Note that default information might be overriden.
      */
     public static SAMRecord asSAMRecord(final FastqRecord record, final SAMFileHeader header, final BiConsumer<FastqRecord, SAMRecord> custom) {
         // construct the SAMRecord and set the unmapped flag
@@ -135,13 +139,13 @@ public final class FastqEncoder {
      * <p>Note that all tabs present in the quality header are replaced by spaces.
      */
     public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_TO_COMMENT_TAG = (record, samRecord) ->
-        samRecord.setAttribute(SAMTag.CO, record.getBaseQualityHeader().replaceAll("\t", " "));
+            samRecord.setAttribute(SAMTag.CO, record.getBaseQualityHeader().replaceAll("\t", " "));
 
 
     public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_PARSE_SAM_TAGS = (record, samRecord) -> {
         final String[] tokens = record.getBaseQualityHeader().split("\t");
         final TextTagCodec codec = new TextTagCodec();
-        for (final String token: tokens) {
+        for (final String token : tokens) {
             final Map.Entry<String, Object> tagValue = codec.decode(token);
             samRecord.setAttribute(tagValue.getKey(), tagValue.getValue());
         }

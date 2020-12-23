@@ -18,13 +18,13 @@ public class AsyncWriterPool implements Closeable {
         this.poolClosed = new AtomicBoolean(false);
         this.writers = new ArrayList<>();
 
-        executor = Executors.newWorkStealingPool(threads);
+        this.executor = Executors.newWorkStealingPool(threads);
     }
 
     @Override
     public void close() throws IOException {
         this.poolClosed.set(true);
-        for (PooledWriter<?> writer : this.writers) {
+        for (final PooledWriter<?> writer : this.writers) {
             writer.close();
         }
         this.executor.shutdown();
@@ -36,7 +36,7 @@ public class AsyncWriterPool implements Closeable {
         private final Writer<A> writer;
         private final BlockingQueue<A> queue;
         private final AtomicBoolean writing;
-        private final AtomicBoolean isClosed;
+        private Boolean isClosed;
 
         private final int bufferSize;
 
@@ -51,7 +51,7 @@ public class AsyncWriterPool implements Closeable {
             this.queue = queue;
             this.bufferSize = bufferSize;
             this.writing = new AtomicBoolean(false);
-            this.isClosed = new AtomicBoolean(false);
+            this.isClosed = false;
             this.currentTask = null;
 
             // Add to pools writers
@@ -67,7 +67,7 @@ public class AsyncWriterPool implements Closeable {
                     // NB: ignoring output of number of records previously written
                     this.currentTask.get();
                 } catch (CancellationException | InterruptedException | ExecutionException e) {
-                    this.isClosed.set(true);
+                    this.isClosed = true;
                     throw new RuntimeException("Exception while writing records asynchronously", e);
                 }
             }
@@ -75,7 +75,11 @@ public class AsyncWriterPool implements Closeable {
 
         @Override
         public void write(final A item) {
-            if (this.isClosed.get()) throw new RuntimeIOException("Attempt to add record to closed writer.");
+            if (this.isClosed) throw new RuntimeIOException("Attempt to add record to closed writer.");
+            // Check if last task is done so that we don't end up in bad situation if draining fails
+            // while we are blocked on queue.put if BlockingQueue is bounded. this.writing is used instead
+            // of this.currentTask since currentTask can be null
+            if (!this.writing.get()) checkAndRethrow();
 
             // Put new item in queue
             try {
@@ -86,23 +90,22 @@ public class AsyncWriterPool implements Closeable {
 
             // If queue size is large enough, and not currently writing items, send to executor
             if (queue.size() >= this.bufferSize && !this.writing.getAndSet(true)) {
-
-                checkAndRethrow();
-                this.drain(this.queue.size());
+//                checkAndRethrow();
+                this.drain();
             }
         }
 
-        private void drain(int toDrain) {
+        private void drain() {
             // check the result of the previous task
             this.currentTask = AsyncWriterPool.this.executor.submit(() -> {
-                int counter = 0;
 
                 try {
                     // BlockingQueue is threadsafe and uses a different lock for both reading and writing
                     // ends of the queue, so this is safe and avoids an extra copy.
-                    while (counter < toDrain) {
-                        this.writer.write(this.queue.poll());
-                        counter++;
+                    A item = this.queue.poll();
+                    while (item != null) {
+                        this.writer.write(item);
+                        item = this.queue.poll();
                     }
                 } finally {
                     this.writing.set(false);
@@ -116,8 +119,9 @@ public class AsyncWriterPool implements Closeable {
         public void close() throws IOException {
             // NB: We don't need to check on writing here since checkAndRethrow will block till writing is done
             this.checkAndRethrow();
-            if (!this.isClosed.getAndSet(true)) {
-                this.drain(this.queue.size());
+            if (!this.isClosed) {
+                this.isClosed = true;
+                this.drain();
                 this.checkAndRethrow(); // Wait for last write to finish
                 this.writer.close();
             }
