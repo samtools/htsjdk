@@ -95,6 +95,15 @@ public class AsyncWriterPool implements Closeable {
             }
         }
 
+        @Override
+        public void flush() {
+            checkAndRethrow();
+            if (!this.isClosed) {
+                this.drain();
+                checkAndRethrow();
+            }
+        }
+
         private void drain() {
             // check the result of the previous task
             this.currentTask = AsyncWriterPool.this.executor.submit(() -> {
@@ -107,6 +116,7 @@ public class AsyncWriterPool implements Closeable {
                         this.writer.write(item);
                         item = this.queue.poll();
                     }
+                    this.writer.flush();
                 } finally {
                     this.writing.set(false);
                 }

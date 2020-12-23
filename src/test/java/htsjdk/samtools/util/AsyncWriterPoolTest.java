@@ -38,6 +38,15 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
         }
 
         @Override
+        public void flush() {
+            try {
+                this.writer.flush();
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
+
+        @Override
         public void close() throws IOException {
             this.writer.close();
         }

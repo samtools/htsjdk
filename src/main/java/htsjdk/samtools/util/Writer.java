@@ -1,9 +1,10 @@
 package htsjdk.samtools.util;
 
 import java.io.Closeable;
+import java.io.Flushable;
 
 
-public interface Writer<A> extends Closeable {
+public interface Writer<A> extends Closeable, Flushable {
 
     void write(A item);
 
