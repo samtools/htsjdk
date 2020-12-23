@@ -2,6 +2,8 @@ package htsjdk.samtools.fastq;
 
 import htsjdk.samtools.util.AbstractAsyncWriter;
 
+import java.io.IOException;
+
 /**
  * Implementation of a FastqWriter that provides asynchronous output.
  *
@@ -30,4 +32,9 @@ public class AsyncFastqWriter extends AbstractAsyncWriter<FastqRecord> implement
         this.writer.close();
     }
 
+    @Override
+    public void flush() throws IOException {
+        // TODO: is this okay?
+        this.writer.flush();
+    }
 }

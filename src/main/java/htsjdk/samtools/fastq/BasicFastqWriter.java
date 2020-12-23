@@ -36,7 +36,7 @@ import java.io.PrintStream;
  * In general FastqWriterFactory should be used so that AsyncFastqWriter can be enabled, but there are some
  * cases in which that behavior is explicitly not wanted.
  */
-public class BasicFastqWriter implements FastqWriter, Flushable, Writer<FastqRecord> {
+public class BasicFastqWriter implements FastqWriter, Flushable {
     private final String path;
     private final PrintStream writer;
 
