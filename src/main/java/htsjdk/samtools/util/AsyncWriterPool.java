@@ -55,8 +55,6 @@ public class AsyncWriterPool implements Closeable {
     }
 
 
-    // TODO: note that this is not threadsafe and multiple threads trying to call write or close should by synchronized
-
     /**
      * Any class that implements {@link Writer} can be exchanged for a {@code PooledWriter}. The PooledWriter provides
      * the same API as {@link Writer}, but will manage buffering of writes and sending to the {@link AsyncWriterPool} it
