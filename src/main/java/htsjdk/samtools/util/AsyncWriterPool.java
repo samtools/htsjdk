@@ -1,7 +1,5 @@
 package htsjdk.samtools.util;
 
-import com.sun.jndi.ldap.pool.Pool;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
