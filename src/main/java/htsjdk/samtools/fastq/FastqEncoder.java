@@ -74,7 +74,7 @@ public final class FastqEncoder {
                     .append(readString == null ? "" : readString).append('\n')
                     .append(FastqConstants.QUALITY_HEADER)
                     .append(qualHeader == null ? "" : qualHeader).append('\n')
-                    .append(qualityString == null ? "" : qualityString).append('\n');
+                    .append(qualityString == null ? "" : qualityString);
         } catch (IOException e) {
             throw new SAMException(e);
         }

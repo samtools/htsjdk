@@ -38,15 +38,6 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
         }
 
         @Override
-        public void flush() {
-            try {
-                this.writer.flush();
-            } catch (IOException e) {
-                throw new RuntimeIOException(e);
-            }
-        }
-
-        @Override
         public void close() throws IOException {
             this.writer.close();
         }
@@ -79,7 +70,8 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             File file = File.createTempFile(String.format("AsyncPoolWriter_%s", i), ".tmp");
             TestWriter writer = new TestWriter(file.toPath());
             files.add(file);
-            writers.add(pool.new PooledWriter<>(writer, new LinkedBlockingQueue<>(), 15));
+            AsyncWriterPool.PooledWriter<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 15);
+            writers.add(pooledWriter);
             streams.add(Stream.iterate(0, val -> val + 1).iterator());
         }
 
@@ -107,7 +99,7 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
         AsyncWriterPool pool = new AsyncWriterPool(4);
         File file = File.createTempFile("AsyncPoolWriterTest", ".tmp");
         TestWriter writer = new TestWriter(file.toPath());
-        AsyncWriterPool.PooledWriter<String> pooledWriter = pool.new PooledWriter<>(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
+        AsyncWriterPool.PooledWriter<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
         writer.close(); // Close the inner writer so an exception will be thrown when a thread trys to write to it
         try {
             pooledWriter.write("Exception"); // Will trigger exception in writing thread

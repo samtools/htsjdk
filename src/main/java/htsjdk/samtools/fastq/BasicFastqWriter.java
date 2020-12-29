@@ -61,9 +61,8 @@ public class BasicFastqWriter implements FastqWriter, Flushable {
     public void write(final FastqRecord rec) {
         // encode without creating a String
         FastqEncoder.write(writer, rec);
-        // TODO, maybe just append the newline to the record here to preserve backward compat. Either way get rid of call to writer.println()
         // and print a new line
-        // writer.println();
+        writer.println();
     }
 
     private void checkError() {
