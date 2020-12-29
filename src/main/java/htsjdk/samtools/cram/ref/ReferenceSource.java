@@ -285,15 +285,19 @@ public class ReferenceSource implements CRAMReferenceSource {
         String rem = md5;
         for (int i = 1; i < subdirs.length; i++) {
             Matcher matcher = pattern.matcher(subdirs[i]);
-            if (matcher.find()) {
+            if (matcher.find() && !rem.isEmpty()) {
                 if (matcher.group(1).isEmpty()) {
                     // last segment of the path
                     pathName.append(rem);
+                    rem = "";
                 } else {
                     // first matched group corresponds to sub-directory name length
                     int subdirLength = Integer.parseInt(matcher.group(1));
                     pathName.append(rem.substring(0, subdirLength) + matcher.group(2));
-                    rem = rem.substring(subdirLength);
+                    if (subdirLength < rem.length())
+                        rem = rem.substring(subdirLength);
+                    else
+                        rem = "";
                 }
             } else {
                 final String message = String

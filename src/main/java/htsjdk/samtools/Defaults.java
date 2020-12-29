@@ -80,10 +80,17 @@ public class Defaults {
     public static final String CUSTOM_READER_FACTORY;
 
     /**
+     * The name of the system property which contains the location of a reference cache.
+     */
+    public static final String REF_CACHE_PROPERTY_NAME = "ref_cache";
+
+    /**
      * Pathname to a local disk directory housing a cache of reference files.
      * The pathname can be constructed using %nums and %s notation, consuming num characters of the MD5sum.
      * For example /local/ref_cache/%2s/%2s/%s will create 2 nested subdirectories with the filenames in
      * the deepest directory being the last 28 characters of the md5sum.
+     * The system property corresponds to the REF_CACHE environment variable implemented by samtools
+     * (see http://www.htslib.org/doc/samtools.html#ENVIRONMENT_VARIABLES).
      */
     public static final String REF_CACHE;
 
@@ -136,7 +143,7 @@ public class Defaults {
             NON_ZERO_BUFFER_SIZE = BUFFER_SIZE;
         }
         REFERENCE_FASTA = getFileProperty("reference_fasta", null);
-        REF_CACHE = getStringProperty("ref_cache", "");
+        REF_CACHE = getStringProperty(REF_CACHE_PROPERTY_NAME, "");
         USE_CRAM_REF_DOWNLOAD = getBooleanProperty("use_cram_ref_download", false);
         EBI_REFERENCE_SERVICE_URL_MASK = "https://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
