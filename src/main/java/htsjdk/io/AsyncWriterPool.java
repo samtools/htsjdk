@@ -1,4 +1,6 @@
-package htsjdk.samtools.util;
+package htsjdk.io;
+
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -6,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Implementation of an asynchronous writer pool.
@@ -52,12 +53,7 @@ public class AsyncWriterPool implements Closeable {
     @Override
     public void close() throws IOException {
         this.poolClosed.set(true);
-        List<CompletableFuture<Void>> closers = new ArrayList<>();
-        for (final PooledWriter<?> writer : this.writers) {
-            closers.add(writer.asyncClose());
-        }
-        // Convert List to array and wait on all futures to complete
-        CompletableFuture.allOf(closers.toArray(new CompletableFuture[0])).join();
+        CompletableFuture.allOf(this.writers.stream().map(PooledWriter::nonBlockingClose).toArray(CompletableFuture[]::new)).join();
         this.executor.shutdown();
     }
 
@@ -70,7 +66,7 @@ public class AsyncWriterPool implements Closeable {
      * @param <A>            the type of the items the {@link Writer} can write.
      * @return a {@link PooledWriter}
      */
-    public <A> PooledWriter<A> pool(final Writer<A> writer, final BlockingQueue<A> queue, final int writeThreshold) {
+    public <A> Writer<A> pool(final Writer<A> writer, final BlockingQueue<A> queue, final int writeThreshold) {
         PooledWriter<A> pooledWriter = new PooledWriter<>(writer, queue, writeThreshold);
         this.writers.add(pooledWriter);
         return pooledWriter;
@@ -87,17 +83,18 @@ public class AsyncWriterPool implements Closeable {
      *
      * @param <A> the type of the item the writer can write
      */
-    public class PooledWriter<A> implements Writer<A> {
-        private final AtomicBoolean isClosed = new AtomicBoolean(false);
+    private class PooledWriter<A> implements Writer<A> {
         private final BlockingQueue<A> queue;
         private final Writer<A> writer;
         private final int writeThreshold;
 
+        private Boolean isClosed = false;
+
         // Holds the Future of the last task submitted to the AsyncWriterPools until it is checked, then it is null again.
-        private final AtomicReference<Future<Void>> currentTask = new AtomicReference<>(null);
+        private Future<Void> currentTask;
 
         /**
-         * Exchange a class implementing {@link Writer} for a {@code PooledWriter}.
+         * Create {@code PooledWriter} from a class implementing {@link Writer}.
          *
          * @param writer         a class implementing {@link Writer}
          * @param queue          a queue to use for this writer, bounded or unbounded.
@@ -120,8 +117,8 @@ public class AsyncWriterPool implements Closeable {
          *
          * @throws RuntimeException if any exception was raised during the writing on the receiving thread
          */
-        private void asyncCheckAndRethrow() {
-            if (this.currentTask.get() != null && this.currentTask.get().isDone()) {
+        private void nonBlockingCheckAndRethrow() {
+            if (this.currentTask != null && this.currentTask.isDone()) {
                 this.checkAndRethrow();
             }
         }
@@ -132,8 +129,8 @@ public class AsyncWriterPool implements Closeable {
          *
          * @throws RuntimeException if any exception was raised during the writing on the receiving thread
          */
-        private void syncCheckAndRethrow() {
-            if (this.currentTask.get() != null) {
+        private void blockingCheckAndRethrow() {
+            if (this.currentTask != null) {
                 this.checkAndRethrow();
             }
         }
@@ -142,20 +139,20 @@ public class AsyncWriterPool implements Closeable {
          * Collect any exceptions thrown by the task, close writer, set the current task to null, and rethrow the
          * caught exceptions.
          * <p>
-         * This method should not be called directly and should only be used through the {@code sync} and {@code async}
-         * variants that go by the same name.
+         * This method should not be called directly and should only be used through the {@code blocking} and
+         * {@code nonBlocking} variants that go by the same name.
          *
          * @throws RuntimeException if any exception was raised during the writing on the receiving thread
          */
         private void checkAndRethrow() {
             try {
-                this.currentTask.get().get();
+                this.currentTask.get();
             } catch (CancellationException | InterruptedException | ExecutionException e) {
-                this.isClosed.set(true);
+                this.isClosed = true;
                 throw new RuntimeException("Exception while writing records asynchronously", e);
             } finally {
                 // Set to null to avoid checking the same task multiple times
-                this.currentTask.set(null);
+                this.currentTask = null;
             }
         }
 
@@ -171,20 +168,20 @@ public class AsyncWriterPool implements Closeable {
          */
         @Override
         public void write(final A item) {
-            if (this.isClosed.get()) throw new RuntimeIOException("Attempt to add record to closed writer.");
+            if (this.isClosed) throw new RuntimeIOException("Attempt to add record to closed writer.");
 
-            this.asyncCheckAndRethrow();
+            this.nonBlockingCheckAndRethrow();
 
             // Put new item in queue
             try {
-                while (!this.isClosed.get() && !this.queue.offer(item, 5, TimeUnit.SECONDS)) {
+                while (!this.isClosed && !this.queue.offer(item, 5, TimeUnit.SECONDS)) {
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException("Exception while placing item in queue", e);
             }
 
             // If queue size is large enough, and the there is no last task
-            if (queue.size() >= this.writeThreshold && this.currentTask.get() == null) {
+            if (queue.size() >= this.writeThreshold && this.currentTask == null) {
                 this.drain();
             }
         }
@@ -198,7 +195,7 @@ public class AsyncWriterPool implements Closeable {
          */
         private void drain() {
             // check the result of the previous task
-            this.currentTask.set(AsyncWriterPool.this.executor.submit(() -> {
+            this.currentTask = AsyncWriterPool.this.executor.submit(() -> {
 
                 // BlockingQueue is threadsafe and uses a different lock for both reading and writing
                 // ends of the queue, so this is safe and avoids an extra copy.
@@ -208,26 +205,49 @@ public class AsyncWriterPool implements Closeable {
                     item = this.queue.poll();
                 }
                 return null;
-            }));
+            });
         }
 
         /**
-         * Asynchronously close the the enclosed writer. This wraps a call to {@link PooledWriter#close()} and sends it
-         * to execute on the executor. So the writer, on a different thread, immediately set {@code .isClosed} to true,
-         * block until any ongoing writes are complete, drain any remaining enqueued items, check for exceptions, and
-         * then call close on the underlying writer.
+         * Non-blocking close the the enclosed writer. This wraps a call to {@link PooledWriter#blockingClose()} and
+         * sends it to execute on the executor. {@code .isClosed} is immediately set to {@code true} on the current
+         * thread. The new thread will block until any ongoing writes are complete, drain any remaining enqueued items,
+         * check for exceptions, and then call close on the underlying writer.
          *
          * @return a future that can be waited on
+         * @throws IllegalStateException if isClosed is already true
          */
-        private CompletableFuture<Void> asyncClose() {
+        private CompletableFuture<Void> nonBlockingClose() {
+            if (this.isClosed) throw new IllegalStateException("Writer is already closed");
+            this.isClosed = true;
             return CompletableFuture.supplyAsync(() -> {
                 try {
-                    this.close();
+                    this.blockingClose();
                     return null;
                 } catch (Exception e) {
                     throw new RuntimeException("Caught exception while closing PooledWriter.", e);
                 }
             }, AsyncWriterPool.this.executor);
+        }
+
+        /**
+         * Blocking close method that will first blocking and waiting for any ongoing writing to complete, draining any
+         * remaining elements from the queue, checking the result for exceptions / blocking till it is complete, and
+         * finally closing the writer itself.
+         * <p>
+         * This method should not be called directly, either {@link PooledWriter#close} or
+         * {@link PooledWriter#nonBlockingClose} should be used instead.
+         *
+         * @throws IOException if the enclosed writer's close raises an exception
+         */
+        private void blockingClose() throws IOException {
+            // Wait for any ongoing writes to finish and check for errors
+            this.blockingCheckAndRethrow();
+            // drain any remaining items in the queue
+            this.drain();
+            // Wait for last write to finish
+            this.blockingCheckAndRethrow();
+            this.writer.close();
         }
 
 
@@ -236,18 +256,15 @@ public class AsyncWriterPool implements Closeable {
          * remaining elements from the queue, checking the result for exceptions / blocking till it is complete, and
          * finally closing the writer itself.
          *
-         * @throws IOException if the enclosed writer's close raises an exception
+         * @throws IOException           if the enclosed writer's close raises an exception
+         * @throws IllegalStateException if isClosed is already true
          */
         @Override
         public void close() throws IOException {
-            this.isClosed.set(true);
-            // Wait for any ongoing writes to finish and check for errors
-            this.syncCheckAndRethrow();
-            // drain any remaining items in the queue
-            this.drain();
-            // Wait for last write to finish
-            this.syncCheckAndRethrow();
-            this.writer.close();
+            if (this.isClosed) throw new IllegalStateException("Writer is already closed");
+
+            this.isClosed = true;
+            this.blockingClose();
         }
     }
 }

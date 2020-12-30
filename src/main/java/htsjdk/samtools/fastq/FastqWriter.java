@@ -1,6 +1,6 @@
 package htsjdk.samtools.fastq;
 
-import htsjdk.samtools.util.Writer;
+import htsjdk.io.Writer;
 
 import java.io.Closeable;
 

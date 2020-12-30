@@ -25,7 +25,6 @@ package htsjdk.samtools.fastq;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Writer;
 
 import java.io.File;
 import java.io.Flushable;

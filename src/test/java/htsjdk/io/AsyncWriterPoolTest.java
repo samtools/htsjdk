@@ -1,6 +1,8 @@
-package htsjdk.samtools.util;
+package htsjdk.io;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -64,13 +66,13 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
         AsyncWriterPool pool = new AsyncWriterPool(4);
         int fileNum = 8;
         ArrayList<File> files = new ArrayList<>();
-        ArrayList<AsyncWriterPool.PooledWriter<String>> writers = new ArrayList<>();
+        ArrayList<Writer<String>> writers = new ArrayList<>();
         ArrayList<Iterator<Integer>> streams = new ArrayList<>();
         for (int i = 0; i < fileNum; i++) {
             File file = File.createTempFile(String.format("AsyncPoolWriter_%s", i), ".tmp");
             TestWriter writer = new TestWriter(file.toPath());
             files.add(file);
-            AsyncWriterPool.PooledWriter<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 15);
+            Writer<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 15);
             writers.add(pooledWriter);
             streams.add(Stream.iterate(0, val -> val + 1).iterator());
         }
@@ -99,7 +101,7 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
         AsyncWriterPool pool = new AsyncWriterPool(4);
         File file = File.createTempFile("AsyncPoolWriterTest", ".tmp");
         TestWriter writer = new TestWriter(file.toPath());
-        AsyncWriterPool.PooledWriter<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
+        Writer<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
         writer.close(); // Close the inner writer so an exception will be thrown when a thread trys to write to it
         try {
             pooledWriter.write("Exception"); // Will trigger exception in writing thread

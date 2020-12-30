@@ -1,4 +1,4 @@
-package htsjdk.samtools.util;
+package htsjdk.io;
 
 import java.io.Closeable;
 
