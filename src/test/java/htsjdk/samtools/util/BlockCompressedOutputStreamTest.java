@@ -84,6 +84,37 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         Assert.assertEquals(bcis2.read(buffer), -1, "Should be end of file");
     }
 
+    @Test
+    public void testWriteSingleBytes() throws Exception {
+        final File f = File.createTempFile("BCOST.", ".gz");
+        f.deleteOnExit();
+        final String s  = "Hello, I am a test string, and I will be written out one painful byte at a time.";
+        final byte[] bs = s.getBytes();
+        final int iterations = BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE * 2 / bs.length;
+
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
+        for (int i=0; i<iterations; ++i) {
+            for (final byte b : bs) {
+                bcos.write(b);
+            }
+            bcos.write('\n');
+
+            // Also write as a byte[]
+            bcos.write(bs);
+            bcos.write('\n');
+        }
+
+        bcos.close();
+
+        final List<String> lines = new ArrayList<>();
+        IOUtil.readLines(f).forEachRemaining(lines::add);
+
+        Assert.assertEquals(lines.size(), iterations * 2);
+        for (final String line : lines) {
+            Assert.assertEquals(line, s);
+        }
+    }
+
     @DataProvider(name = "seekReadExceptionsData")
     private Object[][] seekReadExceptionsData()
     {
