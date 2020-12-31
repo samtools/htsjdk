@@ -25,7 +25,6 @@ package htsjdk.samtools.fastq;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Writer;
 
 import java.io.File;
 import java.io.Flushable;
@@ -36,7 +35,7 @@ import java.io.PrintStream;
  * In general FastqWriterFactory should be used so that AsyncFastqWriter can be enabled, but there are some
  * cases in which that behavior is explicitly not wanted.
  */
-public class BasicFastqWriter implements FastqWriter, Flushable {
+public class BasicFastqWriter implements FastqWriter,Flushable {
     private final String path;
     private final PrintStream writer;
 
@@ -49,7 +48,7 @@ public class BasicFastqWriter implements FastqWriter, Flushable {
     }
 
     private BasicFastqWriter(final File file, final PrintStream writer) {
-        this.path = (file != null ? file.getAbsolutePath() : "");
+        this.path = (file != null? file.getAbsolutePath(): "");
         this.writer = writer;
     }
 
@@ -61,9 +60,8 @@ public class BasicFastqWriter implements FastqWriter, Flushable {
     public void write(final FastqRecord rec) {
         // encode without creating a String
         FastqEncoder.write(writer, rec);
-        // TODO, maybe just append the newline to the record here to preserve backward compat. Either way get rid of call to writer.println()
         // and print a new line
-        // writer.println();
+        writer.println();
     }
 
     private void checkError() {
