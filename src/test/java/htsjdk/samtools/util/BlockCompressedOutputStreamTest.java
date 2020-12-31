@@ -104,7 +104,7 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
             bcos.write('\n');
         }
 
-        bcos.close();
+        bcos.close(false);
 
         final List<String> lines = new ArrayList<>();
         IOUtil.readLines(f).forEachRemaining(lines::add);

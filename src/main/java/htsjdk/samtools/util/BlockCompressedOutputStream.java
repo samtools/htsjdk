@@ -358,11 +358,15 @@ public class BlockCompressedOutputStream
         if (indexer != null) {
             indexer.close();
         }
-        // Can't re-open something that is not a regular file, e.g. a named pipe or an output stream
-        if (this.file == null || !Files.isRegularFile(this.file)) return;
-        if (BlockCompressedInputStream.checkTermination(this.file) !=
-                BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) {
-            throw new IOException("Terminator block not found after closing BGZF file " + this.file);
+
+        // If a terminator block was written, ensure that it's there and valid
+        if (writeTerminatorBlock) {
+            // Can't re-open something that is not a regular file, e.g. a named pipe or an output stream
+            if (this.file == null || !Files.isRegularFile(this.file)) return;
+            if (BlockCompressedInputStream.checkTermination(this.file) !=
+                    BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) {
+                throw new IOException("Terminator block not found after closing BGZF file " + this.file);
+            }
         }
     }
 
