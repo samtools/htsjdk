@@ -55,7 +55,7 @@ import java.util.zip.GZIPOutputStream;
 public class IOUtilTest extends HtsjdkTest {
 
 
-    private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools/io/");
+    private static final Path TEST_DATA_DIR = Paths.get ("src/test/resources/htsjdk/samtools/io/");
     private static final Path TEST_VARIANT_DIR = Paths.get("src/test/resources/htsjdk/variant/");
     private static final Path SLURP_TEST_FILE = TEST_DATA_DIR.resolve("slurptest.txt");
     private static final Path EMPTY_FILE = TEST_DATA_DIR.resolve("empty.txt");
@@ -78,8 +78,7 @@ public class IOUtilTest extends HtsjdkTest {
         existingTempFile.deleteOnExit();
         systemTempDir = System.getProperty("java.io.tmpdir");
         final File tmpDir = new File(systemTempDir);
-        inMemoryFileSystem = Jimfs.newFileSystem(Configuration.unix());
-        ;
+        inMemoryFileSystem = Jimfs.newFileSystem(Configuration.unix());;
         if (!tmpDir.isDirectory()) tmpDir.mkdir();
         if (!tmpDir.isDirectory())
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
@@ -267,23 +266,23 @@ public class IOUtilTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] getFiles() {
+    public Object[][] getFiles(){
         final File file = new File("someFile");
-        return new Object[][]{
+        return new Object[][] {
                 {null, null},
                 {file, file.toPath()}
         };
     }
 
     @Test(dataProvider = "getFiles")
-    public void testToPath(final File file, final Path expected) {
+    public void testToPath(final File file, final Path expected){
         Assert.assertEquals(IOUtil.toPath(file), expected);
     }
 
 
     @DataProvider(name = "fileNamesForDelete")
     public Object[][] fileNamesForDelete() {
-        return new Object[][]{
+        return new Object[][] {
                 {Collections.emptyList()},
                 {Collections.singletonList("file1")},
                 {Arrays.asList("file1", "file2")}
@@ -320,7 +319,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test
     public void testDeleteSinglePath() throws Exception {
-        final Path toDelete = Files.createTempFile("file", ".bad");
+        final Path toDelete = Files.createTempFile("file",".bad");
         Assert.assertTrue(Files.exists(toDelete));
         IOUtil.deletePath(toDelete);
         Assert.assertFalse(Files.exists(toDelete));
@@ -328,7 +327,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test
     public void testDeleteSingleWithDeletePaths() throws Exception {
-        final Path toDelete = Files.createTempFile("file", ".bad");
+        final Path toDelete = Files.createTempFile("file",".bad");
         Assert.assertTrue(Files.exists(toDelete));
         IOUtil.deletePaths(toDelete);
         Assert.assertFalse(Files.exists(toDelete));
@@ -368,9 +367,9 @@ public class IOUtilTest extends HtsjdkTest {
 
     private static List<Path> createLocalFiles(final File tmpDir, final List<String> fileNames) throws Exception {
         final List<Path> paths = new ArrayList<>(fileNames.size());
-        for (final String f : fileNames) {
+        for (final String f: fileNames) {
             final File file = new File(tmpDir, f);
-            Assert.assertTrue(file.createNewFile(), "failed to create test file" + file);
+            Assert.assertTrue(file.createNewFile(), "failed to create test file" +file);
             paths.add(file.toPath());
         }
         return paths;
@@ -381,7 +380,7 @@ public class IOUtilTest extends HtsjdkTest {
         final Path folder = inMemoryFileSystem.getPath(folderName);
         if (Files.notExists(folder)) Files.createDirectory(folder);
 
-        for (final String f : fileNames) {
+        for (final String f: fileNames) {
             final Path p = inMemoryFileSystem.getPath(folderName, f);
             Files.createFile(p);
             paths.add(p);
@@ -392,7 +391,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] pathsForWritableDirectory() throws Exception {
-        return new Object[][]{
+        return new Object[][] {
                 // non existent
                 {inMemoryFileSystem.getPath("no_exists"), false},
                 // non directory
@@ -420,7 +419,7 @@ public class IOUtilTest extends HtsjdkTest {
         nonWritableFile.mkdir();
         nonWritableFile.setWritable(false);
 
-        return new Object[][]{
+        return new Object[][] {
                 // non existent
                 {new File("no_exists"), false},
                 // non directory
@@ -473,12 +472,12 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider(name = "blockCompressedExtensionExtensionStrings")
     public static Object[][] createBlockCompressedExtensionStrings() {
-        return new Object[][]{
-                {"testzip.gz", true},
-                {"test.gzip", true},
-                {"test.bgz", true},
-                {"test.bgzf", true},
-                {"test.bzip2", false}
+        return new Object[][] {
+                { "testzip.gz", true },
+                { "test.gzip", true },
+                { "test.bgz", true },
+                { "test.bgzf", true },
+                { "test.bzip2", false }
         };
     }
 
@@ -556,11 +555,11 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "blockCompressedFiles")
     public void testIsBlockCompressedOnJimfs(Path file, boolean checkExtension, boolean expected) throws IOException {
-        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
-            final Path jimfsRoot = jimfs.getRootDirectories().iterator().next();
-            final Path jimfsFile = Files.copy(file, jimfsRoot.resolve(file.getFileName().toString()));
-            Assert.assertEquals(IOUtil.isBlockCompressed(jimfsFile, checkExtension), expected);
-        }
+         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+             final Path jimfsRoot = jimfs.getRootDirectories().iterator().next();
+             final Path jimfsFile = Files.copy(file, jimfsRoot.resolve(file.getFileName().toString()));
+             Assert.assertEquals(IOUtil.isBlockCompressed(jimfsFile, checkExtension), expected);
+         }
     }
 
     @DataProvider
@@ -597,7 +596,7 @@ public class IOUtilTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] getExtensions() {
+    public Object[][] getExtensions(){
         return new Object[][]{
                 {".gz", true},
                 {".bfq", true},
@@ -609,15 +608,15 @@ public class IOUtilTest extends HtsjdkTest {
         final Path jmfsRoot = inMemoryFileSystem.getRootDirectories().iterator().next();
         final Path tmp = Files.createTempFile(jmfsRoot, "test", extension);
         final String expected = "lorem ipswitch, nantucket, bucket";
-        try (java.io.Writer out = IOUtil.openFileForBufferedWriting(tmp)) {
+        try (Writer out = IOUtil.openFileForBufferedWriting(tmp)){
             out.write(expected);
         }
 
-        try (InputStream in = new BufferedInputStream(Files.newInputStream(tmp))) {
-            Assert.assertEquals(IOUtil.isGZIPInputStream(in), gzipped);
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(tmp))){
+               Assert.assertEquals(IOUtil.isGZIPInputStream(in), gzipped);
         }
 
-        try (BufferedReader in = IOUtil.openFileForBufferedReading(tmp)) {
+        try (BufferedReader in = IOUtil.openFileForBufferedReading(tmp)){
             final String actual = in.readLine();
             Assert.assertEquals(actual, expected);
         }
@@ -791,7 +790,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "gzipTests")
     public void isGZIPInputStreamTest(byte[] data, boolean isGzipped) throws IOException {
-        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data)) {
+        try(ByteArrayInputStream inputStream = new ByteArrayInputStream(data)) {
             // test string without compression
             Assert.assertEquals(IOUtil.isGZIPInputStream(inputStream), isGzipped);
             // call twice to verify 'in.reset()' was called

@@ -4,6 +4,11 @@ import java.io.Closeable;
 
 public interface Writer<A> extends Closeable {
 
+    /**
+     * Writes one item.
+     *
+     * @param item the item to write.
+     */
     void write(A item);
 
     /**

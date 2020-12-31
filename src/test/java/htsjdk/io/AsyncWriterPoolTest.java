@@ -63,35 +63,38 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
 
     @Test
     public void testWritingToFile() throws IOException {
-        AsyncWriterPool pool = new AsyncWriterPool(4);
-        int fileNum = 8;
-        ArrayList<File> files = new ArrayList<>();
-        ArrayList<Writer<String>> writers = new ArrayList<>();
-        ArrayList<Iterator<Integer>> streams = new ArrayList<>();
-        for (int i = 0; i < fileNum; i++) {
-            File file = File.createTempFile(String.format("AsyncPoolWriter_%s", i), ".tmp");
-            TestWriter writer = new TestWriter(file.toPath());
-            files.add(file);
-            Writer<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 15);
-            writers.add(pooledWriter);
-            streams.add(Stream.iterate(0, val -> val + 1).iterator());
-        }
-
-        // Write batches of 10 integers at a time to each filehandle using a stream for each file to generate
-        // sequential integers
-        for (int i = 0; i < fileNum * 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                writers.get(i % fileNum).write(String.format("%s\n", streams.get(i % fileNum).next()));
+        // Test with thread pools sized 1-4
+        for (int threads = 1; threads <= 4; threads++) {
+            AsyncWriterPool pool = new AsyncWriterPool(threads);
+            int fileNum = 8;
+            ArrayList<File> files = new ArrayList<>();
+            ArrayList<Writer<String>> writers = new ArrayList<>();
+            ArrayList<Iterator<Integer>> streams = new ArrayList<>();
+            for (int i = 0; i < fileNum; i++) {
+                File file = File.createTempFile(String.format("AsyncPoolWriter_%s_%s", threads, i), ".tmp");
+                TestWriter writer = new TestWriter(file.toPath());
+                files.add(file);
+                Writer<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 15);
+                writers.add(pooledWriter);
+                streams.add(Stream.iterate(0, val -> val + 1).iterator());
             }
-        }
-        pool.close();
 
-        // Verify that values wrote in order and in full
-        for (int i = 0; i < fileNum; i++) {
-            File file = files.get(i);
-            List<Integer> lines = IOUtil.slurpLines(file).stream().map(Integer::parseInt).collect(Collectors.toList());
-            assert AsyncWriterPoolTest.isSorted(lines);
-            assert lines.size() == 100;
+            // Write batches of 10 integers at a time to each filehandle using a stream for each file to generate
+            // sequential integers
+            for (int i = 0; i < fileNum * 10; i++) {
+                for (int j = 0; j < 10; j++) {
+                    writers.get(i % fileNum).write(String.format("%s\n", streams.get(i % fileNum).next()));
+                }
+            }
+            pool.close();
+
+            // Verify that values wrote in order and in full
+            for (int i = 0; i < fileNum; i++) {
+                File file = files.get(i);
+                List<Integer> lines = IOUtil.slurpLines(file).stream().map(Integer::parseInt).collect(Collectors.toList());
+                assert AsyncWriterPoolTest.isSorted(lines);
+                assert lines.size() == 100;
+            }
         }
     }
 
