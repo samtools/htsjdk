@@ -308,6 +308,19 @@ public class BlockCompressedOutputStream
     }
 
     /**
+     * Writes the specified byte to this output stream. The general contract for write is that one byte is written
+     * to the output stream. The byte to be written is the eight low-order bits of the argument b.
+     * The 24 high-order bits of b are ignored.
+     * @param bite
+     * @throws IOException
+     */
+    @Override
+    public void write(final int bite) throws IOException {
+        uncompressedBuffer[numUncompressedBytes++] = (byte) bite;
+        if (numUncompressedBytes == uncompressedBuffer.length) deflateBlock();
+    }
+
+    /**
      * WARNING: flush() affects the output format, because it causes the current contents of uncompressedBuffer
      * to be compressed and written, even if it isn't full.  Unless you know what you're doing, don't call flush().
      * Instead, call close(), which will flush any unwritten data before closing the underlying stream.
@@ -351,19 +364,6 @@ public class BlockCompressedOutputStream
                 BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) {
             throw new IOException("Terminator block not found after closing BGZF file " + this.file);
         }
-    }
-
-    /**
-     * Writes the specified byte to this output stream. The general contract for write is that one byte is written
-     * to the output stream. The byte to be written is the eight low-order bits of the argument b.
-     * The 24 high-order bits of b are ignored.
-     * @param bite
-     * @throws IOException
-     */
-    @Override
-    public void write(final int bite) throws IOException {
-        singleByteArray[0] = (byte)bite;
-        write(singleByteArray);
     }
 
     /** Encode virtual file pointer
