@@ -102,9 +102,9 @@ public class AsyncWriterPool implements Closeable {
          * @throws IllegalArgumentException if writeThreshold <= 0 or if writeThreshold > queue.remainingCapacity()
          */
         private PooledWriter(final Writer<A> writer, final BlockingQueue<A> queue, final int writeThreshold) {
-            if (writeThreshold <= 0) throw new IllegalArgumentException("writeThreshold must be >= 1");
+            if (writeThreshold <= 0) throw new IllegalArgumentException("writeThreshold must be >= 1: " + writeThreshold);
             if (writeThreshold > queue.remainingCapacity())
-                throw new IllegalArgumentException("writeThreshold can't be larger then queue capacity.");
+                throw new IllegalArgumentException("writeThreshold (" + writeThreshold + ") can't be larger then queue capacity (" + queue.remainingCapacity() + ").");
 
             this.writer = writer;
             this.queue = queue;
@@ -118,9 +118,7 @@ public class AsyncWriterPool implements Closeable {
          * @throws RuntimeException if any exception was raised during the writing on the receiving thread
          */
         private void nonBlockingCheckAndRethrow() {
-            if (this.currentTask != null && this.currentTask.isDone()) {
-                this.checkAndRethrow();
-            }
+            if (this.currentTask != null && this.currentTask.isDone()) checkAndRethrow();
         }
 
         /**
@@ -130,9 +128,7 @@ public class AsyncWriterPool implements Closeable {
          * @throws RuntimeException if any exception was raised during the writing on the receiving thread
          */
         private void blockingCheckAndRethrow() {
-            if (this.currentTask != null) {
-                this.checkAndRethrow();
-            }
+            if (this.currentTask != null) checkAndRethrow();
         }
 
         /**
@@ -149,7 +145,8 @@ public class AsyncWriterPool implements Closeable {
                 this.currentTask.get();
             } catch (CancellationException | InterruptedException | ExecutionException e) {
                 this.isClosed = true;
-                throw new RuntimeException("Exception while writing records asynchronously", e);
+                final Throwable t = e instanceof ExecutionException ? e.getCause() : e;
+                throw new RuntimeException("Exception while writing records asynchronously", t);
             } finally {
                 // Set to null to avoid checking the same task multiple times
                 this.currentTask = null;
@@ -170,19 +167,18 @@ public class AsyncWriterPool implements Closeable {
         public void write(final A item) {
             if (this.isClosed) throw new RuntimeIOException("Attempt to add record to closed writer.");
 
-            this.nonBlockingCheckAndRethrow();
+            nonBlockingCheckAndRethrow();
 
             // Put new item in queue
             try {
-                while (!this.isClosed && !this.queue.offer(item, 5, TimeUnit.SECONDS)) {
-                }
+                while (!this.isClosed && !this.queue.offer(item, 5, TimeUnit.SECONDS)) { /* Just wait. */ }
             } catch (InterruptedException e) {
                 throw new RuntimeException("Exception while placing item in queue", e);
             }
 
             // If queue size is large enough, and the there is no last task
-            if (queue.size() >= this.writeThreshold && this.currentTask == null) {
-                this.drain();
+            if (this.currentTask == null && queue.size() >= this.writeThreshold) {
+               drain();
             }
         }
 
@@ -194,7 +190,7 @@ public class AsyncWriterPool implements Closeable {
          * may result in an {@code OutOfMemoryError}.
          */
         private void drain() {
-            // check the result of the previous task
+            if (this.currentTask != null) throw new IllegalStateException("drain() called while currentTask is not null");
             this.currentTask = AsyncWriterPool.this.executor.submit(() -> {
 
                 // BlockingQueue is threadsafe and uses a different lock for both reading and writing
@@ -241,13 +237,20 @@ public class AsyncWriterPool implements Closeable {
          * @throws IOException if the enclosed writer's close raises an exception
          */
         private void blockingClose() throws IOException {
-            // Wait for any ongoing writes to finish and check for errors
-            this.blockingCheckAndRethrow();
-            // drain any remaining items in the queue
-            this.drain();
-            // Wait for last write to finish
-            this.blockingCheckAndRethrow();
-            this.writer.close();
+            if (this.isClosed) {
+                this.blockingCheckAndRethrow();
+            }
+            else {
+                this.isClosed = true;
+            
+                // Wait for any ongoing writes to finish and check for errors
+                this.blockingCheckAndRethrow();
+                // drain any remaining items in the queue
+                this.drain();
+                // Wait for last write to finish
+                this.blockingCheckAndRethrow();
+                this.writer.close();
+            }
         }
 
 
@@ -261,9 +264,6 @@ public class AsyncWriterPool implements Closeable {
          */
         @Override
         public void close() throws IOException {
-            if (this.isClosed) throw new IllegalStateException("Writer is already closed");
-
-            this.isClosed = true;
             this.blockingClose();
         }
     }
