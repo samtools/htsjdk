@@ -307,16 +307,9 @@ public class BlockCompressedOutputStream
         }
     }
 
-    /**
-     * Writes the specified byte to this output stream. The general contract for write is that one byte is written
-     * to the output stream. The byte to be written is the eight low-order bits of the argument b.
-     * The 24 high-order bits of b are ignored.
-     * @param bite
-     * @throws IOException
-     */
     @Override
-    public void write(final int bite) throws IOException {
-        uncompressedBuffer[numUncompressedBytes++] = (byte) bite;
+    public void write(final int b) throws IOException {
+        uncompressedBuffer[numUncompressedBytes++] = (byte) b;
         if (numUncompressedBytes == uncompressedBuffer.length) deflateBlock();
     }
 
