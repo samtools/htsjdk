@@ -29,12 +29,12 @@ public class HtsgetRequest {
     private final URI endpoint;
 
     // Query parameters
-    private HtsgetFormat format;
-    private HtsgetClass dataClass;
-    private Locatable interval;
-    private final EnumSet<HtsgetRequestField> fields;
-    private final Set<String> tags;
-    private final Set<String> notags;
+    protected HtsgetFormat format;
+    protected HtsgetClass dataClass;
+    protected Locatable interval;
+    protected final EnumSet<HtsgetRequestField> fields;
+    protected final Set<String> tags;
+    protected final Set<String> notags;
 
     /**
      * Construct an HtsgetRequest from a URI identifying a valid resource on a htsget server

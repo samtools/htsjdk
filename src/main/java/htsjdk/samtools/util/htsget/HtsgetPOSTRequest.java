@@ -62,6 +62,65 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
     }
 
     @Override
+    public HtsgetPOSTRequest withFormat(final HtsgetFormat format) {
+        this.format = format;
+        return this;
+    }
+
+    @Override
+    public HtsgetPOSTRequest withDataClass(final HtsgetClass dataClass) {
+        this.dataClass = dataClass;
+        return this;
+    }
+
+    @Override
+    public HtsgetPOSTRequest withInterval(final Locatable interval) {
+        this.intervals.add(interval);
+        return this;
+    }
+
+    public HtsgetPOSTRequest withIntervals(final Collection<Locatable> intervals) {
+        this.intervals.addAll(intervals);
+        return this;
+    }
+
+    @Override
+    public HtsgetPOSTRequest withField(final HtsgetRequestField field) {
+        this.fields.add(field);
+        return this;
+    }
+
+    @Override
+    public HtsgetPOSTRequest withFields(final Collection<HtsgetRequestField> fields) {
+        this.fields.addAll(fields);
+        return this;
+    }
+
+    @Override
+    public HtsgetPOSTRequest withTag(final String tag) {
+        this.tags.add(tag);
+        return this;
+    }
+
+    @Override
+    public HtsgetPOSTRequest withTags(final Collection<String> tags) {
+        this.tags.addAll(tags);
+        return this;
+    }
+
+    @Override
+    public HtsgetPOSTRequest withNotag(final String notag) {
+        this.notags.add(notag);
+        return this;
+    }
+
+    @Override
+    public HtsgetPOSTRequest withNotags(final Collection<String> notags) {
+        this.notags.addAll(notags);
+        return this;
+    }
+
+    @Override
     public void validateRequest() {
         super.validateRequest();
         if (this.getDataClass() != null && this.getDataClass() == HtsgetClass.header && !this.intervals.isEmpty()) {
@@ -76,13 +135,13 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
 
     public mjson.Json queryBody() {
         final mjson.Json postBody = Json.object();
-        if (this.getFormat() != null) {
+        if (this.format != null) {
             postBody.set("format", this.getFormat().toString());
         }
-        if (this.getClass() != null) {
+        if (this.dataClass != null) {
             postBody.set("class", this.getDataClass().toString());
         }
-        if (!this.getFields().isEmpty()) {
+        if (!this.fields.isEmpty()) {
             postBody.set(
                 "fields",
                 Json.array(this.getFields().stream()
@@ -90,10 +149,10 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
                     .toArray())
             );
         }
-        if (!this.getTags().isEmpty()) {
+        if (!this.tags.isEmpty()) {
             postBody.set("tags", Json.array(this.getTags().toArray()));
         }
-        if (!this.getNoTags().isEmpty()) {
+        if (!this.notags.isEmpty()) {
             postBody.set("notags", Json.array(this.getNoTags().toArray()));
         }
         if (!this.intervals.isEmpty()) {

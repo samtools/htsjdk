@@ -97,23 +97,23 @@ public class HtsgetRequestUnitTest extends HtsjdkTest {
 
     @Test
     public void testPOSTjsonBody() {
-        final HtsgetPOSTRequest req = new HtsgetPOSTRequest(testRead);
-        req.setFormat(HtsgetFormat.BAM);
-        req.setDataClass(HtsgetClass.header);
+        final HtsgetPOSTRequest req = new HtsgetPOSTRequest(testRead)
+            .withFormat(HtsgetFormat.BAM)
+            .withDataClass(HtsgetClass.header)
 
-        req.addField(HtsgetRequestField.QNAME);
-        req.addField(HtsgetRequestField.CIGAR);
+            .withField(HtsgetRequestField.QNAME)
+            .withField(HtsgetRequestField.CIGAR)
 
-        req.addTag("tag1");
-        req.addTag("tag3");
-        req.addNotag("tag2");
+            .withTag("tag1")
+            .withTag("tag3")
+            .withNotag("tag2")
 
-        req.addInterval(new Interval("chr1", 1, 16));
-        req.addInterval(new Interval("chr1", 17, 32));
-        req.addIntervals(Arrays.asList(
-            new Interval("chrM", 1, 16),
-            new Interval("chrM", 17, 32))
-        );
+            .withInterval(new Interval("chr1", 1, 16))
+            .withInterval(new Interval("chr1", 17, 32))
+            .withIntervals(Arrays.asList(
+                new Interval("chrM", 1, 16),
+                new Interval("chrM", 17, 32))
+            );
 
         final mjson.Json postBody = req.queryBody();
 
