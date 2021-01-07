@@ -246,6 +246,21 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     }
 
     /**
+     * Can be used to determine whether the specified source supports the POST api
+     */
+    public boolean isUsingPOST() {
+        return this.usePOSTRequest;
+    }
+
+    /**
+     * Force the source to attempt to use the POST api when requesting multiple intervals. Used for testing
+     * @param use whether to use the POST api
+     */
+    public void setUsingPOST(final boolean use) {
+        this.usePOSTRequest = use;
+    }
+
+    /**
      * Prepare to iterate through the SAMRecords in file order.
      * Unlike file-based BAM readers, multiple iterators may be open at the same time
      */

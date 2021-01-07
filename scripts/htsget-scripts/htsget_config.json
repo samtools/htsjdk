@@ -1,10 +1,19 @@
 {
-  "readsDataSourceRegistry": {
-    "sources": [
-      {
-        "pattern": "^htsjdk_test\\.(?P<accession>.*)$",
-        "path": "/data/{accession}"
+  "htsgetConfig": {
+    "props": {
+      "port": "3000",
+      "host": "http://localhost:3000/"
+    },
+    "reads": {
+      "enabled": true,
+      "dataSourceRegistry": {
+        "sources": [
+          {
+            "pattern": "^htsjdk_test\\.(?P<accession>.*)$",
+            "path": "/data/{accession}"
+          }
+        ]
       }
-    ]
+    }
   }
 }

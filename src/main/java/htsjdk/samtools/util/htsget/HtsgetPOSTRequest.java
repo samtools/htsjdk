@@ -186,12 +186,12 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
             final HttpURLConnection conn = (HttpURLConnection) reqURI.toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Accept", HtsgetRequest.ACCEPT_TYPE);
-            conn.connect();
-
-            final byte[] query = this.queryBody().toString().getBytes();
 
             conn.setDoOutput(true);
+            final byte[] query = this.queryBody().toString().getBytes();
             conn.setRequestProperty("Content-Length", Integer.toString(query.length));
+            conn.connect();
+
             conn.getOutputStream().write(query);
 
             return conn;
