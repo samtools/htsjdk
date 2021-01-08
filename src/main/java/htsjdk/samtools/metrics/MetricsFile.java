@@ -132,21 +132,10 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      * @param f a File into which to write the metrics
      */
     public void write(final File f) {
-        FileWriter w = null;
-        try {
-            w = new FileWriter(f);
+        try (FileWriter w = new FileWriter(f)) {
             write(w);
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             throw new SAMException("Could not write metrics to file: " + f.getAbsolutePath(), ioe);
-        }
-        finally {
-            if (w != null) {
-                try {
-                    w.close();
-                } catch (IOException e) {
-                }
-            }
         }
     }
 

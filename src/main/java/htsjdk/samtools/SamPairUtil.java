@@ -203,21 +203,21 @@ public class SamPairUtil {
             rec1.setMateAlignmentStart(rec2.getAlignmentStart());
             rec1.setMateNegativeStrandFlag(rec2.getReadNegativeStrandFlag());
             rec1.setMateUnmappedFlag(false);
-            rec1.setAttribute(SAMTag.MQ.name(), rec2.getMappingQuality());
+            rec1.setAttribute(SAMTag.MQ, rec2.getMappingQuality());
 
             rec2.setMateReferenceIndex(rec1.getReferenceIndex());
             rec2.setMateAlignmentStart(rec1.getAlignmentStart());
             rec2.setMateNegativeStrandFlag(rec1.getReadNegativeStrandFlag());
             rec2.setMateUnmappedFlag(false);
-            rec2.setAttribute(SAMTag.MQ.name(), rec1.getMappingQuality());
+            rec2.setAttribute(SAMTag.MQ, rec1.getMappingQuality());
 
             if (setMateCigar) {
-                rec1.setAttribute(SAMTag.MC.name(), rec2.getCigarString());
-                rec2.setAttribute(SAMTag.MC.name(), rec1.getCigarString());
+                rec1.setAttribute(SAMTag.MC, rec2.getCigarString());
+                rec2.setAttribute(SAMTag.MC, rec1.getCigarString());
             }
             else {
-                rec1.setAttribute(SAMTag.MC.name(), null);
-                rec2.setAttribute(SAMTag.MC.name(), null);
+                rec1.setAttribute(SAMTag.MC, null);
+                rec2.setAttribute(SAMTag.MC, null);
             }
         }
         // Else if they're both unmapped set that straight
@@ -228,8 +228,8 @@ public class SamPairUtil {
             rec1.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
             rec1.setMateNegativeStrandFlag(rec2.getReadNegativeStrandFlag());
             rec1.setMateUnmappedFlag(true);
-            rec1.setAttribute(SAMTag.MQ.name(), null);
-            rec1.setAttribute(SAMTag.MC.name(), null);
+            rec1.setAttribute(SAMTag.MQ, null);
+            rec1.setAttribute(SAMTag.MC, null);
             rec1.setInferredInsertSize(0);
 
             rec2.setReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
@@ -238,8 +238,8 @@ public class SamPairUtil {
             rec2.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
             rec2.setMateNegativeStrandFlag(rec1.getReadNegativeStrandFlag());
             rec2.setMateUnmappedFlag(true);
-            rec2.setAttribute(SAMTag.MQ.name(), null);
-            rec2.setAttribute(SAMTag.MC.name(), null);
+            rec2.setAttribute(SAMTag.MQ, null);
+            rec2.setAttribute(SAMTag.MC, null);
             rec2.setInferredInsertSize(0);
         }
         // And if only one is mapped copy it's coordinate information to the mate
@@ -253,18 +253,18 @@ public class SamPairUtil {
             mapped.setMateAlignmentStart(unmapped.getAlignmentStart());
             mapped.setMateNegativeStrandFlag(unmapped.getReadNegativeStrandFlag());
             mapped.setMateUnmappedFlag(true);
-            mapped.setAttribute(SAMTag.MQ.name(), null);
-            mapped.setAttribute(SAMTag.MC.name(), null);
+            mapped.setAttribute(SAMTag.MQ, null);
+            mapped.setAttribute(SAMTag.MC, null);
             mapped.setInferredInsertSize(0);
 
             unmapped.setMateReferenceIndex(mapped.getReferenceIndex());
             unmapped.setMateAlignmentStart(mapped.getAlignmentStart());
             unmapped.setMateNegativeStrandFlag(mapped.getReadNegativeStrandFlag());
             unmapped.setMateUnmappedFlag(false);
-            unmapped.setAttribute(SAMTag.MQ.name(), mapped.getMappingQuality());
+            unmapped.setAttribute(SAMTag.MQ, mapped.getMappingQuality());
             // For the unmapped read, set mateCigar to the mate's Cigar, since the mate must be mapped
-            if (setMateCigar) unmapped.setAttribute(SAMTag.MC.name(), mapped.getCigarString());
-            else unmapped.setAttribute(SAMTag.MC.name(), null);
+            if (setMateCigar) unmapped.setAttribute(SAMTag.MC, mapped.getCigarString());
+            else unmapped.setAttribute(SAMTag.MC, null);
             unmapped.setInferredInsertSize(0);
         }
 
@@ -314,10 +314,10 @@ public class SamPairUtil {
         supplemental.setMateUnmappedFlag(matePrimary.getReadUnmappedFlag());
         supplemental.setInferredInsertSize(-matePrimary.getInferredInsertSize());
         if (setMateCigar && !matePrimary.getReadUnmappedFlag()) {
-            supplemental.setAttribute(SAMTag.MC.name(), matePrimary.getCigarString());
+            supplemental.setAttribute(SAMTag.MC, matePrimary.getCigarString());
         }
         else {
-            supplemental.setAttribute(SAMTag.MC.name(), null);
+            supplemental.setAttribute(SAMTag.MC, null);
         }
     }
 

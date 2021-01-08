@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -206,7 +207,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     }
 
     private byte[] findBasesByMD5(final String md5) {
-        final String url = String.format(Defaults.EBI_REFERENCE_SERVICE_URL_MASK, md5);
+        final String url = String.format(Locale.US, Defaults.EBI_REFERENCE_SERVICE_URL_MASK, md5);
 
         for (int i = 0; i < downloadTriesBeforeFailing; i++) {
             try (final InputStream is = new URL(url).openStream()) {

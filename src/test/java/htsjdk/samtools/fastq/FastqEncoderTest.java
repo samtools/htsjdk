@@ -47,7 +47,7 @@ public class FastqEncoderTest extends HtsjdkTest {
         testRecord(record.getReadName() + FastqConstants.SECOND_OF_PAIR, FastqEncoder.asFastqRecord(record), record);
         record.setSecondOfPairFlag(false);
         testRecord(record.getReadName(), FastqEncoder.asFastqRecord(record), record);
-        record.setAttribute(SAMTag.CO.name(), "Comment in SAM tag");
+        record.setAttribute(SAMTag.CO, "Comment in SAM tag");
         testRecord(record.getReadName(), FastqEncoder.asFastqRecord(record), record);
     }
 
@@ -55,7 +55,7 @@ public class FastqEncoderTest extends HtsjdkTest {
         Assert.assertEquals(fastqRecord.getReadName(), expectedReadName);
         Assert.assertEquals(fastqRecord.getBaseQualities(), samRecord.getBaseQualities());
         Assert.assertEquals(fastqRecord.getReadBases(), samRecord.getReadBases());
-        Assert.assertEquals(fastqRecord.getBaseQualityHeader(), samRecord.getStringAttribute(SAMTag.CO.name()));
+        Assert.assertEquals(fastqRecord.getBaseQualityHeader(), samRecord.getStringAttribute(SAMTag.CO));
     }
 
     @Test
@@ -72,7 +72,7 @@ public class FastqEncoderTest extends HtsjdkTest {
         // default method does not include the comment header
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
         // test with qualityHeaderToComment=true populates the CO tag
-        samRecord.setAttribute(SAMTag.CO.name(), fastqRecord.getBaseQualityHeader());
+        samRecord.setAttribute(SAMTag.CO, fastqRecord.getBaseQualityHeader());
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader(), FastqEncoder.QUALITY_HEADER_TO_COMMENT_TAG), samRecord);
     }
 
@@ -90,9 +90,9 @@ public class FastqEncoderTest extends HtsjdkTest {
         final FastqRecord record = new FastqRecord(samRecord.getReadName(), samRecord.getReadBases(), tags, samRecord.getBaseQualities());
         final SAMRecord converted = FastqEncoder.asSAMRecord(record, samRecord.getHeader(), FastqEncoder.QUALITY_HEADER_PARSE_SAM_TAGS);
         testConvertedSAMRecord(converted, samRecord);
-        Assert.assertEquals(converted.getAttribute(SAMTag.BC.name()), bc);
-        Assert.assertEquals(converted.getAttribute(SAMTag.RG.name()), rg);
-        Assert.assertEquals(converted.getAttribute(SAMTag.FI.name()), fi);
+        Assert.assertEquals(converted.getAttribute(SAMTag.BC), bc);
+        Assert.assertEquals(converted.getAttribute(SAMTag.RG), rg);
+        Assert.assertEquals(converted.getAttribute(SAMTag.FI), fi);
         Assert.assertEquals(converted.getAttribute(customTag), ct);
     }
 
@@ -100,7 +100,7 @@ public class FastqEncoderTest extends HtsjdkTest {
         Assert.assertEquals(converted.getReadName(), original.getReadName());
         Assert.assertEquals(converted.getBaseQualities(), original.getBaseQualities());
         Assert.assertEquals(converted.getReadBases(), original.getReadBases());
-        Assert.assertEquals(converted.getStringAttribute(SAMTag.CO.name()), original.getStringAttribute(SAMTag.CO.name()));
+        Assert.assertEquals(converted.getStringAttribute(SAMTag.CO), original.getStringAttribute(SAMTag.CO));
         Assert.assertTrue(converted.getReadUnmappedFlag());
     }
 }

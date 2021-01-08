@@ -44,8 +44,10 @@ public class OverclippedReadFilterTest extends HtsjdkTest {
     @Test(dataProvider = "data")
     public void testOverclippedReadFilter(final String name, final String cigar, final boolean filterSingleEndClips, final boolean shouldFail) {
         final OverclippedReadFilter filter = new OverclippedReadFilter(unclippedBasesThreshold, filterSingleEndClips);
+        final InvertFilter invertFilter = new InvertFilter(filter);
         final SAMRecord rec = buildFrag(name, cigar);
         Assert.assertEquals(filter.filterOut(rec), shouldFail);
+        Assert.assertEquals(invertFilter.filterOut(rec), !shouldFail);
     }
 
     @DataProvider(name = "data")

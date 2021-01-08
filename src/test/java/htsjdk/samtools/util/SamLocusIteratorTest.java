@@ -288,6 +288,59 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
     }
 
     /**
+     * Test insertion quality filter
+     */
+    @Test
+    public void testInsertionQualityFilter() {
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        String qualityString = "++++++++++,,,+++++++++++++++++***+++";
+        for (int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record" + i, 0, startPosition, true, false, "10M3I17M3I3M", qualityString, 10);
+        }
+        final int insStart1 = 174;
+        final int insStart2 = 191;
+        for (final int qualityScoreCutoff : new int[] {0, 10}){
+            final SamLocusIterator sli = createSamLocusIterator(builder);
+            sli.setQualityScoreCutoff(10);
+            sli.setQualityScoreCutoff(qualityScoreCutoff);
+            sli.includeIndels = true;
+            // make sure we accumulated depth for each position
+            int pos = startPosition;
+            for (final SamLocusIterator.LocusInfo li : sli) {
+                Assert.assertEquals(li.getPosition(), pos++);
+                // make sure we are accumulating normal coverage
+                Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
+                // Check the correct assignment of the alignment type
+                for (final SamLocusIterator.RecordAndOffset rao : li.getRecordAndOffsets()) {
+                    Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Match);
+                }
+                Assert.assertEquals(li.size(), coverage);
+
+                // make sure that we are not accumulating deletions
+                Assert.assertEquals(li.getDeletedInRecord().size(), 0);
+                if (li.getPosition() == insStart1) {
+                    Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
+                    // Check the correct assignment of the alignment type
+                    for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
+                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
+                    }
+                }
+                // Second insertion should only be included when cutoff is 0 because base quality is 9
+                else if ((qualityScoreCutoff == 0) && (li.getPosition() == insStart2)) {
+                    Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
+                }
+                else {
+                    Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+                }
+            }
+        }
+    }
+
+
+    /**
      * Test an insertion at the start of the read, with both including or not indels
      */
     @Test

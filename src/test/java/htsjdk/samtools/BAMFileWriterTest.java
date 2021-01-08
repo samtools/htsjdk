@@ -436,11 +436,11 @@ public class BAMFileWriterTest extends HtsjdkTest {
         builder.addPair("pair1", 0, 1, 100_000, false, false, sentinelCigarString, sentinelCigarString, true, false, 30);
 
         final SAMRecord frag = builder.addFrag("frag1", 0, 1, false, false, sentinelCigarString, null, 30);
-        frag.setAttribute(SAMTag.CG.name(), cigarEncoding);
+        frag.setAttribute(SAMTag.CG, cigarEncoding);
 
         final List<SAMRecord> pairOfReads = builder.addPair("pair1", 0, 1, 100_000, false, false, cigar.toString(), cigar.toString(), true, false, 30);
         for (final SAMRecord rec : pairOfReads) {
-            rec.setAttribute(SAMTag.CG.name(), cigarEncoding);
+            rec.setAttribute(SAMTag.CG, cigarEncoding);
         }
 
         final File bamFile = File.createTempFile("test.", FileExtensions.BAM);
@@ -474,7 +474,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
         }
 
         try (final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(bamFile)) {
-            reader.iterator().forEachRemaining(rec -> Assert.assertFalse(rec.hasAttribute(SAMTag.CG.name())));
+            reader.iterator().forEachRemaining(rec -> Assert.assertFalse(rec.hasAttribute(SAMTag.CG)));
         }
     }
 
@@ -487,11 +487,11 @@ public class BAMFileWriterTest extends HtsjdkTest {
         final Cigar cigar = Cigar.fromCigarOperators(operators);
 
         final SAMRecord record = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
-        record.setAttribute(SAMTag.CG.name(), "Ceci n'est pas une pipe!");
+        record.setAttribute(SAMTag.CG, "Ceci n'est pas une pipe!");
 
         final List<SAMRecord> pairOfReads = builder.addPair("pair1", 0, 1, 100_000, false, false, cigar.toString(), cigar.toString(), true, false, 30);
         for (final SAMRecord rec : pairOfReads) {
-            rec.setAttribute(SAMTag.CG.name(), "Ceci n'est pas une pipe!");
+            rec.setAttribute(SAMTag.CG, "Ceci n'est pas une pipe!");
         }
 
         testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);

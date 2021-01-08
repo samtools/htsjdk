@@ -52,7 +52,6 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
     public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator, final SAMFileHeader header) {
         this(iterator, header, false);
     }
-
     public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator,
                                 final SAMFileHeader header,
                                 final boolean preSorted) {
@@ -76,7 +75,7 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
                                 final boolean preSorted,
                                 final SAMRecordDuplicateComparator comparator,
                                 final Log log) {
-        this.comparator = (comparator == null) ? new SAMRecordDuplicateComparator(Collections.singletonList(header)) : comparator;
+        this.comparator = (comparator == null) ? new SAMRecordDuplicateComparator(header) : comparator;
 
         if (preSorted) {
             this.wrappedIterator = iterator;

@@ -254,11 +254,11 @@ public class MergingSamRecordIteratorGroupCollisionTest extends HtsjdkTest {
 
         final MergingSamRecordIterator iterator = new MergingSamRecordIterator(headerMerger, readers, false);
         SAMRecord samRecord = iterator.next();
-        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG.name()), "0");
+        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG), "0");
         samRecord = iterator.next();
-        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG.name()), "0.1");
+        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG), "0.1");
         samRecord = iterator.next();
-        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG.name()), null);
+        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG), null);
         Assert.assertFalse(iterator.hasNext());
         CloserUtil.close(readers);
     }
@@ -325,11 +325,11 @@ public class MergingSamRecordIteratorGroupCollisionTest extends HtsjdkTest {
 
         final MergingSamRecordIterator iterator = new MergingSamRecordIterator(headerMerger, readers, false);
         SAMRecord samRecord = iterator.next();
-        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG.name()), "0");
+        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG), "0");
         samRecord = iterator.next();
-        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG.name()), "0");
+        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG), "0");
         samRecord = iterator.next();
-        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG.name()), "0.1");
+        Assert.assertEquals(samRecord.getAttribute(SAMTag.PG), "0.1");
         Assert.assertFalse(iterator.hasNext());
         CloserUtil.close(readers);
     }
@@ -386,7 +386,7 @@ public class MergingSamRecordIteratorGroupCollisionTest extends HtsjdkTest {
 
     private SAMReadGroupRecord createSAMReadGroupRecord(String id) {
         SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(id);
-        readGroupRecord.setAttribute(SAMTag.SM.name(), Double.toString(Math.random()));
+        readGroupRecord.setAttribute(SAMTag.SM, Double.toString(Math.random()));
         return readGroupRecord;
     }
 
@@ -528,7 +528,7 @@ public class MergingSamRecordIteratorGroupCollisionTest extends HtsjdkTest {
         @Override
         AbstractSAMHeaderRecord newGroup(String id) {
             SAMReadGroupRecord group = new SAMReadGroupRecord(id);
-            group.setAttribute(SAMTag.SM.name(), id);
+            group.setAttribute(SAMTag.SM, id);
             return group;
         }
 

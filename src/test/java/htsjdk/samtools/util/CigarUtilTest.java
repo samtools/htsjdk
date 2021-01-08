@@ -275,20 +275,20 @@ public class CigarUtilTest extends HtsjdkTest {
     public void testTagsInvalidation(final String initialCigarString, final boolean negativeStrand, final int clipFrom, final CigarOperator clippingOperator, final boolean expectInvalidated) {
         final byte[] baseQualities1To8 = new byte[]{(byte)31, (byte)32, (byte)33, (byte)34, (byte)35, (byte)36, (byte)37, (byte)38};
         final SAMRecord rec = createTestSamRec("ACTGACTG", baseQualities1To8, initialCigarString, 100, negativeStrand);
-        rec.setAttribute(SAMTag.NM.name(), 0);
-        rec.setAttribute(SAMTag.MD.name(), 0);
-        rec.setAttribute(SAMTag.UQ.name(), 0);
+        rec.setAttribute(SAMTag.NM, 0);
+        rec.setAttribute(SAMTag.MD, 0);
+        rec.setAttribute(SAMTag.UQ, 0);
 
         CigarUtil.clip3PrimeEndOfRead(rec, clipFrom, clippingOperator);
 
         if (expectInvalidated) {
-            Assert.assertNull(rec.getAttribute(SAMTag.NM.name()));
-            Assert.assertNull(rec.getAttribute(SAMTag.MD.name()));
-            Assert.assertNull(rec.getAttribute(SAMTag.UQ.name()));
+            Assert.assertNull(rec.getAttribute(SAMTag.NM));
+            Assert.assertNull(rec.getAttribute(SAMTag.MD));
+            Assert.assertNull(rec.getAttribute(SAMTag.UQ));
         } else {
-            Assert.assertEquals(rec.getAttribute(SAMTag.NM.name()), 0);
-            Assert.assertEquals(rec.getAttribute(SAMTag.MD.name()), 0);
-            Assert.assertEquals(rec.getAttribute(SAMTag.UQ.name()), 0);
+            Assert.assertEquals(rec.getAttribute(SAMTag.NM), 0);
+            Assert.assertEquals(rec.getAttribute(SAMTag.MD), 0);
+            Assert.assertEquals(rec.getAttribute(SAMTag.UQ), 0);
         }
 
     }

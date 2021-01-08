@@ -410,12 +410,12 @@ public class SamFileValidator {
             addError(new SAMValidationError(Type.CG_TAG_FOUND_IN_ATTRIBUTES,
                     "The CG Tag should only be used in BAM format to hold a large cigar. " +
                             "It was found containing the value: " +
-                            record.getAttribute(SAMTag.CG.getBinaryTag()), record.getReadName(), recordNumber));
+                            record.getAttribute(SAMTag.CG), record.getReadName(), recordNumber));
         }
     }
 
     private void validateSecondaryBaseCalls(final SAMRecord record, final long recordNumber) {
-        final String e2 = (String) record.getAttribute(SAMTag.E2.name());
+        final String e2 = (String) record.getAttribute(SAMTag.E2);
         if (e2 != null) {
             if (e2.length() != record.getReadLength()) {
                 addError(new SAMValidationError(Type.MISMATCH_READ_LENGTH_AND_E2_LENGTH,
@@ -437,7 +437,7 @@ public class SamFileValidator {
                 }
             }
         }
-        final String u2 = (String) record.getAttribute(SAMTag.U2.name());
+        final String u2 = (String) record.getAttribute(SAMTag.U2);
         if (u2 != null && u2.length() != record.getReadLength()) {
             addError(new SAMValidationError(Type.MISMATCH_READ_LENGTH_AND_U2_LENGTH,
                     String.format("U2 tag length (%d) != read length (%d)", u2.length(), record.getReadLength()),
@@ -741,7 +741,7 @@ public class SamFileValidator {
             this.mateNegStrandFlag = record.getMateNegativeStrandFlag();
             this.mateReferenceIndex = record.getMateReferenceIndex();
             this.mateUnmappedFlag = record.getMateUnmappedFlag();
-            final Object mcs = record.getAttribute(SAMTag.MC.name());
+            final Object mcs = record.getAttribute(SAMTag.MC);
             this.mateCigarString = (mcs != null) ? (String) mcs : null;
 
             this.firstOfPairFlag = record.getFirstOfPairFlag();

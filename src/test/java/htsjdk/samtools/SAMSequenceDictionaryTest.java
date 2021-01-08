@@ -56,6 +56,25 @@ public class SAMSequenceDictionaryTest extends HtsjdkTest {
     }
 
 
+    @Test
+    public void testAlternativeSequences() {
+        final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", 1);
+        final SAMSequenceRecord ssr2 = new SAMSequenceRecord("2", 1);
+
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(
+                Arrays.asList(ssr1, ssr2));
+        Assert.assertEquals(dict.size(), 2);
+        dict.addAlternativeSequenceName("1", "chr1");
+        dict.addAlternativeSequenceName("1", "01");
+        dict.addAlternativeSequenceName("1", "1");
+        dict.addAlternativeSequenceName("01", "chr01");
+        Assert.assertEquals(dict.size(), 2);
+        Assert.assertTrue(dict.getSequence("chr1").hasAlternativeSequenceNames());
+        Assert.assertEquals(dict.getSequence("1").getAlternativeSequenceNames().size(), 3);
+        Assert.assertNull(dict.getSequence("chr2"));
+    }
+
+
 
     @DataProvider(name="testMergeDictionariesData")
     public Object[][] testMergeDictionariesData(){
@@ -78,7 +97,7 @@ public class SAMSequenceDictionaryTest extends HtsjdkTest {
                 new Object[]{rec2, rec2, true},
                 new Object[]{rec3, rec3, true},
                 new Object[]{rec4, rec4, true},
-                new Object[]{rec1, rec2, false},//since 100 != 101 in Length
+                new Object[]{rec1, rec2, false}, //since 100 != 101 in Length
                 new Object[]{rec1, rec3, true},
                 new Object[]{rec1, rec4, true},
                 new Object[]{rec2, rec3, false}, // since MD5 is not equal

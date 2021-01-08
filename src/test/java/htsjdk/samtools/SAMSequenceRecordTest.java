@@ -26,10 +26,17 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Interval;
 import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Test for SAMReadGroupRecordTest
@@ -55,7 +62,7 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         Assert.assertTrue(r.overlaps(new Interval(r.getContig(), 50, 150)));
         Assert.assertFalse(r.overlaps(new Interval(r.getContig(), 101, 101)));
     }
-    
+
     @DataProvider
     public Object[][] testIsSameSequenceData() {
         final SAMSequenceRecord rec1 = new SAMSequenceRecord("chr1", 100);
@@ -96,6 +103,104 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         }
     }
 
+    @DataProvider
+    Object[][] testAccessFileWithAlternateContigNameData() {
+        return new Object[][]{
+                new Object[]{"chr1", 4},
+                new Object[]{"1", 4},
+                new Object[]{"chr2", 3},
+                new Object[]{"chr3", 2},
+                new Object[]{"3", 2},
+        };
+    }
+
+    File AccessFileWithAlternateContigName;
+
+    @BeforeTest
+    void setup() throws IOException {
+        File input = new File("src/test/resources/htsjdk/samtools/SamSequenceRecordTest/alternate_contig_names.sam");
+
+        final File outputFile = File.createTempFile("tmp.", ".bam");
+        outputFile.deleteOnExit();
+
+        final SamReader samReader = SamReaderFactory.make().open(input);
+        final SAMFileHeader fileHeader = samReader.getFileHeader().clone();
+        fileHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+
+        try (SAMFileWriter samWriter = new SAMFileWriterFactory().setCreateIndex(true).makeWriter(fileHeader, false, outputFile, null)) {
+            samReader.forEach(samWriter::addAlignment);
+        }
+        AccessFileWithAlternateContigName = outputFile;
+    }
+
+    @Test(dataProvider = "testAccessFileWithAlternateContigNameData")
+    public void testAccessFileWithAlternateContigName(final String contigName, final int expectedRecords) throws IOException {
+        try(SamReader bamReader = SamReaderFactory.make().open(AccessFileWithAlternateContigName);
+            Stream<SAMRecord> recordStream = bamReader.query(contigName, 1, 101, false).stream()) {
+            Assert.assertEquals(recordStream.count(), expectedRecords);
+        }
+    }
+
+    @Test
+    public void testAlternativeSequences() {
+        final SAMSequenceRecord chr1 = new SAMSequenceRecord("1", 100);
+
+        // no AN tag yet
+        Assert.assertFalse(chr1.hasAlternativeSequenceNames());
+        Assert.assertTrue(chr1.getAlternativeSequenceNames().isEmpty());
+
+        // set to a random alias
+        chr1.addAlternativeSequenceName("my-chromosome");
+        Assert.assertNotEquals(chr1, new SAMSequenceRecord(chr1.getSequenceName(), chr1.getSequenceLength()));
+        Assert.assertTrue(chr1.hasAlternativeSequenceNames());
+        Assert.assertEquals(chr1.getAlternativeSequenceNames(), Collections.singleton("my-chromosome"));
+        Assert.assertEquals("@SQ\tSN:1\tLN:100\tAN:my-chromosome", chr1.getSAMString());
+
+        // set to new chromosome aliases (removing previous)
+        final List<String> chr1AltNames = Arrays.asList("chr1","chr01","01","CM000663");
+        chr1.setAlternativeSequenceName(chr1AltNames);
+        Assert.assertTrue(chr1.hasAlternativeSequenceNames());
+        Assert.assertEquals( chr1.getAlternativeSequenceNames(), new HashSet<>(chr1AltNames));
+
+        //alt names are sorted now
+        Assert.assertEquals(chr1.getSAMString(), "@SQ\tSN:1\tLN:100\tAN:01,CM000663,chr01,chr1");
+    }
+
+
+
+    @DataProvider
+    public Object[][] validAlternativeSequences() {
+        return new Object[][] {
+                // only characters
+                {"a"},
+                {"alias"},
+                // valid symbols after first character ('*', '+', '.', '@', '_', '|', '-')
+                {"my*contig"},
+                {"my+contig"},
+                {"my.contig"},
+                {"my@contig"},
+                {"my_contig"},
+                {"my|contig"},
+                {"my-contig"}
+        };
+    }
+
+    @Test(dataProvider = "validAlternativeSequences")
+    public void testValidAlternativeSequences(final String altName) {
+        final SAMSequenceRecord contig = new SAMSequenceRecord("contig", 100);
+        // should not throw
+        contig.setAlternativeSequenceName(Collections.singleton(altName));
+        Assert.assertTrue(contig.hasAlternativeSequenceNames());
+        Assert.assertEquals(contig.getAlternativeSequenceNames(), Collections.singleton(altName));
+    }
+
+    @Test(dataProvider = "illegalSequenceNames")
+    public void testInvalidAlternativeSequences(final String altName) {
+        final SAMSequenceRecord chr1 = new SAMSequenceRecord("1", 100);
+        Assert.assertThrows(IllegalArgumentException.class, () -> chr1.addAlternativeSequenceName(altName));
+        Assert.assertThrows(IllegalArgumentException.class, () -> chr1.setAlternativeSequenceName(Collections.singleton(altName)));
+    }
+
     @Test
     public void testSetAndCheckDescription() {
         final SAMSequenceRecord record = new SAMSequenceRecord("Test", 1000);
@@ -106,8 +211,11 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] illegalSequenceNames(){
+    public Object[][] illegalSequenceNames() {
         return new Object[][]{
+                {",chr1"},
+                // comma-separated
+                {"chr1,alt"},
                 {"space "},
                 {"comma,"},
                 {"lbrace["},
@@ -118,7 +226,9 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
                 {"lparen("},
                 {"rparen)"},
                 {"lbracket{"},
-                {"rbracket}"}};
+                {"rbracket}"},
+                {""}
+        };
     }
 
     @Test(dataProvider = "illegalSequenceNames", expectedExceptions = SAMException.class)
