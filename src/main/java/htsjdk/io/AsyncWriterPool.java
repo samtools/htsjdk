@@ -10,6 +10,10 @@ import java.util.concurrent.*;
 
 /**
  * Implementation of an asynchronous writer pool.
+ * <p>
+ * This creates a writer pool allowing for {@code M} writers and {@code N} threads where writers are not tied to an
+ * individual thread. This introduces a small amount of overhead compared to a writer-per-thread model and is best
+ * suited to scenarios where {@code M} is greater than {@code M}.
  *
  * @author Seth Stadick
  */

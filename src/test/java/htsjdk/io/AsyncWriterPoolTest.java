@@ -72,6 +72,7 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             ArrayList<Iterator<Integer>> streams = new ArrayList<>();
             for (int i = 0; i < fileNum; i++) {
                 File file = File.createTempFile(String.format("AsyncPoolWriter_%s_%s", threads, i), ".tmp");
+                file.deleteOnExit();
                 TestWriter writer = new TestWriter(file.toPath());
                 files.add(file);
                 Writer<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 15);
@@ -92,8 +93,8 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             for (int i = 0; i < fileNum; i++) {
                 File file = files.get(i);
                 List<Integer> lines = IOUtil.slurpLines(file).stream().map(Integer::parseInt).collect(Collectors.toList());
-                assert AsyncWriterPoolTest.isSorted(lines);
-                assert lines.size() == 100;
+                Assert.assertTrue(AsyncWriterPoolTest.isSorted(lines));
+                Assert.assertEquals(lines.size(), 100);
             }
         }
     }
@@ -103,6 +104,7 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
 
         AsyncWriterPool pool = new AsyncWriterPool(4);
         File file = File.createTempFile("AsyncPoolWriterTest", ".tmp");
+        file.deleteOnExit();
         TestWriter writer = new TestWriter(file.toPath());
         Writer<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
         writer.close(); // Close the inner writer so an exception will be thrown when a thread trys to write to it
