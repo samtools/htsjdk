@@ -253,7 +253,7 @@ public class HtsgetRequest {
 
             return conn;
         } catch (final IOException e) {
-            throw new RuntimeException("IOException while attempting htsget download, request: " + reqURI, e);
+            throw new RuntimeIOException("IOException while attempting htsget download, request: " + reqURI, e);
         }
     }
 

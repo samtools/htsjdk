@@ -2,6 +2,7 @@ package htsjdk.samtools.util.htsget;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Locatable;
+import htsjdk.samtools.util.RuntimeIOException;
 import mjson.Json;
 
 import java.io.IOException;
@@ -196,7 +197,7 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
 
             return conn;
         } catch (final IOException e) {
-            throw new RuntimeException("IOException while attempting htsget download, request: " + reqURI, e);
+            throw new RuntimeIOException("IOException while attempting htsget download, request: " + reqURI, e);
         }
     }
 }
