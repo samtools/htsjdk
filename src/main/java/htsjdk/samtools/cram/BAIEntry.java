@@ -57,7 +57,7 @@ public class BAIEntry implements Comparable<BAIEntry> {
                 ((alignmentSpan.getAlignmentStart() != 0 && alignmentSpan.getAlignmentStart() != -1) ||
                         (alignmentSpan.getAlignmentSpan() != 0 && alignmentSpan.getAlignmentSpan() != 1)))) {
             throw new CRAMException(
-                    String.format("Attempt to unmapped with non zero alignment start (%d) or span (%d)",
+                    String.format("Attempt to create a bai entry for an unmapped slice with unexpected alignment start (%d) or span (%d) values",
                             alignmentSpan.getAlignmentStart(),
                             alignmentSpan.getAlignmentSpan()));
         }
