@@ -21,6 +21,10 @@ public class AsyncWriterPool implements Closeable {
     private final ExecutorService executor;
     private final List<PooledWriter<?>> writers = new ArrayList<>();
 
+
+    // The amount of time to wait on the queue in the event of catastrophic failure in the writer threads.
+    private int timeoutSeconds = 5;
+
     private boolean poolClosed = false;
 
     /**
@@ -63,6 +67,26 @@ public class AsyncWriterPool implements Closeable {
         this.poolClosed = true;
         CompletableFuture.allOf(this.writers.stream().map(PooledWriter::nonBlockingClose).toArray(CompletableFuture[]::new)).join();
         this.executor.shutdown();
+    }
+
+    /**
+     * Get the {@code timeoutSeconds} value.
+     *
+     * @return the number of seconds a writer will wait to emplace an item in a queue for writing.
+     */
+    public int getTimeoutSeconds() {
+        return timeoutSeconds;
+    }
+
+    /**
+     * Set the {@code timeoutSeconds} value. {@code timeoutSeconds} is used by the writers to determine how long they
+     * should wait when trying to place an item in the queue for writing. This timeout only comes into play if the
+     * writer has failed and prevents a call to {@code write} from hanging.
+     *
+     * @param timeoutSeconds the number of senconds a writer will wait to emplace an item in a queue for writing.
+     */
+    public void setTimeoutSeconds(int timeoutSeconds) {
+        this.timeoutSeconds = timeoutSeconds;
     }
 
     /**
@@ -178,9 +202,13 @@ public class AsyncWriterPool implements Closeable {
 
             nonBlockingCheckAndRethrow();
 
-            // Put new item in queue
+            /*
+             * This loop places a new item the queue. It uses `offer` in order to avoid blocking forever in the event
+             * something fails horribly in the writer and prevents anything from being removed from the queue. In
+             * normal operations the timeout should not come into play and items will add immediately.
+             */
             try {
-                while (!this.isClosed && !this.queue.offer(item, 5, TimeUnit.SECONDS)) { /* Just wait. */ }
+                while (!this.isClosed && !this.queue.offer(item, AsyncWriterPool.this.getTimeoutSeconds(), TimeUnit.SECONDS)) { /* Just wait. */ }
             } catch (InterruptedException e) {
                 throw new RuntimeException("Exception while placing item in queue", e);
             }
