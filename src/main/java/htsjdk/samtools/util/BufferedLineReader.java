@@ -56,7 +56,7 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
             if(idx >= len) {
                 return -1;
             }
-            return (byte) str.charAt(idx++);
+            return (int) str.charAt(idx++);
         }
     }
 
