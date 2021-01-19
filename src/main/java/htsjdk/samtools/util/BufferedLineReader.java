@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder; 
 
 /**
  * Implementation of LineReader that is a thin wrapper around BufferedReader.  On Linux, this is faster
@@ -40,6 +41,8 @@ import java.nio.charset.Charset;
  * @author alecw@broadinstitute.org
  */
 public class BufferedLineReader extends LineNumberReader implements LineReader {
+    
+    private static float MAX_BYTES_PER_CHAR_UTF8 = Charset.forName("UTF8").newEncoder().maxBytesPerChar();
 
     private static class StringBackedInputStream extends InputStream {
         private int idx = 0;
@@ -74,8 +77,12 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
      */
     public static BufferedLineReader fromString(final String s) {
         final InputStream is;
-        if (s.length() >= Integer.MAX_VALUE - 8) {
-           is = new StringBackedInputStream(s);
+        // Developer Note: if the string is long enough such that the # of bytes needed exceeds the
+        // maximum array size, we need to use a custom string-backed input stream, versus a byte array
+        // backed input stream.  The # of bytes needed is the length of the string times the number
+        // bytes per character to store in UTF8.
+        if (s.length() * MAX_BYTES_PER_CHAR_UTF8 >= Integer.MAX_VALUE) {
+            is = new StringBackedInputStream(s);
         }
         else {
             is = new ByteArrayInputStream(s.getBytes());
