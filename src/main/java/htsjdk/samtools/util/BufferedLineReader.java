@@ -42,7 +42,7 @@ import java.nio.charset.CharsetEncoder;
  */
 public class BufferedLineReader extends LineNumberReader implements LineReader {
     
-    private static float MAX_BYTES_PER_CHAR_UTF8 = Charset.forName("UTF8").newEncoder().maxBytesPerChar();
+    private static final float MAX_BYTES_PER_CHAR_UTF8 = StandardCharsets.UTF_8.newEncoder().maxBytesPerChar();
 
     private static class StringBackedInputStream extends InputStream {
         private int idx = 0;
