@@ -68,9 +68,9 @@ public class Gff3Writer implements Closeable {
 
     private void writeFirstEightFields(final Gff3Feature feature) throws IOException {
         writeJoinedByDelimiter(Gff3Constants.FIELD_DELIMITER, this::tryToWrite, Arrays.asList(
-                encodeString(feature.getContig()),
-                encodeString(feature.getSource()),
-                encodeString(feature.getType()),
+                escapeString(feature.getContig()),
+                escapeString(feature.getSource()),
+                escapeString(feature.getType()),
                 Integer.toString(feature.getStart()),
                 Integer.toString(feature.getEnd()),
                 feature.getScore() < 0 ? Gff3Constants.UNDEFINED_FIELD_VALUE : Double.toString(feature.getScore()),
@@ -92,7 +92,7 @@ public class Gff3Writer implements Closeable {
         try {
             tryToWrite(key);
             out.write(Gff3Constants.KEY_VALUE_SEPARATOR);
-            writeJoinedByDelimiter(Gff3Constants.VALUE_DELIMITER, v -> tryToWrite(encodeString(v)), values);
+            writeJoinedByDelimiter(Gff3Constants.VALUE_DELIMITER, v -> tryToWrite(escapeString(v)), values);
         } catch (final IOException ex) {
             throw new TribbleException("error writing out key value pair " + key + " " + values);
         }
@@ -121,6 +121,16 @@ public class Gff3Writer implements Closeable {
         out.write(Gff3Constants.FIELD_DELIMITER);
         writeAttributes(feature.getAttributes());
         out.write(Gff3Constants.END_OF_LINE_CHARACTER);
+    }
+
+    /***
+     * escape a String.
+     * Default behavior is to call {@link #encodeString(String)}
+     * @param s the string to be escaped
+     * @return the escaped string
+     */
+    protected String escapeString(final String s) {
+        return encodeString(s);
     }
 
     static String encodeString(final String s) {
