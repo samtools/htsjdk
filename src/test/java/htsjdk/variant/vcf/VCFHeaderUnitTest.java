@@ -312,6 +312,20 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void testVcfHeaderAddSimpleHeaderLine() {
+        final VCFHeader header = getHiSeqVCFHeader();
+        final VCFSimpleHeaderLine delLine = new VCFSimpleHeaderLine("ALT", "DEL", "Deletion relative to the reference");
+        final VCFSimpleHeaderLine insLine = new VCFSimpleHeaderLine("ALT", "INS", "Insertion of novel sequence relative to the reference");
+        header.addMetaDataLine(delLine);
+        header.addMetaDataLine(insLine);
+
+        Assert.assertTrue(header.getOtherHeaderLines().contains(delLine), "DEL line not found in other header lines");
+        Assert.assertTrue(header.getOtherHeaderLines().contains(insLine), "INS line not found in other header lines");
+        Assert.assertNotNull(header.getOtherHeaderLine("DEL"), "Lookup for DEL by key failed");
+        Assert.assertNotNull(header.getOtherHeaderLine("INS"), "Lookup for INS by key failed");
+    }
+
+    @Test
     public void testVCFHeaderAddMetaDataLineDoesNotDuplicateContigs() {
         File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
 
@@ -363,6 +377,22 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final int numHeaderLinesBefore = header.getOtherHeaderLines().size();
         // readd the same header line
         header.addMetaDataLine(newHeaderLine);
+        final int numHeaderLinesAfter = header.getOtherHeaderLines().size();
+
+        // assert that we have the same number of other header lines before and after
+        Assert.assertEquals(numHeaderLinesBefore, numHeaderLinesAfter);
+    }
+
+    @Test
+    public void testVCFHeaderAddDuplicateSimpleHeaderLine() {
+        final VCFHeader header = getHiSeqVCFHeader();
+        final VCFSimpleHeaderLine delLine = new VCFSimpleHeaderLine("ALT", "DEL", "Deletion relative to the reference");
+        header.addMetaDataLine(delLine);
+        Assert.assertTrue(header.getOtherHeaderLines().contains(delLine), "DEL line not found in other header lines");
+
+        final int numHeaderLinesBefore = header.getOtherHeaderLines().size();
+        // readd the same header line
+        header.addMetaDataLine(delLine);
         final int numHeaderLinesAfter = header.getOtherHeaderLines().size();
 
         // assert that we have the same number of other header lines before and after

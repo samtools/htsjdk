@@ -373,6 +373,9 @@ public class VCFHeader implements Serializable {
             return addMetaDataLineMapLookupEntry(mFilterMetaData, filterLine.getID(), filterLine);
         } else if ( line instanceof VCFContigHeaderLine ) {
             return addContigMetaDataLineLookupEntry((VCFContigHeaderLine) line);
+        } else if ( line instanceof VCFSimpleHeaderLine ){
+            final VCFSimpleHeaderLine simpleLine = (VCFSimpleHeaderLine) line;
+            return addMetaDataLineMapLookupEntry(mOtherMetaData, simpleLine.getID(), simpleLine);
         } else {
             return addMetaDataLineMapLookupEntry(mOtherMetaData, line.getKey(), line);
         }
