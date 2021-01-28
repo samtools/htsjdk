@@ -321,8 +321,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         Assert.assertTrue(header.getOtherHeaderLines().contains(delLine), "DEL line not found in other header lines");
         Assert.assertTrue(header.getOtherHeaderLines().contains(insLine), "INS line not found in other header lines");
-        Assert.assertNotNull(header.getOtherHeaderLine("DEL"), "Lookup for DEL by key failed");
-        Assert.assertNotNull(header.getOtherHeaderLine("INS"), "Lookup for INS by key failed");
+        Assert.assertNotNull(header.getOtherHeaderLine("ALT", "DEL"), "Lookup for ALT:DEL by key failed");
+        Assert.assertNotNull(header.getOtherHeaderLine("ALT", "INS"), "Lookup for ALT:INS by key failed");
     }
 
     @Test

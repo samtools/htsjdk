@@ -375,7 +375,7 @@ public class VCFHeader implements Serializable {
             return addContigMetaDataLineLookupEntry((VCFContigHeaderLine) line);
         } else if ( line instanceof VCFSimpleHeaderLine ){
             final VCFSimpleHeaderLine simpleLine = (VCFSimpleHeaderLine) line;
-            return addMetaDataLineMapLookupEntry(mOtherMetaData, simpleLine.getID(), simpleLine);
+            return addMetaDataLineMapLookupEntry(mOtherMetaData, simpleLine.getKey() + ":" + simpleLine.getID(), simpleLine);
         } else {
             return addMetaDataLineMapLookupEntry(mOtherMetaData, line.getKey(), line);
         }
@@ -587,6 +587,20 @@ public class VCFHeader implements Serializable {
      */
     public VCFHeaderLine getOtherHeaderLine(final String key) {
         return mOtherMetaData.get(key);
+    }
+
+    /**
+     * @param key    the header key or field type
+     * @param id     the header id
+     * @return the meta data line, or null if there is none
+     */
+    public VCFSimpleHeaderLine getOtherHeaderLine(final String key, final String id) {
+        final VCFHeaderLine line = mOtherMetaData.get(key + ":" + id);
+        if (line instanceof VCFSimpleHeaderLine) {
+            return (VCFSimpleHeaderLine) line;
+        } else {
+            return null;
+        }
     }
 
     /**
