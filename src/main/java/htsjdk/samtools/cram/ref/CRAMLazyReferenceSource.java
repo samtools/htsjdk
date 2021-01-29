@@ -38,7 +38,7 @@ public class CRAMLazyReferenceSource implements CRAMReferenceSource {
     @Override
     public byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, final boolean tryNameVariants) {
         throw new IllegalArgumentException(
-                String.format("A reference must be supplied that includes the reference sequence for %s).",
+                String.format("A reference must be supplied that includes the reference sequence for %s.",
                         sequenceRecord.getSequenceName()));
     }
 
