@@ -116,10 +116,6 @@ public class BlockCompressedOutputStream
     private long mBlockAddress = 0;
     private GZIIndex.GZIIndexer indexer;
 
-
-    // Really a local variable, but allocate once to reduce GC burden.
-    private final byte[] singleByteArray = new byte[1];
-
     /**
      * Uses default compression level, which is 5 unless changed by setCompressionLevel
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
