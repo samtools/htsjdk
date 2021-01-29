@@ -1,5 +1,7 @@
 package htsjdk.samtools.fastq;
 
+import htsjdk.io.Writer;
+
 import java.io.Closeable;
 
 /**
@@ -7,8 +9,9 @@ import java.io.Closeable;
  *
  * @author Tim Fennell
  */
-public interface FastqWriter extends Closeable {
+public interface FastqWriter extends Closeable, Writer<FastqRecord> {
     void write(final FastqRecord rec);
+
     @Override
     void close();
 }
