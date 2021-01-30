@@ -116,10 +116,6 @@ public class BlockCompressedOutputStream
     private long mBlockAddress = 0;
     private GZIIndex.GZIIndexer indexer;
 
-
-    // Really a local variable, but allocate once to reduce GC burden.
-    private final byte[] singleByteArray = new byte[1];
-
     /**
      * Uses default compression level, which is 5 unless changed by setCompressionLevel
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
@@ -307,6 +303,12 @@ public class BlockCompressedOutputStream
         }
     }
 
+    @Override
+    public void write(final int b) throws IOException {
+        uncompressedBuffer[numUncompressedBytes++] = (byte) b;
+        if (numUncompressedBytes == uncompressedBuffer.length) deflateBlock();
+    }
+
     /**
      * WARNING: flush() affects the output format, because it causes the current contents of uncompressedBuffer
      * to be compressed and written, even if it isn't full.  Unless you know what you're doing, don't call flush().
@@ -345,25 +347,16 @@ public class BlockCompressedOutputStream
         if (indexer != null) {
             indexer.close();
         }
-        // Can't re-open something that is not a regular file, e.g. a named pipe or an output stream
-        if (this.file == null || !Files.isRegularFile(this.file)) return;
-        if (BlockCompressedInputStream.checkTermination(this.file) !=
-                BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) {
-            throw new IOException("Terminator block not found after closing BGZF file " + this.file);
-        }
-    }
 
-    /**
-     * Writes the specified byte to this output stream. The general contract for write is that one byte is written
-     * to the output stream. The byte to be written is the eight low-order bits of the argument b.
-     * The 24 high-order bits of b are ignored.
-     * @param bite
-     * @throws IOException
-     */
-    @Override
-    public void write(final int bite) throws IOException {
-        singleByteArray[0] = (byte)bite;
-        write(singleByteArray);
+        // If a terminator block was written, ensure that it's there and valid
+        if (writeTerminatorBlock) {
+            // Can't re-open something that is not a regular file, e.g. a named pipe or an output stream
+            if (this.file == null || !Files.isRegularFile(this.file)) return;
+            if (BlockCompressedInputStream.checkTermination(this.file) !=
+                    BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) {
+                throw new IOException("Terminator block not found after closing BGZF file " + this.file);
+            }
+        }
     }
 
     /** Encode virtual file pointer
