@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
@@ -34,7 +36,9 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Function;
 
@@ -783,6 +787,65 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             }
         }
         Assert.assertEquals(count, expectedCount);
+    }
+
+    @DataProvider(name = "serialQueries")
+    public Object[][] serialQueries() {
+        return new Object[][]{
+                {cramQueryWithCRAI, cramQueryReference,
+                        new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}, 5},
+                {cramQueryWithLocalCRAI, cramQueryReference,
+                        new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}, 5},
+                {cramQueryWithBAI, cramQueryReference,
+                        new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}, 5},
+        };
+    }
+
+    @Test(dataProvider = "serialQueries")
+    public void testSerialQueriesOnRemoteFile(
+            final File cramFile,
+            final File referenceFile,
+            final QueryInterval interval,
+            final String[] expectedNames,
+            final int nUnmapped) throws IOException {
+        final Path cramIndex = SamFiles.findIndex(cramFile.toPath());
+
+        try (final FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path jimfsCRAM = jimfs.getPath("remotecram.cram");
+            final Path jimfsCRAI = jimfs.getPath("remotecram.crai");
+
+            Files.copy(cramFile.toPath(), jimfsCRAM);
+            Files.copy(cramIndex, jimfsCRAI);
+
+            SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.LENIENT);
+            if (referenceFile != null) {
+                factory = factory.referenceSequence(referenceFile);
+            }
+            try (final SamReader reader = factory.open(jimfsCRAM)) {
+                try (final CloseableIterator<SAMRecord> it = reader.queryOverlapping(new QueryInterval[]{interval})) {
+                    int count = 0;
+                    while (it.hasNext()) {
+                        final SAMRecord samRec = it.next();
+                        Assert.assertTrue(count < expectedNames.length);
+                        Assert.assertEquals(samRec.getReadName(), expectedNames[count]);
+                        count++;
+                    }
+                    Assert.assertEquals(count, expectedNames.length);
+                }
+
+                // now execute a second query on the same SamReader, this time for unmapped reads, after having
+                // closed the previous iterator
+                try (final CloseableIterator<SAMRecord> it = reader.queryUnmapped()) {
+                    int count = 0;
+                    while (it.hasNext()) {
+                        final SAMRecord samRec = it.next();
+                        Assert.assertTrue(samRec.getReadUnmappedFlag());
+                        count++;
+                    }
+                    Assert.assertEquals(count, nUnmapped);
+                }
+            }
+        }
     }
 
 }

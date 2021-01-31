@@ -39,6 +39,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     private File cramFile;
     private final CRAMReferenceSource referenceSource;
     private InputStream inputStream;
+    private DeferredCloseSeekableStream deferredCloseSeekableStream;
     private CRAMIterator iterator;
     private BAMIndex mIndex;
     private File mIndexFile;
@@ -387,20 +388,85 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     private SeekableStream getSeekableStreamOrFailWithRTE() {
         SeekableStream seekableStream = null;
+
         if (cramFile != null) {
             try {
+                // If this reader was provided with a File, create a SeekableStream directly and
+                // let it be closed by CloseableIterators, and then recreated on demand.
                 seekableStream = new SeekableFileStream(cramFile);
             } catch (final FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
-        } else if (inputStream instanceof SeekableStream) {
-            seekableStream = (SeekableStream) inputStream;
+        } else if (inputStream != null && inputStream instanceof SeekableStream) {
+            // For SeekableStreams that were provided to the reader constructor instead of a File, we
+            // need to prevent CloseableIterators from closing the underlying stream since we can't
+            // reconstitute a SeekableStream from an InputStream. So wrap the underlying SeekableStream
+            // in a DeferredCloseSeekableStream with a no-op close implementation, and defer closing it
+            // until enclosing reader is closed.
+            if (deferredCloseSeekableStream == null) {
+                deferredCloseSeekableStream = new DeferredCloseSeekableStream((SeekableStream) inputStream);
+            }
+            seekableStream = deferredCloseSeekableStream;
         }
         return seekableStream;
     }
 
+    // In order to reuse a SeekableStream multiple times with CloseableIterators (which close the
+    // underlying stream when they're done), we need to wrap the SeekableStream in an object that
+    // has a no-op close implementation so the actual close can be deferred  until the enclosing
+    // reader is closed.
+    private static class DeferredCloseSeekableStream extends SeekableStream {
+        private final SeekableStream delegateStream;
+
+        public DeferredCloseSeekableStream(final SeekableStream delegateStream) {
+            this.delegateStream = delegateStream;
+            if (delegateStream instanceof DeferredCloseSeekableStream) {
+                throw new IllegalArgumentException("ReuseableSeekableStream objects cannot be nested");
+            }
+        }
+
+        public SeekableStream getDelegate() { return delegateStream; }
+
+        @Override
+        public long length() { return delegateStream.length(); }
+
+        @Override
+        public long position() throws IOException { return delegateStream.position(); }
+
+        @Override
+        public void seek(long position) throws IOException { delegateStream.seek(position); }
+
+        @Override
+        public int read() throws IOException { return delegateStream.read(); }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length) throws IOException {
+            return delegateStream.read(buffer, offset, length);
+        }
+
+        @Override
+        public void close() throws IOException {
+            // defer close, and let the caller close the delegate when its ready to by calling
+            // getDelegate().close()
+        }
+
+        @Override
+        public boolean eof() throws IOException { return delegateStream.eof(); }
+
+        @Override
+        public String getSource() { return delegateStream.getSource(); }
+    }
+
     @Override
     public void close() {
+        // if at any point we created a deferredCloseSeekableStream, close the underlying delegate now
+        if (deferredCloseSeekableStream != null) {
+            try {
+                deferredCloseSeekableStream.getDelegate().close();
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
         CloserUtil.close(iterator);
         CloserUtil.close(inputStream);
         CloserUtil.close(mIndex);
