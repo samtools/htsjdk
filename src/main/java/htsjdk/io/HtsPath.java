@@ -99,7 +99,7 @@ public class HtsPath implements IOPath, Serializable {
     public HtsPath(final HtsPath htsPath) {
         ValidationUtils.nonNull(htsPath);
         this.rawInputString = htsPath.getRawInputString();
-        this.uri = getURIForString(rawInputString);
+        this.uri = htsPath.getURI();
     }
 
     @Override
