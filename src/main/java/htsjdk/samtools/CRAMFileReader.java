@@ -461,11 +461,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     public void close() {
         // if at any point we created a deferredCloseSeekableStream, close the underlying delegate now
         if (deferredCloseSeekableStream != null) {
-            try {
-                deferredCloseSeekableStream.getDelegate().close();
-            } catch (IOException e) {
-                throw new RuntimeIOException(e);
-            }
+            CloserUtil.close(deferredCloseSeekableStream.getDelegate());
         }
         CloserUtil.close(iterator);
         CloserUtil.close(inputStream);
