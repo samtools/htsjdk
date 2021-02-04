@@ -25,6 +25,7 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
@@ -39,6 +40,7 @@ import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VCFVersionTransitionPolicy;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
@@ -78,6 +80,16 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     @BeforeClass
     private void createTemporaryDirectory() {
         tempDir = TestUtil.getTempDirectory("VCFHeader", "VCFHeaderTest");
+    }
+
+    @BeforeClass
+    private void setTransitionPolicy() {
+        // Set system property so that VCFWriter does not attempt to transition 4.2 files,
+        // as some tests rely on 4.2 which are valid 4.3 roundtripping exactly back to 4.2 files
+        System.setProperty(
+            Defaults.SAMJDK_PREFIX + "vcf_version_transition_policy",
+            VCFVersionTransitionPolicy.DO_NOT_TRANSITION.name()
+        );
     }
 
     @AfterClass
@@ -255,7 +267,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     }
 
-        @Test
+    @Test
     public void testVCFHeaderHonorContigLineOrder() throws IOException {
         try (final VCFFileReader vcfReader = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
             // start with a header with a bunch of contig lines
@@ -385,14 +397,12 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @DataProvider(name="invalidHeaderVersionTransitions")
     public Object[][] invalidHeaderVersionTransitions() {
-        // v4.3 can never transition with, all other version transitions are allowed
+        // v4.3 can never be transitioned down to pre v4.3
+        // Pre v4.3 might be able to be transitioned to 4.3, and this is tested in VCFCodec43FeaturesTest
         return new Object[][] {
                 {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_0},
                 {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_1},
                 {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_2},
-                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_3},
-                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_3},
-                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_3},
         };
     }
 

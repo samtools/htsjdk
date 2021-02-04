@@ -340,13 +340,18 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         ValidationUtils.nonNull(newHeader);
         ValidationUtils.nonNull(newVersion);
 
-        VCFHeader.validateVersionTransition(version, newVersion);
+        // Check that we're not trying to transition from 4.3+ to before 4.3
+        if (version != null &&
+            version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) &&
+            !newVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            throw new TribbleException("VCF versions 4.3+ cannot be down converted to versions before 4.3");
+        }
 
         // If this codec currently has no header (this happens when the header is being established for
         // the first time during file parsing), establish an initial header and version, and bypass
         // validation.
-        if (header != null && newHeader.getVCFHeaderVersion() != null) {
-            VCFHeader.validateVersionTransition(header.getVCFHeaderVersion(), newHeader.getVCFHeaderVersion());
+        if (newHeader.getVCFHeaderVersion() != null) {
+            VCFHeader.validateHeaderTransition(header, newHeader.getVCFHeaderVersion());
         }
     }
 

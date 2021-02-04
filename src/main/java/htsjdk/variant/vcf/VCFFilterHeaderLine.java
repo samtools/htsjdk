@@ -62,7 +62,7 @@ public class VCFFilterHeaderLine extends VCFSimpleHeaderLine  {
      * @param version   the vcf header version
      */
     public VCFFilterHeaderLine(final String line, final VCFHeaderVersion version) {
-        super(line, version, "FILTER", Arrays.asList("ID", "Description"), Collections.emptyList());
+        super(line, version, "FILTER", Arrays.asList(VCFConstants.ID_ATTRIBUTE, VCFConstants.DESCRIPTION_ATTRIBUTE), Collections.emptyList());
     }
 
     @Override
@@ -75,6 +75,6 @@ public class VCFFilterHeaderLine extends VCFSimpleHeaderLine  {
      * @return the "Description" field
      */
     public String getDescription() {
-        return getGenericFieldValue("Description");
+        return getGenericFieldValue(VCFConstants.DESCRIPTION_ATTRIBUTE);
     }
 }

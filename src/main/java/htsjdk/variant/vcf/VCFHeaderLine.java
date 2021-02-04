@@ -1,6 +1,6 @@
 /*
 * Copyright (c) 2012 The Broad Institute
-* 
+*
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
 * files (the "Software"), to deal in the Software without
@@ -9,10 +9,10 @@
 * copies of the Software, and to permit persons to whom the
 * Software is furnished to do so, subject to the following
 * conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be
 * included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -145,23 +145,39 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @param keyValues a mapping of the key-&gt;value pairs to output
      * @return a string, correctly formatted
      */
-    public static String toStringEncoding(Map<String, ? extends Object> keyValues) {
-        StringBuilder builder = new StringBuilder();
+    public static String toStringEncoding(final Map<String, ?> keyValues) {
+        final StringBuilder builder = new StringBuilder();
         builder.append('<');
         boolean start = true;
-        for (Map.Entry<String,?> entry : keyValues.entrySet()) {
+        for (final Map.Entry<String, ?> entry : keyValues.entrySet()) {
             if (start) start = false;
             else builder.append(',');
 
-            if ( entry.getValue() == null ) throw new TribbleException.InternalCodecException("Header problem: unbound value at " + entry + " from " + keyValues);
+            if (entry.getValue() == null)
+                throw new TribbleException.InternalCodecException("Header problem: unbound value at " + entry + " from " + keyValues);
 
-            builder.append(entry.getKey());
+            final String key = entry.getKey();
+            builder.append(key);
             builder.append('=');
-            builder.append(entry.getValue().toString().contains(",") ||
-                           entry.getValue().toString().contains(" ") ||
-                           entry.getKey().equals("Description") ||
-                           entry.getKey().equals("Source") || // As per VCFv4.2, Source and Version should be surrounded by double quotes
-                           entry.getKey().equals("Version") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
+
+            final String value = entry.getValue().toString();
+            final String escapedValue = value.contains(",") ||
+                value.contains(" ") ||
+                key.equals(VCFConstants.DESCRIPTION_ATTRIBUTE) ||
+                key.equals(VCFConstants.SOURCE_ATTRIBUTE) || // As per VCFv4.2, Source and Version should be surrounded by double quotes
+                key.equals(VCFConstants.VERSION_ATTRIBUTE)
+                ? "\"" + escapeQuotes(entry.getValue().toString()) + "\""
+                : value;
+
+            // As of VCFv4.3, fields which contain characters that have special meanings in the VCF headers
+            // can be percent encoded
+            if (key.equals(VCFConstants.ID_ATTRIBUTE) ||
+                key.equals(VCFConstants.NUMBER_ATTRIBUTE) ||
+                key.equals(VCFConstants.TYPE_ATTRIBUTE)) {
+                builder.append(escapedValue);
+            } else {
+                VCFPercentEncoder.percentEncodeHeaderValue(escapedValue, builder);
+            }
         }
         builder.append('>');
         return builder.toString();

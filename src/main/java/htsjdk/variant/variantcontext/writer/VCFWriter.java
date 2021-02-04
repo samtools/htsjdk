@@ -25,9 +25,11 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -52,9 +54,12 @@ import java.nio.file.Path;
 class VCFWriter extends IndexingVariantContextWriter {
 
     private static final String VERSION_LINE =
-            VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString() + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
+            VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_3.getFormatString() + "=" + VCFHeaderVersion.VCF4_3.getVersionString();
 
-	// Initialized when the header is written to the output stream
+    private static final String VCF4_2_VERSION_LINE =
+        VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString() + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
+
+    // Initialized when the header is written to the output stream
 	private VCFEncoder vcfEncoder = null;
 
 	// the VCF header we're storing
@@ -154,8 +159,28 @@ class VCFWriter extends IndexingVariantContextWriter {
         // note we need to update the mHeader object after this call because they header
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
         setHeader(header);
+        String versionLine;
+
+        if (Defaults.VCF_VERSION_TRANSITION_POLICY == VCFVersionTransitionPolicy.DO_NOT_TRANSITION) {
+            // Write pre 4.3 files as 4.2, and 4.3+ files as 4.3
+            versionLine = header.getVCFHeaderVersion() != null && header.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+                ? getVersionLine()
+                : VCF4_2_VERSION_LINE;
+        } else {
+            // Try to promote to 4.3
+            try {
+                header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_3);
+                versionLine = getVersionLine();
+            } catch (final TribbleException e) {
+                if (Defaults.VCF_VERSION_TRANSITION_POLICY == VCFVersionTransitionPolicy.FAIL_IF_CANNOT_TRANSITION) {
+                    throw new TribbleException("Pre v4.3 VFC file cannot be automatically transitioned to v4.3: " + e.getMessage());
+                }
+                versionLine = VCF4_2_VERSION_LINE;
+            }
+        }
+
         try {
-            writeHeader(this.mHeader, writer, getVersionLine(), getStreamName());
+            writeHeader(this.mHeader, writer, versionLine, getStreamName());
             writeAndResetBuffer();
             outputHasBeenWritten = true;
         } catch ( IOException e ) {
@@ -167,14 +192,11 @@ class VCFWriter extends IndexingVariantContextWriter {
         return VERSION_LINE;
     }
 
-    public static VCFHeader writeHeader(VCFHeader header,
+    public static VCFHeader writeHeader(final VCFHeader header,
                                         final Writer writer,
                                         final String versionLine,
                                         final String streamNameForError) {
-
         try {
-            rejectVCFV43Headers(header);
-
             // the file format field needs to be written first
             writer.write(versionLine + "\n");
 
@@ -260,21 +282,10 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void setHeader(final VCFHeader header) {
-        rejectVCFV43Headers(header);
-
         if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
         this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
-    }
-
-    // writing vcf v4.3 is not implemented
-    private static void rejectVCFV43Headers(final VCFHeader targetHeader) {
-        if (targetHeader.getVCFHeaderVersion() != null && targetHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            throw new IllegalArgumentException(String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
-        }
-
-
     }
 }

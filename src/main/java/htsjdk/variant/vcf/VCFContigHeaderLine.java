@@ -1,6 +1,6 @@
 /*
 * Copyright (c) 2012 The Broad Institute
-* 
+*
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
 * files (the "Software"), to deal in the Software without
@@ -9,10 +9,10 @@
 * copies of the Software, and to permit persons to whom the
 * Software is furnished to do so, subject to the following
 * conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be
 * included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -57,7 +57,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
 
     public VCFContigHeaderLine(final Map<String, String> mapping, final int contigIndex) {
         super(VCFHeader.CONTIG_KEY, mapping);
-	    if (contigIndex < 0) throw new TribbleException("The contig index is less than zero.");
+        if (contigIndex < 0) throw new TribbleException("The contig index is less than zero.");
         this.contigIndex = contigIndex;
     }
 
@@ -65,11 +65,11 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
         // Using LinkedHashMap to preserve order of keys in contig line (ID, length, assembly)
         super(VCFHeader.CONTIG_KEY, new LinkedHashMap<String, String>() {{
 			// Now inside an init block in an anon HashMap subclass
-			this.put("ID", sequenceRecord.getSequenceName());
+			this.put(VCFConstants.ID_ATTRIBUTE, sequenceRecord.getSequenceName());
 			this.put("length", Integer.toString(sequenceRecord.getSequenceLength()));
 			if ( assembly != null ) this.put("assembly", assembly);
 		}});
-		this.contigIndex = sequenceRecord.getSequenceIndex();
+        this.contigIndex = sequenceRecord.getSequenceIndex();
 	}
 
     public Integer getContigIndex() {

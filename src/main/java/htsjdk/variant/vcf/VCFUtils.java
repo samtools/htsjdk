@@ -191,7 +191,7 @@ public class VCFUtils {
 
     private static VCFContigHeaderLine makeContigHeaderLine(final SAMSequenceRecord contig, final String assembly) {
         final Map<String, String> map = new LinkedHashMap<>(3);
-        map.put("ID", contig.getSequenceName());
+        map.put(VCFConstants.ID_ATTRIBUTE, contig.getSequenceName());
         map.put("length", String.valueOf(contig.getSequenceLength()));
         if (assembly != null) map.put("assembly", assembly);
         return new VCFContigHeaderLine(map, contig.getSequenceIndex());

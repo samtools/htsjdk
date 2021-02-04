@@ -10,8 +10,8 @@ public class VCFAltHeaderLine extends VCFSimpleHeaderLine {
 
     private static List<String> expectedTags = Collections.unmodifiableList(
             new ArrayList<String>(2) {{
-                add(ID_ATTRIBUTE);
-                add(DESCRIPTION_ATTRIBUTE);
+                add(VCFConstants.ID_ATTRIBUTE);
+                add(VCFConstants.DESCRIPTION_ATTRIBUTE);
             }}
     );
 

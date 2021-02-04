@@ -174,7 +174,7 @@ public class VCFHeader implements Serializable {
      * @throws TribbleException if the requested header version is not compatible with the existing version
      */
     public void setVCFHeaderVersion(final VCFHeaderVersion vcfHeaderVersion) {
-        validateVersionTransition(this.vcfHeaderVersion, vcfHeaderVersion);
+        validateHeaderTransition(this, vcfHeaderVersion);
         this.vcfHeaderVersion = vcfHeaderVersion;
     }
 
@@ -203,6 +203,35 @@ public class VCFHeader implements Serializable {
                 // we're trying to go from v4.3 to pre-v4.3
                 throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
             }
+        }
+    }
+
+    /**
+     * Throw if {@code fromHeader} is not compatible with a {@code toVersion}. Generally, any version before
+     * version 4.2 can be up-converted to version 4.2, but not to version 4.3.
+     * If such a conversion is attempted, this method will validate that the header is compatible with 4.3
+     * Once a header is established as version 4.3, it cannot be up or down converted, and it must remain at version 4.3.
+     * @param fromHeader current version. May be null, in which case {@code toVersion} can be any version
+     * @param toVersion new version. Cannot be null.
+     * @throws TribbleException if {@code fromVersion} is not compatible with {@code toVersion}
+     */
+    public static void validateHeaderTransition(final VCFHeader fromHeader, final VCFHeaderVersion toVersion) {
+        ValidationUtils.nonNull(toVersion);
+
+        // fromHeader can be null, in which case anything goes (any transition from null is legal)
+        if (fromHeader == null) return;
+        final VCFHeaderVersion fromVersion = fromHeader.getVCFHeaderVersion();
+
+        final String errorMessageFormatString = "VCF cannot be automatically promoted from %s to %s";
+
+        if (toVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            // If fromHeader does not have a set version or is pre 4.3, validate
+            if (fromVersion == null || !fromVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+                VCF43Validator.validate(fromHeader);
+            }
+        } else if (fromVersion != null && fromVersion.equals(VCFHeaderVersion.VCF4_3)) {
+            // we're trying to go from v4.3 to pre-v4.3
+            throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
         }
     }
 

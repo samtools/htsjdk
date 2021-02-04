@@ -41,9 +41,6 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     private String name;
     private Map<String, String> genericFields = new LinkedHashMap<String, String>();
 
-    public static final String ID_ATTRIBUTE = "ID";
-    public static final String DESCRIPTION_ATTRIBUTE = "Description";
-
     /**
      * create a VCF filter header line
      *
@@ -54,7 +51,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     public VCFSimpleHeaderLine(String key, String name, String description) {
         super(key, "");
         Map<String, String> map = new LinkedHashMap<String, String>(1);
-        map.put(DESCRIPTION_ATTRIBUTE, description);
+        map.put(VCFConstants.DESCRIPTION_ATTRIBUTE, description);
         initialize(name, map);
     }
 
@@ -87,7 +84,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
 
     public VCFSimpleHeaderLine(final String key, final Map<String, String> mapping) {
         super(key, "");
-        name = mapping.get(ID_ATTRIBUTE);
+        name = mapping.get(VCFConstants.ID_ATTRIBUTE);
         initialize(name, mapping);
     }
 
@@ -114,7 +111,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     @Override
     protected String toStringEncoding() {
         Map<String, Object> map = new LinkedHashMap<String, Object>();
-        map.put(ID_ATTRIBUTE, name);
+        map.put(VCFConstants.ID_ATTRIBUTE, name);
         map.putAll(genericFields);
         return getKey() + "=" + VCFHeaderLine.toStringEncoding(map);
     }

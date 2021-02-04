@@ -451,7 +451,7 @@ public class VariantContext implements Feature, Serializable {
                              final Map<String, Object> attributes,
                              final boolean fullyDecoded,
                              final EnumSet<Validation> validationToPerform ) {
-        if ( contig == null ) { throw new IllegalArgumentException("Contig cannot be null"); }
+        if ( contig == null || contig.isEmpty() ) { throw new IllegalArgumentException("Contig cannot be null or the empty string"); }
         this.contig = contig;
         this.start = start;
         this.stop = stop;

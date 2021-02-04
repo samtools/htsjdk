@@ -30,6 +30,14 @@ import java.util.Locale;
 public final class VCFConstants {
     public static final Locale VCF_LOCALE = Locale.US;
 
+    // Required and recommended tags
+    public static final String ID_ATTRIBUTE = "ID";
+    public static final String NUMBER_ATTRIBUTE = "Number";
+    public static final String TYPE_ATTRIBUTE = "Type";
+    public static final String DESCRIPTION_ATTRIBUTE = "Description";
+    public static final String SOURCE_ATTRIBUTE = "Source";
+    public static final String VERSION_ATTRIBUTE = "Version";
+
     // reserved INFO/FORMAT field keys
     public static final String ANCESTRAL_ALLELE_KEY = "AA";
     public static final String ALLELE_COUNT_KEY = "AC";
