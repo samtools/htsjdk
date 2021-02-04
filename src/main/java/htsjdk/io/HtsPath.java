@@ -76,50 +76,30 @@ public class HtsPath implements IOPath, Serializable {
     private transient Path  cachedPath;         // cache the Path associated with this URI if its "Path-able"
 
     /**
+     * Create an HtsPath from a raw input path string.
+     *
      * If the raw input string already contains a scheme (including a "file" scheme), assume its already
      * properly escape/encoded. If no scheme component is present, assume it referencess a raw path on the
      * local file system, so try to get a Path first, and then retrieve the URI from the resulting Path.
      * This ensures that input strings that are local file references without a scheme component and contain
      * embedded characters are valid in file names, but which would otherwise be interpreted as excluded
      * URI characters (such as the URI fragment delimiter "#") are properly escape/encoded.
-     * @param rawInputString
+     * @param rawInputString a string specifying an input path. May not be null.
      */
     public HtsPath(final String rawInputString) {
         ValidationUtils.nonNull(rawInputString);
         this.rawInputString = rawInputString;
+        this.uri = getURIForString(rawInputString);
+    }
 
-        URI tempURI;
-        try {
-            tempURI = new URI(rawInputString);
-            if (!tempURI.isAbsolute()) {
-                // if the URI has no scheme, assume its a local (non-URI) file reference, and resolve
-                // it to a Path and retrieve the URI from the Path to ensure proper escape/encoding
-                setCachedPath(Paths.get(rawInputString));
-                tempURI = getCachedPath().toUri();
-            }
-        } catch (URISyntaxException uriException) {
-            // the input string isn't a valid URI; assume its a local (non-URI) file reference, and
-            // use the URI resulting from the corresponding Path
-            try {
-                setCachedPath(Paths.get(rawInputString));
-                tempURI = getCachedPath().toUri();
-            } catch (InvalidPathException | UnsupportedOperationException | SecurityException pathException) {
-                // we have two exceptions, each of which might be relevant since we can't tell whether
-                // the user intended to provide a local file reference or a URI, so preserve both
-                final String errorMessage = String.format(
-                        "%s can't be interpreted as a local file (%s) or as a URI (%s).",
-                        rawInputString,
-                        pathException.getMessage(),
-                        uriException.getMessage());
-                throw new IllegalArgumentException(errorMessage, pathException);
-            }
-        }
-        if (!tempURI.isAbsolute()) {
-            // assert the invariant that every URI we create has a scheme, even if the raw input string does not
-            throw new RuntimeException("URI has no scheme");
-        }
-
-        uri = tempURI;
+    /**
+     * Create an HtsPath from an existing HtsPath.
+     * @param htsPath an existing PathSpecifier. May not be null.
+     */
+    public HtsPath(final HtsPath htsPath) {
+        ValidationUtils.nonNull(htsPath);
+        this.rawInputString = htsPath.getRawInputString();
+        this.uri = htsPath.getURI();
     }
 
     @Override
@@ -260,4 +240,41 @@ public class HtsPath implements IOPath, Serializable {
         return result;
     }
 
+    // Called during HtsPath construction to construct and return a URI for the provided input string.
+    // Has a side-effect of caching a Path object for this PathSpecifier.
+    private URI getURIForString(final String pathString) {
+        URI tempURI;
+        try {
+            tempURI = new URI(pathString);
+            if (!tempURI.isAbsolute()) {
+                // if the URI has no scheme, assume its a local (non-URI) file reference, and resolve
+                // it to a Path and retrieve the URI from the Path to ensure proper escape/encoding
+                setCachedPath(Paths.get(pathString));
+                tempURI = getCachedPath().toUri();
+            }
+        } catch (URISyntaxException uriException) {
+            // the input string isn't a valid URI; assume its a local (non-URI) file reference, and
+            // use the URI resulting from the corresponding Path
+            try {
+                setCachedPath(Paths.get(pathString));
+                tempURI = getCachedPath().toUri();
+            } catch (InvalidPathException | UnsupportedOperationException | SecurityException pathException) {
+                // we have two exceptions, each of which might be relevant since we can't tell whether
+                // the user intended to provide a local file reference or a URI, so preserve both
+                final String errorMessage = String.format(
+                        "%s can't be interpreted as a local file (%s) or as a URI (%s).",
+                        pathString,
+                        pathException.getMessage(),
+                        uriException.getMessage());
+                throw new IllegalArgumentException(errorMessage, pathException);
+            }
+        }
+        if (!tempURI.isAbsolute()) {
+            // assert the invariant that every URI we create has a scheme, even if the raw input string does not
+            throw new RuntimeException("URI has no scheme");
+        }
+
+        return tempURI;
+    }
+    
 }

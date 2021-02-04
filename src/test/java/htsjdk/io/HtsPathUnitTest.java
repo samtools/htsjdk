@@ -21,6 +21,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class HtsPathUnitTest extends HtsjdkTest {
@@ -545,6 +547,33 @@ public class HtsPathUnitTest extends HtsjdkTest {
     @Test(dataProvider = "isCramTestCases")
     public void testIsCram(final String pathString, final boolean expectedMatch) {
         Assert.assertEquals(new HtsPath(pathString).isCram(), expectedMatch);
+    }
+
+    @Test(dataProvider = "validHtsPath")
+    public void testEqualsHash(
+            final String htsPathString,
+            final String unusedExpectedURIString,
+            final boolean unusedHasFileSystemProvider,
+            final boolean unusedIsPath) {
+        final HtsPath originalPath = new HtsPath(htsPathString);
+        final HtsPath htsPathCopy = new HtsPath(originalPath);
+
+        Assert.assertEquals(originalPath.getRawInputString(), htsPathCopy.getRawInputString());
+        Assert.assertEquals(originalPath.getURI(), htsPathCopy.getURI());
+
+        Assert.assertEquals(originalPath, htsPathCopy);
+        Assert.assertEquals(originalPath.hashCode(), htsPathCopy.hashCode());
+    }
+    
+    @Test(dataProvider = "validHtsPath")
+    public void testCopyConstructor(
+            final String htsPathString,
+            final String unusedExpectedURIString,
+            final boolean unusedHasFileSystemProvider,
+            final boolean unusedIsPath) {
+        final HtsPath originalPath = new HtsPath(htsPathString);
+        final HtsPath pathCopy = new HtsPath(originalPath);
+        Assert.assertEquals(originalPath, pathCopy);
     }
 
     /**
