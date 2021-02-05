@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets; 
 
 /**
  * Implementation of LineReader that is a thin wrapper around BufferedReader.  On Linux, this is faster
@@ -40,6 +41,27 @@ import java.nio.charset.Charset;
  * @author alecw@broadinstitute.org
  */
 public class BufferedLineReader extends LineNumberReader implements LineReader {
+    
+    private static final float MAX_BYTES_PER_CHAR_UTF8 = StandardCharsets.UTF_8.newEncoder().maxBytesPerChar();
+
+    private static class StringBackedInputStream extends InputStream {
+        private int idx = 0;
+        private final String str;
+        private final int len;
+
+        StringBackedInputStream(String str) {
+            this.str = str;
+            this.len = str.length();
+        }
+
+        @Override
+        public int read() throws IOException {
+            if(idx >= len) {
+                return -1;
+            }
+            return (int) str.charAt(idx++);
+        }
+    }
 
     public BufferedLineReader(final InputStream is) {
         this(is, Defaults.NON_ZERO_BUFFER_SIZE);
@@ -54,7 +76,18 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
      * is necessary because the String is in unicode.
      */
     public static BufferedLineReader fromString(final String s) {
-        return new BufferedLineReader(new ByteArrayInputStream(s.getBytes()));
+        final InputStream is;
+        // Developer Note: if the string is long enough such that the # of bytes needed exceeds the
+        // maximum array size, we need to use a custom string-backed input stream, versus a byte array
+        // backed input stream.  The # of bytes needed is the length of the string times the number
+        // bytes per character to store in UTF8.
+        if (s.length() * MAX_BYTES_PER_CHAR_UTF8 >= Integer.MAX_VALUE) {
+            is = new StringBackedInputStream(s);
+        }
+        else {
+            is = new ByteArrayInputStream(s.getBytes());
+        }
+        return new BufferedLineReader(is);
     }
 
     /**
