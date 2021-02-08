@@ -449,6 +449,25 @@ public class SequenceUtil {
         }
     }
 
+    /**
+     * TODO fix
+     *
+     * @param readBase the read base to match
+     * @param refBase the reference base to match
+     * @param negativeStrand set to true if the base to test is on the negative strand and should be reverse complemented (only applies if bisulfiteSequence is true)
+     * @param bisulfiteSequence set to true if the base to match is a bisulfite sequence and needs to be converted
+     * @param matchAmbiguousRef causes the match to return true when the read base is a subset of the possible IUPAC reference bases, but not the other way around
+     * @return true if the bases match, false otherwise
+     */
+    private static boolean basesMatchNM(final byte readBase, final byte refBase, final boolean negativeStrand,
+                                      final boolean bisulfiteSequence, final boolean matchAmbiguousRef) {
+        if (!isValidBase(readBase) || !isValidBase(refBase)) {
+            return false;
+        } else {
+            return basesEqual(readBase, refBase);
+        }
+    }
+
     /** Calculates the number of mismatches between the read and the reference sequence provided. */
     public static int countMismatches(final SAMRecord read, final byte[] referenceBases) {
         return countMismatches(read, referenceBases, 0, false);
@@ -487,7 +506,7 @@ public class SequenceUtil {
                 final int length = block.getLength();
 
                 for (int i = 0; i < length; ++i) {
-                    if (!basesMatch(readBases[readBlockStart + i], referenceBases[referenceBlockStart + i],
+                    if (!basesMatchNM(readBases[readBlockStart + i], referenceBases[referenceBlockStart + i],
                             read.getReadNegativeStrandFlag(), bisulfiteSequence, matchAmbiguousRef)) {
                         ++mismatches;
                     }
