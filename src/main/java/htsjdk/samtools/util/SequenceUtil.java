@@ -113,7 +113,7 @@ public class SequenceUtil {
     /**
      * Different modes on how to compare bases, e.g. considering ambiguity codes or applying the SAM NM tag spec.
      */
-    private enum BaseComparisonMode {
+    protected enum BaseComparisonMode {
         MatchExact,
         MatchAmbiguity,
         NMTagMode

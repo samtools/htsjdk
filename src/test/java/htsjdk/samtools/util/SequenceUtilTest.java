@@ -138,7 +138,7 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "mismatchCountsDataProvider")
     public void testCountMismatches(final String readString, final String cigar, final String reference,
-                                    final int expectedMismatchesExact, final int expectedMismatchesAmbiguous) {
+                                    final int expectedMismatchesExact, final int expectedMismatchesAmbiguous, final int expectedMismatchesNMTagMode) {
         final SAMRecord rec = new SAMRecord(null);
         rec.setReadName("test");
         rec.setReadString(readString);
@@ -151,33 +151,36 @@ public class SequenceUtilTest extends HtsjdkTest {
 
         final byte[] refBases = StringUtil.stringToBytes(reference);
 
-        final int nExact = SequenceUtil.countMismatches(rec, refBases, -1, false, false);
+        final int nExact = SequenceUtil.countMismatches(rec, refBases, -1, false, SequenceUtil.BaseComparisonMode.MatchExact);
         Assert.assertEquals(nExact, expectedMismatchesExact);
 
         final int sumMismatchesQualityExact = SequenceUtil.sumQualitiesOfMismatches(rec, refBases, -1, false);
         Assert.assertEquals(sumMismatchesQualityExact, expectedMismatchesExact * 33);
 
-        final int nAmbiguous = SequenceUtil.countMismatches(rec, refBases, -1, false, true);
+        final int nAmbiguous = SequenceUtil.countMismatches(rec, refBases, -1, false, SequenceUtil.BaseComparisonMode.MatchAmbiguity);
         Assert.assertEquals(nAmbiguous, expectedMismatchesAmbiguous);
+
+        final int nNMTagMode = SequenceUtil.countMismatches(rec, refBases, -1, false, SequenceUtil.BaseComparisonMode.NMTagMode);
+        Assert.assertEquals(nNMTagMode, expectedMismatchesNMTagMode);
     }
 
     @DataProvider(name = "mismatchCountsDataProvider")
     public Object[][] testMakeMismatchCountsDataProvider() {
         // note: R=A|G
         return new Object[][]{
-                {"A", "1M", "A", 0, 0},
-                {"A", "1M", "R", 1, 0},
-                {"G", "1M", "R", 1, 0},
-                {"C", "1M", "R", 1, 1},
-                {"T", "1M", "R", 1, 1},
-                {"N", "1M", "R", 1, 1},
-                {"R", "1M", "A", 1, 1},
-                {"R", "1M", "C", 1, 1},
-                {"R", "1M", "G", 1, 1},
-                {"R", "1M", "T", 1, 1},
-                {"R", "1M", "N", 1, 0},
-                {"R", "1M", "R", 0, 0},
-                {"N", "1M", "N", 0, 0}
+                {"A", "1M", "A", 0, 0, 0},
+                {"A", "1M", "R", 1, 0, 1},
+                {"G", "1M", "R", 1, 0, 1},
+                {"C", "1M", "R", 1, 1, 1},
+                {"T", "1M", "R", 1, 1, 1},
+                {"N", "1M", "R", 1, 1, 1},
+                {"R", "1M", "A", 1, 1, 1},
+                {"R", "1M", "C", 1, 1, 1},
+                {"R", "1M", "G", 1, 1, 1},
+                {"R", "1M", "T", 1, 1, 1},
+                {"R", "1M", "N", 1, 0, 1},
+                {"R", "1M", "R", 0, 0, 1},
+                {"N", "1M", "N", 0, 0, 1}
         };
     }
 
@@ -224,7 +227,7 @@ public class SequenceUtilTest extends HtsjdkTest {
 
         final byte[] refBases = StringUtil.stringToBytes(reference);
 
-        final int nExact = SequenceUtil.countMismatches(rec, refBases, -1, true, false);
+        final int nExact = SequenceUtil.countMismatches(rec, refBases, -1, true, SequenceUtil.BaseComparisonMode.MatchExact);
         Assert.assertEquals(nExact, expectedMismatches);
 
         final int sumMismatchesQualityExact = SequenceUtil.sumQualitiesOfMismatches(rec, refBases, -1, true);
