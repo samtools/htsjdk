@@ -465,7 +465,7 @@ public class SequenceUtil {
                 // TODO Different treatment for bisulfite?
                 return readBaseMatchesRefBaseForNM(readBase, refBase);
             default:
-                throw new RuntimeException("Invalid BaseComparisonMode: Not implemented.");
+                throw new IllegalStateException("Invalid BaseComparisonMode: Not implemented.");
         }
     }
 
