@@ -476,8 +476,8 @@ public class SequenceUtil {
      * @param refBase the reference base to match
      * @return true if the bases match and are from [ACGTacgt], false otherwise
      */
-    private static boolean readBaseMatchesRefBaseForNM(final byte readBase, final byte refBase) {
-        return isValidBase(readBase) && isValidBase(refBase) && basesEqual(readBase, refBase);
+    public static boolean readBaseMatchesRefBaseForNM(final byte readBase, final byte refBase) {
+        return readBase == '=' || isValidBase(readBase) && isValidBase(refBase) && basesEqual(readBase, refBase);
     }
 
     /** Calculates the number of mismatches between the read and the reference sequence provided. */
@@ -1002,7 +1002,6 @@ public class SequenceUtil {
         final byte[] seq = record.getReadBases();
         final int alignmentStart = record.getAlignmentStart() - 1;
         int cigarIndex, blockRefPos, blockReadStart, matchCount = 0;
-        int nmCount = 0;
         final StringBuilder mdString = new StringBuilder();
 
         final int nElements = cigarElements.size();
@@ -1028,7 +1027,6 @@ public class SequenceUtil {
                         mdString.append(matchCount);
                         mdString.appendCodePoint(refBase);
                         matchCount = 0;
-                        ++nmCount;
                     }
                 }
                 if (inBlockOffset < blockLength) break;
@@ -1044,11 +1042,9 @@ public class SequenceUtil {
                 matchCount = 0;
                 if (inBlockOffset < blockLength) break;
                 blockRefPos += blockLength;
-                nmCount += blockLength;
             } else if (op == CigarOperator.INSERTION
                     || op == CigarOperator.SOFT_CLIP) {
                 blockReadStart += blockLength;
-                if (op == CigarOperator.INSERTION) nmCount += blockLength;
             } else if (op == CigarOperator.SKIPPED_REGION) {
                 blockRefPos += blockLength;
             }
@@ -1056,7 +1052,7 @@ public class SequenceUtil {
         mdString.append(matchCount);
 
         if (calcMD) record.setAttribute(SAMTag.MD, mdString.toString());
-        if (calcNM) record.setAttribute(SAMTag.NM, nmCount);
+        if (calcNM) record.setAttribute(SAMTag.NM, calculateSamNmTag(record, ref));
     }
 
     public static byte upperCase(final byte base) {
