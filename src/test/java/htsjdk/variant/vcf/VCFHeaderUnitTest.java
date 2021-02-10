@@ -312,17 +312,17 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void testVcfHeaderAddSimpleHeaderLine() {
+    public void testVcfHeaderAddIdHeaderLine() {
         final VCFHeader header = getHiSeqVCFHeader();
         final VCFSimpleHeaderLine delLine = new VCFSimpleHeaderLine("ALT", "DEL", "Deletion relative to the reference");
         final VCFSimpleHeaderLine insLine = new VCFSimpleHeaderLine("ALT", "INS", "Insertion of novel sequence relative to the reference");
         header.addMetaDataLine(delLine);
         header.addMetaDataLine(insLine);
 
-        Assert.assertTrue(header.getOtherHeaderLines().contains(delLine), "DEL line not found in other header lines");
-        Assert.assertTrue(header.getOtherHeaderLines().contains(insLine), "INS line not found in other header lines");
-        Assert.assertNotNull(header.getOtherHeaderLine("ALT", "DEL"), "Lookup for ALT:DEL by key failed");
-        Assert.assertNotNull(header.getOtherHeaderLine("ALT", "INS"), "Lookup for ALT:INS by key failed");
+        Assert.assertTrue(header.getIdHeaderLines().contains(delLine), "DEL line not found in ID header lines");
+        Assert.assertTrue(header.getIdHeaderLines().contains(insLine), "INS line not found in ID header lines");
+        Assert.assertNotNull(header.getIdHeaderLine("ALT", "DEL"), "Lookup for ALT/DEL by key failed");
+        Assert.assertNotNull(header.getIdHeaderLine("ALT", "INS"), "Lookup for ALT/INS by key failed");
     }
 
     @Test
@@ -384,16 +384,16 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void testVCFHeaderAddDuplicateSimpleHeaderLine() {
+    public void testVCFHeaderAddDuplicateIdHeaderLine() {
         final VCFHeader header = getHiSeqVCFHeader();
         final VCFSimpleHeaderLine delLine = new VCFSimpleHeaderLine("ALT", "DEL", "Deletion relative to the reference");
         header.addMetaDataLine(delLine);
-        Assert.assertTrue(header.getOtherHeaderLines().contains(delLine), "DEL line not found in other header lines");
+        Assert.assertTrue(header.getIdHeaderLines().contains(delLine), "DEL line not found in ID header lines");
 
-        final int numHeaderLinesBefore = header.getOtherHeaderLines().size();
+        final int numHeaderLinesBefore = header.getIdHeaderLines().size();
         // readd the same header line
         header.addMetaDataLine(delLine);
-        final int numHeaderLinesAfter = header.getOtherHeaderLines().size();
+        final int numHeaderLinesAfter = header.getIdHeaderLines().size();
 
         // assert that we have the same number of other header lines before and after
         Assert.assertEquals(numHeaderLinesBefore, numHeaderLinesAfter);

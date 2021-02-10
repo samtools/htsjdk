@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,6 +76,7 @@ public class VCFHeader implements Serializable {
     private final Map<String, VCFInfoHeaderLine> mInfoMetaData = new LinkedHashMap<String, VCFInfoHeaderLine>();
     private final Map<String, VCFFormatHeaderLine> mFormatMetaData = new LinkedHashMap<String, VCFFormatHeaderLine>();
     private final Map<String, VCFFilterHeaderLine> mFilterMetaData = new LinkedHashMap<String, VCFFilterHeaderLine>();
+    private final Map<String, Map<String, VCFSimpleHeaderLine>> mIdMetaData = new LinkedHashMap<String, Map<String, VCFSimpleHeaderLine>>();
     private final Map<String, VCFHeaderLine> mOtherMetaData = new LinkedHashMap<String, VCFHeaderLine>();
     private final Map<String, VCFContigHeaderLine> contigMetaData = new LinkedHashMap<>();
 
@@ -374,8 +376,7 @@ public class VCFHeader implements Serializable {
         } else if ( line instanceof VCFContigHeaderLine ) {
             return addContigMetaDataLineLookupEntry((VCFContigHeaderLine) line);
         } else if ( line instanceof VCFSimpleHeaderLine ){
-            final VCFSimpleHeaderLine simpleLine = (VCFSimpleHeaderLine) line;
-            return addMetaDataLineMapLookupEntry(mOtherMetaData, simpleLine.getKey() + ":" + simpleLine.getID(), simpleLine);
+            return addIdMetaDataLineLookupEntry((VCFSimpleHeaderLine) line);
         } else {
             return addMetaDataLineMapLookupEntry(mOtherMetaData, line.getKey(), line);
         }
@@ -402,6 +403,24 @@ public class VCFHeader implements Serializable {
         }
         contigMetaData.put(line.getID(), line);
         return true;
+    }
+
+    /**
+     * Add a simple header line to the lookup list for ID header lines (mIdMetaData). If there's
+     * already an ID line with the same field type and ID, does not add the line.
+     *
+     * Note: does not add the ID line to the master list of header lines in mMetaData --
+     *       this must be done separately if desired.
+     *
+     * @param line ID header line to add
+     * @return true if line was added to the list of ID lines, otherwise false
+     */
+    private boolean addIdMetaDataLineLookupEntry(final VCFSimpleHeaderLine line) {
+        // Check first layer for key/field type
+        if (!mIdMetaData.containsKey(line.getKey())) {
+            mIdMetaData.put(line.getKey(), new LinkedHashMap<String, VCFSimpleHeaderLine>());
+        }
+        return addMetaDataLineMapLookupEntry(mIdMetaData.get(line.getKey()), line.getID(), line);
     }
 
     /**
@@ -582,25 +601,23 @@ public class VCFHeader implements Serializable {
     }
 
     /**
+     * First checks for a VCFHeaderLine with the given key.
+     * If not found, looks for the first ID header line with the given key as the field type.
+     *
      * @param key    the header key name
      * @return the meta data line, or null if there is none
      */
     public VCFHeaderLine getOtherHeaderLine(final String key) {
-        return mOtherMetaData.get(key);
-    }
-
-    /**
-     * @param key    the header key or field type
-     * @param id     the header id
-     * @return the meta data line, or null if there is none
-     */
-    public VCFSimpleHeaderLine getOtherHeaderLine(final String key, final String id) {
-        final VCFHeaderLine line = mOtherMetaData.get(key + ":" + id);
-        if (line instanceof VCFSimpleHeaderLine) {
-            return (VCFSimpleHeaderLine) line;
-        } else {
-            return null;
+        if (mOtherMetaData.containsKey(key)) {
+            return mOtherMetaData.get(key);
+        } else if (mIdMetaData.containsKey(key)) {
+            // Get the first item in the linked hash map
+            Map<String, VCFSimpleHeaderLine> fieldMetaData = mIdMetaData.get(key);
+            if (fieldMetaData.keySet().size() > 0) {
+                return fieldMetaData.get(fieldMetaData.keySet().iterator().next());
+            }
         }
+        return null;
     }
 
     /**
@@ -608,6 +625,30 @@ public class VCFHeader implements Serializable {
      */
     public Collection<VCFHeaderLine> getOtherHeaderLines() {
         return mOtherMetaData.values();
+    }
+
+    /**
+     * @param key    the header key or field type
+     * @param id     the header id
+     * @return the meta data line, or null if there is none
+     */
+    public VCFSimpleHeaderLine getIdHeaderLine(final String key, final String id) {
+        if (mIdMetaData.containsKey(key)) {
+            return mIdMetaData.get(key).get(id);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the ID HeaderLines, in order by:
+     * - First key/field type to be added
+     * - Within key/field types, in original order
+     */
+    public Collection<VCFSimpleHeaderLine> getIdHeaderLines() {
+        final Collection<VCFSimpleHeaderLine> lines = new LinkedList<>();
+        mIdMetaData.forEach((k, v) -> lines.addAll(v.values()));
+        return lines;
     }
 
     /**
