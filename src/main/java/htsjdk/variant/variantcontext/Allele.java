@@ -188,7 +188,7 @@ public interface Allele extends Comparable<Allele>, Serializable {
                 default: throw new IllegalArgumentException("Illegal base [" + (char)bases[0] + "] seen in the allele");
             }
         } else {
-            return new ByteArrayAllele(bases, isRef);
+            return new ByteArrayAllele(bases.clone(), isRef);
         }
     }
 
@@ -340,7 +340,7 @@ public interface Allele extends Comparable<Allele>, Serializable {
     }
 
     /**
-     * Returns an allele with such bases and reference status.
+     * Returns an allele with the given bases and reference status.
      *
      * @param bases  bases representing an allele
      * @param isRef  is this the reference allele?
@@ -389,19 +389,24 @@ public interface Allele extends Comparable<Allele>, Serializable {
 
     boolean isPrefixOf(final Allele other);
 
+    /** @return true if this is the NO_CALL allele */
     boolean isNoCall();
-
     // Returns true if this is not the NO_CALL allele
     boolean isCalled();
 
+    /** @return true if this Allele is the reference allele */
     boolean isReference();
 
+    /** @return true if this Allele is not the reference allele */
     boolean isNonReference();
 
+    /** @return true if this Allele is symbolic (i.e. no well-defined base sequence), this includes breakpoints and breakends */
     boolean isSymbolic();
 
+    /** @return true if this Allele is a breakpoint ( ex: G]17:198982] or ]13:123456]T ) */
     boolean isBreakpoint();
 
+    /** @return true if this Allele is a single breakend (ex: .A or A.) */
     boolean isSingleBreakend();
 
     // Returns a nice string representation of this object

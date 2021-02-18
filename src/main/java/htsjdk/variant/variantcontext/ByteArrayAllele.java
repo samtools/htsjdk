@@ -27,6 +27,8 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.samtools.util.StringUtil;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 class ByteArrayAllele implements Allele {
@@ -91,19 +93,6 @@ class ByteArrayAllele implements Allele {
         this.isSymbolic = allele.isSymbolic;
     }
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // creation routines
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // accessor routines
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
     @Override
     public boolean isPrefixOf(final Allele other) {
         if (other.length() < this.length()) {
@@ -125,30 +114,24 @@ class ByteArrayAllele implements Allele {
         return true;
     }
 
-    /** @return true if this is the NO_CALL allele */
     @Override
     public boolean isNoCall()           { return isNoCall; }
-    // Returns true if this is not the NO_CALL allele
+
     @Override
     public boolean isCalled()           { return ! isNoCall(); }
 
-    /** @return true if this Allele is the reference allele */
     @Override
     public boolean isReference()        { return isRef; }
 
-    /** @return true if this Allele is not the reference allele */
     @Override
     public boolean isNonReference()     { return ! isReference(); }
 
-    /** @return true if this Allele is symbolic (i.e. no well-defined base sequence), this includes breakpoints and breakends */
     @Override
     public boolean isSymbolic()         { return isSymbolic; }
 
-    /** @return true if this Allele is a breakpoint ( ex: G]17:198982] or ]13:123456]T ) */
     @Override
     public boolean isBreakpoint()         { return Allele.wouldBeBreakpoint(bases); }
 
-    /** @return true if this Allele is a single breakend (ex: .A or A.) */
     @Override
     public boolean isSingleBreakend()         { return Allele.wouldBeSingleBreakend(bases); }
 
@@ -174,7 +157,7 @@ class ByteArrayAllele implements Allele {
      * @return the segregating bases
      */
     @Override
-    public String getBaseString() { return isNoCall() ? NO_CALL_STRING : new String(getBases()); }
+    public String getBaseString() { return isNoCall() ? NO_CALL_STRING : new String(getBases(), StandardCharsets.UTF_8); }
 
     /**
      * Return the printed representation of this allele.
@@ -184,7 +167,7 @@ class ByteArrayAllele implements Allele {
      * @return the allele string representation
      */
     @Override
-    public String getDisplayString() { return new String(bases); }
+    public String getDisplayString() { return new String(bases, StandardCharsets.UTF_8); }
 
     /**
      * Same as #getDisplayString() but returns the result as byte[].
@@ -202,8 +185,8 @@ class ByteArrayAllele implements Allele {
      * @return true if these alleles are equal
      */
     @Override
-    public boolean equals(Object other) {
-        return ( ! (other instanceof ByteArrayAllele) ? false : equals((ByteArrayAllele)other, false) );
+    public boolean equals(final Object other) {
+        return other instanceof Allele && equals((Allele) other, false);
     }
 
     /**
@@ -211,12 +194,8 @@ class ByteArrayAllele implements Allele {
      */
     @Override
     public int hashCode() {
-        int hash = 1;
-        for (int i = 0; i < bases.length; i++)
-            hash += (i+1) * bases[i];
-        return hash;
+        return Arrays.hashCode(bases) * 31 + Boolean.hashCode(isRef);
     }
-
 
     /**
      * Returns true if this and other are equal.  If ignoreRefState is true, then doesn't require both alleles has the
@@ -228,7 +207,13 @@ class ByteArrayAllele implements Allele {
      */
     @Override
     public boolean equals(final Allele other, final boolean ignoreRefState) {
-        return this == other || (isRef == other.isReference() || ignoreRefState) && isNoCall == other.isNoCall() && (bases == other.getBases() || Arrays.equals(bases, other.getBases()));
+        if (this == other) {
+            return true;
+        } else if (!ignoreRefState && isRef != other.isReference()) {
+            return false;
+        } else {
+            return isNoCall == other.isNoCall() && Arrays.equals(bases, other.getDisplayBases());
+        }
     }
 
     /**
@@ -237,7 +222,7 @@ class ByteArrayAllele implements Allele {
      * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
      */
     @Override
-    public boolean basesMatch(final byte[] test) { return !isSymbolic && (bases == test || Arrays.equals(bases, test)); }
+    public boolean basesMatch(final byte[] test) { return bases == test || Arrays.equals(bases, test); }
 
     /**
      * @param test  bases to test against
@@ -264,12 +249,6 @@ class ByteArrayAllele implements Allele {
         return isSymbolic ? 0 : bases.length;
     }
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // useful static functions
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
     @Override
     public int compareTo(final Allele other) {
         if ( isReference() && other.isNonReference() )
@@ -285,14 +264,18 @@ class ByteArrayAllele implements Allele {
     }
 
     private int compareBases(final byte[] otherBases) {
-        final int stop = otherBases.length < bases.length ? otherBases.length : bases.length;
-        for (int i = 0; i < stop; i++) {
-            final int baseDiff = bases[i] - otherBases[i];
-            if (baseDiff != 0) {
-                return baseDiff < 0 ? -1 : 1;
+        if (this.bases == otherBases) {
+            return 0;
+        } else {
+            final int stop = Math.min(otherBases.length, bases.length);
+            for (int i = 0; i < stop; i++) {
+                final int baseDiff = bases[i] - otherBases[i];
+                if (baseDiff != 0) {
+                    return baseDiff < 0 ? -1 : 1;
+                }
             }
+            return Integer.compare(bases.length, otherBases.length);
         }
-        return Integer.compare(bases.length, otherBases.length);
     }
 
     /**
