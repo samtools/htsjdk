@@ -30,7 +30,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.AsciiLineReader;
@@ -40,7 +39,7 @@ import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
-import htsjdk.variant.variantcontext.writer.VCFVersionTransitionPolicy;
+import htsjdk.variant.variantcontext.writer.VCF42To43VersionTransitionPolicy;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
@@ -88,7 +87,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // as some tests rely on 4.2 which are valid 4.3 roundtripping exactly back to 4.2 files
         System.setProperty(
             Defaults.SAMJDK_PREFIX + "vcf_version_transition_policy",
-            VCFVersionTransitionPolicy.DO_NOT_TRANSITION.name()
+            VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION.name()
         );
     }
 

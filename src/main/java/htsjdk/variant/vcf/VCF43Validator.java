@@ -1,6 +1,9 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.TribbleException;
+
 
 public class VCF43Validator {
 
@@ -15,14 +18,14 @@ public class VCF43Validator {
     }
 
     public static void validate(final VCFHeaderLine headerLine) {
-        if (headerLine instanceof VCFContigHeaderLine) {
+        if (headerLine.getKey().equals(VCFConstants.PEDIGREE_HEADER_KEY) && !(headerLine instanceof VCFPedigreeHeaderLine)) {
+            throw new TribbleException("VCF v4.3 PEDIGREE lines must contain an ID");
+        } else if (headerLine instanceof VCFContigHeaderLine) {
             VCF43Validator.validate((VCFContigHeaderLine) headerLine);
         } else if (headerLine instanceof VCFSimpleHeaderLine) {
             VCF43Validator.validate((VCFSimpleHeaderLine) headerLine);
         } else if (headerLine instanceof VCFCompoundHeaderLine) {
             VCF43Validator.validate((VCFCompoundHeaderLine) headerLine);
-        } else if (headerLine.getKey().equals(VCFConstants.PEDIGREE_HEADER_KEY)) {
-            throw new TribbleException("VCFv4.3 pedigree lines must contain an ID");
         }
     }
 
@@ -55,34 +58,10 @@ public class VCF43Validator {
 
     private static void validate(final VCFContigHeaderLine headerLine) {
         final String id = headerLine.getID();
-         if (id.isEmpty()) {
-            throw new TribbleException("VCFContigHeaderLine: ID cannot be empty");
-        }
-        final char firstChar = id.charAt(0);
-        if (firstChar == '*' || firstChar == '=') {
-            throw new TribbleException("VCFContigHeaderLine: Contig ID cannot begin with character: " + firstChar);
-        }
-        for (int i = 0; i < id.length(); i++) {
-            final char c = id.charAt(i);
-            boolean legal = false;
-            if ('!' <= c && c <= '~') {
-                switch(c) {
-                    case '\\':
-                    case ',':
-                    case '"':
-                    case '`': case '\'':
-                    case '(': case ')':
-                    case '[': case ']':
-                    case '{': case '}':
-                    case '<': case '>':
-                        break;
-                    default:
-                        legal = true;
-                }
-            }
-            if (!legal) {
-                throw new TribbleException("VCFContigHeaderLine: Contig ID contains illegal character: " + c);
-            }
+        try {
+            SAMSequenceRecord.validateSequenceName(id);
+        } catch (final SAMException e) {
+            throw new TribbleException("Contig has invalid ID: " + e.getMessage());
         }
     }
 }

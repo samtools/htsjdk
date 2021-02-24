@@ -1,8 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
-import htsjdk.variant.variantcontext.writer.VCFVersionTransitionPolicy;
-import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.variantcontext.writer.VCF42To43VersionTransitionPolicy;
 
 import java.io.File;
 import java.util.Collections;
@@ -112,7 +111,7 @@ public class Defaults {
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
-    public static final VCFVersionTransitionPolicy VCF_VERSION_TRANSITION_POLICY;
+    public static final VCF42To43VersionTransitionPolicy VCF_VERSION_TRANSITION_POLICY;
 
 
     public static final String SAMJDK_PREFIX = "samjdk.";
@@ -138,9 +137,9 @@ public class Defaults {
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
-        VCF_VERSION_TRANSITION_POLICY = VCFVersionTransitionPolicy.valueOf(getStringProperty(
+        VCF_VERSION_TRANSITION_POLICY = VCF42To43VersionTransitionPolicy.valueOf(getStringProperty(
             "vcf_version_transition_policy",
-            VCFVersionTransitionPolicy.DO_NOT_TRANSITION.name()
+            VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION.name()
         ));
     }
 

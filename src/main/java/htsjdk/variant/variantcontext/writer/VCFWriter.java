@@ -56,7 +56,7 @@ class VCFWriter extends IndexingVariantContextWriter {
     private static final String VERSION_LINE =
             VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_3.getFormatString() + "=" + VCFHeaderVersion.VCF4_3.getVersionString();
 
-    private static final String VCF4_2_VERSION_LINE =
+    public static final String VCF4_2_VERSION_LINE =
         VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString() + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
 
     // Initialized when the header is written to the output stream
@@ -161,7 +161,7 @@ class VCFWriter extends IndexingVariantContextWriter {
         setHeader(header);
         String versionLine;
 
-        if (Defaults.VCF_VERSION_TRANSITION_POLICY == VCFVersionTransitionPolicy.DO_NOT_TRANSITION) {
+        if (Defaults.VCF_VERSION_TRANSITION_POLICY == VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION) {
             // Write pre 4.3 files as 4.2, and 4.3+ files as 4.3
             versionLine = header.getVCFHeaderVersion() != null && header.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
                 ? getVersionLine()
@@ -170,9 +170,10 @@ class VCFWriter extends IndexingVariantContextWriter {
             // Try to promote to 4.3
             try {
                 header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_3);
+                System.err.println("Converted");
                 versionLine = getVersionLine();
             } catch (final TribbleException e) {
-                if (Defaults.VCF_VERSION_TRANSITION_POLICY == VCFVersionTransitionPolicy.FAIL_IF_CANNOT_TRANSITION) {
+                if (Defaults.VCF_VERSION_TRANSITION_POLICY == VCF42To43VersionTransitionPolicy.FAIL_IF_CANNOT_TRANSITION) {
                     throw new TribbleException("Pre v4.3 VFC file cannot be automatically transitioned to v4.3: " + e.getMessage());
                 }
                 versionLine = VCF4_2_VERSION_LINE;

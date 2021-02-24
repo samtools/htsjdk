@@ -169,7 +169,8 @@ class BCF2Writer extends IndexingVariantContextWriter {
             // write out the header into a byte stream, get its length, and write everything to the file
             final ByteArrayOutputStream capture = new ByteArrayOutputStream();
             final OutputStreamWriter writer = new OutputStreamWriter(capture);
-            this.header = VCFWriter.writeHeader(this.header, writer, VCFWriter.getVersionLine(), "BCF2 stream");
+            // BCF v2.2 writing is not implemented yet,
+            this.header = VCFWriter.writeHeader(this.header, writer, VCFWriter.VCF4_2_VERSION_LINE, "BCF2 stream");
             writer.append('\0'); // the header is null terminated by a byte
             writer.close();
 

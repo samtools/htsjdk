@@ -9,7 +9,7 @@ package htsjdk.variant.variantcontext.writer;
  * workflows that may process 4.2 files that are invalid 4.3, but should be removed once proper versioning
  * support for VCF is incorporated into htsjdk
  */
-public enum VCFVersionTransitionPolicy {
+public enum VCF42To43VersionTransitionPolicy {
     /**
      * Write pre 4.3 files as 4.2, to which automatic transitioning should always be possible, and
      * write 4.3+ files as 4.3.

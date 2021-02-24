@@ -391,6 +391,9 @@ public class VCFHeader implements Serializable {
      *         line with the same key and the new line was not added
      */
     private boolean addMetadataLineLookupEntry(final VCFHeaderLine line) {
+        if (vcfHeaderVersion != null && vcfHeaderVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            VCF43Validator.validate(line);
+        }
         if ( line instanceof VCFInfoHeaderLine )  {
             final VCFInfoHeaderLine infoLine = (VCFInfoHeaderLine)line;
             return addMetaDataLineMapLookupEntry(mInfoMetaData, infoLine.getID(), infoLine);

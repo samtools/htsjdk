@@ -12,10 +12,11 @@ import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
-import htsjdk.variant.variantcontext.writer.VCFVersionTransitionPolicy;
+import htsjdk.variant.variantcontext.writer.VCF42To43VersionTransitionPolicy;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -55,7 +56,15 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
         // Set system property so that VCFWriter attempts to transition pre v4.2 files to v4.3
         System.setProperty(
             Defaults.SAMJDK_PREFIX + "vcf_version_transition_policy",
-            VCFVersionTransitionPolicy.TRANSITION_IF_POSSIBLE.name()
+            VCF42To43VersionTransitionPolicy.TRANSITION_IF_POSSIBLE.name()
+        );
+    }
+
+    @AfterClass
+    private void teardown() {
+        System.setProperty(
+            Defaults.SAMJDK_PREFIX + "vcf_version_transition_policy",
+            VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION.name()
         );
     }
 
@@ -200,6 +209,10 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
         writer.close();
 
         final Tuple<VCFHeader, List<VariantContext>> writeVCF = readEntireVCFIntoMemory(out.toPath());
+
+        Assert.assertNotNull(readVCF.a.getVCFHeaderVersion());
+        Assert.assertNotNull(writeVCF.a.getVCFHeaderVersion());
+
         Assert.assertEquals(readVCF.a.getMetaDataInSortedOrder(), writeVCF.a.getMetaDataInSortedOrder());
         Assert.assertEquals(readVCF.a.getInfoHeaderLines(), writeVCF.a.getInfoHeaderLines());
         Assert.assertEquals(readVCF.a.getFormatHeaderLines(), writeVCF.a.getFormatHeaderLines());
