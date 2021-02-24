@@ -81,16 +81,6 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         tempDir = TestUtil.getTempDirectory("VCFHeader", "VCFHeaderTest");
     }
 
-    @BeforeClass
-    private void setTransitionPolicy() {
-        // Set system property so that VCFWriter does not attempt to transition 4.2 files,
-        // as some tests rely on 4.2 which are valid 4.3 roundtripping exactly back to 4.2 files
-        System.setProperty(
-            Defaults.SAMJDK_PREFIX + "vcf_version_transition_policy",
-            VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION.name()
-        );
-    }
-
     @AfterClass
     private void deleteTemporaryDirectory() {
         for (File f : tempDir.listFiles()) {
@@ -611,7 +601,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         final String actualContents = new String(Files.readAllBytes(actualFile.toPath()), StandardCharsets.UTF_8);
         final String expectedContents = new String(Files.readAllBytes(expectedFile.toPath()), StandardCharsets.UTF_8);
-        Assert.assertEquals(actualContents, expectedContents);
+        Assert.assertEquals(actualContents.substring(actualContents.indexOf('\n')), expectedContents.substring(actualContents.indexOf('\n')));
     }
 
 
