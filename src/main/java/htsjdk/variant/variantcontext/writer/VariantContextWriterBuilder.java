@@ -132,6 +132,8 @@ public class VariantContextWriterBuilder {
     private boolean createMD5 = Defaults.CREATE_MD5;
     protected EnumSet<Options> options = DEFAULT_OPTIONS.clone();
 
+    private VCF42To43VersionTransitionPolicy vcf42To43VersionTransitionPolicy;
+
     /**
      * Default constructor.  Adds <code>USE_ASYNC_IO</code> to the Options if it is present in Defaults.
      */
@@ -326,6 +328,11 @@ public class VariantContextWriterBuilder {
      */
     public VariantContextWriterBuilder setOptions(final EnumSet<Options> options) {
         this.options = options;
+        return this;
+    }
+
+    public VariantContextWriterBuilder setVCF42to43TransitionPolicy(final VCF42To43VersionTransitionPolicy policy) {
+        this.vcf42To43VersionTransitionPolicy = policy;
         return this;
     }
 
@@ -569,20 +576,24 @@ public class VariantContextWriterBuilder {
     }
 
     private VariantContextWriter createVCFWriter(final Path writerPath, final OutputStream writerStream) {
+        final VCFWriter writer;
         if (idxCreator == null) {
-            return new VCFWriter(writerPath, writerStream, refDict,
+            writer = new VCFWriter(writerPath, writerStream, refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
                     options.contains(Options.WRITE_FULL_FORMAT_FIELD));
+            writer.setTransitionPolicy(vcf42To43VersionTransitionPolicy);
         }
         else {
-            return new VCFWriter(writerPath, writerStream, refDict, idxCreator,
+            writer = new VCFWriter(writerPath, writerStream, refDict, idxCreator,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
                     options.contains(Options.WRITE_FULL_FORMAT_FIELD));
+            writer.setTransitionPolicy(vcf42To43VersionTransitionPolicy);
         }
+        return writer;
     }
 
     private VariantContextWriter createBCFWriter(final Path writerPath, final OutputStream writerStream) {

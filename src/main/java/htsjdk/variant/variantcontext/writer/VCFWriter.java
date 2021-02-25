@@ -76,6 +76,8 @@ class VCFWriter extends IndexingVariantContextWriter {
     // is the header or body written to the output stream?
     private boolean outputHasBeenWritten;
 
+    private VCF42To43VersionTransitionPolicy transitionPolicy = Defaults.VCF_VERSION_TRANSITION_POLICY;
+
     /*
      * The VCF writer uses an internal Writer, based by the ByteArrayOutputStream lineBuffer,
      * to temp. buffer the header and per-site output before flushing the per line output
@@ -161,7 +163,7 @@ class VCFWriter extends IndexingVariantContextWriter {
         setHeader(header);
         String versionLine;
 
-        if (Defaults.VCF_VERSION_TRANSITION_POLICY == VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION) {
+        if (transitionPolicy == VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION) {
             // Write pre 4.3 files as 4.2, and 4.3+ files as 4.3
             versionLine = header.getVCFHeaderVersion() != null && header.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
                 ? getVersionLine()
@@ -170,10 +172,9 @@ class VCFWriter extends IndexingVariantContextWriter {
             // Try to promote to 4.3
             try {
                 header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_3);
-                System.err.println("Converted");
                 versionLine = getVersionLine();
             } catch (final TribbleException e) {
-                if (Defaults.VCF_VERSION_TRANSITION_POLICY == VCF42To43VersionTransitionPolicy.FAIL_IF_CANNOT_TRANSITION) {
+                if (transitionPolicy == VCF42To43VersionTransitionPolicy.FAIL_IF_CANNOT_TRANSITION) {
                     throw new TribbleException("Pre v4.3 VFC file cannot be automatically transitioned to v4.3: " + e.getMessage());
                 }
                 versionLine = VCF4_2_VERSION_LINE;
@@ -288,5 +289,9 @@ class VCFWriter extends IndexingVariantContextWriter {
         }
         this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
+    }
+
+    public void setTransitionPolicy(final VCF42To43VersionTransitionPolicy transitionPolicy) {
+        this.transitionPolicy = transitionPolicy;
     }
 }

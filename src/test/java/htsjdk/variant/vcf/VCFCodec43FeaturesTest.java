@@ -1,6 +1,5 @@
 package htsjdk.variant.vcf;
 
-import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
@@ -16,8 +15,6 @@ import htsjdk.variant.variantcontext.writer.VCF42To43VersionTransitionPolicy;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -50,23 +47,6 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     private static final Path TEST_INVALID_43_CONTIG_NAME_FILE = TEST_PATH.resolve("invalid43ContigName.vcf");
     private static final Path TEST_VALID_43_CONTIG_NAME_FILE = TEST_PATH.resolve("valid43ContigName.vcf");
     private static final Path TEST_42_AUTOMATICALLY_CONVERTIBLE_FILE = TEST_PATH.resolve("42AutomaticallyConvertible.vcf");
-
-    @BeforeClass
-    private void setup() {
-        // Set system property so that VCFWriter attempts to transition pre v4.2 files to v4.3
-        System.setProperty(
-            Defaults.SAMJDK_PREFIX + "vcf_version_transition_policy",
-            VCF42To43VersionTransitionPolicy.TRANSITION_IF_POSSIBLE.name()
-        );
-    }
-
-    @AfterClass
-    private void teardown() {
-        System.setProperty(
-            Defaults.SAMJDK_PREFIX + "vcf_version_transition_policy",
-            VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION.name()
-        );
-    }
 
     @DataProvider(name="all43Files")
     private Object[][] allVCF43Files() {
@@ -250,6 +230,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
             .setOutputFile(out)
             .unsetOption(Options.INDEX_ON_THE_FLY)
             .unsetOption(Options.DO_NOT_WRITE_GENOTYPES)
+            .setVCF42to43TransitionPolicy(VCF42To43VersionTransitionPolicy.TRANSITION_IF_POSSIBLE)
             .build();
 
         writer.writeHeader(readVCF.a);
@@ -257,11 +238,13 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
         final Tuple<VCFHeader, List<VariantContext>> writeVCF = readEntireVCFIntoMemory(out.toPath());
 
-        for (final VCFHeaderLine line : writeVCF.a.getMetaDataInInputOrder()) {
-            if (line.getKey().equals("fileformat")) {
-                Assert.assertEquals(line.getValue(), expectedVersion);
-            }
-        }
+        final String actualVersion = writeVCF.a.getMetaDataInInputOrder().stream()
+            .filter(line -> line.getKey().equals("fileformat"))
+            .findFirst()
+            .get()
+            .getValue();
+
+        Assert.assertEquals(actualVersion, expectedVersion);
     }
 
     @DataProvider(name="all43IndexableFiles")
