@@ -599,6 +599,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         mAlignmentStart = value;
         // Clear cached alignment end
         mAlignmentEnd = NO_ALIGNMENT_START;
+        mAlignmentBlocks = null;
     }
 
     /**

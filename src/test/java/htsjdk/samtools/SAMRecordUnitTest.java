@@ -1181,4 +1181,14 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(attribute.getClass(), expectedClass);
         Assert.assertEquals(Array.getLength(attribute), 0);
     }
+
+    @Test
+    public void testAlignmentBlockCacheInvalidation() {
+        final SAMRecord rec = createTestRecordHelper();
+
+        rec.getAlignmentBlocks();
+        Assert.assertEquals(1, rec.getAlignmentBlocks().get(0).getReferenceStart());
+        rec.setAlignmentStart(100);
+        Assert.assertEquals(100, rec.getAlignmentBlocks().get(0).getReferenceStart());
+    }
 }
