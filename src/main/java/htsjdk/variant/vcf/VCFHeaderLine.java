@@ -176,7 +176,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
                 key.equals(VCFConstants.TYPE_ATTRIBUTE)) {
                 builder.append(escapedValue);
             } else {
-                VCFPercentEncoder.percentEncodeHeaderValue(escapedValue, builder);
+                builder.append(new VCFPercentEncodedTextTransformer().encodeHeaderText(escapedValue));
             }
         }
         builder.append('>');

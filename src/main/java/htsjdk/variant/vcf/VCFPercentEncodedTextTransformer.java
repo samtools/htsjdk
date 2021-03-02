@@ -39,6 +39,90 @@ public class VCFPercentEncodedTextTransformer implements VCFTextTransformer {
     }
 
     /**
+     * Transform a single string, % encoding values that have special meanings in VCF.
+     *
+     * @param rawPart the raw string to be encoded
+     * @return the encoded string
+     */
+    @Override
+    public String encodeText(final String rawPart) {
+        final StringBuilder sb = new StringBuilder(rawPart.length());
+        for (int i = 0; i < rawPart.length(); i++) {
+            final char c = rawPart.charAt(i);
+            if (VCFPercentEncodedTextTransformer.isSpecialCharacter(c)) {
+                final byte hi = (byte) (c >>> 4);
+                final byte lo = (byte) (c & 0xf);
+                sb.append(ENCODING_SENTNEL_CHAR);
+                sb.append(VCFPercentEncodedTextTransformer.upperCaseHex(hi));
+                sb.append(VCFPercentEncodedTextTransformer.upperCaseHex(lo));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static char upperCaseHex(final byte b) {
+        return b > 9
+            ? (char) ('A' + (b - 10))
+            : (char) ('0' + b);
+    }
+
+    private static boolean isSpecialCharacter(final char c) {
+        switch (c) {
+            case ':':
+            case ';':
+            case '=':
+            case '%':
+            case ',':
+            case '\r':
+            case '\n':
+            case '\t':
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Transform a single string, % encoding values that have special meanings in VCF.
+     * <p>
+     * This method is suitable for encoding a header value in a key=value pair that is of type String (e.g. Description)
+     * which have fewer restriction than fields in the body of the VCF such as INFO and FORMAT.
+     *
+     * @param rawPart String to encode
+     * @return the encoded string
+     */
+    public String encodeHeaderText(final String rawPart) {
+        final StringBuilder sb = new StringBuilder(rawPart.length());
+        for (int i = 0; i < rawPart.length(); i++) {
+            final char c = rawPart.charAt(i);
+            if (VCFPercentEncodedTextTransformer.isAllowedInHeader(c)) {
+                final byte hi = (byte) (c >>> 4);
+                final byte lo = (byte) (c & 0xf);
+                sb.append(ENCODING_SENTNEL_CHAR);
+                sb.append(VCFPercentEncodedTextTransformer.upperCaseHex(hi));
+                sb.append(VCFPercentEncodedTextTransformer.upperCaseHex(lo));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static boolean isAllowedInHeader(final char c) {
+        switch (c) {
+            case '%':
+            case '\r':
+            case '\n':
+            case '\t':
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
      * Transform input strings containing embedded percent=encoded characters. For example, when given the
      * string '%3D%41' will return the string '=A'.
      *
@@ -48,7 +132,7 @@ public class VCFPercentEncodedTextTransformer implements VCFTextTransformer {
      */
     protected static String decodePercentEncodedChars(final String rawText) {
         if (rawText.contains(ENCODING_SENTINEL_STRING)) {
-            StringBuilder builder = new StringBuilder(rawText.length());
+            final StringBuilder builder = new StringBuilder(rawText.length());
             for (int i = 0; i < rawText.length(); i++) {
                 final char c = rawText.charAt(i);
                 if (c == ENCODING_SENTNEL_CHAR && ((i + 2) < rawText.length())) {
@@ -59,7 +143,7 @@ public class VCFPercentEncodedTextTransformer implements VCFTextTransformer {
                         }
                         builder.append(trans[0]);
                         i += 2;
-                    } catch (IllegalArgumentException e) {
+                    } catch (final IllegalArgumentException e) {
                         builder.append(c);
                     }
                 } else {

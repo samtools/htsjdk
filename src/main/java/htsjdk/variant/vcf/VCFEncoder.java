@@ -38,7 +38,7 @@ public class VCFEncoder {
 
     private boolean outputTrailingFormatFields = false;
 
-    private boolean percentEncodeFields;
+    private VCFTextTransformer vcfTextTransformer;
 
     /**
      * Prepare a VCFEncoder that will encode records appropriate to the given VCF header, optionally
@@ -51,9 +51,9 @@ public class VCFEncoder {
         this.header = header;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.outputTrailingFormatFields = outputTrailingFormatFields;
-        this.percentEncodeFields = header.getVCFHeaderVersion() != null && header
-            .getVCFHeaderVersion()
-            .isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
+        this.vcfTextTransformer = header.getVCFHeaderVersion() != null && header.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+            ? new VCFPercentEncodedTextTransformer()
+            : new VCFPassThruTextTransformer();
     }
 
     /**
@@ -244,9 +244,7 @@ public class VCFEncoder {
             }
             result = sb.toString();
         } else {
-            result = percentEncodeFields
-                ? VCFPercentEncoder.percentEncode(val.toString())
-                : val.toString();
+            result = vcfTextTransformer.encodeText(val.toString());
         }
 
         return result;
