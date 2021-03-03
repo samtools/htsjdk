@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.zip.Inflater;
 
 public class BlockCompressedInputStreamTest extends HtsjdkTest {
@@ -156,7 +155,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
         tempFile.deleteOnExit();
         final List<String> linesWritten = writeTempBlockCompressedFileForInflaterTest(tempFile);
         // wrap our expected output in a lambda to prevent massive string expansion of the test params during test execution
-        final Supplier<List<String>> expectedOutputSupplier = () -> linesWritten;
+        final QuietTestWrapper<List<String>> expectedOutputSupplier = new QuietTestWrapper<>(linesWritten);
 
         final InflaterFactory countingInflaterFactory = new CountingInflaterFactory();
 
@@ -176,7 +175,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
 
     @Test(dataProvider = "customInflaterInput", singleThreaded = true)
     public void testCustomInflater(final CheckedExceptionInputStreamSupplier bcisSupplier,
-                                   final Supplier<List<String>> expectedOutputSupplier,
+                                   final QuietTestWrapper<List<String>> expectedOutputSupplier,
                                    final int expectedInflateCalls,
                                    final InflaterFactory customDefaultInflaterFactory) throws Exception
     {

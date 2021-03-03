@@ -246,15 +246,11 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
     }
 
     // test case wrapper to reduce spammy TestNG output during test execution
-    private static class SAMSequenceDictionaryWrapper {
-        final SAMSequenceDictionary dictionary;
-        public SAMSequenceDictionaryWrapper(final SAMSequenceDictionary dictionary) {
-            this.dictionary = dictionary;
-        }
-
+    private static class SAMSequenceDictionaryWrapper extends QuietTestWrapper<SAMSequenceDictionary>{
+        public SAMSequenceDictionaryWrapper(final SAMSequenceDictionary dictionary) { super(dictionary);}
         @Override
         public String toString() {
-            return String.format("%d/%d", dictionary.size(),dictionary.getReferenceLength());
+            return String.format("%d/%d", get().size(),get().getReferenceLength());
         }
     }
 
@@ -263,7 +259,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
                            final boolean withDescriptions, final int defaultBpl,
                            final int minBpl, final int maxBpl, final int seed, final boolean gzipped)
             throws IOException, GeneralSecurityException, URISyntaxException {
-        final SAMSequenceDictionary dictionary = dictionaryWrapper.dictionary;
+        final SAMSequenceDictionary dictionary = dictionaryWrapper.get();
         final Map<String, byte[]> bases = new LinkedHashMap<>(dictionary.getSequences().size());
         final Map<String, Integer> bpl = new LinkedHashMap<>(dictionary.getSequences().size());
         final Random rdn = new Random(seed);

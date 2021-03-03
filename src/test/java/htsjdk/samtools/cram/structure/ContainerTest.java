@@ -10,6 +10,7 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceContext;
+import htsjdk.samtools.util.QuietTestWrapper;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -27,23 +28,23 @@ public class ContainerTest extends HtsjdkTest {
     private Object[][] singleContainerAlignmentContextData() {
         return new Object[][]{
                 {
-                        CRAMStructureTestHelper.createSAMRecordsMapped(
+                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(
                                 TEST_RECORD_COUNT,
-                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO)),
                         new AlignmentContext(
                                 new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO), 1,
                                 TEST_RECORD_COUNT + CRAMStructureTestHelper.READ_LENGTH - 1)
                 },
                 {
-                        CRAMStructureTestHelper.createSAMRecordsMapped(
+                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(
                                 TEST_RECORD_COUNT,
-                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE),
+                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE)),
                         new AlignmentContext(
                                 new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE), 1,
                                 TEST_RECORD_COUNT + CRAMStructureTestHelper.READ_LENGTH - 1)
                 },
                 {
-                        CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT),
+                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT)),
                         AlignmentContext.UNMAPPED_UNPLACED_CONTEXT
                 },
         };
@@ -51,8 +52,9 @@ public class ContainerTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleContainerAlignmentContextData")
     public void testSingleContainerAlignmentContext(
-            final List<SAMRecord> samRecords,
+            final QuietTestWrapper<List<SAMRecord>> samRecordsSupplier,
             final AlignmentContext expectedAlignmentContext) {
+        final List<SAMRecord> samRecords = samRecordsSupplier.get();
         final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy()
                 // in order to set reads/slice to a small number, we must do the same for minimumSingleReferenceSliceSize
                 .setMinimumSingleReferenceSliceSize(samRecords.size())
@@ -85,11 +87,11 @@ public class ContainerTest extends HtsjdkTest {
         allRecords.addAll(CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT));
 
         return new Object[][]{
-                { bothReferenceSequenceRecords,
+                { new QuietTestWrapper(bothReferenceSequenceRecords),
                         Arrays.asList(
                             CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
                             CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE) },
-                { allRecords,
+                { new QuietTestWrapper(allRecords),
                         Arrays.asList(
                                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
                                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE,
@@ -99,8 +101,9 @@ public class ContainerTest extends HtsjdkTest {
 
     @Test(dataProvider = "multiContainerAlignmentContextData")
     public void testMultiContainerAlignmentContext(
-            final List<SAMRecord> samRecords,
+            final QuietTestWrapper<List<SAMRecord>> samRecordsSupplier,
             final List<ReferenceContext> referenceContexts) {
+        final List<SAMRecord> samRecords = samRecordsSupplier.get();
         final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy()
                 .setSlicesPerContainer(1)
                 .setReadsPerSlice(samRecords.size());
@@ -208,11 +211,11 @@ public class ContainerTest extends HtsjdkTest {
 
         return new Object[][]{
                 {
-                        CRAMStructureTestHelper.createSAMRecordsMapped(TEST_RECORD_COUNT,
-                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        new QuietTestWrapper(CRAMStructureTestHelper.createSAMRecordsMapped(TEST_RECORD_COUNT,
+                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO)),
                 },
                 {
-                        CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT),
+                        new QuietTestWrapper(CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT)),
                 },
 
                 // The records in these next two tests are unmapped but only "half" placed: they have either
@@ -231,7 +234,8 @@ public class ContainerTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "getRecordsTestCases")
-    public void getRecordsTest(final List<SAMRecord> originalRecords) {
+    public void getRecordsTest(final QuietTestWrapper<List<SAMRecord>> originalRecordsSupplier) {
+        final List<SAMRecord> originalRecords = originalRecordsSupplier.get();
         final long dummyByteOffset = 0;
         final ContainerFactory containerFactory = new ContainerFactory(
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
