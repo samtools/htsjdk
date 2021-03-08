@@ -90,18 +90,20 @@ public interface IOPath {
      */
     default Optional<String> getExtension() {
         final String hierarchicalPath = getURI().getPath();
-        final int indexOfLastComponent = hierarchicalPath.lastIndexOf(FileSystems.getDefault().getSeparator());
-        if (indexOfLastComponent != -1 && indexOfLastComponent < hierarchicalPath.length() - 1) {
-            final String lastComponent = hierarchicalPath.substring(indexOfLastComponent + 1);
-            if (lastComponent.length() > 0) {
-                final int indexOfLastDot = lastComponent.lastIndexOf('.');
-                if (indexOfLastDot != -1 && indexOfLastDot < lastComponent.length() - 1) {
-                    // return a string that includes the leading "." to enable easy comparison with the many
-                    // internal file extension constants we have that include the leading "." (i.e., in htsjdk),
-                    // and also for API consistency (since hasExtension() requires the candidate extension to
-                    // include a leading ".", this allows hasExtension(getExtension()) to always work whenever
-                    // getExtension() succeeds)
-                    return Optional.of(lastComponent.substring(indexOfLastDot));
+        if (hierarchicalPath != null) {
+            final int indexOfLastComponent = hierarchicalPath.lastIndexOf(FileSystems.getDefault().getSeparator());
+            if (indexOfLastComponent != -1 && indexOfLastComponent < hierarchicalPath.length() - 1) {
+                final String lastComponent = hierarchicalPath.substring(indexOfLastComponent + 1);
+                if (lastComponent.length() > 0) {
+                    final int indexOfLastDot = lastComponent.lastIndexOf('.');
+                    if (indexOfLastDot != -1 && indexOfLastDot < lastComponent.length() - 1) {
+                        // return a string that includes the leading "." to enable easy comparison with the many
+                        // internal file extension constants we have that include the leading "." (i.e., in htsjdk),
+                        // and also for API consistency (since hasExtension() requires the candidate extension to
+                        // include a leading ".", this allows hasExtension(getExtension()) to always work whenever
+                        // getExtension() succeeds)
+                        return Optional.of(lastComponent.substring(indexOfLastDot));
+                    }
                 }
             }
         }
@@ -124,7 +126,10 @@ public interface IOPath {
 
         // We don't want to use {@code #getExtension} here, since it won't work correctly if we're comparing an
         // extension that uses multiple . chars, such as .fasta.gz.
-        return getURI().getPath().toLowerCase().endsWith(extension.toLowerCase());
+        final String hierarchicalPath = getURI().getPath();
+        return hierarchicalPath == null ?
+                false :
+                hierarchicalPath.toLowerCase().endsWith(extension.toLowerCase());
     }
 
     /**

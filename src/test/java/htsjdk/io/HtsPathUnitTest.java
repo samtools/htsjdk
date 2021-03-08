@@ -395,6 +395,8 @@ public class HtsPathUnitTest extends HtsjdkTest {
                 {"gs://hellbender/test/resources?query=param", ".fasta" },
                 {"gs://hellbender/test/resources/", ".fasta" },
                 {"gs://hellbender/test/resources/?query=param", ".fasta" },
+                {"chr1:18502956", ".cram"},
+                {"chr1://18502956", ".cram"},
         };
     }
 
