@@ -1,34 +1,31 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
-import htsjdk.samtools.util.StringUtil;
-
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -38,9 +35,9 @@ import java.util.Collection;
  *</p>
  *<pre>
  Ref: a t C g a // C is the reference base
-    : a t G g a // C base is a G in some individuals
-    : a t - g a // C base is deleted w.r.t. the reference
-    : a t CAg a // A base is inserted w.r.t. the reference sequence
+ : a t G g a // C base is a G in some individuals
+ : a t - g a // C base is deleted w.r.t. the reference
+ : a t CAg a // A base is inserted w.r.t. the reference sequence
  </pre>
  *<p> In these cases, where are the alleles?</p>
  *<ul>
@@ -53,8 +50,8 @@ import java.util.Collection;
  *</p>
  *<pre>
  Ref: a t C g a // C is the reference base
-    : a t G g a // C base is a G in some individuals
-    : a t - g a // C base is deleted w.r.t. the reference
+ : a t G g a // C base is a G in some individuals
+ : a t - g a // C base is deleted w.r.t. the reference
  </pre>
  * <p>
  * How do I represent this?  There are three segregating alleles:
@@ -71,9 +68,9 @@ import java.util.Collection;
  </p>
  <pre>
  Ref: a t C g a // C is the reference base
-    : a t - g a
-    : a t - - a
-    : a t CAg a
+ : a t - g a
+ : a t - - a
+ : a t CAg a
  </pre>
  * <p>
  * There are actually four segregating alleles:
@@ -98,8 +95,8 @@ import java.util.Collection;
  * Given list of alleles it's possible to determine the "type" of the variation
  </p>
  <pre>
-      A / C @ loc =&gt; SNP
-      - / A =&gt; INDEL
+ A / C @ loc =&gt; SNP
+ - / A =&gt; INDEL
  </pre>
  * <p>
  * If you know where allele is the reference, you can determine whether the variant is an insertion or deletion.
@@ -112,115 +109,55 @@ import java.util.Collection;
  * Note that Alleles store all bases as bytes, in **UPPER CASE**.  So 'atc' == 'ATC' from the perspective of an
  * Allele.
  * </p>
- * @author ebanks, depristo
+ * @author gatk_team.
  */
-public class Allele implements Comparable<Allele>, Serializable {
-    public static final long serialVersionUID = 1L;
-
-    private static final byte[] EMPTY_ALLELE_BASES = new byte[0];
-    private static final char SINGLE_BREAKEND_INDICATOR = '.';
-    private static final char BREAKEND_EXTENDING_RIGHT = '[';
-    private static final char BREAKEND_EXTENDING_LEFT = ']';
-    private static final char SYMBOLIC_ALLELE_START = '<';
-    private static final char SYMBOLIC_ALLELE_END = '>';
-
-    private boolean isRef = false;
-    private boolean isNoCall = false;
-    private boolean isSymbolic = false;
-
-    private byte[] bases = null;
+public interface Allele extends Comparable<Allele>, Serializable {
 
     /** A generic static NO_CALL allele for use */
-    public static final String NO_CALL_STRING = ".";
-
+    String NO_CALL_STRING = ".";
     /** A generic static SPAN_DEL allele for use */
-    public static final String SPAN_DEL_STRING = "*";
-
+    String SPAN_DEL_STRING = "*";
     /** Non ref allele representations */
-    public static final String NON_REF_STRING = "<NON_REF>";
-    public static final String UNSPECIFIED_ALTERNATE_ALLELE_STRING = "<*>";
 
-    // no public way to create an allele
-    protected Allele(final byte[] bases, final boolean isRef) {
-        // null alleles are no longer allowed
-        if ( wouldBeNullAllele(bases) ) {
-            throw new IllegalArgumentException("Null alleles are not supported");
-        }
+    char SINGLE_BREAKEND_INDICATOR = '.';
+    char BREAKEND_EXTENDING_RIGHT = '[';
+    char BREAKEND_EXTENDING_LEFT = ']';
+    char SYMBOLIC_ALLELE_START = '<';
+    char SYMBOLIC_ALLELE_END = '>';
 
-        // no-calls are represented as no bases
-        if ( wouldBeNoCallAllele(bases) ) {
-            this.bases = EMPTY_ALLELE_BASES;
-            isNoCall = true;
-            if ( isRef ) throw new IllegalArgumentException("Cannot tag a NoCall allele as the reference allele");
-            return;
-        }
 
-        if ( wouldBeSymbolicAllele(bases) ) {
-            isSymbolic = true;
-            if ( isRef ) throw new IllegalArgumentException("Cannot tag a symbolic allele as the reference allele");
-        }
-        else {
-            StringUtil.toUpperCase(bases);
-        }
-
-        this.isRef = isRef;
-        this.bases = bases;
-
-        if ( ! acceptableAlleleBases(bases, isRef) )
-            throw new IllegalArgumentException("Unexpected base in allele bases \'" + new String(bases)+"\'");
-    }
-
-    protected Allele(final String bases, final boolean isRef) {
-        this(bases.getBytes(), isRef);
-    }
-
-    /**
-     * Creates a new allele based on the provided one.  Ref state will be copied unless ignoreRefState is true
-     * (in which case the returned allele will be non-Ref).
-     *
-     * This method is efficient because it can skip the validation of the bases (since the original allele was already validated)
-     *
-     * @param allele  the allele from which to copy the bases
-     * @param ignoreRefState  should we ignore the reference state of the input allele and use the default ref state?
-     */
-    protected Allele(final Allele allele, final boolean ignoreRefState) {
-        this.bases = allele.bases;
-        this.isRef = ignoreRefState ? false : allele.isRef;
-        this.isNoCall = allele.isNoCall;
-        this.isSymbolic = allele.isSymbolic;
-    }
-
-    public static final Allele REF_A = new Allele("A", true);
-    public static final Allele ALT_A = new Allele("A", false);
-    public static final Allele REF_C = new Allele("C", true);
-    public static final Allele ALT_C = new Allele("C", false);
-    public static final Allele REF_G = new Allele("G", true);
-    public static final Allele ALT_G = new Allele("G", false);
-    public static final Allele REF_T = new Allele("T", true);
-    public static final Allele ALT_T = new Allele("T", false);
-    public static final Allele REF_N = new Allele("N", true);
-    public static final Allele ALT_N = new Allele("N", false);
-    public static final Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
-    public static final Allele NO_CALL = new Allele(NO_CALL_STRING, false);
-    public static final Allele NON_REF_ALLELE = new Allele(NON_REF_STRING, false);
-    public static final Allele UNSPECIFIED_ALTERNATE_ALLELE = new Allele(UNSPECIFIED_ALTERNATE_ALLELE_STRING, false);
+    String NON_REF_STRING = "<NON_REF>";
+    String UNSPECIFIED_ALTERNATE_ALLELE_STRING = "<*>";
+    Allele REF_A = new ByteArrayAllele("A", true);
+    Allele ALT_A = new ByteArrayAllele("A", false);
+    Allele REF_C = new ByteArrayAllele("C", true);
+    Allele ALT_C = new ByteArrayAllele("C", false);
+    Allele REF_G = new ByteArrayAllele("G", true);
+    Allele ALT_G = new ByteArrayAllele("G", false);
+    Allele REF_T = new ByteArrayAllele("T", true);
+    Allele ALT_T = new ByteArrayAllele("T", false);
+    Allele REF_N = new ByteArrayAllele("N", true);
+    Allele ALT_N = new ByteArrayAllele("N", false);
+    Allele SPAN_DEL = new ByteArrayAllele(SPAN_DEL_STRING, false);
+    Allele NO_CALL = new ByteArrayAllele(NO_CALL_STRING, false);
+    Allele NON_REF_ALLELE = new ByteArrayAllele(NON_REF_STRING, false);
+    Allele UNSPECIFIED_ALTERNATE_ALLELE = new ByteArrayAllele(UNSPECIFIED_ALTERNATE_ALLELE_STRING, false);
 
     // for simple deletion, e.g. "ALT==<DEL>" (note that the spec allows, for now at least, alt alleles like <DEL:ME>)
-    public static final Allele SV_SIMPLE_DEL = StructuralVariantType.DEL.toSymbolicAltAllele();
+    @SuppressWarnings("unused")
+    Allele SV_SIMPLE_DEL = StructuralVariantType.DEL.toSymbolicAltAllele();
     // for simple insertion, e.g. "ALT==<INS>"
-    public static final Allele SV_SIMPLE_INS = StructuralVariantType.INS.toSymbolicAltAllele();
+    @SuppressWarnings("unused")
+    Allele SV_SIMPLE_INS = StructuralVariantType.INS.toSymbolicAltAllele();
     // for simple inversion, e.g. "ALT==<INV>"
-    public static final Allele SV_SIMPLE_INV = StructuralVariantType.INV.toSymbolicAltAllele();
+    @SuppressWarnings("unused")
+    Allele SV_SIMPLE_INV = StructuralVariantType.INV.toSymbolicAltAllele();
     // for simple generic cnv, e.g. "ALT==<CNV>"
-    public static final Allele SV_SIMPLE_CNV = StructuralVariantType.CNV.toSymbolicAltAllele();
+    @SuppressWarnings("unused")
+    Allele SV_SIMPLE_CNV = StructuralVariantType.CNV.toSymbolicAltAllele();
     // for simple duplication, e.g. "ALT==<DUP>"
-    public static final Allele SV_SIMPLE_DUP = StructuralVariantType.DUP.toSymbolicAltAllele();
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // creation routines
-    //
-    // ---------------------------------------------------------------------------------------------------------
+    @SuppressWarnings("unused")
+    Allele SV_SIMPLE_DUP = StructuralVariantType.DUP.toSymbolicAltAllele();
 
     /**
      * Create a new Allele that includes bases and if tagged as the reference allele if isRef == true.  If bases
@@ -230,7 +167,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param isRef should we make this a reference allele?
      * @throws IllegalArgumentException if bases contains illegal characters or is otherwise malformated
      */
-    public static Allele create(final byte[] bases, final boolean isRef) {
+    static Allele create(byte[] bases, boolean isRef) {
         if ( bases == null )
             throw new IllegalArgumentException("create: the Allele base string cannot be null; use new Allele() or new Allele(\"\") to create a Null allele");
 
@@ -251,19 +188,19 @@ public class Allele implements Comparable<Allele>, Serializable {
                 default: throw new IllegalArgumentException("Illegal base [" + (char)bases[0] + "] seen in the allele");
             }
         } else {
-            return new Allele(bases, isRef);
+            return new ByteArrayAllele(bases.clone(), isRef);
         }
     }
 
-    public static Allele create(final byte base, final boolean isRef) {
+    static Allele create(byte base, boolean isRef) {
         return create( new byte[]{ base }, isRef);
     }
 
-    public static Allele create(final byte base) {
+    static Allele create(byte base) {
         return create( base, false );
     }
 
-    public static Allele extend(final Allele left, final byte[] right) {
+    static Allele extend(Allele left, byte[] right) {
         if (left.isSymbolic())
             throw new IllegalArgumentException("Cannot extend a symbolic allele");
         byte[] bases = new byte[left.length() + right.length];
@@ -277,7 +214,8 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing an allele
      * @return true if the bases represent the null allele
      */
-    public static boolean wouldBeNullAllele(final byte[] bases) {
+    @Deprecated
+    static boolean wouldBeNullAllele(byte[] bases) {
         return (bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.NULL_ALLELE) || bases.length == 0;
     }
 
@@ -285,7 +223,8 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases bases representing an allele
      * @return true if the bases represent the SPAN_DEL allele
      */
-    public static boolean wouldBeStarAllele(final byte[] bases) {
+    @Deprecated
+    static boolean wouldBeStarAllele(byte[] bases) {
         return bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.SPANNING_DELETION_ALLELE;
     }
 
@@ -293,7 +232,8 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing an allele
      * @return true if the bases represent the NO_CALL allele
      */
-    public static boolean wouldBeNoCallAllele(final byte[] bases) {
+    @Deprecated
+    static boolean wouldBeNoCallAllele(byte[] bases) {
         return bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.NO_CALL_ALLELE;
     }
 
@@ -301,11 +241,12 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing an allele
      * @return true if the bases represent a symbolic allele, including breakpoints and breakends
      */
-    public static boolean wouldBeSymbolicAllele(final byte[] bases) {
+    @Deprecated
+    static boolean wouldBeSymbolicAllele(byte[] bases) {
     	if ( bases.length <= 1 )
             return false;
         else {
-            return bases[0] == SYMBOLIC_ALLELE_START || bases[bases.length - 1] == SYMBOLIC_ALLELE_END ||
+            return bases[0] == Allele.SYMBOLIC_ALLELE_START || bases[bases.length - 1] == Allele.SYMBOLIC_ALLELE_END ||
                     wouldBeBreakpoint(bases) ||
                     wouldBeSingleBreakend(bases);
         }
@@ -315,27 +256,29 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing an allele
      * @return true if the bases represent a symbolic allele in breakpoint notation, (ex: G]17:198982] or ]13:123456]T )
      */
-    public static boolean wouldBeBreakpoint(final byte[] bases) {
+    @Deprecated
+    static boolean wouldBeBreakpoint(byte[] bases) {
         if (bases.length <= 1) {
             return false;
         }
-        for (int i = 0; i < bases.length; i++) {
-            final byte base = bases[i];
-            if (base == BREAKEND_EXTENDING_LEFT || base == BREAKEND_EXTENDING_RIGHT) {
+        for (final byte base : bases) {
+            if (base == Allele.BREAKEND_EXTENDING_LEFT || base == Allele.BREAKEND_EXTENDING_RIGHT) {
                 return true;
             }
         }
         return false;
     }
+
     /**
      * @param bases  bases representing an allele
      * @return true if the bases represent a symbolic allele in single breakend notation (ex: .A or A. )
      */
-    public static boolean wouldBeSingleBreakend(final byte[] bases) {
+    @Deprecated
+    static boolean wouldBeSingleBreakend(byte[] bases) {
         if ( bases.length <= 1 )
             return false;
         else {
-            return bases[0] == SINGLE_BREAKEND_INDICATOR || bases[bases.length - 1] == SINGLE_BREAKEND_INDICATOR;
+            return bases[0] == Allele.SINGLE_BREAKEND_INDICATOR || bases[bases.length - 1] == Allele.SINGLE_BREAKEND_INDICATOR;
         }
     }
 
@@ -343,7 +286,8 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing a reference allele
      * @return true if the bases represent the well formatted allele
      */
-    public static boolean acceptableAlleleBases(final String bases) {
+    @Deprecated
+    static boolean acceptableAlleleBases(String bases) {
         return acceptableAlleleBases(bases.getBytes(), true);
     }
 
@@ -352,7 +296,8 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param isReferenceAllele is a reference allele
      * @return true if the bases represent the well formatted allele
      */
-    public static boolean acceptableAlleleBases(final String bases, boolean isReferenceAllele) {
+    @Deprecated
+    static boolean acceptableAlleleBases(String bases, boolean isReferenceAllele) {
         return acceptableAlleleBases(bases.getBytes(), isReferenceAllele);
     }
 
@@ -360,7 +305,8 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing a reference allele
      * @return true if the bases represent the well formatted allele
      */
-    public static boolean acceptableAlleleBases(final byte[] bases) {
+    @Deprecated
+    static boolean acceptableAlleleBases(byte[] bases) {
         return acceptableAlleleBases(bases, true);
     }
 
@@ -370,7 +316,8 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param isReferenceAllele true if a reference allele
      * @return true if the bases represent the well formatted allele
      */
-    public static boolean acceptableAlleleBases(final byte[] bases, final boolean isReferenceAllele) {
+    @Deprecated
+    static boolean acceptableAlleleBases(byte[] bases, boolean isReferenceAllele) {
         if ( wouldBeNullAllele(bases) )
             return false;
 
@@ -393,22 +340,21 @@ public class Allele implements Comparable<Allele>, Serializable {
     }
 
     /**
-     * @see #Allele(byte[], boolean)
+     * Returns an allele with the given bases and reference status.
      *
      * @param bases  bases representing an allele
      * @param isRef  is this the reference allele?
      */
-    public static Allele create(final String bases, final boolean isRef) {
+    static Allele create(String bases, boolean isRef) {
         return create(bases.getBytes(), isRef);
     }
-
 
     /**
      * Creates a non-Ref allele.  @see Allele(byte[], boolean) for full information
      *
      * @param bases  bases representing an allele
      */
-    public static Allele create(final String bases) {
+    static Allele create(String bases) {
         return create(bases, false);
     }
 
@@ -417,7 +363,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      *
      * @param bases  bases representing an allele
      */
-    public static Allele create(final byte[] bases) {
+    static Allele create(byte[] bases) {
         return create(bases, false);
     }
 
@@ -430,179 +376,63 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param allele  the allele from which to copy the bases
      * @param ignoreRefState  should we ignore the reference state of the input allele and use the default ref state?
      */
-    public static Allele create(final Allele allele, final boolean ignoreRefState) {
-        return new Allele(allele, ignoreRefState);
+    static Allele create(Allele allele, boolean ignoreRefState) {
+        return new ByteArrayAllele(allele.getBases(), allele.isReference() && !ignoreRefState);
     }
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // accessor routines
-    //
-    // ---------------------------------------------------------------------------------------------------------
+    static boolean oneIsPrefixOfOther(final Allele a1, final Allele a2) {
+        if ( a2.length() >= a1.length() )
+            return a1.isPrefixOf(a2);
+        else
+            return a2.isPrefixOf(a1);
+    }
+
+    boolean isPrefixOf(final Allele other);
 
     /** @return true if this is the NO_CALL allele */
-    public boolean isNoCall()           { return isNoCall; }
+    boolean isNoCall();
     // Returns true if this is not the NO_CALL allele
-    public boolean isCalled()           { return ! isNoCall(); }
+    boolean isCalled();
 
     /** @return true if this Allele is the reference allele */
-    public boolean isReference()        { return isRef; }
+    boolean isReference();
 
     /** @return true if this Allele is not the reference allele */
-    public boolean isNonReference()     { return ! isReference(); }
+    boolean isNonReference();
 
     /** @return true if this Allele is symbolic (i.e. no well-defined base sequence), this includes breakpoints and breakends */
-    public boolean isSymbolic()         { return isSymbolic; }
+    boolean isSymbolic();
 
     /** @return true if this Allele is a breakpoint ( ex: G]17:198982] or ]13:123456]T ) */
-    public boolean isBreakpoint()         { return wouldBeBreakpoint(bases); }
+    boolean isBreakpoint();
 
     /** @return true if this Allele is a single breakend (ex: .A or A.) */
-    public boolean isSingleBreakend()         { return wouldBeSingleBreakend(bases); }
+    boolean isSingleBreakend();
 
     // Returns a nice string representation of this object
-    public String toString() {
-        return ( isNoCall() ? NO_CALL_STRING : getDisplayString() ) + (isReference() ? "*" : "");
-    }
+    String toString();
 
-    /**
-     * Return the DNA bases segregating in this allele.  Note this isn't reference polarized,
-     * so the Null allele is represented by a vector of length 0
-     *
-     * @return the segregating bases
-     */
-    public byte[] getBases() { return isSymbolic ? EMPTY_ALLELE_BASES : bases; }
+    byte[] getBases();
 
-    /**
-     * Return the DNA bases segregating in this allele in String format.
-     * This is useful, because toString() adds a '*' to reference alleles and getBases() returns garbage when you call toString() on it.
-     *
-     * @return the segregating bases
-     */
-    public String getBaseString() { return isNoCall() ? NO_CALL_STRING : new String(getBases()); }
+    String getBaseString();
 
-    /**
-     * Return the printed representation of this allele.
-     * Same as getBaseString(), except for symbolic alleles.
-     * For symbolic alleles, the base string is empty while the display string contains &lt;TAG&gt;.
-     *
-     * @return the allele string representation
-     */
-    public String getDisplayString() { return new String(bases); }
+    String getDisplayString();
 
-    /**
-     * Same as #getDisplayString() but returns the result as byte[].
-     *
-     * Slightly faster then getDisplayString()
-     *
-     * @return the allele string representation
-     */
-    public byte[] getDisplayBases() { return bases; }
+    byte[] getDisplayBases();
 
-    /**
-     * @param other  the other allele
-     *
-     * @return true if these alleles are equal
-     */
-    public boolean equals(Object other) {
-        return ( ! (other instanceof Allele) ? false : equals((Allele)other, false) );
-    }
+    boolean equals(Object other);
 
-    /**
-     * @return hash code
-     */
-    public int hashCode() {
-        int hash = 1;
-        for (int i = 0; i < bases.length; i++)
-            hash += (i+1) * bases[i];
-        return hash;
-    }
+    int hashCode();
 
-    /**
-     * Returns true if this and other are equal.  If ignoreRefState is true, then doesn't require both alleles has the
-     * same ref tag
-     *
-     * @param other            allele to compare to
-     * @param ignoreRefState   if true, ignore ref state in comparison
-     * @return true if this and other are equal
-     */
-    public boolean equals(final Allele other, final boolean ignoreRefState) {
-        return this == other || (isRef == other.isRef || ignoreRefState) && isNoCall == other.isNoCall && (bases == other.bases || Arrays.equals(bases, other.bases));
-    }
+    boolean equals(Allele other, boolean ignoreRefState);
 
-    /**
-     * @param test  bases to test against
-     *
-     * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
-     */
-    public boolean basesMatch(final byte[] test) { return !isSymbolic && (bases == test || Arrays.equals(bases, test)); }
+    boolean basesMatch(byte[] test);
 
-    /**
-     * @param test  bases to test against
-     *
-     * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
-     */
-    public boolean basesMatch(final String test) { return basesMatch(test.toUpperCase().getBytes()); }
+    boolean basesMatch(String test);
 
-    /**
-     * @param test  allele to test against
-     *
-     * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
-     */
-    public boolean basesMatch(final Allele test) { return basesMatch(test.getBases()); }
+    boolean basesMatch(Allele test);
 
-    /**
-     * @return the length of this allele.  Null and NO_CALL alleles have 0 length.
-     */
-    public int length() {
-        return isSymbolic ? 0 : bases.length;
-    }
+    int length();
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // useful static functions
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    public static Allele getMatchingAllele(final Collection<Allele> allAlleles, final byte[] alleleBases) {
-        for ( Allele a : allAlleles ) {
-            if ( a.basesMatch(alleleBases) ) {
-                return a;
-            }
-        }
-
-        if ( wouldBeNoCallAllele(alleleBases) )
-            return NO_CALL;
-        else
-            return null;    // couldn't find anything
-    }
-
-    @Override
-    public int compareTo(final Allele other) {
-        if ( isReference() && other.isNonReference() )
-            return -1;
-        else if ( isNonReference() && other.isReference() ) 
-            return 1;
-        else
-            return getBaseString().compareTo(other.getBaseString()); // todo -- potential performance issue
-    }
-
-    public static boolean oneIsPrefixOfOther(final Allele a1, final Allele a2) {
-        if ( a2.length() >= a1.length() )
-            return firstIsPrefixOfSecond(a1, a2);
-        else
-            return firstIsPrefixOfSecond(a2, a1);
-    }
-
-    private static boolean firstIsPrefixOfSecond(final Allele a1, final Allele a2) {
-        String a1String = a1.getBaseString();
-        return a2.getBaseString().substring(0, a1String.length()).equals(a1String);
-    }
-
-    /**
-     *  @return true if Allele is either {@code <NON_REF>} or {@code <*>}
-     */
-    public boolean isNonRefAllele() {
-        return equals(NON_REF_ALLELE) || equals(UNSPECIFIED_ALTERNATE_ALLELE);
-    }
+    boolean isNonRefAllele();
 }

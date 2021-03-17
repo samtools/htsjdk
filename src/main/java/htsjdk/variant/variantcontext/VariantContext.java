@@ -884,7 +884,17 @@ public class VariantContext implements Feature, Serializable {
      * @return The allele sharing the same bases as this byte[], or null if no such allele is present.
      */
     public Allele getAllele(byte[] allele) {
-        return Allele.getMatchingAllele(getAlleles(), allele);
+
+        if (Allele.NO_CALL.basesMatch(allele)) {
+            return Allele.NO_CALL;
+        } else {
+            for ( Allele a : getAlleles() ) {
+                if ( a.basesMatch(allele) ) {
+                    return a;
+                }
+            }
+            return null;
+        }
     }
 
     /**

@@ -153,8 +153,8 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
         final Allele symbolicAlternateAllele = vc.getAlternateAllele(0);
         Assert.assertTrue(symbolicAlternateAllele.isSymbolic());
-        Assert.assertTrue(symbolicAlternateAllele.isNonRefAllele());
-        Assert.assertTrue(symbolicAlternateAllele.isNonReference());
+        Assert.assertTrue(symbolicAlternateAllele.isNonRefAllele(), symbolicAlternateAllele.toString());
+        Assert.assertTrue(symbolicAlternateAllele.isNonReference(), symbolicAlternateAllele.toString());
         Assert.assertEquals(symbolicAlternateAllele, Allele.create(Allele.UNSPECIFIED_ALTERNATE_ALLELE_STRING));
     }
 
