@@ -212,6 +212,7 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     @Test(dataProvider = "readerProvider")
     public static void testRemovesDuplicates(final HtsgetBAMFileReader htsgetReader) throws IOException {
         // TODO: temporary workaround as reference server does not properly merge regions and remove duplicates yet
+        // See https://github.com/ga4gh/htsget-refserver/issues/27
         if (htsgetReader.isUsingPOST()) {
             return;
         }
