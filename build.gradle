@@ -6,6 +6,7 @@ buildscript {
 
 plugins {
     id 'java'
+    id 'java-library'
     id 'scala'
     id 'maven-publish'
     id 'signing'
@@ -31,23 +32,24 @@ jacocoTestReport {
 }
 
 dependencies {
-    compile "org.apache.commons:commons-jexl:2.1.1"
-    compile "commons-logging:commons-logging:1.1.1"
-    compile "org.xerial.snappy:snappy-java:1.1.7.3"
-    compile "org.apache.commons:commons-compress:1.19"
-    compile 'org.tukaani:xz:1.8'
-    compile "gov.nih.nlm.ncbi:ngs-java:2.9.0"
-    compile ('org.sharegov:mjson:1.4.1') {
+    api "org.apache.commons:commons-jexl:2.1.1"
+    implementation "gov.nih.nlm.ncbi:ngs-java:2.9.0"
+    implementation "commons-logging:commons-logging:1.1.1"
+    implementation "org.xerial.snappy:snappy-java:1.1.7.3"
+    implementation "org.apache.commons:commons-compress:1.19"
+    implementation 'org.tukaani:xz:1.8'
+    implementation ('org.sharegov:mjson:1.4.1') {
         exclude group: "junit" 
     }
 
-    testCompile "org.scala-lang:scala-library:2.12.8"
-    testCompile "org.scalatest:scalatest_2.12:3.0.5"
-    testRuntime 'org.pegdown:pegdown:1.6.0' // Necessary for generating HTML reports with ScalaTest
-    testCompile "org.testng:testng:6.14.3"
-    testCompile "com.google.jimfs:jimfs:1.1"
-    testCompile "com.google.guava:guava:26.0-jre"
-    testCompile "org.apache.commons:commons-lang3:3.7"
+    testImplementation "org.scala-lang:scala-library:2.12.8"
+    testImplementation "org.scalatest:scalatest_2.12:3.0.5"
+    testImplementation "org.testng:testng:6.14.3"
+    testImplementation "com.google.jimfs:jimfs:1.1"
+    testImplementation "com.google.guava:guava:26.0-jre"
+    testImplementation "org.apache.commons:commons-lang3:3.7"
+
+    testRuntimeOnly 'org.pegdown:pegdown:1.6.0' // Necessary for generating HTML reports with ScalaTest
 }
 
 sourceCompatibility = 1.8
@@ -74,7 +76,7 @@ jar {
     manifest {
         attributes 'Implementation-Title': 'HTSJDK',
                 'Implementation-Vendor': 'Samtools Organization',
-                'Implementation-Version': version
+                'Implementation-Version': archiveVersion
     }
 }
 
