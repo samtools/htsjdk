@@ -13,7 +13,7 @@ plugins {
     id 'com.palantir.git-version' version '0.11.0'
     id 'com.github.johnrengelman.shadow' version '4.0.4'
     id 'com.github.maiflai.scalatest' version '0.23'
-    id 'com.github.spotbugs' version '1.6.9'
+    id 'com.github.spotbugs' version '4.7.0'
 }
 
 repositories {
@@ -154,7 +154,7 @@ task testExternalApis(type: Test) {
 
 if(project == rootProject) {
     wrapper {
-        gradleVersion = '5.2.1'
+        gradleVersion = '6.8.3'
     }
 }
 
@@ -177,12 +177,6 @@ spotbugs {
     excludeFilter = file('gradle/spotbugs-exclude.xml')
 }
 
-tasks.withType(com.github.spotbugs.SpotBugsTask) {
-    reports {
-        xml.enabled = false
-        html.enabled = true
-    }
-}
 
 publishing {
     publications {
