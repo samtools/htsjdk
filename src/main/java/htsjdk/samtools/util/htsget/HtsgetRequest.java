@@ -15,26 +15,26 @@ import java.util.stream.Collectors;
 
 
 /**
- * Builder for an htsget request that allows converting the request
- * to a URI after validating that it is properly formed
- *
+ * Builder for an htsget GET request that allows opening a connection
+ * using the request after validating that it is properly formed.
+ * <p>
  * This class currently supports version 1.2.0 of the spec as defined in https://samtools.github.io/hts-specs/htsget.html
  */
 public class HtsgetRequest {
     private final static Log log = Log.getInstance(HtsgetRequest.class);
     public static final Interval UNMAPPED_UNPLACED_INTERVAL = new Interval("*", 1, Integer.MAX_VALUE);
-    private static final String PROTOCOL_VERSION = "vnd.ga4gh.htsget.v1.2.0";
-    private static final String ACCEPT_TYPE = "application/" + PROTOCOL_VERSION + "+json";
+    protected static final String PROTOCOL_VERSION = "vnd.ga4gh.htsget.v1.2.0";
+    protected static final String ACCEPT_TYPE = "application/" + PROTOCOL_VERSION + "+json";
 
     private final URI endpoint;
 
     // Query parameters
-    private HtsgetFormat format;
-    private HtsgetClass dataClass;
-    private Locatable interval;
-    private final EnumSet<HtsgetRequestField> fields;
-    private final Set<String> tags;
-    private final Set<String> notags;
+    protected HtsgetFormat format;
+    protected HtsgetClass dataClass;
+    protected Locatable interval;
+    protected final EnumSet<HtsgetRequestField> fields;
+    protected final Set<String> tags;
+    protected final Set<String> notags;
 
     /**
      * Construct an HtsgetRequest from a URI identifying a valid resource on a htsget server
@@ -85,7 +85,7 @@ public class HtsgetRequest {
         this.dataClass = dataClass;
     }
 
-    public void setInterval(final Interval interval) {
+    public void setInterval(final Locatable interval) {
         this.interval = interval;
     }
 
@@ -161,7 +161,7 @@ public class HtsgetRequest {
     /**
      * Validates that the user query obeys htsget spec
      */
-    private void validateRequest() {
+    public void validateRequest() {
         if (this.dataClass != null && this.dataClass == HtsgetClass.header && (
             this.interval != null ||
                 !this.fields.isEmpty() ||
@@ -243,12 +243,7 @@ public class HtsgetRequest {
         }
     }
 
-    /**
-     * Attempt to make htsget request and return response if there are no errors
-     *
-     * @return the response from the htsget server if request is successful as an HtsgetResponse object
-     */
-    public HtsgetResponse getResponse() {
+    protected HttpURLConnection getConnection() {
         final URI reqURI = this.toURI();
         try {
             final HttpURLConnection conn = (HttpURLConnection) reqURI.toURL().openConnection();
@@ -256,6 +251,20 @@ public class HtsgetRequest {
             conn.setRequestProperty("Accept", HtsgetRequest.ACCEPT_TYPE);
             conn.connect();
 
+            return conn;
+        } catch (final IOException e) {
+            throw new RuntimeIOException("IOException while attempting htsget download, request: " + reqURI, e);
+        }
+    }
+
+    /**
+     * Attempt to make htsget request and return response if there are no errors
+     *
+     * @return the response from the htsget server if request is successful as an HtsgetResponse object
+     */
+    public HtsgetResponse getResponse() {
+        try {
+            final HttpURLConnection conn = this.getConnection();
             final InputStream is = conn.getInputStream();
             final int statusCode = conn.getResponseCode();
             final String respContentType = conn.getContentType();
@@ -286,7 +295,7 @@ public class HtsgetRequest {
                 throw new IllegalStateException("Unrecognized status code: " + statusCode);
             }
         } catch (final IOException e) {
-            throw new RuntimeIOException("IOException while attempting htsget download, request: " + reqURI, e);
+            throw new RuntimeIOException("IOException while attempting htsget download", e);
         }
     }
 }

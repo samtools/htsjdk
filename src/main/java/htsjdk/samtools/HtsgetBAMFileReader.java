@@ -47,6 +47,8 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     // Hold on to all query iterators we've given out so we can close them
     private final List<CloseableIterator<SAMRecord>> iterators;
 
+    private boolean usePOSTRequest;
+
     /**
      * Instantiate an HtsgetBAMFileReader from an HtsgetInputResource,
      * attempting to convert it to an https resource then a http resource if the server does not support https
@@ -141,11 +143,23 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
         }
 
         this.iterators = new ArrayList<>();
+
+        // TODO: Update to use a more appropriate way of determining if the endpoint supports POST requests
+        //       once/if that is available, see https://github.com/samtools/hts-specs/issues/538
+        try {
+            final HtsgetPOSTRequest post = new HtsgetPOSTRequest(this.mSource).withDataClass(HtsgetClass.header);
+            post.getResponse();
+            // If requests succeeds without exception and returns a response, POST should be supported
+            this.usePOSTRequest = true;
+        } catch (final RuntimeIOException ignored) {
+            this.usePOSTRequest = false;
+        }
     }
 
     /**
      * Set error-checking level for subsequent SAMRecord reads.
      */
+    @Override
     public void setValidationStringency(final ValidationStringency validationStringency) {
         this.mValidationStringency = validationStringency;
     }
@@ -153,6 +167,7 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     /**
      * Set SAMRecordFactory for subsequent SAMRecord reads.
      */
+    @Override
     public void setSAMRecordFactory(final SAMRecordFactory samRecordFactory) {
         this.mSamRecordFactory = samRecordFactory;
     }
@@ -167,6 +182,7 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     /**
      * Set whether to check CRC for subsequent iterator or query requests.
      */
+    @Override
     public void enableCrcChecking(final boolean check) {
         this.mCheckCRC = check;
     }
@@ -174,6 +190,7 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     /**
      * Set whether to write the source of every read into the source SAMRecords.
      */
+    @Override
     public void enableFileSource(final SamReader reader, final boolean enabled) {
         this.mReader = enabled ? reader : null;
     }
@@ -226,6 +243,21 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
     @Override
     public SAMFileHeader getFileHeader() {
         return this.mFileHeader;
+    }
+
+    /**
+     * Can be used to determine whether the specified source supports the POST api
+     */
+    public boolean isUsingPOST() {
+        return this.usePOSTRequest;
+    }
+
+    /**
+     * Force the source to attempt to use the POST api when requesting multiple intervals. Used for testing
+     * @param use whether to use the POST api
+     */
+    public void setUsingPOST(final boolean use) {
+        this.usePOSTRequest = use;
     }
 
     /**
@@ -299,7 +331,22 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
      * @param contained only return reads that are fully contained and not just overlapping if this is true
      */
     public CloseableIterator<SAMRecord> query(final List<Locatable> intervals, final boolean contained) {
-        final CloseableIterator<SAMRecord> chainingIterator = new BAMQueryChainingIterator(intervals, contained);
+        final CloseableIterator<SAMRecord> chainingIterator;
+        // Only use POST request if supported and there are multiple intervals
+        if (this.usePOSTRequest && intervals.size() > 1) {
+            // POST request does not guarantee that all returned records are overlapped/contained
+            // by requested intervals, so we still need to filter, but don't need to filter duplicates
+            chainingIterator = new FilteringSamIterator(
+                new HtsgetBAMFileIterator(
+                    new HtsgetPOSTRequest(this.mSource)
+                        .withIntervals(intervals)
+                        .withFormat(HtsgetFormat.BAM)
+                ),
+                new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
+        } else {
+            chainingIterator = new BAMQueryChainingIterator(intervals, contained);
+        }
+
         final CloseableIterator<SAMRecord> queryIterator = this.mUseAsynchronousIO
             ? new SAMRecordPrefetchingIterator(chainingIterator, READAHEAD_LIMIT)
             : chainingIterator;
@@ -483,7 +530,6 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
      * <p>
      * Makes an htsget request for each interval lazily and filters out reads that are duplicated across two intervals
      */
-    // TODO: remove this class and replace with HtsgetBAMFileIterator reading from htsget POST api once implemented
     private class BAMQueryChainingIterator implements CloseableIterator<SAMRecord> {
         private final List<Locatable> intervals;
         private final boolean contained;
@@ -560,7 +606,6 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
      * be contained by or even overlap the given interval, meaning the result of a query for an earlier interval
      * may contain reads logically "belonging" to a later interval, which will be duplicated in that later interval
      */
-    // TODO: remove this class once htsget POST api is implemented, see https://github.com/samtools/hts-specs/pull/285
     private static class ConsecutiveDuplicateRecordFilter implements SamRecordFilter {
         private final Locatable prevInterval;
         private final Locatable currInterval;
@@ -600,6 +645,43 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
                     rec.contigsMatch(prevInterval) &&
                     CoordMath.encloses(prevInterval.getStart(), prevInterval.getEnd(), start, start);
             return matchesCurrInterval && !matchesPrevInterval;
+        }
+    }
+
+    /**
+     * Filters out records that do not match any of the given intervals and query type.
+     */
+    public static class BAMQueryMultipleIntervalsIteratorFilter implements SamRecordFilter {
+        final Iterator<Locatable> intervals;
+        ConsecutiveDuplicateRecordFilter filter;
+        final boolean contained;
+
+        public BAMQueryMultipleIntervalsIteratorFilter(final List<Locatable> intervals,
+                                                       final boolean contained) {
+            this.contained = contained;
+            this.intervals = intervals.iterator();
+            this.filter = null;
+        }
+
+        @Override
+        public boolean filterOut(final SAMRecord record) {
+            while (this.intervals.hasNext()) {
+                if (this.filter == null) {
+                    this.filter = new ConsecutiveDuplicateRecordFilter(this.intervals.next(), null, this.contained);
+                }
+                if (!this.filter.filterOut(record)) {
+                    return false;
+                } else {
+                    this.filter = null;
+                }
+            }
+            // Went past the last interval
+            return true;
+        }
+
+        @Override
+        public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -683,7 +765,6 @@ public class HtsgetBAMFileReader extends SamReader.ReaderImplementation {
 
         @Override
         public void close() {
-
         }
     }
 }

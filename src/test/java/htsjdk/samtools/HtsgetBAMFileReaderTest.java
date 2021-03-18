@@ -26,26 +26,38 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     private final static int noChrMReadsContained = 9;
     private final static int noChrMReadsOverlapped = 10;
 
-    private static HtsgetBAMFileReader bamFileReaderHtsget;
+    private static HtsgetBAMFileReader bamFileReaderHtsgetGET;
+    private static HtsgetBAMFileReader bamFileReaderHtsgetPOST;
     private static HtsgetBAMFileReader bamFileReaderHtsgetAsync;
 
     @BeforeTest
     public void init() throws IOException {
-        bamFileReaderHtsget = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
+        bamFileReaderHtsgetGET = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
+        bamFileReaderHtsgetGET.setUsingPOST(false);
+
         bamFileReaderHtsgetAsync = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), true);
+        bamFileReaderHtsgetAsync.setUsingPOST(false);
+
+        bamFileReaderHtsgetPOST = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
+
+        Assert.assertTrue(bamFileReaderHtsgetPOST.isUsingPOST());
+        Assert.assertFalse(bamFileReaderHtsgetGET.isUsingPOST());
+        Assert.assertFalse(bamFileReaderHtsgetAsync.isUsingPOST());
     }
 
     @AfterTest
     public void tearDown() {
-        bamFileReaderHtsget.close();
+        bamFileReaderHtsgetGET.close();
+        bamFileReaderHtsgetPOST.close();
         bamFileReaderHtsgetAsync.close();
     }
 
     @DataProvider(name = "readerProvider")
     public Object[][] readerProvider() {
         return new Object[][]{
-            {bamFileReaderHtsget},
+            {bamFileReaderHtsgetGET},
             {bamFileReaderHtsgetAsync},
+            {bamFileReaderHtsgetPOST},
         };
     }
 
@@ -199,6 +211,12 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
 
     @Test(dataProvider = "readerProvider")
     public static void testRemovesDuplicates(final HtsgetBAMFileReader htsgetReader) throws IOException {
+        // TODO: temporary workaround as reference server does not properly merge regions and remove duplicates yet
+        // See https://github.com/ga4gh/htsget-refserver/issues/27
+        if (htsgetReader.isUsingPOST()) {
+            return;
+        }
+
         final QueryInterval[] intervals = new QueryInterval[]{
             new QueryInterval(0, 1519, 1688),
             new QueryInterval(0, 1690, 2985),
@@ -257,12 +275,12 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     @Test
     public static void testEnableFileSource() {
         final SamReader reader = SamReaderFactory.makeDefault().open(new SamInputResource(new FileInputResource(bamFile)));
-        bamFileReaderHtsget.enableFileSource(reader, true);
-        try (final CloseableIterator<SAMRecord> htsgetIterator = bamFileReaderHtsget.getIterator()) {
+        bamFileReaderHtsgetGET.enableFileSource(reader, true);
+        try (final CloseableIterator<SAMRecord> htsgetIterator = bamFileReaderHtsgetGET.getIterator()) {
             htsgetIterator.forEachRemaining(record -> Assert.assertEquals(record.getFileSource().getReader(), reader));
         }
-        bamFileReaderHtsget.enableFileSource(reader, false);
-        try (final CloseableIterator<SAMRecord> htsgetIterator = bamFileReaderHtsget.getIterator()) {
+        bamFileReaderHtsgetGET.enableFileSource(reader, false);
+        try (final CloseableIterator<SAMRecord> htsgetIterator = bamFileReaderHtsgetGET.getIterator()) {
             htsgetIterator.forEachRemaining(record -> Assert.assertNull(record.getFileSource()));
         }
     }
