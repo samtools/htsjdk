@@ -13,7 +13,7 @@ plugins {
     id 'jacoco'
     id 'com.palantir.git-version' version '0.11.0'
     id 'com.github.johnrengelman.shadow' version '4.0.4'
-    id 'com.github.maiflai.scalatest' version '0.23'
+    id 'com.github.maiflai.scalatest' version '0.30'
     id 'com.github.spotbugs' version '4.7.0'
 }
 
