@@ -104,6 +104,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Allele TA = Allele.create("TA");
         Allele TC = Allele.create("TC");
         Allele symbolic = Allele.create("<FOO>");
+        Allele nonRef = Allele.create(Allele.NON_REF_STRING, false);
 
         // test REF
         List<Allele> alleles = Arrays.asList(Tref);
@@ -170,6 +171,43 @@ public class VariantContextUnitTest extends VariantBaseTest {
         alleles = Arrays.asList(Tref, symbolic);
         vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
         Assert.assertEquals(vc.getType(), VariantContext.Type.SYMBOLIC);
+
+        // test ignoreNonRef
+        alleles = Arrays.asList(Aref, nonRef);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(false), VariantContext.Type.SYMBOLIC);
+
+        alleles = Arrays.asList(Aref, nonRef, symbolic);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(false), VariantContext.Type.SYMBOLIC);
+
+        alleles = Arrays.asList(Aref, nonRef, symbolic);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(true), VariantContext.Type.SYMBOLIC);
+
+        alleles = Arrays.asList(Aref, nonRef);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(true), VariantContext.Type.SYMBOLIC);
+
+        alleles = Arrays.asList(Aref, C, nonRef);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(true), VariantContext.Type.SNP);
+
+        alleles = Arrays.asList(Aref, nonRef, C);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(true), VariantContext.Type.SNP);
+
+        alleles = Arrays.asList(Aref, AT, nonRef);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(true), VariantContext.Type.INDEL);
+
+        alleles = Arrays.asList(Aref, C, TC, nonRef);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(true), VariantContext.Type.MIXED);
+
+        alleles = Arrays.asList(Aref, C, symbolic, nonRef);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(true), VariantContext.Type.MIXED);
     }
 
     @Test
