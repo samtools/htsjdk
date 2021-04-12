@@ -208,6 +208,13 @@ public class VariantContextUnitTest extends VariantBaseTest {
         alleles = Arrays.asList(Aref, C, symbolic, nonRef);
         vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
         Assert.assertEquals(vc.getType(true), VariantContext.Type.MIXED);
+
+        // Assure that the caching of the variant type is not persistent between ignoreNonRef being true and false
+        alleles = Arrays.asList(Aref, C, nonRef);
+        vc = basicBuilder.alleles(alleles).stop(snpLocStop).make();
+        Assert.assertEquals(vc.getType(), VariantContext.Type.MIXED);
+        Assert.assertEquals(vc.getType(true), VariantContext.Type.SNP);
+        Assert.assertEquals(vc.getType(), VariantContext.Type.MIXED);
     }
 
     @Test
