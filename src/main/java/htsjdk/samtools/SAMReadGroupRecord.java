@@ -59,9 +59,11 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     /* Platform values for the @RG-PL tag */
     public enum PlatformValue {
-        BGI, CAPILLARY, LS454, ILLUMINA,
-        SOLID, HELICOS, IONTORRENT, 
-        ONT, PACBIO, OTHER
+        CAPILLARY, LS454, ILLUMINA,
+        SOLID, HELICOS, IONTORRENT,
+        ONT, PACBIO, DNBSEQ, OTHER,
+        @Deprecated
+        BGI
     }
 
     public static final Set<String> STANDARD_TAGS =
