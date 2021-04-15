@@ -43,6 +43,7 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -169,7 +170,8 @@ class BCF2Writer extends IndexingVariantContextWriter {
             // write out the header into a byte stream, get its length, and write everything to the file
             final ByteArrayOutputStream capture = new ByteArrayOutputStream();
             final OutputStreamWriter writer = new OutputStreamWriter(capture);
-            this.header = VCFWriter.writeHeader(this.header, writer, VCFWriter.getVersionLine(), "BCF2 stream");
+            // TODO implement logic to select VCF version based on BCF version
+            this.header = VCFWriter.writeHeader(this.header, writer, VCFHeaderVersion.VCF4_2, "BCF2 stream");
             writer.append('\0'); // the header is null terminated by a byte
             writer.close();
 

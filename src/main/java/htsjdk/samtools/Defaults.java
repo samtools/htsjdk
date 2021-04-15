@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.writer.VCF42To43VersionTransitionPolicy;
 
 import java.io.File;
 import java.util.Collections;
@@ -110,6 +111,8 @@ public class Defaults {
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
+    public static final VCF42To43VersionTransitionPolicy VCF_VERSION_TRANSITION_POLICY;
+
 
     public static final String SAMJDK_PREFIX = "samjdk.";
     static {
@@ -134,6 +137,10 @@ public class Defaults {
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
+        VCF_VERSION_TRANSITION_POLICY = VCF42To43VersionTransitionPolicy.valueOf(getStringProperty(
+            "vcf_version_transition_policy",
+            VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION.name()
+        ));
     }
 
     /**
@@ -157,6 +164,7 @@ public class Defaults {
         result.put("CUSTOM_READER_FACTORY", CUSTOM_READER_FACTORY);
         result.put("SAM_FLAG_FIELD_FORMAT", SAM_FLAG_FIELD_FORMAT);
         result.put("DISABLE_SNAPPY_COMPRESSOR", DISABLE_SNAPPY_COMPRESSOR);
+        result.put("VCF_VERSION_TRANSITION_POLICY", VCF_VERSION_TRANSITION_POLICY);
         return Collections.unmodifiableSortedMap(result);
     }
 

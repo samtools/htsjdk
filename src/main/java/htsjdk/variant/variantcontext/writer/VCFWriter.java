@@ -25,13 +25,13 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.IndexCreator;
-import htsjdk.utils.Utils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFConstants;
@@ -39,7 +39,6 @@ import htsjdk.variant.vcf.VCFEncoder;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -57,9 +56,7 @@ import java.util.stream.Collectors;
 class VCFWriter extends IndexingVariantContextWriter {
     protected final static Log logger = Log.getInstance(VCFWriter.class);
 
-    private static final String DEFAULT_VERSION_LINE = VCFHeader.METADATA_INDICATOR + VCFHeader.DEFAULT_VCF_VERSION.getVersionLine();
-
-	// Initialized when the header is written to the output stream
+    // Initialized when the header is written to the output stream
 	private VCFEncoder vcfEncoder = null;
 
 	// the VCF header we're storing
@@ -75,6 +72,8 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     // is the header or body written to the output stream?
     private boolean outputHasBeenWritten;
+
+    private VCF42To43VersionTransitionPolicy transitionPolicy = Defaults.VCF_VERSION_TRANSITION_POLICY;
 
     /*
      * The VCF writer uses an internal Writer, based by the ByteArrayOutputStream lineBuffer,
@@ -155,12 +154,11 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(final VCFHeader header) {
-
         // note we need to update the mHeader object after this call because they header
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
         setHeader(header);
         try {
-            writeHeader(this.mHeader, writer, getVersionLine(), getStreamName());
+            writeHeader(this.mHeader, writer, getOutputVersion(header), getStreamName());
             writeAndResetBuffer();
             outputHasBeenWritten = true;
         } catch ( IOException e ) {
@@ -168,24 +166,43 @@ class VCFWriter extends IndexingVariantContextWriter {
         }
     }
 
-    public static String getVersionLine() {
-        return DEFAULT_VERSION_LINE;
+    private VCFHeaderVersion getOutputVersion(final VCFHeader header) {
+        if (transitionPolicy == VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION) {
+            // Write pre 4.3 files as 4.2, and 4.3+ files as 4.3
+            return header.getVCFHeaderVersion() != null && header.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+                ? header.getVCFHeaderVersion()
+                : VCFHeaderVersion.VCF4_2;
+        } else {
+            // Try to promote to 4.3+
+            return VCFHeader.DEFAULT_VCF_VERSION;
+        }
     }
 
-    public static VCFHeader writeHeader(VCFHeader header,
+    public static VCFHeader writeHeader(final VCFHeader header,
                                         final Writer writer,
-                                        final String versionLine,
+                                        final VCFHeaderVersion version,
                                         final String streamNameForError) {
-
         try {
-            rejectVCFV43Headers(header);
-
-            // Validate that the file version we're writing is version-compatible this header's version.
-            validateHeaderVersion(header, versionLine);
+            VCFHeaderVersion versionToWrite = version;
+            // Validate that the file version we're writing is version-compatible with this header's version.
+            for (final VCFHeaderLine line : header.getMetaDataInSortedOrder() ) {
+                // Skip the fileformat line, because we may be trying to transition versions
+                if ( VCFHeaderVersion.isFormatString(line.getKey()) ) {
+                    continue;
+                }
+                try {
+                    line.validateForVersion(versionToWrite);
+                } catch (final TribbleException e) {
+                    // If 4.3 validation fails for any line, use 4.2
+                    if (versionToWrite == VCFHeader.DEFAULT_VCF_VERSION) {
+                        versionToWrite = VCFHeaderVersion.VCF4_2;
+                    }
+                }
+            }
 
             // The file format field needs to be written first; below any file format lines
             // embedded in the header will be removed
-            writer.write(versionLine + "\n");
+            writer.write(VCFHeader.METADATA_INDICATOR + versionToWrite.getVersionLine() + "\n");
 
             for (final VCFHeaderLine line : header.getMetaDataInSortedOrder() ) {
                 // Remove the fileformat header lines
@@ -201,8 +218,8 @@ class VCFWriter extends IndexingVariantContextWriter {
             // write out the column line
             writer.write(VCFHeader.HEADER_INDICATOR);
             writer.write(header.getHeaderFields().stream()
-                    .map(f -> f.name())
-                    .collect(Collectors.joining(VCFConstants.FIELD_SEPARATOR)).toString());
+                    .map(Enum::name)
+                    .collect(Collectors.joining(VCFConstants.FIELD_SEPARATOR)));
 
             if ( header.hasGenotypingData() ) {
                 writer.write(VCFConstants.FIELD_SEPARATOR);
@@ -221,33 +238,6 @@ class VCFWriter extends IndexingVariantContextWriter {
         }
 
         return header;
-    }
-
-    /**
-     * Given a header and a requested target output version, see if the header's version is compatible with the
-     * requested version.
-     * @param header
-     * @param requestedVersionLine
-     */
-    private static void validateHeaderVersion(final VCFHeader header, final String requestedVersionLine) {
-        Utils.nonNull(header);
-        Utils.nonNull(requestedVersionLine);
-
-        final VCFHeaderVersion vcfCurrentVersion = header.getVCFHeaderVersion();
-        final VCFHeaderVersion vcfRequestedVersion = VCFHeaderVersion.getHeaderVersion(requestedVersionLine);
-        if (!vcfCurrentVersion.equals(vcfRequestedVersion)) {
-            final String message = String.format("Attempt to write a version %s VCF header to a version %s VCF output",
-                    vcfRequestedVersion,
-                    vcfCurrentVersion.getVersionString());
-            if (!VCFHeaderVersion.versionsAreCompatible(VCFHeaderVersion.getHeaderVersion(requestedVersionLine), vcfCurrentVersion)) {
-                if (VCFUtils.getStrictVCFVersionValidation()) {
-                    throw new TribbleException(message);
-                }
-            }
-            if (VCFUtils.getVerboseVCFLogging()) {
-                logger.warn(message);
-            }
-        }
     }
 
     /**
@@ -293,8 +283,6 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void setHeader(final VCFHeader header) {
-        rejectVCFV43Headers(header);
-
         if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
@@ -302,12 +290,7 @@ class VCFWriter extends IndexingVariantContextWriter {
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
     }
 
-    // writing vcf v4.3 is not implemented
-    private static void rejectVCFV43Headers(final VCFHeader targetHeader) {
-        if (targetHeader.getVCFHeaderVersion() != null && targetHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            throw new IllegalArgumentException(String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
-        }
-
-
+    public void setTransitionPolicy(final VCF42To43VersionTransitionPolicy transitionPolicy) {
+        this.transitionPolicy = transitionPolicy;
     }
 }

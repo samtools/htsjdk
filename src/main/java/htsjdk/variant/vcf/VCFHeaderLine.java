@@ -1,6 +1,6 @@
 /*
 * Copyright (c) 2012 The Broad Institute
-* 
+*
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
 * files (the "Software"), to deal in the Software without
@@ -9,10 +9,10 @@
 * copies of the Software, and to permit persons to whom the
 * Software is furnished to do so, subject to the following
 * conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be
 * included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -116,6 +116,18 @@ public class VCFHeaderLine implements Comparable, Serializable {
                                 vcfTargetVersion.toString()));
             }
         }
+        // PEDIGREE lines that are not represented as VCFPedigreeHeaderLine, meaning they do not have an ID,
+        // are not allowed starting v4.3
+        if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) &&
+            getKey().equals(VCFConstants.PEDIGREE_HEADER_KEY) &&
+            !(this instanceof VCFPedigreeHeaderLine)
+        ) {
+            throw new TribbleException(
+                String.format("PEDIGREE lines without IDs: \"%s\" is incompatible with version \"%s\"",
+                    this.toStringEncoding(),
+                    vcfTargetVersion.toString())
+            );
+        }
     }
 
     /**
@@ -202,23 +214,39 @@ public class VCFHeaderLine implements Comparable, Serializable {
      */
     //TODO: this should be removed and folded into toStringEncoding(): String, or else
     // protected and VisibleForTesting
-    public static String toStringEncoding(Map<String, ? extends Object> keyValues) {
-        StringBuilder builder = new StringBuilder();
+    public static String toStringEncoding(final Map<String, ?> keyValues) {
+        final StringBuilder builder = new StringBuilder();
         builder.append('<');
         boolean start = true;
-        for (Map.Entry<String,?> entry : keyValues.entrySet()) {
+        for (final Map.Entry<String, ?> entry : keyValues.entrySet()) {
             if (start) start = false;
             else builder.append(',');
 
-            if ( entry.getValue() == null ) throw new TribbleException.InternalCodecException("Header problem: unbound value at " + entry + " from " + keyValues);
+            if (entry.getValue() == null)
+                throw new TribbleException.InternalCodecException("Header problem: unbound value at " + entry + " from " + keyValues);
 
-            builder.append(entry.getKey());
+            final String key = entry.getKey();
+            builder.append(key);
             builder.append('=');
-            builder.append(entry.getValue().toString().contains(",") ||
-                           entry.getValue().toString().contains(" ") ||
-                           entry.getKey().equals("Description") ||
-                           entry.getKey().equals("Source") || // As per VCFv4.2, Source and Version should be surrounded by double quotes
-                           entry.getKey().equals("Version") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
+
+            final String value = entry.getValue().toString();
+            final String escapedValue = value.contains(",") ||
+                value.contains(" ") ||
+                key.equals(VCFSimpleHeaderLine.DESCRIPTION_ATTRIBUTE) ||
+                key.equals(VCFSimpleHeaderLine.SOURCE_ATTRIBUTE) || // As per VCFv4.2, Source and Version should be surrounded by double quotes
+                key.equals(VCFSimpleHeaderLine.VERSION_ATTRIBUTE)
+                ? "\"" + escapeQuotes(entry.getValue().toString()) + "\""
+                : value;
+
+            // As of VCFv4.3, fields which contain characters that have special meanings in the VCF headers
+            // can be percent encoded
+            if (key.equals(VCFSimpleHeaderLine.ID_ATTRIBUTE) ||
+                key.equals(VCFCompoundHeaderLine.NUMBER_ATTRIBUTE) ||
+                key.equals(VCFCompoundHeaderLine.TYPE_ATTRIBUTE)) {
+                builder.append(escapedValue);
+            } else {
+                builder.append(new VCFPercentEncodedTextTransformer().encodeHeaderText(escapedValue));
+            }
         }
         builder.append('>');
         return builder.toString();

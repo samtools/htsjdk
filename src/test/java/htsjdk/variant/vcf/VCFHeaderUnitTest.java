@@ -38,6 +38,7 @@ import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VCF42To43VersionTransitionPolicy;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
@@ -46,13 +47,30 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringReader;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.NO_OPTIONS;
@@ -297,7 +315,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     }
 
-        @Test
+    @Test
     public void testVCFHeaderHonorContigLineOrder() throws IOException {
         try (final VCFFileReader vcfReader = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
             // start with a header with a bunch of contig lines
@@ -427,14 +445,12 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @DataProvider(name="invalidHeaderVersionTransitions")
     public Object[][] invalidHeaderVersionTransitions() {
-        // v4.3 can never transition with, all other version transitions are allowed
+        // v4.3 can never be transitioned down to pre v4.3
+        // Pre v4.3 might be able to be transitioned to 4.3, and this is tested in VCFCodec43FeaturesTest
         return new Object[][] {
                 {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_0},
                 {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_1},
                 {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_2},
-                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_3},
-                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_3},
-                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_3},
         };
     }
 
@@ -933,7 +949,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         final String actualContents = new String(Files.readAllBytes(actualFile.toPath()), StandardCharsets.UTF_8);
         final String expectedContents = new String(Files.readAllBytes(expectedFile.toPath()), StandardCharsets.UTF_8);
-        Assert.assertEquals(actualContents, expectedContents);
+        Assert.assertEquals(actualContents.substring(actualContents.indexOf('\n')), expectedContents.substring(actualContents.indexOf('\n')));
     }
 
 
@@ -999,6 +1015,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                              .setOutputFile(myTempFile)
                              .setOutputFileType(VariantContextWriterBuilder.OutputType.VCF)
                              .setOptions(NO_OPTIONS)
+                             .setVCF42to43TransitionPolicy(VCF42To43VersionTransitionPolicy.DO_NOT_TRANSITION)
                              .build()) {
             vcfWriter.writeHeader(header);
         }

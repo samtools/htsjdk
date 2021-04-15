@@ -47,13 +47,13 @@ import java.util.stream.Collectors;
  *  - the default header version, currently vcfv42
  *
  *  Any attempt to add metadata lines, or change the header version via {@link #setHeaderVersion} will
- *  triggera validation pass against the metadata lines to ensure they conform to the rules defined by
+ *  trigger a validation pass against the metadata lines to ensure they conform to the rules defined by
  *  the VCF specification for that version.
  */
 public class VCFHeader implements Serializable {
     public static final long serialVersionUID = 1L;
     protected final static Log logger = Log.getInstance(VCFHeader.class);
-    public final static VCFHeaderVersion DEFAULT_VCF_VERSION = VCFHeaderVersion.VCF4_2;
+    public final static VCFHeaderVersion DEFAULT_VCF_VERSION = VCFHeaderVersion.VCF4_3;
 
     // the mandatory header fields
     public enum HEADER_FIELDS {
@@ -63,7 +63,7 @@ public class VCFHeader implements Serializable {
     /**
      * The VCF version for this header; once a header version is established, it can only be
      * changed subject to version transition rules defined by
-     * {@link #validateVersionTransition(VCFHeaderVersion, VCFHeaderVersion)}
+     * {@link #validateHeaderTransition(VCFHeader, VCFHeaderVersion)}
      */
     private VCFHeaderVersion vcfHeaderVersion;
 
@@ -199,7 +199,7 @@ public class VCFHeader implements Serializable {
      * @throws TribbleException if the requested header version is not compatible with the existing version
      */
     public void setVCFHeaderVersion(final VCFHeaderVersion vcfHeaderVersion) {
-        validateVersionTransition(this.vcfHeaderVersion, vcfHeaderVersion);
+        validateHeaderTransition(this, vcfHeaderVersion);
         this.vcfHeaderVersion = vcfHeaderVersion;
     }
 
@@ -211,6 +211,7 @@ public class VCFHeader implements Serializable {
      * @param toVersion new version. Cannot be null.
      * @throws TribbleException if {@code fromVersion} is not compatible with {@code toVersion}
      */
+    @Deprecated
     public static void validateVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
         ValidationUtils.nonNull(toVersion);
 
@@ -271,11 +272,48 @@ public class VCFHeader implements Serializable {
    /**
     * Get the header version for this header.
     * @return the VCFHeaderVersion for this header.
+    *
+    * Throw if {@code fromHeader} is not compatible with a {@code toVersion}. Generally, any version before
+    * version 4.2 can be up-converted to version 4.2, but not to version 4.3.
+    * If such a conversion is attempted, this method will validate that the header is compatible with 4.3
+    * Once a header is established as version 4.3, it cannot be up or down converted, and it must remain at version 4.3.
+    * @param fromHeader current version. May be null, in which case {@code toVersion} can be any version
+    * @param toVersion new version. Cannot be null.
+    * @throws TribbleException if {@code fromVersion} is not compatible with {@code toVersion}
     */
+    public static void validateHeaderTransition(final VCFHeader fromHeader, final VCFHeaderVersion toVersion) {
+        ValidationUtils.nonNull(toVersion);
+
+        // fromHeader can be null, in which case anything goes (any transition from null is legal)
+        if (fromHeader == null) return;
+        final VCFHeaderVersion fromVersion = fromHeader.getVCFHeaderVersion();
+
+        final String errorMessageFormatString = "VCF cannot be automatically promoted from %s to %s";
+
+        if (toVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            // If fromHeader does not have a set version or is pre 4.3, validate
+            if (fromVersion == null || !fromVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+                fromHeader.mMetaData.validateMetaDataLines(toVersion);
+            }
+        } else if (fromVersion != null && fromVersion.equals(VCFHeaderVersion.VCF4_3)) {
+            // we're trying to go from v4.3 to pre-v4.3
+            throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
+        }
+    }
+
+    /**
+     * @return the VCFHeaderVersion for this header. Can be null.
+     */
     public VCFHeaderVersion getVCFHeaderVersion() {
         return vcfHeaderVersion;
     }
 
+    // TODO this has a confusing name, as it does not actually touch the existing version
+    //  Is the version of a VCFHeader meant to be immutable once it's set in the constructor?
+    //  This seems to be what is intended and what is current implemented.
+    //  Writers/mergers that want to perform version transition are responsible for either
+    //  constructing new headers with the new versions or validating that a transition is possible
+    //  then writing out the new version, ignoring the header's existing version
     /**
      * Set the version header for this class.
      *
@@ -693,11 +731,12 @@ public class VCFHeader implements Serializable {
         Utils.nonNull(sourceVersions);
         Utils.nonNull(targetVersion);
 
+        // TODO this is too strict to allow merging v4.3 headers with pre v4.3
         Set<VCFHeaderVersion> incompatibleVersions = sourceVersions.stream()
                 .filter(v -> !VCFHeaderVersion.versionsAreCompatible(v, targetVersion))
                 .collect(Collectors.toSet());
         if (!incompatibleVersions.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
+            final StringBuilder sb = new StringBuilder();
             sb.append(String.format(
                     "Attempt to merge a version %s header with incompatible vcf headers from versions:",
                     targetVersion.getVersionString()));
