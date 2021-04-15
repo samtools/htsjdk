@@ -207,13 +207,43 @@ public class VCFStandardHeaderLines {
                                            + (badCount ? " -- counts disagree; header has " + line.getCount() + " but standard is " + standard.getCount() : "")
                                            + (badDesc ? " -- descriptions disagree; header has '" + line.getDescription() + "' but standard is '" + standard.getDescription() + "'": ""));
                     }
-                    return standard;
+                    // Create a new set so we can modify it without mutating the standard line
+                    final Set<String> additionalFields = new HashSet<>(line.getGenericFields().keySet());
+                    additionalFields.removeAll(standard.getGenericFields().keySet());
+
+                    if (additionalFields.isEmpty()) {
+                        return standard;
+                    } else {
+                        // We need to handle the case where a line has nonstandard attributes, but also additional
+                        // attributes of its own that would be lost if we simply returned the standard line
+                        return mergeStandardLine(standard, line, additionalFields);
+                    }
                 } else {
                     return line;
                 }
             } else {
                 return line;
             }
+        }
+
+        private T mergeStandardLine(final T standard, final T line, final Set<String> additionalFields) {
+            // Create a new line identical to the standard line
+            final VCFCompoundHeaderLine mergedLine;
+            if (standard instanceof VCFFormatHeaderLine) {
+                mergedLine = standard.isFixedCount()
+                    ? new VCFFormatHeaderLine(standard.getID(), standard.getCount(), standard.getType(), standard.getDescription())
+                    : new VCFFormatHeaderLine(standard.getID(), standard.getCountType(), standard.getType(), standard.getDescription());
+            } else {
+                mergedLine = standard.isFixedCount()
+                    ? new VCFInfoHeaderLine(standard.getID(), standard.getCount(), standard.getType(), standard.getDescription())
+                    : new VCFInfoHeaderLine(standard.getID(), standard.getCountType(), standard.getType(), standard.getDescription());
+            }
+
+            final Map<String, String> originalGenericFields = line.getGenericFields();
+            for (final String field : additionalFields) {
+                mergedLine.updateGenericField(field, originalGenericFields.get(field));
+            }
+            return (T) mergedLine;
         }
 
         public Set<String> addToHeader(final Set<VCFHeaderLine> headerLines, final Collection<String> IDs, final boolean throwErrorForMissing) {

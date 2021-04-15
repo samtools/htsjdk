@@ -27,11 +27,9 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.tribble.FeatureCodec;
-import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
-import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
@@ -48,7 +46,8 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
-
+import htsjdk.variant.vcf.VCFIterator;
+import htsjdk.variant.vcf.VCFIteratorBuilder;
 import org.testng.Assert;
 
 import java.io.BufferedInputStream;
@@ -234,6 +233,7 @@ public class VariantContextTestProvider extends HtsjdkTest {
         addHeaderLine(metaData, "PL", VCFHeaderLineCount.G, VCFHeaderLineType.Integer);
         addHeaderLine(metaData, "GS", 2, VCFHeaderLineType.String);
         addHeaderLine(metaData, "GV", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String);
+        // TODO changed count type from UNBOUNDED to 1 to match VCF 4.3 spec, but might conflict with existing htsjdk code
         addHeaderLine(metaData, "FT", 1, VCFHeaderLineType.String);
 
         // prep the header
@@ -674,6 +674,7 @@ public class VariantContextTestProvider extends HtsjdkTest {
                         assertEquals(g, expected.getGenotype(g.getSampleName()));
                     } else {
                         // missing
+                        // TODO this may not be correct
                         Assert.assertTrue(g.isNoCall());
                     }
                 }
@@ -755,29 +756,9 @@ public class VariantContextTestProvider extends HtsjdkTest {
     }
 
     public static VariantContextContainer readAllVCs(final File input, final BCF2Codec codec) throws IOException {
-        PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(input));
-        FeatureCodecHeader header = codec.readHeader(headerPbs);
-        headerPbs.close();
-
-        final PositionalBufferedStream pbs = new PositionalBufferedStream(new FileInputStream(input));
-        pbs.skip(header.getHeaderEnd());
-
-        final VCFHeader vcfHeader = (VCFHeader)header.getHeaderValue();
-        return new VariantContextTestProvider.VariantContextContainer(vcfHeader, new VariantContextTestProvider.VCIterable(codec, vcfHeader) {
-            @Override
-            public boolean hasNext() {
-                try {
-                    return !pbs.isDone();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @Override
-            public Object nextSource() {
-                return pbs;
-            }
-        });
+        final VCFIterator iterator = new VCFIteratorBuilder().open(input);
+        final VCFHeader vcfHeader = iterator.getHeader();
+        return new VariantContextTestProvider.VariantContextContainer(vcfHeader, () -> iterator);
     }
 
     public static VariantContextContainer readAllVCs(final File input, final VCFCodec codec) throws FileNotFoundException {
@@ -868,7 +849,7 @@ public class VariantContextTestProvider extends HtsjdkTest {
 
         // inline attributes
         Assert.assertEquals(actual.getDP(), expected.getDP(), "Genotype dp");
-        Assert.assertTrue(Arrays.equals(actual.getAD(), expected.getAD()));
+        Assert.assertEquals(actual.getAD(), expected.getAD(), "Genotype ad");
         Assert.assertEquals(actual.getGQ(), expected.getGQ(), "Genotype gq");
         Assert.assertEquals(actual.hasPL(), expected.hasPL(), "Genotype hasPL");
         Assert.assertEquals(actual.hasAD(), expected.hasAD(), "Genotype hasAD");

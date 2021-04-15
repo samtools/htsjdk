@@ -273,7 +273,6 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * Determine which genotype fields are in use in the genotypes in VC
      * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
      */
-
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
         final Set<String> keys = new HashSet<>();
 
@@ -299,21 +298,23 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         if ( sawPL ) keys.add(VCFConstants.GENOTYPE_PL_KEY);
         if ( sawGenotypeFilter ) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
 
-        List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
-
-        // make sure the GT is first
+        final List<String> list = new ArrayList<>(6 + keys.size());
+        // Make sure the GT is first if present
         if (sawGoodGT) {
-            final List<String> newList = new ArrayList<>(sortedList.size() + 1);
-            newList.add(VCFConstants.GENOTYPE_KEY);
-            newList.addAll(sortedList);
-            sortedList = newList;
+            list.add(VCFConstants.GENOTYPE_KEY);
+            list.addAll(keys);
+            // Sort, skipping GT which will be at the first position of the list
+            Collections.sort(list.subList(1, list.size()));
+        } else {
+            list.addAll(keys);
+            Collections.sort(list);
         }
 
-        if (sortedList.isEmpty() && header.hasGenotypingData()) {
+        if (list.isEmpty() && header.hasGenotypingData()) {
             // this needs to be done in case all samples are no-calls
             return Collections.singletonList(VCFConstants.GENOTYPE_KEY);
         } else {
-            return sortedList;
+            return list;
         }
     }
 
@@ -469,7 +470,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         this.stop = stop;
 
         // intern for efficiency.  equals calls will generate NPE if ID is inappropriately passed in as null
-        if ( ID == null || ID.equals("") ) throw new IllegalArgumentException("ID field cannot be the null or the empty string");
+        if ( ID == null || ID.equals("") ) {
+            throw new IllegalArgumentException("ID field cannot be the null or the empty string");
+        }
         this.ID = ID.equals(VCFConstants.EMPTY_ID_FIELD) ? VCFConstants.EMPTY_ID_FIELD : ID;
 
         this.commonInfo = new CommonInfo(source, log10PError, filters, attributes);

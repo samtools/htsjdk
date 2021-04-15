@@ -7,7 +7,7 @@
 ##INFO=<ID=STRAND_1,Number=1,Type=String,Description="Strand Orientation of SV Start">
 ##INFO=<ID=STRAND_2,Number=1,Type=String,Description="Strand Orientation of SV End">
 ##INFO=<ID=METHOD,Number=1,Type=String,Description="SV Caller used to predict">
-##INFO=<ID=DP,Number=1,Type=String,Description="combined depth across samples">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="combined depth across samples">
 ##ALT=<ID=DEL,Description="Deletion">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INS,Description="Insertion of novel sequence">

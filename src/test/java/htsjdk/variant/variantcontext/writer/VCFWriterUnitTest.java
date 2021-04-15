@@ -29,12 +29,9 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
-import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
-import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -42,7 +39,19 @@ import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.vcf.*;
+import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.VCFStandardHeaderLines;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -52,15 +61,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 /**
  * @author aaron
@@ -104,31 +107,23 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         writer.add(createVC(header));
         writer.add(createVC(header));
         writer.close();
-        final VCFCodec codec = new VCFCodec();
-        final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(fakeVCFFile.getAbsolutePath(), codec, false);
-        final VCFHeader headerFromFile = (VCFHeader)reader.getHeader();
+        final VCFFileReader reader = new VCFFileReader(fakeVCFFile.toPath(), false, VCFVersionUpgradePolicy.DO_NOT_UPGRADE);
+        final VCFHeader headerFromFile = reader.getHeader();
 
         int counter = 0;
 
         // validate what we're reading in
         validateHeader(headerFromFile, sequenceDict);
 
-        try {
-            final Iterator<VariantContext> it = reader.iterator();
-            while(it.hasNext()) {
-                it.next();
-                counter++;
-            }
-            Assert.assertEquals(counter, 2);
+        for (final VariantContext variantContext : reader) {
+            counter++;
         }
-        catch (final IOException e ) {
-            throw new RuntimeException(e.getMessage());
-        }
+        Assert.assertEquals(counter, 2);
 
     }
 
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
-    @Test(dataProvider = "vcfExtensionsDataProvider")
+    @Test(dataProvider = "vcfHeaderlessExtensionsDataProvider")
     public void testWriteAndReadVCFHeaderless(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
         fakeVCFFile.deleteOnExit();
@@ -226,6 +221,12 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                                              final SAMSequenceDictionary sequenceDict) {
         metaData.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
         metaData.add(new VCFHeaderLine("two", "2"));
+        // Explicitly add GT, AD, and BB keys because the .bcf tests that use this fake header require that the header
+        // contain INFO/FORMAT lines for all the attributes written
+        metaData.add(VCFStandardHeaderLines.getFormatLine(VCFConstants.GENOTYPE_KEY));
+        metaData.add(VCFStandardHeaderLines.getFormatLine(VCFConstants.GENOTYPE_QUALITY_KEY));
+        metaData.add(VCFStandardHeaderLines.getInfoLine(VCFConstants.DEPTH_KEY));
+        metaData.add(new VCFFormatHeaderLine("BB", 1, VCFHeaderLineType.Integer, "test key"));
         additionalColumns.add("extra1");
         additionalColumns.add("extra2");
         final VCFHeader ret = new VCFHeader(metaData, additionalColumns);
@@ -326,14 +327,21 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @DataProvider(name = "vcfExtensionsDataProvider")
     public Object[][]vcfExtensionsDataProvider() {
         return new Object[][] {
-                //TODO: fix this BCF problem!
-                // TODO: BCF doesn't work because header is not properly constructed.
-                // {".bcf"},
+                {FileExtensions.BCF},
                 {FileExtensions.VCF},
                 {FileExtensions.COMPRESSED_VCF}
         };
     }
 
+    // Testing writing headerless files does not make sense for .bcf because BCF's strong typing makes writing
+    // bodies without headers impossible, so we only test VCF and compressed VCF with headerless writing
+    @DataProvider(name = "vcfHeaderlessExtensionsDataProvider")
+    public Object[][]vcfHeaderlessExtensionsDataProvider() {
+        return new Object[][] {
+            {FileExtensions.VCF},
+            {FileExtensions.COMPRESSED_VCF}
+        };
+    }
 
     /**
      * A test to ensure that if we add a line to a VCFHeader it will persist through
@@ -366,7 +374,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
      *
      * A test to check that we can't write VCF with missing header.
      */
-    @Test(dataProvider = "vcfExtensionsDataProvider", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "vcfHeaderlessExtensionsDataProvider", expectedExceptions = IllegalStateException.class)
     public void testWriteWithEmptyHeader(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
         metaData = new HashSet<>();

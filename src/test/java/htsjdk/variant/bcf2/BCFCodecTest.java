@@ -13,24 +13,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 public class BCFCodecTest extends VariantBaseTest {
-    final String TEST_DATA_DIR = "src/test/resources/htsjdk/variant/";
-
-    // should reject bcf v2.2 on read, see issue https://github.com/samtools/htsjdk/issues/1323
-    @Test(expectedExceptions = TribbleException.class)
-    private void testRejectBCFVersion22() throws IOException {
-        BCF2Codec bcfCodec = new BCF2Codec();
-        try (final FileInputStream fis = new FileInputStream(new File(TEST_DATA_DIR, "BCFVersion22Uncompressed.bcf"));
-             final PositionalBufferedStream pbs = new PositionalBufferedStream(fis)) {
-            bcfCodec.readHeader(pbs);
-        }
-    }
+    private static final String TEST_DATA_DIR = "src/test/resources/htsjdk/variant/";
 
     @Test
-    private void testBCFCustomVersionCompatibility() throws IOException {
+    public void testBCFCustomVersionCompatibility() throws IOException {
         final BCF2Codec bcfCodec = new BCF2Codec() {
             @Override
             protected void validateVersionCompatibility(final BCFVersion supportedVersion, final BCFVersion actualVersion) {
-                return;
             }
         };
 

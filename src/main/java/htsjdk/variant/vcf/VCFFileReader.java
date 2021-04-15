@@ -55,14 +55,21 @@ public class VCFFileReader implements VCFReader {
      * Returns true if the given file appears to be a BCF file.
      */
     public static boolean isBCF(final File file) {
-        return isBCF(file.toPath());
+        return isBCF(file.toString());
     }
 
     /**
      * Returns true if the given path appears to be a BCF file.
      */
     public static boolean isBCF(final Path path) {
-        return path.toUri().getRawPath().endsWith(FileExtensions.BCF);
+        return isBCF(path.toUri().getRawPath());
+    }
+
+    /**
+     * Returns true if the given path appears to be a BCF file.
+     */
+    public static boolean isBCF(final String path) {
+        return path.endsWith(FileExtensions.BCF) || path.endsWith(FileExtensions.COMPRESSED_BCF);
     }
 
     /**

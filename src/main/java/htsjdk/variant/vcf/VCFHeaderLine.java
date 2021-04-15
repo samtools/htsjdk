@@ -134,7 +134,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
     }
 
     /**
-     * Validate that the header line conforms to {@code vcfTargetVersion.
+     * Validate that the header line conforms to {@code vcfTargetVersion}.
      * @param vcfTargetVersion
      * @throws {@link TribbleException.VersionValidationFailure} if this header line fails to conform
      */
@@ -158,16 +158,6 @@ public class VCFHeaderLine implements Comparable, Serializable {
         } else {
             return Optional.empty();
         }
-    }
-
-    /**
-     * By default the header lines won't be added to the BCF dictionary, unless this method is overriden
-     * (for example in FORMAT, INFO or FILTER header lines).
-     *
-     * @return false
-     */
-    public boolean shouldBeAddedToDictionary() {
-        return false;
     }
 
     public String toString() {

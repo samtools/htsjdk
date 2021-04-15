@@ -110,9 +110,4 @@ public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
             : super.validateKeyOrID(id);
     }
 
-    @Override
-    public boolean shouldBeAddedToDictionary() {
-        return true;
-    }
-
 }

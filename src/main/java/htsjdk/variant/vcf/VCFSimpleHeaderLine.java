@@ -233,10 +233,6 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
             throw new TribbleException(
                     String.format("The required ID tag is missing or not the first attribute: key=%s", super.getKey()));
         }
-        final Optional<String> validationFailure = validateKeyOrID(getGenericFieldValue(ID_ATTRIBUTE));
-        if (validationFailure.isPresent()) {
-            throw new TribbleException.VersionValidationFailure(validationFailure.get());
-        }
     }
 
     // Perform all text transformations required to encode an attribute value

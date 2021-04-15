@@ -405,7 +405,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         }
 
         while ( col < columns.length ) {
-            sampleNames.add(columns[col++]);
+            // Sample names must be unique
+            if (sampleNames.contains(columns[col])) {
+                throw new TribbleException.InvalidHeader("duplicate sample name: " + columns[col]);
+            } else {
+                sampleNames.add(columns[col++]);
+            }
         }
 
         if ( sawFormatTag && sampleNames.isEmpty())
