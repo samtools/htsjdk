@@ -29,8 +29,12 @@ import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.utils.ValidationUtils;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * An abstract class representing a VCF metadata line with a key and attribute=value pairs, one of
@@ -172,14 +176,27 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     @Override
     protected String toStringEncoding() {
         //NOTE: this preserves/round-trips "extra" attributes such as SOURCE, VERSION, etc.
-        final StringBuilder builder = new StringBuilder();
-        builder.append(getKey());
-        builder.append("=<");
-        builder.append(genericFields.entrySet().stream()
-                .map(e -> e.getKey() + "=" + quoteAttributeValueForSerialization(e.getKey(), e.getValue()))
-                .collect(Collectors.joining(",")));
-        builder.append('>');
-        return builder.toString();
+        final StringBuilder s = new StringBuilder();
+        s.append(getKey());
+        s.append('=');
+        s.append('<');
+        boolean notFirst = false;
+        for (final Map.Entry<String, String> e : genericFields.entrySet()) {
+            if (notFirst) {
+                s.append(',');
+            } else {
+                notFirst = true;
+            }
+
+            final String k = e.getKey();
+            final String v = e.getValue();
+            s.append(k);
+            s.append('=');
+            s.append(encodeAttributeValueForSerialization(k, v));
+        }
+        s.append('>');
+
+        return s.toString();
     }
 
     // Called by VCFInfoHeaderLine to allow repairing of VCFInfoLines that have a Flag type and a non-zero count
@@ -194,15 +211,48 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     /**
      * Return true if the attribute name requires quotes.
      * @param attributeName name of the attribute being serialized
-     * @return boolean indicating whether the value should be embedded n quotes during serialization
+     * @return boolean indicating whether the value should be embedded in quotes during serialization
      */
     protected boolean getIsQuotableAttribute(final String attributeName) {
-        // the (VF4.3) spec says that the DESCRIPTION, SOURCE, and VERSION attributes should be quoted
+        // the (VCF4.3) spec says that the DESCRIPTION, SOURCE, and VERSION attributes should be quoted
         // for INFO/FORMAT lines, but htsjdk seems to have historically quoted these for all structured
         // header lines
         return attributeName.equals(DESCRIPTION_ATTRIBUTE) ||
                 attributeName.equals(SOURCE_ATTRIBUTE) ||
                 attributeName.equals(VERSION_ATTRIBUTE);
+    }
+
+    /**
+     * Return true if the attribute name allows percent encoding.
+     * @param attributeName name of the attribute being serialized
+     * @return boolean indicating whether the value may be percent encoded serialization
+     */
+    protected boolean isPercentEncodableAttribute(final String attributeName) {
+        // As of VCF4.3 attribute values containing characters that have special meanings can be percent encoded.
+        // ID, NUMBER and TYPE values do not permit values that would require percent encoding, so they are excluded,
+        // but all other attributes may potentially be percent encoded.
+        return !(attributeName.equals(VCFSimpleHeaderLine.ID_ATTRIBUTE) ||
+            attributeName.equals(VCFCompoundHeaderLine.NUMBER_ATTRIBUTE) ||
+            attributeName.equals(VCFCompoundHeaderLine.TYPE_ATTRIBUTE));
+    }
+
+    private void validate() {
+        if ( genericFields.isEmpty() || !genericFields.keySet().stream().findFirst().get().equals(ID_ATTRIBUTE)) {
+            throw new TribbleException(
+                    String.format("The required ID tag is missing or not the first attribute: key=%s", super.getKey()));
+        }
+        final Optional<String> validationFailure = validateKeyOrID(getGenericFieldValue(ID_ATTRIBUTE));
+        if (validationFailure.isPresent()) {
+            throw new TribbleException.VersionValidationFailure(validationFailure.get());
+        }
+    }
+
+    // Perform all text transformations required to encode an attribute value
+    private String encodeAttributeValueForSerialization(final String attribute, final String originalValue) {
+        final String quotedAttributeValue = quoteAttributeValueForSerialization(attribute, originalValue);
+        return isPercentEncodableAttribute(attribute)
+            ? VCFPercentEncodedTextTransformer.percentEncodeHeaderText(quotedAttributeValue)
+            : quotedAttributeValue;
     }
 
     // Add quotes around any attribute value that contains a space or comma, or is supposed to be quoted by

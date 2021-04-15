@@ -224,7 +224,8 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @param line    the line
      * @return true if the line is a VCF meta data line, or false if it is not
      */
-    public static boolean isHeaderLine(String line) {
+    @Deprecated // starting after version 2.24.1
+    static boolean isHeaderLine(String line) {
         return line != null && !line.isEmpty() && VCFHeader.HEADER_INDICATOR.equals(line.substring(0,1));
     }
 
@@ -247,10 +248,10 @@ public class VCFHeaderLine implements Comparable, Serializable {
             builder.append(entry.getKey());
             builder.append('=');
             builder.append(entry.getValue().toString().contains(",") ||
-                           entry.getValue().toString().contains(" ") ||
-                           entry.getKey().equals("Description") ||
-                           entry.getKey().equals("Source") || // As per VCFv4.2, Source and Version should be surrounded by double quotes
-                           entry.getKey().equals("Version") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
+                entry.getValue().toString().contains(" ") ||
+                entry.getKey().equals("Description") ||
+                entry.getKey().equals("Source") || // As per VCFv4.2, Source and Version should be surrounded by double quotes
+                entry.getKey().equals("Version") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
         }
         builder.append('>');
         return builder.toString();

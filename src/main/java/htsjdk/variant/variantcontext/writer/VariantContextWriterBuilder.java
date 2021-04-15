@@ -571,17 +571,19 @@ public class VariantContextWriterBuilder {
     private VariantContextWriter createVCFWriter(final Path writerPath, final OutputStream writerStream) {
         if (idxCreator == null) {
             return new VCFWriter(writerPath, writerStream, refDict,
-                    options.contains(Options.INDEX_ON_THE_FLY),
-                    options.contains(Options.DO_NOT_WRITE_GENOTYPES),
-                    options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
-                    options.contains(Options.WRITE_FULL_FORMAT_FIELD));
-        }
-        else {
-            return new VCFWriter(writerPath, writerStream, refDict, idxCreator,
-                    options.contains(Options.INDEX_ON_THE_FLY),
-                    options.contains(Options.DO_NOT_WRITE_GENOTYPES),
-                    options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
-                    options.contains(Options.WRITE_FULL_FORMAT_FIELD));
+                options.contains(Options.INDEX_ON_THE_FLY),
+                options.contains(Options.DO_NOT_WRITE_GENOTYPES),
+                options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
+                options.contains(Options.WRITE_FULL_FORMAT_FIELD)
+            );
+        } else {
+            return new VCFWriter(
+                writerPath, writerStream, refDict, idxCreator,
+                options.contains(Options.INDEX_ON_THE_FLY),
+                options.contains(Options.DO_NOT_WRITE_GENOTYPES),
+                options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
+                options.contains(Options.WRITE_FULL_FORMAT_FIELD)
+            );
         }
     }
 

@@ -83,6 +83,18 @@ final public class VCFMetaDataLines implements Serializable {
             // than the new line, since old VCF versions use a different format key than modern versions)
             return updateVersion(newMetaDataLine);
         } else {
+            // Enforce restriction that contig and ALT line IDs cannot share IDs (c.f. VCF 4.3 spec section 1.4.7)
+            // We do not store them in the same namespace so that we can distinguish cases of two lines
+            // of the same type clashing vs an ALT line clashing with an existing contig line or vice versa
+            switch (newMetaDataLine.getKey()) {
+                case VCFConstants.CONTIG_HEADER_KEY:
+                    validateContigAndALTLinesDisjoint(VCFConstants.ALT_HEADER_KEY, newMetaDataLine.getID());
+                    break;
+                case VCFConstants.ALT_HEADER_KEY:
+                    validateContigAndALTLinesDisjoint(VCFConstants.CONTIG_HEADER_KEY, newMetaDataLine.getID());
+                    break;
+            }
+
             // otherwise, see if there is an equivalent line that the new line will replace
             final HeaderLineMapKey newMapKey = makeKeyForLine(newMetaDataLine);
             final VCFHeaderLine equivalentMetaDataLine = mMetaData.get(newMapKey);
@@ -92,6 +104,13 @@ final public class VCFMetaDataLines implements Serializable {
                 replaceExistingMapEntry(newMapKey, equivalentMetaDataLine, newMetaDataLine);
             }
             return equivalentMetaDataLine;
+        }
+    }
+
+    private void validateContigAndALTLinesDisjoint(final String namespace, final String id) {
+        if (mMetaData.containsKey(makeKey(namespace, id))) {
+            throw new IllegalStateException(
+                String.format("ALT and contig line IDs must be disjoint, but both were found for ID: %s", id));
         }
     }
 
@@ -191,8 +210,8 @@ final public class VCFMetaDataLines implements Serializable {
         return mMetaData.values().stream()
                 .filter(line -> !VCFHeaderVersion.isFormatString(line.getKey()))
                 .map(l -> l.validateForVersion(targetVersion))
-                .filter(o -> o.isPresent())
-                .map(o -> o.get())
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .collect(Collectors.toList());
     }
 

@@ -25,15 +25,18 @@
 
 package htsjdk.variant.variantcontext;
 
-import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A builder class for genotypes
@@ -71,7 +74,7 @@ public final class GenotypeBuilder {
     private int[] AD = null;
     private int[] PL = null;
     private Map<String, Object> extendedAttributes = null;
-    private String filters = null;
+    private Set<String> filters;
     private int initialAttributeMapSize = 5;
 
     private final static Map<String, Object> NO_ATTRIBUTES =
@@ -199,7 +202,7 @@ public final class GenotypeBuilder {
      */
     public Genotype make() {
         final Map<String, Object> ea = (extendedAttributes == null) ? NO_ATTRIBUTES : extendedAttributes;
-        return new FastGenotype(sampleName, alleles, isPhased, GQ, DP, AD, PL, filters, ea);
+        return new FastGenotype(sampleName, alleles, isPhased, GQ, DP, AD, PL, buildFilterString(), ea);
     }
 
     /**
@@ -216,7 +219,7 @@ public final class GenotypeBuilder {
         final List<Allele> al = new ArrayList<>(alleles);
         final int[] copyAD = (AD == null) ? null : Arrays.copyOf(AD, AD.length);
         final int[] copyPL = (PL == null) ? null : Arrays.copyOf(PL, PL.length);
-        return new FastGenotype(sampleName, al, isPhased, GQ, DP, copyAD, copyPL, filters, ea);
+        return new FastGenotype(sampleName, al, isPhased, GQ, DP, copyAD, copyPL, buildFilterString(), ea);
     }
 
     /**
@@ -373,12 +376,32 @@ public final class GenotypeBuilder {
      * @return this builder
      */
     public GenotypeBuilder filters(final List<String> filters) {
-        if ( filters.isEmpty() )
-            return filter(null);
-        else if ( filters.size() == 1 )
-            return filter(filters.get(0));
-        else
-            return filter(ParsingUtils.join(";", ParsingUtils.sortList(filters)));
+        for (final String filter : filters) {
+            if (!VariantContext.VALID_FILTER.matcher(filter).matches()) {
+                throw new TribbleException("Filter '" + filter +
+                    "' contains an illegal character. It must conform to the regex ;'" + VariantContext.VALID_FILTER);
+            } else if (filter.equals("0")) {
+                throw new TribbleException("Filter cannot use reserved string '0'");
+            }
+        }
+        // Filters must be unique
+        final Set<String> uniqueFilters = new HashSet<>(filters.size());
+        for (final String filter : filters) {
+            if (uniqueFilters.contains(filter)) {
+                throw new TribbleException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
+            } else {
+                uniqueFilters.add(filter);
+            }
+        }
+
+        final boolean hasUnfilteredString = uniqueFilters.contains(VCFConstants.UNFILTERED);
+        final boolean hasPassesString = uniqueFilters.contains(VCFConstants.PASSES_FILTERS_v4);
+        if ((hasUnfilteredString || hasPassesString) && uniqueFilters.size() > 1) {
+            throw new TribbleException("Filters cannot contain missing value '.' or passing value 'PASS' in addition to filters");
+        }
+
+        this.filters = hasPassesString ? null : uniqueFilters;
+        return this;
     }
 
     /**
@@ -397,8 +420,25 @@ public final class GenotypeBuilder {
      * @return
      */
     public GenotypeBuilder filter(final String filter) {
-        this.filters = VCFConstants.PASSES_FILTERS_v4.equals(filter) ? null : filter;
+        // TODO should this split the string on semicolon, or should it be in the function's contract
+        //  that only one filter and no semicolons can be included in the passed in string
+        if (filter == null || filter.isEmpty() || VCFConstants.PASSES_FILTERS_v4.equals(filter)) {
+            this.filters = null;
+        } else {
+            // Internal adjacent separators such as a;;b produce an empty string in the split array, which is
+            // handled by the valid filter regular expression, which rejects empty filter strings
+            if (filter.startsWith(";") || filter.endsWith(";")) {
+                throw new TribbleException("Filter string cannot start or end with filter separator ';'");
+            }
+            filters(filter.split(";"));
+        }
         return this;
+    }
+
+    private String buildFilterString() {
+        return this.filters == null || this.filters.isEmpty()
+            ? null
+            : this.filters.stream().sorted().collect(Collectors.joining(";"));
     }
 
     /**

@@ -25,9 +25,11 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.QualityUtil;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
@@ -38,6 +40,7 @@ import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.*;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -45,6 +48,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
@@ -57,11 +61,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     // we have to store the list of strings that make up the header until they're needed
     protected VCFHeader header = null;
     protected VCFHeaderVersion version = null;
-
-    private final static VCFTextTransformer percentEncodingTextTransformer = new VCFPercentEncodedTextTransformer();
-    private final static VCFTextTransformer passThruTextTransformer = new VCFPassThruTextTransformer();
-    //by default, we use the passThruTextTransformer (assume pre v4.3)
-    private VCFTextTransformer vcfTextTransformer = passThruTextTransformer;
 
     // a mapping of the allele
     protected final Map<String, List<Allele>> alleleMap = new HashMap<>(3);
@@ -86,7 +85,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     /**
      * If true, then we'll magically fix up VCF headers on the fly when we read them in
      */
-    protected boolean doOnTheFlyModifications = true;
+    protected VCFVersionUpgradePolicy policy = Defaults.VCF_VERSION_TRANSITION_POLICY;
 
     /**
      * If non-null, we will replace the sample name read from the VCF header with this sample name. This feature works
@@ -191,8 +190,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return a VCFHeader object
      */
     protected VCFHeader parseHeaderFromLines( final List<String> headerStrings, final VCFHeaderVersion sourceVersion ) {
-        this.version = sourceVersion;
-
         final Set<VCFHeaderLine> metaData = new LinkedHashSet<>();
         Set<String> sampleNames = new LinkedHashSet<>();
         int contigCounter = 0;
@@ -471,22 +468,49 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     public VCFHeader setVCFHeader(final VCFHeader newHeader) {
         ValidationUtils.nonNull(newHeader);
+        final VCFHeaderVersion originalVersion = newHeader.getVCFHeaderVersion();
 
-        if (this.doOnTheFlyModifications) {
-            // calling this with a header that has any pre-v4.3 version will always result in a header
-            // with version vcfV4.2, no matter what the header version originally was, since the "repair"
-            // operation is essentially a transform of the header so that it conforms with header line rules
-            // as of 4.2
-            this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
-        } else {
-            this.header = newHeader;
+        switch(this.policy) {
+            case DO_NOT_UPGRADE:
+                this.header = newHeader;
+                break;
+            case ONLY_INFALLIBLE_UPGRADE:
+                // Upgrade pre-4.3 versions to 4.2, and keep 4.3 at 4.3
+                // calling this with a header that has any pre-v4.3 version will always result in a header
+                // with version vcfV4.2, no matter what the header version originally was, since the "repair"
+                // operation is essentially a transform of the header so that it conforms with header line rules
+                // as of 4.2
+                this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
+                break;
+            case UPGRADE_OR_FAIL:
+            case UPGRADE_OR_FALLBACK:
+                this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
+                final Collection<VCFValidationFailure<VCFHeaderLine>> errors = this.header.getValidationErrors(VCFHeader.DEFAULT_VCF_VERSION);
+                if (!errors.isEmpty()) {
+                    final String message = String.format(
+                        "Version transition from VCF version %s to %s failed with validation error(s):\n%s%s",
+                        originalVersion.getVersionString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString(),
+                        errors.stream()
+                            .limit(5)
+                            .map(VCFValidationFailure::getSourceMessage)
+                            .collect(Collectors.joining("\n")),
+                        errors.size() > 5 ? "\n+ " + (errors.size() - 5) + " additional error(s)" : ""
+                    );
+                    if (this.policy == VCFVersionUpgradePolicy.UPGRADE_OR_FAIL) {
+                        throw new TribbleException(message);
+                    } else {
+                        logger.info(message + ", header will be kept at original version: " + originalVersion.getVersionString());
+                    }
+                } else {
+                    // Only upgrade if no errors resulting from version upgrading would occur
+                    this.header.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+                }
+                break;
+            default:
+                throw new TribbleException("Unrecognized VCF Version Upgrade Policy: " + this.policy);
         }
-		this.version = this.header.getVCFHeaderVersion();
-        // Obtain a text transformer (technically, this should be based on the ORIGINAL header version, not
-        // the updated version after repairStandardHeaderLines is called), but it doesn't matter in practice
-        // since the transformer only differs starting with 4.3.
-        this.vcfTextTransformer = getTextTransformerForVCFVersion(this.version);
 
+        this.version = this.header.getVCFHeaderVersion();
 		return this.header;
 	}
 
@@ -507,18 +531,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     @Override
     public VariantContext decode(String line) {
         return decodeLine(line, true);
-    }
-
-    /**
-     * For v4.3 up, attribute values can contain embedded percent-encoded characters which must be decoded
-     * on read. Return a version-aware text transformer that can decode encoded text.
-     * @param targetVersion the version for which a transformer is bing requested
-     * @return a {@link VCFTextTransformer} suitable for the targetVersion
-     */
-    private VCFTextTransformer getTextTransformerForVCFVersion(final VCFHeaderVersion targetVersion) {
-        return targetVersion != null && targetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) ?
-                percentEncodingTextTransformer :
-                passThruTextTransformer;
     }
 
     private VariantContext decodeLine(final String line, final boolean includeGenotypes) {
@@ -551,6 +563,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     private VariantContext parseVCFLine(final String[] parts, final boolean includeGenotypes) {
         VariantContextBuilder builder = new VariantContextBuilder();
+        builder.version(version);
         builder.source(getName());
 
         // increment the line count
@@ -728,16 +741,16 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     String valueString = infoFields.get(i).substring(eqI + 1);
 
                     // split on the INFO field separator
-                    List<String> infoValueSplit = ParsingUtils.split(valueString, VCFConstants.INFO_FIELD_ARRAY_SEPARATOR_CHAR);
+                    final List<String> infoValueSplit = ParsingUtils.split(valueString, VCFConstants.INFO_FIELD_ARRAY_SEPARATOR_CHAR);
                     if ( infoValueSplit.size() == 1 ) {
-                        value = vcfTextTransformer.decodeText(infoValueSplit.get(0));
+                        value = infoValueSplit.get(0);
                         final VCFInfoHeaderLine headerLine = header.getInfoHeaderLine(key);
                         if ( headerLine != null && headerLine.getType() == VCFHeaderLineType.Flag && value.equals("0") ) {
                             // deal with the case where a flag field has =0, such as DB=0, by skipping the add
                             continue;
                         }
                     } else {
-                        value = vcfTextTransformer.decodeText(infoValueSplit);
+                        value = infoValueSplit;
                     }
                 } else {
                     key = infoFields.get(i);
@@ -884,8 +897,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if ( allele == null || allele.isEmpty() )
             generateException(generateExceptionTextForBadAlleleBases(""), lineNo);
 
-        if ( GeneralUtils.DEBUG_MODE_ENABLED && MAX_ALLELE_SIZE_BEFORE_WARNING != -1 && allele.length() > MAX_ALLELE_SIZE_BEFORE_WARNING ) {
-            System.err.println(String.format("Allele detected with length %d exceeding max size %d at approximately line %d, likely resulting in degraded VCF processing performance", allele.length(), MAX_ALLELE_SIZE_BEFORE_WARNING, lineNo));
+        if ( MAX_ALLELE_SIZE_BEFORE_WARNING != -1 && allele.length() > MAX_ALLELE_SIZE_BEFORE_WARNING ) {
+            logger.warn(String.format(
+                "Allele detected with length %d exceeding max size %d at approximately line %d, " +
+                    "likely resulting in degraded VCF processing performance",
+                allele.length(), MAX_ALLELE_SIZE_BEFORE_WARNING, lineNo
+            ));
         }
 
         if (Allele.wouldBeSymbolicAllele(allele.getBytes())) {
@@ -996,8 +1013,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         // cycle through the genotype strings
         boolean PlIsSet = false;
         for (int genotypeOffset = 1; genotypeOffset < nParts; genotypeOffset++) {
-            List<String> genotypeValues = ParsingUtils.split(genotypeParts[genotypeOffset], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
-            genotypeValues = vcfTextTransformer.decodeText(genotypeValues);
+            final List<String> genotypeValues = ParsingUtils.split(genotypeParts[genotypeOffset], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
 
             final String sampleName = sampleNameIterator.next();
             final GenotypeBuilder gb = new GenotypeBuilder(sampleName);
@@ -1071,8 +1087,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     private static final int[] decodeInts(final String string) {
-        List<String> split = ParsingUtils.split(string, ',');
-        int [] values = new int[split.size()];
+        final List<String> split = ParsingUtils.split(string, ',');
+        final int [] values = new int[split.size()];
         try {
             for (int i = 0; i < values.length; i++) {
                 values[i] = Integer.parseInt(split.get(i));
@@ -1089,7 +1105,16 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * raw VCF records
      */
     public final void disableOnTheFlyModifications() {
-        doOnTheFlyModifications = false;
+        setVersionUpgradePolicy(VCFVersionUpgradePolicy.DO_NOT_UPGRADE);
+    }
+
+    /**
+     * Forces all VCFCodecs to not perform any on the fly modifications to the VCF header
+     * of VCF records.  Useful primarily for raw comparisons such as when comparing
+     * raw VCF records
+     */
+    public final void setVersionUpgradePolicy(final VCFVersionUpgradePolicy policy) {
+        this.policy = policy;
     }
 
     /**

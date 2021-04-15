@@ -14,7 +14,7 @@
 ##FORMAT=<ID=MED,Number=1,Type=Float,Description="Median of depth distribution.">
 ##FORMAT=<ID=Q1,Number=1,Type=Float,Description="Lower Quartile of depth distribution.">
 ##FORMAT=<ID=Q3,Number=1,Type=Float,Description="Upper Quartile of depth Distribution.">
-##INFO=<ID="Diagnose Targets",Number=0,Type=Flag,Description="DiagnoseTargets mode">
+##INFO=<ID="DiagnoseTargets",Number=0,Type=Flag,Description="DiagnoseTargets mode">
 ##INFO=<ID=AVG_INTERVAL_DP,Number=1,Type=Float,Description="Average depth across the interval. Sum of the depth in a loci divided by interval size.">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="Stop position of the interval">
 ##contig=<ID=1,length=249250621,assembly=b37>

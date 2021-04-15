@@ -41,6 +41,7 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
 
+import htsjdk.variant.vcf.VCFHeader;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -1200,7 +1201,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         // most of the fields are not important to the tests, we just need alleles and gc set properly
         return new VariantContext("genotypes", VCFConstants.EMPTY_ID_FIELD, snpLoc, snpLocStart, snpLocStop, alleles,
                 gc, VariantContext.NO_LOG10_PERROR, filters, attributes,
-                fullyDecoded, toValidate);
+                fullyDecoded, VCFHeader.DEFAULT_VCF_VERSION, toValidate);
     }
 
     // validateReferenceBases: PASS conditions
@@ -1296,7 +1297,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
 
         return new VariantContext("genotypes", rsId, snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, T),
                 GenotypesContext.NO_GENOTYPES, VariantContext.NO_LOG10_PERROR, filters, attributes,
-                fullyDecoded, toValidate);
+                fullyDecoded, VCFHeader.DEFAULT_VCF_VERSION, toValidate);
     }
     private Set<String> makeRsIDsSet(final String... rsIds) {
         return new HashSet<>(Arrays.asList(rsIds));
