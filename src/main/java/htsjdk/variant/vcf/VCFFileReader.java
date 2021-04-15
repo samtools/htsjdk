@@ -24,6 +24,7 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
@@ -35,6 +36,7 @@ import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
 
 import java.io.File;
 import java.io.IOException;
@@ -116,6 +118,23 @@ public class VCFFileReader implements VCFReader {
     }
 
     /**
+     * returns Correct Feature codec for Path depending whether
+     * the name seems to indicate that it's a BCF.
+     *
+     * @param path to vcf/bcf
+     * @return FeatureCodec for input Path
+     */
+    private static FeatureCodec<VariantContext, ?> getCodecForPath(Path path, final VCFVersionUpgradePolicy policy) {
+        if (isBCF(path)) {
+            return new BCF2Codec();
+        } else {
+            final VCFCodec codec = new VCFCodec();
+            codec.setVersionUpgradePolicy(policy);
+            return codec;
+        }
+    }
+
+    /**
      * Returns the SAMSequenceDictionary from the provided VCF file.
      */
     public static SAMSequenceDictionary getSequenceDictionary(final Path path) {
@@ -142,21 +161,49 @@ public class VCFFileReader implements VCFReader {
      * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
      */
     public VCFFileReader(final Path path, final boolean requireIndex) {
-        this.reader = AbstractFeatureReader.getFeatureReader(
-                path.toUri().toString(),
-                getCodecForPath(path),
-                requireIndex);
+        this(path, requireIndex, Defaults.VCF_VERSION_TRANSITION_POLICY);
     }
 
     /**
      * Allows construction of a VCFFileReader with a specified index path.
      */
     public VCFFileReader(final Path path, final Path indexPath, final boolean requireIndex) {
+        this(path, indexPath, requireIndex, Defaults.VCF_VERSION_TRANSITION_POLICY);
+    }
+
+    /**
+     * Constructs a VCFFileReader that requires the index to be present.
+     */
+    public VCFFileReader(final Path path, final VCFVersionUpgradePolicy policy) {
+        this(path, true, policy);
+    }
+
+    /**
+     * Constructs a VCFFileReader with a specified index.
+     */
+    public VCFFileReader(final Path path, final Path indexPath, final VCFVersionUpgradePolicy policy) {
+        this(path, indexPath, true, policy);
+    }
+
+    /**
+     * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
+     */
+    public VCFFileReader(final Path path, final boolean requireIndex, final VCFVersionUpgradePolicy policy) {
         this.reader = AbstractFeatureReader.getFeatureReader(
-                path.toUri().toString(),
-                indexPath.toUri().toString(),
-                getCodecForPath(path),
-                requireIndex);
+            path.toUri().toString(),
+            getCodecForPath(path, policy),
+            requireIndex);
+    }
+
+    /**
+     * Allows construction of a VCFFileReader with a specified index path.
+     */
+    public VCFFileReader(final Path path, final Path indexPath, final boolean requireIndex, final VCFVersionUpgradePolicy policy) {
+        this.reader = AbstractFeatureReader.getFeatureReader(
+            path.toUri().toString(),
+            indexPath.toUri().toString(),
+            getCodecForPath(path, policy),
+            requireIndex);
     }
 
     /**

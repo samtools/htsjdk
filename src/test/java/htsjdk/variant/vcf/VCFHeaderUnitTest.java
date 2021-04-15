@@ -27,7 +27,6 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
@@ -38,16 +37,29 @@ import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class VCFHeaderUnitTest extends VariantBaseTest {
@@ -77,7 +89,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final File actualFile = File.createTempFile("testVcf4.2roundtrip.", FileExtensions.VCF);
         actualFile.deleteOnExit();
 
-        try (final VCFFileReader originalFileReader = new VCFFileReader(expectedFile, false);
+        try (final VCFFileReader originalFileReader = new VCFFileReader(expectedFile.toPath(), false, VCFVersionUpgradePolicy.DO_NOT_UPGRADE);
              final VariantContextWriter copyWriter = new VariantContextWriterBuilder()
                      .setOutputFile(actualFile)
                      .setReferenceDictionary(createArtificialSequenceDictionary())
@@ -289,9 +301,11 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             Assert.assertTrue(originalContigsInSortedOrder.size() > 0);
 
             // copy the contig lines to a new list
-            final List<VCFContigHeaderLine> confoundedList = new ArrayList<>();
             final int midPoint = originalContigsInSortedOrder.size() / 2;
-            confoundedList.addAll(originalContigsInSortedOrder.subList(0, midPoint));
+            final List<VCFContigHeaderLine> confoundedList = new ArrayList<>(originalContigsInSortedOrder.subList(
+                0,
+                midPoint
+            ));
 
             // deliberately stick an extra contig line in the middle of the list, but using a contig index
             // that will cause the line to sort to the end
@@ -312,7 +326,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             // create a new header from the confounded list, call getContigLines() on the header, and validate
             // that the new line is included in the resulting list, and is at the end
             final VCFHeader newHeader = new VCFHeader();
-            confoundedList.forEach(hl -> newHeader.addMetaDataLine(hl));
+            confoundedList.forEach(newHeader::addMetaDataLine);
             final List<VCFContigHeaderLine> roundTrippedLines = newHeader.getContigLines();
             Assert.assertEquals(roundTrippedLines.size(), originalContigsInSortedOrder.size() + 1);
             Assert.assertEquals(roundTrippedLines.get(roundTrippedLines.size() - 1), newContigLine);
@@ -453,6 +467,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @DataProvider(name="invalidHeaderVersionTransitions")
     public Object[][] invalidHeaderVersionTransitions() {
+        // v4.3 can never be transitioned down to pre v4.3
+        // Pre v4.3 might be able to be transitioned to 4.3, and this is tested in VCFCodec43FeaturesTest
         return new Object[][] {
                 //reject any attempt to go backwards in time
                 {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_2},
@@ -602,12 +618,11 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testFileFormatLineFirstInSet() {
-        final Set<VCFHeaderLine> orderedLineSet = new LinkedHashSet<>();
-        orderedLineSet.addAll(VCFHeaderUnitTestData.getV42HeaderLinesWITHOUTFormatString());
-        orderedLineSet.stream().forEach(l -> Assert.assertFalse(VCFHeaderVersion.isFormatString(l.getKey())));
+        final Set<VCFHeaderLine> orderedLineSet = new LinkedHashSet<>(VCFHeaderUnitTestData.getV42HeaderLinesWITHOUTFormatString());
+        orderedLineSet.forEach(l -> Assert.assertFalse(VCFHeaderVersion.isFormatString(l.getKey())));
         // add the file format line last
         orderedLineSet.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
-        final VCFHeader vcfHeader = new VCFHeader(orderedLineSet, Collections.EMPTY_SET);
+        final VCFHeader vcfHeader = new VCFHeader(orderedLineSet, Collections.emptySet());
 
         final Collection<VCFHeaderLine> inputOrderLines = vcfHeader.getMetaDataInInputOrder();
         final Optional<VCFHeaderLine> optFirstInputOrderLine = inputOrderLines.stream().findFirst();
@@ -708,9 +723,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build();
         firstCopyWriter.writeHeader(originalHeader);
-        final CloseableIterator<VariantContext> firstCopyVariantIterator = originalFileReader.iterator();
-        while (firstCopyVariantIterator.hasNext()) {
-            final VariantContext variantContext = firstCopyVariantIterator.next();
+        for (final VariantContext variantContext : originalFileReader) {
             firstCopyWriter.add(variantContext);
         }
         originalFileReader.close();
@@ -751,9 +764,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build();
         secondCopyWriter.writeHeader(firstCopyHeader);
-        final CloseableIterator<VariantContext> secondCopyVariantIterator = firstCopyReader.iterator();
-        while (secondCopyVariantIterator.hasNext()) {
-            final VariantContext variantContext = secondCopyVariantIterator.next();
+        for (final VariantContext variantContext : firstCopyReader) {
             secondCopyWriter.add(variantContext);
         }
         secondCopyWriter.close();
@@ -802,23 +813,58 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     /////////////////////////////////////////////////////////////////////
 
     // Serialize/encode the header to a file, read metaData back in
-    private Set<VCFHeaderLine> getRoundTripEncoded(final VCFHeader header) throws IOException {
+    private static Set<VCFHeaderLine> getRoundTripEncoded(final VCFHeader header) throws IOException {
         final File myTempFile = File.createTempFile("VCFHeader", "vcf");
-        try (final VariantContextWriter vcfWriter =
-                     new VariantContextWriterBuilder()
-                             .setOutputFile(myTempFile)
-                             .setOutputFileType(VariantContextWriterBuilder.OutputType.VCF)
-                             .setOptions(VariantContextWriterBuilder.NO_OPTIONS)
-                             .build()) {
+        try (final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
+                .setOutputFile(myTempFile)
+                .setOutputFileType(VariantContextWriterBuilder.OutputType.VCF)
+                .setOptions(VariantContextWriterBuilder.NO_OPTIONS)
+                .build()
+        ) {
             vcfWriter.writeHeader(header);
         }
-        final VCFHeader vcfHeader = (VCFHeader) new VCFCodec().readActualHeader(new LineIteratorImpl(
+        final VCFCodec codec = new VCFCodec();
+        codec.setVersionUpgradePolicy(VCFVersionUpgradePolicy.DO_NOT_UPGRADE);
+        final VCFHeader vcfHeader = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(
                 new SynchronousLineReader(new FileReader(myTempFile.getAbsolutePath()))));
         return vcfHeader.getMetaDataInSortedOrder();
     }
 
+    @Test
+    public void testVcf42Roundtrip() throws Exception {
+        // this test ensures that source/version fields are round-tripped properly
 
-    private VCFHeader getHiSeqVCFHeader() {
+        // read an existing VCF
+        final File expectedFile = new File("src/test/resources/htsjdk/variant/Vcf4.2WithSourceVersionInfoFields.vcf");
+
+        // write the file out into a new copy
+        final File actualFile = File.createTempFile("testVcf4.2roundtrip.", FileExtensions.VCF);
+        actualFile.deleteOnExit();
+
+        try (final VCFFileReader originalFileReader = new VCFFileReader(expectedFile, false);
+             final VariantContextWriter copyWriter = new VariantContextWriterBuilder()
+                     .setOutputFile(actualFile)
+                     .setReferenceDictionary(createArtificialSequenceDictionary())
+                     .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                     .build()
+        ) {
+            final VCFHeader originalHeader = originalFileReader.getFileHeader();
+
+            copyWriter.writeHeader(originalHeader);
+            for (final VariantContext variantContext : originalFileReader) {
+                copyWriter.add(variantContext);
+            }
+        }
+
+        final String actualContents = new String(Files.readAllBytes(actualFile.toPath()), StandardCharsets.UTF_8);
+        final String expectedContents = new String(Files.readAllBytes(expectedFile.toPath()), StandardCharsets.UTF_8);
+        Assert.assertEquals(actualContents.substring(actualContents.indexOf('\n')), expectedContents.substring(actualContents.indexOf('\n')));
+    }
+
+    private static final int VCF4headerStringCount = 16; // 17 -1 for the #CHROM... line
+
+
+    private static VCFHeader getHiSeqVCFHeader() {
         final File vcf = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf");
         final VCFFileReader reader = new VCFFileReader(vcf, false);
         final VCFHeader header = reader.getFileHeader();

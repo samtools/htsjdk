@@ -70,6 +70,25 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
         Assert.assertEquals(mdLines.getMetaDataInInputOrder().size(), expectCollision ? 1 : 2);
     }
 
+    @DataProvider(name = "contigALTCollisions")
+    public Object[][] contigALTCollisions() {
+        return new Object[][] {
+            {
+                new VCFContigHeaderLine("<ID=X>", VCFHeader.DEFAULT_VCF_VERSION, 0), new VCFAltHeaderLine("<ID=X>", VCFHeader.DEFAULT_VCF_VERSION)
+            },
+            {
+                new VCFAltHeaderLine("<ID=X>", VCFHeader.DEFAULT_VCF_VERSION), new VCFContigHeaderLine("<ID=X>", VCFHeader.DEFAULT_VCF_VERSION, 0)
+            },
+        };
+    }
+
+    @Test(dataProvider = "contigALTCollisions", expectedExceptions = IllegalStateException.class)
+    public void testContigALTCollision(final VCFHeaderLine line1, final VCFHeaderLine line2) {
+        final VCFMetaDataLines mdLines = new VCFMetaDataLines();
+        mdLines.addMetaDataLine(line1);
+        mdLines.addMetaDataLine(line2);
+    }
+
     @Test
     public void testRetainFullHeaderLines() {
         final VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();

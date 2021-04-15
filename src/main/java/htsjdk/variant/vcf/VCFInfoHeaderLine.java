@@ -29,6 +29,8 @@ package htsjdk.variant.vcf;
 import htsjdk.samtools.util.Log;
 import htsjdk.utils.ValidationUtils;
 
+import java.util.Optional;
+
 /**
  *         <p>
  *         Class VCFInfoHeaderLine
@@ -102,14 +104,15 @@ public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
     }
 
     @Override
-    public boolean shouldBeAddedToDictionary() {
-        return true;
+    protected Optional<String> validateKeyOrID(final String id) {
+        return id.equals(VCFConstants.THOUSAND_GENOMES_KEY)
+            ? Optional.empty()
+            : super.validateKeyOrID(id);
     }
 
     @Override
-    //TODO: integrate this with the existing validateKeyOrID method
-    protected boolean validHeaderID(final String id) {
-        return super.validHeaderID(id) || id.equals(VCFConstants.THOUSAND_GENOMES_KEY);
+    public boolean shouldBeAddedToDictionary() {
+        return true;
     }
 
 }

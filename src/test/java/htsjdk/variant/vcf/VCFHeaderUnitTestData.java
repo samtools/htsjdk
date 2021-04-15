@@ -3,6 +3,7 @@ package htsjdk.variant.vcf;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.SynchronousLineReader;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
 import org.testng.Assert;
 
 import java.io.StringReader;
@@ -169,6 +170,7 @@ public class VCFHeaderUnitTestData {
 
     public static VCFHeader createHeaderFromString(final String headerStr) {
         final VCFCodec codec = new VCFCodec();
+        codec.setVersionUpgradePolicy(VCFVersionUpgradePolicy.DO_NOT_UPGRADE);
         final VCFHeader header = (VCFHeader) codec.readActualHeader(
                 new LineIteratorImpl(new SynchronousLineReader(new StringReader(headerStr))));
         Assert.assertEquals(header.getMetaDataInInputOrder().size(), VCF_4_HEADER_STRING_COUNT);

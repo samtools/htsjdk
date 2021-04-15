@@ -190,7 +190,9 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
     @Test(dataProvider = "RepairHeaderTest")
     public void testRepairHeaderTest(final RepairHeaderTest cfg) {
         final Set<VCFHeaderLine> headerLines = new LinkedHashSet<>();
-        headerLines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        // The standard header line repair facility is not sufficiently powerful to fix broken lines
+        // starting from version 4.3, so it is only used for versions <= 4.2, and we use version 4.2 for this test
+        headerLines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
         headerLines.add(cfg.original);
 
         final VCFHeader toRepair = new VCFHeader(headerLines);

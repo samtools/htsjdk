@@ -91,8 +91,7 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "invalidIDs", expectedExceptions = TribbleException.VersionValidationFailure.class)
     public void testGetValidationError(final String lineString) {
-        // TODO change to VCFHeader.DEFAULT_VCF_VERSION
-        new VCFInfoHeaderLine(lineString, VCFHeaderVersion.VCF4_3);
+        new VCFInfoHeaderLine(lineString, VCFHeader.DEFAULT_VCF_VERSION);
     }
 
     @DataProvider (name = "headerLineTypes")
