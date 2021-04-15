@@ -1,6 +1,6 @@
 /*
 * Copyright (c) 2012 The Broad Institute
-* 
+*
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
 * files (the "Software"), to deal in the Software without
@@ -9,10 +9,10 @@
 * copies of the Software, and to permit persons to whom the
 * Software is furnished to do so, subject to the following
 * conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be
 * included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.beta.plugin.HtsRecord;
+import htsjdk.samtools.util.QualityUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -47,7 +48,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * 
+ *
  * <h3> High-level overview </h3>
  *
  * The VariantContext object is a single general class system for representing genetic variation data composed of:
@@ -89,7 +90,7 @@ import java.util.stream.Collectors;
  *<p>
  * A [ref] / T at 10
  *</p>
- *<pre> 
+ *<pre>
  * GenomeLoc snpLoc = GenomeLocParser.createGenomeLoc("chr1", 10, 10);
  *</pre>
  *<p>
@@ -208,7 +209,7 @@ import java.util.stream.Collectors;
  *
  * <!-- comment by jdenvir: not sure what this tag is supposed to do:-->
  * <!-- <s3> -->
- *     <h3>Fully decoding.</h3>  
+ *     <h3>Fully decoding.</h3>
  *     Currently <code>VariantContext</code>s support some fields, particularly those
  *     stored as generic attributes, to be of any type.  For example, a field AB might
  *     be naturally a floating point number, 0.51, but when it's read into a VC its
@@ -266,6 +267,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     /* cached monomorphic value: null -> not yet computed, False, True */
     private Boolean monomorphic = null;
 
+    private final VCFHeaderVersion version;
+
     /*
      * Determine which genotype fields are in use in the genotypes in VC
      * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
@@ -321,7 +324,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    //no controls and white-spaces characters, no semicolon.
+    // No controls and white-spaces characters, no semicolon, filter string cannot be empty
     public static final Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
 
     public enum Validation {
@@ -396,13 +399,15 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 return;
             }
 
-            for (String filter : filters) {
+            for (final String filter : filters) {
                 if ( filter == null) {
-                    throw new IllegalStateException("'null' is not a valid filter string.");
+                    throw new TribbleException("'null' is not a valid filter string.");
                 }
                 if (!VALID_FILTER.matcher(filter).matches()) {
-                    throw new IllegalStateException("Filter '" + filter +
+                    throw new TribbleException("Filter '" + filter +
                             "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
+                } else if (filter.equals("0")) {
+                    throw new TribbleException("Filter cannot use reserved string '0'");
                 }
             }
         }
@@ -421,12 +426,14 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      *
      * @param other the VariantContext to copy
      */
-    protected VariantContext(VariantContext other) {
+    protected VariantContext(final VariantContext other) {
         this(other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
                 other.getAlleles(), other.getGenotypes(), other.getLog10PError(),
                 other.getFiltersMaybeNull(),
                 other.getAttributes(),
-                other.fullyDecoded, NO_VALIDATION);
+                other.fullyDecoded,
+                other.version,
+                NO_VALIDATION);
     }
 
     /**
@@ -454,8 +461,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                              final Set<String> filters,
                              final Map<String, Object> attributes,
                              final boolean fullyDecoded,
+                             final VCFHeaderVersion version,
                              final EnumSet<Validation> validationToPerform ) {
-        if ( contig == null ) { throw new IllegalArgumentException("Contig cannot be null"); }
+        if ( contig == null || contig.isEmpty() ) { throw new IllegalArgumentException("Contig cannot be null or the empty string"); }
         this.contig = contig;
         this.start = start;
         this.stop = stop;
@@ -488,6 +496,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         }
 
         this.fullyDecoded = fullyDecoded;
+        this.version = version;
 
         if ( ! validationToPerform.isEmpty() ) {
             validate(validationToPerform);
@@ -617,7 +626,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * <li><strong>Mixed</strong></li>
      * <li>Mix of other classes</li>
      * </ul>
-     * 
+     *
      * Also supports NO_VARIATION type, used to indicate that the site isn't polymorphic in the population
      *
      *
@@ -812,6 +821,10 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     public String getID() {
         return ID;
+    }
+
+    public VCFHeaderVersion getVersion() {
+        return version;
     }
 
 
@@ -1654,7 +1667,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 continue; // gross, FT is part of the extended attributes
 
             final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
-            final Object decoded = decodeValue(field, attr.getValue(), format);
+            final Object decoded = decodeValue(field, attr.getValue(), format, header.getVCFHeaderVersion());
 
             if ( decoded != null &&
                     ! lenientDecoding
@@ -1675,26 +1688,36 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return newAttributes;
     }
 
-    private final Object decodeValue(final String field, final Object value, final VCFCompoundHeaderLine format) {
+    private Object decodeValue(
+        final String field,
+        final Object value,
+        final VCFCompoundHeaderLine format,
+        final VCFHeaderVersion version
+    ) {
+        final boolean percentDecode = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
         if ( value instanceof String ) {
+            final String string = (String) value;
             if ( field.equals(VCFConstants.GENOTYPE_PL_KEY) )
-                return GenotypeLikelihoods.fromPLField((String)value);
+                return GenotypeLikelihoods.fromPLField(string);
 
-            final String string = (String)value;
+            if (field.equals(VCFConstants.GENOTYPE_POSTERIORS_KEY)) {
+                return decodeGPKey(string, version);
+            }
+
             if ( string.indexOf(',') != -1 ) {
                 final String[] splits = string.split(",");
                 final List<Object> values = new ArrayList<>(splits.length);
-                for ( int i = 0; i < splits.length; i++ )
-                    values.add(decodeOne(field, splits[i], format));
+                for (final String split : splits)
+                    values.add(decodeOne(field, split, format, percentDecode));
                 return values;
             } else {
-                return decodeOne(field, string, format);
+                return decodeOne(field, string, format, percentDecode);
             }
-        } else if ( value instanceof List && (((List) value).get(0)) instanceof String ) {
+        } else if ( value instanceof List && (((List<?>) value).get(0)) instanceof String ) {
             final List<String> asList = (List<String>)value;
             final List<Object> values = new ArrayList<>(asList.size());
             for ( final String s : asList )
-                values.add(decodeOne(field, s, format));
+                values.add(decodeOne(field, s, format, percentDecode));
             return values;
         } else {
             return value;
@@ -1703,7 +1726,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         // allowMissingValuesComparedToHeader
     }
 
-    private final Object decodeOne(final String field, final String string, final VCFCompoundHeaderLine format) {
+    private Object decodeOne(final String field, final String string, final VCFCompoundHeaderLine format, final boolean percentDecode) {
         try {
             if ( string.equals(VCFConstants.MISSING_VALUE_v4) )
                 return null;
@@ -1711,12 +1734,12 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 switch ( format.getType() ) {
                     case Character: return string;
                     case Flag:
-                        final boolean b = Boolean.valueOf(string) || string.equals("1");
-                        if ( b == false )
+                        final boolean b = Boolean.parseBoolean(string) || string.equals("1");
+                        if (!b)
                             throw new TribbleException("VariantContext FLAG fields " + field + " cannot contain false values"
                                     + " as seen at " + getContig() + ":" + getStart());
-                        return b;
-                    case String:    return string;
+                        return true;
+                    case String:    return percentDecode ? VCFPercentEncodedTextTransformer.percentDecode(string) : string;
                     case Integer:   return Integer.valueOf(string);
                     case Float:     return VCFUtils.parseVcfDouble(string);
                     default: throw new TribbleException("Unexpected type for field" + field);
@@ -1727,7 +1750,36 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         }
     }
 
-    private final void fullyDecodeGenotypes(final VariantContextBuilder builder, final VCFHeader header) {
+    private static List<Double> decodeGPKey(final String value, final VCFHeaderVersion version) {
+        final String[] splits = value.split(",");
+        // We need to special-case GP because there is a discrepancy in the scale used to record
+        // its values between pre-4.3 and 4.3+ VCF. Pre-4.3 GP is phred scale encoded while
+        // 4.3+ GP is a linear probability, bringing it in line with other standard keys that
+        // use the P suffix (c.f. VCF 4.3 spec section 7.2).
+
+        // Some tools in the wild apparently already use linear scaled GP, so we have to
+        // be careful about converting inputs. We check whether GP values are already linear
+        // scaled by seeing if the values' sum is approximately equal to 1, like we
+        // would expect if the values were linear scale probabilities.
+        // c.f. https://sourceforge.net/p/vcftools/mailman/vcftools-spec/thread/CEBCD558.FA29%25browning%40u.washington.edu/
+        double sum = 0;
+
+        final List<Double> rawGPValues = new ArrayList<>(splits.length);
+        for (final String s : splits) {
+            final double GP = VCFUtils.parseVcfDouble(s);
+            rawGPValues.add(GP);
+            sum += GP;
+        }
+
+        final boolean wasLinearScale = GeneralUtils.compareDoubles(sum, 1, VCFConstants.VCF_ENCODING_EPSILON) == 0;
+        if (!wasLinearScale && version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            rawGPValues.replaceAll(GP -> QualityUtil.getErrorProbabilityFromPhredScore((int) Math.round(GP)));
+        }
+        return rawGPValues;
+
+    }
+
+    private void fullyDecodeGenotypes(final VariantContextBuilder builder, final VCFHeader header) {
         final GenotypesContext gc = new GenotypesContext();
         for ( final Genotype g : getGenotypes() ) {
             gc.add(fullyDecodeGenotypes(g, header));
@@ -1862,9 +1914,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
     }
 
-    /** 
-     * Search for the INFO=SVTYPE and return the type of Structural Variant 
-     * @return the StructuralVariantType of null if there is no property SVTYPE 
+    /**
+     * Search for the INFO=SVTYPE and return the type of Structural Variant
+     * @return the StructuralVariantType of null if there is no property SVTYPE
      * */
     public StructuralVariantType getStructuralVariantType() {
         final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);

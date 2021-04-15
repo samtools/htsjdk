@@ -15,7 +15,9 @@ import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,10 +28,7 @@ import java.util.TreeMap;
  */
 public class VCFEncoder {
 
-    /**
-     * The encoding used for VCF files: ISO-8859-1. When writing VCF4.3 is implemented, this should change to UTF-8.
-     */
-    public static final Charset VCF_CHARSET = StandardCharsets.ISO_8859_1;
+    public static final Charset VCF_CHARSET = StandardCharsets.UTF_8;
     private static final String QUAL_FORMAT_STRING = "%.2f";
     private static final String QUAL_FORMAT_EXTENSION_TO_TRIM = ".00";
 
@@ -40,6 +39,8 @@ public class VCFEncoder {
     private boolean allowMissingFieldsInHeader = false;
 
     private boolean outputTrailingFormatFields = false;
+
+    private final VCFTextTransformer vcfTextTransformer;
 
     /**
      * Prepare a VCFEncoder that will encode records appropriate to the given VCF header, optionally
@@ -52,6 +53,9 @@ public class VCFEncoder {
         this.header = header;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.outputTrailingFormatFields = outputTrailingFormatFields;
+        this.vcfTextTransformer = header.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+            ? new VCFPercentEncodedTextTransformer()
+            : new VCFPassThruTextTransformer();
     }
 
     /**
@@ -148,7 +152,7 @@ public class VCFEncoder {
                 fieldIsMissingFromHeaderError(context, field.getKey(), "INFO");
             }
 
-            final String outputValue = formatVCFField(field.getValue());
+            final String outputValue = formatVCFField(field.getValue(), context.isFullyDecoded());
             if (outputValue != null) {
                 infoFields.put(field.getKey(), outputValue);
             }
@@ -218,34 +222,71 @@ public class VCFEncoder {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    String formatVCFField(final Object val) {
-        final String result;
+    String formatVCFField(final Object val, final boolean fullyDecoded) {
         if (val == null) {
-            result = VCFConstants.MISSING_VALUE_v4;
+            return VCFConstants.MISSING_VALUE_v4;
         } else if (val instanceof Double) {
-            result = formatVCFDouble((Double) val);
+            return formatVCFDouble((Double) val);
         } else if (val instanceof Boolean) {
-            result = (Boolean) val ? "" : null; // empty string for true, null for false
+            return (Boolean) val ? "" : null; // empty string for true, null for false
         } else if (val instanceof List) {
-            result = formatVCFField(((List) val).toArray());
+            return formatList((List<?>) val, fullyDecoded);
         } else if (val.getClass().isArray()) {
-            final int length = Array.getLength(val);
-            if (length == 0) {
-                return formatVCFField(null);
-            }
-            final StringBuilder sb = new StringBuilder(
-                formatVCFField(Array.get(val, 0)));
-            for (int i = 1; i < length; i++) {
-                sb.append(',');
-                sb.append(formatVCFField(Array.get(val, i)));
-            }
-            result = sb.toString();
+            return val.getClass().getComponentType().isPrimitive()
+                ? formatPrimitiveArray(val)
+                : formatList(Arrays.asList((Object[]) val), fullyDecoded);
+        } else if (val instanceof String) {
+            final String s = val.toString();
+            // If the VariantContext from which this string was obtained was already fully decoded,
+            // its in-memory representation may contain special characters which must be re-encoded,
+            // while strings which have not been decoded yet represent the field as read directly
+            // from the source VCF, so they are written back out without encoding
+            return fullyDecoded ? vcfTextTransformer.encodeText(s) : s;
         } else {
-            result = val.toString();
+            return val.toString();
         }
+    }
 
-        return result;
+    private static String formatPrimitiveArray(final Object v) {
+        final int len = Array.getLength(v);
+        if (len == 0) return VCFConstants.MISSING_VALUE_v4;
+        int i = 0;
+        final StringBuilder s = new StringBuilder();
+        if (v instanceof int[]) {
+            final int[] a = (int[]) v;
+            for (;;) {
+                s.append(a[i++]);
+                if (i == len) break;
+                s.append(',');
+            }
+        } else if (v instanceof double[]) {
+            final double[] a = (double[]) v;
+            for (;;) {
+                s.append(formatVCFDouble(a[i++]));
+                if (i == len) break;
+                s.append(',');
+            }
+        } else if (v instanceof long[]) {
+            final long[] a = (long[]) v;
+            for (;;) {
+                s.append(a[i++]);
+                if (i == len) break;
+                s.append(',');
+            }
+        }
+        return s.toString();
+    }
+
+    private String formatList(final List<?> list, final boolean fullyDecoded) {
+        if (list.isEmpty()) return VCFConstants.MISSING_VALUE_v4;
+        final StringBuilder s = new StringBuilder();
+        final Iterator<?> it = list.iterator();
+        for (;;) {
+            s.append(formatVCFField(it.next(), fullyDecoded));
+            if (!it.hasNext()) break;
+            s.append(',');
+        }
+        return s.toString();
     }
 
     /**
@@ -310,7 +351,8 @@ public class VCFEncoder {
      * @param vcfoutput VCF output
      * @throws IOException
      */
-    private void appendGenotypeData(final VariantContext vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final Appendable vcfoutput) throws IOException {final int ploidy = vc.getMaxPloidy(2);
+    private void appendGenotypeData(final VariantContext vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final Appendable vcfoutput) throws IOException {
+        final int ploidy = vc.getMaxPloidy(2);
 
         for (final String sample : this.header.getGenotypeSamples()) {
             vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
@@ -357,7 +399,7 @@ public class VCFEncoder {
                             }
                         } else {
                             Object val = g.hasExtendedAttribute(field) ? g.getExtendedAttribute(field) : VCFConstants.MISSING_VALUE_v4;
-                            outputValue = formatVCFField(val);
+                            outputValue = formatVCFField(val, vc.isFullyDecoded());
                         }
                     }
 

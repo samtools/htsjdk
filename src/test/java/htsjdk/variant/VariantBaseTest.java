@@ -29,11 +29,15 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Tuple;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.TribbleException;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
+import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFConstants;
-import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import org.testng.Assert;
 
@@ -141,8 +145,16 @@ public class VariantBaseTest extends HtsjdkTest {
      */
     public static Tuple<VCFHeader, List<VariantContext>> readEntireVCFIntoMemory(final Path vcfPath) {
         ValidationUtils.nonNull(vcfPath);
-        try ( final VCFFileReader vcfReader = new VCFFileReader(vcfPath, false) ){
-            return new Tuple<>(vcfReader.getFileHeader(), vcfReader.iterator().toList());
+        final VCFCodec codec = new VCFCodec();
+        codec.setVersionUpgradePolicy(VCFVersionUpgradePolicy.UPGRADE_OR_FALLBACK);
+        try (final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(
+                vcfPath.toUri().toString(),
+                codec,
+                false
+        )) {
+            return new Tuple<>((VCFHeader) reader.getHeader(), reader.iterator().toList());
+        } catch (final IOException e) {
+            throw new TribbleException("Could not create an iterator from a feature reader.", e);
         }
     }
 

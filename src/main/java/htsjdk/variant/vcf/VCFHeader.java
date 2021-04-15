@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
 public class VCFHeader implements HtsHeader, Serializable {
     public static final long serialVersionUID = 1L;
     protected static final Log logger = Log.getInstance(VCFHeader.class);
-    public static final VCFHeaderVersion DEFAULT_VCF_VERSION = VCFHeaderVersion.VCF4_2;
+    public static final VCFHeaderVersion DEFAULT_VCF_VERSION = VCFHeaderVersion.VCF4_3;
 
     // the mandatory header fields
     public enum HEADER_FIELDS {
@@ -602,6 +602,10 @@ public class VCFHeader implements HtsHeader, Serializable {
             throw new TribbleException("The VCFHeader metadata must include a ##fileformat (version) header line");
         }
         return metaDataVersion;
+    }
+
+    public Collection<VCFValidationFailure<VCFHeaderLine>> getValidationErrors(final VCFHeaderVersion targetVersion) {
+        return mMetaData.getValidationErrors(targetVersion);
     }
 
     private void validateVersionTransition(

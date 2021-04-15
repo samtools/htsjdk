@@ -25,7 +25,10 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -80,6 +83,7 @@ public class VariantContextBuilder {
     private Map<String, Object> attributes = null;
     private boolean attributesCanBeModified = false;
     private boolean filtersCanBeModified = false;
+    private VCFHeaderVersion version = VCFHeader.DEFAULT_VCF_VERSION;
 
     /** enum of what must be validated */
     final private EnumSet<VariantContext.Validation> toValidate = EnumSet.noneOf(VariantContext.Validation.class);
@@ -161,6 +165,10 @@ public class VariantContextBuilder {
         return attributes;
     }
 
+    public VCFHeaderVersion getVersion() {
+        return version;
+    }
+
     /**
      * Returns a new builder based on parent -- the new VC will have all fields initialized
      * to their corresponding values in parent.  This is the best way to create a derived VariantContext
@@ -181,6 +189,7 @@ public class VariantContextBuilder {
         this.start = parent.getStart();
         this.stop = parent.getEnd();
         this.fullyDecoded = parent.isFullyDecoded();
+        this.version = parent.getVersion();
 
         this.attributes(parent.getAttributes());
         if (parent.filtersWereApplied()) {
@@ -205,6 +214,7 @@ public class VariantContextBuilder {
         this.start = parent.start;
         this.stop = parent.stop;
         this.fullyDecoded = parent.fullyDecoded;
+        this.version = parent.version;
 
         this.attributes(parent.attributes);
         this.filters(parent.filters);
@@ -212,6 +222,17 @@ public class VariantContextBuilder {
 
     public VariantContextBuilder copy() {
         return new VariantContextBuilder(this);
+    }
+
+    /**
+     * Tells this builder to create a VariantContext conforming to this version of VCF
+     *
+     * @param version the version of VCF to which the VariantContext produced by this builder conforms
+     * @return this builder
+     */
+    public VariantContextBuilder version(final VCFHeaderVersion version) {
+        this.version = version;
+        return this;
     }
 
     /**
@@ -646,6 +667,6 @@ public class VariantContextBuilder {
 
         return new VariantContext(source, ID, contig, start, stop, alleles,
                 genotypes, log10PError, filters, attributes,
-                fullyDecoded, toValidate);
+                fullyDecoded, version, toValidate);
     }
 }
