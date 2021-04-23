@@ -27,34 +27,25 @@ package htsjdk.variant.bcf2;
 
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.TribbleException;
-import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Common utilities for working with BCF2 files
- *
+ * <p>
  * Includes convenience methods for encoding, decoding BCF2 type descriptors (size + type)
  *
  * @author depristo
  * @since 5/12
  */
 public final class BCF2Utils {
-    public static final int MAX_ALLELES_IN_GENOTYPES = 127;
 
     public static final int OVERFLOW_ELEMENT_MARKER = 15;
     public static final int MAX_INLINE_ELEMENTS = 14;
@@ -64,49 +55,16 @@ public final class BCF2Utils {
 
     static {
         int maxID = -1;
-        for ( BCF2Type v : BCF2Type.values() ) maxID = Math.max(v.getID(), maxID);
-        ID_TO_ENUM = new BCF2Type[maxID+1];
-        for ( BCF2Type v : BCF2Type.values() ) ID_TO_ENUM[v.getID()] = v;
+        for (final BCF2Type v : BCF2Type.values()) maxID = Math.max(v.getID(), maxID);
+        ID_TO_ENUM = new BCF2Type[maxID + 1];
+        for (final BCF2Type v : BCF2Type.values()) ID_TO_ENUM[v.getID()] = v;
     }
 
-    private BCF2Utils() {}
-
-    /**
-     * Create a strings dictionary from the VCF header
-     *
-     * The dictionary is an ordered list of common VCF identifers (FILTER, INFO, and FORMAT)
-     * fields.
-     *
-     * Note that its critical that the list be dedupped and sorted in a consistent manner each time,
-     * as the BCF2 offsets are encoded relative to this dictionary, and if it isn't determined exactly
-     * the same way as in the header each time it's very bad
-     *
-     * @param header the VCFHeader from which to build the dictionary
-     * @return a non-null dictionary of elements, may be empty
-     */
-    public static ArrayList<String> makeDictionary(final VCFHeader header) {
-        final Set<String> seen = new HashSet<String>();
-        final ArrayList<String> dict = new ArrayList<String>();
-
-        // special case the special PASS field which doesn't show up in the FILTER field definitions
-        seen.add(VCFConstants.PASSES_FILTERS_v4);
-        dict.add(VCFConstants.PASSES_FILTERS_v4);
-
-        // set up the strings dictionary
-        for ( VCFHeaderLine line : header.getMetaDataInInputOrder() ) {
-            if ( line.shouldBeAddedToDictionary() ) {
-                if ( ! seen.contains(line.getID())) {
-                    dict.add(line.getID());
-                    seen.add(line.getID());
-                }
-            }
-        }
-
-        return dict;
+    private BCF2Utils() {
     }
 
-    public static byte encodeTypeDescriptor(final int nElements, final BCF2Type type ) {
-        return (byte)((0x0F & nElements) << 4 | (type.getID() & 0x0F));
+    public static byte encodeTypeDescriptor(final int nElements, final BCF2Type type) {
+        return (byte) ((0x0F & nElements) << 4 | (type.getID() & 0x0F));
     }
 
     public static int decodeSize(final byte typeDescriptor) {
@@ -125,58 +83,12 @@ public final class BCF2Utils {
         return decodeSize(typeDescriptor) == OVERFLOW_ELEMENT_MARKER;
     }
 
-    public static byte readByte(final InputStream stream) throws IOException {
-        return (byte)(stream.read() & 0xFF);
-    }
-
-    /**
-     * Collapse multiple strings into a comma separated list
-     *
-     * ["s1", "s2", "s3"] =&gt; ",s1,s2,s3"
-     *
-     * @param strings size &gt; 1 list of strings
-     * @return
-     */
-    public static String collapseStringList(final List<String> strings) {
-        if ( strings.isEmpty() ) return "";
-        else if ( strings.size() == 1 ) return strings.get(0);
-        else {
-            final StringBuilder b = new StringBuilder();
-            for ( final String s : strings ) {
-                if ( s != null ) {
-                    assert s.indexOf(",") == -1; // no commas in individual strings
-                    b.append(',').append(s);
-                }
-            }
-            return b.toString();
-        }
-    }
-
-    /**
-     * Inverse operation of collapseStringList.
-     *
-     * ",s1,s2,s3" =&gt; ["s1", "s2", "s3"]
-     *
-     *
-     * @param collapsed
-     * @return
-     */
-    public static List<String> explodeStringList(final String collapsed) {
-        assert isCollapsedString(collapsed);
-        final String[] exploded = collapsed.substring(1).split(",");
-        return Arrays.asList(exploded);
-    }
-
-    public static boolean isCollapsedString(final String s) {
-        return !s.isEmpty() && s.charAt(0) == ',';
-    }
-
     /**
      * Returns a good name for a shadow BCF file for vcfFile.
-     *
+     * <p>
      * foo.vcf =&gt; foo.bcf
      * foo.xxx =&gt; foo.xxx.bcf
-     *
+     * <p>
      * If the resulting BCF file cannot be written, return null.  Happens
      * when vcfFile = /dev/null for example
      *
@@ -185,11 +97,11 @@ public final class BCF2Utils {
      */
     public static final File shadowBCF(final File vcfFile) {
         final String path = vcfFile.getAbsolutePath();
-        if ( path.contains(FileExtensions.VCF) )
+        if (path.contains(FileExtensions.VCF))
             return new File(path.replace(FileExtensions.VCF, FileExtensions.BCF));
         else {
-            final File bcf = new File( path + FileExtensions.BCF );
-            if ( bcf.canRead() )
+            final File bcf = new File(path + FileExtensions.BCF);
+            if (bcf.canRead())
                 return bcf;
             else {
                 try {
@@ -198,9 +110,7 @@ public final class BCF2Utils {
                     o.close();
                     bcf.delete();
                     return bcf;
-                } catch ( FileNotFoundException e ) {
-                    return null;
-                } catch ( IOException e ) {
+                } catch (final IOException e) {
                     return null;
                 }
             }
@@ -208,8 +118,8 @@ public final class BCF2Utils {
     }
 
     public static BCF2Type determineIntegerType(final int value) {
-        for ( final BCF2Type potentialType : INTEGER_TYPES_BY_SIZE) {
-            if ( potentialType.withinRange(value) )
+        for (final BCF2Type potentialType : INTEGER_TYPES_BY_SIZE) {
+            if (potentialType.withinRange(value))
                 return potentialType;
         }
 
@@ -219,9 +129,9 @@ public final class BCF2Utils {
     public static BCF2Type determineIntegerType(final int[] values) {
         // find the min and max values in the array
         int max = 0, min = 0;
-        for ( final int v : values ) {
-            if ( v > max ) max = v;
-            if ( v < min ) min = v;
+        for (final int v : values) {
+            if (v > max) max = v;
+            if (v < min) min = v;
         }
 
         final BCF2Type maxType = determineIntegerType(max);
@@ -233,7 +143,7 @@ public final class BCF2Utils {
 
     /**
      * Returns the maximum BCF2 integer size of t1 and t2
-     *
+     * <p>
      * For example, if t1 == INT8 and t2 == INT16 returns INT16
      *
      * @param t1
@@ -241,64 +151,49 @@ public final class BCF2Utils {
      * @return
      */
     public static BCF2Type maxIntegerType(final BCF2Type t1, final BCF2Type t2) {
-        switch ( t1 ) {
-            case INT8: return t2;
-            case INT16: return t2 == BCF2Type.INT32 ? t2 : t1;
-            case INT32: return t1;
-            default: throw new TribbleException("BUG: unexpected BCF2Type " + t1);
+        switch (t1) {
+            case INT8:
+                return t2;
+            case INT16:
+                return t2 == BCF2Type.INT32 ? t2 : t1;
+            case INT32:
+                return t1;
+            default:
+                throw new TribbleException("BUG: unexpected BCF2Type " + t1);
         }
     }
 
     public static BCF2Type determineIntegerType(final List<Integer> values) {
         BCF2Type maxType = BCF2Type.INT8;
-        for ( final int value : values ) {
+        for (final Integer value : values) {
+            if (value == null) continue;
             final BCF2Type type1 = determineIntegerType(value);
-            switch ( type1 ) {
-                case INT8: break;
-                case INT16: maxType = BCF2Type.INT16; break;
-                case INT32: return BCF2Type.INT32; // fast path for largest possible value
-                default: throw new TribbleException("Unexpected integer type " + type1 );
+            switch (type1) {
+                case INT8:
+                    break;
+                case INT16:
+                    maxType = BCF2Type.INT16;
+                    break;
+                case INT32:
+                    return BCF2Type.INT32; // fast path for largest possible value
+                default:
+                    throw new TribbleException("Unexpected integer type " + type1);
             }
         }
         return maxType;
     }
 
     /**
-     * Helper function that takes an object and returns a list representation
-     * of it:
-     *
-     * o == null =&gt; []
-     * o is a list =&gt; o
-     * else =&gt; [o]
-     *
-     * @param c  the class of the object
-     * @param o  the object to convert to a Java List
-     * @return
-     */
-    public static <T> List<T> toList(final Class<T> c, final Object o) {
-        if ( o == null ) return Collections.emptyList();
-        else if ( o instanceof List ) return (List<T>)o;
-        else if ( o.getClass().isArray() ) {
-            final int arraySize = Array.getLength(o);
-            final List<T> list = new ArrayList<T>(arraySize);
-            for (int i=0; i<arraySize; i++)
-                list.add((T)Array.get(o, i));
-            return list;
-        }
-        else return Collections.singletonList((T)o);
-    }
-
-    /**
      * Are the elements and their order in the output and input headers consistent so that
      * we can write out the raw genotypes block without decoding and recoding it?
-     *
+     * <p>
      * If the order of INFO, FILTER, or contig elements in the output header is different than
      * in the input header we must decode the blocks using the input header and then recode them
      * based on the new output order.
-     *
+     * <p>
      * If they are consistent, we can simply pass through the raw genotypes block bytes, which is
      * a *huge* performance win for large blocks.
-     *
+     * <p>
      * Many common operations on BCF2 files (merging them for -nt, selecting a subset of records, etc)
      * don't modify the ordering of the header fields and so can safely pass through the genotypes
      * undecoded.  Some operations -- those at add filters or info fields -- can change the ordering
@@ -306,28 +201,25 @@ public final class BCF2Utils {
      */
     public static boolean headerLinesAreOrderedConsistently(final VCFHeader outputHeader, final VCFHeader genotypesBlockHeader) {
         // first, we have to have the same samples in the same order
-        if ( ! nullAsEmpty(outputHeader.getSampleNamesInOrder()).equals(nullAsEmpty(genotypesBlockHeader.getSampleNamesInOrder())) )
+        if (!nullAsEmpty(outputHeader.getSampleNamesInOrder()).equals(nullAsEmpty(genotypesBlockHeader.getSampleNamesInOrder())))
             return false;
 
         final Iterator<? extends VCFHeaderLine> outputLinesIt = outputHeader.getIDHeaderLines().iterator();
-        final Iterator<? extends VCFHeaderLine> inputLinesIt = genotypesBlockHeader.getIDHeaderLines().iterator();
 
-        while ( inputLinesIt.hasNext() ) {
-            if ( ! outputLinesIt.hasNext() ) // missing lines in output
+        for (final VCFHeaderLine headerLine : genotypesBlockHeader.getIDHeaderLines()) {
+            if (!outputLinesIt.hasNext()) // missing lines in output
                 return false;
 
             final VCFHeaderLine outputLine = outputLinesIt.next();
-            final VCFHeaderLine inputLine = inputLinesIt.next();
-
-            if ( ! inputLine.getClass().equals(outputLine.getClass()) || ! inputLine.getID().equals(outputLine.getID()) )
+            if (!headerLine.getClass().equals(outputLine.getClass()) || !headerLine.getID().equals(outputLine.getID()))
                 return false;
         }
 
         return true;
     }
 
-    private static <T> List<T> nullAsEmpty(List<T> l) {
-        if ( l == null )
+    private static <T> List<T> nullAsEmpty(final List<T> l) {
+        if (l == null)
             return Collections.emptyList();
         else
             return l;

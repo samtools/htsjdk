@@ -358,7 +358,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         } else {
             final String headerLineValue = headerLineString.substring(indexOfEquals + 1).trim();
             if (headerLineValue.startsWith("<") && headerLineValue.endsWith(">") &&
-                    sourceVersion.isAtLeastAsRecentAs((VCFHeaderVersion.VCF4_3))) {
+                sourceVersion.isAtLeastAsRecentAs((VCFHeaderVersion.VCF4_3))) {
                 // Model all "other" header lines as VCFSimpleHeaderLine starting with 4.3, but
                 // for pre-v4.3, use VCFHeaderLine. This is to accommodate older files that contain
                 // lines with structured header line syntax ("<>" delimited) but which do not contain
@@ -514,13 +514,18 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         ValidationUtils.nonNull(newHeader);
         ValidationUtils.nonNull(newVersion);
 
-        VCFHeader.validateVersionTransition(version, newVersion);
+        // Check that we're not trying to transition from 4.3+ to before 4.3
+        if (version != null &&
+            version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) &&
+            !newVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            throw new TribbleException("VCF version " + version + " cannot be down converted to version " + newVersion);
+        }
 
         // If this codec currently has no header (this happens when the header is being established for
         // the first time during file parsing), establish an initial header and version, and bypass
         // validation.
-        if (header != null && newHeader.getVCFHeaderVersion() != null) {
-            VCFHeader.validateVersionTransition(header.getVCFHeaderVersion(), newHeader.getVCFHeaderVersion());
+        if (newHeader.getVCFHeaderVersion() != null) {
+            VCFHeader.validateHeaderTransition(header, newHeader.getVCFHeaderVersion());
         }
     }
 

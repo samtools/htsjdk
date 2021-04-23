@@ -214,35 +214,35 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
         return new Object[][]{
                 {VCFHeaderVersion.VCF4_0},
                 {VCFHeaderVersion.VCF4_1},
-                {VCFHeaderVersion.VCF4_3}
+                {VCFHeaderVersion.VCF4_2}
         };
     }
 
     @Test(dataProvider="conflictingVCFVersions", expectedExceptions = TribbleException.class)
     public void testValidateMetaDataLinesConflictingVersion(final VCFHeaderVersion vcfVersion) {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
+        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv43 fileformat line
         md.validateMetaDataLines(vcfVersion);
     }
 
     @Test(dataProvider="conflictingVCFVersions", expectedExceptions = TribbleException.class)
     public void testValidateMetaDataLineConflictingVersion(final VCFHeaderVersion vcfVersion) {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
+        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv43 fileformat line
         md.getMetaDataInInputOrder().forEach(hl -> md.validateMetaDataLine(vcfVersion, hl));
     }
 
     @Test
     public void testValidateMetaDataLinesValidVersion() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
+        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv43 fileformat line
         md.validateMetaDataLines(unitTestData.canonicalVersion);
     }
 
     @Test
     public void testValidateMetaDataLineVlidVersion() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
+        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv43 fileformat line
         md.getMetaDataInInputOrder().forEach(hl -> md.validateMetaDataLine(unitTestData.canonicalVersion, hl));
     }
 }

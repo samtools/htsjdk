@@ -75,7 +75,7 @@ public class VCFFileReaderTest extends HtsjdkTest {
                 {TEST_DATA_DIR + "Vcf4.2WithSourceVersionInfoFields.vcf", null, false, true},
 //
 //                // should reject bcf v2.2 on read, see issue https://github.com/samtools/htsjdk/issues/1323
-                {TEST_DATA_DIR + "BCFVersion22Uncompressed.bcf", null, false, false}
+                {TEST_DATA_DIR + "BCFVersion22Uncompressed.bcf", null, false, true}
         };
     }
 

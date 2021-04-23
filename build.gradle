@@ -37,7 +37,9 @@ dependencies {
     compile "org.apache.commons:commons-compress:1.19"
     compile 'org.tukaani:xz:1.8'
     compile "gov.nih.nlm.ncbi:ngs-java:2.9.0"
-    compile 'org.sharegov:mjson:1.4.1'
+    compile ('org.sharegov:mjson:1.4.1') {
+        exclude group: "junit" 
+    }
 
     testCompile "org.scala-lang:scala-library:2.12.8"
     testCompile "org.scalatest:scalatest_2.12:3.0.5"

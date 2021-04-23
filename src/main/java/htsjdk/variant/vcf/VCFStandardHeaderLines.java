@@ -166,6 +166,9 @@ public class VCFStandardHeaderLines {
         registerStandard(new VCFFormatHeaderLine(VCFConstants.DEPTH_KEY,              1,                     VCFHeaderLineType.Integer, "Approximate read depth (reads with MQ=255 or with bad mates are filtered)"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY,        VCFHeaderLineCount.G,         VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFHeaderLineCount.R,         VCFHeaderLineType.Integer, "Allelic depths for the ref and alt alleles in the order listed"));
+        // TODO earlier versions of the VCF/BCF spec did not precisely specify the count type of the standard headers
+        //  so FT was interpreted as UNBOUNDED, but it is specified as 1 in VCF 4.3 / BCF 2.2, many tests in htsjdk seem
+        //  to assume FT is UNBOUNDED as well, so not sure how feasible changing this again would be
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_FILTER_KEY,    VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String,  "Genotype-level filter"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_SET_KEY,          1,                            VCFHeaderLineType.Integer, "Phasing set (typically the position of the first variant in the set)"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_QUALITY_KEY,      1,                            VCFHeaderLineType.Float,   "Read-backed phasing quality"));

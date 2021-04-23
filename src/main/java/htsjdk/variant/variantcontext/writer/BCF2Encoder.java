@@ -25,14 +25,18 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.samtools.util.ListByteBufferOutputStream;
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Type;
 import htsjdk.variant.bcf2.BCF2Utils;
+import htsjdk.variant.bcf2.BCFVersion;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -41,10 +45,22 @@ import java.util.List;
  * @author Mark DePristo
  * @since 06/12
  */
-public final class BCF2Encoder {
+public abstract class BCF2Encoder {
     // TODO -- increase default size?
-    public static final int WRITE_BUFFER_INITIAL_SIZE = 16384;
-    private ByteArrayOutputStream encodeStream = new ByteArrayOutputStream(WRITE_BUFFER_INITIAL_SIZE);
+    public static final int WRITE_BUFFER_INITIAL_SIZE = 16_384;
+    protected final ListByteBufferOutputStream encodeStream = new ListByteBufferOutputStream(WRITE_BUFFER_INITIAL_SIZE);
+
+    public static BCF2Encoder getEncoder(final BCFVersion version) {
+        switch (version.getMinorVersion()) {
+            case 1:
+                return new BCF2_1Encoder();
+            case 2:
+                return new BCF2_2Encoder();
+            default:
+                throw new TribbleException("BCF2Codec can only process BCF2 files with minor version <= " + 2 + " but this file has minor version " + version.getMinorVersion());
+        }
+    }
+
 
     // --------------------------------------------------------------------------------
     //
@@ -52,15 +68,29 @@ public final class BCF2Encoder {
     //
     // --------------------------------------------------------------------------------
 
+    /**
+     * This allocates a new array and copies the stream's contents over so it
+     * should not be used in the actual encoder, but may be useful for testing
+     */
     public byte[] getRecordBytes() {
-        byte[] bytes = encodeStream.toByteArray();
+        final byte[] bytes = encodeStream.toByteArray();
         encodeStream.reset();
         return bytes;
     }
 
+    public final int getSize() {
+        return encodeStream.size();
+    }
+
+    public final void write(final OutputStream out) throws IOException {
+        encodeStream.writeTo(out);
+        encodeStream.reset();
+    }
+
+
     // --------------------------------------------------------------------------------
     //
-    // Writing typed values (have type byte)
+    // Writing typed values (writes out typing byte(s) first)
     //
     // --------------------------------------------------------------------------------
 
@@ -69,16 +99,23 @@ public final class BCF2Encoder {
     }
 
     public final void encodeTyped(final Object value, final BCF2Type type) throws IOException {
-        if ( value == null )
+        if (value == null)
             encodeTypedMissing(type);
         else {
-            switch ( type ) {
+            switch (type) {
                 case INT8:
                 case INT16:
-                case INT32: encodeTypedInt((Integer)value, type); break;
-                case FLOAT: encodeTypedFloat((Double) value); break;
-                case CHAR:  encodeTypedString((String) value); break;
-                default:    throw new IllegalArgumentException("Illegal type encountered " + type);
+                case INT32:
+                    encodeTypedInt((Integer) value, type);
+                    break;
+                case FLOAT:
+                    encodeTypedFloat((Double) value);
+                    break;
+                case CHAR:
+                    encodeTypedString((String) value);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Illegal type encountered " + type);
             }
         }
     }
@@ -93,63 +130,79 @@ public final class BCF2Encoder {
         encodeRawInt(v, type);
     }
 
+    public final void encodeTypedFloat(final double v) throws IOException {
+        encodeType(1, BCF2Type.FLOAT);
+        encodeRawFloat(v);
+    }
+
     public final void encodeTypedString(final String s) throws IOException {
-        encodeTypedString(s.getBytes());
+        encodeTypedString(s.getBytes(StandardCharsets.UTF_8));
     }
 
     public final void encodeTypedString(final byte[] s) throws IOException {
-        if ( s == null )
-            encodeType(0, BCF2Type.CHAR);
-        else {
-            encodeType(s.length, BCF2Type.CHAR);
-            for ( int i = 0; i < s.length; i++ ) {
-                encodeRawChar(s[i]);
-            }
+        encodeType(s.length, BCF2Type.CHAR);
+        encodeStream.write(s);
+    }
+
+    public final void encodeTypedVecInt(final int[] vs) throws IOException {
+        final int size = vs.length;
+        final BCF2Type type = BCF2Utils.determineIntegerType(vs);
+        encodeType(size, type);
+        encodeRawVecInt(vs, size, type);
+    }
+
+
+    public final void encodeTypedVecInt(final int[] vs, final int paddedSize) throws IOException {
+        final BCF2Type type = BCF2Utils.determineIntegerType(vs);
+        encodeType(paddedSize, type);
+        encodeRawVecInt(vs, paddedSize, type);
+    }
+
+    // TODO only used in testing, should remove and update tests
+    public final void encodeTyped(final List<?> v, final BCF2Type type) throws IOException {
+        if (type == BCF2Type.CHAR && !v.isEmpty()) {
+            encodeTypedString(compactStrings((List<String>) v));
+        } else {
+            encodeType(v.size(), type);
+            encodeRawValues(v, type);
         }
     }
 
-    public final void encodeTypedFloat(final double d) throws IOException {
-        encodeType(1, BCF2Type.FLOAT);
-        encodeRawFloat(d);
-    }
-
-    public final void encodeTyped(List<? extends Object> v, final BCF2Type type) throws IOException {
-        if ( type == BCF2Type.CHAR && !v.isEmpty()) {
-            final String s = BCF2Utils.collapseStringList((List<String>) v);
-            v = stringToBytes(s);
-        }
-
-        encodeType(v.size(), type);
-        encodeRawValues(v, type);
-    }
 
     // --------------------------------------------------------------------------------
     //
-    // Writing raw values (don't have a type byte)
+    // Writing raw values (does not write out typing byte(s))
     //
     // --------------------------------------------------------------------------------
 
-    public final <T extends Object> void encodeRawValues(final Collection<T> v, final BCF2Type type) throws IOException {
-        for ( final T v1 : v ) {
+    public final <T> void encodeRawValues(final Collection<T> v, final BCF2Type type) throws IOException {
+        for (final T v1 : v) {
             encodeRawValue(v1, type);
         }
     }
 
-    public final <T extends Object> void encodeRawValue(final T value, final BCF2Type type) throws IOException {
+    public final <T> void encodeRawValue(final T value, final BCF2Type type) throws IOException {
         try {
-            if ( value == type.getMissingJavaValue() )
+            if (value == type.getMissingJavaValue())
                 encodeRawMissingValue(type);
             else {
                 switch (type) {
                     case INT8:
                     case INT16:
-                    case INT32: encodeRawBytes((Integer) value, type); break;
-                    case FLOAT: encodeRawFloat((Double) value); break;
-                    case CHAR:  encodeRawChar((Byte) value); break;
-                    default:    throw new IllegalArgumentException("Illegal type encountered " + type);
+                    case INT32:
+                        encodeRawBytes((Integer) value, type);
+                        break;
+                    case FLOAT:
+                        encodeRawFloat((Double) value);
+                        break;
+                    case CHAR:
+                        encodeRawChar((Byte) value);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Illegal type encountered " + type);
                 }
             }
-        } catch ( ClassCastException e ) {
+        } catch (final ClassCastException e) {
             throw new ClassCastException("BUG: invalid type cast to " + type + " from " + value);
         }
     }
@@ -158,27 +211,15 @@ public final class BCF2Encoder {
         encodeRawBytes(type.getMissingBytes(), type);
     }
 
-    public final void encodeRawMissingValues(final int size, final BCF2Type type) throws IOException {
-        for ( int i = 0; i < size; i++ )
-            encodeRawMissingValue(type);
-    }
 
     // --------------------------------------------------------------------------------
     //
-    // low-level encoders
+    // Low-level encoders
     //
     // --------------------------------------------------------------------------------
-
-    public final void encodeRawChar(final byte c) throws IOException {
-        encodeStream.write(c);
-    }
-
-    public final void encodeRawFloat(final double value) throws IOException {
-        encodeRawBytes(Float.floatToIntBits((float) value), BCF2Type.FLOAT);
-    }
 
     public final void encodeType(final int size, final BCF2Type type) throws IOException {
-        if ( size <= BCF2Utils.MAX_INLINE_ELEMENTS ) {
+        if (size <= BCF2Utils.MAX_INLINE_ELEMENTS) {
             final int typeByte = BCF2Utils.encodeTypeDescriptor(size, type);
             encodeStream.write(typeByte);
         } else {
@@ -189,73 +230,160 @@ public final class BCF2Encoder {
         }
     }
 
-    public final void encodeRawInt(final int value, final BCF2Type type) throws IOException {
-        type.write(value, encodeStream);
+    public final void encodeRawBytes(final int v, final BCF2Type type) throws IOException {
+        type.write(v, encodeStream);
     }
 
-    public final void encodeRawBytes(final int value, final BCF2Type type) throws IOException {
-        type.write(value, encodeStream);
+    public final void encodeRawInt(final int v, final BCF2Type type) throws IOException {
+        type.write(v, encodeStream);
     }
 
-    // --------------------------------------------------------------------------------
-    //
-    // utility functions
-    //
-    // --------------------------------------------------------------------------------
-
-    public void encodeRawString(final String s, final int sizeToWrite) throws IOException {
-        final byte[] bytes = s.getBytes();
-        for ( int i = 0; i < sizeToWrite; i++ )
-            if ( i < bytes.length )
-                encodeRawChar(bytes[i]);
-            else
-                encodeRawMissingValue(BCF2Type.CHAR);
+    public final void encodeRawFloat(final double v) throws IOException {
+        encodeRawBytes(Float.floatToIntBits((float) v), BCF2Type.FLOAT);
     }
 
-    /**
-     * Totally generic encoder that examines o, determines the best way to encode it, and encodes it
-     *
-     * This method is incredibly slow, but it's only used for UnitTests so it doesn't matter
-     *
-     * @param o
-     * @return
-     */
-    public final BCF2Type encode(final Object o) throws IOException {
-        if ( o == null ) throw new IllegalArgumentException("Generic encode cannot deal with null values");
+    public final void encodeRawChar(final byte c) {
+        encodeStream.write(c);
+    }
 
-        if ( o instanceof List ) {
-            final BCF2Type type = determineBCFType(((List) o).get(0));
-            encodeTyped((List) o, type);
-            return type;
-        } else {
-            final BCF2Type type = determineBCFType(o);
-            encodeTyped(o, type);
-            return type;
+    public final void encodeRawString(final byte[] s, final int paddedSize) {
+        encodeStream.write(s);
+        final int padding = paddedSize - s.length;
+        if (padding > 0) {
+            // Pad with zeros, see https://github.com/samtools/hts-specs/issues/232
+            encodeStream.write((byte) 0, padding);
         }
     }
 
-    private final BCF2Type determineBCFType(final Object arg) {
-        final Object toType = arg instanceof List ? ((List)arg).get(0) : arg;
-
-        if ( toType instanceof Integer )
-            return BCF2Utils.determineIntegerType((Integer) toType);
-        else if ( toType instanceof String )
-            return BCF2Type.CHAR;
-        else if ( toType instanceof Double )
-            return BCF2Type.FLOAT;
-        else
-            throw new IllegalArgumentException("No native encoding for Object of type " + arg.getClass().getSimpleName());
+    public final void encodeRawVecInt(final int[] vs, final int paddedSize, final BCF2Type type) throws IOException {
+        for (final int v : vs) {
+            type.write(v, encodeStream);
+        }
+        encodePaddingValues(paddedSize - vs.length, type);
     }
 
-    private final List<Byte> stringToBytes(final String v) throws IOException {
-        if ( v == null || v.equals("") )
-            return Collections.emptyList();
-        else {
-            // TODO -- this needs to be optimized away for efficiency
-            final byte[] bytes = v.getBytes();
-            final List<Byte> l = new ArrayList<Byte>(bytes.length);
-            for ( int i = 0; i < bytes.length; i++) l.add(bytes[i]);
-            return l;
+    public final void encodeRawVecInt(final List<Integer> vs, final BCF2Type type) throws IOException {
+        for (final Integer v : vs) {
+            if (v == null) {
+                type.write(type.getMissingBytes(), encodeStream);
+            } else {
+                type.write(v, encodeStream);
+            }
+        }
+    }
+
+    public final void encodeRawVecInt(final List<Integer> vs, final int paddedSize, final BCF2Type type) throws IOException {
+        encodeRawVecInt(vs, type);
+        encodePaddingValues(paddedSize - vs.size(), type);
+    }
+
+    public final void encodeRawVecFLoat(final double[] vs, final int paddedSize) throws IOException {
+        for (final double v : vs) {
+            encodeRawFloat(v);
+        }
+        encodePaddingValues(paddedSize - vs.length, BCF2Type.FLOAT);
+    }
+
+    public final void encodeRawVecFLoat(final List<Double> vs) throws IOException {
+        for (final Double v : vs) {
+            if (v == null) {
+                encodeRawMissingValue(BCF2Type.FLOAT);
+            } else {
+                encodeRawFloat(v);
+            }
+        }
+    }
+
+    public final void encodeRawVecFLoat(final List<Double> vs, final int paddedSize) throws IOException {
+        encodeRawVecFLoat(vs);
+        encodePaddingValues(paddedSize - vs.size(), BCF2Type.FLOAT);
+    }
+
+    public final void encodePaddingValues(final int size, final BCF2Type type) throws IOException {
+        for (int i = 0; i < size; i++) {
+            encodePaddingValue(type);
+        }
+    }
+
+    public abstract void encodePaddingValue(final BCF2Type type) throws IOException;
+
+    // --------------------------------------------------------------------------------
+    //
+    // Utility Functions
+    //
+    // --------------------------------------------------------------------------------
+
+    public final byte[] compactStrings(final String[] strings) {
+        return compactStrings(Arrays.asList(strings));
+    }
+
+    public abstract byte[] compactStrings(final List<String> strings);
+
+
+    // --------------------------------------------------------------------------------
+    //
+    // Version specific behavior
+    //
+    // --------------------------------------------------------------------------------
+
+    public static class BCF2_1Encoder extends BCF2Encoder {
+
+        @Override
+        public void encodePaddingValue(final BCF2Type type) throws IOException {
+            type.write(type.getMissingBytes(), encodeStream);
+        }
+
+        @Override
+        public byte[] compactStrings(final List<String> strings) {
+            if (strings.isEmpty()) return new byte[0];
+
+            // 1 comma for each string, then add on individual string lengths
+            int size = strings.size();
+            final byte[][] bytes = new byte[strings.size()][];
+            int i = 0;
+            for (final String s : strings) {
+                final byte[] b = s.getBytes(StandardCharsets.UTF_8);
+                size += b.length;
+                bytes[i++] = b;
+            }
+            final ByteBuffer buff = ByteBuffer.allocate(size);
+            for (final byte[] bs : bytes) {
+                buff.put((byte) ',');
+                buff.put(bs);
+            }
+
+            return buff.array();
+        }
+    }
+
+    public static class BCF2_2Encoder extends BCF2Encoder {
+
+        @Override
+        public void encodePaddingValue(final BCF2Type type) throws IOException {
+            type.write(type.getEOVBytes(), encodeStream);
+        }
+
+        @Override
+        public byte[] compactStrings(final List<String> strings) {
+            if (strings.isEmpty()) return new byte[0];
+
+            // 1 comma for each string except the first, then add on individual string lengths
+            int size = strings.size() - 1;
+            final byte[][] bytes = new byte[strings.size()][];
+            int i = 0;
+            for (final String s : strings) {
+                final byte[] b = s.getBytes(StandardCharsets.UTF_8);
+                size += b.length;
+                bytes[i++] = b;
+            }
+            final ByteBuffer buff = ByteBuffer.allocate(size);
+            buff.put(bytes[0]);
+            for (int j = 1; j < strings.size(); j++) {
+                buff.put((byte) ',');
+                buff.put(bytes[j]);
+            }
+
+            return buff.array();
         }
     }
 }

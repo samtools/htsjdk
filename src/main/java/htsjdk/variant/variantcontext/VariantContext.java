@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -262,11 +263,10 @@ public class VariantContext implements Feature, Serializable {
     /* cached monomorphic value: null -> not yet computed, False, True */
     private Boolean monomorphic = null;
 
-    /*
+    /**
      * Determine which genotype fields are in use in the genotypes in VC
      * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
      */
-
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
         final Set<String> keys = new HashSet<>();
 
@@ -292,21 +292,20 @@ public class VariantContext implements Feature, Serializable {
         if ( sawPL ) keys.add(VCFConstants.GENOTYPE_PL_KEY);
         if ( sawGenotypeFilter ) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
 
-        List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
+        final List<String> list = new ArrayList<>(6 + keys.size());
+        list.addAll(keys);
+        Collections.sort(list);
 
         // make sure the GT is first
         if (sawGoodGT) {
-            final List<String> newList = new ArrayList<>(sortedList.size() + 1);
-            newList.add(VCFConstants.GENOTYPE_KEY);
-            newList.addAll(sortedList);
-            sortedList = newList;
+            list.add(0, VCFConstants.GENOTYPE_KEY);
         }
 
-        if (sortedList.isEmpty() && header.hasGenotypingData()) {
+        if (list.isEmpty() && header.hasGenotypingData()) {
             // this needs to be done in case all samples are no-calls
             return Collections.singletonList(VCFConstants.GENOTYPE_KEY);
         } else {
-            return sortedList;
+            return list;
         }
     }
 
@@ -451,7 +450,7 @@ public class VariantContext implements Feature, Serializable {
                              final Map<String, Object> attributes,
                              final boolean fullyDecoded,
                              final EnumSet<Validation> validationToPerform ) {
-        if ( contig == null ) { throw new IllegalArgumentException("Contig cannot be null"); }
+        if ( contig == null || contig.isEmpty() ) { throw new IllegalArgumentException("Contig cannot be null or the empty string"); }
         this.contig = contig;
         this.start = start;
         this.stop = stop;

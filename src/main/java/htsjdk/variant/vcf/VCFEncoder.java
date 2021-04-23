@@ -26,10 +26,7 @@ import java.util.TreeMap;
  */
 public class VCFEncoder {
 
-    /**
-     * The encoding used for VCF files: ISO-8859-1. When writing VCF4.3 is implemented, this should change to UTF-8.
-     */
-    public static final Charset VCF_CHARSET = StandardCharsets.ISO_8859_1;
+    public static final Charset VCF_CHARSET = StandardCharsets.UTF_8;
     private static final String QUAL_FORMAT_STRING = "%.2f";
     private static final String QUAL_FORMAT_EXTENSION_TO_TRIM = ".00";
 
@@ -40,6 +37,8 @@ public class VCFEncoder {
     private boolean allowMissingFieldsInHeader = false;
 
     private boolean outputTrailingFormatFields = false;
+
+    private VCFTextTransformer vcfTextTransformer;
 
     /**
      * Prepare a VCFEncoder that will encode records appropriate to the given VCF header, optionally
@@ -52,6 +51,9 @@ public class VCFEncoder {
         this.header = header;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.outputTrailingFormatFields = outputTrailingFormatFields;
+        this.vcfTextTransformer = header.getVCFHeaderVersion() != null && header.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+            ? new VCFPercentEncodedTextTransformer()
+            : new VCFPassThruTextTransformer();
     }
 
     /**
@@ -242,7 +244,7 @@ public class VCFEncoder {
             }
             result = sb.toString();
         } else {
-            result = val.toString();
+            result = vcfTextTransformer.encodeText(val.toString());
         }
 
         return result;
@@ -310,7 +312,8 @@ public class VCFEncoder {
      * @param vcfoutput VCF output
      * @throws IOException
      */
-    private void appendGenotypeData(final VariantContext vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final Appendable vcfoutput) throws IOException {final int ploidy = vc.getMaxPloidy(2);
+    private void appendGenotypeData(final VariantContext vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final Appendable vcfoutput) throws IOException {
+        final int ploidy = vc.getMaxPloidy(2);
 
         for (final String sample : this.header.getGenotypeSamples()) {
             vcfoutput.append(VCFConstants.FIELD_SEPARATOR);

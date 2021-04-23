@@ -86,7 +86,7 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
                 // technically, this is invalid due to the lack of an "ID" attribute, but it should still parse
                 // into a VCFHeaderLine (but noa VCFSimpleHeaderLine
                 { "ID=<Description=\"ClinVar Variation ID\">",
-                        new VCFHeaderLine("ID", "<Description=\"ClinVar Variation ID\">") },
+                    new VCFHeaderLine("ID", "<Description=\"ClinVar Variation ID\">") },
 		};
 	}
 

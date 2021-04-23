@@ -27,4 +27,14 @@ public class VCFPassThruTextTransformer implements VCFTextTransformer {
     public List<String> decodeText(final List<String> rawParts) {
         return rawParts;
     }
+
+    /**
+     * No-op encoder for a single string
+     * @param rawPart the raw string to be decoded
+     * @return the raw string with no transformation done
+     */
+    @Override
+    public String encodeText(final String rawPart) {
+        return rawPart;
+    }
 }

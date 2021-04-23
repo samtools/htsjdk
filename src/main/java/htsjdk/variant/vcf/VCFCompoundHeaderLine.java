@@ -223,8 +223,13 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
      * version, or when an attempt is made to change the version of header by changing it's target version,
      * to validate that the header line conforms to the target version requirements.
      */
+    @Override
     public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         super.validateForVersion(vcfTargetVersion);
+        // Let the 1000 Genomes line through, but only for INFO lines
+        if (this instanceof VCFInfoHeaderLine && getID().equals(VCFConstants.THOUSAND_GENOMES_KEY)) {
+            return;
+        }
         if (!VALID_HEADER_ID_PATTERN.matcher(getID()).matches() ) {
             String message = String.format("ID value \"%s\" in \"%s\" header line does not conform to VCF %s ID restrictions",
                     getID(),
