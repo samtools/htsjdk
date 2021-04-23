@@ -59,11 +59,26 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     /* Platform values for the @RG-PL tag */
     public enum PlatformValue {
-        CAPILLARY, LS454, ILLUMINA,
-        SOLID, HELICOS, IONTORRENT,
-        ONT, PACBIO, DNBSEQ, OTHER,
-        @Deprecated
-        BGI
+        /** @deprecated Use {@linkplain PlatformValue#DNBSEQ} instead. */
+        @Deprecated BGI,
+        CAPILLARY,
+        
+        /** MGI/BGI */
+        DNBSEQ,
+        HELICOS,
+        ILLUMINA,
+        IONTORRENT,
+        LS454,
+
+        /** Oxford Nanopore */
+        ONT,
+
+        /** @deprecated OTHER is not an official value.  It is recommended to omit PL if it is not in this list or is unknown. */
+        @Deprecated OTHER,
+
+        /** Pacific Biotechnology */
+        PACBIO,
+        SOLID
     }
 
     public static final Set<String> STANDARD_TAGS =
