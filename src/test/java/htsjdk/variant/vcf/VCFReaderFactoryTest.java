@@ -11,7 +11,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import com.google.common.jimfs.Configuration;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.RuntimeIOException;
 

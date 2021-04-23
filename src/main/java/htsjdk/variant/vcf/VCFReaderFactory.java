@@ -37,7 +37,9 @@ public abstract class VCFReaderFactory {
         return currentFactory;
     }
 
-    /** get the default instance of VCFReaderFactory */
+    /** get the default instance of VCFReaderFactory which 
+     * opens VCF files using {@link VCFFileReader}
+     */
     public static VCFReaderFactory getDefaultInstance() {
         return DEFAULT_FACTORY;
     }
@@ -68,6 +70,11 @@ public abstract class VCFReaderFactory {
         return open(Paths.get(vcfUri), requireIndex);
     }
 
+    @Override
+    public String toString() {
+        return "VCFReaderFactory(" + this.getClass() + ")";
+    }
+    
     /**
      * creates the default instance of VCFReaderFactory A new instance from a
      * specific class it's name is defined by the java property
