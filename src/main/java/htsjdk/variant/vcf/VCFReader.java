@@ -31,6 +31,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * Interface for reading VCF/BCF files.
+ * @see VCFReaderFactory
  */
 public interface VCFReader extends Closeable, Iterable<VariantContext> {
 
