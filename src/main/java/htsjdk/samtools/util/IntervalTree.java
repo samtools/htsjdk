@@ -71,7 +71,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
     public V put( final int start, final int end, final V value )
     {
         if ( start > end )
-            throw new IllegalArgumentException("Start cannot exceed end.");
+            throw new IllegalArgumentException("Start cannot exceed end. (start=" + start + ", end=" + end + ")");
 
         V result = mSentinel;
 
