@@ -26,22 +26,36 @@ public class VCFReaderFactoryTest extends HtsjdkTest {
     public Iterator<Object[]> queryableData() throws IOException {
         List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[] { new File(TEST_DATA_DIR, "NA12891.fp.vcf"), false });
-        tests.add(
-                new Object[] { new File(TEST_DATA_DIR, "NA12891.vcf"), false });
+        tests.add(new Object[] { new File(TEST_DATA_DIR, "NA12891.vcf"), false });
         tests.add(new Object[] { VCFUtils.createTemporaryIndexedVcfFromInput(
                 new File(TEST_DATA_DIR, "NA12891.vcf"),
                 "fingerprintcheckertest.tmp."), true });
         tests.add(new Object[] { VCFUtils.createTemporaryIndexedVcfFromInput(
                 new File(TEST_DATA_DIR, "NA12891.vcf.gz"),
                 "fingerprintcheckertest.tmp."), true });
-
         return tests.iterator();
     }
 
     @Test(dataProvider = "queryableData")
-    public void testIsQueriable(final File vcf, final boolean expectedQueryable)
+    public void testFileIsQueriable(final File vcf, final boolean expectedQueryable)
             throws Exception {
         try (VCFReader reader = VCFReaderFactory.getInstance().open(vcf, false)) {
+            Assert.assertEquals(reader.isQueryable(), expectedQueryable);
+        }
+    }
+
+    @Test(dataProvider = "queryableData")
+    public void testPathIsQueriable(final File vcf, final boolean expectedQueryable)
+            throws Exception {
+        try (VCFReader reader = VCFReaderFactory.getInstance().open(vcf.toPath(), false)) {
+            Assert.assertEquals(reader.isQueryable(), expectedQueryable);
+        }
+    }
+
+    @Test(dataProvider = "queryableData")
+    public void testUriIsQueriable(final File vcf, final boolean expectedQueryable)
+            throws Exception {
+        try (VCFReader reader = VCFReaderFactory.getInstance().open(vcf.toString(), false)) {
             Assert.assertEquals(reader.isQueryable(), expectedQueryable);
         }
     }
