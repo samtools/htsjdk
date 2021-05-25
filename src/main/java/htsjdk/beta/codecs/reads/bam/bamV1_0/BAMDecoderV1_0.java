@@ -105,7 +105,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         if (!readsInput.isPresent()) {
             throw new IllegalArgumentException(String.format(
                     "No readable (input) reads resource was provided in bundle %s", inputBundle));
-        } else if (!readsInput.get().isInputResource()) {
+        } else if (!readsInput.get().isInput()) {
             throw new IllegalArgumentException(String.format(
                     "The provided reads resource is not an input (readable): %s", readsInput.get()));
         }
@@ -136,7 +136,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     private SamInputResource getSamInputResourceFromBundleResource(
             final BundleResource bundleResource,
             final ReadsDecoderOptions readsDecoderOptions) {
-        if (bundleResource.isRandomAccessResource()) {
+        if (bundleResource.isRandomAccess()) {
             if (bundleResource.getIOPath().isPresent()) {
                 //TODO: obtain the cloud channel wrapper from readsDecoderOptions and pass through to SamInputResource
                 //Function<SeekableByteChannel, SeekableByteChannel> testPrefetcher =

@@ -9,7 +9,7 @@ public class BundleResourceType {
      * predefined content types
      */
     public static final String READS = "READS";
-    public static final String LINEAR_REFERENCE = "LINEAR_REFERENCE";
+    public static final String HAPLOID_REFERENCE = "HAPLOID_REFERENCE";
     public static final String REFERENCE_DICTIONARY = "REFERENCE_DICTIONARY";
     public static final String VARIANTS = "VARIANTS";
     public static final String FEATURES = "FEATURES";

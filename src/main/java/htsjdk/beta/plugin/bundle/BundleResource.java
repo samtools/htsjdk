@@ -44,6 +44,10 @@ public interface BundleResource {
      */
     Optional<OutputStream> getOutputStream();
 
+    /**
+     * @return true if this resources can render a {@link SeekableStream}
+     */
+    boolean isRandomAccess();
 
     /**
      * @return a {@link SignatureProbingInputStream} stream over the first "prefixSize" bytes of this
@@ -58,7 +62,7 @@ public interface BundleResource {
      * @throws IllegalArgumentException if this method has previously been called on this object
      * with a smaller prefixSize.
      */
-    public SignatureProbingInputStream getSignatureProbingStream(final int prefixSize) { return null; }
+    SignatureProbingInputStream getSignatureProbingStream(final int prefixSize);
 
     /**
      * @return an {@link SeekableStream} for this resource, or Optional.empty if this is

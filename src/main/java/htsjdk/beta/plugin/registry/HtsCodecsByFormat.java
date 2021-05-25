@@ -195,7 +195,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     }
 
     private List<C> getCodecsForInputStream(final List<C> candidateCodecs, final BundleResource bundleResource) {
-        if (bundleResource.isRandomAccessResource()) {
+        if (bundleResource.isRandomAccess()) {
             // stream is already seekable so no need to wrap it
             throw new IllegalArgumentException("SeekableStreamResource input resolution is not yet implemented");
         } else {
@@ -232,7 +232,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         // bundle. Its not a requirement that it be the primary, only that the bundle have some resource
         // with the required content type, but it could indicate that the wrong bundle was provided, and
         // knowing that might be helpful for the user if codec resolution subsequently fails downstream.
-        final String bundlePrimaryContentType = bundle.getPrimaryResourceKey();
+        final String bundlePrimaryContentType = bundle.getPrimaryContentType();
         if (!requiredContentType.equals(bundlePrimaryContentType)) {
             LOG.warn(String.format(
                     "Checking bundle with primary content type %s for resource with requested content type %s.",
@@ -243,14 +243,14 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         // Since we're going to use the resource as input, make sure the resource we found is an INPUT resource,
         // not an output stream or something.
         if (forInput) {
-            if (!bundleResource.isInputResource()) {
+            if (!bundleResource.isInput()) {
                 throw new IllegalArgumentException(
                         String.format("The %s resource found (%s) cannot be used as an input resource",
                                 requiredContentType,
                                 bundleResource));
             }
         } else {
-            if (!bundleResource.isOutputResource()) {
+            if (!bundleResource.isOutput()) {
                 throw new IllegalArgumentException(
                         String.format("The %s resource found (%s) cannot be used as an output resource",
                                 requiredContentType,
@@ -284,7 +284,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
             final BundleResource bundleResource,
             final Function<String, F> mapContentSubTypeToFormat,
             final String requiredContentType) {
-         final Optional<String> optContentSubType = bundleResource.getSubContentType();
+         final Optional<String> optContentSubType = bundleResource.getContentSubType();
         if (!optContentSubType.isPresent()) {
             return Optional.empty();
         }

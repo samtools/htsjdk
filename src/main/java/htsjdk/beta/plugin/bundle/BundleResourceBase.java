@@ -65,6 +65,9 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
     public Optional<SeekableStream> getSeekableStream() { return Optional.empty(); }
 
     @Override
+    public boolean isRandomAccess() {return false; }
+
+    @Override
     public boolean isInput() { return false; }
 
     @Override

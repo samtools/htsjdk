@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.OutputStream;
@@ -40,6 +41,11 @@ public class OutputStreamResource extends BundleResourceBase {
     @Override
     public Optional<OutputStream> getOutputStream() {
         return Optional.of(outputStream);
+    }
+
+    @Override
+    public SignatureProbingInputStream getSignatureProbingStream(int prefixSize) {
+        return null;
     }
 
     @Override

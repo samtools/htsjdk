@@ -26,12 +26,12 @@ public class FASTADecoderV1_0 extends HapRefDecoder {
 
     public FASTADecoderV1_0(final Bundle inputBundle) {
         super(inputBundle);
-        final Optional<BundleResource> optReferenceResource = inputBundle.get(BundleResourceType.REFERENCE);
+        final Optional<BundleResource> optReferenceResource = inputBundle.get(BundleResourceType.HAPLOID_REFERENCE);
         if (!optReferenceResource.isPresent()) {
             throw new IllegalArgumentException(
-                    String.format("No %s resource found in bundle %s", BundleResourceType.REFERENCE, inputBundle));
+                    String.format("No %s resource found in bundle %s", BundleResourceType.HAPLOID_REFERENCE, inputBundle));
         }
-        final BundleResource referenceResource = inputBundle.get(BundleResourceType.REFERENCE).get();
+        final BundleResource referenceResource = inputBundle.get(BundleResourceType.HAPLOID_REFERENCE).get();
         if (referenceResource.getIOPath().isPresent()) {
             referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(
                     referenceResource.getIOPath().get().toPath(), true);

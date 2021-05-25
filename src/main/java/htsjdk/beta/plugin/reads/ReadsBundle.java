@@ -137,9 +137,19 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      * Find the companion index for a reads source, and create a new {@link ReadsBundle} containing the
      * reads and the companion index, if one can be found.
      * @param reads the reads source to use
+     * @return a {@link ReadsBundle} containing reads and companion index, if it can be found
+     */
+    public static ReadsBundle resolveIndex(final IOPath reads) {
+        return resolveIndex(reads, HtsPath::new);
+    }
+
+    /**
+     * Find the companion index for a reads source, and create a new {@link ReadsBundle} containing the
+     * reads and the companion index, if one can be found.
+     * @param reads the reads source to use
      * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
      * @param <T> the IOPath-derived type of the IOPathResources in the new bundle
-     * @return a {@link ReadsBundle} containing reads and companion index, if it canbe found
+     * @return a {@link ReadsBundle} containing reads and companion index, if it can be found
      */
     public static <T extends IOPath> ReadsBundle<T> resolveIndex(
             final T reads,

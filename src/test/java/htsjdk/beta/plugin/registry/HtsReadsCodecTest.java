@@ -30,16 +30,16 @@ public class HtsReadsCodecTest extends HtsjdkTest {
     @DataProvider(name="readsCodecTestCases")
     public Object[][] getCodecInputResolutionSucceeds() {
         return new Object[][]{
-                { BundleBuilder.start().addPrimary(
+                { new BundleBuilder().addPrimary(
                         new IOPathResource(
                                 new HtsPath(TEST_DIR + "example.bam"),
-                                BundleResourceType.READS)).getBundle() },
+                                BundleResourceType.READS)).build() },
 
-                { BundleBuilder.start().addPrimary(
+                { new BundleBuilder().addPrimary(
                         new InputStreamResource(
                                 new HtsPath(TEST_DIR + "example.bam").getInputStream(),
                                 "testReadsStream",
-                                BundleResourceType.READS)).getBundle() },
+                                BundleResourceType.READS)).build() },
         };
     }
 

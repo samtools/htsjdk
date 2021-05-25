@@ -38,9 +38,6 @@ public class SeekableStreamResource extends InputStreamResource {
         this.seekableStream = seekableStream;
     }
 
-    @Override
-    public Optional<SeekableStream> getSeekableStream() { return Optional.of(seekableStream); }
-
     //TODO: this needs access to the cloudWrapper...
     @Override
     public Optional<SeekableStream> getSeekableStream() { return Optional.of(seekableStream); }

@@ -20,12 +20,12 @@ public class HtsHapRefCodecs {
     @SuppressWarnings("unchecked")
     public static HaploidReferenceDecoder getHapRefDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "inputPath");
-        final Bundle referenceBundle = BundleBuilder.start().addPrimary(
-                new IOPathResource(inputPath, BundleResourceType.REFERENCE)).getBundle();
+        final Bundle referenceBundle = new BundleBuilder().addPrimary(
+                new IOPathResource(inputPath, BundleResourceType.HAPLOID_REFERENCE)).build();
 
         final HaploidReferenceCodec haploidReferenceCodec = haprefCodecs.resolveCodecForInput(
                 referenceBundle,
-                BundleResourceType.REFERENCE,
+                BundleResourceType.HAPLOID_REFERENCE,
                 HaploidReferenceFormat::mapContentSubTypeToFormat);
 
         return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(referenceBundle, null);

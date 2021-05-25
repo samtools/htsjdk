@@ -17,7 +17,7 @@ import java.util.Optional;
 /**
  * An bundle resource backed by an {@link IOPath}.
  */
-public class IOPathResource extends BundleResource implements Serializable {
+public class IOPathResource extends BundleResourceBase implements Serializable {
     private static final long serialVersionUID = 1L;
     private final IOPath ioPath;
     private int signaturePrefixSize = -1;
@@ -61,7 +61,8 @@ public class IOPathResource extends BundleResource implements Serializable {
     public boolean isOutput() { return true; }
 
     @Override
-    public boolean isRandomAccessResource() {
+    //TODO: rename this to isSeekable
+    public boolean isRandomAccess() {
         // if hasFileSystemProvider is true, we'll be able to obtain a seekable stream
         // on the underlying path; otherwise return false.
         return ioPath.hasFileSystemProvider();

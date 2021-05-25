@@ -236,11 +236,11 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
 
                 // input IOPath is FORMAT_3 custom protocol scheme, resolve to newest version FORMAT_3_V1_0,
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0),
-                        BundleBuilder.start()
+                        new BundleBuilder()
                                 .addPrimary(new IOPathResource(
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
                                         TEST_CODEC_CONTENT_TYPE))
-                                .getBundle(),
+                                .build(),
                         FORMAT_3_V1_0.getDisplayName() },
 
                 // input is a raw input stream that is FORMAT_1, V1_0, resolve to FORMAT_1_V1_0
@@ -481,31 +481,31 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
 
                 // FORMAT_3 custom protocol scheme, no version specified, resolve to FORMAT_3_V1_0
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0),
-                        BundleBuilder.start()
+                        new BundleBuilder()
                                 .addPrimary(new IOPathResource(
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
                                         TEST_CODEC_CONTENT_TYPE))
-                                .getBundle(),
+                                .build(),
                         null,
                         FORMAT_3_V1_0.getDisplayName() },
 
                 // FORMAT_3 custom protocol scheme, no version specified, resolve to FORMAT_3_V2_0
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
-                        BundleBuilder.start()
+                        new BundleBuilder()
                                 .addPrimary(new IOPathResource(
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
                                         TEST_CODEC_CONTENT_TYPE))
-                                .getBundle(),
+                                .build(),
                         null,
                         FORMAT_3_V2_0.getDisplayName() },
 
                 // FORMAT_3 custom protocol scheme, version FORMAT_3_V1_0 specified, resolve to FORMAT_3_V1_0
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
-                        BundleBuilder.start()
+                        new BundleBuilder()
                                 .addPrimary(new IOPathResource(
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
                                         TEST_CODEC_CONTENT_TYPE))
-                                .getBundle(),
+                                .build(),
                         V1_0,
                         FORMAT_3_V1_0.getDisplayName() },
         };
@@ -645,7 +645,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
         final IOPathResource ioPathResource = contentSubType == null ?
                 new IOPathResource(tempPath, contentType) :
                 new IOPathResource(tempPath, contentType, contentSubType);
-        return BundleBuilder.start().addPrimary(ioPathResource).getBundle();
+        return new BundleBuilder().addPrimary(ioPathResource).build();
     }
 
     private Bundle getIOPathBundle(
@@ -654,13 +654,13 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
             final String fileExtension) {
         final IOPath tempPath = IOUtils.createTempPath("codecResolution", fileExtension);
         if (contentSubType == null) {
-            return BundleBuilder.start()
+            return new BundleBuilder()
                     .addPrimary(new IOPathResource(tempPath, contentType))
-                    .getBundle();
+                    .build();
         } else {
-            return BundleBuilder.start()
+            return new BundleBuilder()
                     .addPrimary(new IOPathResource(tempPath, contentType, contentSubType))
-                    .getBundle();
+                    .build();
         }
 
     }
@@ -678,7 +678,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
             final InputStreamResource isr = contentSubType == null ?
                     new InputStreamResource(bis, displayName, contentType) :
                     new InputStreamResource(bis, displayName, contentType, contentSubType);
-            return BundleBuilder.start().addPrimary(isr).getBundle();
+            return new BundleBuilder().addPrimary(isr).build();
         } catch (final IOException e) {
              throw new RuntimeIOException(e);
         }
@@ -698,9 +698,9 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
 
     public Bundle getOutputStreamBundle(final String contentType, final String contentSubType) {
         final OutputStream os = new ByteArrayOutputStream();
-        return BundleBuilder.start()
+        return new BundleBuilder()
                 .addPrimary(new OutputStreamResource(os, "test stream", contentType, contentSubType))
-                .getBundle();
+                .build();
     }
 
 }

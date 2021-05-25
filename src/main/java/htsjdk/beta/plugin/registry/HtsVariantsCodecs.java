@@ -31,9 +31,9 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(inputPath, "Input path");
         ValidationUtils.nonNull(variantsDecoderOptions, "Decoder options");
 
-        final Bundle inputBundle = BundleBuilder.start()
+        final Bundle inputBundle = new BundleBuilder()
                 .addPrimary(new IOPathResource(inputPath, BundleResourceType.VARIANTS))
-                .getBundle();
+                .build();
         return getVariantsDecoder(inputBundle, variantsDecoderOptions);
     }
 
@@ -63,9 +63,9 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(outputPath, "Output path");
         ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options must not be null");
 
-        final Bundle outputBundle = BundleBuilder.start()
+        final Bundle outputBundle = new BundleBuilder()
                 .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANTS))
-                .getBundle();
+                .build();
         return (VariantsEncoder) variantCodecs.resolveCodecForOutput(
                 outputBundle,
                 BundleResourceType.VARIANTS,
@@ -83,9 +83,9 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(variantsFormat, "Format must not be null");
         ValidationUtils.nonNull(codecVersion, "Codec version must not be null");
 
-        final Bundle outputBundle = BundleBuilder.start()
+        final Bundle outputBundle = new BundleBuilder()
                 .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANTS))
-                .getBundle();
+                .build();
         final VariantsCodec variantCodec = variantCodecs.getCodecForFormatAndVersion(variantsFormat, codecVersion);
         return (VariantsEncoder) variantCodec.getEncoder(outputBundle, new VariantsEncoderOptions());
     }

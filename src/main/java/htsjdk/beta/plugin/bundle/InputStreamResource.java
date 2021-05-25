@@ -14,8 +14,6 @@ import java.util.Optional;
  */
 public class InputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
-    private final InputStream inputStream;
-public class InputStreamResource extends BundleResource {
     private final InputStream rawInputStream;           // the stream as provided by the caller
     private BufferedInputStream bufferedInputStream;    // buffered stream wrapper to allow for signature probing
     private int signaturePrefixSize = -1;
@@ -43,11 +41,8 @@ public class InputStreamResource extends BundleResource {
             final String contentSubType) {
         super(displayName, contentType, contentSubType);
         ValidationUtils.nonNull(inputStream, "input stream");
-        this.inputStream = inputStream;
+        this.rawInputStream = inputStream;
     }
-
-    @Override
-    public Optional<InputStream> getInputStream() { return Optional.of(inputStream); }
 
     @Override
     public Optional<InputStream> getInputStream() {
