@@ -81,6 +81,23 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
     }
 
     /**
+     * Return the BundleResource for the provided targetContentType string, or throw if
+     * no such resource exists.
+     *
+     * @param requiredContentType the content type to be retrieved from the bundle
+     * @return a BundleResource of type targetContentType
+     * @throws IllegalArgumentException if the targetContentType resource isn't present in the bundle
+     */
+    public BundleResource getOrThrow(final String requiredContentType) {
+        ValidationUtils.nonNull(requiredContentType, "target content string");
+        return get(requiredContentType).orElseThrow(
+                        () -> new IllegalArgumentException(
+                                String.format("No resource found in bundle %s with content type %s",
+                                        requiredContentType,
+                                        this)));
+    }
+
+    /**
      * Return the primary content type for this bundle.
      * @return the primary content type for this bundle
      */

@@ -19,7 +19,7 @@ public abstract class BAMEncoder implements ReadsEncoder {
     public BAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
-        this.displayName = outputBundle.get(BundleResourceType.READS).get().getDisplayName();
+        this.displayName = outputBundle.getOrThrow(BundleResourceType.READS).getDisplayName();
     }
 
     @Override

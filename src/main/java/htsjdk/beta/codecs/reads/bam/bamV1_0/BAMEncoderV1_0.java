@@ -47,7 +47,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
         final boolean preSorted = true;
 
         final ReadsEncoderOptions readsEncoderOptions = (ReadsEncoderOptions) htsEncoderOptions;
-        final BundleResource bundleResource = outputBundle.get(BundleResourceType.READS).get();
+        final BundleResource bundleResource = outputBundle.getOrThrow(BundleResourceType.READS);
 
         if (bundleResource.getIOPath().isPresent()) {
             //TODO: SAMFileWriterFactory doesn't expose getters for all options (currently most are not exposed),

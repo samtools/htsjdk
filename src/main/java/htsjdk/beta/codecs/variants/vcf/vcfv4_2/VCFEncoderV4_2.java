@@ -4,16 +4,12 @@ import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
-
-import java.io.OutputStream;
 
 import static htsjdk.variant.variantcontext.writer.Options.INDEX_ON_THE_FLY;
 
@@ -48,7 +44,7 @@ public class VCFEncoderV4_2 extends VCFEncoder {
     }
 
     private VariantContextWriter getVCFWriter(final VariantsEncoderOptions variantsEncoderOptions, final VCFHeader vcfHeader) {
-        final BundleResource variantsResource = outputBundle.get(BundleResourceType.VARIANTS).get();
+        final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.VARIANTS);
         if (variantsResource.getIOPath().isPresent()) {
             final VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
             return builder

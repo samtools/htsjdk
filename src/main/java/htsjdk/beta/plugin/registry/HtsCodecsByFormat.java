@@ -18,7 +18,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 //TODO: unify/clarify exception types
-//TODO: add a "getRequired" on bundle that throws if no present
 //TODO: find a way to better align the ReadsFormat enum with content subtype strings
 // if we used Strings for codec format type instead of a locked down enum, it would
 // not only align better with the bundle content subtype concept, but it would make it
@@ -216,10 +215,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
             final String requiredContentType,
             final boolean forInput) {
         // Throw if the bundle contains no resource of the content type we need
-        final BundleResource bundleResource =
-                bundle.get(requiredContentType).orElseThrow(
-                        () -> new IllegalArgumentException(
-                                String.format("No resource found in bundle with content type %s", requiredContentType)));
+        final BundleResource bundleResource = bundle.getOrThrow(requiredContentType);
 
         // Get the resource of the required content type, and warn if its not the primary resource in the
         // bundle. Its not a requirement that it be the primary, only that the bundle have some resource

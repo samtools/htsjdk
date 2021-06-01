@@ -85,7 +85,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      * @return the READS {@link BundleResource} for this {@link ReadsBundle}
      */
     public BundleResource getReads() {
-        return get(BundleResourceType.READS).get();
+        return getOrThrow(BundleResourceType.READS);
     }
 
     /**

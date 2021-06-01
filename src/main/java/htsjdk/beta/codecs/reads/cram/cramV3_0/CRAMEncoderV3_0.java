@@ -48,7 +48,7 @@ public class CRAMEncoderV3_0 extends CRAMEncoder {
     }
 
     private CRAMFileWriter getCRAMWriter(final SAMFileHeader samFileHeader) {
-        final BundleResource outputResource = outputBundle.get(BundleResourceType.READS).get();
+        final BundleResource outputResource = outputBundle.getOrThrow(BundleResourceType.READS);
         if (outputResource.getIOPath().isPresent()) {
             cramFileWriter = new CRAMFileWriter(
                     outputResource.getIOPath().get().getOutputStream(),

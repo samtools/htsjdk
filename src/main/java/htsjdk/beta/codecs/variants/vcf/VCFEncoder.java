@@ -14,7 +14,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
     public VCFEncoder(final Bundle outputBundle, final VariantsEncoderOptions variantsEncoderOptions) {
         this.outputBundle = outputBundle;
         this.variantsEncoderOptions = variantsEncoderOptions;
-        this.displayName = outputBundle.get(BundleResourceType.VARIANTS).get().getDisplayName();
+        this.displayName = outputBundle.getOrThrow(BundleResourceType.VARIANTS).getDisplayName();
     }
 
    @Override

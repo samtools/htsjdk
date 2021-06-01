@@ -15,7 +15,7 @@ public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     public HtsgetBAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         this.inputBundle = inputBundle;
         this.readsDecoderOptions = readsDecoderOptions;
-        this.displayName = inputBundle.get(BundleResourceType.READS).get().getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.READS).getDisplayName();
     }
 
     @Override

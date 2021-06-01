@@ -100,16 +100,13 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
         //TODO: SamReaderFactory doesn't expose getters for all options (currently most are not exposed),
         // so this is currently not fully honoring the SAMFileWriterFactory
-        final Optional<BundleResource> readsInput = inputBundle.get(BundleResourceType.READS);
-        if (!readsInput.isPresent()) {
+        final BundleResource readsInput = inputBundle.getOrThrow(BundleResourceType.READS);
+        if (!readsInput.isInput()) {
             throw new IllegalArgumentException(String.format(
-                    "No readable (input) reads resource was provided in bundle %s", inputBundle));
-        } else if (!readsInput.get().isInput()) {
-            throw new IllegalArgumentException(String.format(
-                    "The provided reads resource is not an input (readable): %s", readsInput.get()));
+                    "The provided reads resource is not an input (readable): %s", readsInput));
         }
 
-        final SamInputResource readsResource = getSamInputResourceFromBundleResource(readsInput.get(), readsDecoderOptions);
+        final SamInputResource readsResource = getSamInputResourceFromBundleResource(readsInput, readsDecoderOptions);
 
         // add the index if there is one
         final Optional<BundleResource> indexInput = inputBundle.get(BundleResourceType.READS_INDEX);

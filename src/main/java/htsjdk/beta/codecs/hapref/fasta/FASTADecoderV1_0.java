@@ -15,7 +15,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Optional;
 
 /**
  * A FASTA file decoder.
@@ -32,12 +31,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     public FASTADecoderV1_0(final Bundle inputBundle) {
         this.haprefBundle = inputBundle;
         this.displayName = inputBundle.getPrimaryResource().getDisplayName();
-        final Optional<BundleResource> optReferenceResource = inputBundle.get(BundleResourceType.HAPLOID_REFERENCE);
-        if (!optReferenceResource.isPresent()) {
-            throw new IllegalArgumentException(
-                    String.format("No %s resource found in bundle %s", BundleResourceType.HAPLOID_REFERENCE, inputBundle));
-        }
-        final BundleResource referenceResource = inputBundle.get(BundleResourceType.HAPLOID_REFERENCE).get();
+        final BundleResource referenceResource = inputBundle.getOrThrow(BundleResourceType.HAPLOID_REFERENCE);
         if (referenceResource.getIOPath().isPresent()) {
             referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(
                     referenceResource.getIOPath().get().toPath(), true);

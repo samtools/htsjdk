@@ -2,12 +2,9 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.variants.VariantsDecoder;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsFormat;
-
-import java.io.InputStream;
 
 public abstract class VCFDecoder implements VariantsDecoder {
     protected final Bundle inputBundle;
@@ -17,7 +14,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
     public VCFDecoder(final Bundle inputBundle, final VariantsDecoderOptions variantsDecoderOptions) {
         this.inputBundle = inputBundle;
         this.variantsDecoderOptions = variantsDecoderOptions;
-        this.displayName = inputBundle.get(BundleResourceType.VARIANTS).get().getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.VARIANTS).getDisplayName();
     }
 
     @Override

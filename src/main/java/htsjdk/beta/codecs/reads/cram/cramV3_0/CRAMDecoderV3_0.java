@@ -62,11 +62,8 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
         //TODO: honor decoderOptions
         final CRAMFileReader cramFileReader;
 
-        final Optional<BundleResource> readsInput = inputBundle.get(BundleResourceType.READS);
-        if (!readsInput.isPresent()) {
-            throw new IllegalArgumentException("No source of reads was provided");
-        }
-        final Optional<IOPath> readsPath = readsInput.get().getIOPath();
+        final BundleResource readsInput = inputBundle.getOrThrow(BundleResourceType.READS);
+        final Optional<IOPath> readsPath = readsInput.getIOPath();
         if (!readsPath.isPresent()) {
             throw new IllegalArgumentException("Currently onlyIOPaths are supported for reads input bundles");
         }

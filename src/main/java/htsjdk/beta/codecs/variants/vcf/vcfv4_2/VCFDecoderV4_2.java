@@ -5,17 +5,14 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.exception.HtsjdkIOException;
-import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
-import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFReader;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Iterator;
 
 public class VCFDecoderV4_2 extends VCFDecoder {
@@ -54,7 +51,7 @@ public class VCFDecoderV4_2 extends VCFDecoder {
 
     //TODO: need to also look at the bundle to find the index input/stream
     private VCFReader getVCFReader(final VariantsDecoderOptions decoderOptions) {
-        final BundleResource variantsResource = inputBundle.get(BundleResourceType.VARIANTS).get();
+        final BundleResource variantsResource = inputBundle.getOrThrow(BundleResourceType.VARIANTS);
         if (variantsResource.getIOPath().isPresent()) {
             return new VCFFileReader(variantsResource.getIOPath().get().toPath(),false);
         } else {

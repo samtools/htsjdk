@@ -18,7 +18,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     public CRAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
-        this.displayName = outputBundle.get(BundleResourceType.READS).get().getDisplayName();
+        this.displayName = outputBundle.getOrThrow(BundleResourceType.READS).getDisplayName();
     }
 
     @Override
