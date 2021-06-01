@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoder;
-import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.beta.plugin.HtsEncoderOptions;

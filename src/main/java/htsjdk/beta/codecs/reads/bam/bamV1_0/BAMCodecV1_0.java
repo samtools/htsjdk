@@ -4,7 +4,7 @@ import htsjdk.beta.codecs.reads.bam.BAMCodec;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
 import htsjdk.beta.codecs.reads.bam.BAMEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;

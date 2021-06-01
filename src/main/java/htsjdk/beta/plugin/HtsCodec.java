@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin;
 
-import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.bundle.Bundle;
 

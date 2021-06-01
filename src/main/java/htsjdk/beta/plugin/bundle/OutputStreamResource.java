@@ -1,6 +1,5 @@
 package htsjdk.beta.plugin.bundle;
 
-import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.OutputStream;

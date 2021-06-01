@@ -1,6 +1,5 @@
 package htsjdk.beta.plugin.bundle;
 
-import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.utils.ValidationUtils;
 

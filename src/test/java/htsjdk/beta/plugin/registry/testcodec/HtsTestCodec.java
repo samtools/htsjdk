@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsCodecType;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedInputStream;

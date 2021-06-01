@@ -1,6 +1,6 @@
 package htsjdk.beta.codecs.reads.htsget;
 
-import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;

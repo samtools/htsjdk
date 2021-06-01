@@ -1,6 +1,5 @@
 package htsjdk.beta.plugin.bundle;
 
-import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 

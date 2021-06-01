@@ -1,4 +1,4 @@
-package htsjdk.beta.plugin.registry;
+package htsjdk.beta.plugin.bundle;
 
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
