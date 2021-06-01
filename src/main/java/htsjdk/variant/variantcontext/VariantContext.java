@@ -1133,8 +1133,10 @@ public class VariantContext implements Feature, Serializable {
         GenotypesContext genotypes = sampleIds.isEmpty() ? getGenotypes() : getGenotypes(sampleIds);
 
         for ( final Genotype g : genotypes) {
-            for ( final Allele a : g.getAlleles() )
-                n += a.isNoCall() ? 0 : 1;
+            if (!g.isFiltered()) {
+                for ( final Allele a : g.getAlleles() )
+                    n += a.isNoCall() ? 0 : 1;
+            }
         }
 
         return n;
@@ -1162,7 +1164,9 @@ public class VariantContext implements Feature, Serializable {
         GenotypesContext genotypes = sampleIds.isEmpty() ? getGenotypes() : getGenotypes(sampleIds);
 
         for ( final Genotype g : genotypes ) {
-            n += g.countAllele(a);
+            if (!g.isFiltered()) {
+                n += g.countAllele(a);
+            }
         }
 
         return n;
