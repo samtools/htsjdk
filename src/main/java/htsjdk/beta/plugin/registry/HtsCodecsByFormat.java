@@ -4,15 +4,10 @@ import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
-import htsjdk.exception.HtsjdkIOException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -195,7 +190,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     }
 
     private List<C> getCodecsForInputStream(final List<C> candidateCodecs, final BundleResource bundleResource) {
-        if (bundleResource.isRandomAccess()) {
+        if (bundleResource.hasSeekableStream()) {
             // stream is already seekable so no need to wrap it
             throw new IllegalArgumentException("SeekableStreamResource input resolution is not yet implemented");
         } else {

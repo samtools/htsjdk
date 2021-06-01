@@ -61,8 +61,7 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     public boolean isOutput() { return true; }
 
     @Override
-    //TODO: rename this to isSeekable
-    public boolean isRandomAccess() {
+    public boolean hasSeekableStream() {
         // if hasFileSystemProvider is true, we'll be able to obtain a seekable stream
         // on the underlying path; otherwise return false.
         return ioPath.hasFileSystemProvider();

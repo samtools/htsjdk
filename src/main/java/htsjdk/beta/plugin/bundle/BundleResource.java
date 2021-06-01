@@ -45,9 +45,9 @@ public interface BundleResource {
     Optional<OutputStream> getOutputStream();
 
     /**
-     * @return true if this resources can render a {@link SeekableStream}
+     * @return true if this resource can render a {@link SeekableStream} through {@link #getSeekableStream}
      */
-    boolean isRandomAccess();
+    boolean hasSeekableStream();
 
     /**
      * @return a {@link SignatureProbingInputStream} stream over the first "prefixSize" bytes of this

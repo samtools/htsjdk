@@ -5,7 +5,6 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsCodecVersion;
-import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
@@ -136,7 +135,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     private SamInputResource getSamInputResourceFromBundleResource(
             final BundleResource bundleResource,
             final ReadsDecoderOptions readsDecoderOptions) {
-        if (bundleResource.isRandomAccess()) {
+        if (bundleResource.hasSeekableStream()) {
             if (bundleResource.getIOPath().isPresent()) {
                 //TODO: obtain the cloud channel wrapper from readsDecoderOptions and pass through to SamInputResource
                 //Function<SeekableByteChannel, SeekableByteChannel> testPrefetcher =

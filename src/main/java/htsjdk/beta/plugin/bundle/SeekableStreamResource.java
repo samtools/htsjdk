@@ -53,6 +53,9 @@ public class SeekableStreamResource extends InputStreamResource {
     public boolean isInput() { return true; }
 
     @Override
+    public boolean hasSeekableStream() { return true; }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof SeekableStreamResource)) return false;
