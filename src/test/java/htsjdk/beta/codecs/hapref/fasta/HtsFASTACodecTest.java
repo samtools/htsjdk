@@ -3,7 +3,7 @@ package htsjdk.beta.codecs.hapref.fasta;
 import htsjdk.HtsjdkTest;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.registry.HtsHapRefCodecs;
+import htsjdk.beta.plugin.registry.HtsHaploidReferenceCodecs;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.samtools.reference.ReferenceSequence;
 import org.testng.Assert;
@@ -16,7 +16,7 @@ public class HtsFASTACodecTest extends HtsjdkTest {
     public void testFASTADecoder() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "/hg19mini.fasta");
 
-        try (final HaploidReferenceDecoder fastaDecoder = HtsHapRefCodecs.getHapRefDecoder(inputPath)) {
+        try (final HaploidReferenceDecoder fastaDecoder = HtsHaploidReferenceCodecs.getHapRefDecoder(inputPath)) {
             Assert.assertNotNull(fastaDecoder);
 
             for (final ReferenceSequence referenceSequence : fastaDecoder){

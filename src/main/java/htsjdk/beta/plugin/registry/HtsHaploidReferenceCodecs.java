@@ -13,10 +13,9 @@ import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;
 
-public class HtsHapRefCodecs {
+public class HtsHaploidReferenceCodecs {
     private static HtsCodecsByFormat<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecs = HtsCodecRegistry.getHapRefCodecs();
 
-    //TODO: validate stream signature
     @SuppressWarnings("unchecked")
     public static HaploidReferenceDecoder getHapRefDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "inputPath");

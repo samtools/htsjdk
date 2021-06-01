@@ -9,8 +9,8 @@ import java.io.ByteArrayInputStream;
 public final class SignatureProbingInputStream extends ByteArrayInputStream {
     final int signaturePrefixSize;
 
-    //TODO: Note that signaturePrefixSize is given in "plaintext" space. If the input were encrypted, the
-    // number of bytes required to probe the input may be greater than this number.
+    //TODO: Note that signaturePrefixSize is given in "plaintext" space. For encrypted streams,
+    // the number of bytes required to probe the input may be greater than this number.
     public SignatureProbingInputStream(final byte[] signaturePrefix, final int signaturePrefixSize) {
         super(signaturePrefix);
         this.signaturePrefixSize = signaturePrefixSize;

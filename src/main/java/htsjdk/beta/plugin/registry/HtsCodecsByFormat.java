@@ -24,13 +24,11 @@ import java.util.stream.Collectors;
 // not only align better with the bundle content subtype concept, but it would make it
 // possible to dynamically extend this registry to additional content subtypes without
 // changing HTSJDK...
-//TODO: content type should be mapped to F type param via types
 //TODO: encryption/decryption key files, etc.
 //TODO: need a way to allow the caller to provide custom codec resolution
 //TODO: display the bundle resource and the params of the winning codecs when there is more than one
 //TODO: need to support codecs that need to see the stream (can't deterministically tell from the extension)
 //TODO: support/test stdin/stdout
-//TODO: add an entry point that takes codec/version pair to resolve directly
 
 /**
  * Class used by the registry to track all codec formats and versions for a single codec type.
@@ -41,7 +39,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     private static final Log LOG = Log.getInstance(HtsCodecsByFormat.class);
 
     private final Map<F, Map<HtsCodecVersion, List<C>>> codecs = new HashMap<>();
-    //TODO: this is unused. unnecessary ?
+    //TODO: this is unused. is it still necessary ?
     private final Map<F, HtsCodecVersion> newestVersion = new HashMap<>();
 
     /**

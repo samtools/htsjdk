@@ -1,7 +1,7 @@
 package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.beta.codecs.hapref.fasta.FASTADecoderV1_0;
-import htsjdk.beta.plugin.registry.HtsHapRefCodecs;
+import htsjdk.beta.plugin.registry.HtsHaploidReferenceCodecs;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormat;
@@ -34,7 +34,7 @@ public abstract class CRAMCodec implements ReadsCodec {
         // by contig) interface implemented on ReferenceSequenceFile, so we need to cast the decoder in
         // order to get access to the ReferenceSequenceFile
         // maybe the indexing interface could handle this via query(String)
-        final FASTADecoderV1_0 fastaV1Decoder = (FASTADecoderV1_0) HtsHapRefCodecs.getHapRefDecoder(referencePath);
+        final FASTADecoderV1_0 fastaV1Decoder = (FASTADecoderV1_0) HtsHaploidReferenceCodecs.getHapRefDecoder(referencePath);
         if (fastaV1Decoder == null) {
             throw new RuntimeException(String.format("Unable to get reference codec for %s", referencePath));
         }
