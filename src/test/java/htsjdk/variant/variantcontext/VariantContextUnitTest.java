@@ -511,7 +511,6 @@ public class VariantContextUnitTest extends VariantBaseTest {
         List<Allele> alleles = Arrays.asList(Aref, T);
         Genotype g1 = GenotypeBuilder.create("AA", Arrays.asList(Aref, Aref));
         Genotype g2 = GenotypeBuilder.create("AT", Arrays.asList(Aref, T));
-
         VariantContext vc = new VariantContextBuilder("test", snpLoc, snpLocStart, snpLocStop, alleles).genotypes(g1, g2).make();
 
         Assert.assertTrue(vc.isNotFiltered());
@@ -536,6 +535,27 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(3, vc.getFilters().size());
         Assert.assertTrue(vc.filtersWereApplied());
         Assert.assertNotNull(vc.getFiltersMaybeNull());
+    }
+
+    @Test
+    public void testGenotypeFilters() {
+        List<Allele> alleles = Arrays.asList(Aref, T);
+        Genotype homRef = GenotypeBuilder.create("homRef", Arrays.asList(Aref, Aref));
+        Genotype het = GenotypeBuilder.create("het", Arrays.asList(Aref, T));
+        VariantContext vc = new VariantContextBuilder("test", snpLoc, snpLocStart, snpLocStop, alleles).genotypes(homRef, het).make();
+
+        Assert.assertEquals(vc.getCalledChrCount(), 4);
+
+        Assert.assertEquals(vc.getCalledChrCount(Aref),3);
+        Assert.assertEquals(vc.getCalledChrCount(T),1);
+
+        Genotype filtered = new GenotypeBuilder(het).filter("X").make();
+        VariantContext filteredVc = new VariantContextBuilder(vc).genotypes(homRef, filtered).make();
+
+        Assert.assertEquals(filteredVc.getCalledChrCount(), 2);
+
+        Assert.assertEquals(filteredVc.getCalledChrCount(Aref),2);
+        Assert.assertEquals(filteredVc.getCalledChrCount(T),0);
     }
 
     @Test
