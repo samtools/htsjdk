@@ -40,7 +40,6 @@ public abstract class CRAMCodec implements ReadsCodec {
         }
 
         final ReferenceSequenceFile refSeqFile = fastaV1Decoder.getReferenceSequenceFile();
-
         return new ReferenceSource(refSeqFile);
     }
 

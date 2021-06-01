@@ -82,6 +82,16 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         };
     }
 
+    @Override
+    public boolean isQueryable() {
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public boolean hasIndex() {
+        throw new IllegalStateException("Not implemented");
+    }
+
     //TODO: this shouldn't be necessary
     public ReferenceSequenceFile getReferenceSequenceFile() {
         return referenceSequenceFile;

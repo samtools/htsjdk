@@ -77,15 +77,13 @@ public class HtsReadsCodecTest extends HtsjdkTest {
     public void testReadsDecoderForBAMWithOptions() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "example.bam");
 
-        final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions();
-        readsDecoderOptions.getSamReaderFactory().validationStringency(ValidationStringency.SILENT);
+        final ReadsDecoderOptions readsDecoderOptions =
+                new ReadsDecoderOptions().setValidationStringency(ValidationStringency.SILENT);
 
         try (final ReadsDecoder readsDecoder = HtsReadsCodecs.getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(readsDecoder);
             Assert.assertEquals(readsDecoder.getFormat(), ReadsFormat.BAM);
             Assert.assertEquals(readsDecoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
-
-            //TODO: assert validation stringency
 
             final SAMFileHeader samFileHeader = readsDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);

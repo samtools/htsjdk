@@ -9,8 +9,9 @@ import java.io.ByteArrayInputStream;
 public final class SignatureProbingInputStream extends ByteArrayInputStream {
     final int signaturePrefixSize;
 
-    //TODO: Note that signaturePrefixSize is given in "plaintext" space. For encrypted streams,
-    // the number of bytes required to probe the input may be greater than this number.
+    //TODO: signaturePrefixSize should be expressed in "encrypted" space rather than "plaintext"
+    // space. For example, a raw signature may be N bytes of ASCII, but the codec may need to
+    // consume an entire encrypted GZIP block in order to inspect those N byes.
     public SignatureProbingInputStream(final byte[] signaturePrefix, final int signaturePrefixSize) {
         super(signaturePrefix);
         this.signaturePrefixSize = signaturePrefixSize;

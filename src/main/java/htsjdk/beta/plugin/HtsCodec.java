@@ -68,6 +68,7 @@ public interface HtsCodec<
      * @param resource the resource to inspect
      * @return true if the URI represents a custom URI that this codec handles
      */
+    //TODO: rename this to "ownsURI" or "handlesURI" or "isHandlerFor" ?
     default boolean claimURI(final IOPath resource) { return false; }
 
     /**
@@ -78,7 +79,7 @@ public interface HtsCodec<
      */
     //TODO: we need to specify how to handle the case where the URI is ambiguous (ie., no
     // custom protocol, no recognizable file extension, etc. - do you return true or false) to
-    // support the case where thecodec needs to see the actual stream. i.e., .tsv codecs can't
+    // support the case where the codec needs to see the actual stream. i.e., .tsv codecs can't
     // tell from extension and MUST resolve to a stream to determine if it can decode
     boolean canDecodeURI(final IOPath resource);
 
@@ -88,14 +89,18 @@ public interface HtsCodec<
      *
      * @param probingInputStream
      * @param sourceName
-     * @return
+     * @return true if this codec recognizes the stream signature, and can provide a decoder to decode the stream
      */
+    //TODO: rename this to canDecodeStreamSignature ?
     boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName);
 
     /**
      * @return the number of bytes this codec requires to determine whether a stream contains the
      * correct signature/version.
      */
+    //TODO: I don't think this actually needs to be part of the public API anymore, since only
+    // getSignatureProbeStreamSize needs to be called from outside the codecs.
+    // Or alternatively rename getSignatureProbeStreamSize to getSignatureSize ?
     int getSignatureSize();
 
     /**
@@ -105,8 +110,10 @@ public interface HtsCodec<
      * requires a larger {@link #getSignatureProbeStreamSize()} size since it needs to decompress
      * a full compression block in order to examine the first few signature bytes signature.
      */
-    //TODO: Note that this value is in "plaintext" space. If the input were encrypted, the number of
-    // bytes required to probe the input may be greater than this number.
+    //TODO: getSignatureProbeStreamSize should be expressed in "encrypted" space rather than "plaintext"
+    // space. For example, a raw signature may be N bytes of ASCII, but the codec may need to
+    // consume an entire encrypted GZIP block in order to inspect those N byes. getSignatureProbeStreamSize
+    // should return the encryption block size.
     default int getSignatureProbeStreamSize() { return getSignatureSize(); }
 
     /**

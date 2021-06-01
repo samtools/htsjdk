@@ -19,6 +19,9 @@ public class InputStreamResource extends BundleResourceBase {
     private byte[] signaturePrefix;
 
     /**
+     * Note that it is the caller's responsibility to ensure that {@code inputStream} is closed once the
+     * resulting resource is no longer being used.
+     *
      * @param inputStream The {@link InputStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
@@ -28,6 +31,9 @@ public class InputStreamResource extends BundleResourceBase {
     }
 
     /**
+     * Note that it is the caller's responsibility to ensure that {@code inputStream} is closed once the
+     * resulting resource is no longer being used.
+     *
      * @param inputStream The {@link InputStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
@@ -53,12 +59,16 @@ public class InputStreamResource extends BundleResourceBase {
         if (signaturePrefix == null) {
             signaturePrefix = new byte[requestedPrefixSize];
             try {
-                // we don't want this code to close the underlying stream, so don't use try-with-resources
+                // for InputStreamResource, we don't want this code to close the actual rawInputStream
+                // that was provided by the caller, since we don't have any way to reconstitute it. so
+                // we don't use try-with-resources here
                 bufferedInputStream = new BufferedInputStream(rawInputStream, requestedPrefixSize);
                 // mark, read, and then reset the buffered stream so that when the actual stream is consumed,
                 // once signature probing is set, it will be consumed from the beginning
                 bufferedInputStream.mark(requestedPrefixSize);
                 bufferedInputStream.read(signaturePrefix);
+                // reset the buffered input stream so that when the actual codec goes to consume it,
+                // it starts from the beginning
                 bufferedInputStream.reset();
                 this.signaturePrefixSize = requestedPrefixSize;
             } catch (final IOException e) {

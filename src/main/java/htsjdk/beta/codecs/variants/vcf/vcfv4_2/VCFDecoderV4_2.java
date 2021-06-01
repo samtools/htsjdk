@@ -41,6 +41,16 @@ public class VCFDecoderV4_2 extends VCFDecoder {
     }
 
     @Override
+    public boolean isQueryable() {
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public boolean hasIndex() {
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
     public void close() {
         try {
             vcfReader.close();

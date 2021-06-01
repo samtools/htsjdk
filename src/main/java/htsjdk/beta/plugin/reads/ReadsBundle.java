@@ -146,6 +146,10 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
     /**
      * Find the companion index for a reads source, and create a new {@link ReadsBundle} containing the
      * reads and the companion index, if one can be found.
+     *
+     * An index can only be resolved for IOPaths that represent a file on an NIO file system. Remote paths
+     * that contain a protocol scheme for which no NIO file system is available will not be resolved.
+     *
      * @param reads the reads source to use
      * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
      * @param <T> the IOPath-derived type of the IOPathResources in the new bundle
@@ -154,11 +158,15 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
     public static <T extends IOPath> ReadsBundle<T> resolveIndex(
             final T reads,
             final Function<String, T> ioPathConstructor) {
-        final Path index = SamFiles.findIndex(reads.toPath());
-        if (index == null) {
-            return new ReadsBundle<>(reads);
+        if (reads.hasFileSystemProvider()) {
+            final Path index = SamFiles.findIndex(reads.toPath());
+            if (index == null) {
+                return new ReadsBundle<>(reads);
+            } else {
+                return new ReadsBundle<T>(reads, ioPathConstructor.apply(index.toUri().toString()));
+            }
         }
-        return new ReadsBundle<T>(reads, ioPathConstructor.apply(index.toUri().toString()));
+        return new ReadsBundle<>(reads);
     }
 
     public static boolean looksLikeAReadsBundle(final IOPath rawReadPath) {

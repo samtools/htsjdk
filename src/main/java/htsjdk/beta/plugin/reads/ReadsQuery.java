@@ -10,12 +10,8 @@ import java.util.Iterator;
 public interface ReadsQuery<R extends HtsRecord> {
 
     // query unmapped Reads
-    default Iterator<R> queryUnmapped() {
-        throw new IllegalStateException("Not implemented");
-    };
+    Iterator<R> queryUnmapped();
 
     // Fetch the mate for the given read.
-    default R queryMate(R rec) {
-        throw new IllegalStateException("Not implemented");
-    };
+    R queryMate(R rec);
 }

@@ -66,6 +66,16 @@ public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader,
 
     @Override
     public Iterator<HtsRecord> iterator() {
-        return null;
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public boolean isQueryable() {
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public boolean hasIndex() {
+        throw new IllegalStateException("Not implemented");
     }
 }

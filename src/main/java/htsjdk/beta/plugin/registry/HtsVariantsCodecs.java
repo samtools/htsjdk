@@ -17,7 +17,6 @@ import htsjdk.utils.ValidationUtils;
 import java.util.Optional;
 
 public class HtsVariantsCodecs {
-    private static HtsCodecsByFormat<VariantsFormat, VariantsCodec> variantCodecs = HtsCodecRegistry.getVariantCodecs();
 
     @SuppressWarnings("unchecked")
     public static VariantsDecoder getVariantsDecoder(final IOPath inputPath) {
@@ -44,7 +43,7 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(variantsDecoderOptions, "Decoder options");
 
-        final VariantsCodec readsCodec = variantCodecs.resolveCodecForInput(
+        final VariantsCodec readsCodec = HtsCodecRegistry.getVariantCodecs().resolveCodecForInput(
                 inputBundle,
                 BundleResourceType.VARIANTS,
                 VariantsFormat::mapContentSubTypeToVariantsFormat);
@@ -66,7 +65,7 @@ public class HtsVariantsCodecs {
         final Bundle outputBundle = new BundleBuilder()
                 .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANTS))
                 .build();
-        return (VariantsEncoder) variantCodecs.resolveCodecForOutput(
+        return (VariantsEncoder) HtsCodecRegistry.getVariantCodecs().resolveCodecForOutput(
                 outputBundle,
                 BundleResourceType.VARIANTS,
                 Optional.empty(),
@@ -86,7 +85,9 @@ public class HtsVariantsCodecs {
         final Bundle outputBundle = new BundleBuilder()
                 .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANTS))
                 .build();
-        final VariantsCodec variantCodec = variantCodecs.getCodecForFormatAndVersion(variantsFormat, codecVersion);
+        final VariantsCodec variantCodec = HtsCodecRegistry.getVariantCodecs().getCodecForFormatAndVersion(
+                variantsFormat,
+                codecVersion);
         return (VariantsEncoder) variantCodec.getEncoder(outputBundle, new VariantsEncoderOptions());
     }
 

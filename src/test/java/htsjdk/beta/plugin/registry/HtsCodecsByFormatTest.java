@@ -281,7 +281,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
                                 false),
-                        "No matching codec could be found for"},
+                        "No codec could be found for"},
 
                 // input is FORMAT_1, V_2_0, no matching codec for V_2_0 of FORMAT_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
@@ -291,7 +291,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
                                 false),
-                        "No matching codec could be found for"},
+                        "No codec could be found for"},
 
                 // input is FORMAT_2, V2_0, no matching codec for any version of file format FORMAT_2
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
@@ -301,7 +301,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V1_0,
                                 false),
-                        "No matching codec could be found for"},
+                        "No codec could be found for"},
 
                 // resolves to multiple codecs
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_0), // use the same codec twice to force multiple matches
@@ -313,7 +313,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 false),
                         "Multiple codecs accepted the" },
 
-                // no resource in the bundle has the required content type (which is "CONTENT_TYPE")
+                // no resource in the bundle has the required content type ("TEST_CONTENT_TYPE")
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
                         getIOPathBundleWithContent(
                                 "BOGUS_CONTENT_TYPE",
@@ -321,7 +321,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V1_0,
                                 false),
-                        "No resource found in bundle with content type" },
+                        "No resource found in bundle" },
 
                 // the resource in the bundle claims to be the correct content type, for which registered
                 // codecs exist, but the file stream signature doesn't match the signature any such codec
@@ -336,7 +336,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 "BOGUS_SIGNATURE" + V1_0,
                                 false),
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
 
                 // input is FORMAT_2, V_2_0, but with *FORMAT_1* content subtype specified in the bundle;
                 // this prunes based on content subtype FORMAT_1, but none of the resulting codecs claim it
@@ -348,7 +348,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V2_0,
                                 false),
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
 
                 // the resource in the bundle claims to be a content type for which a registered codec
                 // exists, but the version in the file stream doesn't match the version for any registered
@@ -360,7 +360,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
                                 false),
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
 
                 // the resource in the bundle specifies a content subtype that doesn't correspond to any
                 // format for this content type
@@ -389,7 +389,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_2_CONTENT_SUBTYPE,
                                 FORMAT_1_STREAM_SIGNATURE + V1_0,
                                 false),
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
         };
     }
 
@@ -539,7 +539,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 null,
                                 FORMAT_1_FILE_EXTENSION),
                         null,
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
 
                 // no codecs registered at all, content type and version specified
                 { Collections.emptyList(),
@@ -548,7 +548,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_CONTENT_SUBTYPE,
                                 FORMAT_1_FILE_EXTENSION),
                         V1_0,
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
 
                 // no content subtype specified for IOPath
                 //TODO: there should either be an error message that says that no content subtype was specified,
@@ -559,7 +559,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_CONTENT_SUBTYPE,
                                 FORMAT_1_FILE_EXTENSION),
                         V1_0,
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
 
                 // no content subtype specified for OutputStream (should there be a default for content type?)
                 //TODO: there should either be an error message that says that no content subtype was specified,
@@ -574,7 +574,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
                         getOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, FORMAT_1_CONTENT_SUBTYPE),
                         new HtsCodecVersion(3, 0, 0), // version 3.0.0 not registered
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
 
                 // content subtype specified, but specified version not registered
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
@@ -583,7 +583,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_CONTENT_SUBTYPE,
                                 FORMAT_1_FILE_EXTENSION),
                         new HtsCodecVersion(3, 0, 0), // version 3.0.0 not registered
-                        "No matching codec could be found for" },
+                        "No codec could be found for" },
 
                 // bundle contains an INPUT stream resource, not an output stream
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),

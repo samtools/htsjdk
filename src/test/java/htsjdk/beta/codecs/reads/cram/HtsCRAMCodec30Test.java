@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-public class HtsCRAMCodecTest extends HtsjdkTest {
+public class HtsCRAMCodec30Test extends HtsjdkTest {
     final IOPath TEST_DIR = new HtsPath("src/test/resources/htsjdk/samtools/");
 
     @Test
@@ -25,7 +25,8 @@ public class HtsCRAMCodecTest extends HtsjdkTest {
         final IOPath inputPath = new HtsPath(TEST_DIR + "cram/ce#unmap2.3.0.cram");
         final IOPath referencePath = new HtsPath(TEST_DIR + "cram/c2.fa");
 
-        final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions().setReferencePath(referencePath);
+        final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions()
+                .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
         try (final CRAMDecoder cramDecoder = (CRAMDecoder) HtsReadsCodecs.getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(cramDecoder);
@@ -42,8 +43,12 @@ public class HtsCRAMCodecTest extends HtsjdkTest {
         final IOPath cramOutputPath = new HtsPath("pluginTestOutput.cram");
         final IOPath referencePath = new HtsPath(TEST_DIR + "cram/c2.fa");
 
-        final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions().setReferencePath(referencePath);
-        final ReadsEncoderOptions readsEncoderOptions = new ReadsEncoderOptions().setReferencePath(referencePath);
+        final ReadsDecoderOptions readsDecoderOptions =
+                new ReadsDecoderOptions().setCRAMDecoderOptions(
+                    new CRAMDecoderOptions().setReferencePath(referencePath));
+        final ReadsEncoderOptions readsEncoderOptions =
+                new ReadsEncoderOptions().setCRAMEncoderOptions(new CRAMEncoderOptions().setReferencePath(referencePath));
+
 
         try (final CRAMDecoder cramDecoder = (CRAMDecoder) HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CRAMEncoder cramEncoder = (CRAMEncoder) HtsReadsCodecs.getReadsEncoder(cramOutputPath, readsEncoderOptions)) {
@@ -73,13 +78,14 @@ public class HtsCRAMCodecTest extends HtsjdkTest {
     }
 
     @Test
-    public void testCRAMCustomDecoderOptions() {
+    public void testCRAMDecoderOptions() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "cram/ce#unmap2.3.0.cram");
         final IOPath referencePath = new HtsPath(TEST_DIR + "cram/c2.fa");
 
-        final CRAMDecoderOptions customDecoderOptions = new CRAMDecoderOptions().setReferencePath(referencePath);
+        final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions()
+                .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
-        try (final CRAMDecoder cramDecoder = (CRAMDecoder) HtsReadsCodecs.getReadsDecoder(inputPath, customDecoderOptions)) {
+        try (final CRAMDecoder cramDecoder = (CRAMDecoder) HtsReadsCodecs.getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(cramDecoder);
             Assert.assertEquals(cramDecoder.getFormat(), ReadsFormat.CRAM);
 

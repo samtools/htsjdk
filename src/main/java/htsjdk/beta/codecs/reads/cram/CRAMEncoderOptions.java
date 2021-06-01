@@ -6,12 +6,10 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import java.util.Optional;
 
 /**
- * Decoder options for CRAM decoders.
- *
- * NOTE: Currently this doesn't implement any specific options, and is just to illustrate the
- * ability to pass custom options to codecs that can use them.
+ * Encoder options for CRAM encoder. This enables encoders that can accept
+ * things such as a custom encoding map or other CRAM-specific params.
  */
-public class CRAMDecoderOptions {
+public class CRAMEncoderOptions {
     private CRAMReferenceSource referenceSource;
     private IOPath referencePath;
 
@@ -20,7 +18,7 @@ public class CRAMDecoderOptions {
     }
 
     // Mutually exclusive with setReferencePath
-    public CRAMDecoderOptions setReferenceSource(final CRAMReferenceSource referenceSource) {
+    public CRAMEncoderOptions setReferenceSource(final CRAMReferenceSource referenceSource) {
         this.referencePath = null;  // // path is mutually exclusive with setReferenceSource
         this.referenceSource = referenceSource;
         return this;
@@ -31,7 +29,7 @@ public class CRAMDecoderOptions {
     }
 
     // Mutually exclusive with setReferenceSource
-    public CRAMDecoderOptions setReferencePath(final IOPath referencePath) {
+    public CRAMEncoderOptions setReferencePath(final IOPath referencePath) {
         this.referenceSource = null; // path is mutually exclusive with setReferenceSource
         this.referencePath = referencePath;
         return this;

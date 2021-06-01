@@ -12,26 +12,6 @@ import htsjdk.beta.plugin.variants.VariantsFormat;
 
 import java.util.*;
 
-// To add a new codec type T (new interfaces):
-//
-//      define the header and record interfaces
-//      define the corresponding HtsCodec, HtsEncoder and HtsDecoder subinterfaces
-//      add a new HtsCodecsForType variable to the registry
-//      update registerCodec to register discovered codecs of that type
-//      add getEncoder and getDecoder entry points to the registry:
-//
-//        getTDecoder(IOPath)
-//        getTDecoder(IOPath, ReadOptions)
-//        getTDecoder(Bundle)
-//        getTDecoder(Bundle, ReadOptions)
-//        getTDecoder(Bundle, ReadOptions, HtsCodecVersion)
-//
-//        getTEncoder(IOPath)
-//        getTEncoder(IOPath, WriteOptions)
-//        getTEncoder(Bundle)
-//        getTEncoder(Bundle, WriteOptions)
-//        getTEncoder(Bundle, WriteOptions, HtsCodecVersion)
-
 /**
  * Registry/cache for binding to encoders/decoders.
  */
@@ -43,8 +23,6 @@ public class HtsCodecRegistry {
     private static HtsCodecsByFormat<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecs = new HtsCodecsByFormat<>();
     private static HtsCodecsByFormat<ReadsFormat, ReadsCodec> readsCodecs = new HtsCodecsByFormat<>();
     private static HtsCodecsByFormat<VariantsFormat, VariantsCodec> variantCodecs = new HtsCodecsByFormat<>();
-
-    public final static String NO_CODEC_MSG_FORMAT_STRING = "A %s codec capable of handling \"%s\" could not be found";
 
     //discover any codecs on the classpath
     static { ServiceLoader.load(HtsCodec.class).forEach(htsCodecRegistry::registerCodec); }

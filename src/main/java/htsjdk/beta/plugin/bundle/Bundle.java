@@ -93,8 +93,9 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
         return get(requiredContentType).orElseThrow(
                         () -> new IllegalArgumentException(
                                 String.format("No resource found in bundle %s with content type %s",
-                                        requiredContentType,
-                                        this)));
+                                        this,
+                                        requiredContentType
+                                        )));
     }
 
     /**
@@ -141,5 +142,10 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
         int result = resources.hashCode();
         result = 31 * result + primaryContentType.hashCode();
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s/%d resource(s)", primaryContentType, resources.size());
     }
 }

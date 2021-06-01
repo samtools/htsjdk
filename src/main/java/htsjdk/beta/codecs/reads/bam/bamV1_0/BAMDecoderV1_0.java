@@ -1,11 +1,10 @@
 package htsjdk.beta.codecs.reads.bam.bamV1_0;
 
+import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsCodecVersion;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 
@@ -15,12 +14,11 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
-import htsjdk.utils.ValidationUtils;
+import htsjdk.samtools.SamReaderFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 //TODO: need to guard against multiple iterators
 
@@ -30,8 +28,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     public BAMDecoderV1_0(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         super(inputBundle, readsDecoderOptions);
-        ValidationUtils.nonNull(readsDecoderOptions);
-        samReader = getSamReader(readsDecoderOptions);
+        samReader = getSamReader(inputBundle, readsDecoderOptions);
         samFileHeader = samReader.getFileHeader();
     }
 
@@ -96,57 +93,22 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         }
     }
 
-    private SamReader getSamReader(final ReadsDecoderOptions readsDecoderOptions) {
+    protected static SamReader getSamReader(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
+        // note that some reads decoder options, such as cloud wrapper values, need to be propagate to the
+        // samInputResource
+        final SamInputResource samInputResource =
+                ReadsCodecUtils.bundleToSamInputResource(inputBundle, readsDecoderOptions);
 
-        //TODO: SamReaderFactory doesn't expose getters for all options (currently most are not exposed),
-        // so this is currently not fully honoring the SAMFileWriterFactory
-        final BundleResource readsInput = inputBundle.getOrThrow(BundleResourceType.READS);
-        if (!readsInput.isInput()) {
-            throw new IllegalArgumentException(String.format(
-                    "The provided reads resource is not an input (readable): %s", readsInput));
-        }
+        final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault();
+        ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions);
+        ReadsCodecUtils.bamDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions.getBAMDecoderOptions());
 
-        final SamInputResource readsResource = getSamInputResourceFromBundleResource(readsInput, readsDecoderOptions);
-
-        // add the index if there is one
-        final Optional<BundleResource> indexInput = inputBundle.get(BundleResourceType.READS_INDEX);
-        if (indexInput.isPresent()) {
-            final BundleResource indexResource = indexInput.get();
-            if (indexResource.getIOPath().isPresent()) {
-                readsResource.index(indexResource.getIOPath().get().toPath());
-            } else if (indexResource.getSeekableStream().isPresent()) {
-                readsResource.index(indexResource.getSeekableStream().get());
-            } else if (indexResource.getInputStream().isPresent()) {
-                readsResource.index(indexResource.getInputStream().get());
-            }
-        }
-        //TODO: this existing code in SamReaderFactory will automatically resolve a
-        // companion index if there is one. We may want to suppress that somehow if
-        // the contract for codecs is that the index must always be resolved by the
-        // caller; otherwise when we change this code path in the future to no longer
-        // resolve the index, backward incompatibilities will be introduced.
-        return readsDecoderOptions.getSamReaderFactory().open(readsResource);
-    }
-
-    //TODO: move this somewhere so it can be shared by multiple (BAM/CRAM (/VCF?)) decoders
-    private SamInputResource getSamInputResourceFromBundleResource(
-            final BundleResource bundleResource,
-            final ReadsDecoderOptions readsDecoderOptions) {
-        if (bundleResource.hasSeekableStream()) {
-            if (bundleResource.getIOPath().isPresent()) {
-                //TODO: obtain the cloud channel wrapper from readsDecoderOptions and pass through to SamInputResource
-                //Function<SeekableByteChannel, SeekableByteChannel> testPrefetcher =
-                //        (SeekableByteChannel sbc) -> {
-                //            System.out.println("prefetcher called");
-                //            return sbc;
-                //        };
-                //return SamInputResource.of(bundleResource.getIOPath().get().toPath(), testPrefetcher);
-                return SamInputResource.of(bundleResource.getIOPath().get().toPath());
-            } else if (bundleResource.getSeekableStream().isPresent()) {
-                return SamInputResource.of(bundleResource.getSeekableStream().get());
-            }
-        }
-        return SamInputResource.of(bundleResource.getInputStream().get());
+        //TODO: this existing code in SamReaderFactory will automatically resolve a companion index if its
+        // not explicitly provided and one exists. We may want to suppress that somehow since the contract for
+        // codecs/decoders is that the index must always be resolved (and provided in the bundle) by the caller.
+        // Otherwise when we change this code path in the future to no longer use SamReaderFactory, backward
+        // incompatibilities will be introduced.
+        return samReaderFactory.open(samInputResource);
     }
 
 }

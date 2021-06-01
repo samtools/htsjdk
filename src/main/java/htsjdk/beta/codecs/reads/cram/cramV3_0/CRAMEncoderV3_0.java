@@ -52,22 +52,17 @@ public class CRAMEncoderV3_0 extends CRAMEncoder {
         if (outputResource.getIOPath().isPresent()) {
             cramFileWriter = new CRAMFileWriter(
                     outputResource.getIOPath().get().getOutputStream(),
-                    readsEncoderOptions.getReferencePath() == null ?
-                            ReferenceSource.getDefaultCRAMReferenceSource() :
-                            CRAMCodec.getCRAMReferenceSource(readsEncoderOptions.getReferencePath()),
+                    getCRAMReferenceSource(),
                     samFileHeader,
                     outputResource.getIOPath().get().toString());
             return cramFileWriter;
         } else {
             cramFileWriter = new CRAMFileWriter(
                     outputResource.getOutputStream().get(),
-                    readsEncoderOptions.getReferencePath() == null ?
-                            ReferenceSource.getDefaultCRAMReferenceSource() :
-                            CRAMCodec.getCRAMReferenceSource(readsEncoderOptions.getReferencePath()),
+                    getCRAMReferenceSource(),
                     samFileHeader,
                     outputResource.getDisplayName());
             return cramFileWriter;
-
         }
     }
 

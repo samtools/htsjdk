@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 //TODO: unify/clarify exception types
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 //TODO: display the bundle resource and the params of the winning codecs when there is more than one
 //TODO: need to support codecs that need to see the stream (can't deterministically tell from the extension)
 //TODO: support/test stdin/stdout
+//TODO: revive CloseableIterator for Queries
 
 /**
  * Class used by the registry to track all codec formats and versions for a single codec type.
@@ -87,7 +89,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
                 getCodecsForInputStream(candidatesForFormat, bundleResource);
 
         return getOneOrThrow(resolvedCodecs,
-                String.format("Format: %s Input: %s",
+                () -> String.format("format: %s input: %s",
                         optFormat.isPresent () ? optFormat.get() : "NONE",
                         bundleResource));
     }
@@ -114,12 +116,12 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
         final List<C> resolvedCodecs = filterByVersion(filteredCodecs, optHtsVersion);
         return getOneOrThrow(resolvedCodecs,
-                String.format("Format: %s Output: %s",
+                () ->  String.format("format: %s output: %s",
                         optFormat.isPresent () ? optFormat.get() : "NONE",
                         bundleResource));
     }
 
-    final List<C> filterByVersion(final List<C> candidateCodecs, final Optional<HtsCodecVersion> optHtsVersion) {
+    private List<C> filterByVersion(final List<C> candidateCodecs, final Optional<HtsCodecVersion> optHtsVersion) {
         if (candidateCodecs.isEmpty()) {
             return candidateCodecs;
         }
@@ -147,7 +149,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         return candidateCodecs;
     }
 
-    final List<C> getCodecsForInputIOPath(final List<C> candidateCodecs, final BundleResource bundleResource) {
+    private List<C> getCodecsForInputIOPath(final List<C> candidateCodecs, final BundleResource bundleResource) {
         ValidationUtils.validateArg(bundleResource.getIOPath().isPresent(), "an IOPath resource is required");
         final IOPath ioPath = bundleResource.getIOPath().get();
 
@@ -171,7 +173,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
                 .collect(Collectors.toList());
     }
 
-    final List<C> getCodecsForOutputIOPath(final List<C> candidateCodecs, final IOPath ioPath) {
+    private List<C> getCodecsForOutputIOPath(final List<C> candidateCodecs, final IOPath ioPath) {
         final List<C> uriHandlers = candidateCodecs.stream()
                 .filter((c) -> c.claimURI(ioPath))
                 .collect(Collectors.toList());
@@ -251,7 +253,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         return bundleResource;
     }
 
-    public List<C> getAllCodecs() {
+    private List<C> getAllCodecs() {
         // flatten out the codecs into a single list
         final List<C> cList = codecs
                 .values()
@@ -262,7 +264,7 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         return cList;
     }
 
-    public List<C> getAllCodecsForFormat(final F rf) {
+    private List<C> getAllCodecsForFormat(final F rf) {
         final Map<HtsCodecVersion, List<C>> allCodecsForFormat = codecs.get(rf);
         if (allCodecsForFormat != null) {
             return allCodecsForFormat.values().stream().flatMap(l -> l.stream()).collect(Collectors.toList());
@@ -292,15 +294,16 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         return Optional.of(format);
     }
 
+    //TODO: make this private when the last remaining VariantsCodecs call site no  longer uses it
     public C getCodecForFormatAndVersion(final F formatType, HtsCodecVersion codecVersion) {
          final List<C> matchingCodecs = getAllCodecsForFormat(formatType).stream()
                 .filter(codec -> codec.getFileFormat().equals(formatType) && codec.getVersion().equals(codecVersion))
                  .collect(Collectors.toList());
-         return getOneOrThrow(matchingCodecs, String.format("Format: %s Version %s", formatType, codecVersion));
+         return getOneOrThrow(matchingCodecs, () -> String.format("format: %s Vversion %s", formatType, codecVersion));
     }
 
     @SuppressWarnings("rawtypes")
-    public static<T extends HtsCodec> boolean canDecodeIOPathSignature(
+    private static<T extends HtsCodec> boolean canDecodeIOPathSignature(
             final T codec,
             final BundleResource bundleResource,
             final IOPath inputPath,
@@ -359,9 +362,9 @@ final class HtsCodecsByFormat<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
                                         newVersion);
     }
 
-    private C getOneOrThrow(final List<C> resolvedCodecs, final String contextMessage) {
+    private C getOneOrThrow(final List<C> resolvedCodecs, final Supplier<String> contextMessage) {
         if (resolvedCodecs.size() == 0) {
-            throw new RuntimeException(String.format("No matching codec could be found for %s", contextMessage));
+            throw new RuntimeException(String.format("No codec could be found for %s", contextMessage.get()));
         } else if (resolvedCodecs.size() > 1) {
             throw new RuntimeException("Multiple codecs accepted the output bundle");
         } else {

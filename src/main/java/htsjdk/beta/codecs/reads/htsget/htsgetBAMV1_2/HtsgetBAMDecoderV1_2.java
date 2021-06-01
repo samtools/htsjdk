@@ -57,7 +57,17 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public Iterator<SAMRecord> iterator() {
-        return null;
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public boolean isQueryable() {
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public boolean hasIndex() {
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -124,6 +134,6 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public SAMRecord queryMate(final SAMRecord rec) {
-        return null;
+        throw new IllegalArgumentException("queryMate not implemented for htsget bam reader");
     }
 }

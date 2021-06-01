@@ -21,8 +21,10 @@ import java.util.Optional;
 //        getReadsEncoder(Bundle, ReadsEncoderOptions)
 //        getReadsEncoder(Bundle, ReadsEncoderOptions, HtsCodecVersion)
 
+//TODO: document that the non-Bundle overloads resolve the index automatically, but the Bundle ones do not,
+// per the protocol that says that a bundles are taken as-is
+//TODO: should we add an argument that controls index resolution for non-bundles APIs ?
 public class HtsReadsCodecs {
-    private static HtsCodecsByFormat<ReadsFormat, ReadsCodec> readsCodecs = HtsCodecRegistry.getReadsCodecs();
 
     HtsReadsCodecs() {}
 
@@ -32,7 +34,8 @@ public class HtsReadsCodecs {
     @SuppressWarnings("unchecked")
     public static ReadsDecoder getReadsDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "Input path");
-        return getReadsDecoder(new ReadsBundle(inputPath), new ReadsDecoderOptions());
+        //TODO: this resolves the index automatically
+        return getReadsDecoder(ReadsBundle.resolveIndex(inputPath), new ReadsDecoderOptions());
     }
 
     @SuppressWarnings("unchecked")
@@ -41,7 +44,8 @@ public class HtsReadsCodecs {
             final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputPath, "Input path");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options must not be null");
-        return getReadsDecoder(new ReadsBundle(inputPath), readsDecoderOptions);
+        //TODO: this resolves the index automatically
+        return getReadsDecoder(ReadsBundle.resolveIndex(inputPath), readsDecoderOptions);
     }
 
     @SuppressWarnings("unchecked")
@@ -57,7 +61,7 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
 
-        final ReadsCodec readsCodec = readsCodecs.resolveCodecForInput(
+        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().resolveCodecForInput(
                 inputBundle,
                 BundleResourceType.READS,
                 ReadsFormat::mapContentSubTypeToFormat);
@@ -89,7 +93,7 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(outputBundle, "outputBundle");
         ValidationUtils.nonNull(readsEncoderOptions, "Encoder options ");
 
-        final ReadsCodec readsCodec = readsCodecs.resolveCodecForOutput(
+        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().resolveCodecForOutput(
                 outputBundle,
                 BundleResourceType.READS,
                 Optional.empty(),           // no requested version
@@ -108,7 +112,9 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(readsFormat, "Codec format");
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
-        final ReadsCodec readsCodec = readsCodecs.getCodecForFormatAndVersion(readsFormat, codecVersion);
+        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().getCodecForFormatAndVersion(
+                readsFormat,
+                codecVersion);
         return (ReadsEncoder) readsCodec.getEncoder(outputBundle, readsEncoderOptions);
     }
 

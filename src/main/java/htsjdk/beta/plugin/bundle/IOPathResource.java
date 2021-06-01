@@ -79,9 +79,10 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     public SignatureProbingInputStream getSignatureProbingStream(final int requestedPrefixSize) {
         if (signaturePrefix == null) {
             signaturePrefix = new byte[requestedPrefixSize];
-            try {
-                // we don't want this code to close the underlying stream, so don't use try-with-resources
-                final InputStream inputStream = new BufferedInputStream(getInputStream().get(), requestedPrefixSize);
+            // get a stream on the underlying IOPath, get our reuseable signature probing buffer,
+            // and then close the n
+            try (final InputStream is = getInputStream().get();
+                 final InputStream inputStream = new BufferedInputStream(is, requestedPrefixSize)) {
                 inputStream.mark(requestedPrefixSize);
                 inputStream.read(signaturePrefix);
                 inputStream.reset();

@@ -6,10 +6,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-// TODO:
-// - wild cards, i.e., end of reference/contig
-// - why does SamReader have query(..., contained) AND queryContained ?
-// - remove the default implementations once all the decoders implement these
+//TODO: revive CloseableIterator for Queries
+//TODO: wild cards, i.e., end of reference/contig
+//TODO: why does SamReader have query(..., contained) AND queryContained ?
+//TODO: remove the default implementations once all the decoders implement these
 //        switch (queryRule) {
 //            case CONTAINED: return queryContained(queryName, start, end);
 //            case OVERLAPPING: return queryOverlapping(queryName, start, end);
@@ -28,9 +28,9 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     //*******************************************
     // Start temporary common query interface default implementations.
 
-    default boolean isQueryable() { throw new IllegalStateException("Not implemented"); }
+    boolean isQueryable();
 
-    default boolean hasIndex() { throw new IllegalStateException("Not implemented"); }
+    boolean hasIndex();
 
     // TODO: include this, for rsID for variants ? readname for reads?
     default Iterator<RECORD> query(final String queryString) {
