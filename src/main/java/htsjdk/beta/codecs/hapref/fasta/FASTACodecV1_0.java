@@ -1,9 +1,9 @@
 package htsjdk.beta.codecs.hapref.fasta;
 
-import htsjdk.beta.codecs.hapref.HapRefCodec;
-import htsjdk.beta.codecs.hapref.HapRefDecoder;
-import htsjdk.beta.codecs.hapref.HapRefEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
+import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
+import htsjdk.beta.plugin.hapref.HaploidReferenceEncoder;
 import htsjdk.beta.plugin.registry.SignatureProbingInputStream;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsDecoderOptions;
@@ -14,12 +14,10 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
-import java.io.IOException;
-
 /**
  * A FASTA codec.
  */
-public class FASTACodecV1_0 extends HapRefCodec {
+public class FASTACodecV1_0 implements HaploidReferenceCodec {
 
     public static final HtsCodecVersion VERSION_1 = new HtsCodecVersion(1, 0, 0);
 
@@ -54,14 +52,14 @@ public class FASTACodecV1_0 extends HapRefCodec {
     }
 
    @Override
-    public HapRefDecoder getDecoder(final Bundle inputBundle, final HtsDecoderOptions options) {
+    public HaploidReferenceDecoder getDecoder(final Bundle inputBundle, final HtsDecoderOptions options) {
         ValidationUtils.validateArg(options == null, "reference reader options must be null");
         return new FASTADecoderV1_0(inputBundle);
     }
 
     @Override
-    public HapRefEncoder getEncoder(final Bundle outputBundle, final HtsEncoderOptions options) {
-        throw new IllegalStateException("Not implemented");
+    public HaploidReferenceEncoder getEncoder(final Bundle outputBundle, final HtsEncoderOptions options) {
+        throw new IllegalStateException("FASTA encoder not implemented");
     }
 
     @Override

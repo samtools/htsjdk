@@ -1,10 +1,10 @@
 package htsjdk.beta.codecs.hapref.fasta;
 
-import htsjdk.beta.codecs.hapref.HapRefDecoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -20,12 +20,18 @@ import java.util.Optional;
 /**
  * A FASTA file decoder.
  */
-public class FASTADecoderV1_0 extends HapRefDecoder {
+public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
+    protected Bundle haprefBundle;
+    private final String displayName;
+
+    @Override
+    public String getDisplayName() { return displayName; }
 
     private ReferenceSequenceFile referenceSequenceFile;
 
     public FASTADecoderV1_0(final Bundle inputBundle) {
-        super(inputBundle);
+        this.haprefBundle = inputBundle;
+        this.displayName = inputBundle.getPrimaryResource().getDisplayName();
         final Optional<BundleResource> optReferenceResource = inputBundle.get(BundleResourceType.HAPLOID_REFERENCE);
         if (!optReferenceResource.isPresent()) {
             throw new IllegalArgumentException(

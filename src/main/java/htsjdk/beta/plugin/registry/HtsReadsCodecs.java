@@ -15,11 +15,11 @@ import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;
 
-//        getTDecoder(Bundle)
-//        getTDecoder(Bundle, ReadOptions)
-//        getTEncoder(Bundle)
-//        getTEncoder(Bundle, WriteOptions)
-//        getTEncoder(Bundle, WriteOptions, HtsCodecVersion)
+//        getReadsDecoder(Bundle)
+//        getReadsDecoder(Bundle, ReadsDecoderOptions)
+//        getReadsEncoder(Bundle)
+//        getReadsEncoder(Bundle, ReadsEncoderOptions)
+//        getReadsEncoder(Bundle, ReadsEncoderOptions, HtsCodecVersion)
 
 public class HtsReadsCodecs {
     private static HtsCodecsByFormat<ReadsFormat, ReadsCodec> readsCodecs = HtsCodecRegistry.getReadsCodecs();
