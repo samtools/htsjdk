@@ -538,7 +538,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void testGenotypeFilters() {
+    public void testGenotypeCountsRespectGenotypeFilters() {
         List<Allele> alleles = Arrays.asList(Aref, T);
         // These first two genotypes are PASS (this behavior is different for VC filtering than Genotype filtering)
         Genotype homRef = GenotypeBuilder.create("homRef", Arrays.asList(Aref, Aref));
