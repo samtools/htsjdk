@@ -540,6 +540,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @Test
     public void testGenotypeFilters() {
         List<Allele> alleles = Arrays.asList(Aref, T);
+        // These first two genotypes are PASS (this behavior is different for VC filtering than Genotype filtering)
         Genotype homRef = GenotypeBuilder.create("homRef", Arrays.asList(Aref, Aref));
         Genotype het = GenotypeBuilder.create("het", Arrays.asList(Aref, T));
         VariantContext vc = new VariantContextBuilder("test", snpLoc, snpLocStart, snpLocStop, alleles).genotypes(homRef, het).make();
@@ -549,6 +550,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(vc.getCalledChrCount(Aref),3);
         Assert.assertEquals(vc.getCalledChrCount(T),1);
 
+        // Here we add a filter to a genotype so that it will not be included
         Genotype filtered = new GenotypeBuilder(het).filter("X").make();
         VariantContext filteredVc = new VariantContextBuilder(vc).genotypes(homRef, filtered).make();
 
