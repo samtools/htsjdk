@@ -29,7 +29,8 @@ import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.List;
 
-import static htsjdk.samtools.util.SamLocusIterator.*;
+import static htsjdk.samtools.util.SamLocusIterator.LocusInfo;
+import static htsjdk.samtools.util.SamLocusIterator.RecordAndOffset;
 
 /**
  * Iterator that traverses a SAM File and a ReferenceFile, accumulating information on a per-locus basis.

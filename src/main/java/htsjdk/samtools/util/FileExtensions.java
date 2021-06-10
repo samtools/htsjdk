@@ -53,7 +53,12 @@ public final class FileExtensions {
     /** extensions for alignment files SAM, BAM, CRAM. */
     public static final String SAM = ".sam";
     public static final String BAM = ".bam";
-    public static final String BAI_INDEX = ".bai";
+    public static final String BAM_BAI_INDEX = ".bai";
+    /**
+     12/2020 use {@link #BAM_BAI_INDEX} instead
+     */
+    @Deprecated
+    public static final String BAI_INDEX = BAM_BAI_INDEX;
     public static final String CRAM = ".cram";
     public static final String CRAM_INDEX = ".crai";
     
