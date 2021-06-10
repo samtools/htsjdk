@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -71,7 +72,7 @@ public class CramContainerIterator implements Iterator<Container>, Closeable {
 
     @Override
     public void remove() {
-        throw new RuntimeException("Read only iterator.");
+        throw new CRAMException("Read only iterator.");
     }
 
     public CramHeader getCramHeader() {

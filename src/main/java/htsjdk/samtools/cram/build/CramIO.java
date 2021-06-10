@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMTextHeaderCodec;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.structure.*;
@@ -26,6 +27,7 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 
+import javax.security.auth.login.CredentialException;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -88,7 +90,7 @@ public final class CramIO {
             throw new RuntimeIOException(e);
         }
 
-        throw new IllegalArgumentException(String.format("Unrecognized CRAM version %s", cramVersion));
+        throw new CRAMException(String.format("Unrecognized CRAM version %s", cramVersion));
     }
 
     /**
@@ -123,13 +125,13 @@ public final class CramIO {
         try {
             for (final byte magicByte : CramHeader.MAGIC) {
                 if (magicByte != inputStream.read()) {
-                    throw new RuntimeException("Input does not have a valid CRAM header.");
+                    throw new CRAMException("Input does not have a valid CRAM header.");
                 }
             }
 
             final CRAMVersion cramVersion = new CRAMVersion(inputStream.read(), inputStream.read());
             if (!CramVersions.isSupportedVersion(cramVersion)) {
-                throw new RuntimeException(String.format("CRAM version %s is not supported", cramVersion));
+                throw new CRAMException(String.format("CRAM version %s is not supported", cramVersion));
             }
 
             final CramHeader header = new CramHeader(cramVersion, null);
