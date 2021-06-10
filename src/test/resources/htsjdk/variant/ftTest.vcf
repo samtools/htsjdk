@@ -1,0 +1,10 @@
+##fileformat=VCFv4.3
+###FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed",ExtraFormatField="extra format">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth (only filtered reads used for calling)">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
+##FORMAT=<ID=FT,Number=.,Type=String,Description="Genotype Filter">
+##contig=<ID=1,length=249250621,assembly=b37>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA19238	NA19239	NA19240
+2	327	.	T	C	666.18	.	.	GT:DP:GQ:FT	1/0:10:62:BAD	1/0:37:99:BLEH;BAD	1/0:53:99

@@ -4,12 +4,16 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -91,6 +95,21 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
             } catch (TribbleException e) {
                 Assert.assertEquals(value, Double.NEGATIVE_INFINITY); // QUAL cannot be negative
             }
+        }
+    }
+
+    @Test
+        public void testFT() throws IOException {
+            try(VCFReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/ftTest.vcf"))){
+            final VariantContext vc = reader.iterator().next();
+            final Genotype gt1 = vc.getGenotype("NA19238");
+            Assert.assertTrue(gt1.isFiltered());
+            Assert.assertEquals(gt1.getFilters(), "BAD");
+            final Genotype gt2 = vc.getGenotype("NA19239");
+            Assert.assertTrue(gt2.isFiltered());
+            Assert.assertEquals(gt2.getFilters(), "BLEH;BAD");
+            final Genotype gt3 = vc.getGenotype("NA19240");
+            Assert.assertFalse(gt3.isFiltered());
         }
     }
 }

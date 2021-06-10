@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.vcf.VCFConstants;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -34,6 +35,17 @@ import java.util.Arrays;
 import java.util.List;
 
 public class GenotypeBuilderTest extends VariantBaseTest {
+
+    @Test
+    public void testAttributesContainFT(){
+        final String filter = "filter";
+        final Genotype withExplicitFilter = new GenotypeBuilder("test").filters(filter).make();
+        Assert.assertTrue(withExplicitFilter.isFiltered());
+        Assert.assertEquals(withExplicitFilter.getFilters(), filter);
+        final Genotype withFTAttribute = new GenotypeBuilder("test").attribute(VCFConstants.GENOTYPE_FILTER_KEY, filter).make();
+        Assert.assertTrue(withFTAttribute.isFiltered());
+        Assert.assertEquals(withFTAttribute.getFilters(), filter);
+    }
 
     @Test
     public void testMakeWithShallowCopy() {
