@@ -110,6 +110,12 @@ public class Defaults {
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
+    /** Custom VCF reader factory .
+     *  Expected format: <fully qualified factory class name>
+     *  Default = "".
+     */
+    public static final String CUSTOM_VCF_READER_FACTORY;
+
 
     public static final String SAMJDK_PREFIX = "samjdk.";
     static {
@@ -134,6 +140,7 @@ public class Defaults {
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
+        CUSTOM_VCF_READER_FACTORY = getStringProperty("vcf_reader_factory", "");
     }
 
     /**
