@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.samtools.util.StringUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -787,8 +788,24 @@ public class VariantContext implements Feature, Serializable {
         return ! hasID();
     }
 
+    /**
+     * @return the ID field of the record, this be {@linkplain VCFConstants#EMPTY_ID_FIELD}, a single ID, or a semi-colon
+     * separated list of ID's
+     */
     public String getID() {
         return ID;
+    }
+
+    /**
+     *
+     * @return a list of IDs for this record, possibly empty but never null
+     */
+    public List<String> getIDs(){
+        if(hasID()){
+            return ParsingUtils.split(getID(), VCFConstants.ID_FIELD_SEPARATOR_CHAR);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
 
