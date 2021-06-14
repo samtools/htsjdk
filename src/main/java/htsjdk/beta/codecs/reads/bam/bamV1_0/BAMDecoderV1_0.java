@@ -4,7 +4,6 @@ import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
-import htsjdk.beta.plugin.interval.HtsQueryInterval;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.interval.HtsInterval;

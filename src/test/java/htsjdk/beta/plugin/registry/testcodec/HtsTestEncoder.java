@@ -4,9 +4,6 @@ import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.HtsEncoder;
 import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.io.IOPath;
-
-import java.io.OutputStream;
 
 // Dummy encoder class for use by tests
 public class HtsTestEncoder implements HtsEncoder<HtsTestCodecFormat, HtsTestHeader, HtsTestRecord> {

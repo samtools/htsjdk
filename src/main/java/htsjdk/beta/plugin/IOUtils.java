@@ -5,16 +5,13 @@ import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Collectors;
 
 public class IOUtils {
 

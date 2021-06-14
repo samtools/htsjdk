@@ -23,6 +23,9 @@ import java.util.*;
 //      used strings for codec format type instead of a locked down enum, for better alignment with the bundle
 //      subcontenttype concept, and it would enable dynamically extension of this registry with additional
 //      content subtypes without changing HTSJDK
+// - rename the packages classes for codecs to reflect the interfaces they provide (i.e., a "READS" codec
+//      is a codec that exposes SAMFileHeader/SAMRecord). Someday when we replace those, we'll need a new
+//      name that contrasts with the current name i.e. READS2
 // clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
 //      output streams that are passed in ??)
 // - add a "PublicAPI" opt-in annotation to exempt internal methods that need to be public because
@@ -37,11 +40,10 @@ import java.util.*;
 //      BCF codec
 // javadoc
 // tests
-
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
 // - prevent the decoders that delegate to SamReaderFactory from attempting to automatically
-//   resolving index files so we don't introduce incompatibilities when the SamReaderFactory
-//   implementation dependency is removed
+//      resolving index files so we don't introduce incompatibilities when the SamReaderFactory
+//      implementation dependency is removed
 // - respect presorted in Reads encoders
 // - publish the JSON Bundle JSON schema
 // - upgrade API

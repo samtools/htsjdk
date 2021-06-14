@@ -22,8 +22,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.Optional;
-
 public class HtsReadsCodecTest extends HtsjdkTest {
     final IOPath TEST_DIR = new HtsPath("src/test/resources/htsjdk/samtools/");
 

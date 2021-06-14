@@ -1,10 +1,7 @@
 package htsjdk.beta.plugin.reads;
 
-import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
 import htsjdk.beta.codecs.reads.bam.BAMEncoderOptions;
-import htsjdk.beta.codecs.reads.cram.CRAMDecoderOptions;
 import htsjdk.beta.codecs.reads.cram.CRAMEncoderOptions;
-import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.utils.ValidationUtils;

@@ -2,12 +2,7 @@ package htsjdk.beta.plugin.interval;
 
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.Locatable;
 import htsjdk.utils.ValidationUtils;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 //TODO:
 // Wild cards, i.e., end of reference/contig
