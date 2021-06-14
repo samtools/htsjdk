@@ -26,6 +26,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 
@@ -177,6 +178,14 @@ public class ReferenceSource implements CRAMReferenceSource {
 
         // sequence not found, give up:
         return null;
+    }
+    @Override
+    public void close() {
+        try {
+            rsFile.close();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(String.format("Error closing reference source", rsFile, e));
+        }
     }
 
     private byte[] findBasesByName(final String name, final boolean tryVariants) {

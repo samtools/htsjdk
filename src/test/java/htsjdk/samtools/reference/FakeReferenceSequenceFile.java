@@ -70,8 +70,6 @@ public class FakeReferenceSequenceFile implements
 
     @Override
     public void close() throws IOException {
-        map.clear();
-        index.clear();
-        current = 0;
+        // don't close anything since the tests re-use this
     }
 }
