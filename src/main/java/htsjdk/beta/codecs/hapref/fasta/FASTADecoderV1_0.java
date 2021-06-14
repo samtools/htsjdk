@@ -11,10 +11,10 @@ import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * A FASTA file decoder.
@@ -26,7 +26,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     @Override
     public String getDisplayName() { return displayName; }
 
-    private ReferenceSequenceFile referenceSequenceFile;
+    private final ReferenceSequenceFile referenceSequenceFile;
 
     public FASTADecoderV1_0(final Bundle inputBundle) {
         this.haprefBundle = inputBundle;
@@ -62,9 +62,9 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     }
 
     @Override
-    public Iterator<ReferenceSequence> iterator() {
+    public CloseableIterator<ReferenceSequence> iterator() {
         referenceSequenceFile.reset();
-        return new Iterator<ReferenceSequence>() {
+        return new CloseableIterator<ReferenceSequence>() {
             ReferenceSequence nextSeq = referenceSequenceFile.nextSequence();
 
             @Override
@@ -77,6 +77,15 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
                 final ReferenceSequence tmpSeq = nextSeq;
                 nextSeq = referenceSequenceFile.nextSequence();
                 return tmpSeq;
+            }
+
+            @Override
+            public void close() {
+                try {
+                    referenceSequenceFile.close();
+                } catch(final IOException e) {
+                    throw new RuntimeIOException(e);
+                }
             }
         };
     }

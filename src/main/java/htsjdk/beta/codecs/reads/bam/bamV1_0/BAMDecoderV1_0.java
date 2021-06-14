@@ -15,9 +15,9 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 //TODO: need to guard against multiple iterators
@@ -45,7 +45,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     // HtsQuery methods
 
     @Override
-    public Iterator<SAMRecord> iterator() {
+    public CloseableIterator<SAMRecord> iterator() {
         return samReader.iterator();
     }
 
@@ -60,7 +60,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     }
 
     @Override
-    public Iterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
+    public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         final QueryInterval[] queryIntervals = HtsInterval.toQueryIntervalArray(
                 intervals,
                 samFileHeader.getSequenceDictionary());
@@ -68,14 +68,14 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     }
 
     @Override
-    public Iterator<SAMRecord> queryStart(final String queryName, final long start) {
+    public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
         return samReader.queryAlignmentStart(queryName, HtsInterval.toIntegerSafe(start));
     }
 
     // ReadsQuery interface methods
 
     @Override
-    public Iterator<SAMRecord> queryUnmapped() {
+    public CloseableIterator<SAMRecord> queryUnmapped() {
         return samReader.queryUnmapped();
     }
 

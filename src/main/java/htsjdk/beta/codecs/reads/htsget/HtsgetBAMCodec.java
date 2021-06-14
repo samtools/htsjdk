@@ -62,7 +62,7 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
 
     @Override
     public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
-        throw new IllegalArgumentException("This codec claims a custom URI, so canDecodeSignature should never be called");
+        return false;
     }
 
     boolean isQueryable() {

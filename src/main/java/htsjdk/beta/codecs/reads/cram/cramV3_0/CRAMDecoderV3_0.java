@@ -14,12 +14,14 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * CRAM v3.0 decoder.
@@ -27,6 +29,7 @@ import java.util.Optional;
 public class CRAMDecoderV3_0 extends CRAMDecoder {
     private final CRAMFileReader cramReader;
     private final SAMFileHeader samFileHeader;
+    private boolean iteratorExists = false;
 
     public CRAMDecoderV3_0(final Bundle bundle, final ReadsDecoderOptions readsDecoderOptions) {
         super(bundle, readsDecoderOptions);
@@ -45,9 +48,7 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
     }
 
     @Override
-    public Iterator<SAMRecord> iterator() {
-        return cramReader.getIterator();
-    }
+    public CloseableIterator<SAMRecord> iterator() { return getIteratorMonitor(() -> cramReader.getIterator()); }
 
     @Override
     public boolean isQueryable() {
@@ -60,24 +61,26 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
     }
 
     @Override
-    public Iterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
+    public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         final QueryInterval[] queryIntervals = HtsInterval.toQueryIntervalArray(
                 intervals,
                 samFileHeader.getSequenceDictionary());
-        return cramReader.query(queryIntervals, queryRule == HtsQueryRule.CONTAINED);
+        return getIteratorMonitor(() -> cramReader.query(queryIntervals, queryRule == HtsQueryRule.CONTAINED));
     }
 
     @Override
-    public Iterator<SAMRecord> queryStart(final String queryName, final long start) {
-        return cramReader.queryAlignmentStart(queryName, HtsInterval.toIntegerSafe(start));
+    public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
+        return getIteratorMonitor(() -> cramReader.queryAlignmentStart(queryName, HtsInterval.toIntegerSafe(start)));
     }
 
     @Override
-    public Iterator<SAMRecord> queryUnmapped() {
-        return cramReader.queryUnmapped();
+    public CloseableIterator<SAMRecord> queryUnmapped() {
+        return getIteratorMonitor(() -> cramReader.queryUnmapped());
     }
 
-    //TODO: this is copied and slightly modified version of the shared implementation in SamReader
+    //Note that this method  is a copied and slightly modified version of the shared implementation in
+    // SamReader. It delegates to other query methods on this decoder (queryUnmapped and queryStart),
+    // which will throw if an existing iterator is already opened
     @Override
     public SAMRecord queryMate(SAMRecord rec) {
         if (!rec.getReadPairedFlag()) {
@@ -87,13 +90,12 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
             throw new IllegalArgumentException("SAMRecord must be either first and second of pair, but not both.");
         }
         final boolean firstOfPair = rec.getFirstOfPairFlag();
-        final Iterator<SAMRecord> it;
-        if (rec.getMateReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            it = queryUnmapped();
-        } else {
-            it = queryStart(rec.getMateReferenceName(), rec.getMateAlignmentStart());
-        }
-        try {
+        // its important that this method closes the iterators it creates, since otherwise the caller
+        // will never be able to create another iterator after calling this method
+        try (final CloseableIterator<SAMRecord> it =
+                     rec.getMateReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX ?
+                             queryUnmapped() :
+                             queryStart(rec.getMateReferenceName(), rec.getMateAlignmentStart())) {
             SAMRecord mateRec = null;
             while (it.hasNext()) {
                 final SAMRecord next = it.next();
@@ -117,10 +119,6 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
                 }
             }
             return mateRec;
-        } finally {
-            //TODO: does the old implementation of this (shared in SamReader) close the underlying stream when
-            // the CloseableIterator is closed in the finally block ?
-            //it.close();
         }
     }
 
@@ -165,6 +163,50 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
         }
 
         return cramFileReader;
+    }
+
+    // create an iterator wrapper that can notify this decoder when its closed, so the decoder can ensure
+    // that only one iterator is ever outstanding at a time
+    private CloseableIterator<SAMRecord> getIteratorMonitor(final Supplier<CloseableIterator> newIterator) {
+        if (iteratorExists == true) {
+            throw new IllegalStateException("This decoder already has an existing iterator open");
+        } else {
+            iteratorExists = true;
+            return new CloseableIteratorMonitor(newIterator.get());
+        }
+    }
+
+    private void toggleIteratorExists() {
+        if (iteratorExists == false) {
+            throw new IllegalStateException("Attempt to close a non-existent monitored iterator");
+        }
+        // reset the iterator monitor
+        iteratorExists = false;
+    }
+
+    // but this needs to delegate back to the outer class so it has a reference to it anyway...
+    private class CloseableIteratorMonitor<T> implements CloseableIterator<T> {
+        final CloseableIterator<T> wrappedIterator;
+
+        public CloseableIteratorMonitor(final CloseableIterator<T> wrappedIterator) {
+            ValidationUtils.nonNull(wrappedIterator, "wrappedIterator");
+            this.wrappedIterator = wrappedIterator;
+        }
+
+        @Override
+        public void close() {
+            // notify the outer class iterator monitor that the iterator is closed
+            CRAMDecoderV3_0.this.toggleIteratorExists();
+            wrappedIterator.close();
+        }
+
+        @Override
+        public boolean hasNext() { return wrappedIterator.hasNext(); }
+
+        @Override
+        public T next() {
+            return wrappedIterator.next();
+        }
     }
 
 }

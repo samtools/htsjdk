@@ -19,6 +19,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -104,8 +105,9 @@ public class HtsCRAMCodec30QueryTest {
             final IOPath outputCRAI) throws IOException
     {
         Files.copy(inputCRAM.toPath(), outputCRAM.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        try (final FileOutputStream bos = new FileOutputStream(outputCRAI.toPath().toFile())) {
-            CRAMCRAIIndexer.writeIndex(new SeekableFileStream(outputCRAM.toPath().toFile()), bos);
+        try (final FileOutputStream bos = new FileOutputStream(outputCRAI.toPath().toFile());
+             final SeekableFileStream sfs = new SeekableFileStream(outputCRAM.toPath().toFile())) {
+            CRAMCRAIIndexer.writeIndex(sfs, bos);
         }
     }
 
@@ -675,9 +677,9 @@ public class HtsCRAMCodec30QueryTest {
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
         try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
+             final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
-             final Iterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart);
             int count = 0;
             while (it.hasNext()) {
                 it.next();
@@ -720,36 +722,72 @@ public class HtsCRAMCodec30QueryTest {
                         .setValidationStringency(ValidationStringency.LENIENT)
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
-        SAMRecord firstRecord;
-        SAMRecord firstRecordMate;
-        try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
-            final Iterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart);
-            Assert.assertTrue(it.hasNext());
-            firstRecord = it.next();
-            Assert.assertEquals(firstRecord.getReadName(), expectedReadName);
-        }
 
-        // get the mate for the first record
-        try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            SAMRecord firstRecord;
+            SAMRecord firstRecordMate;
+             try (final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
+                 Assert.assertTrue(it.hasNext());
+                 firstRecord = it.next();
+                 Assert.assertEquals(firstRecord.getReadName(), expectedReadName);
+             }
+
+            // get the mate for the first record
             firstRecordMate = cramDecoder.queryMate(firstRecord);
             Assert.assertEquals(firstRecordMate.getReadName(), firstRecord.getReadName());
-        }
 
-        // now query the mate's mate to ensure we get symmetric results
-        try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
             final SAMRecord matesMate = cramDecoder.queryMate(firstRecordMate);
             Assert.assertEquals(matesMate, firstRecord);
         }
     }
 
+    @Test(dataProvider="mateQueries")
+    public void testQueryMateEnsureInternalIteratorsClosed(
+            final IOPath cramInputPath,
+            final IOPath referencePath,
+            final String queryContig,
+            final int alignmentStart,
+            final String expectedReadName)
+    {
+        // the test file ("mitoAlignmentStartTest.cram") used here, which was provided by a user who reported
+        // a queryMate bug, contains reads that have a mateReferenceName == "*", but with mateAlignmentStart != 0;
+        // so we have to use ValidationStringency.LENIENT to suppress validation from throwing when it sees these..
+        final ReadsDecoderOptions readsDecoderOptions =
+                new ReadsDecoderOptions()
+                        .setValidationStringency(ValidationStringency.LENIENT)
+                        .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
+
+        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+
+            SAMRecord firstRecord;
+            SAMRecord firstRecordMate;
+            try (final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
+                Assert.assertTrue(it.hasNext());
+                firstRecord = it.next();
+                Assert.assertEquals(firstRecord.getReadName(), expectedReadName);
+            }
+
+            // get the mate for the first record
+            firstRecordMate = cramDecoder.queryMate(firstRecord);
+            Assert.assertEquals(firstRecordMate.getReadName(), firstRecord.getReadName());
+
+            final SAMRecord matesMate = cramDecoder.queryMate(firstRecordMate);
+            Assert.assertEquals(matesMate, firstRecord);
+
+            // now ensure that the querymate calls closed their iterators by re-executing a query that returns
+            // an iterator, and verify that it doesn't throw
+            try (final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
+                Assert.assertTrue(it.hasNext());
+                firstRecord = it.next();
+                Assert.assertEquals(firstRecord.getReadName(), expectedReadName);
+            }
+        }
+    }
+
     private void doQueryTest(
-            final Function<ReadsDecoder, Iterator <SAMRecord>> getIterator,
+            final Function<ReadsDecoder, CloseableIterator<SAMRecord>> getIterator,
             final IOPath cramInputPath,
             final IOPath referencePath,
             final String[] expectedNames)
@@ -758,9 +796,10 @@ public class HtsCRAMCodec30QueryTest {
                 new ReadsDecoderOptions()
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
         try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
+             final CloseableIterator<SAMRecord> it = getIterator.apply(cramDecoder)) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
-            final Iterator<SAMRecord> it = getIterator.apply(cramDecoder);
+
             int count = 0;
             while (it.hasNext()) {
                 final SAMRecord samRec = it.next();
@@ -777,33 +816,59 @@ public class HtsCRAMCodec30QueryTest {
     @DataProvider(name = "iteratorStateTests")
     public Object[][] iteratorStateQueries() {
         return new Object[][] {
-                {cramQueryWithCRAI, cramQueryReference},
-                {cramQueryWithLocalCRAI, cramQueryReference},
+                {cramQueryWithCRAI, cramQueryReference, 12, 1},
+                {cramQueryWithLocalCRAI, cramQueryReference, 12, 1},
                 //TODO: this requires a CRAM 2.1 HtsCodec which is not yet implemented
                 //{cramQueryWithBAI, cramQueryReference}
         };
     }
 
-    // The current CRAMFileReader implementation allows multiple iterators to exist on a
-    // CRAM reader at the same time, but they're not properly isolated from each other. When
-    // CRAMFileReader is changed to support the SamReader contract of one-iterator-at-a-time
-    // (https://github.com/samtools/htsjdk/issues/563), these can be re-enabled.
-    //
-    @Test(dataProvider="iteratorStateTests", expectedExceptions= SAMException.class, enabled=false)
-    public void testIteratorState(
+    @Test(dataProvider="iteratorStateTests", expectedExceptions= SAMException.class)
+    public void testSerialQueries(
             final IOPath cramInputPath,
-            final IOPath referencePath)
+            final IOPath referencePath,
+            final int expectedTotalCount,
+            final int expectedOverlappingCount)
     {
         final ReadsDecoderOptions readsDecoderOptions =
                 new ReadsDecoderOptions()
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
-        try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
-            final Iterator<SAMRecord> origIt = cramDecoder.iterator();
 
-            // opening the second iterator should throw
-            final Iterator<SAMRecord> overlapIt = cramDecoder.queryOverlapping("20", 100013, 100070);
+        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+
+            try (final CloseableIterator<SAMRecord> it = cramDecoder.iterator()) {
+                Assert.assertEquals(consumeIterator(it), expectedTotalCount);
+            }
+
+            try (final CloseableIterator<SAMRecord> it =
+                    cramDecoder.queryOverlapping("20", 100013, 100070)) {
+                Assert.assertEquals(consumeIterator(it), expectedOverlappingCount);
+            }
+
+            try (final CloseableIterator<SAMRecord> it = cramDecoder.iterator()) {
+                Assert.assertEquals(consumeIterator(it), expectedTotalCount);
+            }
+        }
+    }
+
+    @Test(dataProvider="iteratorStateTests", expectedExceptions= IllegalStateException.class)
+    public void testRejectParallelQueries(
+            final IOPath cramInputPath,
+            final IOPath referencePath,
+            final int unusedExpectedTotalCount,
+            final int unusedExpectedOverlappingCount)
+    {
+        final ReadsDecoderOptions readsDecoderOptions =
+                new ReadsDecoderOptions()
+                        .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
+
+        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
+             final CloseableIterator<SAMRecord> origIt = cramDecoder.iterator()) {
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+
+            // opening a second iterator while the first one is still open should throw
+            cramDecoder.queryOverlapping("20", 100013, 100070);
         }
     }
 
@@ -833,10 +898,9 @@ public class HtsCRAMCodec30QueryTest {
                 new ReadsDecoderOptions()
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
         int count = 0;
-        try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
+             final CloseableIterator<SAMRecord> it = cramDecoder.queryUnmapped()) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
-            final Iterator<SAMRecord> it = cramDecoder.queryUnmapped();
             while (it.hasNext()) {
                 it.next();
                 count++;
@@ -879,31 +943,43 @@ public class HtsCRAMCodec30QueryTest {
                             .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
             try (final ReadsDecoder cramDecoder =
                          HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-                Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
-                final Iterator<SAMRecord> firstIterator = cramDecoder.queryOverlapping(
-                        HtsInterval.fromQueryIntervalArray(
-                                new QueryInterval[]{interval},
-                                cramDecoder.getHeader().getSequenceDictionary()));
-                int count = 0;
-                while (firstIterator.hasNext()) {
-                    final SAMRecord samRec = firstIterator.next();
-                    Assert.assertTrue(count < expectedNames.length);
-                    Assert.assertEquals(samRec.getReadName(), expectedNames[count]);
-                    count++;
-                }
-                Assert.assertEquals(count, expectedNames.length);
+                 Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
 
-                count = 0;
+                 try (final CloseableIterator<SAMRecord> firstIterator = cramDecoder.queryOverlapping(
+                         HtsInterval.fromQueryIntervalArray(
+                                 new QueryInterval[]{interval},
+                                 cramDecoder.getHeader().getSequenceDictionary()))) {
+
+                     int count = 0;
+                     while (firstIterator.hasNext()) {
+                         final SAMRecord samRec = firstIterator.next();
+                         Assert.assertTrue(count < expectedNames.length);
+                         Assert.assertEquals(samRec.getReadName(), expectedNames[count]);
+                         count++;
+                     }
+                     Assert.assertEquals(count, expectedNames.length);
+                 }
+
                 // now execute a second query on the same cramDecoder, this time for unmapped reads
-                final Iterator<SAMRecord> secondIterator = cramDecoder.queryUnmapped();
-                while (secondIterator.hasNext()) {
-                    final SAMRecord samRec = secondIterator.next();
-                    Assert.assertTrue(samRec.getReadUnmappedFlag());
-                    count++;
+                try (final CloseableIterator<SAMRecord> secondIterator = cramDecoder.queryUnmapped()) {
+                    int count = 0;
+                    while (secondIterator.hasNext()) {
+                        final SAMRecord samRec = secondIterator.next();
+                        Assert.assertTrue(samRec.getReadUnmappedFlag());
+                        count++;
+                    }
+                    Assert.assertEquals(count, nUnmapped);
                 }
-                Assert.assertEquals(count, nUnmapped);
             }
         }
     }
 
+    private static int consumeIterator(Iterator<?> it) {
+        int count = 0;
+        while (it.hasNext()) {
+            it.next();
+            count++;
+        }
+        return count;
+    }
 }

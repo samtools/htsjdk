@@ -14,20 +14,18 @@ import java.util.*;
 
 //TODO: Master TODO list:
 // - add a "PublicAPI" opt-in annotation to exempt internal methods that need to be public because
-//   they're shared from being part of the public API
+//      they're shared from being part of the public API
 // - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
-// - guard against multiple iterators
-// - restore use of CloseableIterator in the interface APIs
 // - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
 // - HtsInterval should be an interface
 // - unify/clarify exception types
+// - add an API to register/override a particular codec
+// - throw on multiple codecs
 // - find a way to better align the ReadsFormat enum with content subtype strings
-//   if we used Strings for codec format type instead of a locked down enum, it would
-//   not only align better with the bundle content subtype concept, but it would make it
-//   possible to dynamically extend this registry to additional content subtypes without
-//   changing HTSJDK
+// - used strings for codec format type instead of a locked down enum, for better alignment with the bundle
+//      subcontenttype concept, and it would enable dynamically extension of this registry with additional
+//      content subtypes without changing HTSJDK
 // - encryption/decryption key files, etc.
-// - need a way to allow the caller to provide custom codec resolution
 // - display the bundle resource and the params of the winning codecs when there is more than one
 // - need to support codecs that need to see the stream (can't deterministically tell from the extension)
 // - Incomplete:
@@ -36,6 +34,8 @@ import java.util.*;
 //      SAM codec
 //      CRAM 2.1 codec
 //      BCF codec
+// clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
+//      output streams that are passed in ??)
 // javadoc
 // tests
 

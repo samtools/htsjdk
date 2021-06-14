@@ -8,8 +8,6 @@ import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 
-import java.util.Optional;
-
 /**
  * Base class for CRAM decoders.
  */
@@ -30,6 +28,10 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     @Override
     final public String getDisplayName() { return displayName; }
 
+    // TODO: If we've been handed a CRAMReferenceSource from the caller, then we don't want to close it
+    // when the decoder is closed, but if we create it, then we need to close it.
+    //TODO: creation of the source should be separate from the getting of the source, and the result
+    // cached, so we don't create multiple reference Sources
     protected CRAMReferenceSource getCRAMReferenceSource() {
         final CRAMDecoderOptions cramDecoderOptions = readsDecoderOptions.getCRAMDecoderOptions();
         if (cramDecoderOptions.getReferenceSource().isPresent()) {

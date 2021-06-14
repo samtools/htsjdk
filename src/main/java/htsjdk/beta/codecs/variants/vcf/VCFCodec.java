@@ -12,9 +12,9 @@ import java.util.Set;
 public abstract class VCFCodec implements VariantsCodec {
 
     // FileExtensions.VCF_LIST includes BCF, which we don't want included here
-    private final Set<String> extensionMap = new HashSet() {{
-        extensionMap.add(FileExtensions.VCF);
-        extensionMap.add(FileExtensions.COMPRESSED_VCF);
+    private static final Set<String> extensionMap = new HashSet() {{
+        add(FileExtensions.VCF);
+        add(FileExtensions.COMPRESSED_VCF);
     }};
 
     @Override

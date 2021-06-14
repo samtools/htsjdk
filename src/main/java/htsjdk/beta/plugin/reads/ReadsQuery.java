@@ -1,8 +1,7 @@
 package htsjdk.beta.plugin.reads;
 
 import htsjdk.beta.plugin.HtsRecord;
-
-import java.util.Iterator;
+import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Reads/alignment-specific query methods (reads-specific extension of HtsQuery)
@@ -10,7 +9,7 @@ import java.util.Iterator;
 public interface ReadsQuery<R extends HtsRecord> {
 
     // query unmapped Reads
-    Iterator<R> queryUnmapped();
+    CloseableIterator<R> queryUnmapped();
 
     // Fetch the mate for the given read.
     R queryMate(R rec);

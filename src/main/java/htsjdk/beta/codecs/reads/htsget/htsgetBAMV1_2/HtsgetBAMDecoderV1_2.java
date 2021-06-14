@@ -12,10 +12,10 @@ import htsjdk.samtools.HtsgetBAMFileReader;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
@@ -56,7 +56,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
     }
 
     @Override
-    public Iterator<SAMRecord> iterator() {
+    public CloseableIterator<SAMRecord> iterator() {
         throw new IllegalStateException("Not implemented");
     }
 
@@ -71,64 +71,64 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
     }
 
     @Override
-    public Iterator<SAMRecord> query(final String queryString) {
+    public CloseableIterator<SAMRecord> query(final String queryString) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> query(final String queryName, final long start, final long end, final HtsQueryRule queryRule) {
+    public CloseableIterator<SAMRecord> query(final String queryName, final long start, final long end, final HtsQueryRule queryRule) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> queryOverlapping(final String queryName, final long start, final long end) {
+    public CloseableIterator<SAMRecord> queryOverlapping(final String queryName, final long start, final long end) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> queryContained(final String queryName, final long start, final long end) {
+    public CloseableIterator<SAMRecord> queryContained(final String queryName, final long start, final long end) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> query(final HtsInterval interval, final HtsQueryRule queryRule) {
+    public CloseableIterator<SAMRecord> query(final HtsInterval interval, final HtsQueryRule queryRule) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> queryOverlapping(final HtsInterval interval) {
+    public CloseableIterator<SAMRecord> queryOverlapping(final HtsInterval interval) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> queryContained(final HtsInterval interval) {
+    public CloseableIterator<SAMRecord> queryContained(final HtsInterval interval) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
+    public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         return htsgetReader.query(
                 HtsInterval.toLocatableList(intervals, getHeader().getSequenceDictionary()),
                 queryRule == HtsQueryRule.CONTAINED == true);
     }
 
     @Override
-    public Iterator<SAMRecord> queryOverlapping(final List<HtsInterval> intervals) {
+    public CloseableIterator<SAMRecord> queryOverlapping(final List<HtsInterval> intervals) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> queryContained(final List<HtsInterval> intervals) {
+    public CloseableIterator<SAMRecord> queryContained(final List<HtsInterval> intervals) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> queryStart(final String queryName, final long start) {
+    public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
         return null;
     }
 
     @Override
-    public Iterator<SAMRecord> queryUnmapped() {
+    public CloseableIterator<SAMRecord> queryUnmapped() {
         return null;
     }
 

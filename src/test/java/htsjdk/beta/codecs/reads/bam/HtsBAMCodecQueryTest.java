@@ -16,6 +16,7 @@ import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamFiles;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -92,8 +93,9 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
                         .addPrimary(new IOPathResource(TEST_BAM, BundleResourceType.READS))
                         .addSecondary(new IOPathResource(TEST_BAI, BundleResourceType.READS_INDEX))
                         .build();
-        try (final HtsDecoder bamDecoder = HtsReadsCodecs.getReadsDecoder(readsBundle, new ReadsDecoderOptions())) {
-            final Iterator<SAMRecord> it = bamDecoder.query("chr1", 202661637, 202661812, queryRule);
+        try (final HtsDecoder bamDecoder = HtsReadsCodecs.getReadsDecoder(readsBundle, new ReadsDecoderOptions());
+            final CloseableIterator<SAMRecord> it =
+                    bamDecoder.query("chr1", 202661637, 202661812, queryRule)) {
             Assert.assertEquals(countElements(it), expected);
         }
     }

@@ -7,13 +7,13 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFReader;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 public class VCFDecoderV4_2 extends VCFDecoder {
     private final VCFReader vcfReader;
@@ -36,7 +36,7 @@ public class VCFDecoderV4_2 extends VCFDecoder {
     }
 
     @Override
-    public Iterator<VariantContext> iterator() {
+    public CloseableIterator<VariantContext> iterator() {
         return vcfReader.iterator();
     }
 

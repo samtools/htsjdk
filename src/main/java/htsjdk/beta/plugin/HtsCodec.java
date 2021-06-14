@@ -87,6 +87,9 @@ public interface HtsCodec<
      * Decode the input stream. Read as many bytes as {@link #getSignatureProbeStreamSize} returns for
      * this codec.
      *
+     * Codecs that can't consume a stream directly, such as codecs that handle a custom URI protocol
+     * for which there is no installed NIO provider, should return false;
+     *
      * @param probingInputStream
      * @param sourceName
      * @return true if this codec recognizes the stream signature, and can provide a decoder to decode the stream

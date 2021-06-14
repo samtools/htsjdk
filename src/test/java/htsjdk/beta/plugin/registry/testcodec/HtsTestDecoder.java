@@ -6,9 +6,9 @@ import htsjdk.beta.plugin.HtsHeader;
 import htsjdk.beta.plugin.HtsRecord;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.io.IOPath;
+import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.InputStream;
-import java.util.Iterator;
 
 // Dummy decoder class for use by tests
 public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader, HtsRecord> {
@@ -65,7 +65,7 @@ public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader,
     public void close() { }
 
     @Override
-    public Iterator<HtsRecord> iterator() {
+    public CloseableIterator<HtsRecord> iterator() {
         throw new IllegalStateException("Not implemented");
     }
 
