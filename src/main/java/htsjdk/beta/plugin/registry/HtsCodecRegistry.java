@@ -13,29 +13,28 @@ import htsjdk.beta.plugin.variants.VariantsFormat;
 import java.util.*;
 
 //TODO: Master TODO list:
-// - add a "PublicAPI" opt-in annotation to exempt internal methods that need to be public because
-//      they're shared from being part of the public API
-// - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
-// - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
-// - HtsInterval should be an interface
 // - unify/clarify exception types
+// - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
 // - add an API to register/override a particular codec
 // - throw on multiple codecs
-// - find a way to better align the ReadsFormat enum with content subtype strings
-// - used strings for codec format type instead of a locked down enum, for better alignment with the bundle
-//      subcontenttype concept, and it would enable dynamically extension of this registry with additional
-//      content subtypes without changing HTSJDK
-// - encryption/decryption key files, etc.
 // - display the bundle resource and the params of the winning codecs when there is more than one
 // - need to support codecs that need to see the stream (can't deterministically tell from the extension)
+// - find a way to better align the ReadsFormat enum with content subtype strings
+//      used strings for codec format type instead of a locked down enum, for better alignment with the bundle
+//      subcontenttype concept, and it would enable dynamically extension of this registry with additional
+//      content subtypes without changing HTSJDK
+// clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
+//      output streams that are passed in ??)
+// - add a "PublicAPI" opt-in annotation to exempt internal methods that need to be public because
+//      they're shared from being part of the public API
+// - encryption/decryption key files, etc.
+// - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
 // - Incomplete:
 //      VCF, FASTA codecs
 // - Missing:
 //      SAM codec
 //      CRAM 2.1 codec
 //      BCF codec
-// clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
-//      output streams that are passed in ??)
 // javadoc
 // tests
 

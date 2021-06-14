@@ -5,6 +5,8 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.beta.io.IOPathUtils;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.interval.HtsInterval;
+import htsjdk.beta.plugin.interval.HtsIntervalUtils;
+import htsjdk.beta.plugin.interval.HtsQueryInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -193,7 +195,7 @@ public class HtsCRAMCodec30QueryTest {
                 decoder -> {
                     final SAMSequenceDictionary samDictionary = decoder.getHeader().getSequenceDictionary();
                     return decoder.queryOverlapping(
-                            HtsInterval.fromQueryIntervalArray(new QueryInterval[]{interval}, samDictionary)
+                            HtsIntervalUtils.fromQueryIntervalArray(new QueryInterval[]{interval}, samDictionary)
                     );
                 },
                 cramFileName,
@@ -232,7 +234,7 @@ public class HtsCRAMCodec30QueryTest {
                 decoder -> {
                     final SAMSequenceDictionary samDictionary = decoder.getHeader().getSequenceDictionary();
                     return decoder.query(
-                            HtsInterval.fromQueryIntervalArray(new QueryInterval[]{interval}, samDictionary),
+                            HtsIntervalUtils.fromQueryIntervalArray(new QueryInterval[]{interval}, samDictionary),
                             HtsQueryRule.OVERLAPPING);
                 },
                 cramFileName,
@@ -290,7 +292,7 @@ public class HtsCRAMCodec30QueryTest {
     {
         doQueryTest(
                 decoder -> decoder.queryContained(
-                        HtsInterval.fromQueryIntervalArray(new QueryInterval[]{interval},
+                        HtsIntervalUtils.fromQueryIntervalArray(new QueryInterval[]{interval},
                                 decoder.getHeader().getSequenceDictionary())),
                 cramFileName,
                 referenceFileName,
@@ -326,7 +328,7 @@ public class HtsCRAMCodec30QueryTest {
     {
         doQueryTest(
                 decoder -> decoder.query(
-                        HtsInterval.fromQueryIntervalArray(
+                        HtsIntervalUtils.fromQueryIntervalArray(
                                 new QueryInterval[]{interval}, decoder.getHeader().getSequenceDictionary()
                         ),
                         HtsQueryRule.CONTAINED),
@@ -440,7 +442,7 @@ public class HtsCRAMCodec30QueryTest {
 
         doQueryTest(
                 decoder -> decoder.queryOverlapping(
-                        HtsInterval.fromQueryIntervalArray(
+                        HtsIntervalUtils.fromQueryIntervalArray(
                                 optimizedIntervals,
                                 decoder.getHeader().getSequenceDictionary()
                         )
@@ -483,7 +485,7 @@ public class HtsCRAMCodec30QueryTest {
     {
         final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
         doQueryTest(
-                decoder -> decoder.queryContained(HtsInterval.fromQueryIntervalArray(
+                decoder -> decoder.queryContained(HtsIntervalUtils.fromQueryIntervalArray(
                         optimizedIntervals,
                         decoder.getHeader().getSequenceDictionary()
                 )),
@@ -493,7 +495,7 @@ public class HtsCRAMCodec30QueryTest {
         );
         doQueryTest(
                 decoder -> decoder.queryOverlapping(
-                        HtsInterval.fromQueryIntervalArray(
+                        HtsIntervalUtils.fromQueryIntervalArray(
                                 optimizedIntervals,
                             decoder.getHeader().getSequenceDictionary()
                 )),
@@ -605,7 +607,7 @@ public class HtsCRAMCodec30QueryTest {
         final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
         Assert.assertTrue(optimizedIntervals.length > 1);
         doQueryTest(
-                decoder -> decoder.queryContained(HtsInterval.fromQueryIntervalArray(
+                decoder -> decoder.queryContained(HtsIntervalUtils.fromQueryIntervalArray(
                         optimizedIntervals,
                         decoder.getHeader().getSequenceDictionary()
                 )),
@@ -946,7 +948,7 @@ public class HtsCRAMCodec30QueryTest {
                  Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
 
                  try (final CloseableIterator<SAMRecord> firstIterator = cramDecoder.queryOverlapping(
-                         HtsInterval.fromQueryIntervalArray(
+                         HtsIntervalUtils.fromQueryIntervalArray(
                                  new QueryInterval[]{interval},
                                  cramDecoder.getHeader().getSequenceDictionary()))) {
 

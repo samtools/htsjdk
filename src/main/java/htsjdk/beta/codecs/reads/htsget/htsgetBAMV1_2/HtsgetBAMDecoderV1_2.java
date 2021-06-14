@@ -5,6 +5,8 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
+import htsjdk.beta.plugin.interval.HtsIntervalUtils;
+import htsjdk.beta.plugin.interval.HtsQueryInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.DefaultSAMRecordFactory;
@@ -108,7 +110,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         return htsgetReader.query(
-                HtsInterval.toLocatableList(intervals, getHeader().getSequenceDictionary()),
+                HtsIntervalUtils.toLocatableList(intervals, getHeader().getSequenceDictionary()),
                 queryRule == HtsQueryRule.CONTAINED == true);
     }
 

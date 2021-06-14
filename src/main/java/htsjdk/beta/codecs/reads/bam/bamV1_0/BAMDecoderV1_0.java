@@ -3,6 +3,8 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
 import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.plugin.interval.HtsIntervalUtils;
+import htsjdk.beta.plugin.interval.HtsQueryInterval;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.interval.HtsInterval;
@@ -61,7 +63,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
-        final QueryInterval[] queryIntervals = HtsInterval.toQueryIntervalArray(
+        final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
                 intervals,
                 samFileHeader.getSequenceDictionary());
         return samReader.query(queryIntervals, queryRule == HtsQueryRule.CONTAINED);
@@ -69,7 +71,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
-        return samReader.queryAlignmentStart(queryName, HtsInterval.toIntegerSafe(start));
+        return samReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start));
     }
 
     // ReadsQuery interface methods

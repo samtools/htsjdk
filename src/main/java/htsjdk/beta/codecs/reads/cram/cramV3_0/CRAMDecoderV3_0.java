@@ -4,6 +4,8 @@ import htsjdk.beta.codecs.reads.cram.CRAMDecoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.interval.HtsInterval;
+import htsjdk.beta.plugin.interval.HtsIntervalUtils;
+import htsjdk.beta.plugin.interval.HtsQueryInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.HtsCodecVersion;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
@@ -62,7 +64,7 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
-        final QueryInterval[] queryIntervals = HtsInterval.toQueryIntervalArray(
+        final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
                 intervals,
                 samFileHeader.getSequenceDictionary());
         return getIteratorMonitor(() -> cramReader.query(queryIntervals, queryRule == HtsQueryRule.CONTAINED));
@@ -70,7 +72,7 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
-        return getIteratorMonitor(() -> cramReader.queryAlignmentStart(queryName, HtsInterval.toIntegerSafe(start)));
+        return getIteratorMonitor(() -> cramReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start)));
     }
 
     @Override

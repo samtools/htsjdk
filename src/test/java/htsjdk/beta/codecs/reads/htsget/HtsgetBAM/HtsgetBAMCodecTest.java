@@ -1,10 +1,10 @@
 package htsjdk.beta.codecs.reads.htsget.HtsgetBAM;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.registry.HtsReadsCodecs;
-import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -46,7 +46,7 @@ public class HtsgetBAMCodecTest extends HtsjdkTest {
         try (final SamReader fileReader = SamReaderFactory.makeDefault().open(bamFile);
              final CloseableIterator<SAMRecord> csiIterator = fileReader.query(query, false)) {
             final Iterator<SAMRecord> htsgetIterator = htsgetDecoder.query(
-                    HtsInterval.fromQueryIntervalArray(query, htsgetDecoder.getHeader().getSequenceDictionary()),
+                    HtsIntervalUtils.fromQueryIntervalArray(query, htsgetDecoder.getHeader().getSequenceDictionary()),
                     HtsQueryRule.OVERLAPPING);
             Assert.assertTrue(htsgetIterator.hasNext());
             Assert.assertTrue(csiIterator.hasNext());

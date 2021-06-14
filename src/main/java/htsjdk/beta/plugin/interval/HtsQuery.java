@@ -32,22 +32,22 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
 
     boolean hasIndex();
 
-    // TODO: include this, for rsID for variants ? readname for reads?
+    // retained for usage such as rsID for variants, readname for reads,...
     default CloseableIterator<RECORD> query(final String queryString) {
         ValidationUtils.validateArg(isQueryable(), "Reader is not queryable");
         throw new IllegalStateException("query not implemented for this decoder");
     }
 
     default CloseableIterator<RECORD> query(final String queryName, final long start, final long end, final HtsQueryRule queryRule) {
-        return query(new HtsInterval(queryName, start, end), queryRule);
+        return query(new HtsQueryInterval(queryName, start, end), queryRule);
     }
 
     default CloseableIterator<RECORD> queryOverlapping(final String queryName, final long start, final long end) {
-        return queryOverlapping(new HtsInterval(queryName, start, end));
+        return queryOverlapping(new HtsQueryInterval(queryName, start, end));
     }
 
     default CloseableIterator<RECORD> queryContained(final String queryName, final long start, final long end) {
-        return queryContained(new HtsInterval(queryName, start, end));
+        return queryContained(new HtsQueryInterval(queryName, start, end));
     }
 
     default CloseableIterator<RECORD> query(final HtsInterval interval, final HtsQueryRule queryRule) {
