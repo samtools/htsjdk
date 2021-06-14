@@ -61,7 +61,6 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         return FASTACodecV1_0.VERSION_1;
     }
 
-    //TODO: this needs to consult the inputBundle
     @Override
     public Iterator<ReferenceSequence> iterator() {
         referenceSequenceFile.reset();
@@ -92,7 +91,8 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         throw new IllegalStateException("Not implemented");
     }
 
-    //TODO: this shouldn't be necessary
+    //TODO: can we remove the need to have this getter; it may require porting CRAMFileReader
+    // over so that it uses the new API
     public ReferenceSequenceFile getReferenceSequenceFile() {
         return referenceSequenceFile;
     }

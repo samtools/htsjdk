@@ -31,8 +31,6 @@ public class CRAMCodecV3_0 extends CRAMCodec {
         return CRAM_MAGIC.length();
     }
 
-    //TODO uses a byte array rather than a stream to reduce the need to repeatedly mark/reset the
-    // stream for each codec
     @Override
     public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
         try {

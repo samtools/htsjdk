@@ -23,9 +23,6 @@ public abstract class BAMCodec implements ReadsCodec {
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
-        //TODO: it is incorrect to filter based on "file" protocol here since these codecs CAN
-        // handle other schemes when there is an NIO file system provider for that scheme, such
-        // as hdfs or gs.
         return extensionMap.stream().anyMatch(ext-> ioPath.hasExtension(ext));
     }
 

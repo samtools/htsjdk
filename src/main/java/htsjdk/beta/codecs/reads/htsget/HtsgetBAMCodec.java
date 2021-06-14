@@ -14,15 +14,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-//TODO:
-// does this need custom ReaderOptions ?
-// should this class (and HtsgetBAMCodec) be repurposed to HtsgetReadsCodec/Decoder?
-
 // An Htsget codec for reading BAM.
 // Note: there is no Htsget encoder
+//Unfortunately, the HtsGet protocol doesn't seem to have a version number ?
 public abstract class HtsgetBAMCodec implements ReadsCodec {
     public static final HtsCodecVersion HTSGET_VERSION = new HtsCodecVersion(1, 2, 0);
-    public static final HtsCodecVersion BAM_DEFAULT_VERSION = new HtsCodecVersion(1, 0,0);
 
     private final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.BAM));
 
@@ -66,12 +62,11 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
 
     @Override
     public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
-        //TODO: can/should this throw ? we should never get here...
-        return false;
+        throw new IllegalArgumentException("This codec claims a custom URI, so canDecodeSignature should never be called");
     }
 
     boolean isQueryable() {
-        //TODO: right ??
+        //is this correct ??
         return true;
     }
 

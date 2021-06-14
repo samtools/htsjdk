@@ -8,7 +8,6 @@ import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
-import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.registry.HtsReadsCodecs;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
@@ -18,17 +17,13 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamFiles;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -325,7 +320,7 @@ public class HtsCRAMCodec30QueryTest {
             final HtsPath cramFileName,
             final HtsPath referenceFileName,
             final QueryInterval interval,
-            final String[] expectedNames) throws IOException
+            final String[] expectedNames)
     {
         doQueryTest(
                 decoder -> decoder.query(
@@ -436,7 +431,7 @@ public class HtsCRAMCodec30QueryTest {
             final HtsPath cramFileName,
             final HtsPath referenceFileName,
             final QueryInterval[] intervals,
-            final String[] expectedNames) throws IOException
+            final String[] expectedNames)
     {
         final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
         Assert.assertTrue(optimizedIntervals.length > 1);
@@ -603,7 +598,7 @@ public class HtsCRAMCodec30QueryTest {
             final HtsPath cramFileName,
             final HtsPath referenceFileName,
             final QueryInterval[] intervals,
-            final String[] expectedNames) throws IOException
+            final String[] expectedNames)
     {
         final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
         Assert.assertTrue(optimizedIntervals.length > 1);
@@ -637,7 +632,7 @@ public class HtsCRAMCodec30QueryTest {
     public void testQueryUnmapped(
             final HtsPath cramFileName,
             final HtsPath referenceFileName,
-            final String[] expectedNames) throws IOException
+            final String[] expectedNames)
     {
         doQueryTest(
                 decoder -> decoder.queryUnmapped(),
@@ -715,7 +710,7 @@ public class HtsCRAMCodec30QueryTest {
             final IOPath referencePath,
             final String queryContig,
             final int alignmentStart,
-            final String expectedReadName) throws IOException
+            final String expectedReadName)
     {
         // the test file ("mitoAlignmentStartTest.cram") used here, which was provided by a user who reported
         // a queryMate bug, contains reads that have a mateReferenceName == "*", but with mateAlignmentStart != 0;
@@ -778,38 +773,39 @@ public class HtsCRAMCodec30QueryTest {
 
     }
 
-//
-//    @DataProvider(name = "iteratorStateTests")
-//    public Object[][] iteratorStateQueries() {
-//        return new Object[][] {
-//                {cramQueryWithCRAI, cramQueryReference},
-//                {cramQueryWithLocalCRAI, cramQueryReference},
-//                {cramQueryWithBAI, cramQueryReference}
-//        };
-//    }
-//
-//    // The current CRAMFileReader implementation allows multiple iterators to exist on a
-//    // CRAM reader at the same time, but they're not properly isolated from each other. When
-//    // CRAMFileReader is changed to support the SamReader contract of one-iterator-at-a-time
-//    // (https://github.com/samtools/htsjdk/issues/563), these can be re-enabled.
-//    //
-//    @Test(dataProvider="iteratorStateTests", expectedExceptions= SAMException.class, enabled=false)
-//    public void testIteratorState(
-//            final IOPath cramFileName,
-//            final IOPath referenceFileName) throws IOException
-//    {
-//        SamReaderFactory factory = SamReaderFactory.makeDefault();
-//        if (referenceFileName != null) {
-//            factory = factory.referenceSequence(referenceFileName);
-//        }
-//
-//        try (final SamReader reader = factory.open(cramFileName)) {
-//            final CloseableIterator<SAMRecord> origIt = reader.iterator();
-//
-//            // opening the second iterator should throw
-//            final CloseableIterator<SAMRecord> overlapIt = reader.queryOverlapping("20", 100013, 100070);
-//        }
-//    }
+
+    @DataProvider(name = "iteratorStateTests")
+    public Object[][] iteratorStateQueries() {
+        return new Object[][] {
+                {cramQueryWithCRAI, cramQueryReference},
+                {cramQueryWithLocalCRAI, cramQueryReference},
+                //TODO: this requires a CRAM 2.1 HtsCodec which is not yet implemented
+                //{cramQueryWithBAI, cramQueryReference}
+        };
+    }
+
+    // The current CRAMFileReader implementation allows multiple iterators to exist on a
+    // CRAM reader at the same time, but they're not properly isolated from each other. When
+    // CRAMFileReader is changed to support the SamReader contract of one-iterator-at-a-time
+    // (https://github.com/samtools/htsjdk/issues/563), these can be re-enabled.
+    //
+    @Test(dataProvider="iteratorStateTests", expectedExceptions= SAMException.class, enabled=false)
+    public void testIteratorState(
+            final IOPath cramInputPath,
+            final IOPath referencePath)
+    {
+        final ReadsDecoderOptions readsDecoderOptions =
+                new ReadsDecoderOptions()
+                        .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
+        try (final ReadsDecoder cramDecoder =
+                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            final Iterator<SAMRecord> origIt = cramDecoder.iterator();
+
+            // opening the second iterator should throw
+            final Iterator<SAMRecord> overlapIt = cramDecoder.queryOverlapping("20", 100013, 100070);
+        }
+    }
 
     @DataProvider(name = "unmappedSliceTest")
     public Object[][] unmappedMultiSliceTest() {
@@ -831,7 +827,7 @@ public class HtsCRAMCodec30QueryTest {
     public void testUnmappedMultiSlice(
             final IOPath cramInputPath,
             final IOPath referencePath,
-            final int expectedCount) throws IOException
+            final int expectedCount)
     {
         final ReadsDecoderOptions readsDecoderOptions =
                 new ReadsDecoderOptions()

@@ -19,19 +19,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-//TODO: unify/clarify exception types
-//TODO: find a way to better align the ReadsFormat enum with content subtype strings
-// if we used Strings for codec format type instead of a locked down enum, it would
-// not only align better with the bundle content subtype concept, but it would make it
-// possible to dynamically extend this registry to additional content subtypes without
-// changing HTSJDK...
-//TODO: encryption/decryption key files, etc.
-//TODO: need a way to allow the caller to provide custom codec resolution
-//TODO: display the bundle resource and the params of the winning codecs when there is more than one
-//TODO: need to support codecs that need to see the stream (can't deterministically tell from the extension)
-//TODO: support/test stdin/stdout
-//TODO: revive CloseableIterator for Queries
-
 /**
  * Class used by the registry to track all codec formats and versions for a single codec type.
  * @param <F> enum representing the formats for this codec type

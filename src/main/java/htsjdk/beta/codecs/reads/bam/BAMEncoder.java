@@ -6,8 +6,6 @@ import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormat;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 
-// TODO: handle presorted
-
 /**
  * Base class for BAM encoders.
  */
