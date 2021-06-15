@@ -8,7 +8,7 @@ import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.beta.plugin.HtsEncoderOptions;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -19,10 +19,10 @@ import htsjdk.utils.ValidationUtils;
  */
 public class FASTACodecV1_0 implements HaploidReferenceCodec {
 
-    public static final HtsCodecVersion VERSION_1 = new HtsCodecVersion(1, 0, 0);
+    public static final HtsVersion VERSION_1 = new HtsVersion(1, 0, 0);
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return VERSION_1;
     }
 
@@ -63,7 +63,7 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     }
 
     @Override
-    public boolean runVersionUpgrade(final HtsCodecVersion sourceCodecVersion, final HtsCodecVersion targetCodecVersion) {
+    public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         throw new IllegalStateException("Not implemented");
     }
 }

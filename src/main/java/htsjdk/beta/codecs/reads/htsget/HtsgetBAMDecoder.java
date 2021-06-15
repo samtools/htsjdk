@@ -1,7 +1,7 @@
 package htsjdk.beta.codecs.reads.htsget;
 
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -22,7 +22,7 @@ public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     final public ReadsFormat getFormat() { return ReadsFormat.BAM; }
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return HtsgetBAMCodec.HTSGET_VERSION;
     }
 

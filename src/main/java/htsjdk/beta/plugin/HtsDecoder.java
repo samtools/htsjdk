@@ -17,7 +17,7 @@ public interface HtsDecoder<F extends Enum<F>, H extends HtsHeader, R extends Ht
 
     F getFormat();
 
-    HtsCodecVersion getVersion();
+    HtsVersion getVersion();
 
     String getDisplayName();
 

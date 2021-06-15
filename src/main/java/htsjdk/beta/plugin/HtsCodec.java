@@ -41,9 +41,9 @@ public interface HtsCodec<
     F getFileFormat();
 
     /**
-     * @return the file format version ({@link HtsCodecVersion}) supported by this codec
+     * @return the file format version ({@link HtsVersion}) supported by this codec
      */
-    HtsCodecVersion getVersion();
+    HtsVersion getVersion();
 
     /**
      * @return a user-friendly informational display name for a given instance of this codec

@@ -2,7 +2,7 @@ package htsjdk.beta.plugin.registry.testcodec;
 
 import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsCodecType;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.exception.HtsjdkIOException;
@@ -27,7 +27,7 @@ public class HtsTestCodec implements HtsCodec<
         HtsTestDecoderOptions,
         HtsTestEncoderOptions>
 {
-    private final HtsCodecVersion htsVersion;
+    private final HtsVersion htsVersion;
     private final HtsTestCodecFormat htsFormat;
     private final  String contentSubType;
     private final  String fileExtension;
@@ -46,7 +46,7 @@ public class HtsTestCodec implements HtsCodec<
     // used by tests to create a variety of different test codecs that vary by format/version/extensions/protocol
     public HtsTestCodec(
             final HtsTestCodecFormat htsFormat,
-            final HtsCodecVersion htsVersion,
+            final HtsVersion htsVersion,
             final String contentSubType,
             final String fileExtension,
             final String streamSignature,
@@ -75,7 +75,7 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return htsVersion;
     }
 
@@ -140,7 +140,7 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public boolean runVersionUpgrade(final HtsCodecVersion sourceCodecVersion, final HtsCodecVersion targetCodecVersion) {
+    public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         throw new RuntimeException("Not yet implemented");
     }
 

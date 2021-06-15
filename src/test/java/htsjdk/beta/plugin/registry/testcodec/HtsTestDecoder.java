@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.HtsDecoder;
 import htsjdk.beta.plugin.HtsHeader;
 import htsjdk.beta.plugin.HtsRecord;
@@ -12,14 +12,14 @@ import java.io.InputStream;
 
 // Dummy decoder class for use by tests
 public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader, HtsRecord> {
-    private final HtsCodecVersion htsVersion;
+    private final HtsVersion htsVersion;
     private final HtsTestCodecFormat htsFormat;
 
     public HtsTestDecoder(
             final IOPath inputPath,
             final HtsTestDecoderOptions decoderOptions,
             final HtsTestCodecFormat htsFormat,
-            final HtsCodecVersion htsVersion) {
+            final HtsVersion htsVersion) {
         this.htsFormat = htsFormat;
         this.htsVersion = htsVersion;
     }
@@ -28,7 +28,7 @@ public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader,
             final Bundle inputBundle,
             final HtsTestDecoderOptions decoderOptions,
             final HtsTestCodecFormat htsFormat,
-            final HtsCodecVersion htsVersion) {
+            final HtsVersion htsVersion) {
         this.htsFormat = htsFormat;
         this.htsVersion = htsVersion;
     }
@@ -38,7 +38,7 @@ public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader,
             final String displayName,
             final HtsTestDecoderOptions decoderOptions,
             final HtsTestCodecFormat htsFormat,
-            final HtsCodecVersion htsVersion) {
+            final HtsVersion htsVersion) {
         this.htsFormat = htsFormat;
         this.htsVersion = htsVersion;
     }
@@ -49,7 +49,7 @@ public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader,
     }
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return htsVersion;
     }
 

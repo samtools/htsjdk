@@ -1,19 +1,19 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.HtsEncoder;
 import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.beta.plugin.bundle.Bundle;
 
 // Dummy encoder class for use by tests
 public class HtsTestEncoder implements HtsEncoder<HtsTestCodecFormat, HtsTestHeader, HtsTestRecord> {
-    private final HtsCodecVersion htsVersion;
+    private final HtsVersion htsVersion;
     private final HtsTestCodecFormat htsFormat;
 
     public HtsTestEncoder(final Bundle outputBundle,
                           final HtsEncoderOptions htsEncoderOptions,
                           final HtsTestCodecFormat htsFormat,
-                          final HtsCodecVersion htsVersion) {
+                          final HtsVersion htsVersion) {
         this.htsFormat = htsFormat;
         this.htsVersion = htsVersion;
     }
@@ -24,7 +24,7 @@ public class HtsTestEncoder implements HtsEncoder<HtsTestCodecFormat, HtsTestHea
     }
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return htsVersion;
     }
 

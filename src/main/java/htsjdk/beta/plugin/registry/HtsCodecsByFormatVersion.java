@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.registry;
 
 import htsjdk.beta.plugin.HtsCodec;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
@@ -29,7 +29,7 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
     final static String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
     final static String MULTIPLE_SUPPORTING_CODECS_ERROR = "Multiple codecs accept the provided resource";
 
-    private final Map<F, Map<HtsCodecVersion, C>> codecs = new HashMap<>();
+    private final Map<F, Map<HtsVersion, C>> codecs = new HashMap<>();
     private final Function<String, F> formatFromContentSubType;
 
 
@@ -48,10 +48,10 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
      */
     public C registerCodec(final C codec) {
         final F fileFormat = codec.getFileFormat();
-        final Map<HtsCodecVersion, C> versionMap = codecs.get(fileFormat);
+        final Map<HtsVersion, C> versionMap = codecs.get(fileFormat);
         if (versionMap == null) {
             // first codec for this format
-            final Map<HtsCodecVersion, C> newMap = new HashMap<>();
+            final Map<HtsVersion, C> newMap = new HashMap<>();
             newMap.put(codec.getVersion(), codec);
             codecs.put(fileFormat, newMap);
             return null;
@@ -99,7 +99,7 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
     public C resolveCodecForEncoding(
             final Bundle bundle,
             final String requiredContentType,
-            final Optional<HtsCodecVersion> optHtsVersion) {
+            final Optional<HtsVersion> optHtsVersion) {
 
         final BundleResource bundleResource = getRequiredBundleResource(bundle, requiredContentType,false);
         final Optional<F> optFormat = getFormatForContentSubType(bundleResource, formatFromContentSubType, requiredContentType);
@@ -130,14 +130,14 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
     }
 
     public List<C> getAllCodecsForFormat(final F rf) {
-        final Map<HtsCodecVersion, C> allCodecsForFormat = codecs.get(rf);
+        final Map<HtsVersion, C> allCodecsForFormat = codecs.get(rf);
         if (allCodecsForFormat != null) {
             return allCodecsForFormat.values().stream().collect(Collectors.toList());
         }
         return Collections.EMPTY_LIST;
     }
 
-    public C getCodecForFormatVersion(final F format, HtsCodecVersion formatVersion) {
+    public C getCodecForFormatVersion(final F format, HtsVersion formatVersion) {
         final List<C> matchingCodecs = getAllCodecsForFormat(format)
                 .stream()
                 .filter(codec -> codec.getFileFormat().equals(format) && codec.getVersion().equals(formatVersion))
@@ -164,7 +164,7 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
         }
     }
 
-    private List<C> filterByVersion(final List<C> candidateCodecs, final Optional<HtsCodecVersion> optHtsVersion) {
+    private List<C> filterByVersion(final List<C> candidateCodecs, final Optional<HtsVersion> optHtsVersion) {
         if (candidateCodecs.isEmpty()) {
             return candidateCodecs;
         }
@@ -174,11 +174,11 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
         }
         // find the newest codec version in the list of candidates, and return all the codecs for that
         // version (since there still can be more than one)
-        final HtsCodecVersion newestCodecVersion = candidateCodecs.stream()
+        final HtsVersion newestCodecVersion = candidateCodecs.stream()
                 .map(c -> c.getVersion())
                 .reduce(
                         candidateCodecs.get(0).getVersion(),
-                        (HtsCodecVersion a, HtsCodecVersion b) -> a.compareTo(b) > 0 ? a : b);
+                        (HtsVersion a, HtsVersion b) -> a.compareTo(b) > 0 ? a : b);
         return candidateCodecs.stream().filter(c -> c.getVersion().equals(newestCodecVersion)).collect(Collectors.toList());
     }
 

@@ -1,7 +1,7 @@
 package htsjdk.beta.codecs.reads.bam;
 
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormat;
 import htsjdk.samtools.util.FileExtensions;
@@ -14,7 +14,7 @@ import java.util.Set;
  * Base class for BAM codecs.
  */
 public abstract class BAMCodec implements ReadsCodec {
-    public static final HtsCodecVersion BAM_DEFAULT_VERSION = new HtsCodecVersion(1, 0,0);
+    public static final HtsVersion BAM_DEFAULT_VERSION = new HtsVersion(1, 0,0);
 
     private static final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.BAM));
 

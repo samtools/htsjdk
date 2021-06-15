@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 
 import htsjdk.beta.codecs.reads.bam.BAMEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
@@ -21,7 +21,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
     }
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return BAMCodecV1_0.VERSION_1;
     }
 

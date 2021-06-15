@@ -2,7 +2,7 @@ package htsjdk.beta.plugin;
 
 public class VersionUtils {
 
-    public boolean runVersionUpgrade(final HtsCodecVersion sourceCodecVersion, final HtsCodecVersion targetCodecVersion) {
+    public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
 
         // run upgrade chain
         return true;

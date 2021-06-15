@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin.registry;
 
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsBundle;
@@ -104,7 +104,7 @@ public class HtsReadsCodecs {
             final Bundle outputBundle,
             final ReadsEncoderOptions readsEncoderOptions,
             final ReadsFormat readsFormat,
-            final HtsCodecVersion codecVersion) {
+            final HtsVersion codecVersion) {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
         ValidationUtils.nonNull(readsFormat, "Codec format");
         ValidationUtils.nonNull(codecVersion, "Codec version");

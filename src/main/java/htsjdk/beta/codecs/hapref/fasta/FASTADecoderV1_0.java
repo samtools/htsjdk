@@ -3,7 +3,7 @@ package htsjdk.beta.codecs.hapref.fasta;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -57,7 +57,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     }
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return FASTACodecV1_0.VERSION_1;
     }
 

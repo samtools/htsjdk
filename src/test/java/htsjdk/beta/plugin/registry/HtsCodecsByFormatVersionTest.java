@@ -2,7 +2,7 @@ package htsjdk.beta.plugin.registry;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.plugin.HtsCodec;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleBuilder;
@@ -66,9 +66,9 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
     final static String FORMAT_3_FILE_EXTENSION = ".f3";
     final static String FORMAT_3_PROTOCOL_SCHEME = "ps3";
 
-    final static HtsCodecVersion V1_0 = new HtsCodecVersion(1, 0, 0);
-    final static HtsCodecVersion V1_1 = new HtsCodecVersion(1, 1, 0);
-    final static HtsCodecVersion V2_0 = new HtsCodecVersion(2, 0, 0);
+    final static HtsVersion V1_0 = new HtsVersion(1, 0, 0);
+    final static HtsVersion V1_1 = new HtsVersion(1, 1, 0);
+    final static HtsVersion V2_0 = new HtsVersion(2, 0, 0);
 
     // file format 1, v1.0
     final static HtsTestCodec FORMAT_1_V1_0 = new HtsTestCodec(
@@ -498,7 +498,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
     public void testResolveCodecForEncoding(
             final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
             final Bundle bundle,
-            final HtsCodecVersion htsVersionRequested,
+            final HtsVersion htsVersionRequested,
             final String expectedCodecDisplayName) {
         final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
                 new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
@@ -556,7 +556,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
                 // requested version isn't registered
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
                         getOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, FORMAT_1_CONTENT_SUBTYPE),
-                        new HtsCodecVersion(3, 0, 0), // version 3.0.0 not registered
+                        new HtsVersion(3, 0, 0), // version 3.0.0 not registered
                         HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // content subtype specified, but specified version not registered
@@ -565,7 +565,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
                                 TEST_CODEC_CONTENT_TYPE,
                                 FORMAT_1_CONTENT_SUBTYPE,
                                 FORMAT_1_FILE_EXTENSION),
-                        new HtsCodecVersion(3, 0, 0), // version 3.0.0 not registered
+                        new HtsVersion(3, 0, 0), // version 3.0.0 not registered
                         HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // bundle contains an INPUT stream resource, not an output stream
@@ -584,7 +584,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
     public void testResolveCodecForEncodingFails(
             final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
             final Bundle bundle,
-            final HtsCodecVersion htsCodecVersion,
+            final HtsVersion htsVersion,
             final String expectedMessage) {
         final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
                 new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
@@ -593,7 +593,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
                 testCodecs.resolveCodecForEncoding(
                         bundle,
                         TEST_CODEC_CONTENT_TYPE,
-                        Optional.ofNullable(htsCodecVersion));
+                        Optional.ofNullable(htsVersion));
         } catch (final RuntimeException e) {
             Assert.assertTrue(e.getMessage().contains(expectedMessage));
             throw e;

@@ -5,7 +5,7 @@ import htsjdk.beta.codecs.reads.bam.BAMDecoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.exception.HtsjdkIOException;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 
@@ -32,7 +32,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     }
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return BAMCodecV1_0.VERSION_1;
     }
 

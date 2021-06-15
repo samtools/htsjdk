@@ -14,7 +14,7 @@ public interface HtsEncoder<F, H extends HtsHeader, R extends HtsRecord> extends
 
     F getFormat();
 
-    HtsCodecVersion getVersion();
+    HtsVersion getVersion();
 
     String getDisplayName();
 

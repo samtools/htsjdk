@@ -4,7 +4,7 @@ import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
@@ -21,7 +21,7 @@ public class VCFEncoderV4_2 extends VCFEncoder {
     }
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return VCFCodecV4_2.VCF_V42_VERSION;
     }
 

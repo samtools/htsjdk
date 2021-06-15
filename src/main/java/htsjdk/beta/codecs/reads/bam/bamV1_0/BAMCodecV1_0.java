@@ -6,7 +6,7 @@ import htsjdk.beta.codecs.reads.bam.BAMEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.exception.HtsjdkIOException;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.SamStreams;
@@ -19,10 +19,10 @@ import java.io.IOException;
  * BAM codec.
  */
 public class BAMCodecV1_0 extends BAMCodec {
-    protected static final HtsCodecVersion VERSION_1 = new HtsCodecVersion(1, 0, 0);
+    protected static final HtsVersion VERSION_1 = new HtsVersion(1, 0, 0);
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return VERSION_1;
     }
 
@@ -58,7 +58,7 @@ public class BAMCodecV1_0 extends BAMCodec {
     }
 
     @Override
-    public boolean runVersionUpgrade(final HtsCodecVersion sourceCodecVersion, final HtsCodecVersion targetCodecVersion) {
+    public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         throw new RuntimeException("Not yet implemented");
     }
 

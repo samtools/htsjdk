@@ -3,7 +3,7 @@ package htsjdk.beta.codecs.reads.cram;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.beta.io.IOPathUtils;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
@@ -679,7 +679,7 @@ public class HtsCRAMCodec30QueryTest {
         try (final ReadsDecoder cramDecoder =
                      HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
             int count = 0;
             while (it.hasNext()) {
                 it.next();
@@ -723,7 +723,7 @@ public class HtsCRAMCodec30QueryTest {
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
         try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
             SAMRecord firstRecord;
             SAMRecord firstRecordMate;
@@ -759,7 +759,7 @@ public class HtsCRAMCodec30QueryTest {
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
         try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
             SAMRecord firstRecord;
             SAMRecord firstRecordMate;
@@ -798,7 +798,7 @@ public class HtsCRAMCodec30QueryTest {
         try (final ReadsDecoder cramDecoder =
                      HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> it = getIterator.apply(cramDecoder)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
             int count = 0;
             while (it.hasNext()) {
@@ -835,7 +835,7 @@ public class HtsCRAMCodec30QueryTest {
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
         try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
             try (final CloseableIterator<SAMRecord> it = cramDecoder.iterator()) {
                 Assert.assertEquals(consumeIterator(it), expectedTotalCount);
@@ -865,7 +865,7 @@ public class HtsCRAMCodec30QueryTest {
 
         try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> origIt = cramDecoder.iterator()) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
             // opening a second iterator while the first one is still open should throw
             cramDecoder.queryOverlapping("20", 100013, 100070);
@@ -900,7 +900,7 @@ public class HtsCRAMCodec30QueryTest {
         int count = 0;
         try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> it = cramDecoder.queryUnmapped()) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
             while (it.hasNext()) {
                 it.next();
                 count++;
@@ -943,7 +943,7 @@ public class HtsCRAMCodec30QueryTest {
                             .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
             try (final ReadsDecoder cramDecoder =
                          HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-                 Assert.assertEquals(cramDecoder.getVersion(), new HtsCodecVersion(3, 0, 0));
+                 Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
                  try (final CloseableIterator<SAMRecord> firstIterator = cramDecoder.queryOverlapping(
                          HtsIntervalUtils.fromQueryIntervalArray(

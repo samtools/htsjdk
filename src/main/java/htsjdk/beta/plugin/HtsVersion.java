@@ -5,7 +5,7 @@ import htsjdk.utils.ValidationUtils;
 /**
  * A codec (file format) version.
  */
-public class HtsCodecVersion implements Comparable<HtsCodecVersion> {
+public class HtsVersion implements Comparable<HtsVersion> {
 
     private static final String FORMAT_STRING = "%d.%d.%d";
 
@@ -13,13 +13,13 @@ public class HtsCodecVersion implements Comparable<HtsCodecVersion> {
     private final int minorVersion;
     private final int patchVersion;
 
-    public HtsCodecVersion(final int major, final int minor, final int patch) {
+    public HtsVersion(final int major, final int minor, final int patch) {
         this.majorVersion = major;
         this.minorVersion = minor;
         this.patchVersion = patch;
     }
 
-    public HtsCodecVersion(final String versionString) {
+    public HtsVersion(final String versionString) {
         ValidationUtils.nonNull(versionString);
         final String[] parts = versionString.split(".", 0);
         if (parts.length != 3) {
@@ -49,9 +49,9 @@ public class HtsCodecVersion implements Comparable<HtsCodecVersion> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof HtsCodecVersion)) return false;
+        if (!(o instanceof HtsVersion)) return false;
 
-        HtsCodecVersion codecVersion = (HtsCodecVersion) o;
+        HtsVersion codecVersion = (HtsVersion) o;
 
         if (getMajorVersion() != codecVersion.getMajorVersion()) return false;
         if (getMinorVersion() != codecVersion.getMinorVersion()) return false;
@@ -75,7 +75,7 @@ public class HtsCodecVersion implements Comparable<HtsCodecVersion> {
     //a negative integer, zero, or a positive integer as this object
     //is less than, equal to, or greater than the specified object.
     @Override
-    public int compareTo(HtsCodecVersion o) {
+    public int compareTo(HtsVersion o) {
         ValidationUtils.nonNull(o);
         if (this.majorVersion == o.majorVersion) {
             if (this.minorVersion == o.minorVersion) {

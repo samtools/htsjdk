@@ -6,7 +6,7 @@ import htsjdk.beta.codecs.reads.cram.CRAMEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.exception.HtsjdkIOException;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -18,11 +18,11 @@ import java.util.Arrays;
  * CRAM v3.0 codec
  */
 public class CRAMCodecV3_0 extends CRAMCodec {
-    public static final HtsCodecVersion VERSION_3_0 = new HtsCodecVersion(3, 0, 0);
+    public static final HtsVersion VERSION_3_0 = new HtsVersion(3, 0, 0);
     protected static final String CRAM_MAGIC = new String(CramHeader.MAGIC) + "\3\0";
 
     @Override
-    public HtsCodecVersion getVersion() {
+    public HtsVersion getVersion() {
         return VERSION_3_0;
     }
 
@@ -56,7 +56,7 @@ public class CRAMCodecV3_0 extends CRAMCodec {
     }
 
     @Override
-    public boolean runVersionUpgrade(final HtsCodecVersion sourceCodecVersion, final HtsCodecVersion targetCodecVersion) {
+    public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         throw new IllegalStateException("Not implemented");
     }
 

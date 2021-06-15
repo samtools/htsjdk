@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin.registry;
 
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleBuilder;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
@@ -93,7 +93,7 @@ public class HtsVariantsCodecs {
             final Bundle outputBundle,
             final VariantsEncoderOptions variantsEncoderOptions,
             final VariantsFormat variantsFormat,
-            final HtsCodecVersion codecVersion) {
+            final HtsVersion codecVersion) {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
         ValidationUtils.nonNull(variantsFormat, "Format");
         ValidationUtils.nonNull(codecVersion, "Codec version");

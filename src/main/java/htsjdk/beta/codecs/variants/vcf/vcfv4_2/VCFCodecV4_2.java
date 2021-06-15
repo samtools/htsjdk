@@ -6,7 +6,7 @@ import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.exception.HtsjdkIOException;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
@@ -18,11 +18,11 @@ import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
 public class VCFCodecV4_2 extends VCFCodec {
-    public static final HtsCodecVersion VCF_V42_VERSION = new HtsCodecVersion(4, 2,0);
+    public static final HtsVersion VCF_V42_VERSION = new HtsVersion(4, 2,0);
     protected static final String VCF_V42_MAGIC = "##fileformat=VCFv4.2";
 
     @Override
-    public HtsCodecVersion getVersion() { return VCF_V42_VERSION; }
+    public HtsVersion getVersion() { return VCF_V42_VERSION; }
 
     @Override
     public int getSignatureSize() {
@@ -60,7 +60,7 @@ public class VCFCodecV4_2 extends VCFCodec {
     }
 
     @Override
-    public boolean runVersionUpgrade(final HtsCodecVersion sourceCodecVersion, final HtsCodecVersion targetCodecVersion) {
+    public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         throw new RuntimeException("Not yet implemented");
     }
 

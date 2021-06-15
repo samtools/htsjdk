@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.reads.htsget;
 
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.HtsCodecVersion;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormat;
 import htsjdk.samtools.HtsgetBAMFileReader;
@@ -17,7 +17,7 @@ import java.util.Set;
 // An Htsget codec for reading BAM.
 // Note: there is no Htsget encoder
 public abstract class HtsgetBAMCodec implements ReadsCodec {
-    public static final HtsCodecVersion HTSGET_VERSION = new HtsCodecVersion(1, 2, 0);
+    public static final HtsVersion HTSGET_VERSION = new HtsVersion(1, 2, 0);
 
     private final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.BAM));
 
@@ -25,7 +25,7 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
     /**
      * The HtsGet protocol doesn't seem to have a version number ?
      */
-    public HtsCodecVersion getVersion() { return HTSGET_VERSION; }
+    public HtsVersion getVersion() { return HTSGET_VERSION; }
 
     @Override
     public ReadsFormat getFileFormat() { return ReadsFormat.HTSGET_BAM; }
@@ -75,7 +75,7 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
     boolean hasIndex() { return false; }
 
     @Override
-    public boolean runVersionUpgrade(final HtsCodecVersion sourceCodecVersion, final HtsCodecVersion targetCodecVersion) {
+    public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         return false;
     }
 }
