@@ -4,9 +4,7 @@ import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.utils.ValidationUtils;
 
-//TODO:
-// Wild cards, i.e., end of reference/contig
-// Should this have a separate interface ?
+//TODO: Wild cards, i.e., end of reference/contig
 
 public class HtsQueryInterval implements HtsInterval {
 

@@ -14,8 +14,8 @@ import java.util.*;
 
 //TODO: Master TODO list:
 // - unify/clarify exception types
-// - support codecs that need to see the stream (can't deterministically tell from the extension)
 // - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
+//      document how to implement codecs that need to see the stream (can't deterministically tell from the extension)
 // - rename the packages classes for codecs to reflect the interfaces they provide (i.e., a "READS" codec
 //      is a codec that exposes SAMFileHeader/SAMRecord). Someday when we replace those, we'll need a new
 //      name that contrasts with the current name i.e. READS2

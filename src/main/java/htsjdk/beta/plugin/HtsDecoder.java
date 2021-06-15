@@ -4,11 +4,6 @@ import htsjdk.beta.plugin.interval.HtsQuery;
 
 import java.io.Closeable;
 
-//TODO:
-// Do we need to retain the existing limitation of a single open iterator (and thus CloseableIterator)
-// and reject an attempt to open a second one, or just cancel any outstanding iterator on a subsequent query ?
-// Should we move "extends HtsQuery" down one level to the individual base classes (i.e., ReadsCodec, VariantsCodec?)
-
 /**
  * Base interface for decoders.
  *

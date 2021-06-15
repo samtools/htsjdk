@@ -21,8 +21,6 @@ import htsjdk.samtools.util.CloseableIterator;
 import java.io.IOException;
 import java.util.List;
 
-//TODO: need to guard against multiple iterators
-
 public class BAMDecoderV1_0 extends BAMDecoder {
     private final SamReader samReader;
     private final SAMFileHeader samFileHeader;

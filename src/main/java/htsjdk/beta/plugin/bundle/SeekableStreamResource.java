@@ -37,11 +37,9 @@ public class SeekableStreamResource extends InputStreamResource {
         this.seekableStream = seekableStream;
     }
 
-    //TODO: this needs access to the cloudWrapper...
     @Override
     public Optional<SeekableStream> getSeekableStream() { return Optional.of(seekableStream); }
 
-    //TODO: this needs access to the cloudWrapper...
     @Override
     public SignatureProbingInputStream getSignatureProbingStream(final int requestedPrefixSize) {
         //TODO: is the super class' implementation sufficient ?

@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-//TODO: We need to publish the used for these Bundles schema once its finalized.
+//TODO: Once the schema is finalized, we need to bump the version # to 1.0, and publish it.
 
 /**
  * Methods for serializing and deserializing Bundles to and from JSON strings.

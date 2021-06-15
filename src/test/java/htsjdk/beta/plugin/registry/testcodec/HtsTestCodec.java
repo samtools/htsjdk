@@ -80,10 +80,7 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public int getSignatureProbeStreamSize() {
-        //TODO: fix this
-        return 64 * 1024;
-    }
+    public int getSignatureProbeStreamSize() { return 64 * 1024; }
 
     @Override
     public int getSignatureSize() {
@@ -101,7 +98,6 @@ public class HtsTestCodec implements HtsCodec<
         return extension.isPresent() && extension.get().equals(fileExtension);
     }
 
-    //TODO: document to NEVER close this stream
     @Override
     public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
         ValidationUtils.nonNull(probingInputStream);
@@ -119,13 +115,15 @@ public class HtsTestCodec implements HtsCodec<
                     return false; // this codec requires gzipped input but this input isn't gzipped
                 }
             }
-            //TODO: need a try/catch block ? WAIT. Never close this stream. NEVER.
-            final InputStream streamToUse = useGzippedInputs ? new BlockCompressedInputStream(probingInputStream) : probingInputStream;
-            int numRead = streamToUse.read(signatureBytes);
-            if (numRead <= 0) {
-                throw new HtsjdkIOException(String.format("Failure reading content from input stream for %s", sourceName));
+            try (final InputStream streamToUse =
+                         useGzippedInputs ?
+                                 new BlockCompressedInputStream(probingInputStream) :
+                                 probingInputStream) {
+                if (streamToUse.read(signatureBytes) <= 0) {
+                    throw new HtsjdkIOException(String.format("Failure reading content from input stream for %s", sourceName));
+                }
+                return Arrays.equals(signatureBytes, (streamSignature + htsVersion).getBytes());
             }
-            return Arrays.equals(signatureBytes, (streamSignature + htsVersion).getBytes());
         } catch (IOException e) {
             throw new HtsjdkIOException(String.format("Failure reading content from stream for %s", sourceName), e);
         }

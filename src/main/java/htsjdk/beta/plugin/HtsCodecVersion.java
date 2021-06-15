@@ -5,7 +5,6 @@ import htsjdk.utils.ValidationUtils;
 /**
  * A codec (file format) version.
  */
-//TODO: this should have a different name (HtsVersion ?) since it refers to both codec and format
 public class HtsCodecVersion implements Comparable<HtsCodecVersion> {
 
     private static final String FORMAT_STRING = "%d.%d.%d";
