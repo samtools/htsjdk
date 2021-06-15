@@ -43,7 +43,7 @@ public class HtsReadsCodecs {
             final IOPath inputPath,
             final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputPath, "Input path");
-        ValidationUtils.nonNull(readsDecoderOptions, "Decoder options must not be null");
+        ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
         //TODO: this resolves the index automatically
         return getReadsDecoder(ReadsBundle.resolveIndex(inputPath), readsDecoderOptions);
     }
@@ -61,10 +61,9 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
 
-        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().resolveCodecForInput(
+        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().resolveCodecForDecoding(
                 inputBundle,
-                BundleResourceType.READS,
-                ReadsFormat::mapContentSubTypeToFormat);
+                BundleResourceType.READS);
         return (ReadsDecoder) readsCodec.getDecoder(inputBundle, readsDecoderOptions);
     }
 
@@ -91,14 +90,12 @@ public class HtsReadsCodecs {
             final Bundle outputBundle,
             final ReadsEncoderOptions readsEncoderOptions) {
         ValidationUtils.nonNull(outputBundle, "outputBundle");
-        ValidationUtils.nonNull(readsEncoderOptions, "Encoder options ");
+        ValidationUtils.nonNull(readsEncoderOptions, "Encoder options");
 
-        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().resolveCodecForOutput(
+        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().resolveCodecForEncoding(
                 outputBundle,
                 BundleResourceType.READS,
-                Optional.empty(),           // no requested version
-                ReadsFormat::mapContentSubTypeToFormat);
-
+                Optional.empty());           // no requested version
         return (ReadsEncoder) readsCodec.getEncoder(outputBundle, readsEncoderOptions);
     }
 
@@ -112,7 +109,7 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(readsFormat, "Codec format");
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
-        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().getCodecForFormatAndVersion(
+        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().getCodecForFormatVersion(
                 readsFormat,
                 codecVersion);
         return (ReadsEncoder) readsCodec.getEncoder(outputBundle, readsEncoderOptions);

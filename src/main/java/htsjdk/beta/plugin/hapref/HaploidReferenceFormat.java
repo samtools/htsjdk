@@ -6,7 +6,7 @@ public enum HaploidReferenceFormat {
 
     FASTA;
 
-    public static HaploidReferenceFormat mapContentSubTypeToFormat(final String contentSubType) {
+    public static HaploidReferenceFormat formatFromContentSubType(final String contentSubType) {
         ValidationUtils.nonNull(contentSubType, "contentSubType");
         for (final HaploidReferenceFormat f : HaploidReferenceFormat.values()) {
             if (f.name().equals(contentSubType)) {

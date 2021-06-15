@@ -13,7 +13,7 @@ public enum HtsCodecType {
 
     // TODO: should this be called SEQUENCE, since ultimately FASTQ should belong in the same category..
     HAPLOID_REFERENCE,      // FASTA
-    ALIGNED_READS,          // SAM, BAM, CRAM, htsget, sra,...
+    ALIGNED_READS,          // SAM, BAM, CRAM, htsgetbam, sra,...
     VARIANTS,               // VCF, BCF
     FEATURES,               // GFF, BED, etc
 }

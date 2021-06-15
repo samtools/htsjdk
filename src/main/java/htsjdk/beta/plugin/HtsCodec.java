@@ -25,17 +25,18 @@ public interface HtsCodec<
         extends Upgradeable {
 
     /**
-     * This value defines the set of interfaces exposed by this codec. The underlying file format
-     * may vary amongst different codecs that have the same codec type, since the serialized file
-     * format may be different (i.e., both the BAM and HTSGET_BAM codecs have codec type "ALIGNED_READS"
-     * because they both render records as SAMRecord, even though underlying file formats are different.
-     * @return
+     * @return the {@link HtsCodecType} for this codec. The {@link HtsCodecType} determines the HEADER and
+     * RECORD interfaces exposed by the encoder and decoder for this codec. The underlying file format may
+     * vary amongst different codecs that have the same codec type, since the serialized file format may be
+     * different (i.e., both the BAM and HTSGET_BAM codecs have codec type "ALIGNED_READS" because they
+     * both render records as SAMRecord, even though underlying file formats are different).
      */
     HtsCodecType getCodecType();
 
     /**
-     * @return a value representing the underlying file format handled by this codec (i.e., for codec type
-     * ALIGNED_READS, the values may be from BAM, CRAM, SAM).
+     * @return a value representing the underlying file format handled by this codec, taken from the format
+     * enum for this codec ({@link F} (i.e., for codec type ALIGNED_READS, the values may be from {BAM, CRAM,
+     * SAM}).
      */
     F getFileFormat();
 
@@ -48,7 +49,7 @@ public interface HtsCodec<
      * @return a user-friendly informational display name for a given instance of this codec
      */
     default String getDisplayName() {
-        return String.format("Codec %s for %s version %s", getFileFormat(), getVersion(), getClass().getName());
+        return String.format("%s/%s/%s", getFileFormat(), getVersion(), getClass().getName());
     }
 
     /**

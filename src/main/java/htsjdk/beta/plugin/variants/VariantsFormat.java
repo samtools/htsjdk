@@ -6,7 +6,7 @@ public enum VariantsFormat {
     VCF,
     BCF;
 
-    public static VariantsFormat mapContentSubTypeToVariantsFormat(final String subContentType) {
+    public static VariantsFormat formatFromContentSubType(final String subContentType) {
         ValidationUtils.nonNull(subContentType, "subContentType");
         for (final VariantsFormat f : VariantsFormat.values()) {
             if (f.name().equals(subContentType)) {

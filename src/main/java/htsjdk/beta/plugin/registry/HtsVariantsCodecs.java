@@ -37,17 +37,26 @@ public class HtsVariantsCodecs {
     }
 
     @SuppressWarnings("unchecked")
+    public static VariantsDecoder getVariantsDecoder(final Bundle inputBundle) {
+        ValidationUtils.nonNull(inputBundle, "Input bundle");
+
+        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecs().resolveCodecForDecoding(
+                inputBundle,
+                BundleResourceType.VARIANTS);
+        return (VariantsDecoder) variantsCodec.getDecoder(inputBundle, new VariantsDecoderOptions());
+    }
+
+    @SuppressWarnings("unchecked")
     public static VariantsDecoder getVariantsDecoder(
             final Bundle inputBundle,
             final VariantsDecoderOptions variantsDecoderOptions) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(variantsDecoderOptions, "Decoder options");
 
-        final VariantsCodec readsCodec = HtsCodecRegistry.getVariantCodecs().resolveCodecForInput(
+        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecs().resolveCodecForDecoding(
                 inputBundle,
-                BundleResourceType.VARIANTS,
-                VariantsFormat::mapContentSubTypeToVariantsFormat);
-        return (VariantsDecoder) readsCodec.getDecoder(inputBundle, variantsDecoderOptions);
+                BundleResourceType.VARIANTS);
+        return (VariantsDecoder) variantsCodec.getDecoder(inputBundle, variantsDecoderOptions);
     }
 
     public static VariantsEncoder getVariantsEncoder(final IOPath outputPath) {
@@ -65,30 +74,34 @@ public class HtsVariantsCodecs {
         final Bundle outputBundle = new BundleBuilder()
                 .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANTS))
                 .build();
-        return (VariantsEncoder) HtsCodecRegistry.getVariantCodecs().resolveCodecForOutput(
-                outputBundle,
-                BundleResourceType.VARIANTS,
-                Optional.empty(),
-                VariantsFormat::mapContentSubTypeToVariantsFormat).getEncoder(outputBundle, variantsEncoderOptions);
+        return getVariantsEncoder(outputBundle, new VariantsEncoderOptions());
     }
 
-    //TODO: this needs to have VariantsEncoderOptions
+    public static VariantsEncoder getVariantsEncoder(
+            final Bundle outputBundle,
+            final VariantsEncoderOptions variantsEncoderOptions) {
+        ValidationUtils.nonNull(outputBundle, "Output bundle");
+        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecs().resolveCodecForEncoding(
+                outputBundle,
+                BundleResourceType.VARIANTS,
+                Optional.empty());           // no requested version
+        return (VariantsEncoder) variantsCodec.getEncoder(outputBundle, variantsEncoderOptions);
+    }
+
     @SuppressWarnings("unchecked")
     public static VariantsEncoder getVariantsEncoder(
-            final IOPath outputPath,
+            final Bundle outputBundle,
+            final VariantsEncoderOptions variantsEncoderOptions,
             final VariantsFormat variantsFormat,
             final HtsCodecVersion codecVersion) {
-        ValidationUtils.nonNull(outputPath, "Output path must not be null");
-        ValidationUtils.nonNull(variantsFormat, "Format must not be null");
-        ValidationUtils.nonNull(codecVersion, "Codec version must not be null");
+        ValidationUtils.nonNull(outputBundle, "Output bundle");
+        ValidationUtils.nonNull(variantsFormat, "Format");
+        ValidationUtils.nonNull(codecVersion, "Codec version");
 
-        final Bundle outputBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANTS))
-                .build();
-        final VariantsCodec variantCodec = HtsCodecRegistry.getVariantCodecs().getCodecForFormatAndVersion(
+        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecs().getCodecForFormatVersion(
                 variantsFormat,
                 codecVersion);
-        return (VariantsEncoder) variantCodec.getEncoder(outputBundle, new VariantsEncoderOptions());
+        return (VariantsEncoder) variantsCodec.getEncoder(outputBundle, variantsEncoderOptions);
     }
 
 }

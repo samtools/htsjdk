@@ -31,13 +31,8 @@ import java.util.List;
 import java.util.Optional;
 
 //TODO: test/rules for how to resolve input index
-//TODO: test/rules to handle encrypted streams
-//TODO: upgrade chains
-//TODO: support custom codec resolution when multiple codecs resolve
 //TODO: need a concept of "default" encoder (and decoder?) for the case where there is nothing to go on
 //      i.e. /dev/stdout
-
-//TODO: Input Bundles:
 //TODO: test SeekableStreamInputs
 //TODO: test large number of inputs where the caller asserts the content type, content subtype, version
 //TODO: add a test where the expected file extension isn't present (what are the rules for canDecode* ?)
@@ -45,12 +40,12 @@ import java.util.Optional;
 
 //TODO: Output Bundles:
 //TODO: should there be a default "content subtype" for when no content subtype is requested ?
-//TODO: handle writable custom protocol schemes (though we don't have any ? genomicsDB ?)
+//TODO: handle *writable* custom protocol schemes (though we don't have any ? genomicsDB ?)
 //TODO test /dev/stdout
 
 // Tests for resolving codec (encoder/decoder) requests given a set of input/output resources and a list
 // of registered codecs.
-public class HtsCodecsByFormatTest extends HtsjdkTest {
+public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
     // all of the test codecs created here have the same codec (content) type, with each codec varying by
     // content sub type, version, or protocol scheme
     final static String TEST_CODEC_CONTENT_TYPE = "TEST_CODEC_CONTENT_TYPE";
@@ -151,8 +146,8 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
             FORMAT_3_PROTOCOL_SCHEME,   // custom protocol scheme
             false);
 
-    @DataProvider(name="codecInputResolutionSucceeds")
-    public Object[][] getCodecInputResolutionSucceeds() {
+    @DataProvider(name="resolveCodecForDecodingSucceeds")
+    public Object[][] resolveCodecForDecodingSucceeds() {
         return new Object[][]{
                 // array of codecs to register, resource bundle, expected display name of resolved codec
 
@@ -254,22 +249,22 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "codecInputResolutionSucceeds")
-    public void testCodecInputResolutionSucceeds(
-            final List<HtsTestCodec> codecs,
+    @Test(dataProvider = "resolveCodecForDecodingSucceeds")
+    public void testResolveCodecForDecodingSucceeds(
+            final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
             final Bundle bundle,
             final String expectedCodecDisplayName) {
-        final HtsCodecsByFormat<HtsTestCodecFormat, HtsTestCodec> testCodecs = new HtsCodecsByFormat();
-        codecs.forEach(c -> testCodecs.register(c));
-        final HtsCodec resolvedCodec = testCodecs.resolveCodecForInput(
+        final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
+                new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
+        codecs.forEach(c -> testCodecs.registerCodec(c));
+        final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveCodecForDecoding(
                 bundle,
-                TEST_CODEC_CONTENT_TYPE,
-                HtsCodecsByFormatTest::mapContentSubTypeToFormat);
+                TEST_CODEC_CONTENT_TYPE);
         Assert.assertEquals(resolvedCodec.getDisplayName(), expectedCodecDisplayName);
     }
 
-    @DataProvider(name="codecInputResolutionFails")
-    public Object[][] getCodecInputResolutionFails() {
+    @DataProvider(name="resolveCodecForDecodingFails")
+    public Object[][] resolveCodecForDecodingFails() {
         return new Object[][]{
                 // array of codecs to register, a resource bundle, expected exception message fragment
 
@@ -281,7 +276,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
                                 false),
-                        "No codec could be found for"},
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // input is FORMAT_1, V_2_0, no matching codec for V_2_0 of FORMAT_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
@@ -291,7 +286,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
                                 false),
-                        "No codec could be found for"},
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // input is FORMAT_2, V2_0, no matching codec for any version of file format FORMAT_2
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
@@ -301,17 +296,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V1_0,
                                 false),
-                        "No codec could be found for"},
-
-                // resolves to multiple codecs
-                { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_0), // use the same codec twice to force multiple matches
-                        getIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
-                                null,
-                                FORMAT_1_FILE_EXTENSION,
-                                FORMAT_1_STREAM_SIGNATURE + V1_0,
-                                false),
-                        "Multiple codecs accepted the" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // no resource in the bundle has the required content type ("TEST_CONTENT_TYPE")
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
@@ -336,7 +321,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 "BOGUS_SIGNATURE" + V1_0,
                                 false),
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // input is FORMAT_2, V_2_0, but with *FORMAT_1* content subtype specified in the bundle;
                 // this prunes based on content subtype FORMAT_1, but none of the resulting codecs claim it
@@ -348,7 +333,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V2_0,
                                 false),
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // the resource in the bundle claims to be a content type for which a registered codec
                 // exists, but the version in the file stream doesn't match the version for any registered
@@ -360,7 +345,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
                                 false),
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // the resource in the bundle specifies a content subtype that doesn't correspond to any
                 // format for this content type
@@ -389,30 +374,28 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_2_CONTENT_SUBTYPE,
                                 FORMAT_1_STREAM_SIGNATURE + V1_0,
                                 false),
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
         };
     }
 
-    @Test(dataProvider = "codecInputResolutionFails", expectedExceptions=RuntimeException.class)
-    public void testCodecInputResolutionFails(
-            final List<HtsTestCodec> codecs,
+    @Test(dataProvider = "resolveCodecForDecodingFails", expectedExceptions=RuntimeException.class)
+    public void testResolveCodecForDecodingFails(
+            final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
             final Bundle bundle,
             final String expectedMessage) {
-        final HtsCodecsByFormat<HtsTestCodecFormat, HtsTestCodec> testCodecs = new HtsCodecsByFormat();
-        codecs.forEach(c -> testCodecs.register(c));
+        final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
+                new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
+        codecs.forEach(c -> testCodecs.registerCodec(c));
         try {
-            testCodecs.resolveCodecForInput(
-                    bundle,
-                    TEST_CODEC_CONTENT_TYPE,
-                    HtsCodecsByFormatTest::mapContentSubTypeToFormat);
+            testCodecs.resolveCodecForDecoding(bundle, TEST_CODEC_CONTENT_TYPE);
         } catch (final RuntimeException e) {
             Assert.assertTrue(e.getMessage().contains(expectedMessage));
             throw e;
         }
     }
 
-    @DataProvider(name="codecOutputResolutionSucceeds")
-    public Object[][] getCodecOutputResolutionSucceeds() {
+    @DataProvider(name="resolveCodecForEncodingSucceeds")
+    public Object[][] resolveCodecForEncodingSucceeds() {
         // Note: unlike inputs, for outputs a version must either be explicitly requested
         // by the caller, or else default to the newest version registered for the format.
         // The format (content subtype) may also need to be explicitly requested, since it may not
@@ -511,24 +494,24 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "codecOutputResolutionSucceeds")
-    public void testCodecOutputResolutionSucceeds(
-            final List<HtsTestCodec> codecs,
+    @Test(dataProvider = "resolveCodecForEncodingSucceeds")
+    public void testResolveCodecForEncoding(
+            final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
             final Bundle bundle,
             final HtsCodecVersion htsVersionRequested,
             final String expectedCodecDisplayName) {
-        final HtsCodecsByFormat<HtsTestCodecFormat, HtsTestCodec> testCodecs = new HtsCodecsByFormat();
-        codecs.forEach(c -> testCodecs.register(c));
-        final HtsCodec resolvedCodec = testCodecs.resolveCodecForOutput(
+        final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
+                new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
+        codecs.forEach(c -> testCodecs.registerCodec(c));
+        final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveCodecForEncoding(
                 bundle,
                 TEST_CODEC_CONTENT_TYPE,
-                Optional.ofNullable(htsVersionRequested),
-                HtsCodecsByFormatTest::mapContentSubTypeToFormat);
+                Optional.ofNullable(htsVersionRequested));
         Assert.assertEquals(resolvedCodec.getDisplayName(), expectedCodecDisplayName);
     }
 
-    @DataProvider(name="codecOutputResolutionFails")
-    public Object[][] getCodecOutputResolutionFails() {
+    @DataProvider(name="resolveCodecForEncodingFails")
+    public Object[][] resolveCodecForEncodingFails() {
         return new Object[][]{
                 // array of codecs to register, a resource bundle, optional version, expected exception message fragment
 
@@ -539,7 +522,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 null,
                                 FORMAT_1_FILE_EXTENSION),
                         null,
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // no codecs registered at all, content type and version specified
                 { Collections.emptyList(),
@@ -548,7 +531,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_CONTENT_SUBTYPE,
                                 FORMAT_1_FILE_EXTENSION),
                         V1_0,
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // no content subtype specified for IOPath
                 //TODO: there should either be an error message that says that no content subtype was specified,
@@ -559,7 +542,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_CONTENT_SUBTYPE,
                                 FORMAT_1_FILE_EXTENSION),
                         V1_0,
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // no content subtype specified for OutputStream (should there be a default for content type?)
                 //TODO: there should either be an error message that says that no content subtype was specified,
@@ -567,14 +550,14 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
                         getOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, null),
                         V1_0,
-                        "Multiple codecs accepted the" },
+                        HtsCodecsByFormatVersion.MULTIPLE_SUPPORTING_CODECS_ERROR},
 
                 // content subtype specified for OutputStream (should there be a default for content type?), but
                 // requested version isn't registered
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
                         getOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, FORMAT_1_CONTENT_SUBTYPE),
                         new HtsCodecVersion(3, 0, 0), // version 3.0.0 not registered
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // content subtype specified, but specified version not registered
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
@@ -583,7 +566,7 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
                                 FORMAT_1_CONTENT_SUBTYPE,
                                 FORMAT_1_FILE_EXTENSION),
                         new HtsCodecVersion(3, 0, 0), // version 3.0.0 not registered
-                        "No codec could be found for" },
+                        HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // bundle contains an INPUT stream resource, not an output stream
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
@@ -597,33 +580,39 @@ public class HtsCodecsByFormatTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "codecOutputResolutionFails", expectedExceptions=RuntimeException.class)
-    public void testCodecOutputResolutionFails(
-            final List<HtsTestCodec> codecs,
+    @Test(dataProvider = "resolveCodecForEncodingFails", expectedExceptions=RuntimeException.class)
+    public void testResolveCodecForEncodingFails(
+            final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
             final Bundle bundle,
             final HtsCodecVersion htsCodecVersion,
             final String expectedMessage) {
-        final HtsCodecsByFormat<HtsTestCodecFormat, HtsTestCodec> testCodecs = new HtsCodecsByFormat();
-        codecs.forEach(c -> testCodecs.register(c));
+        final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
+                new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
+        codecs.forEach(c -> testCodecs.registerCodec(c));
         try {
-                testCodecs.resolveCodecForOutput(
+                testCodecs.resolveCodecForEncoding(
                         bundle,
                         TEST_CODEC_CONTENT_TYPE,
-                        Optional.ofNullable(htsCodecVersion),
-                        HtsCodecsByFormatTest::mapContentSubTypeToFormat);
+                        Optional.ofNullable(htsCodecVersion));
         } catch (final RuntimeException e) {
             Assert.assertTrue(e.getMessage().contains(expectedMessage));
             throw e;
         }
     }
 
-    private static HtsTestCodecFormat mapContentSubTypeToFormat(final String contentSubType) {
-        for (final HtsTestCodecFormat f : HtsTestCodecFormat.values()) {
-            if (f.name().equals(contentSubType)) {
-                return f;
-            }
+    @Test(expectedExceptions={RuntimeException.class})
+    public void testResolveCodecForEncodingMultipleCodecs() {
+        // this test is somewhat contrived since in that its using two codecs that should never
+        // really resolve to the same input, but it doesnt matter since the important thing is
+        // to exercise the code path to ensure that it works
+        try {
+            HtsCodecsByFormatVersion.getOneOrThrow(
+                    Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
+                    () -> "test input");
+        } catch (final RuntimeException e) {
+            Assert.assertTrue(e.getMessage().contains(HtsCodecsByFormatVersion.MULTIPLE_SUPPORTING_CODECS_ERROR));
+            throw e;
         }
-        return null;
     }
 
     //TODO: make this accept a bytearray instead of string and move to IOUtil once this is

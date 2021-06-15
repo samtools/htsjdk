@@ -16,17 +16,19 @@ import java.util.Set;
 
 // An Htsget codec for reading BAM.
 // Note: there is no Htsget encoder
-//Unfortunately, the HtsGet protocol doesn't seem to have a version number ?
 public abstract class HtsgetBAMCodec implements ReadsCodec {
     public static final HtsCodecVersion HTSGET_VERSION = new HtsCodecVersion(1, 2, 0);
 
     private final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.BAM));
 
     @Override
+    /**
+     * The HtsGet protocol doesn't seem to have a version number ?
+     */
     public HtsCodecVersion getVersion() { return HTSGET_VERSION; }
 
     @Override
-    public ReadsFormat getFileFormat() { return ReadsFormat.BAM; }
+    public ReadsFormat getFileFormat() { return ReadsFormat.HTSGET_BAM; }
 
     @Override
     public int getSignatureSize() {

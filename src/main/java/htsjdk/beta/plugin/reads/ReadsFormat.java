@@ -8,12 +8,12 @@ import htsjdk.utils.ValidationUtils;
 public enum ReadsFormat {
     SAM,
     BAM,
-    CRAM;
-//    HTSGET_BAM,
+    CRAM,
+    HTSGET_BAM;
 //    HTSGET_CRAM,
 //    SRA
 
-    public static ReadsFormat mapContentSubTypeToFormat(final String contentSubType) {
+    public static ReadsFormat formatFromContentSubType(final String contentSubType) {
         ValidationUtils.nonNull(contentSubType, "contentSubType");
         for (final ReadsFormat f : ReadsFormat.values()) {
             if (f.name().equals(contentSubType)) {

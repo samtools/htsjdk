@@ -14,15 +14,8 @@ import java.util.*;
 
 //TODO: Master TODO list:
 // - unify/clarify exception types
+// - support codecs that need to see the stream (can't deterministically tell from the extension)
 // - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
-// - add an API to register/override a particular codec
-// - throw on multiple codecs
-// - display the bundle resource and the params of the winning codecs when there is more than one
-// - need to support codecs that need to see the stream (can't deterministically tell from the extension)
-// - find a way to better align the ReadsFormat enum with content subtype strings
-//      used strings for codec format type instead of a locked down enum, for better alignment with the bundle
-//      subcontenttype concept, and it would enable dynamically extension of this registry with additional
-//      content subtypes without changing HTSJDK
 // - rename the packages classes for codecs to reflect the interfaces they provide (i.e., a "READS" codec
 //      is a codec that exposes SAMFileHeader/SAMRecord). Someday when we replace those, we'll need a new
 //      name that contrasts with the current name i.e. READS2
@@ -42,7 +35,7 @@ import java.util.*;
 // tests
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
 // - prevent the decoders that delegate to SamReaderFactory from attempting to automatically
-//      resolving index files so we don't introduce incompatibilities when the SamReaderFactory
+//      resolvie index files so we don't introduce incompatibilities when the SamReaderFactory
 //      implementation dependency is removed
 // - respect presorted in Reads encoders
 // - publish the JSON Bundle JSON schema
@@ -56,32 +49,32 @@ import java.util.*;
 public class HtsCodecRegistry {
     private static final HtsCodecRegistry htsCodecRegistry = new HtsCodecRegistry();
 
-    // maps of codec versions, by format, for each codec type
-    private static HtsCodecsByFormat<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecs = new HtsCodecsByFormat<>();
-    private static HtsCodecsByFormat<ReadsFormat, ReadsCodec> readsCodecs = new HtsCodecsByFormat<>();
-    private static HtsCodecsByFormat<VariantsFormat, VariantsCodec> variantCodecs = new HtsCodecsByFormat<>();
+    // for each codec type, keep a map of codec instances, by format and version
+    private static HtsCodecsByFormatVersion<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecs =
+            new HtsCodecsByFormatVersion<>(HaploidReferenceFormat::formatFromContentSubType);
+    private static HtsCodecsByFormatVersion<ReadsFormat, ReadsCodec> readsCodecs =
+            new HtsCodecsByFormatVersion<>(ReadsFormat::formatFromContentSubType);
+    private static HtsCodecsByFormatVersion<VariantsFormat, VariantsCodec> variantCodecs =
+            new HtsCodecsByFormatVersion<>(VariantsFormat::formatFromContentSubType);
 
     //discover any codecs on the classpath
     static { ServiceLoader.load(HtsCodec.class).forEach(htsCodecRegistry::registerCodec); }
 
-    HtsCodecRegistry() {}
+    private HtsCodecRegistry() {}
 
     /**
      * Add a codec to the registry
      */
-    private void registerCodec(final HtsCodec codec) {
+    public HtsCodec<?, ?, ?> registerCodec(final HtsCodec<?, ?, ?> codec) {
         switch (codec.getCodecType()) {
             case ALIGNED_READS:
-                readsCodecs.register((ReadsCodec) codec);
-                break;
+                return readsCodecs.registerCodec((ReadsCodec) codec);
 
             case HAPLOID_REFERENCE:
-                haprefCodecs.register((HaploidReferenceCodec) codec);
-                break;
+                return haprefCodecs.registerCodec((HaploidReferenceCodec) codec);
 
             case VARIANTS:
-                variantCodecs.register((VariantsCodec) codec);
-                break;
+                return variantCodecs.registerCodec((VariantsCodec) codec);
 
             case FEATURES:
                 throw new RuntimeException("Features codec type not yet implemented");
@@ -91,15 +84,15 @@ public class HtsCodecRegistry {
         }
     }
 
-    public static HtsCodecsByFormat<ReadsFormat, ReadsCodec> getReadsCodecs() {
+    public static HtsCodecsByFormatVersion<ReadsFormat, ReadsCodec> getReadsCodecs() {
         return readsCodecs;
     }
 
-    public static HtsCodecsByFormat<VariantsFormat, VariantsCodec> getVariantCodecs() {
+    public static HtsCodecsByFormatVersion<VariantsFormat, VariantsCodec> getVariantsCodecs() {
         return variantCodecs;
     }
 
-    public static HtsCodecsByFormat<HaploidReferenceFormat, HaploidReferenceCodec> getHapRefCodecs() { return haprefCodecs; }
+    public static HtsCodecsByFormatVersion<HaploidReferenceFormat, HaploidReferenceCodec> getHapRefCodecs() { return haprefCodecs; }
 
 }
 

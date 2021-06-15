@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleBuilder;
 import htsjdk.beta.plugin.reads.ReadsBundle;
+import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.registry.HtsReadsCodecs;
@@ -93,8 +94,8 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
                         .addPrimary(new IOPathResource(TEST_BAM, BundleResourceType.READS))
                         .addSecondary(new IOPathResource(TEST_BAI, BundleResourceType.READS_INDEX))
                         .build();
-        try (final HtsDecoder bamDecoder = HtsReadsCodecs.getReadsDecoder(readsBundle, new ReadsDecoderOptions());
-            final CloseableIterator<SAMRecord> it =
+        try (final ReadsDecoder bamDecoder = HtsReadsCodecs.getReadsDecoder(readsBundle, new ReadsDecoderOptions());
+             final CloseableIterator<SAMRecord> it =
                     bamDecoder.query("chr1", 202661637, 202661812, queryRule)) {
             Assert.assertEquals(countElements(it), expected);
         }
