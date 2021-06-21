@@ -29,12 +29,16 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
     final static String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
     final static String MULTIPLE_SUPPORTING_CODECS_ERROR = "Multiple codecs accept the provided resource";
 
+    private final String requiredContentType;
     private final Map<F, Map<HtsVersion, C>> codecs = new HashMap<>();
-    private final Function<String, F> formatFromContentSubType;
+    private final Function<String, Optional<F>> contentSubTypeToFormat;
 
 
-    public HtsCodecsByFormatVersion(final Function<String, F> formatFromContentSubType) {
-        this.formatFromContentSubType = formatFromContentSubType;
+    public HtsCodecsByFormatVersion(
+            final String requiredContentType,
+            final Function<String, Optional<F>> contentSubTypeToFormat) {
+        this.requiredContentType = requiredContentType;
+        this.contentSubTypeToFormat = contentSubTypeToFormat;
     }
 
     /**
@@ -60,7 +64,7 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
             final C oldCodec = versionMap.get(codec.getVersion());
             versionMap.put(codec.getVersion(), codec);
             if (oldCodec != null) {
-                LOG.warn(String.format("A previously registered HTS codec %s was replaced with the %s codec ",
+                LOG.warn(String.format("A previously registered HTS codec (%s) was replaced with the (%s) codec ",
                         oldCodec.getDisplayName(),
                         codec.getDisplayName()));
             }
@@ -71,18 +75,15 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
     /**
      * Find codecs that can read the contentType required for this bundle, if its present.
      */
-    public C resolveCodecForDecoding(final Bundle bundle, final String requiredContentType) {
+    public C resolveForDecoding(final Bundle bundle) {
+        ValidationUtils.nonNull(bundle, "bundle");
 
-        final BundleResource bundleResource = getRequiredBundleResource(bundle, requiredContentType,true);
-        final Optional<F> optFormat = getFormatForContentSubType(bundleResource, formatFromContentSubType, requiredContentType);
-        final List<C> candidatesForFormat = getCodecsForOptionalFormat(optFormat);
-
-        // If the resource is an IOPath resource, look to see if any codec(s) claim ownership of the URI,
-        // specifically the protocol scheme.
-        final Optional<IOPath> ioPath = bundleResource.getIOPath();
-        final List<C> resolvedCodecs = ioPath.isPresent() ?
-                getCodecsForInputIOPath(candidatesForFormat, bundleResource) :
-                getCodecsForInputStream(candidatesForFormat, bundleResource);
+        final BundleResource bundleResource = getPrimaryResource(bundle, true);
+        final Optional<F> optFormat = getFormatForContentSubType(bundleResource);
+        final List<C> candidatesCodecs = getCodecsForFormat(optFormat);
+        final List<C> resolvedCodecs = bundleResource.getIOPath().isPresent() ?
+                resolveForDecodingIOPath(bundleResource, candidatesCodecs) :
+                resolveForDecodingStream(bundleResource, candidatesCodecs);
 
         return getOneOrThrow(resolvedCodecs,
                 () -> String.format("%s/%s",
@@ -96,30 +97,39 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
      * NOTE: If an output stream resources is provided as the target output, the bundle resource must include
      * a file format, otherwise multiple codecs will accept the bundle, and an exception will be thrown.
      */
-    public C resolveCodecForEncoding(
-            final Bundle bundle,
-            final String requiredContentType,
-            final Optional<HtsVersion> optHtsVersion) {
+    public C resolveForEncoding(final Bundle bundle) { return resolveForEncoding(bundle, HtsVersion.NEWEST); }
 
-        final BundleResource bundleResource = getRequiredBundleResource(bundle, requiredContentType,false);
-        final Optional<F> optFormat = getFormatForContentSubType(bundleResource, formatFromContentSubType, requiredContentType);
-        final List<C> candidateCodecs = getCodecsForOptionalFormat(optFormat);
+    /**
+     * Find a codec that can read the contentType required for this bundle. For encoding, the output
+     * format is derived primary bundle resource. For streams, the primary resources must in include a
+     * subcontent type that specifies the output format.
+     *
+     * NOTE: If an output stream resources is provided as the target output, the bundle resource must include
+     * a file format, otherwise multiple codecs will accept the bundle, and an exception will be thrown.
+     */
+    public C resolveForEncoding(final Bundle bundle, final HtsVersion htsVersion) {
+        ValidationUtils.nonNull(bundle, "bundle");
+        ValidationUtils.nonNull(htsVersion, "htsVersion");
+
+        final BundleResource bundleResource = getPrimaryResource(bundle, false);
+        final Optional<F> optFormat = getFormatForContentSubType(bundleResource);
+        final List<C> candidateCodecs = getCodecsForFormat(optFormat);
 
         // If the resource is an IOPath resource, see if any codec(s) claim ownership of the URI,
         // specifically the protocol scheme.
         final Optional<IOPath> ioPath = bundleResource.getIOPath();
-        final List<C> filteredCodecs = ioPath.isPresent() ?
-                getCodecsForOutputIOPath(candidateCodecs, ioPath.get()) :
-                candidateCodecs; // there isn't anything else to go on when the output is to a stream
+        final List<C> filteredCodecs = bundleResource.getIOPath().isPresent() ?
+                resolveForEncodingIOPath(ioPath.get(), candidateCodecs) :
+                candidateCodecs; // there isn't anything else to probe when the output is to a stream
+        final List<C> resolvedCodecs = filterByVersion(filteredCodecs, htsVersion);
 
-        final List<C> resolvedCodecs = filterByVersion(filteredCodecs, optHtsVersion);
         return getOneOrThrow(resolvedCodecs,
                 () ->  String.format("%s/%s",
                         optFormat.isPresent () ? optFormat.get() : "NONE",
                         bundleResource));
     }
 
-    public List<C> getAllCodecs() {
+    public List<C> getCodecs() {
         // flatten out the codecs into a single list
         final List<C> cList = codecs
                 .values()
@@ -129,7 +139,7 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
         return cList;
     }
 
-    public List<C> getAllCodecsForFormat(final F rf) {
+    public List<C> getCodecsForFormat(final F rf) {
         final Map<HtsVersion, C> allCodecsForFormat = codecs.get(rf);
         if (allCodecsForFormat != null) {
             return allCodecsForFormat.values().stream().collect(Collectors.toList());
@@ -137,8 +147,8 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
         return Collections.EMPTY_LIST;
     }
 
-    public C getCodecForFormatVersion(final F format, HtsVersion formatVersion) {
-        final List<C> matchingCodecs = getAllCodecsForFormat(format)
+    public C getCodecForFormatAndVersion(final F format, final HtsVersion formatVersion) {
+        final List<C> matchingCodecs = getCodecsForFormat(format)
                 .stream()
                 .filter(codec -> codec.getFileFormat().equals(format) && codec.getVersion().equals(formatVersion))
                 .collect(Collectors.toList());
@@ -164,35 +174,38 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
         }
     }
 
-    private List<C> filterByVersion(final List<C> candidateCodecs, final Optional<HtsVersion> optHtsVersion) {
+    private List<C> filterByVersion(final List<C> candidateCodecs, final HtsVersion htsVersion) {
+        ValidationUtils.nonNull(htsVersion, "htsVersion");
         if (candidateCodecs.isEmpty()) {
             return candidateCodecs;
         }
-        if (optHtsVersion.isPresent()) {
+        if (htsVersion.equals(HtsVersion.NEWEST)) {
+            // find the newest codec version in the list of candidates, and return all the codecs for that
+            // version (since there still can be more than one)
+            final HtsVersion newestVersion = candidateCodecs.stream()
+                    .map(c -> c.getVersion())
+                    .reduce(candidateCodecs.get(0).getVersion(),
+                            (HtsVersion a, HtsVersion b) -> a.compareTo(b) > 0 ? a : b);
+            return candidateCodecs.stream().filter(
+                    c -> c.getVersion().equals(newestVersion)).collect(Collectors.toList());
+        } else {
             return candidateCodecs.stream()
-                    .filter(c -> c.getVersion().equals(optHtsVersion.get())).collect(Collectors.toList());
+                    .filter(c -> c.getVersion().equals(htsVersion))
+                    .collect(Collectors.toList());
         }
-        // find the newest codec version in the list of candidates, and return all the codecs for that
-        // version (since there still can be more than one)
-        final HtsVersion newestCodecVersion = candidateCodecs.stream()
-                .map(c -> c.getVersion())
-                .reduce(
-                        candidateCodecs.get(0).getVersion(),
-                        (HtsVersion a, HtsVersion b) -> a.compareTo(b) > 0 ? a : b);
-        return candidateCodecs.stream().filter(c -> c.getVersion().equals(newestCodecVersion)).collect(Collectors.toList());
     }
 
     // Get our initial candidate codec list, either filtered by content subtype if one is present,
     // or otherwise all registered codecs for this codec format.
-    private List<C> getCodecsForOptionalFormat(final Optional<F> optFormat) {
+    private List<C> getCodecsForFormat(final Optional<F> optFormat) {
         final List<C> candidateCodecs =
                 optFormat.isPresent() ?
-                        getAllCodecsForFormat(optFormat.get()) :
-                        getAllCodecs();
+                        getCodecsForFormat(optFormat.get()) :
+                        getCodecs();
         return candidateCodecs;
     }
 
-    private List<C> getCodecsForInputIOPath(final List<C> candidateCodecs, final BundleResource bundleResource) {
+    private List<C> resolveForDecodingIOPath(final BundleResource bundleResource, final List<C> candidateCodecs) {
         ValidationUtils.validateArg(bundleResource.getIOPath().isPresent(), "an IOPath resource is required");
         final IOPath ioPath = bundleResource.getIOPath().get();
 
@@ -216,23 +229,7 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
                 .collect(Collectors.toList());
     }
 
-    private List<C> getCodecsForOutputIOPath(final List<C> candidateCodecs, final IOPath ioPath) {
-        final List<C> uriHandlers = candidateCodecs.stream()
-                .filter((c) -> c.claimURI(ioPath))
-                .collect(Collectors.toList());
-
-        // If at least one codec claims this as a custom URI, prune the candidates to only codecs
-        // that also claim it, and don't try to call getInputStream on the resource to check the signature.
-        // Instead just let the codecs that claim the URI further process it.
-        final List<C> filteredCodecs = uriHandlers.isEmpty() ? candidateCodecs : uriHandlers;
-
-        // reduce our candidates based on uri and IOPath
-        return filteredCodecs.stream()
-                .filter(c -> c.canDecodeURI(ioPath))
-                .collect(Collectors.toList());
-    }
-
-    private List<C> getCodecsForInputStream(final List<C> candidateCodecs, final BundleResource bundleResource) {
+    private List<C> resolveForDecodingStream(final BundleResource bundleResource, final List<C> candidateCodecs) {
         if (bundleResource.hasSeekableStream()) {
             // stream is already seekable so no need to wrap it
             throw new IllegalArgumentException("SeekableStreamResource input resolution is not yet implemented");
@@ -250,69 +247,68 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
         }
     }
 
+    private List<C> resolveForEncodingIOPath(final IOPath ioPath, final List<C> candidateCodecs) {
+        final List<C> uriHandlers = candidateCodecs.stream()
+                .filter((c) -> c.claimURI(ioPath))
+                .collect(Collectors.toList());
+
+        // If at least one codec claims this as a custom URI, prune the candidates to only codecs
+        // that also claim it, and don't try to call getInputStream on the resource to check the signature.
+        // Instead just let the codecs that claim the URI further process it.
+        final List<C> filteredCodecs = uriHandlers.isEmpty() ? candidateCodecs : uriHandlers;
+
+        // reduce our candidates based on uri and IOPath
+        return filteredCodecs.stream()
+                .filter(c -> c.canDecodeURI(ioPath))
+                .collect(Collectors.toList());
+    }
+
     private int getSignatureProbeStreamSize(final List<C> candidateCodecs) {
         return candidateCodecs.stream()
                 .map(c -> c.getSignatureProbeStreamSize())
                 .reduce(0, (a, b) -> Integer.max(a, b));
     }
 
-    private final BundleResource getRequiredBundleResource(
-            final Bundle bundle,
-            final String requiredContentType,
-            final boolean forInput) {
-        // Throw if the bundle contains no resource of the content type we need
-        final BundleResource bundleResource = bundle.getOrThrow(requiredContentType);
-
+    private final BundleResource getPrimaryResource(final Bundle bundle, final boolean forEncoding) {
         // Get the resource of the required content type, and throw if its not the primary resource
         final String bundlePrimaryContentType = bundle.getPrimaryContentType();
         if (!requiredContentType.equals(bundlePrimaryContentType)) {
             throw new IllegalArgumentException(String.format(
-                    "Checking bundle with primary content type %s for resource with requested content type %s.",
+                    "The primary content type (%s) for the resource does not match the requested content type (%s).",
                     bundlePrimaryContentType,
                     requiredContentType));
         }
 
-        // Since we're going to use the resource as input, make sure the resource we found is an INPUT resource,
-        // not an output stream or something.
-        if (forInput) {
-            if (!bundleResource.isInput()) {
-                throw new IllegalArgumentException(
-                        String.format("The %s resource found (%s) cannot be used as an input resource",
-                                requiredContentType,
-                                bundleResource));
-            }
-        } else {
-            if (!bundleResource.isOutput()) {
-                throw new IllegalArgumentException(
-                        String.format("The %s resource found (%s) cannot be used as an output resource",
-                                requiredContentType,
-                                bundleResource));
-            }
+        // Make sure the resource matches the requested usage (for input or for output as appropriate.
+        final BundleResource bundleResource = bundle.getOrThrow(requiredContentType);
+        if (forEncoding && !bundleResource.isInput()) {
+            throw new IllegalArgumentException(
+                    String.format("The %s resource found (%s) cannot be used as an input resource",
+                            requiredContentType,
+                            bundleResource));
+        } else if (!forEncoding && !bundleResource.isOutput()) { // for decoding
+            throw new IllegalArgumentException(
+                    String.format("The %s resource found (%s) cannot be used as an output resource",
+                            requiredContentType,
+                            bundleResource));
         }
 
         return bundleResource;
     }
 
-    private Optional<F> getFormatForContentSubType(
-            final BundleResource bundleResource,
-            final Function<String, F> formatFromContentSubType,
-            final String requiredContentType) {
-         final Optional<String> optContentSubType = bundleResource.getContentSubType();
-        if (!optContentSubType.isPresent()) {
-            return Optional.empty();
-        }
-        final String contentSubType = optContentSubType.get();
-        final F format = formatFromContentSubType.apply(contentSubType);
-        if (format == null) {
-            // if the bundle contentSubType is present, but it doesn't map to any contentSubType
-            // supported by the content type being requested, throw
+    private Optional<F> getFormatForContentSubType(final BundleResource bundleResource) {
+        final Optional<String> optContentSubType = bundleResource.getContentSubType();
+        final Optional<F> optFormat = optContentSubType.flatMap(
+                contentSubType -> contentSubTypeToFormat.apply(contentSubType));
+        if (optContentSubType.isPresent() && !optFormat.isPresent()) {
+            // throw if the resource contentSubType is present, but doesn't map to any format supported by the content
             throw new IllegalArgumentException(
                     String.format("The sub-content type (%s) found in the bundle resource (%s) does not correspond to any known subtype for content type (%s)",
-                            contentSubType,
+                            optContentSubType.get(),
                             bundleResource,
                             requiredContentType));
         }
-        return Optional.of(format);
+        return optFormat;
     }
 
     @SuppressWarnings("rawtypes")

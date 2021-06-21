@@ -2,9 +2,7 @@ package htsjdk.beta.plugin.registry;
 
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsBundle;
-import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormat;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -12,8 +10,6 @@ import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
-
-import java.util.Optional;
 
 //        getReadsDecoder(Bundle)
 //        getReadsDecoder(Bundle, ReadsDecoderOptions)
@@ -61,10 +57,9 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
 
-        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().resolveCodecForDecoding(
-                inputBundle,
-                BundleResourceType.READS);
-        return (ReadsDecoder) readsCodec.getDecoder(inputBundle, readsDecoderOptions);
+        return (ReadsDecoder) HtsCodecRegistry.getReadsCodecs()
+                .resolveForDecoding(inputBundle)
+                .getDecoder(inputBundle, readsDecoderOptions);
     }
 
     //***********************
@@ -92,11 +87,9 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(outputBundle, "outputBundle");
         ValidationUtils.nonNull(readsEncoderOptions, "Encoder options");
 
-        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().resolveCodecForEncoding(
-                outputBundle,
-                BundleResourceType.READS,
-                Optional.empty());           // no requested version
-        return (ReadsEncoder) readsCodec.getEncoder(outputBundle, readsEncoderOptions);
+        return (ReadsEncoder) HtsCodecRegistry.getReadsCodecs()
+                .resolveForEncoding(outputBundle)
+                .getEncoder(outputBundle, readsEncoderOptions);
     }
 
     @SuppressWarnings("unchecked")
@@ -109,10 +102,9 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(readsFormat, "Codec format");
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
-        final ReadsCodec readsCodec = HtsCodecRegistry.getReadsCodecs().getCodecForFormatVersion(
-                readsFormat,
-                codecVersion);
-        return (ReadsEncoder) readsCodec.getEncoder(outputBundle, readsEncoderOptions);
+        return (ReadsEncoder) HtsCodecRegistry.getReadsCodecs()
+                .getCodecForFormatAndVersion(readsFormat, codecVersion)
+                .getEncoder(outputBundle, readsEncoderOptions);
     }
 
 }

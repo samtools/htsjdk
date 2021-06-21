@@ -2,6 +2,8 @@ package htsjdk.beta.plugin.reads;
 
 import htsjdk.utils.ValidationUtils;
 
+import java.util.Optional;
+
 /**
  * Represents the possible underlying serialized formats for reads data.
  */
@@ -13,14 +15,14 @@ public enum ReadsFormat {
 //    HTSGET_CRAM,
 //    SRA
 
-    public static ReadsFormat formatFromContentSubType(final String contentSubType) {
+    public static Optional<ReadsFormat> contentSubTypeToFormat(final String contentSubType) {
         ValidationUtils.nonNull(contentSubType, "contentSubType");
         for (final ReadsFormat f : ReadsFormat.values()) {
             if (f.name().equals(contentSubType)) {
-                return f;
+                return Optional.of(f);
             }
         }
-        return null;
+        return Optional.empty();
     }
 
 }

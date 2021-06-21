@@ -2,18 +2,20 @@ package htsjdk.beta.plugin.hapref;
 
 import htsjdk.utils.ValidationUtils;
 
+import java.util.Optional;
+
 public enum HaploidReferenceFormat {
 
     FASTA;
 
-    public static HaploidReferenceFormat formatFromContentSubType(final String contentSubType) {
+    public static Optional<HaploidReferenceFormat> contentSubTypeToFormat(final String contentSubType) {
         ValidationUtils.nonNull(contentSubType, "contentSubType");
         for (final HaploidReferenceFormat f : HaploidReferenceFormat.values()) {
             if (f.name().equals(contentSubType)) {
-                return f;
+                return Optional.of(f);
             }
         }
-        return null;
+        return Optional.empty();
     }
 
 }

@@ -2,17 +2,19 @@ package htsjdk.beta.plugin.variants;
 
 import htsjdk.utils.ValidationUtils;
 
+import java.util.Optional;
+
 public enum VariantsFormat {
     VCF,
     BCF;
 
-    public static VariantsFormat formatFromContentSubType(final String subContentType) {
+    public static Optional<VariantsFormat> contentSubTypeToFormat(final String subContentType) {
         ValidationUtils.nonNull(subContentType, "subContentType");
         for (final VariantsFormat f : VariantsFormat.values()) {
             if (f.name().equals(subContentType)) {
-                return f;
+                return Optional.of(f);
             }
         }
-        return null;
+        return Optional.empty();
     }
 }

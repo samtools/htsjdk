@@ -7,6 +7,8 @@ import htsjdk.utils.ValidationUtils;
  */
 public class HtsVersion implements Comparable<HtsVersion> {
 
+    public static final HtsVersion NEWEST = new HtsVersion(-1, -1, -1);
+
     private static final String FORMAT_STRING = "%d.%d.%d";
 
     private final int majorVersion;

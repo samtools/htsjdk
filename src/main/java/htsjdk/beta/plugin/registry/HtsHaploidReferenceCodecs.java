@@ -19,9 +19,7 @@ public class HtsHaploidReferenceCodecs {
         final Bundle referenceBundle = new BundleBuilder().addPrimary(
                 new IOPathResource(inputPath, BundleResourceType.HAPLOID_REFERENCE)).build();
 
-        final HaploidReferenceCodec haploidReferenceCodec = haprefCodecs.resolveCodecForDecoding(
-                referenceBundle,
-                BundleResourceType.HAPLOID_REFERENCE);
+        final HaploidReferenceCodec haploidReferenceCodec = haprefCodecs.resolveForDecoding(referenceBundle);
 
         return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(referenceBundle, null);
     }

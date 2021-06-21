@@ -1,6 +1,7 @@
 package htsjdk.beta.plugin.registry;
 
 import htsjdk.beta.plugin.HtsCodec;
+import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
 
@@ -14,7 +15,7 @@ import java.util.*;
 
 //TODO: Master TODO list:
 // - fix CRAM reference leak issue
-// - address issue with using buffered stream in bundle resources to build an index
+// - implement index creation on decoders (existing inputs), on buffered stream
 // - unify/clarify exception types
 // - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
 //      document how to implement codecs that need to see the stream (can't deterministically tell from the extension)
@@ -37,7 +38,7 @@ import java.util.*;
 // tests
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
 // - prevent the decoders that delegate to SamReaderFactory from attempting to automatically
-//      resolvie index files so we don't introduce incompatibilities when the SamReaderFactory
+//      resolve index files so we don't introduce incompatibilities when the SamReaderFactory
 //      implementation dependency is removed
 // - respect presorted in Reads encoders
 // - publish the JSON Bundle JSON schema
@@ -53,11 +54,17 @@ public class HtsCodecRegistry {
 
     // for each codec type, keep a map of codec instances, by format and version
     private static HtsCodecsByFormatVersion<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecs =
-            new HtsCodecsByFormatVersion<>(HaploidReferenceFormat::formatFromContentSubType);
+            new HtsCodecsByFormatVersion<>(
+                    BundleResourceType.HAPLOID_REFERENCE,
+                    HaploidReferenceFormat::contentSubTypeToFormat);
     private static HtsCodecsByFormatVersion<ReadsFormat, ReadsCodec> readsCodecs =
-            new HtsCodecsByFormatVersion<>(ReadsFormat::formatFromContentSubType);
+            new HtsCodecsByFormatVersion<>(
+                    BundleResourceType.READS,
+                    ReadsFormat::contentSubTypeToFormat);
     private static HtsCodecsByFormatVersion<VariantsFormat, VariantsCodec> variantCodecs =
-            new HtsCodecsByFormatVersion<>(VariantsFormat::formatFromContentSubType);
+            new HtsCodecsByFormatVersion<>(
+                    BundleResourceType.VARIANTS,
+                    VariantsFormat::contentSubTypeToFormat);
 
     //discover any codecs on the classpath
     static { ServiceLoader.load(HtsCodec.class).forEach(htsCodecRegistry::registerCodec); }
@@ -94,7 +101,9 @@ public class HtsCodecRegistry {
         return variantCodecs;
     }
 
-    public static HtsCodecsByFormatVersion<HaploidReferenceFormat, HaploidReferenceCodec> getHapRefCodecs() { return haprefCodecs; }
+    public static HtsCodecsByFormatVersion<HaploidReferenceFormat, HaploidReferenceCodec> getHapRefCodecs() {
+        return haprefCodecs;
+    }
 
 }
 

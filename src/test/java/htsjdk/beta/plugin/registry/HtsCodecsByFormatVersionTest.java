@@ -28,7 +28,6 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 //TODO: test/rules for how to resolve input index
 //TODO: need a concept of "default" encoder (and decoder?) for the case where there is nothing to go on
@@ -255,11 +254,11 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
             final Bundle bundle,
             final String expectedCodecDisplayName) {
         final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
-                new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
+                new HtsCodecsByFormatVersion<>(
+                        TEST_CODEC_CONTENT_TYPE,
+                        HtsTestCodecFormat::formatFromContentSubType);
         codecs.forEach(c -> testCodecs.registerCodec(c));
-        final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveCodecForDecoding(
-                bundle,
-                TEST_CODEC_CONTENT_TYPE);
+        final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveForDecoding(bundle);
         Assert.assertEquals(resolvedCodec.getDisplayName(), expectedCodecDisplayName);
     }
 
@@ -306,7 +305,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V1_0,
                                 false),
-                        "No resource found in bundle" },
+                        "for the resource does not match the requested content type" },
 
                 // the resource in the bundle claims to be the correct content type, for which registered
                 // codecs exist, but the file stream signature doesn't match the signature any such codec
@@ -384,10 +383,12 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
             final Bundle bundle,
             final String expectedMessage) {
         final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
-                new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
+                new HtsCodecsByFormatVersion<>(
+                        TEST_CODEC_CONTENT_TYPE,
+                        HtsTestCodecFormat::formatFromContentSubType);
         codecs.forEach(c -> testCodecs.registerCodec(c));
         try {
-            testCodecs.resolveCodecForDecoding(bundle, TEST_CODEC_CONTENT_TYPE);
+            testCodecs.resolveForDecoding(bundle);
         } catch (final RuntimeException e) {
             Assert.assertTrue(e.getMessage().contains(expectedMessage));
             throw e;
@@ -407,28 +408,28 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
                 // is FORMAT_1_V1_0
                 { Arrays.asList(FORMAT_1_V1_0),
                         getIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
-                        null, // no specific requested version
+                        HtsVersion.NEWEST,
                         FORMAT_1_V1_0.getDisplayName() },
 
                 // no specific version requested, so resolve to the newest version registered for FORMAT_1, which
                 // is FORMAT_1_V1_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
                         getIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
-                        null, // no specific requested version
+                        HtsVersion.NEWEST,
                         FORMAT_1_V1_1.getDisplayName() },
 
                 // no specific version requested, so resolve to the newest version registered for FORMAT_1, which
                 // is FORMAT_1_V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0),
                         getIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
-                        null, // no specific requested version
+                        HtsVersion.NEWEST,
                         FORMAT_1_V2_0.getDisplayName() },
 
                 // no specific version requested, so resolve to the newest version registered for FORMAT_1, which is
                 // FORMAT_1_V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         getIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
-                        null, // no specific requested version
+                        HtsVersion.NEWEST,
                         FORMAT_1_V2_0.getDisplayName() },
 
                 // FORMAT_1 file extension, request version V1_0, so resolve to FORMAT_1_V1_0
@@ -469,7 +470,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
                                         TEST_CODEC_CONTENT_TYPE))
                                 .build(),
-                        null,
+                        HtsVersion.NEWEST,
                         FORMAT_3_V1_0.getDisplayName() },
 
                 // FORMAT_3 custom protocol scheme, no version specified, resolve to FORMAT_3_V2_0
@@ -479,7 +480,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
                                         TEST_CODEC_CONTENT_TYPE))
                                 .build(),
-                        null,
+                        HtsVersion.NEWEST,
                         FORMAT_3_V2_0.getDisplayName() },
 
                 // FORMAT_3 custom protocol scheme, version FORMAT_3_V1_0 specified, resolve to FORMAT_3_V1_0
@@ -501,12 +502,13 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
             final HtsVersion htsVersionRequested,
             final String expectedCodecDisplayName) {
         final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
-                new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
+                new HtsCodecsByFormatVersion<>(
+                        TEST_CODEC_CONTENT_TYPE,
+                        HtsTestCodecFormat::formatFromContentSubType);
         codecs.forEach(c -> testCodecs.registerCodec(c));
-        final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveCodecForEncoding(
+        final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveForEncoding(
                 bundle,
-                TEST_CODEC_CONTENT_TYPE,
-                Optional.ofNullable(htsVersionRequested));
+                htsVersionRequested);
         Assert.assertEquals(resolvedCodec.getDisplayName(), expectedCodecDisplayName);
     }
 
@@ -521,7 +523,7 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
                                 TEST_CODEC_CONTENT_TYPE,
                                 null,
                                 FORMAT_1_FILE_EXTENSION),
-                        null,
+                        HtsVersion.NEWEST,
                         HtsCodecsByFormatVersion.NO_SUPPORTING_CODEC_ERROR},
 
                 // no codecs registered at all, content type and version specified
@@ -587,13 +589,12 @@ public class HtsCodecsByFormatVersionTest extends HtsjdkTest {
             final HtsVersion htsVersion,
             final String expectedMessage) {
         final HtsCodecsByFormatVersion<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
-                new HtsCodecsByFormatVersion<>(HtsTestCodecFormat::formatFromContentSubType);
+                new HtsCodecsByFormatVersion<>(
+                        TEST_CODEC_CONTENT_TYPE,
+                        HtsTestCodecFormat::formatFromContentSubType);
         codecs.forEach(c -> testCodecs.registerCodec(c));
         try {
-                testCodecs.resolveCodecForEncoding(
-                        bundle,
-                        TEST_CODEC_CONTENT_TYPE,
-                        Optional.ofNullable(htsVersion));
+                testCodecs.resolveForEncoding(bundle, htsVersion);
         } catch (final RuntimeException e) {
             Assert.assertTrue(e.getMessage().contains(expectedMessage));
             throw e;
