@@ -6,12 +6,10 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
-import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
 public class HtsHaploidReferenceCodecs {
-    private static HtsCodecsByFormatVersion<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecs = HtsCodecRegistry.getHapRefCodecs();
 
     @SuppressWarnings("unchecked")
     public static HaploidReferenceDecoder getHapRefDecoder(final IOPath inputPath) {
@@ -19,7 +17,8 @@ public class HtsHaploidReferenceCodecs {
         final Bundle referenceBundle = new BundleBuilder().addPrimary(
                 new IOPathResource(inputPath, BundleResourceType.HAPLOID_REFERENCE)).build();
 
-        final HaploidReferenceCodec haploidReferenceCodec = haprefCodecs.resolveForDecoding(referenceBundle);
+        final HaploidReferenceCodec haploidReferenceCodec = HtsCodecRegistry.getHapRefCodecResolver()
+                .resolveForDecoding(referenceBundle);
 
         return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(referenceBundle, null);
     }

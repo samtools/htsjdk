@@ -53,16 +53,16 @@ public class HtsCodecRegistry {
     private static final HtsCodecRegistry htsCodecRegistry = new HtsCodecRegistry();
 
     // for each codec type, keep a map of codec instances, by format and version
-    private static HtsCodecsByFormatVersion<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecs =
-            new HtsCodecsByFormatVersion<>(
+    private static HtsCodecResolver<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecResolver =
+            new HtsCodecResolver<>(
                     BundleResourceType.HAPLOID_REFERENCE,
                     HaploidReferenceFormat::contentSubTypeToFormat);
-    private static HtsCodecsByFormatVersion<ReadsFormat, ReadsCodec> readsCodecs =
-            new HtsCodecsByFormatVersion<>(
+    private static HtsCodecResolver<ReadsFormat, ReadsCodec> readsCodecResolver =
+            new HtsCodecResolver<>(
                     BundleResourceType.READS,
                     ReadsFormat::contentSubTypeToFormat);
-    private static HtsCodecsByFormatVersion<VariantsFormat, VariantsCodec> variantCodecs =
-            new HtsCodecsByFormatVersion<>(
+    private static HtsCodecResolver<VariantsFormat, VariantsCodec> variantsCodecResolver =
+            new HtsCodecResolver<>(
                     BundleResourceType.VARIANTS,
                     VariantsFormat::contentSubTypeToFormat);
 
@@ -77,13 +77,13 @@ public class HtsCodecRegistry {
     public HtsCodec<?, ?, ?> registerCodec(final HtsCodec<?, ?, ?> codec) {
         switch (codec.getCodecType()) {
             case ALIGNED_READS:
-                return readsCodecs.registerCodec((ReadsCodec) codec);
+                return readsCodecResolver.registerCodec((ReadsCodec) codec);
 
             case HAPLOID_REFERENCE:
-                return haprefCodecs.registerCodec((HaploidReferenceCodec) codec);
+                return haprefCodecResolver.registerCodec((HaploidReferenceCodec) codec);
 
             case VARIANTS:
-                return variantCodecs.registerCodec((VariantsCodec) codec);
+                return variantsCodecResolver.registerCodec((VariantsCodec) codec);
 
             case FEATURES:
                 throw new RuntimeException("Features codec type not yet implemented");
@@ -93,16 +93,16 @@ public class HtsCodecRegistry {
         }
     }
 
-    public static HtsCodecsByFormatVersion<ReadsFormat, ReadsCodec> getReadsCodecs() {
-        return readsCodecs;
+    public static HtsCodecResolver<ReadsFormat, ReadsCodec> getReadsCodecResolver() {
+        return readsCodecResolver;
     }
 
-    public static HtsCodecsByFormatVersion<VariantsFormat, VariantsCodec> getVariantsCodecs() {
-        return variantCodecs;
+    public static HtsCodecResolver<VariantsFormat, VariantsCodec> getVariantsCodecResolver() {
+        return variantsCodecResolver;
     }
 
-    public static HtsCodecsByFormatVersion<HaploidReferenceFormat, HaploidReferenceCodec> getHapRefCodecs() {
-        return haprefCodecs;
+    public static HtsCodecResolver<HaploidReferenceFormat, HaploidReferenceCodec> getHapRefCodecResolver() {
+        return haprefCodecResolver;
     }
 
 }

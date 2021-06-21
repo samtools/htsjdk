@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
  * @param <F> enum representing the formats for this codec type
  * @param <C> the HtsCodec type
  */
-final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
-    private static final Log LOG = Log.getInstance(HtsCodecsByFormatVersion.class);
+final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
+    private static final Log LOG = Log.getInstance(HtsCodecResolver.class);
 
     final static String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
     final static String MULTIPLE_SUPPORTING_CODECS_ERROR = "Multiple codecs accept the provided resource";
@@ -34,7 +34,7 @@ final class HtsCodecsByFormatVersion<F extends Enum<F>, C extends HtsCodec<F, ?,
     private final Function<String, Optional<F>> contentSubTypeToFormat;
 
 
-    public HtsCodecsByFormatVersion(
+    public HtsCodecResolver(
             final String requiredContentType,
             final Function<String, Optional<F>> contentSubTypeToFormat) {
         this.requiredContentType = requiredContentType;

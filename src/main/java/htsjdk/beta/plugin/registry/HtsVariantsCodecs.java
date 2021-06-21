@@ -14,8 +14,6 @@ import htsjdk.beta.plugin.variants.VariantsFormat;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
-import java.util.Optional;
-
 public class HtsVariantsCodecs {
 
     @SuppressWarnings("unchecked")
@@ -40,7 +38,7 @@ public class HtsVariantsCodecs {
     public static VariantsDecoder getVariantsDecoder(final Bundle inputBundle) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
 
-        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecs().resolveForDecoding(inputBundle);
+        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecResolver().resolveForDecoding(inputBundle);
         return (VariantsDecoder) variantsCodec.getDecoder(inputBundle, new VariantsDecoderOptions());
     }
 
@@ -51,7 +49,7 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(variantsDecoderOptions, "Decoder options");
 
-        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecs().resolveForDecoding(inputBundle);
+        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecResolver().resolveForDecoding(inputBundle);
         return (VariantsDecoder) variantsCodec.getDecoder(inputBundle, variantsDecoderOptions);
     }
 
@@ -77,7 +75,7 @@ public class HtsVariantsCodecs {
             final Bundle outputBundle,
             final VariantsEncoderOptions variantsEncoderOptions) {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
-        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecs().resolveForEncoding(outputBundle);
+        final VariantsCodec variantsCodec = HtsCodecRegistry.getVariantsCodecResolver().resolveForEncoding(outputBundle);
         return (VariantsEncoder) variantsCodec.getEncoder(outputBundle, variantsEncoderOptions);
     }
 
@@ -91,7 +89,7 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(variantsFormat, "Format");
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
-        return (VariantsEncoder) HtsCodecRegistry.getVariantsCodecs()
+        return (VariantsEncoder) HtsCodecRegistry.getVariantsCodecResolver()
                 .getCodecForFormatAndVersion(variantsFormat, codecVersion)
                 .getEncoder(outputBundle, variantsEncoderOptions);
     }

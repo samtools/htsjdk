@@ -57,7 +57,7 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
 
-        return (ReadsDecoder) HtsCodecRegistry.getReadsCodecs()
+        return (ReadsDecoder) HtsCodecRegistry.getReadsCodecResolver()
                 .resolveForDecoding(inputBundle)
                 .getDecoder(inputBundle, readsDecoderOptions);
     }
@@ -87,7 +87,7 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(outputBundle, "outputBundle");
         ValidationUtils.nonNull(readsEncoderOptions, "Encoder options");
 
-        return (ReadsEncoder) HtsCodecRegistry.getReadsCodecs()
+        return (ReadsEncoder) HtsCodecRegistry.getReadsCodecResolver()
                 .resolveForEncoding(outputBundle)
                 .getEncoder(outputBundle, readsEncoderOptions);
     }
@@ -102,7 +102,7 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(readsFormat, "Codec format");
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
-        return (ReadsEncoder) HtsCodecRegistry.getReadsCodecs()
+        return (ReadsEncoder) HtsCodecRegistry.getReadsCodecResolver()
                 .getCodecForFormatAndVersion(readsFormat, codecVersion)
                 .getEncoder(outputBundle, readsEncoderOptions);
     }
