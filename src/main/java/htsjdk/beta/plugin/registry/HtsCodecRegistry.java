@@ -13,6 +13,8 @@ import htsjdk.beta.plugin.variants.VariantsFormat;
 import java.util.*;
 
 //TODO: Master TODO list:
+// - fix CRAM reference leak issue
+// - address issue with using buffered stream in bundle resources to build an index
 // - unify/clarify exception types
 // - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
 //      document how to implement codecs that need to see the stream (can't deterministically tell from the extension)

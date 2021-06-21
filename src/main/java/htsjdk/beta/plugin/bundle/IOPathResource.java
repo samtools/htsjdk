@@ -77,10 +77,13 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
 
     @Override
     public SignatureProbingInputStream getSignatureProbingStream(final int requestedPrefixSize) {
+        ValidationUtils.validateArg(
+                requestedPrefixSize > 0,
+                "signature probing stream size must be > 0");
         if (signaturePrefix == null) {
             signaturePrefix = new byte[requestedPrefixSize];
             // get a stream on the underlying IOPath, get our reuseable signature probing buffer,
-            // and then close the n
+            // and then close the stream
             try (final InputStream is = getInputStream().get();
                  final InputStream inputStream = new BufferedInputStream(is, requestedPrefixSize)) {
                 inputStream.mark(requestedPrefixSize);
@@ -93,9 +96,10 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
                         e);
             }
         } else if (requestedPrefixSize > signaturePrefixSize) {
-            throw new IllegalArgumentException(
-                    String.format("A signature probing size of %d was requested, but a probe size of %d has already been established",
-                            requestedPrefixSize, signaturePrefixSize));
+            throw new IllegalArgumentException(String.format(
+                    "A signature probing size of %d was requested, but a probe size of %d" +
+                            " has already been established for this input",
+                    requestedPrefixSize, signaturePrefixSize));
         }
         return new SignatureProbingInputStream(signaturePrefix, signaturePrefixSize);
     }

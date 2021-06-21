@@ -109,15 +109,12 @@ public interface HtsCodec<
 
     /**
      * @return the number of bytes this codec requires to determine whether it can decode a stream.
-     * This number may differ from {@link #getSignatureSize()} if, for example, the file format
-     * uses a block compressed format. BAM for example has a small {@link #getSignatureSize()}, but
-     * requires a larger {@link #getSignatureProbeStreamSize()} size since it needs to decompress
-     * a full compression block in order to examine the first few signature bytes signature.
+     * The signatureSize should be expressed in "compressed(/encrypted)" space rather than "plaintext"
+     * space. For example, a raw signature may be n bytes of decompressed ASCII, but the codec may need
+     * to consume an entire encrypted GZIP block in order to inspect those n bytes. signaturePrefixSize
+     * should be specified based on the compressed block size, in order to ensure that the signature
+     * probing stream contains a semantically meaningful fragment of the underlying input.
      */
-    //TODO: getSignatureProbeStreamSize should be expressed in "encrypted" space rather than "plaintext"
-    // space. For example, a raw signature may be N bytes of ASCII, but the codec may need to
-    // consume an entire encrypted GZIP block in order to inspect those N byes. getSignatureProbeStreamSize
-    // should return the encryption block size.
     default int getSignatureProbeStreamSize() { return getSignatureSize(); }
 
     /**

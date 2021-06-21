@@ -58,8 +58,15 @@ public interface BundleResource {
      * Note that resources for which the underlying stream cannot be reconstructed, this method must be
      * called before any of the underlying stream has been consumed.
      *
-     * @throws IllegalArgumentException if this method has previously been called on this object
-     * with a smaller prefixSize.
+     * @param prefixSize prefixSize should be expressed in "compressed(/encrypted)" space rather than "plaintext"
+     *                  space. For example, a raw signature may be 4 bytes of decompressed ASCII, but the codec may
+     *                  need to consume an entire encrypted GZIP block in order to inspect those n bytes.
+     *                  signaturePrefixSize should be specified based on the compressed block size, in order to ensure
+     *                  that the signature probing stream contains a semantically meaningful fragment of the underlying
+     *                  input.
+     *
+     * @throws IllegalArgumentException if this method has previously been called on this object with a smaller
+     * prefixSize.
      */
     SignatureProbingInputStream getSignatureProbingStream(final int prefixSize);
 
