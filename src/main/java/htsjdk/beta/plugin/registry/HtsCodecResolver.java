@@ -97,6 +97,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         final BundleResource bundleResource = getPrimaryResource(bundle, true);
         final Optional<F> optFormat = getFormatForContentSubType(bundleResource);
         final List<C> candidatesCodecs = resolveFormat(optFormat);
+
         final List<C> resolvedCodecs = bundleResource.getIOPath().isPresent() ?
                 resolveForDecodingIOPath(bundleResource, candidatesCodecs) :
                 resolveForDecodingStream(bundleResource, candidatesCodecs);

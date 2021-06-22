@@ -131,7 +131,7 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
     private CRAMFileReader getCRAMReader(final ReadsDecoderOptions readsDecoderOptions) {
         final CRAMFileReader cramFileReader;
 
-        final BundleResource readsInput = inputBundle.getOrThrow(BundleResourceType.READS);
+        final BundleResource readsInput = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
         final Optional<BundleResource> indexInput = inputBundle.get(BundleResourceType.READS_INDEX);
         if (indexInput.isPresent()) {
             final BundleResource indexResource = indexInput.get();

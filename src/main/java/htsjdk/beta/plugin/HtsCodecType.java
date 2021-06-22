@@ -11,9 +11,10 @@ package htsjdk.beta.plugin;
  */
 public enum HtsCodecType {
 
-    // TODO: should this be called SEQUENCE, since ultimately FASTQ should belong in the same category..
+    //TODO: where would a FASTQ codec fit ? in the same category (which implies the same interfaces) ?
+    // should this be called SEQUENCE ?
     HAPLOID_REFERENCE,      // FASTA
     ALIGNED_READS,          // SAM, BAM, CRAM, htsgetbam, sra,...
-    VARIANTS,               // VCF, BCF
+    VARIANT_CONTEXTS,       // VCF, BCF
     FEATURES,               // GFF, BED, etc
 }

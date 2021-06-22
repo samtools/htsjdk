@@ -29,7 +29,7 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(variantsDecoderOptions, "Decoder options");
 
         final Bundle inputBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(inputPath, BundleResourceType.VARIANTS))
+                .addPrimary(new IOPathResource(inputPath, BundleResourceType.VARIANT_CONTEXTS))
                 .build();
         return getVariantsDecoder(inputBundle, variantsDecoderOptions);
     }
@@ -66,7 +66,7 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options must not be null");
 
         final Bundle outputBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANTS))
+                .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANT_CONTEXTS))
                 .build();
         return getVariantsEncoder(outputBundle, new VariantsEncoderOptions());
     }

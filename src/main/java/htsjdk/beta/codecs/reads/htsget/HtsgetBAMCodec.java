@@ -49,7 +49,7 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
 
     public boolean handlesURI(final IOPath ioPath) {
         final boolean hasExtension = extensionMap.stream().anyMatch(ext-> ioPath.hasExtension(ext));
-        final boolean hasScheme =matchesScheme(ioPath);
+        final boolean hasScheme = matchesScheme(ioPath);
 
         //TODO: does this check for "/reads/" at the start of the path ? should it ?
         final HtsgetRequest htsgetRequest = new HtsgetRequest(ioPath.getURI());

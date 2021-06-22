@@ -61,7 +61,7 @@ public class VCFDecoderV4_2 extends VCFDecoder {
 
     //TODO: need to also look at the bundle to find the index input/stream
     private VCFReader getVCFReader(final VariantsDecoderOptions decoderOptions) {
-        final BundleResource variantsResource = inputBundle.getOrThrow(BundleResourceType.VARIANTS);
+        final BundleResource variantsResource = inputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
         if (variantsResource.getIOPath().isPresent()) {
             return new VCFFileReader(variantsResource.getIOPath().get().toPath(),false);
         } else {

@@ -21,9 +21,6 @@ import java.util.*;
 //      document how to implement codecs that need to see the stream (can't deterministically tell from the extension)
 //      clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
 //      output streams that are passed in ??)
-// - rename the packages classes for codecs to reflect the interfaces they provide (i.e., a "READS" codec
-//      is a codec that exposes SAMFileHeader/SAMRecord). Someday when we replace those, we'll need a new
-//      name that contrasts with the current name i.e. READS2
 // - add a "PublicAPI" opt-in annotation to exempt internal methods that need to be public because
 //      they're shared from being part of the public API
 // - respect presorted in Reads encoders
@@ -55,11 +52,11 @@ public class HtsCodecRegistry {
                     HaploidReferenceFormat::contentSubTypeToFormat);
     private static HtsCodecResolver<ReadsFormat, ReadsCodec> readsCodecResolver =
             new HtsCodecResolver<>(
-                    BundleResourceType.READS,
+                    BundleResourceType.ALIGNED_READS,
                     ReadsFormat::contentSubTypeToFormat);
     private static HtsCodecResolver<VariantsFormat, VariantsCodec> variantsCodecResolver =
             new HtsCodecResolver<>(
-                    BundleResourceType.VARIANTS,
+                    BundleResourceType.VARIANT_CONTEXTS,
                     VariantsFormat::contentSubTypeToFormat);
 
     //discover any codecs on the classpath
@@ -78,7 +75,7 @@ public class HtsCodecRegistry {
             case HAPLOID_REFERENCE:
                 return haprefCodecResolver.registerCodec((HaploidReferenceCodec) codec);
 
-            case VARIANTS:
+            case VARIANT_CONTEXTS:
                 return variantsCodecResolver.registerCodec((VariantsCodec) codec);
 
             case FEATURES:

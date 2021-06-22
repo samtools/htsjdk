@@ -8,7 +8,6 @@ import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.registry.HtsReadsCodecs;
-import htsjdk.beta.plugin.HtsDecoder;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
@@ -91,7 +90,7 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
     public void testQueryIntervals(final HtsQueryRule queryRule, final int expected) {
         final Bundle readsBundle =
                 new BundleBuilder()
-                        .addPrimary(new IOPathResource(TEST_BAM, BundleResourceType.READS))
+                        .addPrimary(new IOPathResource(TEST_BAM, BundleResourceType.ALIGNED_READS))
                         .addSecondary(new IOPathResource(TEST_BAI, BundleResourceType.READS_INDEX))
                         .build();
         try (final ReadsDecoder bamDecoder = HtsReadsCodecs.getReadsDecoder(readsBundle, new ReadsDecoderOptions());

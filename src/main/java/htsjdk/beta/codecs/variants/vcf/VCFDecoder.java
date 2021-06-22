@@ -14,7 +14,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
     public VCFDecoder(final Bundle inputBundle, final VariantsDecoderOptions variantsDecoderOptions) {
         this.inputBundle = inputBundle;
         this.variantsDecoderOptions = variantsDecoderOptions;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.VARIANTS).getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS).getDisplayName();
     }
 
     @Override

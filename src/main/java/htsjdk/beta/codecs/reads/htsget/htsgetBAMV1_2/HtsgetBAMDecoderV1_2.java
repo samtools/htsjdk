@@ -6,7 +6,6 @@ import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
-import htsjdk.beta.plugin.interval.HtsQueryInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.DefaultSAMRecordFactory;
@@ -26,7 +25,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     public HtsgetBAMDecoderV1_2(final Bundle inputBundle, final ReadsDecoderOptions decoderOptions) {
         super(inputBundle, decoderOptions);
-        final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.READS);
+        final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
         if (!readsResource.getIOPath().isPresent()) {
             throw new IllegalArgumentException(String.format(
                     "Htsget required a non-stream input resource. The bundle resource %s doesn't contain the required URI",

@@ -21,7 +21,7 @@ final public class ReadsCodecUtils {
             final ReadsDecoderOptions readsDecoderOptions) {
         final SamInputResource samInputResource = readsToSamInputResource(
                 inputBundle,
-                BundleResourceType.READS,
+                BundleResourceType.ALIGNED_READS,
                 readsDecoderOptions);
         indexToSamInputResource(
                 inputBundle,

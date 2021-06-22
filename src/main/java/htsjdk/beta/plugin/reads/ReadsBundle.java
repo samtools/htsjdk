@@ -48,8 +48,8 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      */
     public ReadsBundle(final T reads) {
         this(Arrays.asList(toInputResource(
-                BundleResourceType.READS,
-                ValidationUtils.nonNull(reads, BundleResourceType.READS))));
+                BundleResourceType.ALIGNED_READS,
+                ValidationUtils.nonNull(reads, BundleResourceType.ALIGNED_READS))));
     }
 
     /**
@@ -59,7 +59,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      */
     public ReadsBundle(final T reads, final T index) {
         this(Arrays.asList(
-                toInputResource(BundleResourceType.READS, ValidationUtils.nonNull(reads, BundleResourceType.READS)),
+                toInputResource(BundleResourceType.ALIGNED_READS, ValidationUtils.nonNull(reads, BundleResourceType.ALIGNED_READS)),
                 toInputResource(
                         BundleResourceType.READS_INDEX,
                         ValidationUtils.nonNull(index, BundleResourceType.READS_INDEX))));
@@ -78,14 +78,14 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      * input {@link BundleResource} collection
      */
     protected ReadsBundle(final Collection<BundleResource> resources) {
-        super(BundleResourceType.READS, resources);
+        super(BundleResourceType.ALIGNED_READS, resources);
     }
 
    /**
      * @return the READS {@link BundleResource} for this {@link ReadsBundle}
      */
     public BundleResource getReads() {
-        return getOrThrow(BundleResourceType.READS);
+        return getOrThrow(BundleResourceType.ALIGNED_READS);
     }
 
     /**
@@ -202,11 +202,11 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
         if (extension.isPresent()) {
             final String ext = extension.get();
             if (ext.equals(FileExtensions.BAM)) {
-                return Optional.of(new Tuple<>(BundleResourceType.READS, BundleResourceType.READS_BAM));
+                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM));
             } else if (ext.equals(FileExtensions.CRAM)) {
-                return Optional.of(new Tuple<>(BundleResourceType.READS, BundleResourceType.READS_CRAM));
+                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_CRAM));
             } else if (ext.equals((FileExtensions.SAM))) {
-                return Optional.of(new Tuple<>(BundleResourceType.READS, BundleResourceType.READS_SAM));
+                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_SAM));
             }
             //TODO: else SRA, htsget,...
         }

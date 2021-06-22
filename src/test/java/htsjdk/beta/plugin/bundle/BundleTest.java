@@ -22,10 +22,10 @@ public class BundleTest extends HtsjdkTest {
 
     @Test
     public void testPrimaryResource() {
-        final String primaryKey = BundleResourceType.READS;
+        final String primaryKey = BundleResourceType.ALIGNED_READS;
         final IOPathResource ioPathResource = new IOPathResource(
                 new HtsPath("somefile.bam"),
-                BundleResourceType.READS);
+                BundleResourceType.ALIGNED_READS);
         final Bundle bundle = new Bundle(primaryKey, Collections.singletonList(ioPathResource));
         Assert.assertEquals(bundle.getPrimaryContentType(), primaryKey);
         Assert.assertEquals(bundle.getPrimaryResource(), ioPathResource);
@@ -34,7 +34,7 @@ public class BundleTest extends HtsjdkTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNullPrimaryResource() {
         new Bundle(null, Collections.singletonList(
-                new IOPathResource(new HtsPath("somefile.bam"), BundleResourceType.READS)));
+                new IOPathResource(new HtsPath("somefile.bam"), BundleResourceType.ALIGNED_READS)));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -43,21 +43,21 @@ public class BundleTest extends HtsjdkTest {
         final String primaryKey = "MISSING_RESOURCE";
         final IOPathResource ioPathResource = new IOPathResource(
                 new HtsPath("somefile.bam"),
-                BundleResourceType.READS);
+                BundleResourceType.ALIGNED_READS);
         try {
             new Bundle(primaryKey, Collections.singletonList(ioPathResource));
         } catch (final IllegalArgumentException e) {
-            Assert.assertTrue(e.getMessage().contains("not present in the resource list"));
+            Assert.assertTrue(e.getMessage().contains("not present in the bundle's resources"));
             throw e;
         }
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testDuplicateResource() {
-        final String primaryKey = BundleResourceType.READS;
+        final String primaryKey = BundleResourceType.ALIGNED_READS;
         final IOPathResource ioPathResource = new IOPathResource(
                 new HtsPath("somefile.bam"),
-                BundleResourceType.READS);
+                BundleResourceType.ALIGNED_READS);
         try {
             new Bundle(primaryKey, Arrays.asList(ioPathResource, ioPathResource));
         } catch (final IllegalArgumentException e) {
@@ -76,7 +76,7 @@ public class BundleTest extends HtsjdkTest {
         final Iterator<BundleResource> it = bundle.iterator();
         while (it.hasNext()) {
             final BundleResource ir = it.next();
-            if (ir.getContentType().equals(BundleResourceType.READS)) {
+            if (ir.getContentType().equals(BundleResourceType.ALIGNED_READS)) {
                 Assert.assertEquals(ir, BundleResourceTestData.readsWithContentSubType);
             } else {
                 Assert.assertEquals(ir, BundleResourceTestData.indexNoContentSubType);

@@ -44,7 +44,7 @@ public class VCFEncoderV4_2 extends VCFEncoder {
     }
 
     private VariantContextWriter getVCFWriter(final VariantsEncoderOptions variantsEncoderOptions, final VCFHeader vcfHeader) {
-        final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.VARIANTS);
+        final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
         if (variantsResource.getIOPath().isPresent()) {
             final VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
             return builder

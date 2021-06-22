@@ -13,11 +13,11 @@ public class BundleResourceTestData {
 
     public static final IOPathResource readsWithContentSubType = new IOPathResource(
             READS_FILE,
-            BundleResourceType.READS,
+            BundleResourceType.ALIGNED_READS,
             BundleResourceType.READS_BAM);
     public static final IOPathResource readsNoContentSubType =new IOPathResource(
             READS_FILE,
-            BundleResourceType.READS);
+            BundleResourceType.ALIGNED_READS);
     public static final IOPathResource indexWithContentSubType = new IOPathResource(
             READS_INDEX,
             BundleResourceType.READS_INDEX,

@@ -64,7 +64,7 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
         // validate that the primary resource actually exists in the resources
         if (!this.resources.containsKey(primaryContentType)) {
             throw new IllegalArgumentException(
-                    String.format("Primary resource content type %s is not present in the resource list",
+                    String.format("Primary resource content type %s is not present in the bundle's resources",
                             primaryContentType));
         }
     }

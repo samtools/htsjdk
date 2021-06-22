@@ -19,7 +19,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     public CRAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         this.inputBundle = inputBundle;
         this.readsDecoderOptions = readsDecoderOptions;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.READS).getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
     }
 
     @Override
