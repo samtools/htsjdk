@@ -5,13 +5,14 @@ import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoder;
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
+import htsjdk.exception.HtsjdkIOException;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
 /**
@@ -40,7 +41,7 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     public boolean canDecodeSignature(final SignatureProbingInputStream rawInputStream, final String sourceName) {
         int c = rawInputStream.read();
         if (c == -1) {
-            throw new RuntimeIOException(
+            throw new HtsjdkIOException(
                     String.format("Codec %s failed probing signature for resource %s", this.getDisplayName(), sourceName));
         }
         return ((char) c) == '>';  // for FASTA, this is all we have to go on...
@@ -59,11 +60,11 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
 
     @Override
     public HaploidReferenceEncoder getEncoder(final Bundle outputBundle, final HtsEncoderOptions options) {
-        throw new IllegalStateException("FASTA encoder not implemented");
+        throw new HtsjdkPluginException("FASTA encoder not implemented");
     }
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 }

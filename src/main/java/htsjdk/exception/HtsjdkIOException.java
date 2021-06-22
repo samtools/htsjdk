@@ -1,9 +1,12 @@
 package htsjdk.exception;
 
+/**
+ * A RuntimeException-derived class for propagating IOExceptions caught/thrown by the plugin framework.
+ */
 public class HtsjdkIOException extends HtsjdkException {
 
     /**
-     * Constructs an HtsjdkIOException exception.
+     * Construct an HtsjdkIOException exception.
      *
      * @param message detailed message.
      */
@@ -12,10 +15,10 @@ public class HtsjdkIOException extends HtsjdkException {
     }
 
     /**
-     * Constructs an HtsjdkIOException exception with a specified cause.
+     * Construct an HtsjdkIOException exception with a specified cause.
      *
      * @param message detailed message.
-     * @param cause   cause of the exception.
+     * @param cause cause of the exception.
      */
     public HtsjdkIOException(String message, Throwable cause) {
         super(message, cause);

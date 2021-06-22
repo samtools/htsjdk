@@ -11,10 +11,10 @@ import htsjdk.beta.plugin.bundle.InputStreamResource;
 import htsjdk.beta.plugin.bundle.OutputStreamResource;
 import htsjdk.beta.plugin.registry.testcodec.HtsTestCodec;
 import htsjdk.beta.plugin.registry.testcodec.HtsTestCodecFormat;
+import htsjdk.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -682,7 +682,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                     new InputStreamResource(bis, displayName, contentType, contentSubType);
             return new BundleBuilder().addPrimary(isr).build();
         } catch (final IOException e) {
-             throw new RuntimeIOException(e);
+             throw new HtsjdkIOException(e);
         }
     }
 
@@ -694,7 +694,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
             final byte array[] = bos.toByteArray();
             return new ByteArrayInputStream(array);
         } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+            throw new HtsjdkIOException(e);
         }
     }
 

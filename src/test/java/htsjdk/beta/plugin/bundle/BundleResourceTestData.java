@@ -36,12 +36,14 @@ public class BundleResourceTestData {
     public static final InputStream fakeInputStream = new InputStream() {
         @Override
         public int read() throws IOException {
+            // should never get here
             throw new IllegalStateException();
         }
     };
     public static final OutputStream fakeOutputStream = new OutputStream() {
         @Override
         public void write(int b) throws IOException {
+            // should never get here
             throw new IllegalStateException();
         }
     };

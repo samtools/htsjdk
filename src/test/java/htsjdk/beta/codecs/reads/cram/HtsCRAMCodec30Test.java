@@ -1,6 +1,7 @@
 package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.registry.HtsReadsCodecs;
@@ -11,7 +12,6 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.util.RuntimeIOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -73,7 +73,7 @@ public class HtsCRAMCodec30Test extends HtsjdkTest {
                 System.out.println(samRec);
             }
         } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+            throw new HtsjdkIOException(e);
         }
     }
 

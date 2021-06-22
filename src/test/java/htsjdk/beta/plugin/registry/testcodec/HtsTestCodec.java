@@ -6,6 +6,7 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
 import htsjdk.exception.HtsjdkIOException;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.utils.ValidationUtils;
@@ -40,7 +41,7 @@ public class HtsTestCodec implements HtsCodec<
         // using the other (non-standard) configuration constructor. Since this no-arg constructor
         // is the one that will be called if this codec is instantiated through normal dynamic codec
         // discovery, throw if it ever gets called.
-        throw new RuntimeException("This codec should never be instantiated using the no-arg constructor");
+        throw new HtsjdkPluginException("This codec should never be instantiated using the no-arg constructor");
     }
 
     // used by tests to create a variety of different test codecs that vary by format/version/extensions/protocol
@@ -141,7 +142,7 @@ public class HtsTestCodec implements HtsCodec<
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new RuntimeException("Not yet implemented");
+        throw new HtsjdkPluginException("Not yet implemented");
     }
 
 }

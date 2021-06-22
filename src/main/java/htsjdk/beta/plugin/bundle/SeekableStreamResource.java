@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.utils.ValidationUtils;
 
@@ -43,7 +44,7 @@ public class SeekableStreamResource extends InputStreamResource {
     @Override
     public SignatureProbingInputStream getSignatureProbingStream(final int requestedPrefixSize) {
         //TODO: is the super class' implementation sufficient ?
-        throw new IllegalStateException("Signature probing not yet implemented for seekable stream inputs");
+        throw new HtsjdkPluginException("Signature probing not yet implemented for seekable stream inputs");
     }
 
     @Override

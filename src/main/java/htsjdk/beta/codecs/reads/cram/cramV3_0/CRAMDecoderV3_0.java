@@ -9,6 +9,7 @@ import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
+import htsjdk.exception.HtsjdkIOException;
 import htsjdk.samtools.CRAMFileReader;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader;
@@ -149,7 +150,7 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
                         getCRAMReferenceSource(),
                         readsDecoderOptions.getValidationStringency());
             } catch (IOException e) {
-                throw new RuntimeIOException(e);
+                throw new HtsjdkIOException(e);
             }
         } else {
             try {
@@ -159,7 +160,7 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
                         getCRAMReferenceSource(),
                         readsDecoderOptions.getValidationStringency());
             } catch (IOException e) {
-                throw new RuntimeIOException(e);
+                throw new HtsjdkIOException(e);
             }
         }
 

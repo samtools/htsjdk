@@ -8,13 +8,14 @@ import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
+import htsjdk.exception.HtsjdkIOException;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.HtsgetBAMFileReader;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,7 +29,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
         final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
         if (!readsResource.getIOPath().isPresent()) {
             throw new IllegalArgumentException(String.format(
-                    "Htsget required a non-stream input resource. The bundle resource %s doesn't contain the required URI",
+                    "Htsget requires an IOPath input resource. The bundle resource %s doesn't contain the required IOPath",
                     readsResource.getDisplayName()));
         }
         try {
@@ -39,7 +40,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
                     DefaultSAMRecordFactory.getInstance(),
                     false);
         } catch (IOException e) {
-            throw new RuntimeIOException(
+            throw new HtsjdkIOException(
                     String.format("Failure opening Htsget reader on %s", readsResource.getIOPath().get().toString()), e);
         }
     }
@@ -58,17 +59,17 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> iterator() {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public boolean isQueryable() {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public boolean hasIndex() {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
@@ -135,6 +136,6 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public SAMRecord queryMate(final SAMRecord rec) {
-        throw new IllegalArgumentException("queryMate not implemented for htsget bam reader");
+        throw new HtsjdkPluginException("queryMate not implemented for htsget bam reader");
     }
 }

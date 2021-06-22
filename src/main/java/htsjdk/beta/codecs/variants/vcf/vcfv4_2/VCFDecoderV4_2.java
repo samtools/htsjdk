@@ -7,6 +7,7 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -42,12 +43,12 @@ public class VCFDecoderV4_2 extends VCFDecoder {
 
     @Override
     public boolean isQueryable() {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public boolean hasIndex() {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
@@ -65,7 +66,7 @@ public class VCFDecoderV4_2 extends VCFDecoder {
         if (variantsResource.getIOPath().isPresent()) {
             return new VCFFileReader(variantsResource.getIOPath().get().toPath(),false);
         } else {
-            throw new IllegalArgumentException("VCF reader from stream not implemented");
+            throw new HtsjdkPluginException("VCF reader from stream not implemented");
         }
     }
 

@@ -1,8 +1,8 @@
 package htsjdk.beta.io;
 
+import htsjdk.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -27,7 +27,7 @@ public class IOPathUtils {
             tempFile.deleteOnExit();
             return new HtsPath(tempFile.getAbsolutePath());
         } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+            throw new HtsjdkIOException(e);
         }
     }
 
@@ -58,7 +58,7 @@ public class IOPathUtils {
                     });
             return stringWriter.toString();
         } catch (final IOException e) {
-            throw new RuntimeException(
+            throw new HtsjdkIOException(
                     String.format("Failed to read from: %s", ioPath.getRawInputString()),
                     e);
         }
@@ -74,7 +74,7 @@ public class IOPathUtils {
         try (final BufferedOutputStream bos = new BufferedOutputStream(ioPath.getOutputStream())) {
             bos.write(contents.getBytes());
         } catch (final IOException e) {
-            throw new RuntimeException(
+            throw new HtsjdkIOException(
                     String.format("Failed to write to: %s", ioPath.getRawInputString()),
                     e);
         }

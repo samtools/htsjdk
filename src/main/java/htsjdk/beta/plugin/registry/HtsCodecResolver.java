@@ -5,6 +5,8 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
+import htsjdk.exception.HtsjdkException;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.Log;
 import htsjdk.utils.ValidationUtils;
@@ -194,7 +196,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
             // remote resource. We should never get here since this protocol should have been claimed
             // by some codec's claimURI implementation. Attempting to get an input stream directly from such
             // an IOPath will fail.
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     String.format("The resource (%s) specifies a custom protocol (%s) for which no NIO file system provider is registered",
                             bundleResource,
                             inputPath.getURI().getScheme()));
@@ -266,7 +268,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     private List<C> resolveForDecodingStream(final BundleResource bundleResource, final List<C> candidateCodecs) {
         if (bundleResource.hasSeekableStream()) {
             // stream is already seekable so no need to wrap it
-            throw new IllegalArgumentException("SeekableStreamResource input resolution is not yet implemented");
+            throw new HtsjdkPluginException("SeekableStreamResource input resolution is not yet implemented");
         } else {
             final int streamPrefixSize = getSignatureProbeStreamSize(candidateCodecs);
             final SignatureProbingInputStream signatureProbingStream =
@@ -363,7 +365,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
             final List<C> resolvedCodecs,
             final Supplier<String> contextMessage) {
         if (resolvedCodecs.size() == 0) {
-            throw new RuntimeException(String.format(
+            throw new HtsjdkException(String.format(
                     "%s %s",
                     NO_SUPPORTING_CODEC_ERROR,
                     contextMessage.get()));
@@ -373,7 +375,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
                     MULTIPLE_SUPPORTING_CODECS_ERROR,
                     contextMessage.get(),
                     resolvedCodecs.stream().map(c -> c.getDisplayName()).collect(Collectors.joining("\n")));
-            throw new RuntimeException(multipleCodecsMessage);
+            throw new HtsjdkPluginException(multipleCodecsMessage);
         } else {
             return resolvedCodecs.get(0);
         }

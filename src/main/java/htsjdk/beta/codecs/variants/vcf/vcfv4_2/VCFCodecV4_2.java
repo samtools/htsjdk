@@ -9,6 +9,7 @@ import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.IOUtil;
 
@@ -41,7 +42,7 @@ public class VCFCodecV4_2 extends VCFCodec {
                     probingInputStream;
             final int numRead = wrappedInputStream.read(signatureBytes);
             if (numRead < 0) {
-                throw new IOException(String.format("0 bytes read from input stream for %s", sourceName));
+                throw new HtsjdkIOException(String.format("0 bytes read from input stream for %s", sourceName));
             }
         } catch (IOException e) {
             throw new HtsjdkIOException(String.format("Failure reading signature from stream for %s", sourceName), e);
@@ -61,7 +62,7 @@ public class VCFCodecV4_2 extends VCFCodec {
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new RuntimeException("Not yet implemented");
+        throw new HtsjdkPluginException("Not yet implemented");
     }
 
 }

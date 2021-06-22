@@ -15,7 +15,7 @@ public class HtsjdkException extends RuntimeException {
     }
 
     /**
-     * Constructs an HtsjdkException with a specified cause.
+     * Construct an HtsjdkException with a specified cause.
      *
      * @param message detailed message.
      * @param cause   cause of the exception.
@@ -25,7 +25,7 @@ public class HtsjdkException extends RuntimeException {
     }
 
     /**
-     * Constructs an HtsjdkException with a message constructed from the cause.
+     * Construct an HtsjdkException with a message constructed from the cause.
      *
      * @param cause cause of the exception.
      */

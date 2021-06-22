@@ -10,13 +10,13 @@ import htsjdk.beta.plugin.reads.ReadsFormat;
 
 import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.plugin.variants.VariantsFormat;
+import htsjdk.exception.HtsjdkPluginException;
 
 import java.util.*;
 
 //TODO: Master TODO list:
 // - address CRAM reference leak issue in master
 // - implement index creation on decoders (existing inputs), requires unbuffered stream
-// - unify/clarify exception types
 // - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
 //      document how to implement codecs that need to see the stream (can't deterministically tell from the extension)
 //      clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
@@ -79,10 +79,10 @@ public class HtsCodecRegistry {
                 return variantsCodecResolver.registerCodec((VariantsCodec) codec);
 
             case FEATURES:
-                throw new RuntimeException("Features codec type not yet implemented");
+                throw new HtsjdkPluginException("Features codec type not yet implemented");
 
             default:
-                throw new IllegalArgumentException("Unknown codec type");
+                throw new HtsjdkPluginException("Unknown codec type");
         }
     }
 

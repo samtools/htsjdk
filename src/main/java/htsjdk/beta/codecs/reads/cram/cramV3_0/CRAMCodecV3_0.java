@@ -9,6 +9,7 @@ import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.cram.structure.CramHeader;
 
 import java.io.IOException;
@@ -57,7 +58,7 @@ public class CRAMCodecV3_0 extends CRAMCodec {
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
 }

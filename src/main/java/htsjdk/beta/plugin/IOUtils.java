@@ -1,9 +1,9 @@
 package htsjdk.beta.plugin;
 
+import htsjdk.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -28,7 +28,7 @@ public class IOUtils {
             tempFile.deleteOnExit();
             return new HtsPath(tempFile.getAbsolutePath());
         } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+            throw new HtsjdkIOException(e);
         }
     }
 
@@ -59,7 +59,7 @@ public class IOUtils {
                     });
             return stringWriter.toString();
         } catch (final IOException e) {
-            throw new RuntimeException(
+            throw new HtsjdkIOException(
                     String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()),
                     e);
         }
@@ -78,14 +78,14 @@ public class IOUtils {
                   final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(bos, ioPath.toPath())) {
                  bcos.write(contents.getBytes());
              } catch (final IOException e) {
-                 throw new RuntimeException(
+                 throw new HtsjdkIOException(
                          String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()), e);
              }
          } else {
              try (final BufferedOutputStream bos = new BufferedOutputStream(ioPath.getOutputStream())) {
                  bos.write(contents.getBytes());
              } catch (final IOException e) {
-                 throw new RuntimeException(
+                 throw new HtsjdkIOException(
                          String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()), e);
              }
          }

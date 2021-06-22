@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin.interval;
 
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.utils.ValidationUtils;
 
@@ -35,7 +36,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     // retained for usage such as rsID for variants, readname for reads,...
     default CloseableIterator<RECORD> query(final String queryString) {
         ValidationUtils.validateArg(isQueryable(), "Reader is not queryable");
-        throw new IllegalStateException("query not implemented for this decoder");
+        throw new HtsjdkPluginException("query not implemented for this decoder");
     }
 
     default CloseableIterator<RECORD> query(final String queryName, final long start, final long end, final HtsQueryRule queryRule) {
@@ -64,7 +65,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
 
     default CloseableIterator<RECORD> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         ValidationUtils.validateArg(isQueryable(), "Reader is not queryable");
-        throw new IllegalStateException("query not implemented for this decoder"); }
+        throw new HtsjdkPluginException("query not implemented for this decoder"); }
 
     default CloseableIterator<RECORD> queryOverlapping(final List<HtsInterval> intervals) {
         return query(intervals, HtsQueryRule.OVERLAPPING);
@@ -77,7 +78,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     //TODO: match reads that have this start; we could just use an HtsInterval with span==1
     default CloseableIterator<RECORD> queryStart(final String queryName, final long start) {
         ValidationUtils.validateArg(isQueryable(), "Reader is not queryable");
-        throw new IllegalStateException("queryStart not implemented for this decoder");
+        throw new HtsjdkPluginException("queryStart not implemented for this decoder");
     }
 
 }

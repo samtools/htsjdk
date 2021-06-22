@@ -6,13 +6,14 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
+import htsjdk.exception.HtsjdkIOException;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 
@@ -53,7 +54,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
 
     @Override
     public SAMSequenceDictionary getHeader() {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
@@ -84,7 +85,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
                 try {
                     referenceSequenceFile.close();
                 } catch(final IOException e) {
-                    throw new RuntimeIOException(e);
+                    throw new HtsjdkIOException(e);
                 }
             }
         };
@@ -92,12 +93,12 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
 
     @Override
     public boolean isQueryable() {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public boolean hasIndex() {
-        throw new IllegalStateException("Not implemented");
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     //TODO: can we remove the need to have this getter; it may require porting CRAMFileReader
@@ -112,7 +113,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
             try {
                 referenceSequenceFile.close();
             } catch (IOException e) {
-                throw new RuntimeIOException(e);
+                throw new HtsjdkIOException(e);
             }
         }
     }

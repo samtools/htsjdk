@@ -6,6 +6,7 @@ import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -52,7 +53,7 @@ public class VCFEncoderV4_2 extends VCFEncoder {
                     .unsetOption(INDEX_ON_THE_FLY)
                     .build();
         } else {
-            throw new IllegalArgumentException("VCF writer to stream not yet implemented");
+            throw new HtsjdkPluginException("VCF writer to stream not yet implemented");
         }
     }
 }
