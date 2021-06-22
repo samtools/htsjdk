@@ -19,8 +19,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Class used by the registry to track all codec formats and versions for a single codec type.
- * @param <F> enum representing the formats for this codec type
+ * Class used to resolve an input or output resource to an appropriate codec (encoder/decoder) for a
+ * single codec type. Methods in this class accept a bundle, along with some auxiliary arguments,
+ * and return one or more codecs appropriate for encoding or decoding the input.
+ *
+ * @param <F> enum representing the possible formats for this codec type
  * @param <C> the HtsCodec type
  */
 final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
@@ -33,7 +36,14 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     private final Map<F, Map<HtsVersion, C>> codecs = new HashMap<>();
     private final Function<String, Optional<F>> contentSubTypeToFormat;
 
-
+    /**
+     * Create a resolver for a given codec type.
+     *
+     * @param requiredContentType the primary content type this resolver will use to interrogate a bundle
+     *                            to locate the primary resource when attempting to resolve the bundle to a codec
+     * @param contentSubTypeToFormat a mapping function that takes a String contentSubType and returns
+     *                              the corresponding format, if one exists
+     */
     public HtsCodecResolver(
             final String requiredContentType,
             final Function<String, Optional<F>> contentSubTypeToFormat) {
@@ -73,29 +83,45 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     }
 
     /**
-     * Find codecs that can read the contentType required for this bundle, if its present.
+     * Inspect a bundle and find a codec that can decode the primary resource.
+     *
+     * @param bundle the bundle to resolve to a codec
+     * @return a codec that can decode the bundle resources
+     *
+     * @throws RuntimeException if more than one codec matches. this usually indicates a registered codec
+     * that is poorly behaved.
      */
     public C resolveForDecoding(final Bundle bundle) {
         ValidationUtils.nonNull(bundle, "bundle");
 
         final BundleResource bundleResource = getPrimaryResource(bundle, true);
         final Optional<F> optFormat = getFormatForContentSubType(bundleResource);
-        final List<C> candidatesCodecs = getCodecsForFormat(optFormat);
+        final List<C> candidatesCodecs = resolveFormat(optFormat);
         final List<C> resolvedCodecs = bundleResource.getIOPath().isPresent() ?
                 resolveForDecodingIOPath(bundleResource, candidatesCodecs) :
                 resolveForDecodingStream(bundleResource, candidatesCodecs);
 
         return getOneOrThrow(resolvedCodecs,
                 () -> String.format("%s/%s",
-                        optFormat.isPresent () ? optFormat.get() : "NONE",
+                        optFormat.isPresent () ? optFormat.get() : "(NONE)",
                         bundleResource));
     }
 
     /**
-     * Find codecs that can read the contentType required for this bundle, if its present.
+     * Inspect a bundle and find a codec that can encode content based on the primary resource.
      *
-     * NOTE: If an output stream resources is provided as the target output, the bundle resource must include
-     * a file format, otherwise multiple codecs will accept the bundle, and an exception will be thrown.
+     * @param bundle the bundle to resolve to an encoding codec. for bundles with a primary content
+     *               type that is an IOPath, the structure of the IOPath (protocol scheme, file extension,
+     *               and query parameters) are used to determine the file format used. For resources
+     *               that are ambiguous (i.e., a stream, which has no file extension), the bundle resource
+     *               must include a subContentType that corresponds to one of the formats for the content
+     *               type used by this codec type. The newest version of the file format will be used.
+     *               To request a specific version or format, see {@link #resolveForEncoding(Bundle, HtsVersion)}
+     *               or {@link #resolveFormatAndVersion(Enum, HtsVersion)}.
+     * @return a codec that can decode the input bundle
+     *
+     * @throws RuntimeException if more than one codec matches. this usually indicates a registered codec
+     * that is poorly behaved.
      */
     public C resolveForEncoding(final Bundle bundle) { return resolveForEncoding(bundle, HtsVersion.NEWEST); }
 
@@ -113,7 +139,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
         final BundleResource bundleResource = getPrimaryResource(bundle, false);
         final Optional<F> optFormat = getFormatForContentSubType(bundleResource);
-        final List<C> candidateCodecs = getCodecsForFormat(optFormat);
+        final List<C> candidateCodecs = resolveFormat(optFormat);
 
         // If the resource is an IOPath resource, see if any codec(s) claim ownership of the URI,
         // specifically the protocol scheme.
@@ -125,8 +151,24 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
         return getOneOrThrow(resolvedCodecs,
                 () ->  String.format("%s/%s",
-                        optFormat.isPresent () ? optFormat.get() : "NONE",
+                        optFormat.isPresent () ? optFormat.get() : "(NONE)",
                         bundleResource));
+    }
+
+    public List<C> resolveFormat(final F rf) {
+        final Map<HtsVersion, C> allCodecsForFormat = codecs.get(rf);
+        if (allCodecsForFormat != null) {
+            return allCodecsForFormat.values().stream().collect(Collectors.toList());
+        }
+        return Collections.EMPTY_LIST;
+    }
+
+    public C resolveFormatAndVersion(final F format, final HtsVersion formatVersion) {
+        final List<C> matchingCodecs = resolveFormat(format)
+                .stream()
+                .filter(codec -> codec.getFileFormat().equals(format) && codec.getVersion().equals(formatVersion))
+                .collect(Collectors.toList());
+        return getOneOrThrow(matchingCodecs, () -> String.format("%s/%s", format, formatVersion));
     }
 
     public List<C> getCodecs() {
@@ -139,39 +181,26 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         return cList;
     }
 
-    public List<C> getCodecsForFormat(final F rf) {
-        final Map<HtsVersion, C> allCodecsForFormat = codecs.get(rf);
-        if (allCodecsForFormat != null) {
-            return allCodecsForFormat.values().stream().collect(Collectors.toList());
-        }
-        return Collections.EMPTY_LIST;
-    }
-
-    public C getCodecForFormatAndVersion(final F format, final HtsVersion formatVersion) {
-        final List<C> matchingCodecs = getCodecsForFormat(format)
-                .stream()
-                .filter(codec -> codec.getFileFormat().equals(format) && codec.getVersion().equals(formatVersion))
-                .collect(Collectors.toList());
-        return getOneOrThrow(matchingCodecs, () -> String.format("%s/%s", format, formatVersion));
-    }
-
     @SuppressWarnings("rawtypes")
     private static<T extends HtsCodec<?, ?, ?>> boolean canDecodeIOPathSignature(
             final T codec,
             final BundleResource bundleResource,
             final IOPath inputPath,
             final int streamPrefixSize) {
-        // If the input IOPath has no file system provider, then it probably has a custom protocol scheme
-        // and represents a remote resource. Attempting to get an input stream directly from such an IOPath
-        // will likely fail, so fall back to just checking the URI, and let the winning codec access
-        // the remote resource once codec resolution is complete.
         if (!inputPath.hasFileSystemProvider()) {
-            return codec.canDecodeURI(inputPath);
-        } else {
-            return codec.canDecodeSignature(
-                    bundleResource.getSignatureProbingStream(streamPrefixSize),
-                    inputPath.getRawInputString());
+            // We're about to query the input stream to probe for signatures; if the input IOPath has no file
+            // system provider, then it probably has a custom protocol scheme, and most likely represents a
+            // remote resource. We should never get here since this protocol should have been claimed
+            // by some codec's claimURI implementation. Attempting to get an input stream directly from such
+            // an IOPath will fail.
+            throw new RuntimeException(
+                    String.format("The resource (%s) specifies a custom protocol (%s) for which no NIO file system provider is registered",
+                            bundleResource,
+                            inputPath.getURI().getScheme()));
         }
+        return codec.canDecodeSignature(
+                bundleResource.getSignatureProbingStream(streamPrefixSize),
+                inputPath.getRawInputString());
     }
 
     private List<C> filterByVersion(final List<C> candidateCodecs, final HtsVersion htsVersion) {
@@ -197,10 +226,10 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
     // Get our initial candidate codec list, either filtered by content subtype if one is present,
     // or otherwise all registered codecs for this codec format.
-    private List<C> getCodecsForFormat(final Optional<F> optFormat) {
+    private List<C> resolveFormat(final Optional<F> optFormat) {
         final List<C> candidateCodecs =
                 optFormat.isPresent() ?
-                        getCodecsForFormat(optFormat.get()) :
+                        resolveFormat(optFormat.get()) :
                         getCodecs();
         return candidateCodecs;
     }
@@ -212,21 +241,25 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         final List<C> uriHandlers = candidateCodecs.stream()
                 .filter((c) -> c.claimURI(ioPath))
                 .collect(Collectors.toList());
+        final boolean isCustomURI = !uriHandlers.isEmpty();
 
-        // If at least one codec claims this as a custom URI, prune the candidates to only codecs
-        // that also claim it, and don't try to call getInputStream on the resource to check the signature.
-        // Instead just let the codecs that claim the URI further process it.
-        final List<C> filteredCodecs = uriHandlers.isEmpty() ? candidateCodecs : uriHandlers;
-
-        // get our signature probing size across all candidate codecs
-        final int streamPrefixSize = getSignatureProbeStreamSize(filteredCodecs);
-
-        // reduce our candidates based on uri and IOPath. we can't create the signature probing stream
-        // yet because we still can't be sure that we can obtain a stream on the input
-        return filteredCodecs.stream()
-                .filter(c -> c.canDecodeURI(ioPath))
-                .filter(c -> canDecodeIOPathSignature(c, bundleResource, ioPath, streamPrefixSize))
-                .collect(Collectors.toList());
+        if (isCustomURI) {
+            // If at least one codec claims this resource's URI, prune the candidates to only those
+            // codecs that claim it, and short circuit stream signature probing, since likely there
+            // is no NIO provider for it, and attempts to get a stream will throw. There really should
+            // only ever be one codec that claims this URI (though in theory its possible to have more
+            // more than one such that the ambiguity will be resolved via canDecodeURI).
+            return uriHandlers.stream()
+                    .filter(c -> c.canDecodeURI(ioPath))
+                    .collect(Collectors.toList());
+        } else {
+            // get the largest signature probing stream size across all the remaining candidate codecs,
+            // and let the codecs probe the stream for a signature
+            final int signatureProbeStreamSize = getSignatureProbeStreamSize(candidateCodecs);
+            return candidateCodecs.stream()
+                    .filter(c -> canDecodeIOPathSignature(c, bundleResource, ioPath, signatureProbeStreamSize))
+                    .collect(Collectors.toList());
+        }
     }
 
     private List<C> resolveForDecodingStream(final BundleResource bundleResource, final List<C> candidateCodecs) {
@@ -252,8 +285,8 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
                 .filter((c) -> c.claimURI(ioPath))
                 .collect(Collectors.toList());
 
-        // If at least one codec claims this as a custom URI, prune the candidates to only codecs
-        // that also claim it, and don't try to call getInputStream on the resource to check the signature.
+        // If at least one codec claimed this resource based on a custom URI, prune the candidates to only
+        // codecs that also claim it, and don't try to call getInputStream on the resource to check the signature.
         // Instead just let the codecs that claim the URI further process it.
         final List<C> filteredCodecs = uriHandlers.isEmpty() ? candidateCodecs : uriHandlers;
 
@@ -270,7 +303,9 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     }
 
     private final BundleResource getPrimaryResource(final Bundle bundle, final boolean forEncoding) {
-        // Get the resource of the required content type, and throw if its not the primary resource
+        final BundleResource bundleResource = bundle.getPrimaryResource();
+
+        // make sure the primary resource matches the content type required for this resolver's codec type
         final String bundlePrimaryContentType = bundle.getPrimaryContentType();
         if (!requiredContentType.equals(bundlePrimaryContentType)) {
             throw new IllegalArgumentException(String.format(
@@ -279,8 +314,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
                     requiredContentType));
         }
 
-        // Make sure the resource matches the requested usage (for input or for output as appropriate.
-        final BundleResource bundleResource = bundle.getOrThrow(requiredContentType);
+        // Make sure the resource type is appropriate for encoding or decoding, as requested by the caller
         if (forEncoding && !bundleResource.isInput()) {
             throw new IllegalArgumentException(
                     String.format("The %s resource found (%s) cannot be used as an input resource",

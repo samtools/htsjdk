@@ -147,8 +147,9 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      * Find the companion index for a reads source, and create a new {@link ReadsBundle} containing the
      * reads and the companion index, if one can be found.
      *
-     * An index can only be resolved for IOPaths that represent a file on an NIO file system. Remote paths
-     * that contain a protocol scheme for which no NIO file system is available will not be resolved.
+     * An index can only be resolved for an IOPath that represents on a file system for which an NIO
+     * provider is installed. Remote paths that use a protocol scheme for which no NIO file system is
+     * available will (silently) not be resolved.
      *
      * @param reads the reads source to use
      * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
@@ -184,18 +185,17 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
                         ioPath.getRawInputString(),
                         typePair.get().a));
             }
-            return new IOPathResource(
-                    ioPath,
-                    providedContentType,  // prefer the provided content type
-                    typePair.get().b);
-        } else {
-            return new IOPathResource(
-                    ioPath,
-                    providedContentType);
         }
+        return new IOPathResource(ioPath, providedContentType);
     }
 
-    //try to infer the contentType/contentSubType, i.e., READS/BAM from an IOPath
+    // Try to infer the contentType/contentSubType, i.e., READS/BAM from an IOPath. Currently this
+    // exists purely to check for logical inconsistencies. It can detect cases that are illogical
+    // (an IOPath that has contentSubType CRAM, but file extension BAM), but it can't determinstically
+    // and correctly infer the types in all cases without reproducing all the logic embedded in all the
+    // codecs (i.e., an htsget IOPath ends in ".bam", but has contentSubType HTSGET_BAM, not BAM - detecting
+    // that here would require parsing the entire IOPath structure, which is best left to the codecs
+    // themselves). So for now its advisory, but maybe it should be abandoned altogether.
     private static <T extends IOPath> Optional<Tuple<String, String>> getInferredContentTypes(final T ioPath) {
         ValidationUtils.nonNull(ioPath, "ioPath");
         final Optional<String> extension = ioPath.getExtension();

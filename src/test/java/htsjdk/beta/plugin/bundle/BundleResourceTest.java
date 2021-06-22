@@ -1,6 +1,7 @@
 package htsjdk.beta.plugin.bundle;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.io.HtsPath;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -31,6 +32,18 @@ public class BundleResourceTest extends HtsjdkTest {
                 {
                         BundleResourceTestData.readsWithContentSubType,
                         BundleResourceTestData.readsWithContentSubType,
+                        true
+                },
+                {
+                        // force two separate IOPath instances for which == is false
+                        new IOPathResource(
+                                BundleResourceTestData.READS_FILE,
+                                BundleResourceType.READS,
+                                BundleResourceType.READS_BAM),
+                        new IOPathResource(
+                                new HtsPath(BundleResourceTestData.READS_FILE.getRawInputString()),
+                                BundleResourceType.READS,
+                                BundleResourceType.READS_BAM),
                         true
                 },
                 {

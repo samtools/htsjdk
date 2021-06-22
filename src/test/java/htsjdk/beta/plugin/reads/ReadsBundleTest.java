@@ -70,8 +70,19 @@ public class ReadsBundleTest extends HtsjdkTest {
 
                 // json string, primary key, corresponding array of resources
                 {
-                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"READS\":{\"path\":\"" + BAM_FILE + "\",\"subtype\":\"BAM\"},\"primary\":\"READS\"}",
+                    // without contentSubtype included
+                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"READS\":{\"path\":\"" + BAM_FILE + "\"},\"primary\":\"READS\"}",
                     new ReadsBundle<IOPath>(new HtsPath(BAM_FILE))
+                },
+                {
+                    // with contentSubtype included
+                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"READS\":{\"path\":\"" + BAM_FILE + "\",\"subtype\":\"BAM\"},\"primary\":\"READS\"}",
+                    // ReadsBundle doesn't automatically infer contentSubtype, so create one manually
+                    new ReadsBundle(
+                            new BundleBuilder().addPrimary(
+                                    new IOPathResource(new HtsPath(BAM_FILE),"READS", "BAM"))
+                                    .build()
+                            .getResources())
                 },
         };
     }

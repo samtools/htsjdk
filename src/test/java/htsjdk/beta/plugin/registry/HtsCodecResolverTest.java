@@ -374,6 +374,18 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                                 FORMAT_1_STREAM_SIGNATURE + V1_0,
                                 false),
                         HtsCodecResolver.NO_SUPPORTING_CODEC_ERROR},
+
+                // the user entered a URI that has a protocol scheme that no codec claims to support, and for
+                // which no NIO provider is installed
+                { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
+                    new BundleBuilder()
+                            .addPrimary(
+                                    new IOPathResource(
+                                        new HtsPath("bogus://some/uri"),
+                                        TEST_CODEC_CONTENT_TYPE,
+                                        FORMAT_1_CONTENT_SUBTYPE)
+                            ).build(),
+                        "specifies a custom protocol (bogus) for which no NIO file system provider is registered"}
         };
     }
 

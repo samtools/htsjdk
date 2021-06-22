@@ -90,7 +90,7 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
         return (VariantsEncoder) HtsCodecRegistry.getVariantsCodecResolver()
-                .getCodecForFormatAndVersion(variantsFormat, codecVersion)
+                .resolveFormatAndVersion(variantsFormat, codecVersion)
                 .getEncoder(outputBundle, variantsEncoderOptions);
     }
 

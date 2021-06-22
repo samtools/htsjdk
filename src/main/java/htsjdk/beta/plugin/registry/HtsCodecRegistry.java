@@ -14,26 +14,26 @@ import htsjdk.beta.plugin.variants.VariantsFormat;
 import java.util.*;
 
 //TODO: Master TODO list:
-// - fix CRAM reference leak issue
-// - implement index creation on decoders (existing inputs), on buffered stream
+// - address CRAM reference leak issue in master
+// - implement index creation on decoders (existing inputs), requires unbuffered stream
 // - unify/clarify exception types
 // - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
 //      document how to implement codecs that need to see the stream (can't deterministically tell from the extension)
+//      clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
+//      output streams that are passed in ??)
 // - rename the packages classes for codecs to reflect the interfaces they provide (i.e., a "READS" codec
 //      is a codec that exposes SAMFileHeader/SAMRecord). Someday when we replace those, we'll need a new
 //      name that contrasts with the current name i.e. READS2
-// clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
-//      output streams that are passed in ??)
 // - add a "PublicAPI" opt-in annotation to exempt internal methods that need to be public because
 //      they're shared from being part of the public API
 // - encryption/decryption key files, etc.
 // - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
 // - Incomplete:
-//      VCF, FASTA codecs
+//      BAM/CRAM encoder options, VCF, FASTA codecs
 // - Missing:
 //      SAM codec
 //      CRAM 2.1 codec
-//      BCF codec
+//      BCF codec ?
 // javadoc
 // tests
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
@@ -41,9 +41,9 @@ import java.util.*;
 //      resolve index files so we don't introduce incompatibilities when the SamReaderFactory
 //      implementation dependency is removed
 // - respect presorted in Reads encoders
+// - test stdin/stdout
 // - publish the JSON Bundle JSON schema
 // - upgrade API
-// - support/test stdin/stdout
 
 /**
  * Registry/cache for binding to encoders/decoders.
@@ -52,7 +52,7 @@ import java.util.*;
 public class HtsCodecRegistry {
     private static final HtsCodecRegistry htsCodecRegistry = new HtsCodecRegistry();
 
-    // for each codec type, keep a map of codec instances, by format and version
+    // for each codec type, keep track of registered codec instances, by format and version
     private static HtsCodecResolver<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecResolver =
             new HtsCodecResolver<>(
                     BundleResourceType.HAPLOID_REFERENCE,

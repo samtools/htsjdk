@@ -103,7 +103,7 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
         return (ReadsEncoder) HtsCodecRegistry.getReadsCodecResolver()
-                .getCodecForFormatAndVersion(readsFormat, codecVersion)
+                .resolveFormatAndVersion(readsFormat, codecVersion)
                 .getEncoder(outputBundle, readsEncoderOptions);
     }
 
