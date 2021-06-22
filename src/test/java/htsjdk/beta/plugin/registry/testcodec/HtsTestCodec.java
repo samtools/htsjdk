@@ -84,7 +84,7 @@ public class HtsTestCodec implements HtsCodec<
     public int getSignatureProbeSize() { return 64 * 1024; }
 
     @Override
-    public int getSignatureActualSize() {
+    public int getSignatureLength() {
         return streamSignature.length() + htsVersion.toString().length();
     }
 
@@ -105,7 +105,7 @@ public class HtsTestCodec implements HtsCodec<
         ValidationUtils.nonNull(sourceName);
 
         try {
-            final int signatureSize = getSignatureActualSize();
+            final int signatureSize = getSignatureLength();
             final byte[] signatureBytes = new byte[signatureSize];
 
             if (useGzippedInputs) {

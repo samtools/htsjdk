@@ -15,13 +15,9 @@ import htsjdk.exception.HtsjdkPluginException;
 import java.util.*;
 
 //TODO: Master TODO list:
-// - resolve/clarify/rename/document the canDecodeURI/canDecodeSignature protocol
-//      document how to implement codecs that need to see the stream (can't deterministically tell from the extension)
-//      clarify ownership of stream (ie, streams that are passed in are closed ? but we can't close
-//      output streams that are passed in ??)
+// - enforce that getSignatureProbeSize and getSignatureSize are 0 for codecs that return "owns" uri
+// - implement SeekableStream source
 // - finish encoders/options for BAM/CRAM, respect presorted in Reads encoders
-// - add a "PublicAPI" opt-in annotation to exempt internal methods that need to be public because
-//      they're shared from being part of the public API
 // - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs
 // - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
 // - javadoc/final/PublicAPI/ValidateArgs

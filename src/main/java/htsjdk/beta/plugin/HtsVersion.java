@@ -6,8 +6,8 @@ import htsjdk.utils.ValidationUtils;
  * A codec (file format) version.
  */
 public class HtsVersion implements Comparable<HtsVersion> {
-
-    public static final HtsVersion NEWEST = new HtsVersion(-1, -1, -1);
+    /** Sentinel constant used to indicate the newest version available */
+    public static final HtsVersion NEWEST_VERSION = new HtsVersion(-1, -1, -1);
 
     private static final String FORMAT_STRING = "%d.%d.%d";
 

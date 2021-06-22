@@ -33,7 +33,7 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     }
 
     @Override
-    public int getSignatureActualSize() {
+    public int getSignatureLength() {
         return 1;
     }
 

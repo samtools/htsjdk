@@ -21,8 +21,8 @@ import java.io.IOException;
  * A FASTA file decoder.
  */
 public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
-    protected Bundle haprefBundle;
     private final String displayName;
+    protected Bundle haprefBundle;
 
     @Override
     public String getDisplayName() { return displayName; }

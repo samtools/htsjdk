@@ -22,13 +22,16 @@ import java.util.stream.Collectors;
 
 /**
  * Class used to resolve an input or output resource to an appropriate codec (encoder/decoder) for a
- * single codec type. Methods in this class accept a bundle, along with some auxiliary arguments,
- * and return one or more codecs appropriate for encoding or decoding the bundle.
+ * single codec type. Methods in this class accept a bundle, and/or additional arguments, and return
+ * one or more codecs appropriate for encoding or decoding a resource.
+ * <p>
+ * The resolver uses a series of probes that inspect resources, along with calls to registered codecs,
+ * to determine which file format/version is being requested in order to find a matching codec.
  *
  * @param <F> enum representing the possible formats for this codec type
  * @param <C> the HtsCodec type
  */
-final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
+public final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     private static final Log LOG = Log.getInstance(HtsCodecResolver.class);
 
     final static String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
@@ -39,12 +42,12 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     private final Function<String, Optional<F>> contentSubTypeToFormat;
 
     /**
-     * Create a resolver for a given codec type, defined by the type parameters {@link #<F>} and {@link #<C>}.
+     * Create a resolver for a given codec type, defined by the type parameters {@code F} and {@code C}.
      *
      * @param requiredContentType the primary content type this resolver will use to interrogate a bundle
      *                            to locate the primary resource when attempting to resolve the bundle to a codec
      * @param contentSubTypeToFormat a mapping function that takes a contentSubType string and returns
-     *                              the corresponding format {@link #<F>}, if one exists
+     *                              the corresponding format {@code F}, if one exists
      */
     public HtsCodecResolver(
             final String requiredContentType,
@@ -54,11 +57,11 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     }
 
     /**
-     * Register a codec of type {@link C} for file format {@link F}. If a codec for the same
+     * Register a codec of type {@code C} for file format {@code F}. If a codec for the same
      * format and version is already registered with this resolver, the resolver is updated
      * with the new codec, and the previously registered codec is returned.
      *
-     * @param codec a codec of type {@link C} for file format {@link F}
+     * @param codec a codec of type {@code C} for file format {@code F}
      * @return the previously registered codec for the same format and version, or null if no
      * codec was previously registered
      */
@@ -86,12 +89,60 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
     /**
      * Inspect a bundle and find a codec that can decode the primary resource.
+     * <p>
+     *     To resolve a bundle to a codec, the bundle is inspected to determine whether the primary
+     *     resource contains an IOPath or a stream. The list of candidate codecs starts with all codecs for
+     *     this resolver's type (determined by the requiredContent type used to instantiate the resolver),
+     *     and is reduced as follows:
+     * <p>
+     *     If the primary resource is an IOPath:
+     *     <ul>
+     *         <li>
+     *             The IOPath is passed to each candidate codec's {@link HtsCodec#ownsURI} method. If any codec
+     *              returns true:
+     *              <ol>
+     *                  <li>
+     *                      The candidate list is first reduced to only those codecs that return true from
+     *                      {@link HtsCodec#ownsURI}
+     *                  <li>
+     *                      The candidate list is then further reduced to only those codecs that return true from
+     *                      {@link HtsCodec#canDecodeURI(IOPath)}.
+     *                  </li>
+     *              </ol>
+     *          <li>
+     *              Otherwise:
+     *                  <ol>
+     *                      <li>
+     *                          The candidate list is first reduced to those codecs that return true from
+     *                          {@link HtsCodec#canDecodeURI(IOPath)}
+     *                      <li>
+     *                          The candidate list is then further reduced to only those codecs that return
+     *                          true from {@link HtsCodec#canDecodeStreamSignature(SignatureProbingInputStream, String)}
+     *                      </li>
+     *                  </ol>
+     *           </li>
+     *  </ul>
+     * <p>
+     *      If the primary resource is a stream:
+     *      <ol>
+     *          <li>
+     *              The candidate list is reduced to those codecs that return true from
+     *              {@link HtsCodec#canDecodeStreamSignature(SignatureProbingInputStream, String)}
+     *          </li>
+     *     </ol>
+     * <p>
+     *     It is an error if more than one codec is remaining in the candidate list after codec resolution.
+     *     This usually indicates that the registry contains an ill-behaved codec implementation.
+     * <p>
+     *     Note: {@link HtsCodec#canDecodeStreamSignature(SignatureProbingInputStream, String)} will never be
+     *     called by the framework on a resource if any codec returns true from {@link HtsCodec#ownsURI}..
+     * </p>
      *
      * @param bundle the bundle to resolve to a codec
      * @return a codec that can decode the bundle resources
      *
-     * @throws RuntimeException if more than one codec matches. this usually indicates a registered codec
-     * that is poorly behaved.
+     * @throws RuntimeException if the input resolves to more than one codec. this usually indicates that the
+     * registry contains a poorly behaved codec.
      */
     public C resolveForDecoding(final Bundle bundle) {
         ValidationUtils.nonNull(bundle, "bundle");
@@ -112,29 +163,33 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
     /**
      * Inspect a bundle and find a codec that can encode content based on the primary resource.
+     * For bundles with a primary resource that is an IOPath, the structure of the IOPath (protocol scheme,
+     * file extension, and query parameters) are used to determine the file format used.
+     * <p>
+     * Note that for resources that are ambiguous (i.e., a stream, which has no file extension), the bundle
+     * resource must include a subContentType that corresponds to one of the formats for the content
+     * type used by this codec type. The newest version of the file format will be used.
+     * <p>
+     * To request a specific version or format, see {@link #resolveForEncoding(Bundle, HtsVersion)}
+     * or {@link #resolveFormatAndVersion(Enum, HtsVersion)}.
      *
-     * @param bundle the bundle to resolve to an encoding codec. for bundles with a primary content
-     *               type that is an IOPath, the structure of the IOPath (protocol scheme, file extension,
-     *               and query parameters) are used to determine the file format used. For resources
-     *               that are ambiguous (i.e., a stream, which has no file extension), the bundle resource
-     *               must include a subContentType that corresponds to one of the formats for the content
-     *               type used by this codec type. The newest version of the file format will be used.
-     *               To request a specific version or format, see {@link #resolveForEncoding(Bundle, HtsVersion)}
-     *               or {@link #resolveFormatAndVersion(Enum, HtsVersion)}.
+     * @param bundle the bundle to resolve to a codec for encoding
      * @return a codec that can decode the input bundle
      *
      * @throws RuntimeException if more than one codec matches. this usually indicates a registered codec
      * that is poorly behaved.
      */
-    public C resolveForEncoding(final Bundle bundle) { return resolveForEncoding(bundle, HtsVersion.NEWEST); }
+    public C resolveForEncoding(final Bundle bundle) { return resolveForEncoding(bundle, HtsVersion.NEWEST_VERSION); }
 
     /**
      * Find a codec that can read the contentType required for this bundle. For encoding, the output
-     * format is derived primary bundle resource. For streams, the primary resources must in include a
-     * subcontent type that specifies the output format.
+     * format is derived primary bundle resource. For streams, the primary resource must include a
+     * content subtype (see {@link BundleResource#getContentSubType()}) that specifies the output format.
      *
-     * NOTE: If an output stream resources is provided as the target output, the bundle resource must include
-     * a file format, otherwise multiple codecs will accept the bundle, and an exception will be thrown.
+     * @param bundle the bundle to use for encoding
+     * @param htsVersion the version being requested (use HtsVersion.NEWEST_VERSION to use the newest
+     *                   version codec registered)
+     * @return A codec that can provide an encoder for the given inputs.
      */
     public C resolveForEncoding(final Bundle bundle, final HtsVersion htsVersion) {
         ValidationUtils.nonNull(bundle, "bundle");
@@ -144,8 +199,6 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         final Optional<F> optFormat = getFormatForContentSubType(bundleResource);
         final List<C> candidateCodecs = resolveFormat(optFormat);
 
-        // If the resource is an IOPath resource, see if any codec(s) claim ownership of the URI,
-        // specifically the protocol scheme.
         final Optional<IOPath> ioPath = bundleResource.getIOPath();
         final List<C> filteredCodecs = bundleResource.getIOPath().isPresent() ?
                 resolveForEncodingIOPath(ioPath.get(), candidateCodecs) :
@@ -158,14 +211,28 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
                         bundleResource));
     }
 
-    public List<C> resolveFormat(final F rf) {
-        final Map<HtsVersion, C> allCodecsForFormat = codecs.get(rf);
+    /**
+     * Obtain a list of codecs that claim to support file format {@code format} of type {@code F}
+     * @param format the input format of type {@code F}
+     * @return The list of registered codecs that claim to support some version of file format {@code format}
+     */
+    public List<C> resolveFormat(final F format) {
+        final Map<HtsVersion, C> allCodecsForFormat = codecs.get(format);
         if (allCodecsForFormat != null) {
             return allCodecsForFormat.values().stream().collect(Collectors.toList());
         }
         return Collections.EMPTY_LIST;
     }
 
+    /**
+     * Obtain a list of codecs that claim to support version {formatVersion} of file format {@code format}
+     * of type {@code F}.
+     *
+     * @param format the input format of type {@code F}
+     * @param formatVersion the version of {@code format} requested
+     * @return The list of registered codecs that claim to support version {@code formatVersion} of file
+     * format {@code format}
+     */
     public C resolveFormatAndVersion(final F format, final HtsVersion formatVersion) {
         final List<C> matchingCodecs = resolveFormat(format)
                 .stream()
@@ -174,6 +241,10 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         return getOneOrThrow(matchingCodecs, () -> String.format("%s/%s", format, formatVersion));
     }
 
+    /**
+     * Return a list of all codecs of the codec type ({@code C} managed by this resolver
+     * @return a list of all codecs of the codec type ({@code C} managed by this resolver
+     */
     public List<C> getCodecs() {
         // flatten out the codecs into a single list
         final List<C> cList = codecs
@@ -213,7 +284,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         if (candidateCodecs.isEmpty()) {
             return candidateCodecs;
         }
-        if (htsVersion.equals(HtsVersion.NEWEST)) {
+        if (htsVersion.equals(HtsVersion.NEWEST_VERSION)) {
             // find the newest codec version in the list of candidates, and return all the codecs for that
             // version (since there still can be more than one)
             final HtsVersion newestVersion = candidateCodecs.stream()

@@ -420,28 +420,28 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // is FORMAT_1_V1_0
                 { Arrays.asList(FORMAT_1_V1_0),
                         getIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
-                        HtsVersion.NEWEST,
+                        HtsVersion.NEWEST_VERSION,
                         FORMAT_1_V1_0.getDisplayName() },
 
                 // no specific version requested, so resolve to the newest version registered for FORMAT_1, which
                 // is FORMAT_1_V1_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
                         getIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
-                        HtsVersion.NEWEST,
+                        HtsVersion.NEWEST_VERSION,
                         FORMAT_1_V1_1.getDisplayName() },
 
                 // no specific version requested, so resolve to the newest version registered for FORMAT_1, which
                 // is FORMAT_1_V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0),
                         getIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
-                        HtsVersion.NEWEST,
+                        HtsVersion.NEWEST_VERSION,
                         FORMAT_1_V2_0.getDisplayName() },
 
                 // no specific version requested, so resolve to the newest version registered for FORMAT_1, which is
                 // FORMAT_1_V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         getIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
-                        HtsVersion.NEWEST,
+                        HtsVersion.NEWEST_VERSION,
                         FORMAT_1_V2_0.getDisplayName() },
 
                 // FORMAT_1 file extension, request version V1_0, so resolve to FORMAT_1_V1_0
@@ -482,7 +482,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
                                         TEST_CODEC_CONTENT_TYPE))
                                 .build(),
-                        HtsVersion.NEWEST,
+                        HtsVersion.NEWEST_VERSION,
                         FORMAT_3_V1_0.getDisplayName() },
 
                 // FORMAT_3 custom protocol scheme, no version specified, resolve to FORMAT_3_V2_0
@@ -492,7 +492,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
                                         TEST_CODEC_CONTENT_TYPE))
                                 .build(),
-                        HtsVersion.NEWEST,
+                        HtsVersion.NEWEST_VERSION,
                         FORMAT_3_V2_0.getDisplayName() },
 
                 // FORMAT_3 custom protocol scheme, version FORMAT_3_V1_0 specified, resolve to FORMAT_3_V1_0
@@ -535,7 +535,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                                 TEST_CODEC_CONTENT_TYPE,
                                 null,
                                 FORMAT_1_FILE_EXTENSION),
-                        HtsVersion.NEWEST,
+                        HtsVersion.NEWEST_VERSION,
                         HtsCodecResolver.NO_SUPPORTING_CODEC_ERROR},
 
                 // no codecs registered at all, content type and version specified

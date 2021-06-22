@@ -31,7 +31,7 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
     public ReadsFormat getFileFormat() { return ReadsFormat.HTSGET_BAM; }
 
     @Override
-    public int getSignatureActualSize() {
+    public int getSignatureLength() {
         return 0;
     }
 
