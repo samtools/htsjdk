@@ -10,6 +10,7 @@ import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.BAMFileWriter;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 
@@ -52,7 +53,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
         if (bundleResource.getIOPath().isPresent()) {
             //TODO: SAMFileWriterFactory doesn't expose getters for all options (currently most are not exposed),
             // so this is currently not fully honoring the SAMFileWriterFactory
-            return readsEncoderOptions.getSamFileWriterFactory().makeBAMWriter(
+            return new SAMFileWriterFactory().makeBAMWriter(
                     samFileHeader,
                     preSorted,
                     bundleResource.getIOPath().get().toPath());
@@ -61,7 +62,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
             final BAMFileWriter bamFileWriter = new BAMFileWriter(
                     bundleResource.getOutputStream().get(),
                     getDisplayName(),
-                    readsEncoderOptions.getSamFileWriterFactory().getCompressionLevel(),
+                    new SAMFileWriterFactory().getCompressionLevel(),
                     BlockCompressedOutputStream.getDefaultDeflaterFactory());
             bamFileWriter.setHeader(samFileHeader);
             return bamFileWriter; }

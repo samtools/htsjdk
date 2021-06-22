@@ -12,19 +12,9 @@ import java.util.Optional;
  * ReadsEncoderOptions.
  */
 public class ReadsEncoderOptions implements HtsEncoderOptions {
-    private SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();
 
     private BAMEncoderOptions bamEncoderOptions;
     private CRAMEncoderOptions cramEncoderOptions;
-
-    public SAMFileWriterFactory getSamFileWriterFactory() {
-        return samFileWriterFactory;
-    }
-
-    public ReadsEncoderOptions setSamFileWriterFactory(final SAMFileWriterFactory samFileWriterFactory) {
-        this.samFileWriterFactory = samFileWriterFactory;
-        return this;
-    }
 
     public Optional<BAMEncoderOptions> getBAMEncoderOptions() {
         return Optional.ofNullable(bamEncoderOptions);

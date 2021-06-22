@@ -26,21 +26,17 @@ import java.util.*;
 //      name that contrasts with the current name i.e. READS2
 // - add a "PublicAPI" opt-in annotation to exempt internal methods that need to be public because
 //      they're shared from being part of the public API
+// - respect presorted in Reads encoders
 // - encryption/decryption key files, etc.
 // - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
-// - Incomplete:
-//      BAM/CRAM encoder options, VCF, FASTA codecs
-// - Missing:
-//      SAM codec
-//      CRAM 2.1 codec
-//      BCF codec ?
-// javadoc
-// tests
+// - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs
+// - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
+// - javadoc
+// - tests
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
 // - prevent the decoders that delegate to SamReaderFactory from attempting to automatically
 //      resolve index files so we don't introduce incompatibilities when the SamReaderFactory
 //      implementation dependency is removed
-// - respect presorted in Reads encoders
 // - test stdin/stdout
 // - publish the JSON Bundle JSON schema
 // - upgrade API
