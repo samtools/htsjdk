@@ -33,12 +33,12 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     }
 
     @Override
-    public int getSignatureSize() {
+    public int getSignatureActualSize() {
         return 1;
     }
 
     @Override
-    public boolean canDecodeSignature(final SignatureProbingInputStream rawInputStream, final String sourceName) {
+    public boolean canDecodeStreamSignature(final SignatureProbingInputStream rawInputStream, final String sourceName) {
         int c = rawInputStream.read();
         if (c == -1) {
             throw new HtsjdkIOException(

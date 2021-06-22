@@ -28,16 +28,16 @@ public class CRAMCodecV3_0 extends CRAMCodec {
     }
 
     @Override
-    public int getSignatureSize() {
+    public int getSignatureActualSize() {
         return CRAM_MAGIC.length();
     }
 
     @Override
-    public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
+    public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
         try {
-            final byte[] signatureBytes = new byte[getSignatureSize()];
+            final byte[] signatureBytes = new byte[getSignatureActualSize()];
             final int numRead = probingInputStream.read(signatureBytes);
-            if (numRead < getSignatureSize()) {
+            if (numRead < getSignatureActualSize()) {
                 throw new HtsjdkIOException(String.format("Failure reading content from stream for %s", sourceName));
             }
             return Arrays.equals(signatureBytes, CRAM_MAGIC.getBytes());

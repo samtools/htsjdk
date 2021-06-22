@@ -81,15 +81,15 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public int getSignatureProbeStreamSize() { return 64 * 1024; }
+    public int getSignatureProbeSize() { return 64 * 1024; }
 
     @Override
-    public int getSignatureSize() {
+    public int getSignatureActualSize() {
         return streamSignature.length() + htsVersion.toString().length();
     }
 
     @Override
-    public boolean claimURI(final IOPath ioPath) {
+    public boolean ownsURI(final IOPath ioPath) {
         return protocolScheme != null && protocolScheme.equals(ioPath.getScheme());
     }
 
@@ -100,12 +100,12 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
+    public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
         ValidationUtils.nonNull(probingInputStream);
         ValidationUtils.nonNull(sourceName);
 
         try {
-            final int signatureSize = getSignatureSize();
+            final int signatureSize = getSignatureActualSize();
             final byte[] signatureBytes = new byte[signatureSize];
 
             if (useGzippedInputs) {

@@ -26,16 +26,16 @@ public class VCFCodecV4_2 extends VCFCodec {
     public HtsVersion getVersion() { return VCF_V42_VERSION; }
 
     @Override
-    public int getSignatureSize() {
+    public int getSignatureActualSize() {
         return VCF_V42_MAGIC.length();
     }
 
     @Override
-    public int getSignatureProbeStreamSize() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
+    public int getSignatureProbeSize() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
 
     @Override
-    public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
-        final byte[] signatureBytes = new byte[getSignatureSize()];
+    public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
+        final byte[] signatureBytes = new byte[getSignatureActualSize()];
         try {
             final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(probingInputStream) ?
                     new GZIPInputStream(probingInputStream) :

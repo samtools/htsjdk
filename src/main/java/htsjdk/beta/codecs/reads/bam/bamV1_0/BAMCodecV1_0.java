@@ -28,15 +28,15 @@ public class BAMCodecV1_0 extends BAMCodec {
     }
 
     @Override
-    public int getSignatureProbeStreamSize() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
+    public int getSignatureProbeSize() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
 
     @Override
-    public int getSignatureSize() {
+    public int getSignatureActualSize() {
         return BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE;
     }
 
     @Override
-    public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
+    public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
         ValidationUtils.nonNull(probingInputStream);
         ValidationUtils.nonNull(sourceName);
 

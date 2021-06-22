@@ -385,7 +385,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                                         TEST_CODEC_CONTENT_TYPE,
                                         FORMAT_1_CONTENT_SUBTYPE)
                             ).build(),
-                        "specifies a custom protocol (bogus) for which no NIO file system provider is registered"}
+                        "specifies a custom protocol (bogus) for which no codec is registered and no NIO file system provider is installed"}
         };
     }
 

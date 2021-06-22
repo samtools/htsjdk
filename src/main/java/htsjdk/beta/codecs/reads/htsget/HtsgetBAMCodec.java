@@ -31,12 +31,12 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
     public ReadsFormat getFileFormat() { return ReadsFormat.HTSGET_BAM; }
 
     @Override
-    public int getSignatureSize() {
+    public int getSignatureActualSize() {
         return 0;
     }
 
     @Override
-    public boolean claimURI(final IOPath ioPath) {
+    public boolean ownsURI(final IOPath ioPath) {
         return matchesScheme(ioPath);
     }
 
@@ -63,7 +63,7 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
     public boolean canDecodeURI(final IOPath ioPath) { return handlesURI(ioPath); }
 
     @Override
-    public boolean canDecodeSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
+    public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
         return false;
     }
 

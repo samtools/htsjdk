@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 /**
  * Class used to resolve an input or output resource to an appropriate codec (encoder/decoder) for a
  * single codec type. Methods in this class accept a bundle, along with some auxiliary arguments,
- * and return one or more codecs appropriate for encoding or decoding the input.
+ * and return one or more codecs appropriate for encoding or decoding the bundle.
  *
  * @param <F> enum representing the possible formats for this codec type
  * @param <C> the HtsCodec type
@@ -39,12 +39,12 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
     private final Function<String, Optional<F>> contentSubTypeToFormat;
 
     /**
-     * Create a resolver for a given codec type.
+     * Create a resolver for a given codec type, defined by the type parameters {@link #<F>} and {@link #<C>}.
      *
      * @param requiredContentType the primary content type this resolver will use to interrogate a bundle
      *                            to locate the primary resource when attempting to resolve the bundle to a codec
-     * @param contentSubTypeToFormat a mapping function that takes a String contentSubType and returns
-     *                              the corresponding format, if one exists
+     * @param contentSubTypeToFormat a mapping function that takes a contentSubType string and returns
+     *                              the corresponding format {@link #<F>}, if one exists
      */
     public HtsCodecResolver(
             final String requiredContentType,
@@ -55,8 +55,8 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
     /**
      * Register a codec of type {@link C} for file format {@link F}. If a codec for the same
-     * format and version is already registered, the registry is updated with the new codec,
-     * and the previously registered codec is returned.
+     * format and version is already registered with this resolver, the resolver is updated
+     * with the new codec, and the previously registered codec is returned.
      *
      * @param codec a codec of type {@link C} for file format {@link F}
      * @return the previously registered codec for the same format and version, or null if no
@@ -191,17 +191,19 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
             final IOPath inputPath,
             final int streamPrefixSize) {
         if (!inputPath.hasFileSystemProvider()) {
-            // We're about to query the input stream to probe for signatures; if the input IOPath has no file
-            // system provider, then it probably has a custom protocol scheme, and most likely represents a
-            // remote resource. We should never get here since this protocol should have been claimed
-            // by some codec's claimURI implementation. Attempting to get an input stream directly from such
-            // an IOPath will fail.
+            // We're about to query the input stream to probe for a signature, but there is no
+            // installed file system provider for the IOPath's protocol scheme. Attempting to get an
+            // input stream directly from such an IOPath will fail. If the IOPath was legitimate, we
+            // should never get here, since it would have been claimed by one of the installed codec's
+            // "claimURI" implementations. It likely represents user error (a user entered "hdf://"
+            // instead of "hdfs://"), so throw.
             throw new IllegalArgumentException(
-                    String.format("The resource (%s) specifies a custom protocol (%s) for which no NIO file system provider is registered",
+                    String.format("The resource (%s) specifies a custom protocol (%s) " +
+                                    "for which no codec is registered and no NIO file system provider is installed",
                             bundleResource,
                             inputPath.getURI().getScheme()));
         }
-        return codec.canDecodeSignature(
+        return codec.canDecodeStreamSignature(
                 bundleResource.getSignatureProbingStream(streamPrefixSize),
                 inputPath.getRawInputString());
     }
@@ -242,19 +244,27 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
         final IOPath ioPath = bundleResource.getIOPath().get();
 
         final List<C> uriHandlers = candidateCodecs.stream()
-                .filter((c) -> c.claimURI(ioPath))
+                .filter((c) -> c.ownsURI(ioPath))
                 .collect(Collectors.toList());
         final boolean isCustomURI = !uriHandlers.isEmpty();
 
         if (isCustomURI) {
-            // If at least one codec claims this resource's URI, prune the candidates to only those
-            // codecs that claim it, and short circuit stream signature probing, since likely there
-            // is no NIO provider for it, and attempts to get a stream will throw. There really should
-            // only ever be one codec that claims this URI (though in theory its possible to have more
-            // more than one such that the ambiguity will be resolved via canDecodeURI).
-            return uriHandlers.stream()
-                    .filter(c -> c.canDecodeURI(ioPath))
-                    .collect(Collectors.toList());
+            // ensure that all codecs that claim to own this URI honor the contract that requires them to also
+            // return true for canDecodeURI for the same IOPath
+            uriHandlers.stream().forEach(
+                    c -> {
+                        if (!c.canDecodeURI(ioPath)) {
+                            throw new HtsjdkPluginException(
+                                    String.format("The %s codec returned true for ownsURI but false for canDecodeURI for: %s",
+                                            c,
+                                            ioPath.getURI()));
+                        }});
+            // If at least one codec claims to own this resource's URI, prune the candidates down to only those
+            // that make the same claim, and short circuit any attempts to get a stream on this URI since
+            // (such as signature probing) since its possible that there is no NIO provider installed for this
+            // URI, and attempts to get a stream will throw. There should never be more than one codec that claims
+            // ownership of a given URI, but return them all here, and let the caller report any ambiguity.
+            return uriHandlers;
         } else {
             // get the largest signature probing stream size across all the remaining candidate codecs,
             // and let the codecs probe the stream for a signature
@@ -285,7 +295,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
     private List<C> resolveForEncodingIOPath(final IOPath ioPath, final List<C> candidateCodecs) {
         final List<C> uriHandlers = candidateCodecs.stream()
-                .filter((c) -> c.claimURI(ioPath))
+                .filter((c) -> c.ownsURI(ioPath))
                 .collect(Collectors.toList());
 
         // If at least one codec claimed this resource based on a custom URI, prune the candidates to only
@@ -301,7 +311,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
 
     private int getSignatureProbeStreamSize(final List<C> candidateCodecs) {
         return candidateCodecs.stream()
-                .map(c -> c.getSignatureProbeStreamSize())
+                .map(c -> c.getSignatureProbeSize())
                 .reduce(0, (a, b) -> Integer.max(a, b));
     }
 
@@ -355,7 +365,7 @@ final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
             final String displayName,
             final SignatureProbingInputStream signatureProbingInputStream) {
         signatureProbingInputStream.mark(streamPrefixSize);
-        final boolean canDecode = codec.canDecodeSignature(signatureProbingInputStream, displayName);
+        final boolean canDecode = codec.canDecodeStreamSignature(signatureProbingInputStream, displayName);
         signatureProbingInputStream.reset();
         return canDecode;
     }
