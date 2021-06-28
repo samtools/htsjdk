@@ -8,6 +8,13 @@ public enum HaploidReferenceFormat {
 
     FASTA;
 
+    /**
+     * Convert a string content subtype to an file format value from this enum, or Optional.empty() if
+     * no value matches.
+     *
+     * @param contentSubType string content subtype
+     * @return enum value from {@link HaploidReferenceFormat} that matches {@code contentSubType}
+     */
     public static Optional<HaploidReferenceFormat> contentSubTypeToFormat(final String contentSubType) {
         ValidationUtils.nonNull(contentSubType, "contentSubType");
         for (final HaploidReferenceFormat f : HaploidReferenceFormat.values()) {

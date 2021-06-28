@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsCodecType;
 
 /**
- * Base class for all reads codecs.
+ * Base class for all reads codecs. Defines th type parameters instantiated for reads codecs.
  */
 public interface ReadsCodec extends HtsCodec<ReadsFormat, ReadsDecoderOptions, ReadsEncoderOptions> {
 

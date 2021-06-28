@@ -15,7 +15,7 @@ import htsjdk.exception.HtsjdkPluginException;
 import java.util.*;
 
 //TODO: Master TODO list:
-// - enforce that getSignatureProbeSize and getSignatureSize are 0 for codecs that return "owns" uri
+// use is prefix for boolean getters
 // - implement SeekableStream source
 // - finish encoders/options for BAM/CRAM, respect presorted in Reads encoders
 // - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs
@@ -35,7 +35,14 @@ import java.util.*;
 // - upgrade API
 
 /**
- * Registry/cache for binding to encoders/decoders.
+ * Registry for tracking {@link HtsCodec} instances. Classes that implement {@link HtsCodec} are
+ * either dynamically discovered at startup and entered into this registry, or manually registered
+ * via the {@link #registerCodec(HtsCodec)} method.
+ *
+ * This class uses a single {@link HtsCodecResolver} object for each of the 4 different codec types
+ * to manage instances of that type, delegating registration to the appropriate {@link HtsCodecResolver}
+ * based on the type of the codec being registered. The {@link HtsCodecResolver} that is subsequently
+ * used to resolve an input or output to a specific codec.
  */
 @SuppressWarnings("rawtypes")
 public class HtsCodecRegistry {
@@ -61,7 +68,14 @@ public class HtsCodecRegistry {
     private HtsCodecRegistry() {}
 
     /**
-     * Add a codec to the registry
+     * Add a codec to the registry. If a codec that supports the same (format, version) values, as
+     * returned by {@link HtsCodec#getFileFormat()} and {@link HtsCodec#getVersion()} ()} methods
+     * is already, registered, the new codec replaces the previous one, and the previously registered
+     * codec is returned.
+     *
+     * @param codec the codec to be added
+     * @return a previously registered codec with the same (format, version), or null if no codec was
+     * previously registered
      */
     public HtsCodec<?, ?, ?> registerCodec(final HtsCodec<?, ?, ?> codec) {
         switch (codec.getCodecType()) {
@@ -82,14 +96,23 @@ public class HtsCodecRegistry {
         }
     }
 
+    /**
+     * Return the {@link HtsCodecResolver} for {@link ReadsCodec}s.
+     */
     public static HtsCodecResolver<ReadsFormat, ReadsCodec> getReadsCodecResolver() {
         return readsCodecResolver;
     }
 
+    /**
+     * Return the {@link HtsCodecResolver} for {@link VariantsCodec}s.
+     */
     public static HtsCodecResolver<VariantsFormat, VariantsCodec> getVariantsCodecResolver() {
         return variantsCodecResolver;
     }
 
+    /**
+     * Return the {@link HtsCodecResolver} for {@link HaploidReferenceCodec}s.
+     */
     public static HtsCodecResolver<HaploidReferenceFormat, HaploidReferenceCodec> getHapRefCodecResolver() {
         return haprefCodecResolver;
     }

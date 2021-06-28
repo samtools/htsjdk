@@ -12,9 +12,16 @@ public enum ReadsFormat {
     BAM,
     CRAM,
     HTSGET_BAM;
-//    HTSGET_CRAM,
-//    SRA
+    // HTSGET_CRAM,
+    // SRA
 
+    /**
+     * Convert a string content subtype to an file format value from this enum, or Optional.empty() if
+     * no value matches.
+     *
+     * @param contentSubType string content subtype
+     * @return enum value from {@link ReadsFormat} that matches {@code contentSubType}
+     */
     public static Optional<ReadsFormat> contentSubTypeToFormat(final String contentSubType) {
         ValidationUtils.nonNull(contentSubType, "contentSubType");
         for (final ReadsFormat f : ReadsFormat.values()) {

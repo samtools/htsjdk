@@ -12,16 +12,41 @@ import java.io.Closeable;
  */
 public interface HtsEncoder<F, H extends HtsHeader, R extends HtsRecord> extends Closeable {
 
+    /**
+     * Return the file format supported by this encoder, from the enum {@code F}
+     * @return
+     */
     F getFormat();
 
+    /**
+     * Return the version of the file format supported by this encoder.
+     */
     HtsVersion getVersion();
 
+    /**
+     * @return a user-friendly display name for this encoder for use in error and warning messages
+     */
     String getDisplayName();
 
+    /**
+     */
+    /**
+     * set the file format header for this decoder, of type {@code H}
+     * @param header to use
+     */
     void setHeader(H header);
 
+    /**
+     * Write a single record to the underlying output.
+     *
+     * @param record record to write
+     */
     void write(R record);
 
+    /**
+     * Close any resources associated with this decoder.
+     */
+    @Override
     void close();
 
 }

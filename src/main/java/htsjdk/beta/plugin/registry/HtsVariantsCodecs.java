@@ -14,6 +14,18 @@ import htsjdk.beta.plugin.variants.VariantsFormat;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
+/**
+ * Class with methods for resolving inputs and outputs to variants encoders and decoders.
+ *
+ * Provides typesafe access layer over the {@link HtsCodecResolver} thats used by
+ * the {@link HtsCodecRegistry} to manage variants codecs (see {@link HtsCodecRegistry#getVariantsCodecResolver()}).
+ * It exposes methods that accept common types, such as IOPath, with automatic conversion to types
+ * appropriate for reads, and argument and return types that conform to
+ * those used by {@link htsjdk.beta.plugin.variants.VariantsCodec}s, such as
+ * {@link htsjdk.beta.plugin.variants.VariantsEncoder},
+ * {@link htsjdk.beta.plugin.variants.VariantsEncoder}, and
+ * {@link htsjdk.beta.plugin.variants.VariantsDecoderOptions}
+ */
 public class HtsVariantsCodecs {
 
     @SuppressWarnings("unchecked")
@@ -90,7 +102,7 @@ public class HtsVariantsCodecs {
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
         return (VariantsEncoder) HtsCodecRegistry.getVariantsCodecResolver()
-                .resolveFormatAndVersion(variantsFormat, codecVersion)
+                .resolveForFormatAndVersion(variantsFormat, codecVersion)
                 .getEncoder(outputBundle, variantsEncoderOptions);
     }
 

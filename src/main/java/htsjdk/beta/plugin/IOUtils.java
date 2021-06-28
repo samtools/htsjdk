@@ -13,6 +13,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Class for updated IOUtils methods that use either {@link htsjdk.io.IOPath} {@link java.nio.file.Path} in public
+ * method argument lists.
+ */
 public class IOUtils {
 
     /**

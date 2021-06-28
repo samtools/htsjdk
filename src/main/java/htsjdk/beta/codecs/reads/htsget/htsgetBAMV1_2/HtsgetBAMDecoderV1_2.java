@@ -110,23 +110,23 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         return htsgetReader.query(
-                HtsIntervalUtils.toLocatableList(intervals, getHeader().getSequenceDictionary()),
+                HtsIntervalUtils.toLocatableList(intervals),
                 queryRule == HtsQueryRule.CONTAINED == true);
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryOverlapping(final List<HtsInterval> intervals) {
-        return null;
+        throw new HtsjdkPluginException("queryOverlapping not implemented for htsget bam reader");
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryContained(final List<HtsInterval> intervals) {
-        return null;
+        throw new HtsjdkPluginException("queryContained not implemented for htsget bam reader");
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
-        return null;
+        throw new HtsjdkPluginException("queryStart not implemented for htsget bam reader");
     }
 
     @Override

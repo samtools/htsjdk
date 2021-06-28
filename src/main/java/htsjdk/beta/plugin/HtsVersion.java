@@ -3,7 +3,8 @@ package htsjdk.beta.plugin;
 import htsjdk.utils.ValidationUtils;
 
 /**
- * A codec (file format) version.
+ * A class for representing 3-part versions with major, minor and patch segments. Used by
+ * {@link HtsCodec}, {@link HtsEncoder} and {@link HtsDecoder} for HTS file format versions.
  */
 public class HtsVersion implements Comparable<HtsVersion> {
     /** Sentinel constant used to indicate the newest version available */
@@ -15,17 +16,28 @@ public class HtsVersion implements Comparable<HtsVersion> {
     private final int minorVersion;
     private final int patchVersion;
 
+    /**
+     * Construct a 3 part version number.
+     * @param major major version number
+     * @param minor minor version number
+     * @param patch patch number
+     */
     public HtsVersion(final int major, final int minor, final int patch) {
         this.majorVersion = major;
         this.minorVersion = minor;
         this.patchVersion = patch;
     }
 
+    /**
+     * Construct a 3 part version number from a string withe the format {@code major.minor.patch}, where
+     * each of major/minor/patch is an integer.
+     * @param versionString the version string from which to construct this version
+     */
     public HtsVersion(final String versionString) {
         ValidationUtils.nonNull(versionString);
         final String[] parts = versionString.split(".", 0);
         if (parts.length != 3) {
-            throw new IllegalArgumentException(String.format("Can parse version string: '%s'", versionString));
+            throw new IllegalArgumentException(String.format("Unable parse version string as major.minor.patch: '%s'", versionString));
         }
         try {
             majorVersion = Integer.parseInt(parts[0]);
@@ -36,14 +48,23 @@ public class HtsVersion implements Comparable<HtsVersion> {
         }
     }
 
+    /**
+     * @return the major version integer for this version
+     */
     public int getMajorVersion() {
         return majorVersion;
     }
 
+    /**
+     * @return the minor version integer for this version
+     */
     public int getMinorVersion() {
         return minorVersion;
     }
 
+    /**
+     * @return the patch version integer for this version
+     */
     public int getPatchVersion() {
         return patchVersion;
     }

@@ -8,17 +8,24 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * Base interface implemented by all {@link htsjdk.beta.plugin} codecs.
  * <H3>Codecs</H3>
  * <p>
- *     Each version of a file format supported by the HTSJDK plugin framework is represented by a class
- *     that implements HtsCodec. These classes are discovered dynamically at runtime, and instantiated
- *     and registered in the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}. The objects are lightweight
- *     and long-lived, and are interrogated by the framework to resolve requests to find an encoder or decoder
- *     to match a given resource.
+ *     Each version of a file format supported by the HTSJDK {@link htsjdk.beta.plugin} framework is
+ *     represented by three separate components:
+ * <ul>
+ *     <li>a codec class that implements {@link HtsCodec}</li>
+ *     <li>an encoder class that implements {@link HtsEncoder}</li>
+ *     <li>a decoder class that implements {@link HtsDecoder}</li>
+ * </ul>
  * <p>
- *     The main responsibility of an HtsCodec is to satisfy these requests by the framework, and to instantiate
- *     and return an appropriate {@link HtsEncoder} or {@link HtsDecoder} on request from the framework once
- *     it has determined that a match is found.
+ *     The {@link HtsCodec} classes are discovered dynamically at runtime, and instantiated and registered
+ *     in the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}. The objects are lightweight and long-lived,
+ *     and are interrogated by the framework to resolve requests for an appropriate {@link HtsEncoder} or
+ *     {@link HtsDecoder} that matches a given resource.
  * <p>
- *     There are 4 different types of codecs, enumerated by the values in {@link HtsCodecType}:
+ *     The main responsibility of an {@link HtsCodec is to satisfy these requests by the framework, and to
+ *     instantiate and return an appropriate {@link HtsEncoder} or {@link HtsDecoder} on request from the
+ *     framework once it finds a match.
+ * <p>
+ *     There are four different types of codecs, enumerated by the values in {@link HtsCodecType}:
  * <ul>
  *     <li> {@link HtsCodecType#ALIGNED_READS} </li>
  *     <li> {@link HtsCodecType#HAPLOID_REFERENCE} </li>
@@ -57,8 +64,8 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     supported reads file format </li>
  * </ul>
  * <p>
- * The packages containing the definitions of the common interfaces that are defined for each of the 4 different
- * codec types are:
+ *     The packages containing the definitions of the common interfaces that are defined for each of the four
+ *     different codec types are:
  * <ul>
  *     <li> For {@link HtsCodecType#ALIGNED_READS} codecs, see the {@link htsjdk.beta.plugin.reads} package </li>
  *     <li> For {@link HtsCodecType#HAPLOID_REFERENCE} codecs, see the {@link htsjdk.beta.plugin.hapref} package </li>
@@ -68,8 +75,9 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <H3>Codec Resolution Protocol</H3>
  * <p>
  *     The plugin framework uses a series of probes to inspect input and output resources in order to determine
- *     which file format/version, and thus which codec, to use to obtain an encoder or decoder for that resource.
- *     Much of this work is delegated to registered codecs by calling methods implemented in HtsCodec.
+ *     which file format/version, and thus which codec, should be used to use to obtain an encoder or decoder for
+ *     that resource. Much of this work is delegated to the HtsCodec methods to allow them to determine which
+ *     codecs recognize the presented resource.
  * <p>
  *     The values returned from these methods are used by the framework to prune the list of candidate codecs.
  * <p>
@@ -80,31 +88,41 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)} </li>
  * </ol>
  * <p>
- *     See the {@link htsjdk.beta.plugin.registry.HtsCodecResolver} methods for more detail:
+ *     See the {@link htsjdk.beta.plugin.registry.HtsCodecResolver} methods for more detail on the resolution
+ *     protocol:
  *     <ul>
  *     <li> {@link htsjdk.beta.plugin.registry.HtsCodecResolver#resolveForDecoding(Bundle)} </li>
  *     <li> {@link htsjdk.beta.plugin.registry.HtsCodecResolver#resolveForEncoding(Bundle)} </li>
  *     <li> {@link htsjdk.beta.plugin.registry.HtsCodecResolver#resolveForEncoding(Bundle, HtsVersion)} </li>
  * </ul>
- * <H3>Custom Protocol Schemes</H3>
+ * <H3>Codecs That Use a Custom URI Format or Protocol Scheme</H3>
  * <p>
- *     Most codecs are agnostic about the IOPath protocol scheme used for resources that are to be decoded or
- *     encoded, and assume that file contents can be accessed via {@link java.nio} file system providers. However
- *     some file formats depend on a specific, well known URI protocol scheme, often used to access a
- *     remote or otherwise specially-formatted resource. These codecs use specialized code that bypasses file
- *     system access in order to encode or decode resources.
+ *     Most file formats reside in a single file that resides on a file system that is backed by a
+ *     {@link java.nio} file system provider. Codecs that support such formats are generally agnostic
+ *     about the IOPath protocol scheme used to identify their resources, and assume that file contents
+ *     can be accessed directly via a single stream created via a {@link java.nio} file system provider.
  * <p>
- *     For example, the {@link htsjdk.beta.codecs.reads.bam.bamV1_0.BAMCodecV1_0} assumes that underlying
- *     input and output IOPath resources can be accessed as a file via either the "file://" protocol, or
- *     other protocols such gs:// or hdfs:// that have {@link java.nio} file system providers, and is
- *     agnostic about URI scheme. In contrast, the
- *     {@link htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2.HtsgetBAMCodecV1_2} codec only handles resources
- *     that are accessible via the htsget protocol, identified via the "http://" protocol. It uses http to
- *     access the underlying resource, and bypasses file system access.
+ *     However some file formats are based around a specific, well known URI format or protocol scheme, often
+ *     used to identify a remote or otherwise specially-formatted resource, such as a local database format
+ *     that is distributed across multiple physical files. These codecs may bypass direct file {@link java.nio}
+ *     system access, and instead use specialized code to access their underlying resources.
  * <p>
- *     Codecs that use a custom resource protocol scheme such as htsget must recognize their own protocol
- *     scheme, and return true from the {@link #ownsURI(IOPath)} method when presented with a
- *     protocol-conforming URI.
+ *     For example, the {@link htsjdk.beta.codecs.reads.bam.bamV1_0.BAMCodecV1_0} assumes that IOPath
+ *     resources can be accessed as a stream on a single file via either the "file://" protocol, or
+ *     other protocols such gs:// or hdfs:// that have {@link java.nio} file system providers. It does
+ *     not require or assume a particular URI format, and is agnostic about URI scheme.
+ *     <p>
+ *     In contrast, the {@link htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2.HtsgetBAMCodecV1_2} codec only
+ *     handles remote resources that are accessible via the htsget protocol, identified via the
+ *     "http://" protocol. It uses {@code http} to access the underlying resource, and bypasses {@link java.nio}
+ *     file system access.
+ * <p>
+ *     Codecs that use a custom URI format or protocol scheme such as {@code htsget} must:
+ *     <ul>
+ *         <li>recognize a conforming URI the {@link #ownsURI(IOPath)} method, and return true</li>
+ *         <li>return 0 from the {@link #getSignatureLength()} method</li>
+ *         <li>return 0 from the {@link #getSignatureProbeSize()} method</li>
+ *     </ul>
  * </p>
  * @param <F> an {@link java.lang.Enum} with a value for each file format handled by this codec
  * @param <D> decoder options for this codec

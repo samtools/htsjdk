@@ -4,7 +4,8 @@ import htsjdk.beta.plugin.HtsCodecType;
 import htsjdk.beta.plugin.reads.ReadsFormat;
 
 /**
- * Namespace for standard constants to specify content type and content subtype in resources in a {@link Bundle}.
+ * Namespace for standard constants to specify content type and content subtype for resources
+ * contained in a {@link Bundle}.
  */
 public class BundleResourceType {
 

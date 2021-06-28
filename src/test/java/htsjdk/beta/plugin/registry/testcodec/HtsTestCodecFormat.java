@@ -2,6 +2,7 @@ package htsjdk.beta.plugin.registry.testcodec;
 
 import java.util.Optional;
 
+// File formats for the HtsTest codec implmentations used to test codec resolution
 public enum HtsTestCodecFormat {
     FILE_FORMAT_1,
     FILE_FORMAT_2,

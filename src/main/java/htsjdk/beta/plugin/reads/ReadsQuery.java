@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.HtsRecord;
 import htsjdk.samtools.util.CloseableIterator;
 
 /**
- * Reads/alignment-specific query methods (reads-specific extension of HtsQuery)
+ * Query methods specific to aligned reads decoders. Reads-specific extension of HtsQuery)
  */
 public interface ReadsQuery<R extends HtsRecord> {
 
