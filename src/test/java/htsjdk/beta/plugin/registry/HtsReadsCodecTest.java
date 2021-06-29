@@ -2,6 +2,7 @@ package htsjdk.beta.plugin.registry;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.reads.bam.BAMCodec;
+import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleBuilder;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
@@ -92,7 +93,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
 
     @Test
     public void testReadsEncoderForBAM() {
-        final IOPath outputPath = new HtsPath("pluginTestOutput.bam");
+        final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
 
         try (final ReadsEncoder readsEncoder = HtsReadsCodecs.getReadsEncoder(outputPath)) {
             Assert.assertNotNull(readsEncoder);
@@ -105,7 +106,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
 
     @Test
     public void testReadsEncoderForVersion() {
-        final IOPath outputPath = new HtsPath("pluginTestOutput.bam");
+        final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
 
         try (final ReadsEncoder readsEncoder = HtsReadsCodecs.getReadsEncoder(
                 new ReadsBundle(outputPath),
@@ -121,7 +122,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
     @Test
     public void testRoundTripReads() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "example.bam");
-        final IOPath outputPath = new HtsPath("pluginTestOutput.bam");
+        final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
 
         try (final ReadsDecoder readDecoder = HtsReadsCodecs.getReadsDecoder(inputPath);
              final ReadsEncoder readsEncoder = HtsReadsCodecs.getReadsEncoder(outputPath)) {

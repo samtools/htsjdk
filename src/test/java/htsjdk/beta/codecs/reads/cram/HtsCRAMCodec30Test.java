@@ -1,6 +1,7 @@
 package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.beta.plugin.IOUtils;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
@@ -40,7 +41,7 @@ public class HtsCRAMCodec30Test extends HtsjdkTest {
     @Test
     public void testRoundTripCRAM() {
         final IOPath cramInputPath = new HtsPath(TEST_DIR + "cram/c2#pad.3.0.cram");
-        final IOPath cramOutputPath = new HtsPath("pluginTestOutput.cram");
+        final IOPath cramOutputPath = IOUtils.createTempPath("pluginTestOutput", ".cram");
         final IOPath referencePath = new HtsPath(TEST_DIR + "cram/c2.fa");
 
         final ReadsDecoderOptions readsDecoderOptions =

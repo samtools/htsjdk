@@ -27,11 +27,13 @@ import java.util.*;
 // - prevent the decoders that use SamReaderFactory from automatically resolving index files
 // - address CRAM reference leak issue in master
 // - test stdin/stdout
+//
 // TODO: post PR
 // - encryption/decryption key files, etc.
 // - publish the JSON Bundle JSON schema
 // - implement index creation on decoders (existing inputs), requires unbuffered stream
 // - upgrade API
+//
 //TODO: Questions:
 // - should we change "contentSubType" to "format". then it would match the codec terminology
 // - should we change codec format to content type ?

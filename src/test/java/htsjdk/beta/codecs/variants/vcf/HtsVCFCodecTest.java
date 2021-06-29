@@ -2,6 +2,7 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.variants.vcf.vcfv4_2.VCFCodecV4_2;
+import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.registry.HtsVariantsCodecs;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
@@ -28,7 +29,7 @@ public class HtsVCFCodecTest extends HtsjdkTest {
 
     @Test(dataProvider = "vcfTests")
     public void testRoundTripVCF(final IOPath inputPath) {
-        final IOPath outputPath = new HtsPath("pluginVariants.vcf");
+        final IOPath outputPath = IOUtils.createTempPath("pluginVariants", ".vcf");
 
         try (final VariantsDecoder variantsDecoder = HtsVariantsCodecs.getVariantsDecoder(inputPath);
              final VariantsEncoder variantsEncoder = HtsVariantsCodecs.getVariantsEncoder(outputPath)) {

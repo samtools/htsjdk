@@ -1,6 +1,7 @@
 package htsjdk.beta.codecs.reads.bam;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
@@ -37,7 +38,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
 
     @Test
     public void testBAMEncoder() {
-        final IOPath outputPath = new HtsPath("pluginTestOutput.bam");
+        final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
         try (final BAMEncoder bamEncoder = (BAMEncoder) HtsReadsCodecs.getReadsEncoder(outputPath)) {
             Assert.assertNotNull(bamEncoder);
             Assert.assertEquals(bamEncoder.getFormat(), ReadsFormat.BAM);
@@ -47,7 +48,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
     @DataProvider(name="inputBundles")
     private Object[][] getInputVariations() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "example.bam");
-        final IOPath outputPath = new HtsPath("pluginTestOutput.bam");
+        final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
 
         return new Object[][] {
                 {
