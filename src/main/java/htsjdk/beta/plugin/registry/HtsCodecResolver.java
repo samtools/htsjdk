@@ -91,10 +91,9 @@ public final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, 
     /**
      * Inspect a bundle and find a codec that can decode the primary resource.
      * <p>
-     *     A list of candidate codecs that starts with all codecs for this resolver's type (determined
-     *     by the requiredContent type that was used to instantiate the resolver),
-     *     and is reduced as followsTo resolve a bundle to a codec, the bundle is inspected to determine whether the primary
-     *     resource contains an IOPath or a stream. :
+     *     Th resolution process starts with a list of candidate codecs consisting of all the codecs
+     *     for this resolver's type. The bundle is inspected to determine whether the primary resource
+     *     is an IOPath or a stream, and is reduced as follows:
      * <p>
      *     If the primary resource is an IOPath:
      *     <ol>
@@ -106,8 +105,8 @@ public final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, 
      *                      The candidate list is first reduced to only those codecs that return true from
      *                      {@link HtsCodec#ownsURI}
      *                  <li>
-     *                      The candidate list is then further reduced to only those codecs that return true from
-     *                      {@link HtsCodec#canDecodeURI(IOPath)}.
+     *                      The candidate list is then further reduced to only those codecs that return true
+     *                      from {@link HtsCodec#canDecodeURI(IOPath)}.
      *                  </li>
      *              </ol>
      *          <li>
@@ -132,8 +131,10 @@ public final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, 
      *          </li>
      *     </ol>
      * <p>
-     *     It is an error if more than one codec is remaining in the candidate list after codec resolution.
-     *     This usually indicates that the registry contains an ill-behaved codec implementation.
+     *     If a single codec remains in the candidate list after the resolution process described above,
+     *     that is returned. It is an error if more than one codec is remaining in the candidate list
+     *     after codec resolution. This usually indicates that the registry contains an ill-behaved codec
+     *     implementation.
      * <p>
      *     Note: {@link HtsCodec#canDecodeStreamSignature(SignatureProbingInputStream, String)} will never be
      *     called by the framework on a resource if any codec returns true from {@link HtsCodec#ownsURI} for

@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin.reads;
 
+import htsjdk.beta.plugin.HtsFormat;
 import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;

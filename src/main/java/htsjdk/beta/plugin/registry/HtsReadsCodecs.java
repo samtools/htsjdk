@@ -25,7 +25,7 @@ import htsjdk.utils.ValidationUtils;
  * those used by {@link htsjdk.beta.plugin.reads.ReadsCodec}s, such as
  * {@link htsjdk.beta.plugin.reads.ReadsEncoder},
  * {@link htsjdk.beta.plugin.reads.ReadsEncoder}, and
- * {@link htsjdk.beta.plugin.reads.ReadsDecoderOptions}
+ * {@link htsjdk.beta.plugin.reads.ReadsDecoderOptions}.
  */
 public class HtsReadsCodecs {
 
@@ -144,7 +144,7 @@ public class HtsReadsCodecs {
      * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, ReadsFormat, HtsVersion)}.
      *
      * @param outputBundle target output to encode to
-     * @param readsEncoderOptions {@lin ReadsEncoderOptions} to be used by the encoder
+     * @param readsEncoderOptions {@link ReadsEncoderOptions} to be used by the encoder
      * @return
      */
     @SuppressWarnings("unchecked")

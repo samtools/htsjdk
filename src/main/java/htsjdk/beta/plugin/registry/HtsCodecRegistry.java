@@ -15,7 +15,7 @@ import htsjdk.exception.HtsjdkPluginException;
 import java.util.*;
 
 //TODO: Master TODO list:
-// use is prefix for boolean getters
+// - use is prefix for boolean getters
 // - implement SeekableStream source
 // - finish encoders/options for BAM/CRAM, respect presorted in Reads encoders
 // - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs

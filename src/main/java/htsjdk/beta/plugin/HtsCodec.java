@@ -16,16 +16,16 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li>a decoder that implements {@link HtsDecoder}</li>
  * </ul>
  * <p>
- *     Classes that implement {@link HtsCodec} are either discovered and instantiated and registered dynamically
- *     at runtime, via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}'s {@link java.util.ServiceLoader}
+ *     Classes that implement {@link HtsCodec} are either discovered, instantiated, and registered dynamically
+ *     at runtime via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}'s {@link java.util.ServiceLoader}
  *     code, or are manually registered via the
  *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)} method.
  *     {@link HtsCodec} objects are lightweight and long-lived, and are used by the framework
  *     to resolve requests for an {@link HtsEncoder} or {@link HtsDecoder} that matches a given resource.
  *     <p>
- *     The primary responsibility of an {@link HtsCodec} is to provide method implementations that are
- *     used by the framework to satisfy such requests, and to instantiate and return an appropriate
- *     {@link HtsEncoder} or {@link HtsDecoder} on demand from the framework once a match is found.
+ *     The primary responsibility of an {@link HtsCodec} is to participate in the framework's codec resolution
+ *     process, and to instantiate and return an appropriate {@link HtsEncoder} or {@link HtsDecoder} on demand
+ *     once a match is found.
  * <p>
  * <H3>Codec Types</H3>
  *     The plugin framework supports four different types of codec/encoder/decoder trios, enumerated
@@ -111,12 +111,12 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * </ul>
  * <H3>Codecs That Use a Custom URI Format or Protocol Scheme</H3>
  * <p>
- *     Most file formats reside in a single file that resides on a file system that is backed by a
+ *     Most file formats consist of a single file resides on a file system that is supported by a
  *     {@link java.nio} file system provider. Codecs that support such formats are generally agnostic
  *     about the IOPath/URI protocol scheme used to identify their resources, and assume that file contents
  *     can be accessed directly via a single stream created via a {@link java.nio} file system provider.
  * <p>
- *     However some file formats are based around a specific, well known URI format or protocol scheme, often
+ *     However some file formats require a specific, well known URI format or protocol scheme, often
  *     used to identify a remote or otherwise specially-formatted resource, such as a local database format
  *     that is distributed across multiple physical files. These codecs may bypass direct file {@link java.nio}
  *     system access, and instead use specialized code to access their underlying resources.
@@ -126,14 +126,13 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     other protocols such gs:// or hdfs:// that have {@link java.nio} file system providers. It does
  *     not require or assume a particular URI format, and is agnostic about URI scheme.
  *     <p>
- *     In contrast, the {@link htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2.HtsgetBAMCodecV1_2} codec only
- *     handles remote resources that are accessible via the htsget protocol, identified via the
- *     "http://" protocol. It uses {@code http} to access the underlying resource, and bypasses {@link java.nio}
- *     file system access.
+ *     In contrast, the {@link htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2.HtsgetBAMCodecV1_2} codec
+ *     only handles remote resources that are  accessible via the "http://" protocol. It uses {@code http}
+ *     to access the underlying resource, and bypasses direct {@link java.nio} file system access.
  * <p>
- *     Codecs that use a custom URI format or protocol scheme such as {@code htsget} must be able to determine
- *     if they can decode or encode a resource purely by inspecting the IOPath/URI. Such codes should follow these
- *     guidelines:
+ *     Codecs that use such a custom URI format or protocol scheme such as {@code htsget} must be able
+ *     to determine if they can decode or encode a resource purely by inspecting the IOPath/URI. Such
+ *     codes should follow these guidelines:
  *     <ul>
  *         <li>return true when {@link #ownsURI(IOPath)} is presented with an IOPath with
  *         a conforming URI </li>
@@ -199,32 +198,31 @@ public interface HtsCodec<
      * probing that is used to resolve inputs to a codec handler. During codec resolution, if any registered
      * codec returns true for this method on {@code ioPath}, the signature probing protocol will instead:
      * <ol>
-     *  <li> immediately prune the list of candidate codecs to only those that return true for this method
-     *  on {@code ioPath}</li>
-     *  <li> not attempt to obtain an InputStream on the IOPath containing the URI, on the assumption that
-     *  special handling is required in order to access the underlying resource (i.e., htsget
-     *  codec would claim an "http://" URI if the rest of the URI conforms to the expected format for that
-     *  codec's protocol). </li>
+     * <li> immediately prune the list of candidate codecs to only those that return true for this method
+     * on {@code ioPath}</li>
+     * <li> not attempt to obtain an InputStream on the IOPath containing the URI, on the assumption that
+     * special handling is required in order to access the underlying resource (i.e., htsget
+     * codec would claim an "http://" URI if the rest of the URI conforms to the expected format for that
+     * codec's protocol). </li>
      * </ol>
      * <p>
      * Any codec that returns true from {@link #ownsURI(IOPath)} for a given IOPath must also return true
      * from {@link #canDecodeURI(IOPath)} for the same IOPath.
      *
      * @param ioPath the ioPath to inspect
-     * @return true if the iopaht's URI represents a custom URI that this codec handles
+     * @return true if the ioPath's URI represents a custom URI that this codec handles
      */
     default boolean ownsURI(final IOPath ioPath) { return false; }
 
     /**
      * Return true if the URI for <code>ioPath</code> (obtained via {@link IOPath#getURI()} appears to
-     * conform to the expected URI
-     * for format this codec's file format. Most implementations only look at the file extension
-     * {@see htsjdk.io.IOPath#hasExtension}. If the file format implemented by this codec does not use a
-     * specific file extension, or if the codec cannot determine if it can decode the underlying resource
-     * without inspecting the underlying stream, it is safe to return true. In that case the framework will
-     * make a subsequent call to this codec's {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)}
-     * method, during which time the codec can do a more detailed inspection of the
-     * {@link SignatureProbingInputStream}.
+     * conform to the expected URI format this codec's file format. Most implementations only look at
+     * the file extension {@see htsjdk.io.IOPath#hasExtension}. If the file format implemented by this
+     * codec does not use a specific file extension, or if the codec cannot determine if it can decode
+     * the underlying resource without inspecting the underlying stream, it is safe to return true. In
+     * that case the framework will make a subsequent call to this codec's
+     * {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)} method, during which time
+     * the codec can do a more detailed inspection of the {@link SignatureProbingInputStream}.
      * <p>
      * Implementations should generally not inspect the URI's protocol scheme unless the file format
      * supported by the codec requires the use a specific protocol scheme. For codecs that do own
