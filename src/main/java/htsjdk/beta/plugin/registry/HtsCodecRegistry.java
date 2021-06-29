@@ -15,31 +15,31 @@ import htsjdk.exception.HtsjdkPluginException;
 import java.util.*;
 
 //TODO: Master TODO list:
-// - what should a codec do when presented with a URI that uses it’s custom protocol scheme,
-//   but which doesn’t otherwise conform (i.e., query params are missing or malformed ?) throw ? what
-//   if some OTHER codec would accept it because it accepts very similar URIs (i.e, an htsget CRAM codec
-//   accepts .cram extension, - to the Htsget BAM codec that would look close, but malformed? accept it
-//   as is ? log a warning ?
-// - can we store the resource byte array outside of the resources ?
-// - finish content type inference
+// - javadoc/final/PublicAPI/ValidateArgs - use opt-out for privateAPI
 // - make registry and resolver threadsafe, instantiable
-// - implement SeekableStream source
 // - finish encoders/options for BAM/CRAM, respect presorted in Reads encoders
 // - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs
 // - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
-// - javadoc/final/PublicAPI/ValidateArgs - use opt-out for privateAPI
 // - tests
-// - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
-// - prevent the decoders that delegate to SamReaderFactory from attempting to automatically
-//      resolve index files so we don't introduce incompatibilities when the SamReaderFactory
-//      implementation dependency is removed
-// - address CRAM reference leak issue in master
-// - implement index creation on decoders (existing inputs), requires unbuffered stream
-// - encryption/decryption key files, etc.
+// - finish content type inference
 // - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
+// - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
+// - prevent the decoders that use SamReaderFactory from automatically resolving index files
+// - address CRAM reference leak issue in master
 // - test stdin/stdout
+// TODO: post PR
+// - encryption/decryption key files, etc.
 // - publish the JSON Bundle JSON schema
+// - implement index creation on decoders (existing inputs), requires unbuffered stream
 // - upgrade API
+//TODO: Questions:
+// - should we change "contentSubType" to "format". then it would match the codec terminology
+// - should we change codec format to content type ?
+// - what should a codec do when presented with a URI that uses it’s custom protocol scheme,
+//   but which doesn’t otherwise conform (i.e., query params are missing or malformed ?) throw ? what
+//   if some OTHER codec would accept it because it accepts very similar URIs (i.e, an htsget CRAM codec
+//   accepts a .cram extension, but to the Htsget BAM codec that would look close, but malformed ? accept it
+//   as is ? log a warning ?
 
 /**
  * Registry for tracking {@link HtsCodec} instances. Classes that implement {@link HtsCodec} are

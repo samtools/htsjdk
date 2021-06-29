@@ -1,10 +1,10 @@
 package htsjdk.beta.codecs.reads.htsget;
 
-import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
-import htsjdk.io.IOPath;
+import htsjdk.beta.plugin.bundle.SignatureProbingStream;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.HtsgetBAMFileReader;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.htsget.HtsgetFormat;
@@ -63,7 +63,7 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
     public boolean canDecodeURI(final IOPath ioPath) { return handlesURI(ioPath); }
 
     @Override
-    public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
+    public boolean canDecodeStreamSignature(final SignatureProbingStream probingInputStream, final String sourceName) {
         return false;
     }
 

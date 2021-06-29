@@ -14,20 +14,18 @@ import java.io.Serializable;
 import java.util.Optional;
 
 /**
- * An bundle resource backed by an {@link IOPath}.
+ * An {@link BundleResource} backed by an {@link IOPath}.
  */
 public class IOPathResource extends BundleResourceBase implements Serializable {
     private static final long serialVersionUID = 1L;
     private final IOPath ioPath;
-    private int signaturePrefixSize = -1;
-    private byte[] signaturePrefix;
 
     /**
      * @param ioPath The IOPath for this resource. May not be null.
      * @param contentType The content type for this resource. May not be null or 0-length.
      */
     public IOPathResource(final IOPath ioPath, final String contentType) {
-        this(ioPath, contentType,null);
+        this(ioPath, contentType, null);
     }
 
     /**
@@ -45,6 +43,9 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     @Override
     public Optional<IOPath> getIOPath() { return Optional.of(ioPath); }
 
+    /**
+     * @return create a new stream for the IOPath managed by this resource
+     */
     @Override
     public Optional<InputStream> getInputStream() {
         return Optional.of(ioPath.getInputStream());
@@ -76,32 +77,22 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     }
 
     @Override
-    public SignatureProbingInputStream getSignatureProbingStream(final int requestedPrefixSize) {
-        ValidationUtils.validateArg(
-                requestedPrefixSize > 0,
-                "signature probing stream size must be > 0");
-        if (signaturePrefix == null) {
-            signaturePrefix = new byte[requestedPrefixSize];
-            // get a stream on the underlying IOPath, get our reuseable signature probing buffer,
-            // and then close the stream
-            try (final InputStream is = getInputStream().get();
-                 final InputStream inputStream = new BufferedInputStream(is, requestedPrefixSize)) {
-                inputStream.mark(requestedPrefixSize);
-                inputStream.read(signaturePrefix);
-                inputStream.reset();
-                this.signaturePrefixSize = requestedPrefixSize;
-            } catch (final IOException e) {
-                throw new RuntimeIOException(
-                        String.format("Error during signature probing with prefix size %d", requestedPrefixSize),
-                        e);
-            }
-        } else if (requestedPrefixSize > signaturePrefixSize) {
-            throw new IllegalArgumentException(String.format(
-                    "A signature probing size of %d was requested, but a probe size of %d" +
-                            " has already been established for this input",
-                    requestedPrefixSize, signaturePrefixSize));
+    public SignatureProbingStream getSignatureProbingStream(final int signatureProbeLength) {
+        ValidationUtils.validateArg(signatureProbeLength > 0, "signature probe length size must be > 0");
+
+        // get a stream on the underlying IOPath, get reuseable signature probing buffer,
+        try (final InputStream is = getInputStream().get();
+             final InputStream inputStream = new BufferedInputStream(is, signatureProbeLength)) {
+            final byte[] signaturePrefix = new byte[signatureProbeLength];
+            inputStream.mark(signatureProbeLength);
+            inputStream.read(signaturePrefix);
+            inputStream.reset();
+            return new SignatureProbingStream(signatureProbeLength, signaturePrefix);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(
+                    String.format("Error getting s signature probing stream with probe length %d", signatureProbeLength),
+                    e);
         }
-        return new SignatureProbingInputStream(signaturePrefix, signaturePrefixSize);
     }
 
     @Override

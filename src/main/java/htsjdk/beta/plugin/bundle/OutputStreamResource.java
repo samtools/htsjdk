@@ -1,12 +1,13 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.OutputStream;
 import java.util.Optional;
 
 /**
- * An output resource backed by an {@link java.io.OutputStream}.
+ * An output {@link BundleResource} backed by an {@link java.io.OutputStream}.
  */
 public class OutputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
@@ -43,8 +44,8 @@ public class OutputStreamResource extends BundleResourceBase {
     }
 
     @Override
-    public SignatureProbingInputStream getSignatureProbingStream(int prefixSize) {
-        return null;
+    public SignatureProbingStream getSignatureProbingStream(int signatureProbeLength) {
+        throw new HtsjdkPluginException("Cannot create a signature probing stream on an output stream resource");
     }
 
     @Override

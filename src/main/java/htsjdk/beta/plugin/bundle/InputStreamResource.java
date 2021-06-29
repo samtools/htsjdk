@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
@@ -9,14 +10,12 @@ import java.io.InputStream;
 import java.util.Optional;
 
 /**
- * An input resource backed by an {@link java.io.InputStream}.
+ * An {@link BundleResource} backed by an {@link java.io.InputStream}.
  */
 public class InputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
     private final InputStream rawInputStream;           // the stream as provided by the caller
     private BufferedInputStream bufferedInputStream;    // buffered stream wrapper to allow for signature probing
-    private int signaturePrefixSize = -1;
-    private byte[] signaturePrefix;
 
     /**
      * Note that it is the caller's responsibility to ensure that {@code inputStream} is closed once the
@@ -55,33 +54,34 @@ public class InputStreamResource extends BundleResourceBase {
     }
 
     @Override
-    public SignatureProbingInputStream getSignatureProbingStream(final int requestedPrefixSize) {
-        if (signaturePrefix == null) {
-            signaturePrefix = new byte[requestedPrefixSize];
-            try {
-                // for InputStreamResource, we don't want this code to close the actual rawInputStream
-                // that was provided by the caller, since we don't have any way to reconstitute it. so
-                // we don't use try-with-resources here
-                bufferedInputStream = new BufferedInputStream(rawInputStream, requestedPrefixSize);
-                // mark, read, and then reset the buffered stream so that when the actual stream is consumed,
-                // once signature probing is set, it will be consumed from the beginning
-                bufferedInputStream.mark(requestedPrefixSize);
-                bufferedInputStream.read(signaturePrefix);
-                // reset the buffered input stream so that when the actual codec goes to consume it,
-                // it starts from the beginning
-                bufferedInputStream.reset();
-                this.signaturePrefixSize = requestedPrefixSize;
-            } catch (final IOException e) {
-                throw new RuntimeIOException(
-                        String.format("Error during signature probing with prefix size %d", requestedPrefixSize),
-                        e);
-            }
-        } else if (requestedPrefixSize > signaturePrefixSize) {
-            throw new IllegalArgumentException(
-                    String.format("A signature probing size of %d was requested, but a probe size of %d has already been established",
-                            requestedPrefixSize, signaturePrefixSize));
+    public SignatureProbingStream getSignatureProbingStream(final int signatureProbeLength) {
+        ValidationUtils.validateArg(signatureProbeLength > 0, "signatureProbeLength must be > 0");
+
+        if (bufferedInputStream != null) {
+            throw new HtsjdkPluginException(
+                    String.format("Only one probing stream can be created for an Input stream resource"));
         }
-        return new SignatureProbingInputStream(signaturePrefix, signaturePrefixSize);
+
+        final byte[] signaturePrefix = new byte[signatureProbeLength];
+        try {
+            // for an InputStreamResource, we don't want this code to close the actual rawInputStream that
+            // was provided by the caller, since we don't have any way to reconstitute it, so don't use
+            // try-with-resources
+            bufferedInputStream = new BufferedInputStream(rawInputStream, signatureProbeLength);
+            // mark, read, and then reset the buffered stream so that when the actual stream is consumed,
+            // once signature probing is set, it will be consumed from the beginning
+            bufferedInputStream.mark(signatureProbeLength);
+            bufferedInputStream.read(signaturePrefix);
+            // reset the buffered input stream so the next consumer sees the beginning of the stream
+            bufferedInputStream.reset();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(
+                    String.format("Error during signature probing on %s with prefix size %d",
+                            this.getDisplayName(),
+                            signatureProbeLength),
+                    e);
+        }
+        return new SignatureProbingStream(signatureProbeLength, signaturePrefix);
     }
 
     @Override

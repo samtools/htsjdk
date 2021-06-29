@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin;
 
-import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingStream;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.bundle.Bundle;
 
@@ -98,7 +98,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <ol>
  *     <li> {@link #ownsURI(IOPath)} </li>
  *     <li> {@link #canDecodeURI(IOPath)} </li>
- *     <li> {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)} </li>
+ *     <li> {@link #canDecodeStreamSignature(SignatureProbingStream, String)} </li>
  * </ol>
  * <p>
  *     See the {@link htsjdk.beta.plugin.registry.HtsCodecResolver} methods for more detail on the resolution
@@ -226,8 +226,8 @@ public interface HtsCodec<
      * any of the expected extensions. If the format does not use a specific extension, or if the codec
      * cannot determine if it can decode the underlying resource without inspecting the underlying stream,
      * it is safe to return true, after which the framework will subsequent call this codec's
-     * {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)} method, during which time
-     * the codec can inspect the actual underlying stream via the {@link SignatureProbingInputStream}.
+     * {@link #canDecodeStreamSignature(SignatureProbingStream, String)} method, during which time
+     * the codec can inspect the actual underlying stream via the {@link SignatureProbingStream}.
      * <p>
      * Implementations should generally not inspect the URI's protocol scheme unless the file format
      * supported by the codec requires the use a specific protocol scheme. For codecs that do own
@@ -236,7 +236,7 @@ public interface HtsCodec<
      * <p>
      * It is never save to attempt to directly inspect the underlying stream for <code>ioPath</code>
      * in this method. If the stream needs to be inspected, it should be done when the
-     * {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)} method is called.
+     * {@link #canDecodeStreamSignature(SignatureProbingStream, String)} method is called.
      *
      * For custom URI handlers, codecs should avoid making remote calls to determine the suitability
      * of the input resource; the return value for this method should be based only on the format
@@ -261,13 +261,13 @@ public interface HtsCodec<
      * always return false from this method.
      * </p>
      *
-     * @param probingInputStream the stream to be used by the codec to inspect the resource's embedded
-     *                          signature and version
+     * @param signatureProbingStream the stream to be used by the codec to inspect the resource's embedded
+     *                              signature and version
      * @param sourceName a display name describing the source of the input stream, for use in error messages
      * @return true if this codec recognizes the stream by it's signature, and can provide a decoder to
      * decode the stream
      */
-    boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName);
+    boolean canDecodeStreamSignature(final SignatureProbingStream signatureProbingStream, final String sourceName);
 
     /**
      * The number of bytes in the format name and version signature used by the file format supported by
@@ -293,8 +293,8 @@ public interface HtsCodec<
      * <p>
      * Therefore signatureProbeSize should be expressed in "compressed/encrypted" space rather than
      * "plaintext" space. The length returned from this method is used to determine the size of the
-     * {@link SignatureProbingInputStream} that is subsequently passed to
-     * {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)}.
+     * {@link SignatureProbingStream} that is subsequently passed to
+     * {@link #canDecodeStreamSignature(SignatureProbingStream, String)}.
      * <p>
      * Note: Codecs that are custom URI handlers (those that return true for {@link #ownsURI(IOPath)}),
      * should always return 0 from this method when it is called.

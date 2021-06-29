@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoder;
-import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingStream;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
@@ -38,13 +38,13 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     }
 
     @Override
-    public boolean canDecodeStreamSignature(final SignatureProbingInputStream rawInputStream, final String sourceName) {
-        int c = rawInputStream.read();
-        if (c == -1) {
+    public boolean canDecodeStreamSignature(final SignatureProbingStream signatureProbingStream, final String sourceName) {
+        int ch = signatureProbingStream.read();
+        if (ch == -1) {
             throw new HtsjdkIOException(
                     String.format("Codec %s failed probing signature for resource %s", this.getDisplayName(), sourceName));
         }
-        return ((char) c) == '>';  // for FASTA, this is all we have to go on...
+        return ((char) ch) == '>';  // for FASTA, this is all we have to go on...
     }
 
     @Override

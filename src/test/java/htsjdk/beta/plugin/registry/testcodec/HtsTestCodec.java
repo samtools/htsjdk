@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsCodecType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingStream;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
@@ -97,7 +97,7 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
+    public boolean canDecodeStreamSignature(final SignatureProbingStream probingInputStream, final String sourceName) {
         ValidationUtils.nonNull(probingInputStream);
         ValidationUtils.nonNull(sourceName);
 

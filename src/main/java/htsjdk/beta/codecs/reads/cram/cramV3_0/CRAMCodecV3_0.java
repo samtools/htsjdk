@@ -4,7 +4,7 @@ import htsjdk.beta.codecs.reads.cram.CRAMCodec;
 import htsjdk.beta.codecs.reads.cram.CRAMDecoder;
 import htsjdk.beta.codecs.reads.cram.CRAMEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingStream;
 import htsjdk.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -33,10 +33,10 @@ public class CRAMCodecV3_0 extends CRAMCodec {
     }
 
     @Override
-    public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
+    public boolean canDecodeStreamSignature(final SignatureProbingStream signatureProbingStream, final String sourceName) {
         try {
             final byte[] signatureBytes = new byte[getSignatureLength()];
-            final int numRead = probingInputStream.read(signatureBytes);
+            final int numRead = signatureProbingStream.read(signatureBytes);
             if (numRead < getSignatureLength()) {
                 throw new HtsjdkIOException(String.format("Failure reading content from stream for %s", sourceName));
             }

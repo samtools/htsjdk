@@ -1,13 +1,16 @@
 package htsjdk.beta.plugin.bundle;
 
-import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.annotation.Inherited;
 import java.util.Optional;
 
 /**
- * An input resource backed by a {@link htsjdk.samtools.seekablestream.SeekableStream}.
+ * A {@link BundleResource} backed by a {@link htsjdk.samtools.seekablestream.SeekableStream}.
  */
 public class SeekableStreamResource extends InputStreamResource {
     private static final long serialVersionUID = 1L;
@@ -38,13 +41,44 @@ public class SeekableStreamResource extends InputStreamResource {
         this.seekableStream = seekableStream;
     }
 
+    /**
+     * @return the seekable stream managed by this resource, without resetting the stream's state
+     */
+    @Override
+    public Optional<InputStream> getInputStream() {
+        // note, this doesn't reset the stream...
+        return Optional.of(seekableStream);
+    }
+
     @Override
     public Optional<SeekableStream> getSeekableStream() { return Optional.of(seekableStream); }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @param signatureProbeLength {@inheritDoc}
+     * @return Obtain a SignatureProbingStream on this resource. Resets the underlying seekable stream.
+     */
     @Override
-    public SignatureProbingInputStream getSignatureProbingStream(final int requestedPrefixSize) {
-        //TODO: is the super class' implementation sufficient ?
-        throw new HtsjdkPluginException("Signature probing not yet implemented for seekable stream inputs");
+    public SignatureProbingStream getSignatureProbingStream(final int signatureProbeLength) {
+        //we don't want to call the super class' implementation here
+        final byte[] signaturePrefix = new byte[signatureProbeLength];
+        try {
+            // for a SeekableStreamResource, we don't want this code to close the actual SeekableStream that
+            // was provided by the caller, so don't use try-with-resources, just seek, read, and reset,
+            // so that when the actual stream is subsequently consumed, it will be consumed from the beginning
+            seekableStream.seek(0);
+            seekableStream.read(signaturePrefix);
+            // reset the buffered input stream so the next consumer sees the beginning of the stream
+            seekableStream.seek(0);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(
+                    String.format("Error creating signature probing for seekable stream resource with prefix size %d",
+                            signatureProbeLength),
+                    e);
+        }
+        return new SignatureProbingStream(signatureProbeLength, signaturePrefix);
+
     }
 
     @Override

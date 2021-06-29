@@ -5,7 +5,7 @@ import htsjdk.beta.plugin.HtsFormat;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
-import htsjdk.beta.plugin.bundle.SignatureProbingInputStream;
+import htsjdk.beta.plugin.bundle.SignatureProbingStream;
 import htsjdk.exception.HtsjdkException;
 import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
@@ -117,7 +117,7 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
      *                          {@link HtsCodec#canDecodeURI(IOPath)}
      *                      <li>
      *                          The candidate list is then further reduced to only those codecs that return
-     *                          true from {@link HtsCodec#canDecodeStreamSignature(SignatureProbingInputStream, String)}
+     *                          true from {@link HtsCodec#canDecodeStreamSignature(SignatureProbingStream, String)}
      *                      </li>
      *                  </ol>
      *           </li>
@@ -127,7 +127,7 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
      *      <ol>
      *          <li>
      *              The candidate list is reduced to those codecs that return true from
-     *              {@link HtsCodec#canDecodeStreamSignature(SignatureProbingInputStream, String)}
+     *              {@link HtsCodec#canDecodeStreamSignature(SignatureProbingStream, String)}
      *          </li>
      *     </ol>
      * <p>
@@ -136,7 +136,7 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
      *     after codec resolution. This usually indicates that the registry contains an ill-behaved codec
      *     implementation.
      * <p>
-     *     Note: {@link HtsCodec#canDecodeStreamSignature(SignatureProbingInputStream, String)} will never be
+     *     Note: {@link HtsCodec#canDecodeStreamSignature(SignatureProbingStream, String)} will never be
      *     called by the framework on a resource if any codec returns true from {@link HtsCodec#ownsURI} for
      *     that resource.
      * </p>
@@ -158,7 +158,8 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
                 resolveForDecodingIOPath(bundleResource, candidatesCodecs) :
                 resolveForDecodingStream(bundleResource, candidatesCodecs);
 
-        return getOneOrThrow(resolvedCodecs,
+        return getOneOrThrow(
+                resolvedCodecs,
                 () -> String.format("%s/%s",
                         optFormat.isPresent () ? optFormat.get() : "(NONE)",
                         bundleResource));
@@ -212,7 +213,8 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
                 candidateCodecs; // there isn't anything else to probe when the output is to a stream
         final List<C> resolvedCodecs = filterByVersion(filteredCodecs, htsVersion);
 
-        return getOneOrThrow(resolvedCodecs,
+        return getOneOrThrow(
+                resolvedCodecs,
                 () ->  String.format("%s/%s",
                         optFormat.isPresent () ? optFormat.get() : "(NONE)",
                         bundleResource));
@@ -254,20 +256,82 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
      */
     public List<C> getCodecs() {
         // flatten out the codecs into a single list
-        final List<C> cList = codecs
+        final List<C> codecList = codecs
                 .values()
                 .stream()
-                .flatMap(m -> m.values().stream())
+                .flatMap(map -> map.values().stream())
                 .collect(Collectors.toList());
-        return cList;
+        return codecList;
     }
 
-    @SuppressWarnings("rawtypes")
-    private static<T extends HtsCodec<?, ?, ?>> boolean canDecodeIOPathSignature(
-            final T codec,
+    private List<C> resolveForDecodingIOPath(final BundleResource bundleResource, final List<C> candidateCodecs) {
+        ValidationUtils.validateArg(bundleResource.getIOPath().isPresent(), "an IOPath resource is required");
+        final IOPath ioPath = bundleResource.getIOPath().get();
+
+        // if at least one codec claims to own this resource's URI, only return the owners,
+        // otherwise let each codec probe for a signature
+        if (candidateCodecs.size() > 0) {
+            final List<C> uriOwners = getURIOwners(candidateCodecs, ioPath);
+            if (!uriOwners.isEmpty()) {
+                return uriOwners;
+            } else {
+                final int maxSignatureProbeLength = getMaxSignatureProbeLength(candidateCodecs);
+                final SignatureProbingStream probingStream =
+                        getIOPathSignatureProbingStream(bundleResource, maxSignatureProbeLength);
+                return candidateCodecs.stream()
+                        .filter(codec -> codec.canDecodeURI(ioPath))
+                        .filter(codec -> canDecodeInputStreamSignature(
+                                codec,
+                                probingStream, maxSignatureProbeLength,
+                                bundleResource.getDisplayName()
+                        ))
+                        .collect(Collectors.toList());
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private List<C> resolveForDecodingStream(final BundleResource bundleResource, final List<C> candidateCodecs) {
+        final int streamPrefixSize = getMaxSignatureProbeLength(candidateCodecs);
+        final SignatureProbingStream signatureProbingStream =
+                bundleResource.getSignatureProbingStream(streamPrefixSize);
+        return candidateCodecs.stream()
+                .filter(codec -> canDecodeInputStreamSignature(
+                        codec,
+                        signatureProbingStream, streamPrefixSize,
+                        bundleResource.getDisplayName()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    private List<C> resolveForEncodingIOPath(final IOPath ioPath, final List<C> candidateCodecs) {
+        final List<C> uriHandlers = candidateCodecs.stream()
+                .filter((codec) -> codec.ownsURI(ioPath))
+                .collect(Collectors.toList());
+
+        // If at least one codec claimed this resource based on a custom URI, prune the candidates to only
+        // codecs that also claim it, and don't try to call getInputStream on the resource to check the signature.
+        // Instead just let the codecs that claim the URI further process it.
+        final List<C> filteredCodecs = uriHandlers.isEmpty() ? candidateCodecs : uriHandlers;
+
+        // reduce our candidates based on uri and IOPath
+        return filteredCodecs.stream()
+                .filter(c -> c.canDecodeURI(ioPath))
+                .collect(Collectors.toList());
+    }
+
+    private int getMaxSignatureProbeLength(final List<C> candidateCodecs) {
+        // find the longest signature probe length of any candidate
+        return candidateCodecs.stream()
+                .map(codec -> codec.getSignatureProbeLength())
+                .reduce(0, (a, b) -> Integer.max(a, b));
+    }
+
+    private SignatureProbingStream getIOPathSignatureProbingStream(
             final BundleResource bundleResource,
-            final IOPath inputPath,
             final int streamPrefixSize) {
+        ValidationUtils.validateArg(bundleResource.getIOPath().isPresent(), "an IOPath resource is required");
+        final IOPath inputPath = bundleResource.getIOPath().get();
         if (!inputPath.hasFileSystemProvider()) {
             // We're about to query the input stream to probe for a signature, but there is no
             // installed file system provider for the IOPath's protocol scheme. Attempting to get an
@@ -282,9 +346,18 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
                             bundleResource,
                             inputPath.getURI().getScheme()));
         }
-        return codec.canDecodeStreamSignature(
-                bundleResource.getSignatureProbingStream(streamPrefixSize),
-                inputPath.getRawInputString());
+        return bundleResource.getSignatureProbingStream(streamPrefixSize);
+    }
+
+    private static<T extends HtsCodec<?, ?, ?>> boolean canDecodeInputStreamSignature(
+            final T codec,
+            final SignatureProbingStream signatureProbingStream,
+            final int signatureProbeLength,
+            final String displayName) {
+        signatureProbingStream.mark(signatureProbeLength);
+        final boolean canDecode = codec.canDecodeStreamSignature(signatureProbingStream, displayName);
+        signatureProbingStream.reset();
+        return canDecode;
     }
 
     private List<C> filterByVersion(final List<C> candidateCodecs, final HtsVersion htsVersion) {
@@ -318,12 +391,9 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
         return candidateCodecs;
     }
 
-    private List<C> resolveForDecodingIOPath(final BundleResource bundleResource, final List<C> candidateCodecs) {
-        ValidationUtils.validateArg(bundleResource.getIOPath().isPresent(), "an IOPath resource is required");
-        final IOPath ioPath = bundleResource.getIOPath().get();
-
+    private List<C> getURIOwners(final List<C> candidateCodecs, final IOPath ioPath) {
         final List<C> uriHandlers = candidateCodecs.stream()
-                .filter((c) -> c.ownsURI(ioPath))
+                .filter((codec) -> codec.ownsURI(ioPath))
                 .collect(Collectors.toList());
         final boolean isCustomURI = !uriHandlers.isEmpty();
 
@@ -331,68 +401,15 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
             // ensure that all codecs that claim to own this URI honor the contract that says if canDecodeURI
             // returns true, ownsURI must also return true for the same IOPath
             uriHandlers.stream().forEach(
-                    c -> {
-                        if (!c.canDecodeURI(ioPath)) {
+                    codec -> {
+                        if (!codec.canDecodeURI(ioPath)) {
                             throw new HtsjdkPluginException(
-                                    String.format("The %s codec returned true for ownsURI but false for canDecodeURI for: %s",
-                                            c,
+                                    String.format("The %s codec returned true for ownsURI but false for canDecodeURI for path: %s",
+                                            codec,
                                             ioPath.getURI()));
                         }});
-            // If at least one codec claims to own this resource's URI, prune the candidates down to only those
-            // that make the same claim, and short circuit any attempts to get a stream on this URI since
-            // (such as signature probing) since its possible that there is no NIO provider installed for this
-            // URI, and attempts to get a stream will throw. There should never be more than one codec that claims
-            // ownership of a given URI, but return them all here, and let the caller report any ambiguity.
-            return uriHandlers;
-        } else {
-            // get the largest signature probing stream size across all the remaining candidate codecs,
-            // and let the codecs probe the stream for a signature
-            final int signatureProbeStreamSize = getSignatureProbeStreamSize(candidateCodecs);
-            return candidateCodecs.stream()
-                    .filter(c -> c.canDecodeURI(ioPath))
-                    .filter(c -> canDecodeIOPathSignature(c, bundleResource, ioPath, signatureProbeStreamSize))
-                    .collect(Collectors.toList());
         }
-    }
-
-    private List<C> resolveForDecodingStream(final BundleResource bundleResource, final List<C> candidateCodecs) {
-        if (bundleResource.hasSeekableStream()) {
-            // stream is already seekable so no need to wrap it
-            throw new HtsjdkPluginException("SeekableStreamResource input resolution is not yet implemented");
-        } else {
-            final int streamPrefixSize = getSignatureProbeStreamSize(candidateCodecs);
-            final SignatureProbingInputStream signatureProbingStream =
-                    bundleResource.getSignatureProbingStream(streamPrefixSize);
-            return candidateCodecs.stream()
-                    .filter(c -> canDecodeInputStreamSignature(
-                            c,
-                            streamPrefixSize,
-                            bundleResource.getDisplayName(),
-                            signatureProbingStream))
-                    .collect(Collectors.toList());
-        }
-    }
-
-    private List<C> resolveForEncodingIOPath(final IOPath ioPath, final List<C> candidateCodecs) {
-        final List<C> uriHandlers = candidateCodecs.stream()
-                .filter((c) -> c.ownsURI(ioPath))
-                .collect(Collectors.toList());
-
-        // If at least one codec claimed this resource based on a custom URI, prune the candidates to only
-        // codecs that also claim it, and don't try to call getInputStream on the resource to check the signature.
-        // Instead just let the codecs that claim the URI further process it.
-        final List<C> filteredCodecs = uriHandlers.isEmpty() ? candidateCodecs : uriHandlers;
-
-        // reduce our candidates based on uri and IOPath
-        return filteredCodecs.stream()
-                .filter(c -> c.canDecodeURI(ioPath))
-                .collect(Collectors.toList());
-    }
-
-    private int getSignatureProbeStreamSize(final List<C> candidateCodecs) {
-        return candidateCodecs.stream()
-                .map(c -> c.getSignatureProbeLength())
-                .reduce(0, (a, b) -> Integer.max(a, b));
+        return uriHandlers;
     }
 
     private final BundleResource getPrimaryResource(final Bundle bundle, final boolean forEncoding) {
@@ -436,18 +453,6 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
                             requiredContentType));
         }
         return optFormat;
-    }
-
-    @SuppressWarnings("rawtypes")
-    private static<T extends HtsCodec<?, ?, ?>> boolean canDecodeInputStreamSignature(
-            final T codec,
-            final int streamPrefixSize,
-            final String displayName,
-            final SignatureProbingInputStream signatureProbingInputStream) {
-        signatureProbingInputStream.mark(streamPrefixSize);
-        final boolean canDecode = codec.canDecodeStreamSignature(signatureProbingInputStream, displayName);
-        signatureProbingInputStream.reset();
-        return canDecode;
     }
 
     //VisibleForTesting

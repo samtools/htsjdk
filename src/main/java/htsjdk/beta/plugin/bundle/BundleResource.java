@@ -33,7 +33,11 @@ public interface BundleResource {
 
     /**
      * @return an {@link InputStream} for this resource, or Optional.empty if {@link
-     * BundleResource#isInput()} is false for this resource
+     * BundleResource#isInput()} is false for this resource.
+     *
+     * The stream returned by this method may use a read-ahead/buffering layer over the underlying
+     * resource, which may not be suitable for some applications that need absolute control over the
+     * offsets of the underlying stream, such as index creation.
      */
     Optional<InputStream> getInputStream();
 
@@ -49,27 +53,30 @@ public interface BundleResource {
     boolean hasSeekableStream();
 
     /**
-     * @return a {@link SignatureProbingInputStream} stream over the first {@code signatureProbeLength} bytes of this
-     * resource that can be used to support signature probing.
+     * @return a {@link SignatureProbingStream} over the first {@code signatureProbeLength} bytes of this
+     * resource, for use with signature probing for codec resolution.
      *
-     * Once this method is called on a {@link BundleResource} object using a given {@code signatureProbeLength},
-     * subsequent calls to the method on the same object must use the same {@code signatureProbeLength} or smaller.
+     * Note that this method requires access to the first {@code signatureProbeLength} bytes of the underlying
+     * resource. {@link BundleResource} implementations that are backed by raw streams that can only be consumed
+     * once, such as {@link InputStreamResource}, may consume and buffer a portion of the underlying resource's
+     * stream in order to allow subsequent callers of the {@link #getInputStream()}) method to be presented with
+     * the entire stream, including the signature. Calls to this method may the have the side effect of changing
+     * or resetting the current position of the underlying stream; serial calls to
+     * {@link #getSignatureProbingStream} on the same object are not necessarily idempotent; and implementations
+     * are free to throw to prevent serial calls to this method.
      *
-     * Note that for resources for which the underlying stream cannot be reconstructed once it is consumed,
-     * this method must be called before any of the underlying stream has been consumed.
+     * @param signatureProbeLength the number of bytes of the underlying resource to include in the probing stream.
+     *                             {@code signatureProbeLength} should be expressed in "compressed(/encrypted)" space
+     *                             rather than "plaintext" space. For example, a file format signature may consist
+     *                             of {@code n} bytes of ASCII, but for formats that use compressed streams,
+     *                             the codec may need access to an entire compressed block in order to inspect
+     *                             those {@code n} bytes. {@code signatureProbeLength} should use the compressed
+     *                             block size, in order to ensure that the signature probing stream contains a
+     *                             semantically meaningful fragment of the underlying input.
      *
-     * @param signatureProbeLength signatureProbeLength should be expressed in "compressed(/encrypted)" space
-     *                            rather than "plaintext" space. For example, a file format signature may consist
-     *                            of {@code n} bytes of ASCII, but the if the file format uses compressed streams,
-     *                            the codec may need access to an entire compressed block in order to inspect
-     *                            those {@code n} bytes. signatureProbeLength should be specified based on the
-     *                            compressed block size, in order to ensure that the signature probing stream
-     *                            contains a semantically meaningful fragment of the underlying input.
-     *
-     * @throws IllegalArgumentException if this method has previously been called on this object with a smaller
-     * prefixSize.
+     * @throws IllegalArgumentException if this method has previously been called on this resource
      */
-    SignatureProbingInputStream getSignatureProbingStream(final int signatureProbeLength);
+    SignatureProbingStream getSignatureProbingStream(final int signatureProbeLength);
 
     /**
      * @return an {@link SeekableStream} for this resource, or Optional.empty if this is
