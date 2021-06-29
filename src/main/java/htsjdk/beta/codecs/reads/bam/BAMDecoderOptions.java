@@ -31,7 +31,7 @@ public class BAMDecoderOptions {
         return this;
     }
 
-    public boolean getIncludeSourceInRecords() {
+    public boolean isIncludeSourceInRecords() {
         return includeSourceInRecords;
     }
 

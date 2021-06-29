@@ -13,7 +13,6 @@ import java.util.function.Function;
 //TODO:
 // not carried forward from SamReaderFactory:
 //  SAMRecordFactory (doesn't appear to ever ACTUALLY be used in htsjdk or gatk)
-// use is* prefix for boolean getters ?
 // finish cloud wrapper implementation
 
 /**
@@ -41,7 +40,7 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
         return this;
     }
 
-    public boolean getEagerlyDecode() {
+    public boolean isEagerlyDecode() {
         return eagerlyDecode;
     }
 

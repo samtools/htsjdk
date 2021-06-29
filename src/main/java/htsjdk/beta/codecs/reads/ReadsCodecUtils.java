@@ -90,7 +90,7 @@ final public class ReadsCodecUtils {
             final SamReaderFactory samReaderFactory,
             final ReadsDecoderOptions readsDecoderOptions) {
         samReaderFactory.validationStringency(readsDecoderOptions.getValidationStringency());
-        samReaderFactory.setOption(SamReaderFactory.Option.EAGERLY_DECODE, readsDecoderOptions.getEagerlyDecode());
+        samReaderFactory.setOption(SamReaderFactory.Option.EAGERLY_DECODE, readsDecoderOptions.isEagerlyDecode());
         samReaderFactory.setOption(SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES,
                 readsDecoderOptions.isCacheFileBasedIndexes());
         samReaderFactory.setOption(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX,
@@ -103,7 +103,7 @@ final public class ReadsCodecUtils {
             final BAMDecoderOptions bamDecoderOptions) {
         samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
         samReaderFactory.setOption(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS,
-                bamDecoderOptions.getIncludeSourceInRecords());
+                bamDecoderOptions.isIncludeSourceInRecords());
         samReaderFactory.setUseAsyncIo(bamDecoderOptions.isUseAsyncIO());
         samReaderFactory.setOption(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS,
                 bamDecoderOptions.isValidateCRCChecksums());
