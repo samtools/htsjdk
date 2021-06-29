@@ -2,6 +2,7 @@ package htsjdk.beta.codecs.reads.cram;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import htsjdk.HtsjdkTest;
 import htsjdk.beta.io.IOPathUtils;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
@@ -40,7 +41,7 @@ import java.util.function.Function;
 // testing the 3.0 codec implementation.
 //TODO: when the CRAM 2.1 plugin codec is implemented, this file should be cloned, and
 // the commented out tests (which are all 2.1) can be reenabled.
-public class HtsCRAMCodec30QueryTest {
+public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
     private static final IOPath TEST_DATA_DIR = new HtsPath("src/test/resources/htsjdk/samtools/cram/");
 
     //TODO: this requires a CRAM 2.1 HtsCodec which is not yet implemented
