@@ -49,26 +49,27 @@ public interface BundleResource {
     boolean hasSeekableStream();
 
     /**
-     * @return a {@link SignatureProbingInputStream} stream over the first "prefixSize" bytes of this
-     * resource to support signature probing.
+     * @return a {@link SignatureProbingInputStream} stream over the first {@code signatureProbeLength} bytes of this
+     * resource that can be used to support signature probing.
      *
-     * Once this method is called on a {@link BundleResource} object using a given {@code prefixSize},
-     * subsequent calls to the method on the same object must use the same {@code prefixSize} or smaller.
+     * Once this method is called on a {@link BundleResource} object using a given {@code signatureProbeLength},
+     * subsequent calls to the method on the same object must use the same {@code signatureProbeLength} or smaller.
      *
-     * Note that resources for which the underlying stream cannot be reconstructed, this method must be
-     * called before any of the underlying stream has been consumed.
+     * Note that for resources for which the underlying stream cannot be reconstructed once it is consumed,
+     * this method must be called before any of the underlying stream has been consumed.
      *
-     * @param prefixSize prefixSize should be expressed in "compressed(/encrypted)" space rather than "plaintext"
-     *                  space. For example, a raw signature may be 4 bytes of decompressed ASCII, but the codec may
-     *                  need to consume an entire encrypted GZIP block in order to inspect those n bytes.
-     *                  signaturePrefixSize should be specified based on the compressed block size, in order to ensure
-     *                  that the signature probing stream contains a semantically meaningful fragment of the underlying
-     *                  input.
+     * @param signatureProbeLength signatureProbeLength should be expressed in "compressed(/encrypted)" space
+     *                            rather than "plaintext" space. For example, a file format signature may consist
+     *                            of {@code n} bytes of ASCII, but the if the file format uses compressed streams,
+     *                            the codec may need access to an entire compressed block in order to inspect
+     *                            those {@code n} bytes. signatureProbeLength should be specified based on the
+     *                            compressed block size, in order to ensure that the signature probing stream
+     *                            contains a semantically meaningful fragment of the underlying input.
      *
      * @throws IllegalArgumentException if this method has previously been called on this object with a smaller
      * prefixSize.
      */
-    SignatureProbingInputStream getSignatureProbingStream(final int prefixSize);
+    SignatureProbingInputStream getSignatureProbingStream(final int signatureProbeLength);
 
     /**
      * @return an {@link SeekableStream} for this resource, or Optional.empty if this is

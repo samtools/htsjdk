@@ -8,24 +8,29 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * Base interface implemented by all {@link htsjdk.beta.plugin} codecs.
  * <H3>Codecs</H3>
  * <p>
- *     Each version of a file format supported by the HTSJDK {@link htsjdk.beta.plugin} framework is
- *     represented by three separate components:
+ *     Each version of a file format supported by the {@link htsjdk.beta.plugin} framework is
+ *     represented by a trio of related components:
  * <ul>
- *     <li>a codec class that implements {@link HtsCodec}</li>
- *     <li>an encoder class that implements {@link HtsEncoder}</li>
- *     <li>a decoder class that implements {@link HtsDecoder}</li>
+ *     <li>a codec that implements {@link HtsCodec}</li>
+ *     <li>an encoder that implements {@link HtsEncoder}</li>
+ *     <li>a decoder that implements {@link HtsDecoder}</li>
  * </ul>
  * <p>
- *     The {@link HtsCodec} classes are discovered dynamically at runtime, and instantiated and registered
- *     in the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}. The objects are lightweight and long-lived,
- *     and are interrogated by the framework to resolve requests for an appropriate {@link HtsEncoder} or
- *     {@link HtsDecoder} that matches a given resource.
+ *     Classes that implement {@link HtsCodec} are either discovered and instantiated and registered dynamically
+ *     at runtime, via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}'s {@link java.util.ServiceLoader}
+ *     code, or are manually registered via the
+ *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)} method.
+ *     {@link HtsCodec} objects are lightweight and long-lived, and are used by the framework
+ *     to resolve requests for an {@link HtsEncoder} or {@link HtsDecoder} that matches a given resource.
+ *     <p>
+ *     The primary responsibility of an {@link HtsCodec} is to provide method implementations that are
+ *     used by the framework to satisfy such requests, and to instantiate and return an appropriate
+ *     {@link HtsEncoder} or {@link HtsDecoder} on demand from the framework once a match is found.
  * <p>
- *     The main responsibility of an {@link HtsCodec is to satisfy these requests by the framework, and to
- *     instantiate and return an appropriate {@link HtsEncoder} or {@link HtsDecoder} on request from the
- *     framework once it finds a match.
+ * <H3>Codec Types</H3>
+ *     The plugin framework supports four different types of codec/encoder/decoder trios, enumerated
+ *     by the values in {@link HtsCodecType}:
  * <p>
- *     There are four different types of codecs, enumerated by the values in {@link HtsCodecType}:
  * <ul>
  *     <li> {@link HtsCodecType#ALIGNED_READS} </li>
  *     <li> {@link HtsCodecType#HAPLOID_REFERENCE} </li>
@@ -33,44 +38,53 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link HtsCodecType#FEATURES} </li>
  * </ul>
  * <p>
- *     Each codec type has a corresponding set of interfaces that are specific to that type that
- *     are derived from common interfaces defined by the plugin framework. These interfaces must
- *     be implemented by either the codec itself, or by the codec's decoder or encoder components.
- *     Each implementation of a given codec type exposes the same interfaces, but over a different
- *     combination of file format and version.
+ *     Each of these codec types has a corresponding set of type-specific codec/decoder/encoder interfaces.
+ *     These interfaces extend common generic interfaces defined by the plugin framework, and
+ *     provide type instantiations for the base interfaces that are appropriate for that codec
+ *     type (see for example, {@link htsjdk.beta.plugin.reads.ReadsCodec} or
+ *     {@link htsjdk.beta.plugin.reads.ReadsDecoder}). Each implementation of a given codec type
+ *     exposes the same interfaces, with the same type instantiations, but over a different combination of
+ *     file format/version.
  * <p>
- * The base interfaces that are common to all HtsCodecs, from which the type-specific interfaces derive are:
+ * The generic base interfaces that are common to all codecs encoders and decoders are:
  * <ul>
- *     <li> {@link HtsCodec}: the base codec </li>
- *     <li> {@link HtsEncoder}: the encoder interface for this codec type </li>
- *     <li> {@link HtsEncoderOptions}: encoder options specific to the codec's type </li>
- *     <li> {@link HtsDecoder}: decoder options specific to the codec's type </li>
- *     <li> {@link HtsDecoderOptions}: decoder options specific to the codec's type </li>
+ *     <li> {@link HtsCodec}: base codec interface </li>
+ *     <li> {@link HtsEncoder}: base encoder interface </li>
+ *     <li> {@link HtsEncoderOptions}: base options interface for encoders </li>
+ *     <li> {@link HtsDecoder}: base decoder interface </li>
+ *     <li> {@link HtsDecoderOptions}: base options interface for decoders </li>
  *     <li> {@link java.lang.Enum}: an enum with values for each supported file format for that type </li>
- *     <li> (optional) {@link htsjdk.beta.plugin.bundle.Bundle}: a type-specific
- *     {@link htsjdk.beta.plugin.bundle.Bundle} for that codec type </li>
+ *     <li> {@link htsjdk.beta.plugin.bundle.Bundle}: a optional type-specific
+ *     {@link htsjdk.beta.plugin.bundle.Bundle} implementation </li>
  * </ul>
  * <p>
- *     As an example, an codec of type {@link HtsCodecType#ALIGNED_READS} implements and consumes the following
- *     specialized interfaces that are derived from the common base interfaces, and defined in the
- *     {@link htsjdk.beta.plugin.reads} package:
- * <ul>
- *     <li> {@link htsjdk.beta.plugin.reads.ReadsCodec}: the base reads codec interface, extends the common interface {@link HtsCodec} </li>
- *     <li> {@link htsjdk.beta.plugin.reads.ReadsEncoder}: reads encoder options, extends the common interface {@link HtsEncoder} </li>
- *     <li> {@link htsjdk.beta.plugin.reads.ReadsEncoderOptions}: reads encoder options, extends the common interface {@link HtsDecoderOptions} </li>
- *     <li> {@link htsjdk.beta.plugin.reads.ReadsDecoder}: reads decoder interface, extends the common interface {@link HtsDecoder} </li>
- *     <li> {@link htsjdk.beta.plugin.reads.ReadsDecoderOptions}: reads decoder options, extends the common interface {@link HtsDecoderOptions} </li>
- *     <li> {@link htsjdk.beta.plugin.reads.ReadsFormat}: an enum with values for each possible
- *     supported reads file format </li>
- * </ul>
+ *     The packages containing the definitions of the type-specific interfaces that correspond to
+ *     the four different codec types are:
  * <p>
- *     The packages containing the definitions of the common interfaces that are defined for each of the four
- *     different codec types are:
  * <ul>
  *     <li> For {@link HtsCodecType#ALIGNED_READS} codecs, see the {@link htsjdk.beta.plugin.reads} package </li>
  *     <li> For {@link HtsCodecType#HAPLOID_REFERENCE} codecs, see the {@link htsjdk.beta.plugin.hapref} package </li>
  *     <li> For {@link HtsCodecType#VARIANT_CONTEXTS} codecs, see the {@link htsjdk.beta.plugin.variants} package </li>
  *     <li> For {@link HtsCodecType#FEATURES} codecs, see the {@link htsjdk.beta.plugin.features} package </li>
+ * </ul>
+ * <p>
+ * <H3>Example Codec Type: Reads Codecs</H3>
+ * <p>
+ *     As an example, the {@link htsjdk.beta.plugin.reads} package defines the following interfaces
+ *     that extend the common base interfaces for codecs with type {@link HtsCodecType#ALIGNED_READS}:
+ * <ul>
+ *     <li> {@link htsjdk.beta.plugin.reads.ReadsCodec}: reads codec interface, extends the generic
+ *     {@link HtsCodec} interface </li>
+ *     <li> {@link htsjdk.beta.plugin.reads.ReadsEncoder}: reads encoder, extends the generic
+ *     {@link HtsEncoder} interface </li>
+ *     <li> {@link htsjdk.beta.plugin.reads.ReadsEncoderOptions}: reads encoder options, extends the generic
+ *     {@link HtsDecoderOptions} interface </li>
+ *     <li> {@link htsjdk.beta.plugin.reads.ReadsDecoder}: reads decoder interface, extends the generic
+ *     {@link HtsDecoder} interface </li>
+ *     <li> {@link htsjdk.beta.plugin.reads.ReadsDecoderOptions}: reads decoder options, extends the generic
+ *     {@link HtsDecoderOptions} interface </li>
+ *     <li> {@link htsjdk.beta.plugin.reads.ReadsFormat}: an enum with values for each possible
+ *     supported reads file format </li>
  * </ul>
  * <H3>Codec Resolution Protocol</H3>
  * <p>
@@ -99,7 +113,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <p>
  *     Most file formats reside in a single file that resides on a file system that is backed by a
  *     {@link java.nio} file system provider. Codecs that support such formats are generally agnostic
- *     about the IOPath protocol scheme used to identify their resources, and assume that file contents
+ *     about the IOPath/URI protocol scheme used to identify their resources, and assume that file contents
  *     can be accessed directly via a single stream created via a {@link java.nio} file system provider.
  * <p>
  *     However some file formats are based around a specific, well known URI format or protocol scheme, often
@@ -117,11 +131,17 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     "http://" protocol. It uses {@code http} to access the underlying resource, and bypasses {@link java.nio}
  *     file system access.
  * <p>
- *     Codecs that use a custom URI format or protocol scheme such as {@code htsget} must:
+ *     Codecs that use a custom URI format or protocol scheme such as {@code htsget} must be able to determine
+ *     if they can decode or encode a resource purely by inspecting the IOPath/URI. Such codes should follow these
+ *     guidelines:
  *     <ul>
- *         <li>recognize a conforming URI the {@link #ownsURI(IOPath)} method, and return true</li>
- *         <li>return 0 from the {@link #getSignatureLength()} method</li>
- *         <li>return 0 from the {@link #getSignatureProbeSize()} method</li>
+ *         <li>return true when {@link #ownsURI(IOPath)} is presented with an IOPath with
+ *         a conforming URI </li>
+ *         <li>return true when {@link #canDecodeURI(IOPath)} is presented with an IOPath
+ *         with a conforming URI </li>
+ *         <li> ensure that for a given IOPath, {@link #ownsURI(IOPath)} == {@link #canDecodeURI(IOPath)}
+ *         <li>always return 0 from the {@link #getSignatureProbeLength()} method</li>
+ *         <li>always return 0 from the {@link #getSignatureLength()} method</li>
  *     </ul>
  * </p>
  * @param <F> an {@link java.lang.Enum} with a value for each file format handled by this codec
@@ -169,64 +189,66 @@ public interface HtsCodec<
     }
 
     /**
-     * Returning true from this method indicates that the resource URI contains a URI that this
-     * codec "owns", and that the input resource should not be handed to any protocol-agnostic codecs because
-     * the resource maya require use of a custom, non-NIO access mechanism.
-     *
-     * A codec "owns" the URI only if it explicitly recognizes and handles the protocol scheme
-     * in the <code>resource</code> URI, and recognizes the rest of the URI as being well-formed for that protocol
+     * Returning true from this method indicates that this codec "owns" the URI contained in
+     * {@code ioPath} (see {@link IOPath#getURI()}).
+     * A codec "owns" the URI only if it explicitly recognizes and handles the protocol scheme in the
+     * URI, or recognizes the rest of the URI as being well-formed for this file format
      * (including, for example, the file extension if appropriate, and any query parameters).
      * <p>
-     * Returning true from this method will short-circuit the stream-oriented signature probing that is used
-     * by the framework to resolve inputs to a codec handler. During codec resolution, if any
-     * registered codec returns true for this method on this URI, the signature probing protocol will:
+     * Returning true from this method will cause the framework to bypass the stream-oriented signature
+     * probing that is used to resolve inputs to a codec handler. During codec resolution, if any registered
+     * codec returns true for this method on {@code ioPath}, the signature probing protocol will instead:
      * <ol>
-     *  <li> immediately prune the list of candidate codecs to only those that return true for this method </li>
-     *  <li> not attempt to obtain an "InputStream" on the IOPath, on the assumption that custom protocol
-     *  handlers must perform special handling to access the underlying scheme (i.e., htsget codec would
-     *  claim an "http://" uri if the rest of the URI conforms to the expected format for that codec's
-     *  protocol). </li>
+     *  <li> immediately prune the list of candidate codecs to only those that return true for this method
+     *  on {@code ioPath}</li>
+     *  <li> not attempt to obtain an InputStream on the IOPath containing the URI, on the assumption that
+     *  special handling is required in order to access the underlying resource (i.e., htsget
+     *  codec would claim an "http://" URI if the rest of the URI conforms to the expected format for that
+     *  codec's protocol). </li>
      * </ol>
      * <p>
-     * Any codec that returns true for a given IOPath must also return true from {@link #canDecodeURI}
-     * when given the same IOPath.
+     * Any codec that returns true from {@link #ownsURI(IOPath)} for a given IOPath must also return true
+     * from {@link #canDecodeURI(IOPath)} for the same IOPath.
      *
-     * @param resource the resource to inspect
-     * @return true if the URI represents a custom URI that this codec handles
+     * @param ioPath the ioPath to inspect
+     * @return true if the iopaht's URI represents a custom URI that this codec handles
      */
-    default boolean ownsURI(final IOPath resource) { return false; }
+    default boolean ownsURI(final IOPath ioPath) { return false; }
 
     /**
-     * Return true if the URI in <code>resource</code> appears to conform to the expected URI for this codec.
-     * Most implementations only look at the file extension. If the file format implemented by this codec does not
-     * use a specific file extension, it is safe to return true, in which case the framework will make a subsequent
-     * call to this codec's {@link #canDecodeStreamSignature} method, during which the codec can do a more detailed
-     * inspection of the stream signature.
+     * Return true if the URI for <code>ioPath</code> (obtained via {@link IOPath#getURI()} appears to
+     * conform to the expected URI
+     * for format this codec's file format. Most implementations only look at the file extension
+     * {@see htsjdk.io.IOPath#hasExtension}. If the file format implemented by this codec does not use a
+     * specific file extension, or if the codec cannot determine if it can decode the underlying resource
+     * without inspecting the underlying stream, it is safe to return true. In that case the framework will
+     * make a subsequent call to this codec's {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)}
+     * method, during which time the codec can do a more detailed inspection of the
+     * {@link SignatureProbingInputStream}.
      * <p>
-     * Implementations should generally not inspect the protocol scheme unless the file format supported by the
-     * codec uses a specific protocol scheme, in which case it should also return true for the same <code>resource</code>
-     * when {@link #ownsURI} is called.
+     * Implementations should generally not inspect the URI's protocol scheme unless the file format
+     * supported by the codec requires the use a specific protocol scheme. For codecs that do own
+     * a specific scheme or URI format, any codec that returns true from {@link #ownsURI(IOPath)} for a given
+     * IOPath must also return true from {@link #canDecodeURI(IOPath)} for the same IOPath.
      * <p>
-     * It is not save to inspect the underlying stream for <code>resource</code> directly in this method. If the
-     * stream needs to be inspected, it should be done in the {@link #canDecodeStreamSignature} method.
+     * It is never save to attempt to directly inspect the underlying stream for <code>ioPath</code> in
+     * this method. If the stream needs to be inspected, it should be done when the
+     * {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)} method is called.
      *
-     * @param resource to be decoded
-     * @return true if the codec can provide a decoder to provide this URL
+     * @param ioPath to be decoded
+     * @return true if the codec can provide a decoder to provide this URI
      */
-    boolean canDecodeURI(final IOPath resource);
+    boolean canDecodeURI(final IOPath ioPath);
 
     /**
      * Determine if codec can decode the input stream by inspecting any signature embedded
-     * within the stream. The probingInputStream stream contains only the first bytes f the actual input
-     * stream. Specifically, it is guaranteed to contain the lesser of:
+     * within the stream. The probingInputStream stream will contain only the leading fragment
+     * of the actual input stream, the size of which will be the lesser of:
      * <p>
      * <ol>
-     *     <li> the number of bytes {@link #getSignatureProbeSize} returns for this codec or </li>
-     *     <li> the entire input stream </li>
+     *     <li> the number of bytes returned by {@link #getSignatureProbeLength} </li>
+     *     <li> the entire input stream, for streams that are smaller than {@link #getSignatureProbeLength}  </li>
      * </ol>
-     * <p>
-     * It is permissible to consume as much of the stream as necessary in order to determine the
-     * return value, and also to close the stream before returning control.
      * <p>
      * Note: Codecs that are custom URI handlers (those that return true for {@link #ownsURI}), should
      * always return false from this method.
@@ -253,28 +275,25 @@ public interface HtsCodec<
     int getSignatureLength();
 
     /**
-     * The number of bytes of input required by this codec to determine if it can supply an decoder for the stream.
+     * The number of bytes of needed by this codec to probe an input stream for a format/version signature
+     * and determine if it can supply an decoder for the stream.
      *
      * @return the number of bytes this codec must consume from a stream in order to determine whether
-     * it can decode that stream. This number may differ from the size of the actual signature size
-     * as returned by {@link #getSignatureLength()} for compressed or encrypted streams, since they may
-     * require a larger and more semantically meaningful input fragment (such as an entire encrypted or
-     * compressed block) in order to inspect the plaintext signature.
+     * it can decode that stream. This number may differ from the actual signature size
+     * as returned by {@link #getSignatureLength()} for codecs that support compressed or encrypted
+     * streams, since they may require a larger and more semantically meaningful input fragment
+     * (such as an entire encrypted or compressed block) in order to inspect the plaintext signature.
      * <p>
-     * Note that  signatureProbeSize should be expressed in "compressed/encrypted" space rather than
-     * "plaintext" space. For example, a raw signature may be {@code N} bytes of raw ASCII, but the codec
-     * may need to consume an entire encrypted GZIP block in order to inspect those {@code N} bytes, so the
-     * signaturePrefixSize should be specified based on the compressed block size.
-     *
-     * The size returned from this method is used by the framework to construct the
+     * Therefore signatureProbeSize should be expressed in "compressed/encrypted" space rather than
+     * "plaintext" space. The length returned from this method is used to determine the size of the
      * {@link SignatureProbingInputStream} that is subsequently passed to
      * {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)}.
      * <p>
-     * Note: Codecs that are custom URI handlers (those that return true for {@link #ownsURI}), should
-     * always return 0 from this method.
+     * Note: Codecs that are custom URI handlers (those that return true for {@link #ownsURI(IOPath)}),
+     * should always return 0 from this method when it is called.
      * </p>
      */
-    default int getSignatureProbeSize() { return getSignatureLength(); }
+    default int getSignatureProbeLength() { return getSignatureLength(); }
 
     /**
      * Return an {@link HtsDecoder}-derived object that can decode the provided inputs

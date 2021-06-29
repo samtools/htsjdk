@@ -28,7 +28,7 @@ public class BAMCodecV1_0 extends BAMCodec {
     }
 
     @Override
-    public int getSignatureProbeSize() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
+    public int getSignatureProbeLength() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
 
     @Override
     public int getSignatureLength() {

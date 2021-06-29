@@ -81,7 +81,7 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public int getSignatureProbeSize() { return 64 * 1024; }
+    public int getSignatureProbeLength() { return 64 * 1024; }
 
     @Override
     public int getSignatureLength() {

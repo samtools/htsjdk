@@ -91,10 +91,10 @@ public final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, 
     /**
      * Inspect a bundle and find a codec that can decode the primary resource.
      * <p>
-     *     To resolve a bundle to a codec, the bundle is inspected to determine whether the primary
-     *     resource contains an IOPath or a stream. The list of candidate codecs starts with all codecs for
-     *     this resolver's type (determined by the requiredContent type used to instantiate the resolver),
-     *     and is reduced as follows:
+     *     A list of candidate codecs that starts with all codecs for this resolver's type (determined
+     *     by the requiredContent type that was used to instantiate the resolver),
+     *     and is reduced as followsTo resolve a bundle to a codec, the bundle is inspected to determine whether the primary
+     *     resource contains an IOPath or a stream. :
      * <p>
      *     If the primary resource is an IOPath:
      *     <ol>
@@ -388,7 +388,7 @@ public final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, 
 
     private int getSignatureProbeStreamSize(final List<C> candidateCodecs) {
         return candidateCodecs.stream()
-                .map(c -> c.getSignatureProbeSize())
+                .map(c -> c.getSignatureProbeLength())
                 .reduce(0, (a, b) -> Integer.max(a, b));
     }
 

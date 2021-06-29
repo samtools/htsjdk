@@ -31,7 +31,7 @@ public class VCFCodecV4_2 extends VCFCodec {
     }
 
     @Override
-    public int getSignatureProbeSize() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
+    public int getSignatureProbeLength() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
 
     @Override
     public boolean canDecodeStreamSignature(final SignatureProbingInputStream probingInputStream, final String sourceName) {
