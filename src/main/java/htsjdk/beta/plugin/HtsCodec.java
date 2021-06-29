@@ -191,8 +191,8 @@ public interface HtsCodec<
      * Returning true from this method indicates that this codec "owns" the URI contained in
      * {@code ioPath} ({@see IOPath#getURI()}).
      * A codec "owns" the URI only if it explicitly recognizes and handles the protocol scheme in the
-     * URI, or recognizes the rest of the URI as being well-formed for this file format
-     * (including, for example, the file extension if appropriate, and any query parameters).
+     * URI, or recognizes the rest of the URI as being well-formed for the codec's file format
+     * (including the file extension if appropriate, and any query parameters).
      * <p>
      * Returning true from this method will cause the framework to bypass the stream-oriented signature
      * probing that is used to resolve inputs to a codec handler. During codec resolution, if any registered
@@ -209,6 +209,10 @@ public interface HtsCodec<
      * Any codec that returns true from {@link #ownsURI(IOPath)} for a given IOPath must also return true
      * from {@link #canDecodeURI(IOPath)} for the same IOPath.
      *
+     * For custom URI handlers, codecs should avoid making remote calls to determine the suitability
+     * of the input resource; the return value for this method should be based only on the format
+     * of the URI that is presented.
+     *
      * @param ioPath the ioPath to inspect
      * @return true if the ioPath's URI represents a custom URI that this codec handles
      */
@@ -217,21 +221,26 @@ public interface HtsCodec<
     /**
      * Return true if the URI for <code>ioPath</code> (obtained via {@link IOPath#getURI()} appears to
      * conform to the expected URI format this codec's file format. Most implementations only look at
-     * the file extension {@see htsjdk.io.IOPath#hasExtension}. If the file format implemented by this
-     * codec does not use a specific file extension, or if the codec cannot determine if it can decode
-     * the underlying resource without inspecting the underlying stream, it is safe to return true. In
-     * that case the framework will make a subsequent call to this codec's
+     * the file extension {@see htsjdk.io.IOPath#hasExtension}. For codecs that implement formats that
+     * use well known, specific file extensions, the codec should reject inputs that do not conform to
+     * any of the expected extensions. If the format does not use a specific extension, or if the codec
+     * cannot determine if it can decode the underlying resource without inspecting the underlying stream,
+     * it is safe to return true, after which the framework will subsequent call this codec's
      * {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)} method, during which time
-     * the codec can do a more detailed inspection of the {@link SignatureProbingInputStream}.
+     * the codec can inspect the actual underlying stream via the {@link SignatureProbingInputStream}.
      * <p>
      * Implementations should generally not inspect the URI's protocol scheme unless the file format
      * supported by the codec requires the use a specific protocol scheme. For codecs that do own
-     * a specific scheme or URI format, any codec that returns true from {@link #ownsURI(IOPath)} for a given
-     * IOPath must also return true from {@link #canDecodeURI(IOPath)} for the same IOPath.
+     * a specific scheme or URI format, any codec that returns true from {@link #ownsURI(IOPath)} for a
+     * given IOPath must also return true from {@link #canDecodeURI(IOPath)} for the same IOPath.
      * <p>
-     * It is never save to attempt to directly inspect the underlying stream for <code>ioPath</code> in
-     * this method. If the stream needs to be inspected, it should be done when the
+     * It is never save to attempt to directly inspect the underlying stream for <code>ioPath</code>
+     * in this method. If the stream needs to be inspected, it should be done when the
      * {@link #canDecodeStreamSignature(SignatureProbingInputStream, String)} method is called.
+     *
+     * For custom URI handlers, codecs should avoid making remote calls to determine the suitability
+     * of the input resource; the return value for this method should be based only on the format
+     * of the URI that is presented.
      *
      * @param ioPath to be decoded
      * @return true if the codec can provide a decoder to provide this URI

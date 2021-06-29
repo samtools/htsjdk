@@ -15,12 +15,19 @@ import htsjdk.exception.HtsjdkPluginException;
 import java.util.*;
 
 //TODO: Master TODO list:
+// - what should a codec do when presented with a URI that uses it’s custom protocol scheme,
+//   but which doesn’t otherwise conform (i.e., query params are missing or malformed ?) throw ? what
+//   if some OTHER codec would accept it because it accepts very similar URIs (i.e, an htsget CRAM codec
+//   accepts .cram extension, - to the Htsget BAM codec that would look close, but malformed? accept it
+//   as is ? log a warning ?
+// - can we store the resource byte array outside of the resources ?
+// - finish content type inference
 // - make registry and resolver threadsafe, instantiable
 // - implement SeekableStream source
 // - finish encoders/options for BAM/CRAM, respect presorted in Reads encoders
 // - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs
 // - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
-// - javadoc/final/PublicAPI/ValidateArgs
+// - javadoc/final/PublicAPI/ValidateArgs - use opt-out for privateAPI
 // - tests
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
 // - prevent the decoders that delegate to SamReaderFactory from attempting to automatically

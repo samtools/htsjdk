@@ -273,11 +273,12 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
             // installed file system provider for the IOPath's protocol scheme. Attempting to get an
             // input stream directly from such an IOPath will fail. If the IOPath was legitimate, we
             // should never get here, since it would have been claimed by one of the installed codec's
-            // "claimURI" implementations. It likely represents user error (a user entered "hdf://"
-            // instead of "hdfs://"), so throw.
+            // "claimURI" implementations, or else it would be a known protocol such as "gs://" for
+            // which the user expected a file system to be present. It likely represents user error
+            // (a user entered "hdf://" instead of "hdfs://"), and it will fail anyway, so throw.
             throw new IllegalArgumentException(
                     String.format("The resource (%s) specifies a custom protocol (%s) " +
-                                    "for which no codec is registered and no NIO file system provider is installed",
+                                    "which no registered codec claims, and for which no NIO file system provider is available",
                             bundleResource,
                             inputPath.getURI().getScheme()));
         }
@@ -327,8 +328,8 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
         final boolean isCustomURI = !uriHandlers.isEmpty();
 
         if (isCustomURI) {
-            // ensure that all codecs that claim to own this URI honor the contract that requires them to also
-            // return true for canDecodeURI for the same IOPath
+            // ensure that all codecs that claim to own this URI honor the contract that says if canDecodeURI
+            // returns true, ownsURI must also return true for the same IOPath
             uriHandlers.stream().forEach(
                     c -> {
                         if (!c.canDecodeURI(ioPath)) {
@@ -348,6 +349,7 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
             // and let the codecs probe the stream for a signature
             final int signatureProbeStreamSize = getSignatureProbeStreamSize(candidateCodecs);
             return candidateCodecs.stream()
+                    .filter(c -> c.canDecodeURI(ioPath))
                     .filter(c -> canDecodeIOPathSignature(c, bundleResource, ioPath, signatureProbeStreamSize))
                     .collect(Collectors.toList());
         }

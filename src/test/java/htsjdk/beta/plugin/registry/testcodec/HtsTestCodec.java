@@ -16,12 +16,15 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Optional;
 
-// NOTE: This codec has configurable parameters that allow the tests to instantiate several variations
-// of codecs for a fictional file format, with different sub content types, versions, protocol schemes,
-// and stream signatures.
+// NOTE: Unlike real codec, this codec has configurable parameters that allow it to impersonate several different
+// kinds fictional file formats and versions for a fictional codec type, supporting various sub content types,
+// versions, protocol schemes, and stream signatures.
 //
 // Its ok for it to be dynamically discovered when running in a test configuration, but it should
 // never be discovered/included at runtime.
+//
+// The stream signature used by this codec is always: format concatenated with version# (for FORMAT_2, version
+// "1.0.0", the embedded signature would be be "FORMAT_21.0.0".
 //
 public class HtsTestCodec implements HtsCodec<
         HtsTestCodecFormat,
@@ -30,10 +33,8 @@ public class HtsTestCodec implements HtsCodec<
 {
     private final HtsVersion htsVersion;
     private final HtsTestCodecFormat htsFormat;
-    private final  String contentSubType;
-    private final  String fileExtension;
-    private final  String streamSignature;
-    private final  String protocolScheme;
+    private final String fileExtension;
+    private final String protocolScheme;
     private final boolean useGzippedInputs;
 
     public HtsTestCodec() {
@@ -41,24 +42,20 @@ public class HtsTestCodec implements HtsCodec<
         // using the other (non-standard) configuration constructor. Since this no-arg constructor
         // is the one that will be called if this codec is instantiated through normal dynamic codec
         // discovery, throw if it ever gets called.
-        throw new HtsjdkPluginException("This codec should never be instantiated using the no-arg constructor");
+        throw new HtsjdkPluginException("The HtsTestCodec codec should never be instantiated using the no-arg constructor");
     }
 
     // used by tests to create a variety of different test codecs that vary by format/version/extensions/protocol
     public HtsTestCodec(
             final HtsTestCodecFormat htsFormat,
             final HtsVersion htsVersion,
-            final String contentSubType,
             final String fileExtension,
-            final String streamSignature,
             final String protocolScheme,
             final boolean useGzippedInputs
     ) {
         this.htsFormat              = htsFormat;
         this.htsVersion             = htsVersion;
-        this.contentSubType         = contentSubType;
         this.fileExtension          = fileExtension;
-        this.streamSignature        = streamSignature;
         this.protocolScheme         = protocolScheme;
         this.useGzippedInputs       = useGzippedInputs;
     }
@@ -85,7 +82,7 @@ public class HtsTestCodec implements HtsCodec<
 
     @Override
     public int getSignatureLength() {
-        return streamSignature.length() + htsVersion.toString().length();
+        return htsFormat.name().length() + htsVersion.toString().length();
     }
 
     @Override
@@ -123,7 +120,7 @@ public class HtsTestCodec implements HtsCodec<
                 if (streamToUse.read(signatureBytes) <= 0) {
                     throw new HtsjdkIOException(String.format("Failure reading content from input stream for %s", sourceName));
                 }
-                return Arrays.equals(signatureBytes, (streamSignature + htsVersion).getBytes());
+                return Arrays.equals(signatureBytes, (htsFormat.name() + htsVersion).getBytes());
             }
         } catch (IOException e) {
             throw new HtsjdkIOException(String.format("Failure reading content from stream for %s", sourceName), e);
