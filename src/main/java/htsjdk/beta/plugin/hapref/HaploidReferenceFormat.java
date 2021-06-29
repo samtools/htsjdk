@@ -1,10 +1,14 @@
 package htsjdk.beta.plugin.hapref;
 
+import htsjdk.beta.plugin.HtsFormat;
 import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;
 
-public enum HaploidReferenceFormat {
+/**
+ * Enum representing the formats supported by haploid reference codecs.
+ */
+public enum HaploidReferenceFormat implements HtsFormat<HaploidReferenceFormat> {
 
     FASTA;
 
@@ -15,7 +19,7 @@ public enum HaploidReferenceFormat {
      * @param contentSubType string content subtype
      * @return enum value from {@link HaploidReferenceFormat} that matches {@code contentSubType}
      */
-    public static Optional<HaploidReferenceFormat> contentSubTypeToFormat(final String contentSubType) {
+    public Optional<HaploidReferenceFormat> contentSubTypeToFormat(final String contentSubType) {
         ValidationUtils.nonNull(contentSubType, "contentSubType");
         for (final HaploidReferenceFormat f : HaploidReferenceFormat.values()) {
             if (f.name().equals(contentSubType)) {

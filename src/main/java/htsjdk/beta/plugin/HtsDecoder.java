@@ -8,17 +8,17 @@ import java.lang.annotation.Inherited;
 /**
  * Base interface for decoders.
  *
- * @param <F> enum representing the formats for this codec category
- *               (i.e., ReadsFormat defining SAM/BAM/CRAM constants)
+ * @param <F> enum representing the formats for the codec type for this decoder
+ *               (i.e., ReadsFormat defining SAM/BAM/CRAM values)
  * @param <H> type param for the header for this format (i.e. SAMFileHeader)
  * @param <R> type param for the record for this format (i.e. SAMRecord)
  */
-public interface HtsDecoder<F extends Enum<F>, H extends HtsHeader, R extends HtsRecord>
+public interface HtsDecoder<F extends Enum<F> & HtsFormat<F>, H extends HtsHeader, R extends HtsRecord>
         extends HtsQuery<R>, Closeable {
 
     /**
      * Return the file format supported by this decoder, from the enum {@code F}
-     * @return
+     * @return the file format supported by this decoder, from the enum {@code F}
      */
     F getFormat();
 
@@ -33,7 +33,7 @@ public interface HtsDecoder<F extends Enum<F>, H extends HtsHeader, R extends Ht
     String getDisplayName();
 
     /**
-     * @return the file format header for this decoder, of type {@code H}
+     * @return the file format header for this decoder, of type {@link H}
      */
     H getHeader();
 

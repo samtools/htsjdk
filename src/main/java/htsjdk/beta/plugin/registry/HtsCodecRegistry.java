@@ -15,6 +15,7 @@ import htsjdk.exception.HtsjdkPluginException;
 import java.util.*;
 
 //TODO: Master TODO list:
+// - make registry and resolver threadsafe, instantiable
 // - use is prefix for boolean getters
 // - implement SeekableStream source
 // - finish encoders/options for BAM/CRAM, respect presorted in Reads encoders
@@ -49,18 +50,15 @@ public class HtsCodecRegistry {
     private static final HtsCodecRegistry htsCodecRegistry = new HtsCodecRegistry();
 
     // for each codec type, keep track of registered codec instances, by format and version
+    // Note that the actual Enum instance passed in here is not meaningful, as long as it is
+    // an instance of the correct enum; HtsCodecResolver uses it map content subtypes to the
+    // format enum value via HtsFormat.c.
     private static HtsCodecResolver<HaploidReferenceFormat, HaploidReferenceCodec> haprefCodecResolver =
-            new HtsCodecResolver<>(
-                    BundleResourceType.HAPLOID_REFERENCE,
-                    HaploidReferenceFormat::contentSubTypeToFormat);
+            new HtsCodecResolver<>(BundleResourceType.HAPLOID_REFERENCE, HaploidReferenceFormat.FASTA);
     private static HtsCodecResolver<ReadsFormat, ReadsCodec> readsCodecResolver =
-            new HtsCodecResolver<>(
-                    BundleResourceType.ALIGNED_READS,
-                    ReadsFormat::contentSubTypeToFormat);
+            new HtsCodecResolver<>(BundleResourceType.ALIGNED_READS, ReadsFormat.BAM);
     private static HtsCodecResolver<VariantsFormat, VariantsCodec> variantsCodecResolver =
-            new HtsCodecResolver<>(
-                    BundleResourceType.VARIANT_CONTEXTS,
-                    VariantsFormat::contentSubTypeToFormat);
+            new HtsCodecResolver<>(BundleResourceType.VARIANT_CONTEXTS, VariantsFormat.VCF);
 
     //discover any codecs on the classpath
     static { ServiceLoader.load(HtsCodec.class).forEach(htsCodecRegistry::registerCodec); }

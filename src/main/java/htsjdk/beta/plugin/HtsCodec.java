@@ -38,15 +38,14 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link HtsCodecType#FEATURES} </li>
  * </ul>
  * <p>
- *     Each of these codec types has a corresponding set of type-specific codec/decoder/encoder interfaces.
- *     These interfaces extend common generic interfaces defined by the plugin framework, and
- *     provide type instantiations for the base interfaces that are appropriate for that codec
- *     type (see for example, {@link htsjdk.beta.plugin.reads.ReadsCodec} or
- *     {@link htsjdk.beta.plugin.reads.ReadsDecoder}). Each implementation of a given codec type
- *     exposes the same interfaces, with the same type instantiations, but over a different combination of
- *     file format/version.
+ *     Each of these codec types has an associated set of type-specific codec/decoder/encoder interfaces
+ *     that are defined by the framework. The type-specific interfaces extend generic base interfaces,
+ *     with type instantiations that are appropriate for that codec type. (as an example, see
+ *     {@link htsjdk.beta.plugin.reads.ReadsDecoder} which is a specialization of
+ *     {@link htsjdk.beta.plugin.HtsDecoder}. The component trios for the various implementations a given type
+ *     expose the same type-specific interfaces, but over a different combination of file format/version.
  * <p>
- * The generic base interfaces that are common to all codecs encoders and decoders are:
+ * The generic, base interfaces that are common to all codecs, encoders, and decoders are:
  * <ul>
  *     <li> {@link HtsCodec}: base codec interface </li>
  *     <li> {@link HtsEncoder}: base encoder interface </li>
@@ -59,7 +58,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * </ul>
  * <p>
  *     The packages containing the definitions of the type-specific interfaces that correspond to
- *     the four different codec types are:
+ *     the four different codec types are defined in:
  * <p>
  * <ul>
  *     <li> For {@link HtsCodecType#ALIGNED_READS} codecs, see the {@link htsjdk.beta.plugin.reads} package </li>
@@ -71,7 +70,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <H3>Example Codec Type: Reads Codecs</H3>
  * <p>
  *     As an example, the {@link htsjdk.beta.plugin.reads} package defines the following interfaces
- *     that extend the common base interfaces for codecs with type {@link HtsCodecType#ALIGNED_READS}:
+ *     that extend the generic base interfaces, for codecs with type {@link HtsCodecType#ALIGNED_READS}:
  * <ul>
  *     <li> {@link htsjdk.beta.plugin.reads.ReadsCodec}: reads codec interface, extends the generic
  *     {@link HtsCodec} interface </li>
@@ -143,12 +142,13 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *         <li>always return 0 from the {@link #getSignatureLength()} method</li>
  *     </ul>
  * </p>
- * @param <F> an {@link java.lang.Enum} with a value for each file format handled by this codec
- * @param <D> decoder options for this codec
- * @param <E> encoder options for this codec
+ * @param <F> a {@link java.lang.Enum} that implements {@link HtsFormat}, with a value for each file format
+ *          handled by this codec
+ * @param <D> decoder options type for this codec
+ * @param <E> encoder options type for this codec
  */
 public interface HtsCodec<
-        F extends Enum<F>,
+        F extends Enum<F> & HtsFormat<F>,
         D extends HtsDecoderOptions,
         E extends HtsEncoderOptions>
         extends Upgradeable {
@@ -189,7 +189,7 @@ public interface HtsCodec<
 
     /**
      * Returning true from this method indicates that this codec "owns" the URI contained in
-     * {@code ioPath} (see {@link IOPath#getURI()}).
+     * {@code ioPath} ({@see IOPath#getURI()}).
      * A codec "owns" the URI only if it explicitly recognizes and handles the protocol scheme in the
      * URI, or recognizes the rest of the URI as being well-formed for this file format
      * (including, for example, the file extension if appropriate, and any query parameters).

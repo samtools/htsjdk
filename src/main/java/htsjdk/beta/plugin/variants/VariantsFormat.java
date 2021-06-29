@@ -1,10 +1,14 @@
 package htsjdk.beta.plugin.variants;
 
+import htsjdk.beta.plugin.HtsFormat;
 import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;
 
-public enum VariantsFormat {
+/**
+ * Enum representing the formats supported by variants codecs.
+ */
+public enum VariantsFormat implements HtsFormat<VariantsFormat> {
     VCF,
     BCF;
 
@@ -13,9 +17,10 @@ public enum VariantsFormat {
      * no value matches.
      *
      * @param contentSubType string content subtype
-     * @return enum value from {@link VariantsFormat} that matches {@code contentSubType}
+     * @return enum value from {@link VariantsFormat} that matches {@code contentSubType}, or Optional.empty() if
+     * no value matches
      */
-    public static Optional<VariantsFormat> contentSubTypeToFormat(final String contentSubType) {
+    public Optional<VariantsFormat> contentSubTypeToFormat(final String contentSubType) {
         ValidationUtils.nonNull(contentSubType, "contentSubType");
         for (final VariantsFormat f : VariantsFormat.values()) {
             if (f.name().equals(contentSubType)) {

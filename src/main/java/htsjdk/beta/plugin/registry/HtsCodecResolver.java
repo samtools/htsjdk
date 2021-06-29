@@ -1,6 +1,7 @@
 package htsjdk.beta.plugin.registry;
 
 import htsjdk.beta.plugin.HtsCodec;
+import htsjdk.beta.plugin.HtsFormat;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
@@ -16,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -29,32 +29,32 @@ import java.util.stream.Collectors;
  * to determine the file format and version being requested, delegating calls to registered codecs,
  * in order to find a matching codec.
  *
- * @param <F> enum representing the possible formats for this codec type
- * @param <C> the HtsCodec type
+ * @param <F> enum representing the possible formats for this codec type, implements HtsFormat<F>
+ * @param <C> the HtsCodec type managed by this resolver
  */
-public final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, ?>> {
+public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCodec<F, ?, ?>> {
     private static final Log LOG = Log.getInstance(HtsCodecResolver.class);
 
     final static String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
     final static String MULTIPLE_SUPPORTING_CODECS_ERROR = "Multiple codecs accept the provided resource";
 
     private final String requiredContentType;
+    private final HtsFormat<F> htsFormatEnum;
     private final Map<F, Map<HtsVersion, C>> codecs = new HashMap<>();
-    private final Function<String, Optional<F>> contentSubTypeToFormat;
 
     /**
      * Create a resolver for a given codec type, defined by the type parameters {@code F} and {@code C}.
      *
      * @param requiredContentType the primary content type this resolver will use to interrogate a bundle
      *                            to locate the primary resource when attempting to resolve the bundle to a codec
-     * @param contentSubTypeToFormat a mapping function that takes a contentSubType string and returns
-     *                              the corresponding format {@code F}, if one exists
+     * @param htsFormatEnum any instance of Enum that implements {@link HtsFormat>}. the actual instance passed
+     *                      herr is not meaningful; any instance of the required Enum will suffice. the value is used
+     *                      to call the {@link HtsFormat#contentSubTypeToFormat(String)} >} instance method on
+     *                      the Enum class
      */
-    public HtsCodecResolver(
-            final String requiredContentType,
-            final Function<String, Optional<F>> contentSubTypeToFormat) {
+    public HtsCodecResolver(final String requiredContentType, final HtsFormat<F> htsFormatEnum) {
         this.requiredContentType = requiredContentType;
-        this.contentSubTypeToFormat = contentSubTypeToFormat;
+        this.htsFormatEnum = htsFormatEnum;
     }
 
     /**
@@ -424,7 +424,7 @@ public final class HtsCodecResolver<F extends Enum<F>, C extends HtsCodec<F, ?, 
     private Optional<F> getFormatForContentSubType(final BundleResource bundleResource) {
         final Optional<String> optContentSubType = bundleResource.getContentSubType();
         final Optional<F> optFormat = optContentSubType.flatMap(
-                contentSubType -> contentSubTypeToFormat.apply(contentSubType));
+                contentSubType -> htsFormatEnum.contentSubTypeToFormat(contentSubType));
         if (optContentSubType.isPresent() && !optFormat.isPresent()) {
             // throw if the resource contentSubType is present, but doesn't map to any format supported by the content
             throw new IllegalArgumentException(

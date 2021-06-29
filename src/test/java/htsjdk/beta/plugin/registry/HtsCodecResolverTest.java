@@ -253,10 +253,8 @@ public class HtsCodecResolverTest extends HtsjdkTest {
             final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
             final Bundle bundle,
             final String expectedCodecDisplayName) {
-        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
-                new HtsCodecResolver<>(
-                        TEST_CODEC_CONTENT_TYPE,
-                        HtsTestCodecFormat::formatFromContentSubType);
+        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>>
+                testCodecs = new HtsCodecResolver<>(TEST_CODEC_CONTENT_TYPE, HtsTestCodecFormat.FILE_FORMAT_1);
         codecs.forEach(c -> testCodecs.registerCodec(c));
         final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveForDecoding(bundle);
         Assert.assertEquals(resolvedCodec.getDisplayName(), expectedCodecDisplayName);
@@ -394,10 +392,8 @@ public class HtsCodecResolverTest extends HtsjdkTest {
             final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
             final Bundle bundle,
             final String expectedMessage) {
-        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
-                new HtsCodecResolver<>(
-                        TEST_CODEC_CONTENT_TYPE,
-                        HtsTestCodecFormat::formatFromContentSubType);
+        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>>
+                testCodecs = new HtsCodecResolver<>(TEST_CODEC_CONTENT_TYPE, HtsTestCodecFormat.FILE_FORMAT_1);
         codecs.forEach(c -> testCodecs.registerCodec(c));
         try {
             testCodecs.resolveForDecoding(bundle);
@@ -513,10 +509,8 @@ public class HtsCodecResolverTest extends HtsjdkTest {
             final Bundle bundle,
             final HtsVersion htsVersionRequested,
             final String expectedCodecDisplayName) {
-        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
-                new HtsCodecResolver<>(
-                        TEST_CODEC_CONTENT_TYPE,
-                        HtsTestCodecFormat::formatFromContentSubType);
+        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>>
+                testCodecs = new HtsCodecResolver<>(TEST_CODEC_CONTENT_TYPE, HtsTestCodecFormat.FILE_FORMAT_1);
         codecs.forEach(c -> testCodecs.registerCodec(c));
         final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveForEncoding(
                 bundle,
@@ -600,10 +594,8 @@ public class HtsCodecResolverTest extends HtsjdkTest {
             final Bundle bundle,
             final HtsVersion htsVersion,
             final String expectedMessage) {
-        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>> testCodecs =
-                new HtsCodecResolver<>(
-                        TEST_CODEC_CONTENT_TYPE,
-                        HtsTestCodecFormat::formatFromContentSubType);
+        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>>
+                testCodecs = new HtsCodecResolver<>(TEST_CODEC_CONTENT_TYPE, HtsTestCodecFormat.FILE_FORMAT_1);
         codecs.forEach(c -> testCodecs.registerCodec(c));
         try {
                 testCodecs.resolveForEncoding(bundle, htsVersion);

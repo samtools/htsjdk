@@ -5,16 +5,16 @@ import java.io.Closeable;
 /**
  * Base interface for encoders.
  *
- * @param <F> enum representing the formats for this codec category
+ * @param <F> an {@link HtsFormat} enum representing the formats for this codec category
  *               (i.e., ReadsFormat defining SAM/BAM/CRAM constants)
  * @param <H> type param for the header for this format (i.e. SAMFileHeader)
  * @param <R> type param for the record for this format (i.e. SAMRecord)
  */
-public interface HtsEncoder<F, H extends HtsHeader, R extends HtsRecord> extends Closeable {
+public interface HtsEncoder<F extends Enum<F> & HtsFormat<F>, H extends HtsHeader, R extends HtsRecord> extends Closeable {
 
     /**
      * Return the file format supported by this encoder, from the enum {@code F}
-     * @return
+     * @return the file format supported by the encoder, from {@code F}
      */
     F getFormat();
 
@@ -31,7 +31,7 @@ public interface HtsEncoder<F, H extends HtsHeader, R extends HtsRecord> extends
     /**
      */
     /**
-     * set the file format header for this decoder, of type {@code H}
+     * set the file format header for this decoder, of type {@link H}
      * @param header to use
      */
     void setHeader(H header);
