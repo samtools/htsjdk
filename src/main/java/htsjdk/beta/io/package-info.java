@@ -1,4 +1,4 @@
 @BetaAPI
-package htsjdk.beta.codecs;
+package htsjdk.beta.io;
 
 import htsjdk.utils.BetaAPI;

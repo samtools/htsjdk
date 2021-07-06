@@ -15,7 +15,7 @@ import htsjdk.exception.HtsjdkPluginException;
 import java.util.*;
 
 //TODO: Master TODO list:
-// - javadoc/final/PublicAPI/ValidateArgs - use opt-out for privateAPI
+// - javadoc/final/PublicAPI/ValidateArgs @PrivateAPI for opt-out
 // - make registry and resolver threadsafe, instantiable
 // - finish encoders/options for BAM/CRAM, respect presorted in Reads encoders
 // - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs

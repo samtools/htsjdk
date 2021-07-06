@@ -1,4 +1,4 @@
-@BetaPackage
+@BetaAPI
 package htsjdk.beta.plugin;
 
-import htsjdk.utils.BetaPackage;
+import htsjdk.utils.BetaAPI;

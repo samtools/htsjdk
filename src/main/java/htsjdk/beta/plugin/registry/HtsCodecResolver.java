@@ -10,6 +10,7 @@ import htsjdk.exception.HtsjdkException;
 import htsjdk.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.Log;
+import htsjdk.utils.PrivateAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.util.Collections;
@@ -455,7 +456,7 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
         return optFormat;
     }
 
-    //VisibleForTesting
+    @PrivateAPI
     static <C extends HtsCodec<?, ?, ?>> C getOneOrThrow(
             final List<C> resolvedCodecs,
             final Supplier<String> contextMessage) {

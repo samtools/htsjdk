@@ -7,15 +7,15 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.utils.PrivateAPI;
 
 import java.util.Optional;
 
-//TODO: we need a way to keep these methods public so they're shareable amongst multiple implementations,
-// but exempt from public API versioning rules
-
-// Shareable (and sometimes temporary_ utilities for use with private local reads encoder/decoder implementations
+// Shareable (and sometimes temporary) utilities for use with private local reads encoder/decoder implementations
+@PrivateAPI
 final public class ReadsCodecUtils {
 
+    @PrivateAPI
     public static SamInputResource bundleToSamInputResource(
             final Bundle inputBundle,
             final ReadsDecoderOptions readsDecoderOptions) {
@@ -29,6 +29,34 @@ final public class ReadsCodecUtils {
                 readsDecoderOptions,
                 samInputResource);
         return samInputResource;
+    }
+
+    // Propagate all readsDecoderOptions, except BAM and CRAM specific options, which are propagated separately,
+    // and cloud wrappers, since those are not SamReaderFactory options, but rather are added when the Sam
+    // InputResource is created.
+    @PrivateAPI
+    public static void readsDecoderOptionsToSamReaderFactory(
+            final SamReaderFactory samReaderFactory,
+            final ReadsDecoderOptions readsDecoderOptions) {
+        samReaderFactory.validationStringency(readsDecoderOptions.getValidationStringency());
+        samReaderFactory.setOption(SamReaderFactory.Option.EAGERLY_DECODE, readsDecoderOptions.isEagerlyDecode());
+        samReaderFactory.setOption(SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES,
+                readsDecoderOptions.isCacheFileBasedIndexes());
+        samReaderFactory.setOption(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX,
+                readsDecoderOptions.isDontMemoryMapIndexes());
+    }
+
+    // Propagate all BAMDecoderOptions to the samReaderFactory.
+    @PrivateAPI
+    public static void bamDecoderOptionsToSamReaderFactory(
+            final SamReaderFactory samReaderFactory,
+            final BAMDecoderOptions bamDecoderOptions) {
+        samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
+        samReaderFactory.setOption(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS,
+                bamDecoderOptions.isIncludeSourceInRecords());
+        samReaderFactory.setUseAsyncIo(bamDecoderOptions.isUseAsyncIO());
+        samReaderFactory.setOption(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS,
+                bamDecoderOptions.isValidateCRCChecksums());
     }
 
     private static SamInputResource readsToSamInputResource(
@@ -81,32 +109,6 @@ final public class ReadsCodecUtils {
                 }
             }
         }
-    }
-
-    // Propagate all readsDecoderOptions, except BAM and CRAM specific options, which are propagated separately,
-    // and cloud wrappers, since those are not SamReaderFactory options, but rather are added when the Sam
-    // InputResource is created.
-    public static void readsDecoderOptionsToSamReaderFactory(
-            final SamReaderFactory samReaderFactory,
-            final ReadsDecoderOptions readsDecoderOptions) {
-        samReaderFactory.validationStringency(readsDecoderOptions.getValidationStringency());
-        samReaderFactory.setOption(SamReaderFactory.Option.EAGERLY_DECODE, readsDecoderOptions.isEagerlyDecode());
-        samReaderFactory.setOption(SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES,
-                readsDecoderOptions.isCacheFileBasedIndexes());
-        samReaderFactory.setOption(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX,
-                readsDecoderOptions.isDontMemoryMapIndexes());
-    }
-
-    // Propagate all BAMDecoderOptions to the samReaderFactory.
-    public static void bamDecoderOptionsToSamReaderFactory(
-            final SamReaderFactory samReaderFactory,
-            final BAMDecoderOptions bamDecoderOptions) {
-        samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
-        samReaderFactory.setOption(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS,
-                bamDecoderOptions.isIncludeSourceInRecords());
-        samReaderFactory.setUseAsyncIo(bamDecoderOptions.isUseAsyncIO());
-        samReaderFactory.setOption(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS,
-                bamDecoderOptions.isValidateCRCChecksums());
     }
 
 }
