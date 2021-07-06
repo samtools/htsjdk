@@ -1,4 +1,4 @@
-package htsjdk.exception;
+package htsjdk.beta.exception;
 
 /**
  * A RuntimeException-derived class for propagating IOExceptions caught/thrown by the plugin framework.

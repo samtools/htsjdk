@@ -1,4 +1,4 @@
-package htsjdk.exception;
+package htsjdk.beta.exception;
 
 /**
  * Base class for exceptions resulting from ill-behaved codec plugins.

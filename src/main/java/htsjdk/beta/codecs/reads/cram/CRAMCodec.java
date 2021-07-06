@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.beta.codecs.hapref.fasta.FASTADecoderV1_0;
 import htsjdk.beta.plugin.registry.HtsHaploidReferenceCodecs;
-import htsjdk.exception.HtsjdkException;
+import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormat;

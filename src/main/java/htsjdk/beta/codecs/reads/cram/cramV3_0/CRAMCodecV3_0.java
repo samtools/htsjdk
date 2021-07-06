@@ -5,11 +5,11 @@ import htsjdk.beta.codecs.reads.cram.CRAMDecoder;
 import htsjdk.beta.codecs.reads.cram.CRAMEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.SignatureProbingStream;
-import htsjdk.exception.HtsjdkIOException;
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.samtools.cram.structure.CramHeader;
 
 import java.io.IOException;

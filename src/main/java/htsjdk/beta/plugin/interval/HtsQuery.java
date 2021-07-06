@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin.interval;
 
-import htsjdk.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.utils.ValidationUtils;
 

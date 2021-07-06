@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin;
 
-import htsjdk.exception.HtsjdkIOException;
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedOutputStream;

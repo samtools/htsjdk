@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin.bundle;
 
-import htsjdk.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 

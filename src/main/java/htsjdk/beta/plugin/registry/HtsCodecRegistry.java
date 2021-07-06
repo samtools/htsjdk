@@ -10,15 +10,14 @@ import htsjdk.beta.plugin.reads.ReadsFormat;
 
 import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.plugin.variants.VariantsFormat;
-import htsjdk.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkPluginException;
 
 import java.util.*;
 
 //TODO: Master TODO list:
-// - javadoc/final/PublicAPI/ValidateArgs @PrivateAPI for opt-out
 // - make registry and resolver threadsafe, instantiable
-// - finish encoders/options for BAM/CRAM, respect presorted in Reads encoders
-// - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs
+// - javadoc/final/ValidateArgs
+// - Incomplete: BAM/CRAM encoder options, VCF 4.2, FASTA codecs, respect presorted in Reads encoders
 // - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
 // - tests
 // - finish content type inference

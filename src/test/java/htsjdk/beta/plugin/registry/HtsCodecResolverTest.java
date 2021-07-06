@@ -12,7 +12,7 @@ import htsjdk.beta.plugin.bundle.OutputStreamResource;
 import htsjdk.beta.plugin.bundle.SeekableStreamResource;
 import htsjdk.beta.plugin.registry.testcodec.HtsTestCodec;
 import htsjdk.beta.plugin.registry.testcodec.HtsTestCodecFormat;
-import htsjdk.exception.HtsjdkIOException;
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedOutputStream;

@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.plugin.IOUtils;
-import htsjdk.exception.HtsjdkIOException;
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.registry.HtsReadsCodecs;

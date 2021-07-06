@@ -1,4 +1,4 @@
-package htsjdk.exception;
+package htsjdk.beta.exception;
 
 /**
  * Exception type for all exceptions caused at runtime by HTSJDK.
