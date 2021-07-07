@@ -116,7 +116,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
      * @throws IOException
      */
-    public BAMFileReader(final InputStream stream,
+    BAMFileReader(final InputStream stream,
                   final File indexFile,
                   final boolean eagerDecode,
                   final boolean useAsynchronousIO,
