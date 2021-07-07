@@ -25,7 +25,7 @@ public class CRAMEncoderV3_0 extends CRAMEncoder {
 
     @Override
     public void setHeader(final SAMFileHeader samFileHeader) {
-        cramFileWriter = getCRAMWriter(samFileHeader);
+        cramFileWriter = getCRAMWriter(samFileHeader, readsEncoderOptions);
     }
 
     @Override
@@ -45,19 +45,19 @@ public class CRAMEncoderV3_0 extends CRAMEncoder {
         }
     }
 
-    private CRAMFileWriter getCRAMWriter(final SAMFileHeader samFileHeader) {
+    private CRAMFileWriter getCRAMWriter(final SAMFileHeader samFileHeader, final ReadsEncoderOptions readsEncoderOptions) {
         final BundleResource outputResource = outputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
         if (outputResource.getIOPath().isPresent()) {
             cramFileWriter = new CRAMFileWriter(
                     outputResource.getIOPath().get().getOutputStream(),
-                    getCRAMReferenceSource(),
+                    getCRAMReferenceSource(readsEncoderOptions),
                     samFileHeader,
                     outputResource.getIOPath().get().toString());
             return cramFileWriter;
         } else {
             cramFileWriter = new CRAMFileWriter(
                     outputResource.getOutputStream().get(),
-                    getCRAMReferenceSource(),
+                    getCRAMReferenceSource(readsEncoderOptions),
                     samFileHeader,
                     outputResource.getDisplayName());
             return cramFileWriter;

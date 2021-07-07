@@ -139,9 +139,8 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      *
      * @param bundle the bundle to resolve to a codec
      * @return a codec that can decode the bundle resource
-     *
-     * @throws RuntimeException if the input resolves to more than one codec. this usually indicates that the
-     * registry contains a poorly behaved codec.
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     public C resolveForDecoding(final Bundle bundle) {
         ValidationUtils.nonNull(bundle, "bundle");
@@ -177,9 +176,8 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      *
      * @param bundle the bundle to resolve to a codec for encoding
      * @return A codec that can decode the input bundle
-     *
-     * @throws RuntimeException if more than one codec matches. this usually indicates a registered codec
-     * that is poorly behaved.
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     public C resolveForEncoding(final Bundle bundle) { return resolveForEncoding(bundle, HtsVersion.NEWEST_VERSION); }
 
@@ -196,6 +194,8 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * @param htsVersion the version being requested (use HtsVersion.NEWEST_VERSION to use the newest
      *                   version codec registered)
      * @return A codec that can provide an encoder for the given inputs.
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     public C resolveForEncoding(final Bundle bundle, final HtsVersion htsVersion) {
         ValidationUtils.nonNull(bundle, "bundle");
@@ -240,6 +240,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * @param formatVersion the version of {@code format} requested
      * @return The list of registered codecs that claim to support version {@code formatVersion} of file
      * format {@code format}
+     * @throws HtsjdkException if no registered codecs can handle the resource
      */
     public C resolveFormatAndVersion(final String format, final HtsVersion formatVersion) {
         final List<C> matchingCodecs = resolveForFormat(format)

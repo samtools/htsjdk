@@ -6,8 +6,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import java.util.Optional;
 
 /**
- * Encoder options for CRAM encoder. This enables encoders that can accept
- * things such as a custom encoding map or other CRAM-specific params.
+ * Encoder options for CRAM encoders.
  */
 public class CRAMEncoderOptions {
     private CRAMReferenceSource referenceSource;

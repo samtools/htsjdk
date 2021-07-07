@@ -6,33 +6,16 @@ import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.exception.HtsjdkPluginException;
 
-//TODO: Master TODO list:
-// - javadoc/final/ValidateArgs/audit super() calls
-// - Incomplete: BAM/CRAM de/encoder options, VCF 4.2, FASTA codecs, respect presorted in Reads encoders
-// - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
-// - finish adding tests/input index resolution rules
-// - finish content type inference
-// - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
-// - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
-// - address CRAM reference leak issue in master
-// - test stdin/stdout (would be way easier with GATK)
-//
-// TODO: post PR
-// - encryption/decryption key files, etc.
-// - publish the JSON Bundle JSON schema
-// - implement index creation on decoders (existing inputs), requires unbuffered stream
-// - upgrade API
-
 /**
  * A registry for tracking {@link HtsCodec} instances.
+ * <p>
+ * Registries are populated with {@link HtsCodec} objects that are either discovered
+ * and registered statically in the {@link HtsDefaultRegistry}, or manually registered in a private
+ * registry (see {@link HtsCodecRegistry#createPrivateRegistry()}) via the {@link #registerCodec(HtsCodec)}
+ * method.
  *
- * Registries are populated with objects that implement {@link HtsCodec}, which are either discovered
- * and registered dynamically at startup (see {@link HtsDefaultRegistry}), or manually registered via
- * the {@link #registerCodec(HtsCodec)} method (see {@link HtsCodecRegistry#createPrivateRegistry()}).
- *
- * A global static immutable registry is maintained by {@link HtsDefaultRegistry}. A private mutable
- * registry that can be used with custom codecs can be created with
- * {@link HtsCodecRegistry#createPrivateRegistry()}.
+ * The global static {@link HtsDefaultRegistry} is immutable. A private, mutable registry for registering
+ * custom codecs can be created with {@link HtsCodecRegistry#createPrivateRegistry()}.
  */
 public class HtsCodecRegistry {
     private final HaploidReferenceResolver htsHaploidReferenceResolver = new HaploidReferenceResolver();;
@@ -75,10 +58,11 @@ public class HtsCodecRegistry {
     }
 
     /**
-     * Create a mutable registry instance for private use. The {@link HtsDefaultRegistry} is immutable, but
-     * a private registry can be populated with, and used to resolve against, custom codecs. The private registry
-     * is initialized to contain all codecs that are registered in the {@link HtsDefaultRegistry}. Custom
-     * codecs can be installed using {@link HtsCodecRegistry#registerCodec(HtsCodec)}.
+     * Create a mutable registry for private use. The {@link HtsDefaultRegistry} is immutable, but
+     * a private registry can be populated with, and used to resolve against, custom codecs. A private registry
+     * is initially populated with all codecs that are registered in the {@link HtsDefaultRegistry}. Custom
+     * codecs can be then be installed into the private registry using
+     * {@link HtsCodecRegistry#registerCodec(HtsCodec)}.
      *
      * @return a mutable registry instance for private use
      */

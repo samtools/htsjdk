@@ -1,5 +1,7 @@
 package htsjdk.beta.plugin.registry;
 
+import htsjdk.beta.exception.HtsjdkException;
+import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
@@ -12,14 +14,12 @@ import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
-//TODO: document that the non-Bundle overloads resolve the index automatically, but the Bundle ones do not,
-// per the protocol that says that a bundles are taken as-is
-//TODO: should we add an argument that controls index resolution for non-bundles APIs ?
+//TODO: should we add an arguments/overloads that control index resolution for the non-bundles methods ?
 
 /**
  * Class with methods for resolving inputs and outputs to reads encoders and decoders.
  * <p>
- * Provides a convenient typesafe layer over the {@link HtsCodecResolver} thats used by an
+ * Provides a convenient typesafe layer over the {@link HtsCodecResolver} used by an
  * {@link HtsCodecRegistry} to manage {@link ReadsCodec}s
  * (see {@link HtsCodecRegistry#getHaploidReferenceResolver()}).
  * <p>
@@ -42,6 +42,8 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      *
      * @param inputPath the IOPath to be decoded
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputPath}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     public ReadsDecoder getReadsDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "Input path");
@@ -58,6 +60,8 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @param inputPath the IOPath to be decoded
      * @param readsDecoderOptions options to use
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputPath}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     public ReadsDecoder getReadsDecoder(
             final IOPath inputPath,
@@ -75,6 +79,8 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      *
      * @param inputBundle the bundle to be decoded
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputBundle}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     public ReadsDecoder getReadsDecoder(final Bundle inputBundle) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
@@ -90,6 +96,8 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @param inputBundle the bundle to be decoded
      * @param readsDecoderOptions {@link ReadsDecoderOptions} options to be used by the decoder
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputBundle}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     @SuppressWarnings("unchecked")
     public ReadsDecoder getReadsDecoder(
@@ -102,13 +110,15 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Gt a {@link ReadsEncoder} suitable for encoding to {@code outputPath}. The path must include
+     * Get a {@link ReadsEncoder} suitable for encoding to {@code outputPath}. The path must include
      * a file extension suitable for determining the appropriate file format to use; the newest version
      * of the file format available will be used. To request a specific file format and/or version, use
      * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, String, HtsVersion)}.
      *
      * @param outputPath the IOPath target for encoding
      * @return a {@link ReadsEncoder} suitable for encoding to {@code outputPath}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     public ReadsEncoder getReadsEncoder(final IOPath outputPath) {
         ValidationUtils.nonNull(outputPath, "Output path");
@@ -126,6 +136,8 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @param outputPath target path to encode
      * @param readsEncoderOptions {@link ReadsEncoderOptions} options to be used by the encoder
      * @return {@link ReadsEncoder} suitable for encoding to {@code outputPath}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     public ReadsEncoder getReadsEncoder(
             final IOPath outputPath,
@@ -147,6 +159,8 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @param outputBundle target output to encode to
      * @param readsEncoderOptions {@link ReadsEncoderOptions} to be used by the encoder
      * @return {@link ReadsEncoder} suitable for encoding to {@code outputPath}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     @SuppressWarnings("unchecked")
     public ReadsEncoder getReadsEncoder(
@@ -167,6 +181,8 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @param readsFormat target file format
      * @param formatVersion target file format version
      * @return {@link ReadsEncoder} suitable for encoding to {@code outputBundle}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      */
     @SuppressWarnings("unchecked")
     public ReadsEncoder getReadsEncoder(

@@ -3,6 +3,7 @@ package htsjdk.beta.plugin;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.SignatureStream;
 import htsjdk.beta.plugin.reads.ReadsFormats;
+import htsjdk.beta.plugin.registry.HtsCodecRegistry;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.bundle.Bundle;
 
@@ -19,20 +20,27 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li>a decoder that implements {@link HtsDecoder}</li>
  * </ul>
  * <p>
- *     Classes that implement {@link HtsCodec} are discovered, instantiated, and registered either dynamically
- *     at runtime, via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}'s {@link java.util.ServiceLoader}
- *     code, or manually via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)}
- *     method. {@link HtsCodec} objects are lightweight and long-lived, and are used by the framework
- *     to resolve requests for an {@link HtsEncoder} or {@link HtsDecoder} that matches a given resource.
+ *     The {@link HtsCodec} components are lightweight and long-lived objects that reside in an
+ *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}. A default, static, immutable
+ *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry} is populated with {@link HtsCodec} objects
+ *     that are discovered and instantiated
+ *     statically via a {@link java.util.ServiceLoader}, and can be accessed using
+ *     {@link htsjdk.beta.plugin.registry.HtsDefaultRegistry}. A private, mutable registry can be created at
+ *     runtime via {@link HtsCodecRegistry#createPrivateRegistry()}, and populated dynamically by calls to
+ *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)}.
+ *     <p>
+ *     The {@link HtsCodec} objects in a registry are used by the framework to resolve requests for an
+ *     {@link HtsEncoder} or {@link HtsDecoder} that matches a given resource. The {@link HtsEncoder} and
+ *     {@link HtsDecoder} object do the actual work of writing and reading record to and from underlying
+ *     resources.
  *     <p>
  *     The primary responsibility of an {@link HtsCodec} is to satisfy requests made by the framework during
  *     codec resolution, inspecting and recognizing input URIs and stream resources that match the
  *     supported format and version, and providing an {@link HtsEncoder} or {@link HtsDecoder} on demand, once
  *     a match is made.
  * <p>
- * <H3>Codec Types</H3>
- *     The plugin framework supports four different types of codec/encoder/decoder trios, enumerated
- *     by the values in {@link HtsContentType}:
+ * <H3>Content Types</H3>
+ *     The plugin framework supports four different types of HTS data, called content types:
  * <p>
  * <ul>
  *     <li> {@link HtsContentType#ALIGNED_READS} </li>
@@ -41,13 +49,14 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link HtsContentType#FEATURES} </li>
  * </ul>
  * <p>
- *     The plugin framework defines a set of codec/decoder/encoder interfaces that correspond to each of these
- *     content types. These interfaces extend generic base interfaces with type instantiations appropriate for
- *     that content type (as an example, see {@link htsjdk.beta.plugin.reads.ReadsDecoder} which is a
- *     specialization of {@link htsjdk.beta.plugin.HtsDecoder} that defines the interface for decoders for
- *     codecs with content type {@link HtsContentType#ALIGNED_READS}. The various component trios for a given
- *     content type all expose these same content-type-specific interfaces, but each over a different
- *     combination of file format and version.
+ *   For each content type, there is a corresponding set of codec/decoder/encoder interfaces that
+ *   are implemented by components that support that content type. These interfaces extend generic base
+ *   interfaces, and provide generic parameter type instantiations appropriate for that content type.
+ *   As an example, see {@link htsjdk.beta.plugin.reads.ReadsDecoder} which defines the interface for
+ *   all {@link htsjdk.beta.plugin.HtsDecoder}s for the {@link HtsContentType#ALIGNED_READS} content
+ *   type. The different implementations of component trios for a given content type all use the same
+ *   content-type-specific interfaces, but each over a different combination of underlying file format
+ *   and version.
  * <p>
  * The generic, base interfaces that are common to all codecs, encoders, and decoders are:
  * <ul>
@@ -61,8 +70,8 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     {@link htsjdk.beta.plugin.bundle.Bundle} implementation </li>
  * </ul>
  * <p>
- *     The packages containing the definitions of the content type-specific interfaces that correspond to
- *     the four different content types defined in:
+ *     The packages containing the content type-specific interface definitions for each of
+ *     the four different content types are:
  * <p>
  * <ul>
  *     <li> For {@link HtsContentType#ALIGNED_READS} codecs, see the {@link htsjdk.beta.plugin.reads} package </li>
@@ -74,7 +83,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <H3>Example Codec Type: Reads Codecs</H3>
  * <p>
  *     As an example, the {@link htsjdk.beta.plugin.reads} package defines the following interfaces
- *     that extend the generic base interfaces, for codecs with type {@link HtsContentType#ALIGNED_READS}:
+ *     that extend the generic base interfaces for codecs with content type {@link HtsContentType#ALIGNED_READS}:
  * <ul>
  *     <li> {@link htsjdk.beta.plugin.reads.ReadsCodec}: reads codec interface, extends the generic
  *     {@link HtsCodec} interface </li>
@@ -91,11 +100,11 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * </ul>
  * <H3>Codec Resolution Protocol</H3>
  * <p>
- *     The plugin framework uses calls to registered codecs to conduct a series of probes of the structure
+ *     The plugin framework uses registered codecs to conduct a series of probes into the structure
  *     and format of an input or output resource in order to find a matching codec that can produce
- *     an appropriate encoder or decoder for the resource. The values returned from the codec methods are
- *     used by the framework to prune a list of candidate codecs down until a match is found. During codec
- *     this process, the codec methods are called in the following order:
+ *     an encoder or decoder for that resource. The values returned from the codec methods are
+ *     used by the framework to prune a list of candidate codecs down, until a match is found. During codec
+ *     resolution, the codec methods are called in the following order:
  * <ol>
  *     <li> {@link #ownsURI(IOPath)} </li>
  *     <li> {@link #canDecodeURI(IOPath)} </li>
@@ -113,11 +122,11 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <p>
  *     Many file formats consist of a single file that resides on a file system that is supported by a
  *     {@link java.nio} file system provider. Codecs that support such formats are generally agnostic
- *     about the IOPath/URI protocol scheme used to identify their resources, and assume that file contents
+ *     about the IOPath or URI protocol scheme used to identify their resources, and assume that file contents
  *     can be accessed directly via a single stream created via a {@link java.nio} file system provider.
  * <p>
- *     However some file formats use a specific, well known URI format or protocol scheme, often
- *     to identify a remote or otherwise specially-formatted resource, such as a local database format
+ *     However, some file formats use a specific, well known URI format or protocol scheme, often
+ *     to identify a remote or otherwise specially-formatted resource, such as a local database
  *     that is distributed across multiple physical files. These codecs may bypass direct file {@link java.nio}
  *     system access, and instead use specialized code to access their underlying resources.
  * <p>
@@ -133,7 +142,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <p>
  *     Codecs that use a custom URI format or protocol scheme such as {@code htsget} must be able
  *     to determine if they can decode or encode a resource purely by inspecting the IOPath/URI. Such
- *     codes should follow these guidelines:
+ *     codecs should follow these guidelines:
  *     <ul>
  *         <li>return true when {@link #ownsURI(IOPath)} is presented with an IOPath with
  *         a conforming URI </li>

@@ -356,7 +356,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
                 // IOPath with a file extension that doesn't match the format
                 //TODO: this should have a better error message or warning saying the file extension for the resource
-                // doesn't match the file extension, since thats likely user or programming error
+                // doesn't match the actual format, since thats likely user or programming error
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
                                 BundleResourceType.ALIGNED_READS,
@@ -562,7 +562,8 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
                 // no format specified for OutputStream (for output streams, the content type and format
                 // must be specified)
-                //TODO: this should have a better error message saying the format must be specified
+                //TODO: this should have a better error message saying the format must be specified in the
+                //resource for stream encoders
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
                         makeOutputStreamBundle(BundleResourceType.ALIGNED_READS, null),
                         V1_0,

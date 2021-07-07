@@ -1,5 +1,7 @@
 package htsjdk.beta.plugin.registry;
 
+import htsjdk.beta.exception.HtsjdkException;
+import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleBuilder;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
@@ -12,7 +14,7 @@ import htsjdk.utils.ValidationUtils;
 /**
  * Class with methods for resolving inputs and outputs to haploid reference encoders and decoders.
  * <p>
- * Provides a typesafe layer over the {@link HtsCodecResolver} thats used by an {@link HtsCodecRegistry}
+ * Provides a typesafe layer over the {@link HtsCodecResolver} used by an {@link HtsCodecRegistry}
  * to manage {@link HaploidReferenceCodec}s (see {@link HtsCodecRegistry#getHaploidReferenceResolver()}).
  * <p>
  * Provides typesafe conversion of argument and return types to types that conform to those used by
@@ -29,10 +31,13 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
     }
 
     /**
-     * Find a HaploidReferenceDecoder for the given inputPath.
+     * Gat a {@link HaploidReferenceDecoder} for the given inputPath.
      *
      * @param inputPath the path to the resource to be decoded
      * @return a HaploidReferenceDecoder for the given inputPath
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * a bad code implementation
      */
     @SuppressWarnings("unchecked")
     public HaploidReferenceDecoder getHapRefDecoder(final IOPath inputPath) {

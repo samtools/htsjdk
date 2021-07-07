@@ -32,7 +32,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     @Override
     final public String getDisplayName() { return displayName; }
 
-    protected CRAMReferenceSource getCRAMReferenceSource() {
+    protected static CRAMReferenceSource getCRAMReferenceSource(final ReadsEncoderOptions readsEncoderOptions) {
         final Optional<CRAMEncoderOptions> optCRAMEncoderOptions = readsEncoderOptions.getCRAMEncoderOptions();
         if (optCRAMEncoderOptions.isPresent()) {
             final CRAMEncoderOptions cramEncoderOptions = optCRAMEncoderOptions.get();
