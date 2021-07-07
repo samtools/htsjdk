@@ -1,12 +1,12 @@
 package htsjdk.beta.exception;
 
 /**
- * A RuntimeException-derived class for propagating IOExceptions caught/thrown by the plugin framework.
+ * A RuntimeException-derived class for propagating IOExceptions caught and rethrown by the plugin framework.
  */
 public class HtsjdkIOException extends HtsjdkException {
 
     /**
-     * Construct an HtsjdkIOException exception.
+     * Construct an HtsjdkIOException.
      *
      * @param message detailed message.
      */

@@ -11,10 +11,15 @@ import htsjdk.utils.PrivateAPI;
 
 import java.util.Optional;
 
-// Shareable (and sometimes temporary) utilities for use with private local reads encoder/decoder implementations
+/**
+ * @PrivateAPI utilities for use with reads encoder/decoder implementations.
+ */
 @PrivateAPI
 final public class ReadsCodecUtils {
 
+    /**
+     * @PrivateAPI
+     */
     @PrivateAPI
     public static SamInputResource bundleToSamInputResource(
             final Bundle inputBundle,
@@ -31,9 +36,9 @@ final public class ReadsCodecUtils {
         return samInputResource;
     }
 
-    // Propagate all readsDecoderOptions, except BAM and CRAM specific options, which are propagated separately,
-    // and cloud wrappers, since those are not SamReaderFactory options, but rather are added when the Sam
-    // InputResource is created.
+    /**
+     * @PrivateAPI
+     */
     @PrivateAPI
     public static void readsDecoderOptionsToSamReaderFactory(
             final SamReaderFactory samReaderFactory,
@@ -46,7 +51,9 @@ final public class ReadsCodecUtils {
                 readsDecoderOptions.isDontMemoryMapIndexes());
     }
 
-    // Propagate all BAMDecoderOptions to the samReaderFactory.
+    /**
+     * @PrivateAPI
+     */
     @PrivateAPI
     public static void bamDecoderOptionsToSamReaderFactory(
             final SamReaderFactory samReaderFactory,

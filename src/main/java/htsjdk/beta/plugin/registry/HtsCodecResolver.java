@@ -23,14 +23,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Class with methods used to resolve an input or output resource to a codec that can supply an encoder
- * or decoder for that resource. Each resolver manages a single {@link HtsCodec} type, defined by the type
- * parameters used to instantiate the resolver.
+ * Base class for content-type-specific resolvers, with methods for resolving an input or output resource
+ * to a codec that can supply an encoder or decoder for that resource. Each resolver manages {@link HtsCodec}s
+ * of a single {@link htsjdk.beta.plugin.HtsContentType} type, defined by the type parameters used to
+ * instantiate the resolver.
  * <p>
  * Methods in this class accept a bundle, and/or additional arguments, and return one or more matching
  * codecs. The resolution methods use a series of probes to inspect resource structure and format
- * to determine the file format and version for the target resource, in order to find codecs that
- * claim to be able to process the resource.
+ * to determine the file format in order to find codecs that claim to be able to process the resource.
  *</p>
  * @param <C> the HtsCodec type managed by this resolver
  */
@@ -88,8 +88,8 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * Inspect a bundle and find a codec that can decode the primary resource.
      * <p>
      *     The resolution process starts with a list of candidate codecs consisting of all registered codecs
-     *     that match this resolver's type. The bundle is then inspected to determine whether the primary resource
-     *     is an IOPath or a stream, and the list of candidate codecs is reduced as follows:
+     *     that match this resolver's required content type. The bundle is then inspected to determine whether
+     *     the primary resource is an IOPath or a stream, and the list of candidate codecs is reduced as follows:
      * <p>
      *     If the primary resource is an IOPath:
      *     <ol>
@@ -254,7 +254,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
     }
 
     /**
-     * Geg a list of all codecs of the type {@code C} managed by this resolver.
+     * Get a list of all codecs of the type {@code C} managed by this resolver.
      *
      * @return a list of all codecs of the type {@code C} managed by this resolver
      */

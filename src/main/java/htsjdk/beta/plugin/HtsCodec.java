@@ -10,9 +10,9 @@ import htsjdk.beta.plugin.bundle.Bundle;
 /**
  * Base interface implemented by all {@link htsjdk.beta.plugin} codecs.
  * </p>
- * <H3>Codecs</H3>
+ * <H3>Codec Components</H3>
  * <p>
- *     Each version of each file format supported by the {@link htsjdk.beta.plugin} framework is
+ *     Each version of a file format supported by the {@link htsjdk.beta.plugin} framework is
  *     represented by a trio of components:
  * <ul>
  *     <li>a codec that implements {@link HtsCodec}</li>
@@ -20,19 +20,17 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li>a decoder that implements {@link HtsDecoder}</li>
  * </ul>
  * <p>
- *     The {@link HtsCodec} components are lightweight and long-lived objects that reside in an
- *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}. A default, static, immutable
- *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry} is populated with {@link HtsCodec} objects
- *     that are discovered and instantiated
- *     statically via a {@link java.util.ServiceLoader}, and can be accessed using
- *     {@link htsjdk.beta.plugin.registry.HtsDefaultRegistry}. A private, mutable registry can be created at
- *     runtime via {@link HtsCodecRegistry#createPrivateRegistry()}, and populated dynamically by calls to
- *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)}.
+ *     The {@link HtsCodec} is a lightweight and long-lived object that resides in an
+ *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}. A registry is used to resolve requests for
+ *     an {@link HtsEncoder} or {@link HtsDecoder} that matches a given resource. The {@link HtsEncoder}
+ *     and {@link HtsDecoder} objects do the work of actually writing and reading records to and from
+ *     underlying resources.
  *     <p>
- *     The {@link HtsCodec} objects in a registry are used by the framework to resolve requests for an
- *     {@link HtsEncoder} or {@link HtsDecoder} that matches a given resource. The {@link HtsEncoder} and
- *     {@link HtsDecoder} object do the actual work of writing and reading record to and from underlying
- *     resources.
+ *     A default, static, immutable {@link htsjdk.beta.plugin.registry.HtsCodecRegistry} is populated with
+ *     {@link HtsCodec}s that are discovered and instantiated statically via a {@link java.util.ServiceLoader},
+ *     and can be accessed using {@link htsjdk.beta.plugin.registry.HtsDefaultRegistry}. A private, mutable
+ *     registry can be created at runtime via {@link HtsCodecRegistry#createPrivateRegistry()}, and populated
+ *     dynamically by calls to {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)}.
  *     <p>
  *     The primary responsibility of an {@link HtsCodec} is to satisfy requests made by the framework during
  *     codec resolution, inspecting and recognizing input URIs and stream resources that match the
@@ -80,7 +78,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> For {@link HtsContentType#FEATURES} codecs, see the {@link htsjdk.beta.plugin.features} package </li>
  * </ul>
  * <p>
- * <H3>Example Codec Type: Reads Codecs</H3>
+ * <H3>Example Content Type: Reads</H3>
  * <p>
  *     As an example, the {@link htsjdk.beta.plugin.reads} package defines the following interfaces
  *     that extend the generic base interfaces for codecs with content type {@link HtsContentType#ALIGNED_READS}:
@@ -98,7 +96,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link ReadsFormats}: an class with string constants for each possible
  *     supported reads file format </li>
  * </ul>
- * <H3>Codec Resolution Protocol</H3>
+ * <H3>Codec Resolution</H3>
  * <p>
  *     The plugin framework uses registered codecs to conduct a series of probes into the structure
  *     and format of an input or output resource in order to find a matching codec that can produce
@@ -118,7 +116,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link htsjdk.beta.plugin.registry.HtsCodecResolver#resolveForEncoding(Bundle)} </li>
  *     <li> {@link htsjdk.beta.plugin.registry.HtsCodecResolver#resolveForEncoding(Bundle, HtsVersion)} </li>
  * </ul>
- * <H3>Codecs That Use a Custom URI Format or Protocol Scheme</H3>
+ * <H3>Formats That Use a Custom URI or Protocol Scheme</H3>
  * <p>
  *     Many file formats consist of a single file that resides on a file system that is supported by a
  *     {@link java.nio} file system provider. Codecs that support such formats are generally agnostic
@@ -140,9 +138,9 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     It uses {@code http} to access the underlying resource, and bypasses direct {@link java.nio}
  *     file system access.
  * <p>
- *     Codecs that use a custom URI format or protocol scheme such as {@code htsget} must be able
- *     to determine if they can decode or encode a resource purely by inspecting the IOPath/URI. Such
- *     codecs should follow these guidelines:
+ *     Codecs for formats that use a custom URI format or protocol scheme such as {@code htsget} must be
+ *     able to determine if they can decode or encode a resource purely by inspecting the IOPath/URI, and
+ *     should follow these guidelines:
  *     <ul>
  *         <li>return true when {@link #ownsURI(IOPath)} is presented with an IOPath with
  *         a conforming URI </li>

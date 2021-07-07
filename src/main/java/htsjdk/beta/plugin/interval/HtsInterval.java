@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.interval;
 
 /**
- * A common interface for 1-based closed genomic intervals.
+ * A common interface for 1-based, closed genomic intervals.
  */
 public interface HtsInterval {
     /**

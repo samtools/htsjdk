@@ -6,7 +6,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import java.util.Optional;
 
 /**
- * Query methods specific to aligned reads decoders. Reads-specific extension of HtsQuery)
+ * Query methods specific to {@link ReadsDecoder}s.
  */
 public interface ReadsQuery<R extends HtsRecord> {
 

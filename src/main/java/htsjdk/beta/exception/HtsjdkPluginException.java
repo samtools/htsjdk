@@ -5,7 +5,7 @@ package htsjdk.beta.exception;
  */
 public class HtsjdkPluginException extends HtsjdkException {
     /**
-     * Construct an HtsjdkPluginException exception.
+     * Construct an HtsjdkPluginException.
      *
      * @param message detailed message.
      */
