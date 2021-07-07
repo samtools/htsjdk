@@ -3,13 +3,13 @@ package htsjdk.beta.codecs.hapref.fasta;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
+import htsjdk.beta.plugin.hapref.HaploidReferenceDecoderOptions;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoder;
-import htsjdk.beta.plugin.bundle.SignatureProbingStream;
+import htsjdk.beta.plugin.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.plugin.hapref.HaploidReferenceEncoderOptions;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.HtsDecoderOptions;
-import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
 import htsjdk.samtools.util.FileExtensions;
@@ -38,8 +38,8 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     }
 
     @Override
-    public boolean canDecodeStreamSignature(final SignatureProbingStream signatureProbingStream, final String sourceName) {
-        int ch = signatureProbingStream.read();
+    public boolean canDecodeSignature(final SignatureStream signatureStream, final String sourceName) {
+        int ch = signatureStream.read();
         if (ch == -1) {
             throw new HtsjdkIOException(
                     String.format("Codec %s failed probing signature for resource %s", this.getDisplayName(), sourceName));
@@ -53,13 +53,13 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     }
 
    @Override
-    public HaploidReferenceDecoder getDecoder(final Bundle inputBundle, final HtsDecoderOptions options) {
+    public HaploidReferenceDecoder getDecoder(final Bundle inputBundle, final HaploidReferenceDecoderOptions options) {
         ValidationUtils.validateArg(options == null, "reference reader options must be null");
         return new FASTADecoderV1_0(inputBundle);
     }
 
     @Override
-    public HaploidReferenceEncoder getEncoder(final Bundle outputBundle, final HtsEncoderOptions options) {
+    public HaploidReferenceEncoder getEncoder(final Bundle outputBundle, final HaploidReferenceEncoderOptions options) {
         throw new HtsjdkPluginException("FASTA encoder not implemented");
     }
 

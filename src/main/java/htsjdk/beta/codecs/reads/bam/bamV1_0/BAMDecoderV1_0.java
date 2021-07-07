@@ -3,6 +3,7 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
 import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
@@ -50,16 +51,17 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public boolean isQueryable() {
-        return samReader.isQueryable();
+        return indexProvidedInInputBundle() && samReader.isQueryable();
     }
 
     @Override
     public boolean hasIndex() {
-        return samReader.hasIndex();
+        return indexProvidedInInputBundle() && samReader.hasIndex();
     }
 
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
+        assertIndexProvided();
         final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
                 intervals,
                 samFileHeader.getSequenceDictionary());
@@ -68,6 +70,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
+        assertIndexProvided();
         return samReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start));
     }
 
@@ -75,11 +78,13 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
+        assertIndexProvided();
         return samReader.queryUnmapped();
     }
 
     @Override
     public SAMRecord queryMate(final SAMRecord rec) {
+        assertIndexProvided();
         return samReader.queryMate(rec);
     }
 
@@ -108,6 +113,23 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         // Otherwise when we change this code path in the future to no longer use SamReaderFactory, backward
         // incompatibilities will be introduced.
         return samReaderFactory.open(samInputResource);
+    }
+
+    // the stated contract for decoders is that the index must be included in the bundle in order to use
+    // index queries, but BAMFileReader *always* tries to resolve the sibling, which would violate that,
+    // so enforce the contract manually so that someday when we use a different implementation, no backward
+    // compatibility issue will be introduced
+    private void assertIndexProvided() {
+        if (!indexProvidedInInputBundle()) {
+            throw new IllegalArgumentException(String.format(
+                    "An index resource must be provided in the resource bundle to make index queries: %s",
+                    inputBundle
+            ));
+        }
+    }
+
+    private boolean indexProvidedInInputBundle() {
+        return inputBundle.get(BundleResourceType.READS_INDEX).isPresent();
     }
 
 }

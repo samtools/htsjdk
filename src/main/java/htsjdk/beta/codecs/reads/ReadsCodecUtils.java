@@ -64,7 +64,7 @@ final public class ReadsCodecUtils {
             final String contentType,
             final ReadsDecoderOptions readsDecoderOptions) {
         final BundleResource readsInput = inputBundle.getOrThrow(contentType);
-        if (!readsInput.isInput()) {
+        if (!readsInput.hasInputType()) {
             throw new IllegalArgumentException(String.format(
                     "The provided %s resource (%s) must be a readable/input resource", contentType, readsInput));
         }

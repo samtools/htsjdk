@@ -25,34 +25,75 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
 /**
  * Test BAM file index queries.
  *
- * Test and code hijacked from BAMFileIndexTest.
+ * Tests and code hijacked from BAMFileIndexTest.
+ *
+ * The test here don't need to be exhaustive since we're not testing the BAM reader itself. We're just trying
+ * to get good coverage of the surface area of the BAMDecoder API.
  */
 public class HtsBAMCodecQueryTest extends HtsjdkTest {
     private final IOPath TEST_BAM = new HtsPath("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final IOPath TEST_BAI = new HtsPath(SamFiles.findIndex(TEST_BAM.toPath().toFile()).toString());
     private final boolean mVerbose = false;
 
-    @Test
-    public void testSpecificQueries()
-            throws Exception {
-        assertEquals(runQueryTest(TEST_BAM, "chrM", 10400, 10600, HtsQueryRule.CONTAINED), 1);
-        assertEquals(runQueryTest(TEST_BAM, "chrM", 10400, 10600, HtsQueryRule.OVERLAPPING), 2);
+    @DataProvider(name="queryMethodsCases")
+    private Object[][] queryMethodsCases() {
+        return new Object[][] {
+                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryStart("chr1", 202160268) },
+                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.query("chr1", 202661637, 202661812, HtsQueryRule.CONTAINED) },
+                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryContained("chr1", 202661637, 202661812) },
+                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryOverlapping("chr1", 202661637, 202661812) },
+                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryUnmapped() },
+        };
     }
 
-    @Test(groups = {"slow"})
-    public void testRandomQueries() throws Exception {
-        runRandomTest(TEST_BAM, 1000, new Random(TestUtil.RANDOM_SEED));
+    @Test(dataProvider="queryMethodsCases")
+    public void testAcceptIndexInBundle(final Function<BAMDecoder, ?> queryFunction) {
+        // use a bam that is known to have an on-disk companion index to ensure that attempts to make
+        // index queries are rejected if the index is not explicitly included in the input bundle
+        final ReadsBundle readsBundle = ReadsBundle.resolveIndex(TEST_BAM);
+        Assert.assertTrue(readsBundle.getIndex().isPresent());
+
+        try (final BAMDecoder bamDecoder = (BAMDecoder)
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
+            Assert.assertTrue(bamDecoder.hasIndex());
+            Assert.assertTrue(bamDecoder.isQueryable());
+            queryFunction.apply(bamDecoder);
+        }
+    }
+
+    @Test(dataProvider="queryMethodsCases", expectedExceptions = IllegalArgumentException.class)
+    public void testRejectIndexNotIncludedInBundle(final Function<BAMDecoder, ?> queryFunction) {
+        // use a bam that is known to have an on-disk companion index to ensure that attempts to make
+        // index queries are rejected if the index is not explicitly included in the input bundle
+        final ReadsBundle readsBundle = new ReadsBundle(TEST_BAM);
+        Assert.assertFalse(readsBundle.getIndex().isPresent());
+
+        try (final BAMDecoder bamDecoder = (BAMDecoder)
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
+
+            Assert.assertFalse(bamDecoder.hasIndex());
+            Assert.assertFalse(bamDecoder.isQueryable());
+
+            // now try every possible query method
+            queryFunction.apply(bamDecoder);
+        }
+    }
+
+    @Test
+    public void testSpecificQueries() {
+        assertEquals(runQueryTest(TEST_BAM, "chrM", 10400, 10600, HtsQueryRule.CONTAINED), 1);
+        assertEquals(runQueryTest(TEST_BAM, "chrM", 10400, 10600, HtsQueryRule.OVERLAPPING), 2);
     }
 
     @Test
@@ -62,21 +103,25 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
         checkChromosome("chr2", 837);
     }
 
-//    @Test
-//    public void testQueryAlignmentStart() {
-//        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsCodecRegistry.getReadsDecoder(TEST_BAM)) {
-//            Iterator<SAMRecord> it = bamDecoder.queryStart("chr1", 202160268);
-//            Assert.assertEquals(countElements(it), 2);
-//            it = bamDecoder.queryStart("chr1", 201595153);
-//            Assert.assertEquals(countElements(it), 1);
-//            // There are records that overlap this position, but none that start here
-//            it = bamDecoder.queryStart("chrM", 10400);
-//            Assert.assertEquals(countElements(it), 0);
-//            // One past the last chr1 record
-//            it = bamDecoder.queryStart("chr1", 246817509);
-//            Assert.assertEquals(countElements(it), 0);
-//        }
-//    }
+    @Test
+    public void testQueryAlignmentStart() {
+        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(TEST_BAM)) {
+            try (final CloseableIterator<SAMRecord> it = bamDecoder.queryStart("chr1", 202160268)) {
+                Assert.assertEquals(countElements(it), 2);
+            }
+            try (final CloseableIterator<SAMRecord> it = bamDecoder.queryStart("chr1", 201595153)) {
+                Assert.assertEquals(countElements(it), 1);
+            }
+            // There are records that overlap this position, but none that start here
+            try (final CloseableIterator<SAMRecord> it = bamDecoder.queryStart("chrM", 10400)) {
+                Assert.assertEquals(countElements(it), 0);
+            }
+            // One past the last chr1 record
+            try (final CloseableIterator<SAMRecord> it = bamDecoder.queryStart("chr1", 246817509)) {
+                Assert.assertEquals(countElements(it), 0);
+            }
+        }
+    }
 
     @DataProvider(name = "queryIntervalsData")
     public Object[][] queryIntervalsData(){
@@ -101,54 +146,9 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
         }
     }
 
-//    /**
-//     * Compare the results of a multi-interval query versus the union of the results from each interval done
-//     * separately.
-//     */
-//    @Test(dataProvider = "testMultiIntervalQueryDataProvider")
-//    public void testMultiIntervalQuery(final boolean contained) {
-//        final List<String> referenceNames = getReferenceNames(TEST_BAM);
-//
-//        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsCodecRegistry.getReadsDecoder(TEST_BAM)) {
-//            final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), 1000, new Random(TestUtil.RANDOM_SEED));
-//            final Set<SAMRecord> multiIntervalRecords = new HashSet<>();
-//            final Set<SAMRecord> singleIntervalRecords = new HashSet<>();
-//            for (final QueryInterval interval : intervals) {
-//                consumeAll(singleIntervalRecords,
-//                        bamDecoder.query(referenceNames.get(interval.referenceIndex),
-//                                interval.start,
-//                                interval.end,
-//                                contained));
-//            }
-//
-//            final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
-//            consumeAll(multiIntervalRecords, bamDecoder.query(queryIntervalArrayToHtsIntervalList(optimizedIntervals), contained));
-//            final Iterator<SAMRecord> singleIntervalRecordIterator = singleIntervalRecords.iterator();
-//            boolean failed = false;
-//            while (singleIntervalRecordIterator.hasNext()) {
-//                final SAMRecord record = singleIntervalRecordIterator.next();
-//                if (!multiIntervalRecords.remove(record)) {
-//                    System.out.println("SingleIntervalQuery found " + record + " but MultiIntervalQuery did not");
-//                    failed = true;
-//                }
-//            }
-//            for (final SAMRecord record : multiIntervalRecords) {
-//                System.out.println("MultiIntervalQuery found " + record + " but SingleIntervalQuery did not");
-//                failed = true;
-//            }
-//            Assert.assertFalse(failed);
-//        }
-//    }
-
     @DataProvider(name = "testMultiIntervalQueryDataProvider")
     private Object[][] testMultiIntervalQueryDataProvider() {
         return new Object[][]{{true}, {false}};
-    }
-
-    private <E> void consumeAll(final Collection<E> collection, final Iterator<E> iterator) {
-        while (iterator.hasNext()) {
-            collection.add(iterator.next());
-        }
     }
 
     private long countElements(final Iterator<SAMRecord> it) {
@@ -164,56 +164,7 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
         assertEquals(count, expectedCount);
     }
 
-    private void runRandomTest(final IOPath bamFile, final int count, final Random generator) {
-        final List<String> referenceNames = getReferenceNames(bamFile);
-        final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), count, generator);
-        for (final QueryInterval interval : intervals) {
-            final String refName = referenceNames.get(interval.referenceIndex);
-            final int startPos = interval.start;
-            final int endPos = interval.end;
-            System.out.println("Testing query " + refName + ":" + startPos + "-" + endPos + " ...");
-            try {
-                runQueryTest(bamFile, refName, startPos, endPos, HtsQueryRule.CONTAINED);
-                runQueryTest(bamFile, refName, startPos, endPos, HtsQueryRule.OVERLAPPING);
-            } catch (final Throwable exc) {
-                String message = "Query test failed: " + refName + ":" + startPos + "-" + endPos;
-                message += ": " + exc.getMessage();
-                throw new RuntimeException(message, exc);
-            }
-        }
-    }
-
-    private QueryInterval[] generateRandomIntervals(final int numReferences, final int count, final Random generator) {
-        final QueryInterval[] intervals = new QueryInterval[count];
-        final int maxCoordinate = 10000000;
-        for (int i = 0; i < count; i++) {
-            final int referenceIndex = generator.nextInt(numReferences);
-            final int coord1 = generator.nextInt(maxCoordinate + 1);
-            final int coord2 = generator.nextInt(maxCoordinate + 1);
-            final int startPos = Math.min(coord1, coord2);
-            final int endPos = Math.max(coord1, coord2);
-            intervals[i] = new QueryInterval(referenceIndex, startPos, endPos);
-        }
-
-        return intervals;
-    }
-
-    private static List<String> getReferenceNames(final IOPath bamFile) {
-        try (final BAMDecoder bamDecoder = (BAMDecoder)
-                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(bamFile)) {
-            final List<String> result = new ArrayList<>();
-            final List<SAMSequenceRecord> seqRecords = bamDecoder.getHeader().getSequenceDictionary().getSequences();
-            for (final SAMSequenceRecord seqRecord : seqRecords) {
-                if (seqRecord.getSequenceName() != null) {
-                    result.add(seqRecord.getSequenceName());
-                }
-            }
-            return result;
-        }
-    }
-
     private int runQueryTest(final IOPath bamFile, final String sequence, final int startPos, final int endPos, final HtsQueryRule queryRule) {
-        verbose("Testing query " + sequence + ":" + startPos + "-" + endPos + " ...");
 
         final ReadsBundle readsBundleWithIndex = ReadsBundle.resolveIndex(bamFile);
         try (final BAMDecoder bamDecoder = (BAMDecoder)
@@ -275,13 +226,13 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
     private static void checkPassesFilter(final boolean expected, final SAMRecord record, final String sequence, final int startPos, final int endPos, final HtsQueryRule queryRule) {
         final boolean passes = passesFilter(record, sequence, startPos, endPos, queryRule);
         if (passes != expected) {
-            System.out.println("Error: Record erroneously " +
-                    (passes ? "passed" : "failed") +
-                    " filter.");
-            System.out.println(" Record: " + record.getSAMString());
-            System.out.println(" Filter: " + sequence + ":" +
-                    startPos + "-" + endPos +
-                    " (" + (queryRule == HtsQueryRule.CONTAINED ? "contained" : "overlapping") + ")");
+            //System.out.println("Error: Record erroneously " +
+            //        (passes ? "passed" : "failed") +
+            //        " filter.");
+            //System.out.println(" Record: " + record.getSAMString());
+            //System.out.println(" Filter: " + sequence + ":" +
+            //        startPos + "-" + endPos +
+            //        " (" + (queryRule == HtsQueryRule.CONTAINED ? "contained" : "overlapping") + ")");
             assertEquals(passes, expected);
         }
     }

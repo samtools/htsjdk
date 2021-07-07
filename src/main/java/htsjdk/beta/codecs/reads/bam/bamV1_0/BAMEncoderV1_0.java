@@ -3,7 +3,6 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 import htsjdk.beta.codecs.reads.bam.BAMEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
@@ -43,11 +42,10 @@ public class BAMEncoderV1_0 extends BAMEncoder {
         }
     }
 
-    private SAMFileWriter getBAMFileWriter(final HtsEncoderOptions htsEncoderOptions, final SAMFileHeader samFileHeader) {
-        //TODO: expose presorted
+    private SAMFileWriter getBAMFileWriter(final ReadsEncoderOptions readsEncoderOptions, final SAMFileHeader samFileHeader) {
+        //TODO: expose presorted, use BAMEncoderOptions
         final boolean preSorted = true;
 
-        final ReadsEncoderOptions readsEncoderOptions = (ReadsEncoderOptions) htsEncoderOptions;
         final BundleResource bundleResource = outputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
 
         if (bundleResource.getIOPath().isPresent()) {

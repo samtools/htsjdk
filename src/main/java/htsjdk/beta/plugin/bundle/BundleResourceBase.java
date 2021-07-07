@@ -68,10 +68,10 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
     public boolean hasSeekableStream() { return false; }
 
     @Override
-    public boolean isInput() { return false; }
+    public boolean hasInputType() { return false; }
 
     @Override
-    public boolean isOutput() { return false; }
+    public boolean hasOutputType() { return false; }
 
     @Override
     public String toString() {

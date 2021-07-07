@@ -44,12 +44,12 @@ public class OutputStreamResource extends BundleResourceBase {
     }
 
     @Override
-    public SignatureProbingStream getSignatureProbingStream(int signatureProbeLength) {
-        throw new HtsjdkPluginException("Cannot create a signature probing stream on an output stream resource");
+    public SignatureStream getSignatureProbeStream(int signatureProbeLength) {
+        throw new HtsjdkPluginException("Cannot create a signature probe stream on an output stream resource");
     }
 
     @Override
-    public boolean isOutput() { return true; }
+    public boolean hasOutputType() { return true; }
 
     @Override
     public boolean equals(Object o) {

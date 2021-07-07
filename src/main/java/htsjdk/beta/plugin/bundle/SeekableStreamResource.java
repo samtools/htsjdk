@@ -6,7 +6,6 @@ import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Inherited;
 import java.util.Optional;
 
 /**
@@ -57,10 +56,10 @@ public class SeekableStreamResource extends InputStreamResource {
      * {@inheritDoc}
      *
      * @param signatureProbeLength {@inheritDoc}
-     * @return Obtain a SignatureProbingStream on this resource. Resets the underlying seekable stream.
+     * @return Obtain a SignatureProbeStream on this resource. Resets the underlying seekable stream.
      */
     @Override
-    public SignatureProbingStream getSignatureProbingStream(final int signatureProbeLength) {
+    public SignatureStream getSignatureProbeStream(final int signatureProbeLength) {
         //we don't want to call the super class' implementation here
         final byte[] signaturePrefix = new byte[signatureProbeLength];
         try {
@@ -73,16 +72,16 @@ public class SeekableStreamResource extends InputStreamResource {
             seekableStream.seek(0);
         } catch (final IOException e) {
             throw new RuntimeIOException(
-                    String.format("Error creating signature probing for seekable stream resource with prefix size %d",
+                    String.format("Error creating signature probe for seekable stream resource with prefix size %d",
                             signatureProbeLength),
                     e);
         }
-        return new SignatureProbingStream(signatureProbeLength, signaturePrefix);
+        return new SignatureStream(signatureProbeLength, signaturePrefix);
 
     }
 
     @Override
-    public boolean isInput() { return true; }
+    public boolean hasInputType() { return true; }
 
     @Override
     public boolean hasSeekableStream() { return true; }

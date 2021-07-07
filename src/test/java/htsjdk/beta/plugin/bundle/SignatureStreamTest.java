@@ -6,12 +6,12 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-public class SignatureProbingStreamTest extends HtsjdkTest {
+public class SignatureStreamTest extends HtsjdkTest {
 
     @Test
     private void testReadPastEndOfSignatureBuffer() throws IOException {
         final int SIGNATURE_BUFFER_SIZE = 100;
-        try (final SignatureProbingStream sis = new SignatureProbingStream(
+        try (final SignatureStream sis = new SignatureStream(
                 SIGNATURE_BUFFER_SIZE, new byte[SIGNATURE_BUFFER_SIZE]
         )) {
             Assert.assertEquals(sis.getSignaturePrefixLength(), SIGNATURE_BUFFER_SIZE);

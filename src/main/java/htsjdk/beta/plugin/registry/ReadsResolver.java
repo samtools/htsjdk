@@ -179,7 +179,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsFormat, ReadsCodec>{
         ValidationUtils.nonNull(readsFormat, "Reads format");
         ValidationUtils.nonNull(formatVersion, "File format version");
 
-        return (ReadsEncoder) resolveForFormatAndVersion(readsFormat, formatVersion)
+        return (ReadsEncoder) resolveFormatAndVersion(readsFormat, formatVersion)
                 .getEncoder(outputBundle, readsEncoderOptions);
     }
 

@@ -4,7 +4,7 @@ import htsjdk.beta.codecs.reads.bam.BAMCodec;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
 import htsjdk.beta.codecs.reads.bam.BAMEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.SignatureProbingStream;
+import htsjdk.beta.plugin.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -36,7 +36,7 @@ public class BAMCodecV1_0 extends BAMCodec {
     }
 
     @Override
-    public boolean canDecodeStreamSignature(final SignatureProbingStream probingInputStream, final String sourceName) {
+    public boolean canDecodeSignature(final SignatureStream probingInputStream, final String sourceName) {
         ValidationUtils.nonNull(probingInputStream);
         ValidationUtils.nonNull(sourceName);
 

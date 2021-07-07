@@ -20,8 +20,8 @@ public class BundleResourceTest extends HtsjdkTest {
 
     @Test(dataProvider = "inputOutputTestData")
     public void testIsInputOutput(final BundleResource resource, final boolean expectedIsInput, final boolean expectedIsOutput) {
-        Assert.assertEquals(resource.isInput(), expectedIsInput);
-        Assert.assertEquals(resource.isOutput(), expectedIsOutput);
+        Assert.assertEquals(resource.hasInputType(), expectedIsInput);
+        Assert.assertEquals(resource.hasOutputType(), expectedIsOutput);
     }
 
     @DataProvider(name="resourceEqualityTestData")

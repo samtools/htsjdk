@@ -15,7 +15,7 @@ import java.util.Optional;
 public class InputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
     private final InputStream rawInputStream;           // the stream as provided by the caller
-    private BufferedInputStream bufferedInputStream;    // buffered stream wrapper to allow for signature probing
+    private BufferedInputStream bufferedInputStream;    // buffered stream wrapper to compensate for signature probing
 
     /**
      * Note that it is the caller's responsibility to ensure that {@code inputStream} is closed once the
@@ -54,12 +54,12 @@ public class InputStreamResource extends BundleResourceBase {
     }
 
     @Override
-    public SignatureProbingStream getSignatureProbingStream(final int signatureProbeLength) {
+    public SignatureStream getSignatureProbeStream(final int signatureProbeLength) {
         ValidationUtils.validateArg(signatureProbeLength > 0, "signatureProbeLength must be > 0");
 
         if (bufferedInputStream != null) {
             throw new HtsjdkPluginException(
-                    String.format("Only one probing stream can be created for an Input stream resource"));
+                    String.format("Only one SignatureProbeStream stream can be created for an Input stream resource"));
         }
 
         final byte[] signaturePrefix = new byte[signatureProbeLength];
@@ -68,8 +68,8 @@ public class InputStreamResource extends BundleResourceBase {
             // was provided by the caller, since we don't have any way to reconstitute it, so don't use
             // try-with-resources
             bufferedInputStream = new BufferedInputStream(rawInputStream, signatureProbeLength);
-            // mark, read, and then reset the buffered stream so that when the actual stream is consumed,
-            // once signature probing is set, it will be consumed from the beginning
+            // mark, read, and then reset the buffered stream so that when the actual stream is consumed
+            // once signature probing is complete, it will be consumed from the beginning
             bufferedInputStream.mark(signatureProbeLength);
             bufferedInputStream.read(signaturePrefix);
             // reset the buffered input stream so the next consumer sees the beginning of the stream
@@ -81,11 +81,11 @@ public class InputStreamResource extends BundleResourceBase {
                             signatureProbeLength),
                     e);
         }
-        return new SignatureProbingStream(signatureProbeLength, signaturePrefix);
+        return new SignatureStream(signatureProbeLength, signaturePrefix);
     }
 
     @Override
-    public boolean isInput() { return true; }
+    public boolean hasInputType() { return true; }
 
     @Override
     public boolean equals(Object o) {

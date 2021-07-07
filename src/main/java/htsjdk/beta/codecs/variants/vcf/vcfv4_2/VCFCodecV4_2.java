@@ -4,7 +4,7 @@ import htsjdk.beta.codecs.variants.vcf.VCFCodec;
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
 import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.SignatureProbingStream;
+import htsjdk.beta.plugin.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
@@ -34,7 +34,7 @@ public class VCFCodecV4_2 extends VCFCodec {
     public int getSignatureProbeLength() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
 
     @Override
-    public boolean canDecodeStreamSignature(final SignatureProbingStream probingInputStream, final String sourceName) {
+    public boolean canDecodeSignature(final SignatureStream probingInputStream, final String sourceName) {
         final byte[] signatureBytes = new byte[getSignatureLength()];
         try {
             final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(probingInputStream) ?

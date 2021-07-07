@@ -5,12 +5,13 @@ import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.beta.plugin.HtsEncoderOptions;
 
-//TODO:should this use a more specific HaploidReferenceOptions class, even if its a no-op
-
 /**
- *  Defines the type parameters instantiated for haploid reference codecs.
+ *  Base class for all haploid reference codecs.
  */
-public interface HaploidReferenceCodec extends HtsCodec<HaploidReferenceFormat, HtsDecoderOptions, HtsEncoderOptions> {
+public interface HaploidReferenceCodec extends HtsCodec<
+        HaploidReferenceFormat,
+        HaploidReferenceDecoderOptions,
+        HaploidReferenceEncoderOptions> {
 
     @Override
     default HtsContentType getContentType() { return HtsContentType.HAPLOID_REFERENCE; }

@@ -104,7 +104,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsFormat, VariantsC
         ValidationUtils.nonNull(variantsFormat, "Format");
         ValidationUtils.nonNull(codecVersion, "Codec version");
 
-        return (VariantsEncoder) resolveForFormatAndVersion(variantsFormat, codecVersion)
+        return (VariantsEncoder) resolveFormatAndVersion(variantsFormat, codecVersion)
                 .getEncoder(outputBundle, variantsEncoderOptions);
     }
 

@@ -7,20 +7,18 @@ import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.exception.HtsjdkPluginException;
 
 //TODO: Master TODO list:
-// - prevent the decoders that use SamReaderFactory from automatically resolving index files
-// - javadoc/final/ValidateArgs
+// - javadoc/final/ValidateArgs/audit super() calls
 // - Incomplete: BAM/CRAM de/encoder options, VCF 4.2, FASTA codecs, respect presorted in Reads encoders
 // - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
 // - finish adding tests
-//      rules for how to resolve input index
-//      large number of inputs where the caller asserts the content type, format, version
+//      input index resolution rules
 //      add a test where the expected file extension isn't present (what are the rules for canDecode* ?)
 //      make sure *writable* HtsBAMGet encoder custom protocol schemes (though we don't have any ? genomicsDB ?)
 // - finish content type inference
 // - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
 // - address CRAM reference leak issue in master
-// - test stdin/stdout (this would be way easier with GATK)
+// - test stdin/stdout (would be way easier with GATK)
 //
 // TODO: post PR
 // - encryption/decryption key files, etc.
@@ -89,10 +87,14 @@ public class HtsCodecRegistry {
      */
     public synchronized static HtsCodecRegistry createPrivateRegistry() {
         final HtsCodecRegistry privateRegistry = new HtsCodecRegistry();
-        // propagate the codecs from the sourceRegistry to the new one
-        HtsDefaultRegistry.htsDefaultCodecRegistry.getHaploidReferenceResolver().getCodecs().forEach(c -> privateRegistry.registerCodec(c));
-        HtsDefaultRegistry.htsDefaultCodecRegistry.getReadsResolver().getCodecs().forEach(c -> privateRegistry.registerCodec(c));
-        HtsDefaultRegistry.htsDefaultCodecRegistry.getVariantsResolver().getCodecs().forEach(c -> privateRegistry.registerCodec(c));
+
+        // propagate the codecs from the sourceRegistry to the new registry
+        HtsDefaultRegistry.htsDefaultCodecRegistry.getHaploidReferenceResolver().getCodecs()
+                .forEach(c -> privateRegistry.registerCodec(c));
+        HtsDefaultRegistry.htsDefaultCodecRegistry.getReadsResolver().getCodecs().
+                forEach(c -> privateRegistry.registerCodec(c));
+        HtsDefaultRegistry.htsDefaultCodecRegistry.getVariantsResolver().getCodecs()
+                .forEach(c -> privateRegistry.registerCodec(c));
         return privateRegistry;
     }
 

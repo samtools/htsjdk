@@ -55,10 +55,10 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     public Optional<OutputStream> getOutputStream() { return Optional.of(ioPath.getOutputStream()); }
 
     @Override
-    public boolean isInput() { return true; }
+    public boolean hasInputType() { return true; }
 
     @Override
-    public boolean isOutput() { return true; }
+    public boolean hasOutputType() { return true; }
 
     @Override
     public boolean hasSeekableStream() {
@@ -77,20 +77,20 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     }
 
     @Override
-    public SignatureProbingStream getSignatureProbingStream(final int signatureProbeLength) {
+    public SignatureStream getSignatureProbeStream(final int signatureProbeLength) {
         ValidationUtils.validateArg(signatureProbeLength > 0, "signature probe length size must be > 0");
 
-        // get a stream on the underlying IOPath, get reuseable signature probing buffer,
+        // get a stream on the underlying IOPath, get a reuseable signature probe buffer,
         try (final InputStream is = getInputStream().get();
              final InputStream inputStream = new BufferedInputStream(is, signatureProbeLength)) {
             final byte[] signaturePrefix = new byte[signatureProbeLength];
             inputStream.mark(signatureProbeLength);
             inputStream.read(signaturePrefix);
             inputStream.reset();
-            return new SignatureProbingStream(signatureProbeLength, signaturePrefix);
+            return new SignatureStream(signatureProbeLength, signaturePrefix);
         } catch (final IOException e) {
             throw new RuntimeIOException(
-                    String.format("Error getting s signature probing stream with probe length %d", signatureProbeLength),
+                    String.format("Error getting a signature probe stream with probe length %d", signatureProbeLength),
                     e);
         }
     }

@@ -1,6 +1,5 @@
 package htsjdk.beta.plugin.interval;
 
-//TODO: use 0
 /**
  * A common interface for 1-based closed genomic intervals.
  */
