@@ -9,8 +9,8 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *
  * <H3>Codecs</H3>
  * <p>
- *     Each version of a data format supported by the {@link htsjdk.beta.plugin} framework is
- *     represented by a trio of related components:
+ *     Each version of each file format supported by the {@link htsjdk.beta.plugin} framework is
+ *     represented by a trio of components:
  * <ul>
  *     <li>a codec that implements {@link HtsCodec}</li>
  *     <li>an encoder that implements {@link HtsEncoder}</li>
@@ -24,9 +24,9 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     to resolve requests for an {@link HtsEncoder} or {@link HtsDecoder} that matches a given resource.
  *     <p>
  *     The primary responsibility of an {@link HtsCodec} is to satisfy requests made by the framework during
- *     the codec resolution process, to inspect and recognize input URIs and stream resources that match the
- *     codec's supported format and version, and to instantiate and return an {@link HtsEncoder} or
- *     {@link HtsDecoder} on demand once a match is made.
+ *     codec resolution, inspecting and recognizing input URIs and stream resources that match the
+ *     supported format and version, and providing an {@link HtsEncoder} or {@link HtsDecoder} on demand, once
+ *     a match is made.
  * <p>
  * <H3>Codec Types</H3>
  *     The plugin framework supports four different types of codec/encoder/decoder trios, enumerated
@@ -43,9 +43,9 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     content types. These interfaces extend generic base interfaces with type instantiations appropriate for
  *     that content type (as an example, see {@link htsjdk.beta.plugin.reads.ReadsDecoder} which is a
  *     specialization of {@link htsjdk.beta.plugin.HtsDecoder} that defines the interface for decoders for
- *     codecs with content type {@link HtsContentType#ALIGNED_READS}. The component trios for the various content
- *     type implementations expose the same type-specific interfaces, each over a different combination of file
- *     format and version.
+ *     codecs with content type {@link HtsContentType#ALIGNED_READS}. The various component trios for a given
+ *     content type all expose these same content-type-specific interfaces, but each over a different
+ *     combination of file format and version.
  * <p>
  * The generic, base interfaces that are common to all codecs, encoders, and decoders are:
  * <ul>
@@ -170,7 +170,7 @@ public interface HtsCodec<
         extends Upgradeable {
 
     /**
-     * return the {@link HtsContentType} for this codec
+     * Get the {@link HtsContentType} for this codec.
      *
      * @return the {@link HtsContentType} for this codec. The {@link HtsContentType} is used by callers to
      * determine the content type managed by this codec, as well as the HEADER and RECORD types used by the
@@ -183,22 +183,22 @@ public interface HtsCodec<
     HtsContentType getContentType();
 
     /**
-     * The file format supported by this codec. Taken from the values in {@code F}.
+     * Get the file format supported by this codec, taken from the values in {@code F}.
      *
      * @return a value taken from the Enum {@code F}, representing the underlying file format handled by this codec
      */
     F getFileFormat();
 
     /**
-     * The version of the file format returned by {@link #getFileFormat()} that is supported by this codec.
+     * Get the version of the file format returned by {@link #getFileFormat()} that is supported by this codec.
      *
      * @return the file format version ({@link HtsVersion}) supported by this codec
      */
     HtsVersion getVersion();
 
     /**
-     * A user-friendly display name for instances of this codec. It is recommended that this name minimally
-     * include both the supported file format and version.
+     * Get a user-friendly display name for instances of this codec. It is recommended that the display
+     * name minimally include both the name of the supported file format and the supported version.
      *
      * @return a user-friendly display name for instances of this codec
      */
@@ -207,8 +207,7 @@ public interface HtsCodec<
     }
 
     /**
-     * Returning true from this method indicates that this codec "owns" the URI contained in
-     * {@code ioPath} see ({@link IOPath#getURI()}).
+     * Determine if this codec "owns" the URI contained in {@code ioPath} see ({@link IOPath#getURI()}).
      * A codec "owns" the URI only if it explicitly recognizes and handles the protocol scheme in the
      * URI, or recognizes the rest of the URI as being well-formed for the codec's file format
      * (including the file extension if appropriate, and any query parameters).
@@ -238,7 +237,7 @@ public interface HtsCodec<
     default boolean ownsURI(final IOPath ioPath) { return false; }
 
     /**
-     * Return true if the URI for <code>ioPath</code> (obtained via {@link IOPath#getURI()}) appears to
+     * Determine if the URI for <code>ioPath</code> (obtained via {@link IOPath#getURI()}) appears to
      * conform to the expected URI format this codec's file format. Most implementations only look at
      * the file extension (see {@link htsjdk.io.IOPath#hasExtension}). For codecs that implement formats
      * that use well known, specific file extensions, the codec should reject inputs that do not conform
@@ -291,20 +290,19 @@ public interface HtsCodec<
     boolean canDecodeSignature(final SignatureStream signatureStream, final String sourceName);
 
     /**
-     * The number of bytes in the format name and version signature used by the file format supported by
-     * this codec.
+     * Get the number of bytes in the format and version signature used by the file format supported
+     * by this codec.
      *
      * @return if the file format supported by this codecs is not remote, and is accessible
      * via a local file or stream, the size of the unique signature/version for this file format. otherwise 0.
-     * <p>
      * Note: Codecs that are custom URI handlers (those that return true for {@link #ownsURI}), should
      * always return 0 from this method.
      */
     int getSignatureLength();
 
     /**
-     * The number of bytes of needed by this codec to probe an input stream for a format/version signature,
-     * and determine if it can supply a decoder for the stream.
+     * Get the number of bytes of needed by this codec to probe an input stream for a format/version
+     * signature, and determine if it can supply a decoder for the stream.
      *
      * @return the number of bytes this codec must consume from a stream in order to determine whether
      * it can decode that stream. This number may differ from the actual signature size
@@ -324,7 +322,7 @@ public interface HtsCodec<
     default int getSignatureProbeLength() { return getSignatureLength(); }
 
     /**
-     * Return an {@link HtsDecoder} to decode the provided inputs. The framework will never call this
+     * Obtain an {@link HtsDecoder} to decode the provided inputs. The framework will never call this
      * method unless either {@link #ownsURI(IOPath)}, or {@link #canDecodeURI(IOPath)} and
      * {@link #canDecodeSignature(SignatureStream, String)} (IOPath)} returned true for {@code inputBundle}.
      *
@@ -338,7 +336,7 @@ public interface HtsCodec<
     HtsDecoder<F, ?, ? extends HtsRecord> getDecoder(final Bundle inputBundle, final D decoderOptions);
 
     /**
-     * Return an {@link HtsEncoder} to encode to the provided outputs. The framework
+     * Obtain an {@link HtsEncoder} to encode to the provided outputs. The framework
      * will never call this method unless either {@link #ownsURI(IOPath)}, or {@link #canDecodeURI(IOPath)}
      * returned true for {@code outputBundle}.
      *

@@ -7,13 +7,15 @@ import java.io.OutputStream;
 import java.util.Optional;
 
 /**
- * An output {@link BundleResource} backed by an {@link java.io.OutputStream}.
+ * A {@link BundleResource} backed by an {@link java.io.OutputStream}.
  */
 public class OutputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
     private final OutputStream outputStream;
 
     /**
+     * Create a {@link BundleResource} backed by an OutputStream, specifying a display name and content type.
+     *
      * @param outputStream The {@link OutputStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
@@ -23,6 +25,8 @@ public class OutputStreamResource extends BundleResourceBase {
     }
 
     /**
+     * Create a BundleResource backed by an OutputStream, specifying a display name, content type and format.
+     *
      * @param outputStream The {@link OutputStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.

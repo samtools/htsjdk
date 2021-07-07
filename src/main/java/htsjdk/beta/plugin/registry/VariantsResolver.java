@@ -28,7 +28,7 @@ import htsjdk.utils.ValidationUtils;
 public class VariantsResolver extends HtsCodecResolver<VariantsFormat, VariantsCodec> {
 
     /**
-     * Create a new VariantsResolver.
+     * Create a VariantsResolver.
      */
     public VariantsResolver() {
         super(BundleResourceType.VARIANT_CONTEXTS, VariantsFormat.VCF);

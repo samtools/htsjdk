@@ -19,6 +19,7 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
     private final String format;
 
     /**
+     * Base constructor for creating a new bundle resource.
      *
      * @param displayName A user-recognizable name for this resource. Used for error messages. May not be null or
      *                    0 length.

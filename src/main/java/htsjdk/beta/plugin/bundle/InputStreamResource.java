@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.util.Optional;
 
 /**
- * An {@link BundleResource} backed by an {@link java.io.InputStream}.
+ * A {@link BundleResource} backed by an {@link java.io.InputStream}.
  */
 public class InputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
@@ -19,6 +19,8 @@ public class InputStreamResource extends BundleResourceBase {
     private BufferedInputStream bufferedInputStream;    // buffered stream wrapper to compensate for signature probing
 
     /**
+     * Create a {@link BundleResource} backed by an InputStream.
+     *
      * Note that it is the caller's responsibility to ensure that {@code inputStream} is closed once the
      * resulting resource is no longer being used.
      *
@@ -31,6 +33,9 @@ public class InputStreamResource extends BundleResourceBase {
     }
 
     /**
+     * Create a {@link BundleResource} backed by an InputStream, specifying a display name, content
+     * type, and format.
+     *
      * Note that it is the caller's responsibility to ensure that {@code inputStream} is closed once the
      * resulting resource is no longer being used.
      *

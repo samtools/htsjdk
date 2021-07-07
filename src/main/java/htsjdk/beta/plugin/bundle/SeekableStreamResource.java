@@ -16,6 +16,9 @@ public class SeekableStreamResource extends InputStreamResource {
     private final SeekableStream seekableStream;
 
     /**
+     * Create a {@link BundleResource} backed by an SeekableStream, specifying a display name and
+     * content type.
+     *
      * @param seekableStream The {@link SeekableStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
@@ -25,6 +28,9 @@ public class SeekableStreamResource extends InputStreamResource {
     }
 
     /**
+     *  Create a {@link BundleResource} backed by an SeekableStream, specifying a display name, content
+     *  type and format.
+     *
      * @param seekableStream The {@link SeekableStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
@@ -41,7 +47,7 @@ public class SeekableStreamResource extends InputStreamResource {
     }
 
     /**
-     * return the {@link SeekableStream} managed by this resource as an {@link InputStream}
+     * get the {@link SeekableStream} managed by this resource as an {@link InputStream}
      *
      * @return the seekable stream managed by this resource, without resetting the stream's state
      */

@@ -12,28 +12,28 @@ import java.util.Optional;
  */
 public interface BundleResource {
     /**
-     * return the display name for this resource
+     * get the display name for this resource
      *
      * @return the display name for this resource
      */
     String getDisplayName();
 
     /**
-     * return the content type string for this resource
+     * get the content type string for this resource
      *
      * @return the content type string for this resource
      */
     String getContentTypeString();
 
     /**
-     * return the format string for this resource
+     * get the format string for this resource
      *
      * @return the format string for this resource, or Optional.empty if not present
      */
     Optional<String> getFormatString();
 
     /**
-     * return the {@link IOPath} backing this resource, or Optional.empty
+     * get the {@link IOPath} backing this resource, or Optional.empty
      *
      * @return the {@link IOPath} backing this resource, or Optional.empty if the resource has no backing
      * {@link IOPath}
@@ -41,7 +41,7 @@ public interface BundleResource {
     Optional<IOPath> getIOPath();
 
     /**
-     * return an {@link InputStream} for this resource, or Optional.empty
+     * get an {@link InputStream} for this resource, or Optional.empty
      *
      * @return an {@link InputStream} for this resource, or Optional.empty if {@link
      * BundleResource#hasInputType()} is false for this resource.
@@ -53,7 +53,7 @@ public interface BundleResource {
     Optional<InputStream> getInputStream();
 
     /**
-     * return an {@link OutputStream} for this resource
+     * get an {@link OutputStream} for this resource, or Optional.empty
      *
      * @return an {@link OutputStream} for this resource, or Optional.empty if {@link
      * BundleResource#hasOutputType()} is false for this resource
@@ -61,7 +61,7 @@ public interface BundleResource {
     Optional<OutputStream> getOutputStream();
 
     /**
-     * return an {@link SeekableStream} for this resource, or Optional.empty
+     * get a {@link SeekableStream} for this resource, or Optional.empty
      *
      * @return an {@link SeekableStream} for this resource, or Optional.empty if this is not an input
      * type (see {@link BundleResource#hasInputType()}), or is an input type for which no {@link SeekableStream}
@@ -70,7 +70,7 @@ public interface BundleResource {
     Optional<SeekableStream> getSeekableStream();
 
     /**
-     * return a {@link SignatureStream} for this resource
+     * get a {@link SignatureStream} for this resource
      *
      * @return a {@link SignatureStream} over the first {@code signatureProbeLength} bytes of this
      * resource, for use with signature probing for codec resolution. Only applicable to resources for

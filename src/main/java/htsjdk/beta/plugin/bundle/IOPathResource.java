@@ -13,13 +13,15 @@ import java.io.Serializable;
 import java.util.Optional;
 
 /**
- * An {@link BundleResource} backed by an {@link IOPath}.
+ * A {@link BundleResource} backed by an {@link IOPath}.
  */
 public class IOPathResource extends BundleResourceBase implements Serializable {
     private static final long serialVersionUID = 1L;
     private final IOPath ioPath;
 
     /**
+     * Create a {@link BundleResource} backed by an IOPath, specifying a content type.
+     *
      * @param ioPath The IOPath for this resource. May not be null.
      * @param contentType The content type for this resource. May not be null or 0-length.
      */
@@ -28,6 +30,8 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     }
 
     /**
+     * Create a {@link BundleResource} backed by an IOPath, specifying a content type string and format string.
+
      * @param ioPath The IOPath for this resource. May not be null.
      * @param contentType The content type for this resource. May not be mull or 0-length.
      * @param format The format for this resource. May not be null or 0-length.
@@ -43,6 +47,8 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     public Optional<IOPath> getIOPath() { return Optional.of(ioPath); }
 
     /**
+     * {@InheritDoc}
+     *
      * return a new stream for the IOPath managed by this resource
      *
      * @return return a stream for the IOPath managed by this resource

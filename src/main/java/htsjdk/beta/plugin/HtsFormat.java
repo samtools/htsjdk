@@ -14,9 +14,9 @@ public interface HtsFormat<F extends Enum<F>> {
      * A method that accepts a format string and returns the matching instance of the file format enum
      * from {@link F}
      *
-     * @param format the format String to be converted
+     * @param formatString the format String to be converted
      * @return an instance of the file format enum {@link F} that corresponds to {@code format}, or
      * Optional.empty if there is no match
      */
-    Optional<F> formatStringToEnum(final String format);
+    Optional<F> formatStringToEnum(final String formatString);
 }

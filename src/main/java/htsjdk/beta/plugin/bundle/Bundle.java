@@ -14,24 +14,24 @@ import java.util.Optional;
  * An immutable collection of related resources (a primary resource, such as "reads", "variants",
  * "features", or "reference"), plus zero or more related companion resources ("index", "dictionary",
  * "MD5", etc.).
- *
+ * <p>
  * Each resource in a {@link Bundle} is represented by a {@link BundleResource}, which in turn describes
  * a binding mechanism for that resource (such as an {@link IOPath} in the case of a URI, Path or file
  * name; or an input or output stream), and a "content type" string that is unique within that
  * {@link Bundle}. Any string can be used as a content type. Predefined content type strings are defined
  * in {@link BundleResourceType}.
- *
+ * <p>
  * A {@link Bundle} must have one resource that is designated as the "primary" resource, specified
  * by a content type string. A resource with "primary content type" is is guaranteed to be present in
  * the {@link Bundle}.
- *
+ * <p>
  * Since each resource in a {@link Bundle} has a content type that is unique within that {@link Bundle},
  * a Bundle can not be used to represent a list of similar items where each item is equivalent to
  * each other item (i.e., a list of shards, where each shard in the list is equivalent to each other
  * shard). Rather {@link Bundle}s are used to represent related resources where each resource has a unique
  * character or role  relative to the other resources (i.e., a "reads" resource and a corresponding "index"
  * resource).
- *
+ * <p>
  * Bundles that contain only serializable ({@link IOPathResource}) resources may be serialized to, and
  * deserialized from JSON.
  */
@@ -42,6 +42,8 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
     private final String primaryContentType;
 
     /**
+     * Create a new bundle from an existing resource collection.
+     *
      * @param primaryContentType the content type of the primary resource in this bundle. may not be null.
      *                           a resource with this content type must be included in resources
      * @param resources resources to include in this bundle, may not be null or empty

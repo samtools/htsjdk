@@ -42,7 +42,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
     private static final Log LOG = Log.getInstance(ReadsBundle.class);
 
     /**
-     * Return a {@link ReadsBundle} containing only a reads resource.
+     * Create a {@link ReadsBundle} containing only a reads resource.
      *
      * @param reads An {@link IOPath}-derived object that represents a source of reads.
      */
@@ -53,7 +53,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
     }
 
     /**
-     * Return a {@link ReadsBundle} containing only reads and an index.
+     * Create a {@link ReadsBundle} containing only reads and an index.
      *
      * @param reads An {@link IOPath}-derived object that represents a source of reads.
      */

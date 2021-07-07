@@ -451,14 +451,14 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
     }
 
     private Optional<F> getFormatForFormatString(final BundleResource bundleResource) {
-        final Optional<String> optResourceFormat = bundleResource.getFormatString();
-        final Optional<F> optFormatEnum = optResourceFormat.flatMap(
+        final Optional<String> optFormatString = bundleResource.getFormatString();
+        final Optional<F> optFormatEnum = optFormatString.flatMap(
                 resourceFormat -> htsFormatEnumInstance.formatStringToEnum(resourceFormat));
-        if (optResourceFormat.isPresent() && !optFormatEnum.isPresent()) {
-            // throw if the resource format is present, but doesn't map to any format supported by the content
+        if (optFormatString.isPresent() && !optFormatEnum.isPresent()) {
+            // throw if the resource format string is present, but doesn't map to any format supported by the content
             throw new IllegalArgumentException(
                     String.format("The format (%s) specified in the bundle resource (%s) does not correspond to any known format for content type (%s)",
-                            optResourceFormat.get(),
+                            optFormatString.get(),
                             bundleResource,
                             requiredContentType));
         }
