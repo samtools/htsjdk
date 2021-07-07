@@ -12,22 +12,16 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
-import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
@@ -41,7 +35,7 @@ import java.util.stream.StreamSupport;
  * The test here don't need to be exhaustive since we're not testing the BAM reader itself. We're just trying
  * to get good coverage of the surface area of the BAMDecoder API.
  */
-public class HtsBAMCodecQueryTest extends HtsjdkTest {
+public class HtsBAMDecoderQueryTest extends HtsjdkTest {
     private final IOPath TEST_BAM = new HtsPath("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final IOPath TEST_BAI = new HtsPath(SamFiles.findIndex(TEST_BAM.toPath().toFile()).toString());
     private final boolean mVerbose = false;

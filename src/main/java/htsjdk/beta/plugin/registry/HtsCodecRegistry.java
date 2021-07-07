@@ -10,10 +10,7 @@ import htsjdk.beta.exception.HtsjdkPluginException;
 // - javadoc/final/ValidateArgs/audit super() calls
 // - Incomplete: BAM/CRAM de/encoder options, VCF 4.2, FASTA codecs, respect presorted in Reads encoders
 // - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
-// - finish adding tests
-//      input index resolution rules
-//      add a test where the expected file extension isn't present (what are the rules for canDecode* ?)
-//      make sure *writable* HtsBAMGet encoder custom protocol schemes (though we don't have any ? genomicsDB ?)
+// - finish adding tests/input index resolution rules
 // - finish content type inference
 // - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor

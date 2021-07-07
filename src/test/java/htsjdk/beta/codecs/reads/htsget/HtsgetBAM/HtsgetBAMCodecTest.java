@@ -2,6 +2,7 @@ package htsjdk.beta.codecs.reads.htsget.HtsgetBAM;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
+import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
@@ -22,14 +23,20 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
-//TODO: these tests were lifted from HtsgetBAMFileReaderTest
-
 // NOTE: running these tests require a local htsget server
 
 public class HtsgetBAMCodecTest extends HtsjdkTest {
-    private final static IOPath htsgetBAM = new HtsPath(HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + "index_test.bam");
+    private final static IOPath htsgetBAM = new HtsPath(
+            HtsgetBAMFileReaderTest.HTSGET_ENDPOINT +
+                    HtsgetBAMFileReaderTest.LOCAL_PREFIX + "index_test.bam");
+    private final static File bamFile = new File(
+            "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
-    private final static File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testThrowOnGetEncoder() {
+        // htsget has no write support, so attempts to get an encoder throw
+        HtsDefaultRegistry.getReadsResolver().getReadsEncoder(htsgetBAM, new ReadsEncoderOptions());
+    }
 
     @Test
     public void testGetHeader() {
