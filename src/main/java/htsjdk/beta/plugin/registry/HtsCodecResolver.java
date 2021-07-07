@@ -10,9 +10,11 @@ import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.PrivateAPI;
 import htsjdk.utils.ValidationUtils;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -280,16 +282,20 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
                 return uriOwners;
             } else {
                 final int maxSignatureProbeLength = getMaxSignatureProbeLength(candidateCodecs);
-                final SignatureStream probingStream =
-                        getIOPathSignatureProbingStream(bundleResource, maxSignatureProbeLength);
-                return candidateCodecs.stream()
-                        .filter(codec -> codec.canDecodeURI(ioPath))
-                        .filter(codec -> canDecodeInputStreamSignature(
-                                codec,
-                                probingStream, maxSignatureProbeLength,
-                                bundleResource.getDisplayName()
-                        ))
-                        .collect(Collectors.toList());
+                try (final SignatureStream probingStream =
+                        getIOPathSignatureProbingStream(bundleResource, maxSignatureProbeLength)) {
+                    // closing this stream is a no-op since its backed by a byte array..
+                    return candidateCodecs.stream()
+                            .filter(codec -> codec.canDecodeURI(ioPath))
+                            .filter(codec -> canDecodeInputStreamSignature(
+                                    codec,
+                                    probingStream, maxSignatureProbeLength,
+                                    bundleResource.getDisplayName()
+                            ))
+                            .collect(Collectors.toList());
+                } catch (IOException e) {
+                    throw new RuntimeIOException("error closing signature stream", e);
+                }
             }
         }
         return Collections.emptyList();

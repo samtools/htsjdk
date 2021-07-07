@@ -6,6 +6,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
 
 /**
  * Base interface implemented by all {@link htsjdk.beta.plugin} codecs.
+ *
  * <H3>Codecs</H3>
  * <p>
  *     Each version of a data format supported by the {@link htsjdk.beta.plugin} framework is
@@ -38,7 +39,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link HtsContentType#FEATURES} </li>
  * </ul>
  * <p>
- *     The plugin framework defines a corresponding set of codec/decoder/encoder interfaces for each of these
+ *     The plugin framework defines a set of codec/decoder/encoder interfaces that correspond to each of these
  *     content types. These interfaces extend generic base interfaces with type instantiations appropriate for
  *     that content type (as an example, see {@link htsjdk.beta.plugin.reads.ReadsDecoder} which is a
  *     specialization of {@link htsjdk.beta.plugin.HtsDecoder} that defines the interface for decoders for
@@ -270,7 +271,7 @@ public interface HtsCodec<
      * </ol>
      * <p>
      * Codecs that handle custom URIs that reference remote resources (those that return true for {@link #ownsURI})
-     * should generally not inspect the stream, should generally return false from this method, since the method
+     * should generally not inspect the stream, and should return false from this method, since the method
      * will never be called with any resource for which {@link #ownsURI} returned true.
      * </p>
      *
