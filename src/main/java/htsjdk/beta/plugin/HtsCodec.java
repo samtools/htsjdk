@@ -170,6 +170,8 @@ public interface HtsCodec<
         extends Upgradeable {
 
     /**
+     * return the {@link HtsContentType} for this codec
+     *
      * @return the {@link HtsContentType} for this codec. The {@link HtsContentType} is used by callers to
      * determine the content type managed by this codec, as well as the HEADER and RECORD types used by the
      * codec's {@link HtsEncoder} and {@link HtsDecoder}s. Each implementation of the same content type

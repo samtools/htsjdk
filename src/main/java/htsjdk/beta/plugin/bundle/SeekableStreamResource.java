@@ -41,6 +41,8 @@ public class SeekableStreamResource extends InputStreamResource {
     }
 
     /**
+     * return the {@link SeekableStream} managed by this resource as an {@link InputStream}
+     *
      * @return the seekable stream managed by this resource, without resetting the stream's state
      */
     @Override

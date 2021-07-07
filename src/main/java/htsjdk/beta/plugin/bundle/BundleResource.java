@@ -12,27 +12,37 @@ import java.util.Optional;
  */
 public interface BundleResource {
     /**
+     * return the display name for this resource
+     *
      * @return the display name for this resource
      */
     String getDisplayName();
 
     /**
+     * return the content type string for this resource
+     *
      * @return the content type string for this resource
      */
-    String getContentType();
+    String getContentTypeString();
 
     /**
+     * return the format string for this resource
+     *
      * @return the format string for this resource, or Optional.empty if not present
      */
-    Optional<String> getFormat();
+    Optional<String> getFormatString();
 
     /**
+     * return the {@link IOPath} backing this resource, or Optional.empty
+     *
      * @return the {@link IOPath} backing this resource, or Optional.empty if the resource has no backing
      * {@link IOPath}
      */
     Optional<IOPath> getIOPath();
 
     /**
+     * return an {@link InputStream} for this resource, or Optional.empty
+     *
      * @return an {@link InputStream} for this resource, or Optional.empty if {@link
      * BundleResource#hasInputType()} is false for this resource.
      *
@@ -43,12 +53,16 @@ public interface BundleResource {
     Optional<InputStream> getInputStream();
 
     /**
+     * return an {@link OutputStream} for this resource
+     *
      * @return an {@link OutputStream} for this resource, or Optional.empty if {@link
      * BundleResource#hasOutputType()} is false for this resource
      */
     Optional<OutputStream> getOutputStream();
 
     /**
+     * return an {@link SeekableStream} for this resource, or Optional.empty
+     *
      * @return an {@link SeekableStream} for this resource, or Optional.empty if this is not an input
      * type (see {@link BundleResource#hasInputType()}), or is an input type for which no {@link SeekableStream}
      * can be obtained (see {@link #hasSeekableStream}).
@@ -56,6 +70,8 @@ public interface BundleResource {
     Optional<SeekableStream> getSeekableStream();
 
     /**
+     * return a {@link SignatureStream} for this resource
+     *
      * @return a {@link SignatureStream} over the first {@code signatureProbeLength} bytes of this
      * resource, for use with signature probing for codec resolution. Only applicable to resources for
      * which {@link #hasInputType()} is true.
@@ -85,6 +101,8 @@ public interface BundleResource {
     SignatureStream getSignatureStream(final int signatureProbeLength);
 
     /**
+     * return true if the type of this resource is an input type
+     *
      * @return true if the type of this resource makes it suitable for use as a source of input.
      * Some resource types, such as {@link InputStreamResource}, can be used for input but not for output
      * (see {@link #hasOutputType}. Others, such as {@link OutputStreamResource}, can be used for output but
@@ -96,6 +114,8 @@ public interface BundleResource {
     boolean hasInputType();
 
     /**
+     * return true if the type of this resource is an output type
+     *
      * @return true if the type of this resource makes it suitable for use as target for output.
      * Some resource types, such as {@link InputStreamResource}, can be used for input but not for output
      * (see {@link #hasOutputType}. Others, such as {@link OutputStreamResource}, can be used for output but
@@ -107,6 +127,8 @@ public interface BundleResource {
     boolean hasOutputType();
 
     /**
+     * return true if this resource can be rendered as a {@link SeekableStream}
+     *
      * @return true if this resource can be rendered as a {@link SeekableStream} (see {@link #getSeekableStream})
      */
     boolean hasSeekableStream();

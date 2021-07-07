@@ -30,12 +30,16 @@ public interface HtsDecoder<F extends Enum<F> & HtsFormat<F>, H extends HtsHeade
     HtsVersion getVersion();
 
     /**
+     * return a user-friendly display name for this decoder
+     *
      * @return a user-friendly display name for this decoder for use in error and warning messages
      */
     String getDisplayName();
 
     /**
-     * @return the file format header for this decoder, of type {@code H}
+     * return the file header for this decoder
+     *
+     * @return the file header for this decoder, of type {@code H}
      */
     H getHeader();
 

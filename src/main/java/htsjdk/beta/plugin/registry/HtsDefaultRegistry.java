@@ -20,18 +20,24 @@ public class HtsDefaultRegistry {
     static {ServiceLoader.load(HtsCodec .class).forEach(htsDefaultCodecRegistry::registerCodec);}
 
     /**
+     * return the {@link HaploidReferenceResolver} resolver for this registry
+     *
      * @return the {@link HaploidReferenceResolver} resolver for this registry
      */
     public static synchronized HaploidReferenceResolver getHaploidReferenceResolver() {
         return htsDefaultCodecRegistry.getHaploidReferenceResolver(); }
 
     /**
+     * return the {@link ReadsResolver} resolver for this registry
+     *
      * @return the {@link ReadsResolver} resolver for this registry
      */
     public static synchronized ReadsResolver getReadsResolver() {
         return htsDefaultCodecRegistry.getReadsResolver(); }
 
     /**
+     * return the {@link VariantsResolver} resolver for this registry
+     *
      * @return the {@link VariantsResolver} resolver for this registry
      */
     public static synchronized VariantsResolver getVariantsResolver() {

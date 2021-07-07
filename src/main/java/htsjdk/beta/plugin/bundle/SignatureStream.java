@@ -30,6 +30,8 @@ public final class SignatureStream extends ByteArrayInputStream {
     }
 
     /**
+     * return the maximum number of bytes that can be consumed from this stream
+     *
      * @return the maximum number of bytes that can be consumed from this stream.
      */
     public final int getSignaturePrefixLength() { return signaturePrefixLength;}

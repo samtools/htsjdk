@@ -49,6 +49,8 @@ public class HtsVersion implements Comparable<HtsVersion> {
     }
 
     /**
+     * return the major version integer for this version
+     *
      * @return the major version integer for this version
      */
     public int getMajorVersion() {
@@ -56,6 +58,8 @@ public class HtsVersion implements Comparable<HtsVersion> {
     }
 
     /**
+     * return the minor version integer for this version
+     *
      * @return the minor version integer for this version
      */
     public int getMinorVersion() {
@@ -63,6 +67,8 @@ public class HtsVersion implements Comparable<HtsVersion> {
     }
 
     /**
+     * return the patch version integer for this version
+     *
      * @return the patch version integer for this version
      */
     public int getPatchVersion() {

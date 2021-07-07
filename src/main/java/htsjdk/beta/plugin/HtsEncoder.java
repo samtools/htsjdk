@@ -24,6 +24,8 @@ public interface HtsEncoder<F extends Enum<F> & HtsFormat<F>, H extends HtsHeade
     HtsVersion getVersion();
 
     /**
+     * return a user-friendly display name for this encoder
+     *
      * @return a user-friendly display name for this encoder for use in error and warning messages
      */
     String getDisplayName();

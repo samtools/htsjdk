@@ -174,10 +174,11 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
      * primary resource that is an {@code IOPath}, the structure of the IOPath (protocol scheme,
      * file extension, and query parameters) are used to determine the file format to be used.
      * <p>
-     * For resources that are ambiguous (i.e., a stream, which has no file extension that can be used to
-     * infer a format), the bundle resource must specify a format (see {@link BundleResource#getFormat()})
-     * that corresponds to one of the formats for the content type used by this codec type. The newest
-     * available version of that file format will be used.
+     * For resources that are ambiguous (i.e., a stream, which has no file extension that can be used
+     * to infer a format), the bundle resource must specify a format
+     * (see {@link BundleResource#getFormatString()}) that corresponds to one of the formats for the
+     * content type used by this codec type. The newest available version of that file format will
+     * be used.
      * <p>
      * To request a specific version, see {@link #resolveForEncoding(Bundle, HtsVersion)}. To request a
      * specific format and version, use {@link #resolveFormatAndVersion(Enum, HtsVersion)}.
@@ -196,8 +197,8 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
      * (protocol scheme, file extension, and query parameters) are used to determine the file format used.
      * <p>
      * For resources that are ambiguous (i.e., a stream which has no file extension that can be used to infer
-     * a file format), the bundle resource must specify a format (see {@link BundleResource#getFormat()}) that
-     * corresponds to one of the formats for the content type used by this codec type.
+     * a file format), the bundle resource must specify a format (see {@link BundleResource#getFormatString()})
+     * that corresponds to one of the formats for the {@code requiredContentType} used by this resolver.
      *
      * @param bundle the bundle to use for encoding
      * @param htsVersion the version being requested (use HtsVersion.NEWEST_VERSION to use the newest
@@ -450,7 +451,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
     }
 
     private Optional<F> getFormatForFormatString(final BundleResource bundleResource) {
-        final Optional<String> optResourceFormat = bundleResource.getFormat();
+        final Optional<String> optResourceFormat = bundleResource.getFormatString();
         final Optional<F> optFormatEnum = optResourceFormat.flatMap(
                 resourceFormat -> htsFormatEnumInstance.formatStringToEnum(resourceFormat));
         if (optResourceFormat.isPresent() && !optFormatEnum.isPresent()) {

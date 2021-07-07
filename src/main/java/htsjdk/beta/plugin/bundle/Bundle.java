@@ -54,9 +54,9 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
         ValidationUtils.nonEmpty(resources,"resource collection");
 
         resources.forEach(r -> {
-            if (null != this.resources.putIfAbsent(r.getContentType(), r)) {
+            if (null != this.resources.putIfAbsent(r.getContentTypeString(), r)) {
                 throw new IllegalArgumentException(
-                        String.format("Attempt to add a duplicate resource for bundle key: %s", r.getContentType()));
+                        String.format("Attempt to add a duplicate resource for bundle key: %s", r.getContentTypeString()));
             }
         });
         this.primaryContentType = primaryContentType;

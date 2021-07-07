@@ -82,8 +82,10 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
     }
 
    /**
-     * @return the READS {@link BundleResource} for this {@link ReadsBundle}
-     */
+    * return the READS {@link BundleResource} for this {@link ReadsBundle}
+    *
+    * @return the READS {@link BundleResource} for this {@link ReadsBundle}
+    */
     public BundleResource getReads() {
         return getOrThrow(BundleResourceType.ALIGNED_READS);
     }

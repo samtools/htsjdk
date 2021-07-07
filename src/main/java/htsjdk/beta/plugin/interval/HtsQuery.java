@@ -17,7 +17,9 @@ import java.util.List;
 public interface HtsQuery<RECORD> extends Iterable<RECORD> {
 
     /**
-     * @return an iterator of all records  in the underlying resource
+     * return an iterator of all records in the underlying resource
+     *
+     * @return an iterator of all records in the underlying resource
      */
     @Override
     CloseableIterator<RECORD> iterator();
@@ -26,12 +28,16 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     // Start temporary common query interface default implementations.
 
     /**
+     * return true if the underlying resource is queryable
+     *
      * @return true if the underlying resource is queryable. this may be true even if the underlying
      * resource returns false for {@link #hasIndex()}
      */
     boolean isQueryable();
 
     /**
+     * return true if the underlying resource has an index
+     *
      * @return true if the underlying resource has an index
      */
     boolean hasIndex();

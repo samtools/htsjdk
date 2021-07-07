@@ -29,10 +29,10 @@ public final class BundleBuilder {
         if (primaryResource != null) {
                 throw new IllegalStateException(String.format(
                         "Can't add primary resource %s to a bundle that already has primary resource %s",
-                        resource.getContentType(),
+                        resource.getContentTypeString(),
                         primaryResource));
         }
-        primaryResource = resource.getContentType();
+        primaryResource = resource.getContentTypeString();
         addSecondary(resource);
         return this;
     }

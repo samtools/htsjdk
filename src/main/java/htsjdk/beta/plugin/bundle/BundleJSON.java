@@ -61,10 +61,10 @@ public class BundleJSON {
 
             // generate JSON for each bundle resource
             final Json resourceJSON = Json.object().set(JSON_PROPERTY_PATH, resourcePath.get().getURIString());
-            if (bundleResource.getFormat().isPresent()) {
-                resourceJSON.set(JSON_PROPERTY_FORMAT, bundleResource.getFormat().get());
+            if (bundleResource.getFormatString().isPresent()) {
+                resourceJSON.set(JSON_PROPERTY_FORMAT, bundleResource.getFormatString().get());
             }
-            outerJSON.set(bundleResource.getContentType(), resourceJSON);
+            outerJSON.set(bundleResource.getContentTypeString(), resourceJSON);
         });
 
         return prettyPrintJSON(outerJSON);
