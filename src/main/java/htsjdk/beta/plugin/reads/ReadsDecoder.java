@@ -10,7 +10,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import java.util.Optional;
 
 /**
- * Base class for all {@link HtsContentType#ALIGNED_READS decoders. Defines the type parameters instantiated for
+ * Base class for all {@link HtsContentType#ALIGNED_READS} decoders. Defines the type parameters instantiated for
  * reads decoders.
  */
 public interface ReadsDecoder extends HtsDecoder<SAMFileHeader, SAMRecord>, ReadsQuery<SAMRecord> {

@@ -37,7 +37,7 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
      * @return a HaploidReferenceDecoder for the given inputPath
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * a bad code implementation
+     * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public HaploidReferenceDecoder getHapRefDecoder(final IOPath inputPath) {

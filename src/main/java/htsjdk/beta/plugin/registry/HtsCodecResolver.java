@@ -141,6 +141,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * @return a codec that can decode the bundle resource
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public C resolveForDecoding(final Bundle bundle) {
         ValidationUtils.nonNull(bundle, "bundle");
@@ -178,6 +179,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * @return A codec that can decode the input bundle
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public C resolveForEncoding(final Bundle bundle) { return resolveForEncoding(bundle, HtsVersion.NEWEST_VERSION); }
 
@@ -196,6 +198,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * @return A codec that can provide an encoder for the given inputs.
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public C resolveForEncoding(final Bundle bundle, final HtsVersion htsVersion) {
         ValidationUtils.nonNull(bundle, "bundle");

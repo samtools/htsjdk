@@ -6,6 +6,6 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 
 /**
- * Base interface for {@link HtsContentType#ALIGNED_READS encoders.
+ * Base interface for {@link HtsContentType#ALIGNED_READS} encoders.
  */
 public interface ReadsEncoder extends HtsEncoder<SAMFileHeader, SAMRecord> { }

@@ -42,6 +42,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * @return a {@link VariantsDecoder} suitable for decoding {@code inputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public VariantsDecoder getVariantsDecoder(final IOPath inputPath) {
         return getVariantsDecoder(inputPath, new VariantsDecoderOptions());
@@ -55,6 +56,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * @return a {@link VariantsDecoder} suitable for decoding {@code inputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public VariantsDecoder getVariantsDecoder(
             final IOPath inputPath,
@@ -75,6 +77,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * @return a {@link VariantsDecoder} suitable for decoding {@code inputBundle}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public VariantsDecoder getVariantsDecoder(final Bundle inputBundle) {
@@ -92,6 +95,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * @return a {@link VariantsDecoder} suitable for decoding {@code inputBundle}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public VariantsDecoder getVariantsDecoder(
@@ -111,6 +115,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * @return a {@link VariantsEncoder} suitable for encoding to {@code outputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public VariantsEncoder getVariantsEncoder(final IOPath outputPath) {
         ValidationUtils.nonNull(outputPath, "Output path");
@@ -125,6 +130,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * @return a {@link VariantsEncoder} suitable for encoding to {@code outputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public VariantsEncoder getVariantsEncoder(
             final IOPath outputPath,
@@ -146,6 +152,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * @return a {@link VariantsEncoder} suitable for encoding to {@code outputBundle}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public VariantsEncoder getVariantsEncoder(
             final Bundle outputBundle,
@@ -166,6 +173,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * @return a {@link VariantsEncoder} suitable for encoding to {@code outputBundle}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public VariantsEncoder getVariantsEncoder(

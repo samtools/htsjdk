@@ -44,6 +44,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public ReadsDecoder getReadsDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "Input path");
@@ -62,6 +63,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public ReadsDecoder getReadsDecoder(
             final IOPath inputPath,
@@ -81,6 +83,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputBundle}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public ReadsDecoder getReadsDecoder(final Bundle inputBundle) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
@@ -98,6 +101,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputBundle}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public ReadsDecoder getReadsDecoder(
@@ -119,6 +123,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @return a {@link ReadsEncoder} suitable for encoding to {@code outputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public ReadsEncoder getReadsEncoder(final IOPath outputPath) {
         ValidationUtils.nonNull(outputPath, "Output path");
@@ -138,6 +143,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @return {@link ReadsEncoder} suitable for encoding to {@code outputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     public ReadsEncoder getReadsEncoder(
             final IOPath outputPath,
@@ -161,6 +167,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @return {@link ReadsEncoder} suitable for encoding to {@code outputPath}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public ReadsEncoder getReadsEncoder(
@@ -183,6 +190,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @return {@link ReadsEncoder} suitable for encoding to {@code outputBundle}
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public ReadsEncoder getReadsEncoder(
