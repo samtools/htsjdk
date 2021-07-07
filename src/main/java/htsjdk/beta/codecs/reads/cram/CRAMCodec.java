@@ -5,7 +5,7 @@ import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.reads.ReadsCodec;
-import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
@@ -22,7 +22,7 @@ public abstract class CRAMCodec implements ReadsCodec {
     private static final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.CRAM));
 
     @Override
-    public ReadsFormat getFileFormat() { return ReadsFormat.CRAM; }
+    public String getFileFormat() { return ReadsFormats.CRAM; }
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {

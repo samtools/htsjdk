@@ -6,12 +6,13 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleBuilder;
+import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
 import htsjdk.beta.plugin.bundle.InputStreamResource;
 import htsjdk.beta.plugin.bundle.OutputStreamResource;
 import htsjdk.beta.plugin.bundle.SeekableStreamResource;
 import htsjdk.beta.plugin.registry.testcodec.HtsTestCodec;
-import htsjdk.beta.plugin.registry.testcodec.HtsTestCodecFormat;
+import htsjdk.beta.plugin.registry.testcodec.HtsTestCodecFormats;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
@@ -38,16 +39,17 @@ public class HtsCodecResolverTest extends HtsjdkTest {
     final static String TEST_CODEC_CONTENT_TYPE = "TEST_CODEC_CONTENT_TYPE";
 
     // parameters for file format 1
-    final static String FORMAT_1_FORMAT_NAME = HtsTestCodecFormat.FILE_FORMAT_1.toString();
-    final static String FORMAT_1_STREAM_SIGNATURE = HtsTestCodecFormat.FILE_FORMAT_1.name();
+    final static String FORMAT_1_FORMAT_NAME = HtsTestCodecFormats.FILE_FORMAT_1;
+    final static String FORMAT_1_STREAM_SIGNATURE = HtsTestCodecFormats.FILE_FORMAT_1;
     final static String FORMAT_1_FILE_EXTENSION = ".f1";
 
     // parameters for file format 2
-    final static String FORMAT_2_FORMAT_NAME = HtsTestCodecFormat.FILE_FORMAT_2.toString();
-    final static String FORMAT_2_STREAM_SIGNATURE = HtsTestCodecFormat.FILE_FORMAT_2.name();
+    final static String FORMAT_2_FORMAT_NAME = HtsTestCodecFormats.FILE_FORMAT_2;
+    final static String FORMAT_2_STREAM_SIGNATURE = HtsTestCodecFormats.FILE_FORMAT_2;
     final static String FORMAT_2_FILE_EXTENSION = ".f2";
 
     // parameters for file format 3, which uses a custom protocol scheme
+    final static String FORMAT_3_FORMAT_NAME = HtsTestCodecFormats.FILE_FORMAT_3;
     final static String FORMAT_3_FILE_EXTENSION = ".f3";
     final static String FORMAT_3_PROTOCOL_SCHEME = "ps3";
 
@@ -57,21 +59,21 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
     // file format FORMAT_1, V1_0
     final static HtsTestCodec FORMAT_1_V1_0 = new HtsTestCodec(
-            HtsTestCodecFormat.FILE_FORMAT_1,
+            FORMAT_1_FORMAT_NAME,
             V1_0,
             FORMAT_1_FILE_EXTENSION,
             null,
             false);
     // file format FORMAT_1, V1_1
     final static HtsTestCodec FORMAT_1_V1_1 = new HtsTestCodec(
-            HtsTestCodecFormat.FILE_FORMAT_1,
+            FORMAT_1_FORMAT_NAME,
             V1_1,
             FORMAT_1_FILE_EXTENSION,
             null,
             false);
     // file format FORMAT_1, V2_0
     final static HtsTestCodec FORMAT_1_V2_0 = new HtsTestCodec(
-            HtsTestCodecFormat.FILE_FORMAT_1,
+            FORMAT_1_FORMAT_NAME,
             V2_0,
             FORMAT_1_FILE_EXTENSION,
             null,
@@ -79,21 +81,21 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
     // file format FORMAT_2, V1_0
     final static HtsTestCodec FORMAT_2_V1_0 = new HtsTestCodec(
-            HtsTestCodecFormat.FILE_FORMAT_2,
+            FORMAT_2_FORMAT_NAME,
             V1_0,
             FORMAT_2_FILE_EXTENSION,
             null,
             false);
     // file format FORMAT_2, V1_1
     final static HtsTestCodec FORMAT_2_V1_1 = new HtsTestCodec(
-            HtsTestCodecFormat.FILE_FORMAT_2,
+            FORMAT_2_FORMAT_NAME,
             V1_1,
             FORMAT_2_FILE_EXTENSION,
             null,
             false);
     // file format FORMAT_2, V2_0, uses gzipped inputs
     final static HtsTestCodec FORMAT_2_V2_0 = new HtsTestCodec(
-            HtsTestCodecFormat.FILE_FORMAT_2,
+            FORMAT_2_FORMAT_NAME,
             V2_0,
             FORMAT_2_FILE_EXTENSION,
             null,
@@ -101,7 +103,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
     // file format FORMAT_3, V1_0, uses a custom protocol scheme
     final static HtsTestCodec FORMAT_3_V1_0 = new HtsTestCodec(
-            HtsTestCodecFormat.FILE_FORMAT_3,
+            FORMAT_3_FORMAT_NAME,
             V1_0,
             FORMAT_3_FILE_EXTENSION,
             FORMAT_3_PROTOCOL_SCHEME,   // custom protocol scheme
@@ -109,7 +111,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
     // file format FORMAT_3, V2_0, uses a custom protocol scheme
     final static HtsTestCodec FORMAT_3_V2_0 = new HtsTestCodec(
-            HtsTestCodecFormat.FILE_FORMAT_3,
+            FORMAT_3_FORMAT_NAME,
             V2_0,
             FORMAT_3_FILE_EXTENSION,
             FORMAT_3_PROTOCOL_SCHEME,   // custom protocol scheme
@@ -123,7 +125,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is FORMAT_1, V1_0, resolve to FORMAT_1_V1_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V1_0,
@@ -133,7 +135,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is FORMAT_1, V1_1, resolve to FORMAT_1_V1_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V1_1,
@@ -143,7 +145,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is FORMAT_1, V2_0, resolve to FORMAT_1_V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
@@ -154,7 +156,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // resolve to FORMAT_1_V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
@@ -164,7 +166,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is FORMAT_2, V1_0, resolve to FORMAT_2_V1_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V1_0,
@@ -174,7 +176,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is FORMAT_2, V1_1, resolve to FORMAT_2_V1_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V1_1,
@@ -184,7 +186,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is gzipped FORMAT_2 (which requires GZIPPED inputs), V2_0, resolve to FORMAT_2_V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V2_0,
@@ -196,14 +198,14 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                         new BundleBuilder()
                                 .addPrimary(new IOPathResource(
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
-                                        TEST_CODEC_CONTENT_TYPE))
+                                        BundleResourceType.ALIGNED_READS))
                                 .build(),
                         FORMAT_3_V1_0.getDisplayName() },
 
                 // input STREAM is FORMAT_1, V1_0, resolve to FORMAT_1_V1_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputStreamBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_STREAM_SIGNATURE + V1_0,
                                 false),
@@ -212,7 +214,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input STREAM is gzipped FORMAT_2, V2_0 (which requires GZIPPED inputs), resolve to  FORMAT_2_V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputStreamBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_2_STREAM_SIGNATURE + V2_0,
                                 true),    // use gzipped inputs
@@ -222,25 +224,24 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         new BundleBuilder().addPrimary(new SeekableStreamResource(
                                 makeInputIOPathBundleWithContent(
-                                    TEST_CODEC_CONTENT_TYPE,
+                                        BundleResourceType.ALIGNED_READS,
                                     null,
                                     FORMAT_2_FILE_EXTENSION,
                                     FORMAT_2_STREAM_SIGNATURE + V2_0,
                                     true) // use gzipped inputs
-                                .getPrimaryResource().getSeekableStream().get(), TEST_CODEC_CONTENT_TYPE, TEST_CODEC_CONTENT_TYPE)).build(),
+                                .getPrimaryResource().getSeekableStream().get(), BundleResourceType.ALIGNED_READS, BundleResourceType.ALIGNED_READS)).build(),
                         FORMAT_2_V2_0.getDisplayName() },
         };
     }
 
     @Test(dataProvider = "resolveCodecForDecodingSucceeds")
     public void testResolveCodecForDecodingSucceeds(
-            final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
+            final List<HtsCodec<?, ?>> codecs,
             final Bundle bundle,
             final String expectedCodecDisplayName) {
-        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>>
-                testCodecs = new HtsCodecResolver<>(TEST_CODEC_CONTENT_TYPE, HtsTestCodecFormat.FILE_FORMAT_1);
+        final HtsCodecResolver<HtsCodec<?, ?>> testCodecs = new HtsCodecResolver<>(BundleResourceType.ALIGNED_READS);
         codecs.forEach(c -> testCodecs.registerCodec(c));
-        final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveForDecoding(bundle);
+        final HtsCodec<?, ?> resolvedCodec = testCodecs.resolveForDecoding(bundle);
         Assert.assertEquals(resolvedCodec.getDisplayName(), expectedCodecDisplayName);
     }
 
@@ -252,7 +253,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is FORMAT_1, V2_0, no codecs registered
                 { Collections.emptyList(),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
@@ -262,7 +263,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is FORMAT_2, V1_0, no codec is registered for any FORMAT_2 version
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V1_0,
@@ -272,7 +273,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // input IOPath is FORMAT_1, V2_0, no codec is registered for V2_0 of FORMAT_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
@@ -294,30 +295,30 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // content type
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 "BOGUS_FORMAT",
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V1_0,
                                 false),
-                        "does not correspond to any known format for content type" },
+                        HtsCodecResolver.NO_SUPPORTING_CODEC_ERROR },
 
                 // the resource in the bundle has a valid content type, and the file extension is valid,
                 // but the signature in the underlying file is "BOGUS_FORMAT", which doesn't match the
                 // signature for any of the codecs
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_FILE_EXTENSION,
                                 "BOGUS_FORMAT" + V1_0,
                                 false),
-                        HtsCodecResolver.NO_SUPPORTING_CODEC_ERROR},
+                        HtsCodecResolver.NO_SUPPORTING_CODEC_ERROR },
 
                 // the resource in the bundle has a valid content type, but the signature in the underlying
                 // file has version "V2_0", which doesn't match the version any codec expects
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_FILE_EXTENSION,
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
@@ -332,14 +333,14 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // either a user or coding error
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 FORMAT_2_FILE_EXTENSION,
                                 FORMAT_2_STREAM_SIGNATURE + V2_0,
                                 false),
                         HtsCodecResolver.NO_SUPPORTING_CODEC_ERROR},
 
-                // input *STREAM* resoruce has *format* FORMAT_1 (specifying a format causes the resolver to
+                // input *STREAM* resource has *format* FORMAT_1 (specifying a format causes the resolver to
                 // prune all codecs except those that handle that format), but the underlying stream signature
                 // contains the signature FORMAT_2, which none of the FORMAT_1 codecs accept
                 //TODO: this should have a better error message or warning saying the content type in the bundle
@@ -347,7 +348,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // programming error
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputStreamBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 FORMAT_2_STREAM_SIGNATURE + V1_0,
                                 false),
@@ -358,7 +359,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // doesn't match the file extension, since thats likely user or programming error
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 FORMAT_3_FILE_EXTENSION, // use the wrong file extension
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
@@ -372,7 +373,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                             .addPrimary(
                                     new IOPathResource(
                                         new HtsPath("bogus://some/uri/some" + FORMAT_1_FILE_EXTENSION),
-                                        TEST_CODEC_CONTENT_TYPE,
+                                            BundleResourceType.ALIGNED_READS,
                                             FORMAT_1_FORMAT_NAME)
                             ).build(),
                         "specifies a custom protocol (bogus) which no registered codec claims, and for which no NIO file system provider is available"},
@@ -380,18 +381,17 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // the primary resource has the required content type, but is an output-only resource (OutputStream),
                 // not a readable input resource
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
-                        makeOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, null),
+                        makeOutputStreamBundle(BundleResourceType.ALIGNED_READS, null),
                         "cannot be used as an input resource"},
         };
     }
 
     @Test(dataProvider = "resolveCodecForDecodingFails", expectedExceptions=RuntimeException.class)
     public void testResolveCodecForDecodingFails(
-            final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
+            final List<HtsCodec<?, ?>> codecs,
             final Bundle bundle,
             final String expectedMessage) {
-        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>>
-                testCodecs = new HtsCodecResolver<>(TEST_CODEC_CONTENT_TYPE, HtsTestCodecFormat.FILE_FORMAT_1);
+        final HtsCodecResolver<HtsCodec<?, ?>> testCodecs = new HtsCodecResolver<>(BundleResourceType.ALIGNED_READS);
         codecs.forEach(c -> testCodecs.registerCodec(c));
         try {
             testCodecs.resolveForDecoding(bundle);
@@ -413,59 +413,59 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // no specific version requested, resolve to the newest version registered for FORMAT_1, resolve
                 // to FORMAT_1, V1_0
                 { Arrays.asList(FORMAT_1_V1_0),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, null, FORMAT_1_FILE_EXTENSION),
                         HtsVersion.NEWEST_VERSION,
                         FORMAT_1_V1_0.getDisplayName() },
 
                 // no specific version requested, resolve to the newest version registered for FORMAT_1, which
                 // is FORMAT_1, V1_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, null, FORMAT_1_FILE_EXTENSION),
                         HtsVersion.NEWEST_VERSION,
                         FORMAT_1_V1_1.getDisplayName() },
 
                 // no specific version requested, resolve to the newest version registered for FORMAT_1, which
                 // is FORMAT_1, V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, null, FORMAT_1_FILE_EXTENSION),
                         HtsVersion.NEWEST_VERSION,
                         FORMAT_1_V2_0.getDisplayName() },
 
                 // no specific version requested, resolve to the newest version registered for FORMAT_1, which is
                 // V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, null, FORMAT_1_FILE_EXTENSION),
                         HtsVersion.NEWEST_VERSION,
                         FORMAT_1_V2_0.getDisplayName() },
 
                 // FORMAT_1 file extension, request version V1_0, resolve to FORMAT, 1_V1_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, null, FORMAT_1_FILE_EXTENSION),
                         V1_0,
                         FORMAT_1_V1_0.getDisplayName() },
 
                 // FORMAT_1 file extension, request version V1_1, so resolve to FORMAT_1, V1_1
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, null, FORMAT_1_FILE_EXTENSION),
                         V1_1,
                         FORMAT_1_V1_1.getDisplayName() },
 
                 // FORMAT_1 file extension, request V2_0, so resolve to FORMAT_1, V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_1_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, null, FORMAT_1_FILE_EXTENSION),
                         V2_0,
                         FORMAT_1_V2_0.getDisplayName() },
 
                 // FORMAT_2 file extension, request V2_0, so resolve to FORMAT_2, V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, null, FORMAT_2_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, null, FORMAT_2_FILE_EXTENSION),
                         V2_0,
                         FORMAT_2_V2_0.getDisplayName() },
 
                 // FORMAT_2 file extension, format FORMAT_2 specified in the bundle, request V2_0,
                 // resolve to FORMAT_2_V2_0;
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
-                        makeInputIOPathBundle(TEST_CODEC_CONTENT_TYPE, FORMAT_2_FORMAT_NAME, FORMAT_2_FILE_EXTENSION),
+                        makeInputIOPathBundle(BundleResourceType.ALIGNED_READS, FORMAT_2_FORMAT_NAME, FORMAT_2_FILE_EXTENSION),
                         V2_0,
                         FORMAT_2_V2_0.getDisplayName() },
 
@@ -474,7 +474,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                         new BundleBuilder()
                                 .addPrimary(new IOPathResource(
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
-                                        TEST_CODEC_CONTENT_TYPE))
+                                        BundleResourceType.ALIGNED_READS))
                                 .build(),
                         HtsVersion.NEWEST_VERSION,
                         FORMAT_3_V1_0.getDisplayName() },
@@ -484,7 +484,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                         new BundleBuilder()
                                 .addPrimary(new IOPathResource(
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
-                                        TEST_CODEC_CONTENT_TYPE))
+                                        BundleResourceType.ALIGNED_READS))
                                 .build(),
                         HtsVersion.NEWEST_VERSION,
                         FORMAT_3_V2_0.getDisplayName() },
@@ -494,21 +494,21 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                         new BundleBuilder()
                                 .addPrimary(new IOPathResource(
                                         new HtsPath(FORMAT_3_PROTOCOL_SCHEME + ":///myFile" + FORMAT_3_FILE_EXTENSION),
-                                        TEST_CODEC_CONTENT_TYPE))
+                                        BundleResourceType.ALIGNED_READS))
                                 .build(),
                         V1_0,
                         FORMAT_3_V1_0.getDisplayName() },
 
                 // output *stream*, with format FORMAT_2 specified, request V1_1, resolve to FORMAT_2, V1_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
-                        makeOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, FORMAT_2_FORMAT_NAME),
+                        makeOutputStreamBundle(BundleResourceType.ALIGNED_READS, FORMAT_2_FORMAT_NAME),
                         V1_1,
                         FORMAT_2_V1_1.getDisplayName() },
 
                 // output *stream*, with embedded format (FORMAT_2)  specified, request NEWEST_VERSION,
                 // resolve to FORMAT_2, V2_0
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
-                        makeOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, FORMAT_2_FORMAT_NAME),
+                        makeOutputStreamBundle(BundleResourceType.ALIGNED_READS, FORMAT_2_FORMAT_NAME),
                         HtsVersion.NEWEST_VERSION,
                         FORMAT_2_V2_0.getDisplayName() },
         };
@@ -516,14 +516,13 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
     @Test(dataProvider = "resolveCodecForEncodingSucceeds")
     public void testResolveCodecForEncodingSucceeds(
-            final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
+            final List<HtsCodec<?, ?>> codecs,
             final Bundle bundle,
             final HtsVersion htsVersionRequested,
             final String expectedCodecDisplayName) {
-        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>>
-                testCodecs = new HtsCodecResolver<>(TEST_CODEC_CONTENT_TYPE, HtsTestCodecFormat.FILE_FORMAT_1);
+        final HtsCodecResolver<HtsCodec<?, ?>> testCodecs = new HtsCodecResolver<>(BundleResourceType.ALIGNED_READS);
         codecs.forEach(c -> testCodecs.registerCodec(c));
-        final HtsCodec<HtsTestCodecFormat, ?, ?> resolvedCodec = testCodecs.resolveForEncoding(
+        final HtsCodec<?, ?> resolvedCodec = testCodecs.resolveForEncoding(
                 bundle,
                 htsVersionRequested);
         Assert.assertEquals(resolvedCodec.getDisplayName(), expectedCodecDisplayName);
@@ -537,7 +536,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // no content type or version specified, no codecs registered
                 { Collections.emptyList(),
                         makeInputIOPathBundle(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 null,
                                 FORMAT_1_FILE_EXTENSION),
                         HtsVersion.NEWEST_VERSION,
@@ -546,7 +545,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // content type and version specified, no codecs registered
                 { Collections.emptyList(),
                         makeInputIOPathBundle(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 FORMAT_1_FILE_EXTENSION),
                         V1_0,
@@ -555,7 +554,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // FORMAT_1 file extension, format FORMAT_1 specified, no FORMAT_1 codecs registered
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
                         makeInputIOPathBundle(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 FORMAT_1_FILE_EXTENSION),
                         V1_0,
@@ -565,14 +564,14 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // must be specified)
                 //TODO: this should have a better error message saying the format must be specified
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
-                        makeOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, null),
+                        makeOutputStreamBundle(BundleResourceType.ALIGNED_READS, null),
                         V1_0,
                         HtsCodecResolver.MULTIPLE_SUPPORTING_CODECS_ERROR},
 
                 // format specified for IOPath resource, but requested version not registered
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
                         makeInputIOPathBundle(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 FORMAT_1_FILE_EXTENSION),
                         new HtsVersion(3, 0, 0), // version 3.0.0 not registered
@@ -580,14 +579,14 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
                 // format specified for OutputStream resource, but requested version isn't registered
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
-                        makeOutputStreamBundle(TEST_CODEC_CONTENT_TYPE, FORMAT_1_FORMAT_NAME),
+                        makeOutputStreamBundle(BundleResourceType.ALIGNED_READS, FORMAT_1_FORMAT_NAME),
                         new HtsVersion(3, 0, 0), // version 3.0.0 not registered
                         HtsCodecResolver.NO_SUPPORTING_CODEC_ERROR},
 
                 // bundle contains an INPUT stream resource instead of an OUTPUT stream
                 { Arrays.asList(FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0, FORMAT_3_V1_0, FORMAT_3_V2_0),
                         makeInputStreamBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 "irrelevant content",
                                 false),
@@ -597,7 +596,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
                 // IOPath with file extension doesn't match the specified format
                 { Arrays.asList(FORMAT_1_V1_0, FORMAT_1_V1_1, FORMAT_1_V2_0, FORMAT_2_V1_0, FORMAT_2_V1_1, FORMAT_2_V2_0),
                         makeInputIOPathBundleWithContent(
-                                TEST_CODEC_CONTENT_TYPE,
+                                BundleResourceType.ALIGNED_READS,
                                 FORMAT_1_FORMAT_NAME,
                                 FORMAT_3_FILE_EXTENSION, // use the wrong file extension
                                 FORMAT_1_STREAM_SIGNATURE + V2_0,
@@ -609,12 +608,11 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
     @Test(dataProvider = "resolveCodecForEncodingFails", expectedExceptions=RuntimeException.class)
     public void testResolveCodecForEncodingFails(
-            final List<HtsCodec<HtsTestCodecFormat, ?, ?>> codecs,
+            final List<HtsCodec<?, ?>> codecs,
             final Bundle bundle,
             final HtsVersion htsVersion,
             final String expectedMessage) {
-        final HtsCodecResolver<HtsTestCodecFormat, HtsCodec<HtsTestCodecFormat, ?, ?>>
-                testCodecs = new HtsCodecResolver<>(TEST_CODEC_CONTENT_TYPE, HtsTestCodecFormat.FILE_FORMAT_1);
+        final HtsCodecResolver<HtsCodec<?, ?>> testCodecs = new HtsCodecResolver<>(BundleResourceType.ALIGNED_READS);
         codecs.forEach(c -> testCodecs.registerCodec(c));
         try {
                 testCodecs.resolveForEncoding(bundle, htsVersion);
@@ -639,14 +637,14 @@ public class HtsCodecResolverTest extends HtsjdkTest {
         }
     }
 
-    private IOPath createTempFileWithContents(final String contents, final String extension, final boolean gzipOutput) {
+    private static IOPath createTempFileWithContents(final String contents, final String extension, final boolean gzipOutput) {
         Assert.assertTrue(extension.startsWith("."));
         final IOPath tempFile = IOUtils.createTempPath("codecResolution", extension);
         IOUtils.writeStringToPath(tempFile, contents, gzipOutput);
         return tempFile;
     }
 
-    private Bundle makeInputIOPathBundleWithContent(
+    static Bundle makeInputIOPathBundleWithContent(
             final String contentType,
             final String format,
             final String fileExtension,
@@ -659,7 +657,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
         return new BundleBuilder().addPrimary(ioPathResource).build();
     }
 
-    private Bundle makeInputIOPathBundle(
+    static Bundle makeInputIOPathBundle(
             final String contentType,
             final String format,
             final String fileExtension) {
@@ -676,14 +674,14 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
     }
 
-    public Bundle makeOutputStreamBundle(final String contentType, final String format) {
+    public static Bundle makeOutputStreamBundle(final String contentType, final String format) {
         final OutputStream os = new ByteArrayOutputStream();
         return new BundleBuilder()
                 .addPrimary(new OutputStreamResource(os, "test stream", contentType, format))
                 .build();
     }
 
-    private Bundle makeInputStreamBundleWithContent(
+    static Bundle makeInputStreamBundleWithContent(
             final String contentType,
             final String format,
             final String contents,
@@ -702,7 +700,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
         }
     }
 
-    final InputStream getInputStreamOnGzippedContent(final String contents) {
+    final static InputStream getInputStreamOnGzippedContent(final String contents) {
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             try (final BlockCompressedOutputStream bcs = new BlockCompressedOutputStream(bos, (File) null)) {
                 bcs.write(contents.getBytes());

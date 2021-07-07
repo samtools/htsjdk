@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.bundle;
 
 import htsjdk.beta.plugin.HtsContentType;
-import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 
 /**
  * Namespace for standard constants to specify content type and format for resources
@@ -23,10 +23,10 @@ public class BundleResourceType {
     /**
      * formats for content type {@link BundleResourceType#ALIGNED_READS}
      */
-    public static final String READS_SAM = ReadsFormat.SAM.name();
-    public static final String READS_BAM = ReadsFormat.BAM.name();
-    public static final String READS_CRAM = ReadsFormat.CRAM.name();
-    public static final String READS_HTSGET_BAM = ReadsFormat.HTSGET_BAM.name();
+    public static final String READS_SAM = ReadsFormats.SAM;
+    public static final String READS_BAM = ReadsFormats.BAM;
+    public static final String READS_CRAM = ReadsFormats.CRAM;
+    public static final String READS_HTSGET_BAM = ReadsFormats.HTSGET_BAM;
 
     /**
      * secondary content types for primary content type {@link #ALIGNED_READS}

@@ -11,7 +11,7 @@ import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoderOptions;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
+import htsjdk.beta.plugin.hapref.HaploidReferenceFormats;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.utils.ValidationUtils;
 
@@ -28,8 +28,8 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     }
 
     @Override
-    public HaploidReferenceFormat getFileFormat() {
-        return HaploidReferenceFormat.FASTA;
+    public String getFileFormat() {
+        return HaploidReferenceFormats.FASTA;
     }
 
     @Override

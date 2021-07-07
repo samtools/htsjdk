@@ -7,4 +7,4 @@ import htsjdk.variant.vcf.VCFHeader;
 /**
  *  Defines the type parameters instantiated for variants decoders.
  */
-public interface VariantsDecoder extends HtsDecoder<VariantsFormat, VCFHeader, VariantContext> { }
+public interface VariantsDecoder extends HtsDecoder<VCFHeader, VariantContext> { }

@@ -1,52 +1,31 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.HtsDecoder;
-import htsjdk.beta.plugin.HtsHeader;
-import htsjdk.beta.plugin.HtsRecord;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.io.IOPath;
+import htsjdk.beta.plugin.reads.ReadsDecoder;
+import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 
-import java.io.InputStream;
+import java.util.Optional;
 
 // Dummy decoder class for use by tests
-public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader, HtsRecord> {
+public class HtsTestDecoder implements ReadsDecoder {
     private final HtsVersion htsVersion;
-    private final HtsTestCodecFormat htsFormat;
-
-    public HtsTestDecoder(
-            final IOPath inputPath,
-            final HtsTestDecoderOptions decoderOptions,
-            final HtsTestCodecFormat htsFormat,
-            final HtsVersion htsVersion) {
-        this.htsFormat = htsFormat;
-        this.htsVersion = htsVersion;
-    }
+    private final String htsFormat;
 
     public HtsTestDecoder(
             final Bundle inputBundle,
-            final HtsTestDecoderOptions decoderOptions,
-            final HtsTestCodecFormat htsFormat,
-            final HtsVersion htsVersion) {
-        this.htsFormat = htsFormat;
-        this.htsVersion = htsVersion;
-    }
-
-    public HtsTestDecoder(
-            final InputStream is,
-            final String displayName,
-            final HtsTestDecoderOptions decoderOptions,
-            final HtsTestCodecFormat htsFormat,
+            final ReadsDecoderOptions decoderOptions,
+            final String htsFormat,
             final HtsVersion htsVersion) {
         this.htsFormat = htsFormat;
         this.htsVersion = htsVersion;
     }
 
     @Override
-    public HtsTestCodecFormat getFormat() {
-        return htsFormat;
-    }
+    public String getFormat() { return htsFormat; }
 
     @Override
     public HtsVersion getVersion() {
@@ -59,23 +38,35 @@ public class HtsTestDecoder implements HtsDecoder<HtsTestCodecFormat, HtsHeader,
     }
 
     @Override
-    public HtsHeader getHeader() { return null; }
+    public SAMFileHeader getHeader() {
+        throw new IllegalStateException("Not implemented by test decoder");
+    }
 
     @Override
     public void close() { }
 
     @Override
-    public CloseableIterator<HtsRecord> iterator() {
-        throw new IllegalStateException("Not implemented");
+    public CloseableIterator<SAMRecord> iterator() {
+        throw new IllegalStateException("Not implemented by test decoder");
     }
 
     @Override
     public boolean isQueryable() {
-        throw new IllegalStateException("Not implemented");
+        throw new IllegalStateException("Not implemented by test decoder");
     }
 
     @Override
     public boolean hasIndex() {
-        throw new IllegalStateException("Not implemented");
+        throw new IllegalStateException("Not implemented by test decoder");
+    }
+
+    @Override
+    public CloseableIterator<SAMRecord> queryUnmapped() {
+        throw new IllegalStateException("Not implemented by test decoder");
+    }
+
+    @Override
+    public Optional<SAMRecord> queryMate(SAMRecord rec) {
+        throw new IllegalStateException("Not implemented by test decoder");
     }
 }

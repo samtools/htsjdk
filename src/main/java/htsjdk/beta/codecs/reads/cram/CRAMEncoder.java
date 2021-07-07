@@ -3,7 +3,7 @@ package htsjdk.beta.codecs.reads.cram;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -26,7 +26,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     }
 
     @Override
-    final public ReadsFormat getFormat() { return ReadsFormat.CRAM; }
+    final public String getFormat() { return ReadsFormats.CRAM; }
 
     @Override
     final public String getDisplayName() { return displayName; }

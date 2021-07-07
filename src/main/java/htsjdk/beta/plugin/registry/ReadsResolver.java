@@ -5,7 +5,6 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsBundle;
 import htsjdk.beta.plugin.reads.ReadsCodec;
-import htsjdk.beta.plugin.reads.ReadsFormat;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
@@ -28,13 +27,13 @@ import htsjdk.utils.ValidationUtils;
  * {@link ReadsCodec}s, such as {@link ReadsDecoder}, {@link ReadsEncoder},
  * {@link htsjdk.beta.plugin.reads.ReadsDecoderOptions}.
  */
-public class ReadsResolver extends HtsCodecResolver<ReadsFormat, ReadsCodec>{
+public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
 
     /**
      * Create a ReadsResolver.
      */
     public ReadsResolver() {
-        super(BundleResourceType.ALIGNED_READS, ReadsFormat.BAM);
+        super(BundleResourceType.ALIGNED_READS);
     }
 
     /**
@@ -106,7 +105,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsFormat, ReadsCodec>{
      * Return a {@link ReadsEncoder} suitable for encoding to {@code outputPath}. The path must include
      * a file extension suitable for determining the appropriate file format to use; the newest version
      * of the file format available will be used. To request a specific file format and/or version, use
-     * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, ReadsFormat, HtsVersion)}.
+     * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, String, HtsVersion)}.
      *
      * @param outputPath the IOPath target for encoding
      * @return a {@link ReadsEncoder} suitable for encoding to {@code outputPath}
@@ -122,7 +121,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsFormat, ReadsCodec>{
      * in {@code readsEncoderOptions}. The path must include a file extension suitable for determining
      * the appropriate file format to use; the newest version of the file format available will be used.
      * To request a specific file format and/or version, use
-     * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, ReadsFormat, HtsVersion)}.
+     * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, String, HtsVersion)}.
      *
      * @param outputPath target path to encode
      * @param readsEncoderOptions {@link ReadsEncoderOptions} options to be used by the encoder
@@ -143,7 +142,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsFormat, ReadsCodec>{
      * extension suitable for determining the appropriate file format to use; or the resource must include
      * a format. The newest version of the selected file format available will be used.
      * To request a specific file format and/or version, use
-     * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, ReadsFormat, HtsVersion)}.
+     * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, String, HtsVersion)}.
      *
      * @param outputBundle target output to encode to
      * @param readsEncoderOptions {@link ReadsEncoderOptions} to be used by the encoder
@@ -173,7 +172,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsFormat, ReadsCodec>{
     public ReadsEncoder getReadsEncoder(
             final Bundle outputBundle,
             final ReadsEncoderOptions readsEncoderOptions,
-            final ReadsFormat readsFormat,
+            final String readsFormat,
             final HtsVersion formatVersion) {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
         ValidationUtils.nonNull(readsFormat, "Reads format");

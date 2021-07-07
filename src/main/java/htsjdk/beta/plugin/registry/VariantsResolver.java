@@ -10,7 +10,6 @@ import htsjdk.beta.plugin.variants.VariantsDecoder;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsEncoder;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
-import htsjdk.beta.plugin.variants.VariantsFormat;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
@@ -25,13 +24,13 @@ import htsjdk.utils.ValidationUtils;
  * used with {@link VariantsCodec}s, such as {@link VariantsDecoder}, {@link VariantsEncoder},
  * {@link htsjdk.beta.plugin.variants.VariantsDecoderOptions}.
  */
-public class VariantsResolver extends HtsCodecResolver<VariantsFormat, VariantsCodec> {
+public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
 
     /**
      * Create a VariantsResolver.
      */
     public VariantsResolver() {
-        super(BundleResourceType.VARIANT_CONTEXTS, VariantsFormat.VCF);
+        super(BundleResourceType.VARIANT_CONTEXTS);
     }
 
     public VariantsDecoder getVariantsDecoder(final IOPath inputPath) {
@@ -98,7 +97,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsFormat, VariantsC
     public VariantsEncoder getVariantsEncoder(
             final Bundle outputBundle,
             final VariantsEncoderOptions variantsEncoderOptions,
-            final VariantsFormat variantsFormat,
+            final String variantsFormat,
             final HtsVersion codecVersion) {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
         ValidationUtils.nonNull(variantsFormat, "Format");

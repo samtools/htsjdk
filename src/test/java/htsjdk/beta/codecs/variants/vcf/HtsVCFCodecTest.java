@@ -8,7 +8,7 @@ import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.variants.VariantsDecoder;
 import htsjdk.beta.plugin.variants.VariantsEncoder;
-import htsjdk.beta.plugin.variants.VariantsFormat;
+import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 import org.testng.Assert;
@@ -35,11 +35,11 @@ public class HtsVCFCodecTest extends HtsjdkTest {
              final VariantsEncoder variantsEncoder = HtsDefaultRegistry.getVariantsResolver().getVariantsEncoder(outputPath)) {
 
             Assert.assertNotNull(variantsDecoder);
-            Assert.assertEquals(variantsDecoder.getFormat(), VariantsFormat.VCF);
+            Assert.assertEquals(variantsDecoder.getFormat(), VariantsFormats.VCF);
             Assert.assertEquals(variantsDecoder.getVersion(), VCFCodecV4_2.VCF_V42_VERSION);
 
             Assert.assertNotNull(variantsEncoder);
-            Assert.assertEquals(variantsEncoder.getFormat(), VariantsFormat.VCF);
+            Assert.assertEquals(variantsEncoder.getFormat(), VariantsFormats.VCF);
             Assert.assertEquals(variantsEncoder.getVersion(), VCFCodecV4_2.VCF_V42_VERSION);
 
             final VCFHeader vcfHeader = variantsDecoder.getHeader();

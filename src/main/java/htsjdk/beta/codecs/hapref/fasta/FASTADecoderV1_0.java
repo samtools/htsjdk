@@ -5,7 +5,7 @@ import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
-import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
+import htsjdk.beta.plugin.hapref.HaploidReferenceFormats;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -51,7 +51,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     }
 
     @Override
-    final public HaploidReferenceFormat getFormat() { return HaploidReferenceFormat.FASTA; }
+    final public String getFormat() { return HaploidReferenceFormats.FASTA; }
 
     @Override
     public SAMSequenceDictionary getHeader() {

@@ -6,7 +6,6 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
-import htsjdk.beta.plugin.hapref.HaploidReferenceFormat;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
@@ -20,13 +19,13 @@ import htsjdk.utils.ValidationUtils;
  * {@link HaploidReferenceCodec}s, such as {@link htsjdk.beta.plugin.hapref.HaploidReferenceDecoder} and
  * {@link htsjdk.beta.plugin.hapref.HaploidReferenceEncoder}.
  */
-public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceFormat, HaploidReferenceCodec> {
+public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceCodec> {
 
     /**
      * Create a new HaploidReferenceResolver.
      */
     public HaploidReferenceResolver() {
-        super(BundleResourceType.HAPLOID_REFERENCE, HaploidReferenceFormat.FASTA);
+        super(BundleResourceType.HAPLOID_REFERENCE);
     }
 
     /**

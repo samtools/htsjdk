@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.bundle.InputStreamResource;
 import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import org.testng.Assert;
@@ -27,7 +27,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
 
         try (final BAMDecoder bamDecoder = (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
             Assert.assertNotNull(bamDecoder);
-            Assert.assertEquals(bamDecoder.getFormat(), ReadsFormat.BAM);
+            Assert.assertEquals(bamDecoder.getFormat(), ReadsFormats.BAM);
 
             final SAMFileHeader samFileHeader = bamDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);
@@ -41,7 +41,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
         final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
         try (final BAMEncoder bamEncoder = (BAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
             Assert.assertNotNull(bamEncoder);
-            Assert.assertEquals(bamEncoder.getFormat(), ReadsFormat.BAM);
+            Assert.assertEquals(bamEncoder.getFormat(), ReadsFormats.BAM);
         }
     }
 
@@ -79,9 +79,9 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
              final BAMEncoder bamEncoder = (BAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
 
             Assert.assertNotNull(bamDecoder);
-            Assert.assertEquals(bamDecoder.getFormat(), ReadsFormat.BAM);
+            Assert.assertEquals(bamDecoder.getFormat(), ReadsFormats.BAM);
             Assert.assertNotNull(bamEncoder);
-            Assert.assertEquals(bamEncoder.getFormat(), ReadsFormat.BAM);
+            Assert.assertEquals(bamEncoder.getFormat(), ReadsFormats.BAM);
 
             final SAMFileHeader samFileHeader = bamDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);

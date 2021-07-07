@@ -7,4 +7,4 @@ import htsjdk.samtools.reference.ReferenceSequence;
 /**
  *  Defines the type parameters instantiated for haploid reference decoders.
  */
-public interface HaploidReferenceDecoder extends HtsDecoder<HaploidReferenceFormat, SAMSequenceDictionary, ReferenceSequence> { }
+public interface HaploidReferenceDecoder extends HtsDecoder<SAMSequenceDictionary, ReferenceSequence> { }

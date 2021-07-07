@@ -3,7 +3,7 @@ package htsjdk.beta.codecs.reads.htsget;
 import htsjdk.beta.plugin.bundle.SignatureStream;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;
-import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.HtsgetBAMFileReader;
 import htsjdk.samtools.util.FileExtensions;
@@ -28,7 +28,7 @@ public abstract class HtsgetBAMCodec implements ReadsCodec {
     public HtsVersion getVersion() { return HTSGET_VERSION; }
 
     @Override
-    public ReadsFormat getFileFormat() { return ReadsFormat.HTSGET_BAM; }
+    public String getFileFormat() { return ReadsFormats.HTSGET_BAM; }
 
     @Override
     public int getSignatureLength() {

@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.variants.VariantsDecoder;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
-import htsjdk.beta.plugin.variants.VariantsFormat;
+import htsjdk.beta.plugin.variants.VariantsFormats;
 
 public abstract class VCFDecoder implements VariantsDecoder {
     protected final Bundle inputBundle;
@@ -18,7 +18,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
     }
 
     @Override
-    final public VariantsFormat getFormat() { return VariantsFormat.VCF; }
+    final public String getFormat() { return VariantsFormats.VCF; }
 
     @Override
     final public String getDisplayName() { return displayName; }

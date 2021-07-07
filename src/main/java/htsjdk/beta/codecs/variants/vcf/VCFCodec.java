@@ -2,10 +2,9 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.variants.VariantsCodec;
-import htsjdk.beta.plugin.variants.VariantsFormat;
+import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.samtools.util.FileExtensions;
 
-import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,7 +17,7 @@ public abstract class VCFCodec implements VariantsCodec {
     }};
 
     @Override
-    public VariantsFormat getFileFormat() { return VariantsFormat.VCF; }
+    public String getFileFormat() { return VariantsFormats.VCF; }
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {

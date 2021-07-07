@@ -7,7 +7,6 @@ import htsjdk.beta.plugin.HtsRecord;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.beta.plugin.reads.ReadsFormat;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -28,7 +27,7 @@ public class HtsgetBAMCodecV1_2 extends HtsgetBAMCodec {
     }
 
     @Override
-    public HtsEncoder<ReadsFormat, ?, ? extends HtsRecord> getEncoder(Bundle outputBundle, ReadsEncoderOptions encodeOptions) {
+    public HtsEncoder<?, ? extends HtsRecord> getEncoder(Bundle outputBundle, ReadsEncoderOptions encodeOptions) {
         throw new IllegalArgumentException("Htsget is read only - no Htsget BAM encoder component is available.");
     }
 

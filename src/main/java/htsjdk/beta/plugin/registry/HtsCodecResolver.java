@@ -1,7 +1,6 @@
 package htsjdk.beta.plugin.registry;
 
 import htsjdk.beta.plugin.HtsCodec;
-import htsjdk.beta.plugin.HtsFormat;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
@@ -33,45 +32,38 @@ import java.util.stream.Collectors;
  * to determine the file format and version for the target resource, in order to find codecs that
  * claim to be able to process the resource.
  *</p>
- * @param <F> enum representing the possible formats for this codec type, implements HtsFormat<F>
  * @param <C> the HtsCodec type managed by this resolver
  */
-public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCodec<F, ?, ?>> {
+public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
     private static final Log LOG = Log.getInstance(HtsCodecResolver.class);
 
     final static String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
     final static String MULTIPLE_SUPPORTING_CODECS_ERROR = "Multiple codecs accept the provided resource";
 
     private final String requiredContentType;
-    private final F htsFormatEnumInstance;
-    private final Map<F, Map<HtsVersion, C>> codecs = new HashMap<>();
+    private final Map<String, Map<HtsVersion, C>> codecs = new HashMap<>();
 
     /**
-     * Create a resolver for a given {@link HtsCodec} type, defined by the type parameters {@code F} and {@code C}.
+     * Create a resolver for a given {@link HtsCodec} type, defined by the type parameter {@code C}.
      *
      * @param requiredContentType the primary content type this resolver will use to interrogate a bundle
      *                            to locate the primary resource when attempting to resolve the bundle to a codec
-     * @param htsFormatEnumInstance any instance of the {@code F} enum. the actual instance passed is not
-     *                             significant; any instance of the enum {@code F} will work. The value is
-     *                             used to access the {@link HtsFormat#formatStringToEnum(String)} method of
-     *                             {@link HtsFormat}.
+     *
      */
-    public HtsCodecResolver(final String requiredContentType, F htsFormatEnumInstance) {
+    public HtsCodecResolver(final String requiredContentType) {
         this.requiredContentType = requiredContentType;
-        this.htsFormatEnumInstance = htsFormatEnumInstance;
     }
 
     /**
-     * Register a codec of type {@code C} for file format {@code F}. If a codec for the same
-     * format and version is already registered with this resolver, the resolver is updated
-     * with the new codec, and the previously registered codec is returned.
+     * Register a codec of type {@code C}. If a codec for the same format and version is already registered with
+     * this resolver, the resolver is updated with the new codec, and the previously registered codec is returned.
      *
-     * @param codec a codec of type {@code C} for file format {@code F}
+     * @param codec a codec of type {@code C}
      * @return the previously registered codec for the same format and version, or null if no
      * codec was previously registered
      */
     public C registerCodec(final C codec) {
-        final F fileFormat = codec.getFileFormat();
+        final String fileFormat = codec.getFileFormat();
         final Map<HtsVersion, C> versionMap = codecs.get(fileFormat);
         if (versionMap == null) {
             // first codec for this format
@@ -155,17 +147,17 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         ValidationUtils.nonNull(bundle, "bundle");
 
         final BundleResource bundleResource = getPrimaryResource(bundle, true);
-        final Optional<F> optFormat = getFormatForFormatString(bundleResource);
-        final List<C> candidatesCodecs = resolveFormat(optFormat);
+        final Optional<String> optFormatString = bundleResource.getFormatString();
+        final List<C> candidateCodecs = resolveForFormat(optFormatString);
 
         final List<C> resolvedCodecs = bundleResource.getIOPath().isPresent() ?
-                resolveForDecodingIOPath(bundleResource, candidatesCodecs) :
-                resolveForDecodingStream(bundleResource, candidatesCodecs);
+                resolveForDecodingIOPath(bundleResource, candidateCodecs) :
+                resolveForDecodingStream(bundleResource, candidateCodecs);
 
         return getOneOrThrow(
                 resolvedCodecs,
                 () -> String.format("%s/%s",
-                        optFormat.isPresent () ? optFormat.get() : "(NONE)",
+                        optFormatString.isPresent () ? optFormatString.get() : "(NONE)",
                         bundleResource));
     }
 
@@ -181,10 +173,10 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
      * be used.
      * <p>
      * To request a specific version, see {@link #resolveForEncoding(Bundle, HtsVersion)}. To request a
-     * specific format and version, use {@link #resolveFormatAndVersion(Enum, HtsVersion)}.
+     * specific format and version, use {@link #resolveFormatAndVersion(String, HtsVersion)}.
      *
      * @param bundle the bundle to resolve to a codec for encoding
-     * @return a codec that can decode the input bundle
+     * @return A codec that can decode the input bundle
      *
      * @throws RuntimeException if more than one codec matches. this usually indicates a registered codec
      * that is poorly behaved.
@@ -210,8 +202,8 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         ValidationUtils.nonNull(htsVersion, "htsVersion");
 
         final BundleResource bundleResource = getPrimaryResource(bundle, false);
-        final Optional<F> optFormat = getFormatForFormatString(bundleResource);
-        final List<C> candidateCodecs = resolveFormat(optFormat);
+        final Optional<String> optFormatString = bundleResource.getFormatString();
+        final List<C> candidateCodecs = resolveForFormat(optFormatString);
 
         final Optional<IOPath> ioPath = bundleResource.getIOPath();
         final List<C> filteredCodecs = bundleResource.getIOPath().isPresent() ?
@@ -222,17 +214,17 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         return getOneOrThrow(
                 resolvedCodecs,
                 () ->  String.format("%s/%s",
-                        optFormat.isPresent () ? optFormat.get() : "(NONE)",
+                        optFormatString.isPresent () ? optFormatString.get() : "(NONE)",
                         bundleResource));
     }
 
     /**
-     * Obtain a list of codecs that claim to support file format {@code format} of type {@code F}
+     * Obtain a list of codecs that claim to support file format {@code format} string
      *
-     * @param format the input format of type {@code F}
+     * @param format the format string of the input
      * @return The list of registered codecs that claim to support some version of file format {@code format}
      */
-    public List<C> resolveFormat(final F format) {
+    public List<C> resolveForFormat(final String format) {
         final Map<HtsVersion, C> allCodecsForFormat = codecs.get(format);
         if (allCodecsForFormat != null) {
             return allCodecsForFormat.values().stream().collect(Collectors.toList());
@@ -242,15 +234,15 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
 
     /**
      * Obtain a list of codecs that claim to support version {@code formatVersion} of file format
-     * {@code format} of type {@code F}.
+     * {@code format}.
      *
-     * @param format the input format of type {@code F}
+     * @param format the input format
      * @param formatVersion the version of {@code format} requested
      * @return The list of registered codecs that claim to support version {@code formatVersion} of file
      * format {@code format}
      */
-    public C resolveFormatAndVersion(final F format, final HtsVersion formatVersion) {
-        final List<C> matchingCodecs = resolveFormat(format)
+    public C resolveFormatAndVersion(final String format, final HtsVersion formatVersion) {
+        final List<C> matchingCodecs = resolveForFormat(format)
                 .stream()
                 .filter(codec -> codec.getFileFormat().equals(format) && codec.getVersion().equals(formatVersion))
                 .collect(Collectors.toList());
@@ -359,7 +351,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         return bundleResource.getSignatureStream(streamPrefixSize);
     }
 
-    private static<T extends HtsCodec<?, ?, ?>> boolean canDecodeInputStreamSignature(
+    private static<T extends HtsCodec<?, ?>> boolean canDecodeInputStreamSignature(
             final T codec,
             final SignatureStream signatureStream,
             final int signatureProbeLength,
@@ -393,11 +385,20 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
 
     // Get our initial candidate codec list, either filtered by format if one is present,
     // or otherwise all registered codecs for this codec format.
-    private List<C> resolveFormat(final Optional<F> optFormat) {
+    private List<C> resolveForFormat(final Optional<String> optFormatString) {
         final List<C> candidateCodecs =
-                optFormat.isPresent() ?
-                        resolveFormat(optFormat.get()) :
+                optFormatString.isPresent() ?
+                        resolveForFormat(optFormatString.get()) :
                         getCodecs();
+        if (optFormatString.isPresent() && candidateCodecs.isEmpty()) {
+            // warn if the resource format string is present, but doesn't map to any codec registered
+            // with this resolver (/content type).
+            LOG.warn(String.format(
+                    "The specified format string (%s) does not correspond to any registered codec for content type (%s)",
+                    optFormatString.get(),
+                    requiredContentType));
+
+        }
         return candidateCodecs;
     }
 
@@ -450,23 +451,8 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         return bundleResource;
     }
 
-    private Optional<F> getFormatForFormatString(final BundleResource bundleResource) {
-        final Optional<String> optFormatString = bundleResource.getFormatString();
-        final Optional<F> optFormatEnum = optFormatString.flatMap(
-                resourceFormat -> htsFormatEnumInstance.formatStringToEnum(resourceFormat));
-        if (optFormatString.isPresent() && !optFormatEnum.isPresent()) {
-            // throw if the resource format string is present, but doesn't map to any format supported by the content
-            throw new IllegalArgumentException(
-                    String.format("The format (%s) specified in the bundle resource (%s) does not correspond to any known format for content type (%s)",
-                            optFormatString.get(),
-                            bundleResource,
-                            requiredContentType));
-        }
-        return optFormatEnum;
-    }
-
     @PrivateAPI
-    static <C extends HtsCodec<?, ?, ?>> C getOneOrThrow(
+    static <C extends HtsCodec<?, ?>> C getOneOrThrow(
             final List<C> resolvedCodecs,
             final Supplier<String> contextMessage) {
         if (resolvedCodecs.size() == 0) {

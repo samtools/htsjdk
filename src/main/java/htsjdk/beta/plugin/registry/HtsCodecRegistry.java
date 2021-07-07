@@ -55,7 +55,7 @@ public class HtsCodecRegistry {
      * @return a previously registered codec with the same (format, version), or null if no codec
      * was previously registered
      */
-    public synchronized HtsCodec<?, ?, ?> registerCodec(final HtsCodec<?, ?, ?> codec) {
+    public synchronized HtsCodec<?, ?> registerCodec(final HtsCodec<?, ?> codec) {
         switch (codec.getContentType()) {
             case HAPLOID_REFERENCE:
                 return htsHaploidReferenceResolver.registerCodec((HaploidReferenceCodec) codec);

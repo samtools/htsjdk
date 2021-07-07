@@ -1,25 +1,28 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
+import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.HtsEncoder;
-import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.plugin.reads.ReadsEncoder;
+import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 
 // Dummy encoder class for use by tests
-public class HtsTestEncoder implements HtsEncoder<HtsTestCodecFormat, HtsTestHeader, HtsTestRecord> {
+public class HtsTestEncoder implements ReadsEncoder {
     private final HtsVersion htsVersion;
-    private final HtsTestCodecFormat htsFormat;
+    private final String htsFormat;
 
     public HtsTestEncoder(final Bundle outputBundle,
-                          final HtsEncoderOptions htsEncoderOptions,
-                          final HtsTestCodecFormat htsFormat,
+                          final ReadsEncoderOptions readsEncoderOptions,
+                          final String htsFormat,
                           final HtsVersion htsVersion) {
         this.htsFormat = htsFormat;
         this.htsVersion = htsVersion;
     }
 
     @Override
-    public HtsTestCodecFormat getFormat() {
+    public String getFormat() {
         return htsFormat;
     }
 
@@ -34,12 +37,18 @@ public class HtsTestEncoder implements HtsEncoder<HtsTestCodecFormat, HtsTestHea
     }
 
     @Override
-    public void setHeader(HtsTestHeader header) { }
+    public void setHeader(SAMFileHeader header) {
+        throw new HtsjdkPluginException("Not implemented by test codec");
+    }
 
     @Override
-    public void write(HtsTestRecord record) { }
+    public void write(SAMRecord record) {
+        throw new HtsjdkPluginException("Not implemented by test codec");
+    }
 
     @Override
-    public void close() { }
+    public void close() {
+        // no-op
+    }
 
 }

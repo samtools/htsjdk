@@ -1,6 +1,7 @@
 package htsjdk.beta.plugin;
 
 import htsjdk.beta.plugin.bundle.SignatureStream;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.bundle.Bundle;
 
@@ -54,7 +55,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link HtsEncoderOptions}: base options interface for encoders </li>
  *     <li> {@link HtsDecoder}: base decoder interface </li>
  *     <li> {@link HtsDecoderOptions}: base options interface for decoders </li>
- *     <li> {@link java.lang.Enum}: an enum with values for each supported file format for that type </li>
+ *     <li>  a class with string constants for each supported file format for that type </li>
  *     <li> {@link htsjdk.beta.plugin.bundle.Bundle}: a optional type-specific
  *     {@link htsjdk.beta.plugin.bundle.Bundle} implementation </li>
  * </ul>
@@ -84,7 +85,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     {@link HtsDecoder} interface </li>
  *     <li> {@link htsjdk.beta.plugin.reads.ReadsDecoderOptions}: reads decoder options, extends the generic
  *     {@link HtsDecoderOptions} interface </li>
- *     <li> {@link htsjdk.beta.plugin.reads.ReadsFormat}: an enum with values for each possible
+ *     <li> {@link ReadsFormats}: an class with string constants for each possible
  *     supported reads file format </li>
  * </ul>
  * <H3>Codec Resolution Protocol</H3>
@@ -159,15 +160,10 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *         </li>
  *     </ul>
  * </p>
- * @param <F> the format enum type for this codec. must also implement {@link HtsFormat}
  * @param <D> the decoder options type for this codec
  * @param <E> the encoder options type for this codec
  */
-public interface HtsCodec<
-        F extends Enum<F> & HtsFormat<F>,
-        D extends HtsDecoderOptions,
-        E extends HtsEncoderOptions>
-        extends Upgradeable {
+public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptions> extends Upgradeable {
 
     /**
      * Get the {@link HtsContentType} for this codec.
@@ -183,11 +179,11 @@ public interface HtsCodec<
     HtsContentType getContentType();
 
     /**
-     * Get the file format supported by this codec, taken from the values in {@code F}.
+     * Get the name of the file format supported by this codec.
      *
-     * @return a value taken from the Enum {@code F}, representing the underlying file format handled by this codec
+     * @return a value representing the underlying file format handled by this codec
      */
-    F getFileFormat();
+    String getFileFormat();
 
     /**
      * Get the version of the file format returned by {@link #getFileFormat()} that is supported by this codec.
@@ -333,7 +329,7 @@ public interface HtsCodec<
      * @param decoderOptions options for the decoder to use
      * @return an {@link HtsDecoder} that can decode the provided inputs
      */
-    HtsDecoder<F, ?, ? extends HtsRecord> getDecoder(final Bundle inputBundle, final D decoderOptions);
+    HtsDecoder<?, ? extends HtsRecord> getDecoder(final Bundle inputBundle, final D decoderOptions);
 
     /**
      * Obtain an {@link HtsEncoder} to encode to the provided outputs. The framework
@@ -344,6 +340,6 @@ public interface HtsCodec<
      * @param encoderOptions encoder options to use
      * @return an {@link HtsEncoder} suitable for writing to the provided outputs
      */
-    HtsEncoder<F, ?, ? extends HtsRecord> getEncoder(final Bundle outputBundle, final E encoderOptions);
+    HtsEncoder<?, ? extends HtsRecord> getEncoder(final Bundle outputBundle, final E encoderOptions);
 
 }

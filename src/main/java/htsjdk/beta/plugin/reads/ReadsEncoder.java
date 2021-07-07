@@ -7,4 +7,4 @@ import htsjdk.samtools.SAMRecord;
 /**
  * Base interface for reads encoders.
  */
-public interface ReadsEncoder extends HtsEncoder<ReadsFormat, SAMFileHeader, SAMRecord> { }
+public interface ReadsEncoder extends HtsEncoder<SAMFileHeader, SAMRecord> { }

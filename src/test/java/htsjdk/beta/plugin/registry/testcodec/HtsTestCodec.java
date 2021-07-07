@@ -7,6 +7,11 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.plugin.reads.ReadsCodec;
+import htsjdk.beta.plugin.reads.ReadsDecoder;
+import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
+import htsjdk.beta.plugin.reads.ReadsEncoder;
+import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.utils.ValidationUtils;
@@ -26,13 +31,9 @@ import java.util.Optional;
 // The stream signature used by this codec is always: format concatenated with version# (for FORMAT_2, version
 // "1.0.0", the embedded signature would be be "FORMAT_21.0.0".
 //
-public class HtsTestCodec implements HtsCodec<
-        HtsTestCodecFormat,
-        HtsTestDecoderOptions,
-        HtsTestEncoderOptions>
-{
+public class HtsTestCodec implements ReadsCodec {
     private final HtsVersion htsVersion;
-    private final HtsTestCodecFormat htsFormat;
+    private final String htsFormat;
     private final String fileExtension;
     private final String protocolScheme;
     private final boolean useGzippedInputs;
@@ -47,7 +48,7 @@ public class HtsTestCodec implements HtsCodec<
 
     // used by tests to create a variety of different test codecs that vary by format/version/extensions/protocol
     public HtsTestCodec(
-            final HtsTestCodecFormat htsFormat,
+            final String htsFormat,
             final HtsVersion htsVersion,
             final String fileExtension,
             final String protocolScheme,
@@ -62,13 +63,13 @@ public class HtsTestCodec implements HtsCodec<
 
     @Override
     public HtsContentType getContentType() {
-        //this isn't really an ALIGNED_READS codec, but codecs are constrained by type to use a value from
-        // the HtsContentType enum
+        // being a test codec, this isn't really an ALIGNED_READS codec, but codecs are constrained by the known
+        // content types from the HtsContentType enum, so this has to masquerade ad one of those
         return HtsContentType.ALIGNED_READS;
     }
 
     @Override
-    public HtsTestCodecFormat getFileFormat() {
+    public String getFileFormat() {
         return htsFormat;
     }
 
@@ -82,7 +83,7 @@ public class HtsTestCodec implements HtsCodec<
 
     @Override
     public int getSignatureLength() {
-        return htsFormat.name().length() + htsVersion.toString().length();
+        return htsFormat.length() + htsVersion.toString().length();
     }
 
     @Override
@@ -120,7 +121,7 @@ public class HtsTestCodec implements HtsCodec<
                 if (streamToUse.read(signatureBytes) <= 0) {
                     throw new HtsjdkIOException(String.format("Failure reading content from input stream for %s", sourceName));
                 }
-                return Arrays.equals(signatureBytes, (htsFormat.name() + htsVersion).getBytes());
+                return Arrays.equals(signatureBytes, (htsFormat + htsVersion).getBytes());
             }
         } catch (IOException e) {
             throw new HtsjdkIOException(String.format("Failure reading content from stream for %s", sourceName), e);
@@ -128,12 +129,12 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public HtsTestDecoder getDecoder(final Bundle inputBundle, final HtsTestDecoderOptions decoderOptions) {
+    public ReadsDecoder getDecoder(final Bundle inputBundle, final ReadsDecoderOptions decoderOptions) {
         return new HtsTestDecoder(inputBundle, decoderOptions, htsFormat, htsVersion);
     }
 
     @Override
-    public HtsTestEncoder getEncoder(final Bundle outputBundle, final HtsTestEncoderOptions encoderOptions) {
+    public ReadsEncoder getEncoder(final Bundle outputBundle, final ReadsEncoderOptions encoderOptions) {
         return new HtsTestEncoder(outputBundle, encoderOptions, htsFormat, htsVersion);
     }
 

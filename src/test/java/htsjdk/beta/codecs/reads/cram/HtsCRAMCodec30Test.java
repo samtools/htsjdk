@@ -8,7 +8,7 @@ import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
@@ -32,7 +32,7 @@ public class HtsCRAMCodec30Test extends HtsjdkTest {
         try (final CRAMDecoder cramDecoder =
                      (CRAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(cramDecoder);
-            Assert.assertEquals(cramDecoder.getFormat(), ReadsFormat.CRAM);
+            Assert.assertEquals(cramDecoder.getFormat(), ReadsFormats.CRAM);
 
             final SAMFileHeader samFileHeader = cramDecoder.getHeader();
             Assert.assertEquals(samFileHeader.getSortOrder(), SAMFileHeader.SortOrder.unsorted);
@@ -58,9 +58,9 @@ public class HtsCRAMCodec30Test extends HtsjdkTest {
                      HtsDefaultRegistry.getReadsResolver().getReadsEncoder(cramOutputPath, readsEncoderOptions)) {
 
             Assert.assertNotNull(cramDecoder);
-            Assert.assertEquals(cramDecoder.getFormat(), ReadsFormat.CRAM);
+            Assert.assertEquals(cramDecoder.getFormat(), ReadsFormats.CRAM);
             Assert.assertNotNull(cramEncoder);
-            Assert.assertEquals(cramEncoder.getFormat(), ReadsFormat.CRAM);
+            Assert.assertEquals(cramEncoder.getFormat(), ReadsFormats.CRAM);
 
             final SAMFileHeader samFileHeader = cramDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);
@@ -92,7 +92,7 @@ public class HtsCRAMCodec30Test extends HtsjdkTest {
         try (final CRAMDecoder cramDecoder = (CRAMDecoder)
                 HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(cramDecoder);
-            Assert.assertEquals(cramDecoder.getFormat(), ReadsFormat.CRAM);
+            Assert.assertEquals(cramDecoder.getFormat(), ReadsFormats.CRAM);
 
             final SAMFileHeader samFileHeader = cramDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);

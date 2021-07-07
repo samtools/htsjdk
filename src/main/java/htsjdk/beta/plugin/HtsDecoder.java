@@ -10,19 +10,18 @@ import java.io.Closeable;
  *      only satisfy index queries when the provided input bundle explicitly specifies an index resource.
  * </p>
  *
- * @param <F> enum representing the formats for the codec type for this decoder
- *               (i.e., ReadsFormat defining SAM/BAM/CRAM values)
  * @param <H> type param for the header for this format (i.e. SAMFileHeader)
  * @param <R> type param for the record for this format (i.e. SAMRecord)
  */
-public interface HtsDecoder<F extends Enum<F> & HtsFormat<F>, H extends HtsHeader, R extends HtsRecord>
+public interface HtsDecoder<H extends HtsHeader, R extends HtsRecord>
         extends HtsQuery<R>, Closeable {
 
     /**
-     * Return the file format supported by this decoder, from the enum {@code F}
-     * @return the file format supported by this decoder, from the enum {@code F}
+     * Return a string for the file format supported by this decoder
+     *
+     * @return the file format supported by this decoder
      */
-    F getFormat();
+    String getFormat();
 
     /**
      * Return the version of the file format supported by this decoder.

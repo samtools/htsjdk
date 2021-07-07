@@ -5,7 +5,7 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
-import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 
 public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     protected final Bundle inputBundle;
@@ -19,7 +19,7 @@ public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     }
 
     @Override
-    final public ReadsFormat getFormat() { return ReadsFormat.BAM; }
+    final public String getFormat() { return ReadsFormats.BAM; }
 
     @Override
     public HtsVersion getVersion() {

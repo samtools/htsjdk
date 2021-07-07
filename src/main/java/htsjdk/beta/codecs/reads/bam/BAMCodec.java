@@ -3,7 +3,7 @@ package htsjdk.beta.codecs.reads.bam;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;
-import htsjdk.beta.plugin.reads.ReadsFormat;
+import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.samtools.util.FileExtensions;
 
 import java.util.Arrays;
@@ -19,7 +19,7 @@ public abstract class BAMCodec implements ReadsCodec {
     private static final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.BAM));
 
     @Override
-    public ReadsFormat getFileFormat() { return ReadsFormat.BAM; }
+    public String getFileFormat() { return ReadsFormats.BAM; }
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
