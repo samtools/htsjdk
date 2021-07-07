@@ -79,11 +79,12 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
         return getIteratorMonitor(() -> cramReader.queryUnmapped());
     }
 
-    //Note that this method  is a copied and slightly modified version of the shared implementation in
+    // This method is a slightly modified version of the shared implementation in
     // SamReader. It delegates to other query methods on this decoder (queryUnmapped and queryStart),
     // which will throw if an existing iterator is already opened
     @Override
-    public SAMRecord queryMate(SAMRecord rec) {
+    public Optional<SAMRecord> queryMate(SAMRecord rec) {
+        ValidationUtils.nonNull(rec, "rec");
         if (!rec.getReadPairedFlag()) {
             throw new IllegalArgumentException("queryMate called for unpaired read.");
         }
@@ -119,7 +120,7 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
                     mateRec = next;
                 }
             }
-            return mateRec;
+            return Optional.ofNullable(mateRec);
         }
     }
 

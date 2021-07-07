@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.function.Function;
 
 // These tests are derived from the tests in CRAMIndexQueryTest, which are used to test the (combined)
@@ -736,10 +737,14 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
              }
 
             // get the mate for the first record
-            firstRecordMate = cramDecoder.queryMate(firstRecord);
+            final Optional<SAMRecord> optFirstMate = cramDecoder.queryMate(firstRecord);
+            Assert.assertTrue(optFirstMate.isPresent());
+            firstRecordMate = optFirstMate.get();
             Assert.assertEquals(firstRecordMate.getReadName(), firstRecord.getReadName());
 
-            final SAMRecord matesMate = cramDecoder.queryMate(firstRecordMate);
+            final Optional<SAMRecord> optMatesMate = cramDecoder.queryMate(firstRecordMate);
+            Assert.assertTrue(optMatesMate.isPresent());
+            final SAMRecord matesMate = optMatesMate.get();
             Assert.assertEquals(matesMate, firstRecord);
         }
     }
@@ -773,10 +778,14 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
             }
 
             // get the mate for the first record
-            firstRecordMate = cramDecoder.queryMate(firstRecord);
+            final Optional<SAMRecord> optFirstMate = cramDecoder.queryMate(firstRecord);
+            Assert.assertTrue(optFirstMate.isPresent());
+            firstRecordMate = optFirstMate.get();
             Assert.assertEquals(firstRecordMate.getReadName(), firstRecord.getReadName());
 
-            final SAMRecord matesMate = cramDecoder.queryMate(firstRecordMate);
+            final Optional<SAMRecord> optMatesMate = cramDecoder.queryMate(firstRecordMate);
+            Assert.assertTrue(optMatesMate.isPresent());
+            final SAMRecord matesMate = optMatesMate.get();
             Assert.assertEquals(matesMate, firstRecord);
 
             // now ensure that the querymate calls closed their iterators by re-executing a query that returns

@@ -152,6 +152,11 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *             HtsCodec instances may be shared across multiple registries, and should generally be immutable
  *             (HtsEncoder and HtsDecoder implementations may be mutable).
  *         </li>
+ *         <li>
+ *             The {@link #getDecoder(Bundle, HtsDecoderOptions)} implementation should not attempt to automatically
+ *             resolve a companion index. {@link HtsDecoder}s should only satisfy index queries when the input bundle
+ *             explicitly specifies an index resource.
+ *         </li>
  *     </ul>
  * </p>
  * @param <F> the format enum type for this codec. must also implement {@link HtsFormat}
@@ -317,24 +322,27 @@ public interface HtsCodec<
     default int getSignatureProbeLength() { return getSignatureLength(); }
 
     /**
-     * Return an {@link HtsDecoder}-derived object to decode the provided inputs. The framework
-     * will never call this method unless either {@link #ownsURI(IOPath)}, or {@link #canDecodeURI(IOPath)}
-     * and {@link #canDecodeSignature(SignatureStream, String)} (IOPath)} returned true for {@code inputBundle}.
+     * Return an {@link HtsDecoder} to decode the provided inputs. The framework will never call this
+     * method unless either {@link #ownsURI(IOPath)}, or {@link #canDecodeURI(IOPath)} and
+     * {@link #canDecodeSignature(SignatureStream, String)} (IOPath)} returned true for {@code inputBundle}.
      *
-     * @param inputBundle input to be decoded
+     * @param inputBundle input to be decoded. To get a decoder for use with index queries that use
+     *                    {@link htsjdk.beta.plugin.interval.HtsQuery} methods, the bundle must contain
+     *                    an index resource.
+     *
      * @param decoderOptions options for the decoder to use
-     * @return an {@link HtsDecoder}-derived object that can decode the provided inputs
+     * @return an {@link HtsDecoder} that can decode the provided inputs
      */
     HtsDecoder<F, ?, ? extends HtsRecord> getDecoder(final Bundle inputBundle, final D decoderOptions);
 
     /**
-     * Return an {@link HtsEncoder}-derived object to encode to the provided outputs. The framework
+     * Return an {@link HtsEncoder} to encode to the provided outputs. The framework
      * will never call this method unless either {@link #ownsURI(IOPath)}, or {@link #canDecodeURI(IOPath)}
      * returned true for {@code outputBundle}.
      *
      * @param outputBundle target output for the encoder
      * @param encoderOptions encoder options to use
-     * @return an {@link HtsEncoder}-derived object suitable for writing to the provided outputs
+     * @return an {@link HtsEncoder} suitable for writing to the provided outputs
      */
     HtsEncoder<F, ?, ? extends HtsRecord> getEncoder(final Bundle outputBundle, final E encoderOptions);
 

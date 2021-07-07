@@ -1,12 +1,14 @@
 package htsjdk.beta.plugin;
 
 import htsjdk.beta.plugin.interval.HtsQuery;
-
 import java.io.Closeable;
-import java.lang.annotation.Inherited;
 
 /**
  * Base interface for decoders.
+ * <p>
+ *      Implementations should not attempt to automatically resolve a companion index, and instead should
+ *      only satisfy index queries when the provided input bundle explicitly specifies an index resource.
+ * </p>
  *
  * @param <F> enum representing the formats for the codec type for this decoder
  *               (i.e., ReadsFormat defining SAM/BAM/CRAM values)
@@ -42,4 +44,5 @@ public interface HtsDecoder<F extends Enum<F> & HtsFormat<F>, H extends HtsHeade
      */
     @Override
     void close();
+
 }

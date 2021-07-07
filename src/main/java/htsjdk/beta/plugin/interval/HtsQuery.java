@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.List;
 
 //TODO: use wild cards, i.e., 0 for end of reference/contig?
-//TODO: remove the default implementations that throw once all the decoders implement these
 
 /**
  * Common query interface for {@link htsjdk.beta.plugin.HtsDecoder}s

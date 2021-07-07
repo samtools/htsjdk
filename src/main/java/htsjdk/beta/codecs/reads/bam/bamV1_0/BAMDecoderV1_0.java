@@ -21,6 +21,7 @@ import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 public class BAMDecoderV1_0 extends BAMDecoder {
     private final SamReader samReader;
@@ -83,9 +84,9 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     }
 
     @Override
-    public SAMRecord queryMate(final SAMRecord rec) {
+    public Optional<SAMRecord> queryMate(final SAMRecord rec) {
         assertIndexProvided();
-        return samReader.queryMate(rec);
+        return Optional.ofNullable(samReader.queryMate(rec));
     }
 
     @Override
@@ -107,18 +108,13 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions);
         ReadsCodecUtils.bamDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions.getBAMDecoderOptions());
 
-        //TODO: this existing code in SamReaderFactory will automatically resolve a companion index if its
-        // not explicitly provided and one exists. We may want to suppress that somehow since the contract for
-        // codecs/decoders is that the index must always be resolved (and provided in the bundle) by the caller.
-        // Otherwise when we change this code path in the future to no longer use SamReaderFactory, backward
-        // incompatibilities will be introduced.
         return samReaderFactory.open(samInputResource);
     }
 
     // the stated contract for decoders is that the index must be included in the bundle in order to use
-    // index queries, but BAMFileReader *always* tries to resolve the sibling, which would violate that,
-    // so enforce the contract manually so that someday when we use a different implementation, no backward
-    // compatibility issue will be introduced
+    // index queries, but this uses BAMFileReader which *always* tries to resolve the index, which would
+    // violate that, so enforce the contract manually so that someday when we use a different implementation,
+    // no backward compatibility issue will be introduced
     private void assertIndexProvided() {
         if (!indexProvidedInInputBundle()) {
             throw new IllegalArgumentException(String.format(

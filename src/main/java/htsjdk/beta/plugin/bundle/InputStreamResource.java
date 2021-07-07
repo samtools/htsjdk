@@ -14,6 +14,7 @@ import java.util.Optional;
  */
 public class InputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
+    private static final int MINIMUM_STREAM_BUFFER_SIZE = 64*1024;
     private final InputStream rawInputStream;           // the stream as provided by the caller
     private BufferedInputStream bufferedInputStream;    // buffered stream wrapper to compensate for signature probing
 
@@ -56,7 +57,6 @@ public class InputStreamResource extends BundleResourceBase {
     @Override
     public SignatureStream getSignatureStream(final int signatureProbeLength) {
         ValidationUtils.validateArg(signatureProbeLength > 0, "signatureProbeLength must be > 0");
-
         if (bufferedInputStream != null) {
             throw new HtsjdkPluginException(
                     String.format("Only one SignatureStream stream can be created for an InputStream resource"));
@@ -64,15 +64,18 @@ public class InputStreamResource extends BundleResourceBase {
 
         final byte[] signaturePrefix = new byte[signatureProbeLength];
         try {
-            // we don't want this code to close the actual rawInputStream that was provided by the caller,
-            // since we don't have any way to reconstitute it, so don't use try-with-resources
-            bufferedInputStream = new BufferedInputStream(rawInputStream, signatureProbeLength);
-            // mark, read, and then reset the buffered stream so that when the actual stream is consumed
-            // once signature probing is complete, it will be consumed from the beginning
+            // Don't use try-with-resources here since we don't want to close the actual rawInputStream
+            // that was provided by the caller. Create the buffered stream using at least
+            // MINIMUM_STREAM_BUFFER_SIZE to ensure a reasonable buffer size since the buffered stream
+            // becomes the stream returned by getInputStream(). Since we need to consumer part of it in
+            // order to get the signature bytes, mark, read, and then reset it so that when the stream
+            // is ultimately consumed once signature probing is complete, it will be consumed from the
+            // beginning.
+            bufferedInputStream = new BufferedInputStream(
+                    rawInputStream,
+                    Integer.max(signatureProbeLength, MINIMUM_STREAM_BUFFER_SIZE));
             bufferedInputStream.mark(signatureProbeLength);
             bufferedInputStream.read(signaturePrefix);
-            // reset the buffered input stream, which will be returned by the next call to {@link getInputStream},
-            // so the next consumer sees the stream from the beginning
             bufferedInputStream.reset();
         } catch (final IOException e) {
             throw new RuntimeIOException(

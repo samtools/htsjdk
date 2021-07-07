@@ -19,6 +19,7 @@ import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
@@ -131,11 +132,11 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
-        return null;
+        throw new HtsjdkPluginException("queryMate not implemented for htsget bam reader");
     }
 
     @Override
-    public SAMRecord queryMate(final SAMRecord rec) {
+    public Optional<SAMRecord> queryMate(final SAMRecord rec) {
         throw new HtsjdkPluginException("queryMate not implemented for htsget bam reader");
     }
 }

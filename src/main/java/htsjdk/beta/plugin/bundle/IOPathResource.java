@@ -6,7 +6,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -62,8 +61,8 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
 
     @Override
     public boolean hasSeekableStream() {
-        // if hasFileSystemProvider is true, we'll be able to obtain a seekable stream
-        // on the underlying path; otherwise return false
+        // if there is a file system provider, we'll be able to obtain a seekable stream
+        // on the underlying IOPath; otherwise return false
         return ioPath.hasFileSystemProvider();
     }
 
