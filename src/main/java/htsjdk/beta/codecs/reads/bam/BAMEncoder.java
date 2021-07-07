@@ -7,7 +7,7 @@ import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 
 /**
- * Base class for BAM encoders.
+ * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} encoders.
  */
 public abstract class BAMEncoder implements ReadsEncoder {
     protected final Bundle outputBundle;
@@ -21,7 +21,7 @@ public abstract class BAMEncoder implements ReadsEncoder {
     }
 
     @Override
-    final public String getFormat() { return ReadsFormats.BAM; }
+    final public String getFileFormat() { return ReadsFormats.BAM; }
 
     @Override
     final public String getDisplayName() { return displayName; }

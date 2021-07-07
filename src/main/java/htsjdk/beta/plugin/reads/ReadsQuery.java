@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface ReadsQuery<R extends HtsRecord> {
 
     /**
-     * Obtain an iterator of unmapped reads.
+     * Get an iterator of unmapped reads.
      */
     CloseableIterator<R> queryUnmapped();
 

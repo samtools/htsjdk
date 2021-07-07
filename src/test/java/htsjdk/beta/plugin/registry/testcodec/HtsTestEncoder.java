@@ -22,7 +22,7 @@ public class HtsTestEncoder implements ReadsEncoder {
     }
 
     @Override
-    public String getFormat() {
+    public String getFileFormat() {
         return htsFormat;
     }
 

@@ -27,7 +27,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
 
         try (final BAMDecoder bamDecoder = (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
             Assert.assertNotNull(bamDecoder);
-            Assert.assertEquals(bamDecoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(bamDecoder.getFileFormat(), ReadsFormats.BAM);
 
             final SAMFileHeader samFileHeader = bamDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);
@@ -41,7 +41,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
         final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
         try (final BAMEncoder bamEncoder = (BAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
             Assert.assertNotNull(bamEncoder);
-            Assert.assertEquals(bamEncoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(bamEncoder.getFileFormat(), ReadsFormats.BAM);
         }
     }
 
@@ -79,9 +79,9 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
              final BAMEncoder bamEncoder = (BAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
 
             Assert.assertNotNull(bamDecoder);
-            Assert.assertEquals(bamDecoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(bamDecoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertNotNull(bamEncoder);
-            Assert.assertEquals(bamEncoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(bamEncoder.getFileFormat(), ReadsFormats.BAM);
 
             final SAMFileHeader samFileHeader = bamDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);

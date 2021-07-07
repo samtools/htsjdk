@@ -37,7 +37,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Return a {@link ReadsDecoder} suitable for decoding {@code inputPath}. The {@code inputPath} is
+     * Get a {@link ReadsDecoder} suitable for decoding {@code inputPath}. The {@code inputPath} is
      * inspected to determine the appropriate file format/version.
      *
      * @param inputPath the IOPath to be decoded
@@ -51,7 +51,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Return a {@link ReadsDecoder} suitable for decoding {@code inputPath} using options in
+     * Grt a {@link ReadsDecoder} suitable for decoding {@code inputPath} using options in
      * {@code readsDecoderOptions}. The {@code inputPath} is inspected to determine the appropriate
      * file format/version.
      *
@@ -70,7 +70,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Return a {@link ReadsDecoder} suitable for decoding {@code inputBundle}. The {@code inputBundle} is
+     * Get a {@link ReadsDecoder} suitable for decoding {@code inputBundle}. The {@code inputBundle} is
      * inspected to determine the appropriate file format/version.
      *
      * @param inputBundle the bundle to be decoded
@@ -83,7 +83,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Return a {@link ReadsDecoder} suitable for decoding {@code inputBundle} using options in
+     * Get a {@link ReadsDecoder} suitable for decoding {@code inputBundle} using options in
      * {@code readsDecoderOptions}. The {@code inputBundle} is inspected to determine the appropriate
      * file format/version.
      *
@@ -102,7 +102,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Return a {@link ReadsEncoder} suitable for encoding to {@code outputPath}. The path must include
+     * Gt a {@link ReadsEncoder} suitable for encoding to {@code outputPath}. The path must include
      * a file extension suitable for determining the appropriate file format to use; the newest version
      * of the file format available will be used. To request a specific file format and/or version, use
      * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, String, HtsVersion)}.
@@ -117,7 +117,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Return a {@link ReadsEncoder} suitable for encoding to {@code outputPath}, using the options
+     * Get a {@link ReadsEncoder} suitable for encoding to {@code outputPath}, using the options
      * in {@code readsEncoderOptions}. The path must include a file extension suitable for determining
      * the appropriate file format to use; the newest version of the file format available will be used.
      * To request a specific file format and/or version, use
@@ -137,7 +137,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Return a {@link ReadsEncoder} suitable for encoding to {@code outputBundle}, using the options
+     * Get a {@link ReadsEncoder} suitable for encoding to {@code outputBundle}, using the options
      * in {@code readsEncoderOptions}. The outputBundle must include a primary resource with a file
      * extension suitable for determining the appropriate file format to use; or the resource must include
      * a format. The newest version of the selected file format available will be used.
@@ -159,7 +159,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
     /**
-     * Return a {@link ReadsEncoder} suitable for encoding to {@code outputBundle}, using the options
+     * Get a {@link ReadsEncoder} suitable for encoding to {@code outputBundle}, using the options
      * in {@code readsEncoderOptions}, and the file format and version specified in readsFormat and formatVersion.
      *
      * @param outputBundle target output bundle

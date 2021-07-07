@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Version 1.2 of {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_HTSGET_BAM} decoder.
+ */
 public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     final HtsgetBAMFileReader htsgetReader;

@@ -16,6 +16,9 @@ import htsjdk.variant.vcf.VCFReader;
 
 import java.io.IOException;
 
+/**
+ * VCF V4.2 decoder.
+ */
 public class VCFDecoderV4_2 extends VCFDecoder {
     private final VCFReader vcfReader;
     private final VCFHeader vcfHeader;

@@ -13,6 +13,9 @@ import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 
+/**
+ * BAM v1.0 encoder.
+ */
 public class BAMEncoderV1_0 extends BAMEncoder {
     private SAMFileWriter samFileWriter;
 

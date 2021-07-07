@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Base class for BAM codecs.
+ * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} codecs.
  */
 public abstract class BAMCodec implements ReadsCodec {
     public static final HtsVersion BAM_DEFAULT_VERSION = new HtsVersion(1, 0,0);

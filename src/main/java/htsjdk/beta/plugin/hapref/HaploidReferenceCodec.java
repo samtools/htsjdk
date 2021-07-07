@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsContentType;
 
 /**
- *  Base class for all haploid reference codecs.
+ *  Base class for all {@link HtsContentType#HAPLOID_REFERENCE} codecs.
  */
 public interface HaploidReferenceCodec extends HtsCodec<
         HaploidReferenceDecoderOptions,

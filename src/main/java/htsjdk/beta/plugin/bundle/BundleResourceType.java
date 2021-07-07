@@ -21,7 +21,7 @@ public class BundleResourceType {
     public static final String FEATURES = HtsContentType.FEATURES.name();
 
     /**
-     * formats for content type {@link BundleResourceType#ALIGNED_READS}
+     * file formats for content type {@link BundleResourceType#ALIGNED_READS}
      */
     public static final String READS_SAM = ReadsFormats.SAM;
     public static final String READS_BAM = ReadsFormats.BAM;
@@ -34,7 +34,7 @@ public class BundleResourceType {
     public static final String READS_INDEX = "READS_INDEX";
 
     /**
-     * formats for secondary content type {@link BundleResourceType#READS_INDEX}
+     * file formats for secondary content type {@link BundleResourceType#READS_INDEX}
      */
     public static final String READS_INDEX_BAI = "BAI";
     public static final String READS_INDEX_CRAI = "CRAI";

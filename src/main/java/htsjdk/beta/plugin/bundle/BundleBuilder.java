@@ -29,10 +29,10 @@ public final class BundleBuilder {
         if (primaryResource != null) {
                 throw new IllegalStateException(String.format(
                         "Can't add primary resource %s to a bundle that already has primary resource %s",
-                        resource.getContentTypeString(),
+                        resource.getContentType(),
                         primaryResource));
         }
-        primaryResource = resource.getContentTypeString();
+        primaryResource = resource.getContentType();
         addSecondary(resource);
         return this;
     }
@@ -50,10 +50,11 @@ public final class BundleBuilder {
     }
 
     /**
-     * Create a bundle from accumulated builder state, and reset the builder state. At least one (primary)
-     * resource must have been previously added to create a valid bundle.
+     * Create a bundle from this builder's accumulated builder state, and reset the builder state. At
+     * least one (primary) resource must have been previously added to create a valid bundle.
      *
-     * @return a {@link Bundle}.
+     * @return a {@link Bundle}
+     * @throws IllegalStateException if no primary resouuce has been added
      */
     public Bundle build() {
         if (primaryResource == null) {

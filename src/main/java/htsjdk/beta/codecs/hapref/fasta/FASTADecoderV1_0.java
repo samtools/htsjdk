@@ -19,7 +19,7 @@ import htsjdk.utils.PrivateAPI;
 import java.io.IOException;
 
 /**
- * A FASTA file decoder.
+ * The v1.0 FASTA decoder.
  */
 public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     private final String displayName;
@@ -51,7 +51,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     }
 
     @Override
-    final public String getFormat() { return HaploidReferenceFormats.FASTA; }
+    final public String getFileFormat() { return HaploidReferenceFormats.FASTA; }
 
     @Override
     public SAMSequenceDictionary getHeader() {

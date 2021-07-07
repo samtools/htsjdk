@@ -1,11 +1,15 @@
 package htsjdk.beta.codecs.variants.vcf;
 
+import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.variants.VariantsEncoder;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 
+/**
+ * Base class for concrete implementations of {@link HtsContentType#VARIANT_CONTEXTS} encoders.
+ */
 public abstract class VCFEncoder implements VariantsEncoder {
     final protected Bundle outputBundle;
     final protected VariantsEncoderOptions variantsEncoderOptions;
@@ -18,7 +22,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
     }
 
    @Override
-    final public String getFormat() { return VariantsFormats.VCF; }
+    final public String getFileFormat() { return VariantsFormats.VCF; }
 
     @Override
     final public String getDisplayName() { return displayName; }

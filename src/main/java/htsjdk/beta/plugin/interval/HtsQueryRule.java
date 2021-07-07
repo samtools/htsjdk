@@ -6,11 +6,11 @@ package htsjdk.beta.plugin.interval;
  */
 public enum HtsQueryRule {
     /**
-     * Return all records that overlap the query interval.
+     * Get all records that overlap the query interval.
      */
     OVERLAPPING,
     /**
-     * Only return records that are entirely contained with the query interval.
+     * Only get records that are entirely contained with the query interval.
      */
     CONTAINED;
 }

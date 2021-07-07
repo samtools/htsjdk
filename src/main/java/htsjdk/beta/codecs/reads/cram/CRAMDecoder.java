@@ -9,7 +9,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 
 /**
- * Base class for CRAM decoders.
+ * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} decoders.
  */
 public abstract class CRAMDecoder implements ReadsDecoder {
     protected final Bundle inputBundle;
@@ -23,7 +23,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     }
 
     @Override
-    final public String getFormat() { return ReadsFormats.CRAM; }
+    final public String getFileFormat() { return ReadsFormats.CRAM; }
 
     @Override
     final public String getDisplayName() { return displayName; }

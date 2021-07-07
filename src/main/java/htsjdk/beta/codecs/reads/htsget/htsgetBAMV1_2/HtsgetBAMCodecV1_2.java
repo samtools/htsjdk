@@ -2,6 +2,7 @@ package htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2;
 
 import htsjdk.beta.codecs.reads.htsget.HtsgetBAMCodec;
 import htsjdk.beta.codecs.reads.htsget.HtsgetBAMDecoder;
+import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsEncoder;
 import htsjdk.beta.plugin.HtsRecord;
 import htsjdk.beta.plugin.bundle.Bundle;
@@ -13,6 +14,9 @@ import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 
 import java.util.Optional;
 
+/**
+ * Version 1.2 of {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_HTSGET_BAM} codec.
+ */
 public class HtsgetBAMCodecV1_2 extends HtsgetBAMCodec {
 
     @Override

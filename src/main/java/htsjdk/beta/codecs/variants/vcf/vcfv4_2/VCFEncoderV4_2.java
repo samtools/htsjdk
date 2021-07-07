@@ -14,6 +14,9 @@ import htsjdk.variant.vcf.VCFHeader;
 
 import static htsjdk.variant.variantcontext.writer.Options.INDEX_ON_THE_FLY;
 
+/**
+ * VCF V4.2 encoder.
+ */
 public class VCFEncoderV4_2 extends VCFEncoder {
     private VariantContextWriter vcfWriter;
 

@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Base class for CRAM codecs.
+ * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} codecs.
  */
 public abstract class CRAMCodec implements ReadsCodec {
     private static final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.CRAM));

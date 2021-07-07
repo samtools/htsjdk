@@ -9,7 +9,7 @@ import htsjdk.utils.ValidationUtils;
 import java.util.Optional;
 
 /**
- * ReadsEncoderOptions.
+ * Reads encoder options.
  */
 public class ReadsEncoderOptions implements HtsEncoderOptions {
 

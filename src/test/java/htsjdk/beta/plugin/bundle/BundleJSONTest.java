@@ -166,7 +166,7 @@ public class BundleJSONTest extends HtsjdkTest {
         Assert.assertEquals(bundleFromJSON.getPrimaryContentType(), primaryKey);
 
         resources.forEach(expectedResource -> {
-            final Optional<BundleResource> jsonResource = bundleFromJSON.get(expectedResource.getContentTypeString());
+            final Optional<BundleResource> jsonResource = bundleFromJSON.get(expectedResource.getContentType());
             Assert.assertTrue(jsonResource.isPresent());
             Assert.assertEquals(jsonResource.get(), expectedResource);
         });
@@ -178,7 +178,7 @@ public class BundleJSONTest extends HtsjdkTest {
         Assert.assertNotNull(bundleFromJSON);
         Assert.assertEquals(bundleFromJSON.getPrimaryContentType(), primaryKey);
         expectedResources.forEach(expectedResource -> {
-            final Optional<BundleResource> jsonResource = bundleFromJSON.get(expectedResource.getContentTypeString());
+            final Optional<BundleResource> jsonResource = bundleFromJSON.get(expectedResource.getContentType());
             Assert.assertTrue(jsonResource.isPresent());
             //NOTE: we don't test the individual resources for equality here, since the expected resources
             // don't have a custom path type, so a resource equality test would fail because the HtsPath

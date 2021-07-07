@@ -12,28 +12,28 @@ import java.util.Optional;
  */
 public interface BundleResource {
     /**
-     * get the display name for this resource
+     * Get the display name for this resource.
      *
      * @return the display name for this resource
      */
     String getDisplayName();
 
     /**
-     * get the content type string for this resource
+     * Get the content type for this resource.
      *
-     * @return the content type string for this resource
+     * @return a string representing name of the content type for this resource
      */
-    String getContentTypeString();
+    String getContentType();
 
     /**
-     * get the format string for this resource
+     * Get the file format for this resource.
      *
-     * @return the format string for this resource, or Optional.empty if not present
+     * @return the file format for this resource, or Optional.empty if not present
      */
-    Optional<String> getFormatString();
+    Optional<String> getFileFormat();
 
     /**
-     * get the {@link IOPath} backing this resource, or Optional.empty
+     * Get the {@link IOPath} backing this resource, or Optional.empty.
      *
      * @return the {@link IOPath} backing this resource, or Optional.empty if the resource has no backing
      * {@link IOPath}
@@ -41,7 +41,7 @@ public interface BundleResource {
     Optional<IOPath> getIOPath();
 
     /**
-     * get an {@link InputStream} for this resource, or Optional.empty
+     * Get an {@link InputStream} for this resource, or Optional.empty.
      *
      * @return an {@link InputStream} for this resource, or Optional.empty if {@link
      * BundleResource#hasInputType()} is false for this resource.
@@ -53,7 +53,7 @@ public interface BundleResource {
     Optional<InputStream> getInputStream();
 
     /**
-     * get an {@link OutputStream} for this resource, or Optional.empty
+     * Get an {@link OutputStream} for this resource, or Optional.empty.
      *
      * @return an {@link OutputStream} for this resource, or Optional.empty if {@link
      * BundleResource#hasOutputType()} is false for this resource
@@ -61,7 +61,7 @@ public interface BundleResource {
     Optional<OutputStream> getOutputStream();
 
     /**
-     * get a {@link SeekableStream} for this resource, or Optional.empty
+     * Get a {@link SeekableStream} for this resource, or Optional.empty.
      *
      * @return an {@link SeekableStream} for this resource, or Optional.empty if this is not an input
      * type (see {@link BundleResource#hasInputType()}), or is an input type for which no {@link SeekableStream}
@@ -70,13 +70,9 @@ public interface BundleResource {
     Optional<SeekableStream> getSeekableStream();
 
     /**
-     * get a {@link SignatureStream} for this resource
+     * Get a {@link SignatureStream} for this resource.
      *
-     * @return a {@link SignatureStream} over the first {@code signatureProbeLength} bytes of this
-     * resource, for use with signature probing for codec resolution. Only applicable to resources for
-     * which {@link #hasInputType()} is true.
-     *
-     * Note that this method requires access to the first {@code signatureProbeLength} bytes of the underlying
+     * This method requires access to the first {@code signatureProbeLength} bytes of the underlying
      * resource. {@link BundleResource} implementations that are backed by raw streams that can only be consumed
      * once, such as {@link InputStreamResource}, may consume and buffer a portion of the underlying resource's
      * stream in order to allow subsequent callers of the {@link #getInputStream()}) method to be presented with
@@ -94,40 +90,42 @@ public interface BundleResource {
      *                             signatureProbeLength} should use the compressed block size, in order to ensure
      *                             that the {@link SignatureStream} contains a semantically meaningful fragment
      *                             of the underlying input.
-     *
+     * @return a {@link SignatureStream} over the first {@code signatureProbeLength} bytes of this
+     * resource, for use with signature probing for codec resolution. Only applicable to resources for
+     * which {@link #hasInputType()} is true.
      * @throws IllegalArgumentException if this method has previously been called on this resource, or if
      * {@link #hasInputType()} is false for this resource
      */
     SignatureStream getSignatureStream(final int signatureProbeLength);
 
     /**
-     * return true if the type of this resource is an input type
+     * Return true if is this resource is backed by a type that can be used for input. Some resource types,
+     * such as {@link InputStreamResource}, can be used for input but not for output (see
+     * {@link #hasOutputType}. Others, such as {@link OutputStreamResource}, can be used for output but not
+     * for input. Some resource types may be suitable for both (for example see {@link IOPathResource}).
+     * <p>
+     * The determination is based only on the type of the resource, and does not imply a guarantee about
+     * whether the resource type is actually readable.
      *
      * @return true if the type of this resource makes it suitable for use as a source of input.
-     * Some resource types, such as {@link InputStreamResource}, can be used for input but not for output
-     * (see {@link #hasOutputType}. Others, such as {@link OutputStreamResource}, can be used for output but
-     * not for input. Some resource types may be suitable for both (for example see {@link IOPathResource}).
-     * <p>
-     * The determination is based only on the type of the resource, and does not imply a guarantee about whether
-     * the resource type is actually readable.
      */
     boolean hasInputType();
 
     /**
-     * return true if the type of this resource is an output type
-     *
-     * @return true if the type of this resource makes it suitable for use as target for output.
-     * Some resource types, such as {@link InputStreamResource}, can be used for input but not for output
-     * (see {@link #hasOutputType}. Others, such as {@link OutputStreamResource}, can be used for output but
+     * Return true if this resource is backed by a type that can be used for output. Some resource types,
+     * such as {@link InputStreamResource}, can be used for input but not for output (see
+     * {@link #hasOutputType}. Others, such as {@link OutputStreamResource}, can be used for output but
      * not for input. Some resource types may be suitable for both (for example see {@link IOPathResource}).
      * <p>
-     * The determination is based only on the type of the resource, and does not imply a guarantee about whether
-     * the resource is actually writeable.
+     * The determination is based only on the type of the resource, and does not imply a guarantee about
+     * whether the resource is actually writeable.
+     *
+     * @return true if the type of this resource makes it suitable for use as target for output.
      */
     boolean hasOutputType();
 
     /**
-     * return true if this resource can be rendered as a {@link SeekableStream}
+     * Returns true if this resource can be rendered as a {@link SeekableStream}.
      *
      * @return true if this resource can be rendered as a {@link SeekableStream} (see {@link #getSeekableStream})
      */

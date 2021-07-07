@@ -28,7 +28,7 @@ public class HtsCodecRegistryTest extends HtsjdkTest {
         try (final HaploidReferenceDecoder hapRefDecoder =
                      HtsDefaultRegistry.getHaploidReferenceResolver().getHapRefDecoder(inputPath)) {
             Assert.assertNotNull(hapRefDecoder);
-            Assert.assertEquals(hapRefDecoder.getFormat(), HaploidReferenceFormats.FASTA);
+            Assert.assertEquals(hapRefDecoder.getFileFormat(), HaploidReferenceFormats.FASTA);
             Assert.assertEquals(hapRefDecoder.getVersion(), FASTACodecV1_0.VERSION_1);
 
             for (final ReferenceSequence referenceSequence : hapRefDecoder) {
@@ -65,7 +65,7 @@ public class HtsCodecRegistryTest extends HtsjdkTest {
 
         try (final ReadsDecoder customDecoder = privateRegistry.getReadsResolver().getReadsDecoder(testFormatBundle)) {
             Assert.assertNotNull(customDecoder);
-            Assert.assertEquals(customDecoder.getFormat(), HtsTestCodecFormats.FILE_FORMAT_1);
+            Assert.assertEquals(customDecoder.getFileFormat(), HtsTestCodecFormats.FILE_FORMAT_1);
             Assert.assertEquals(customDecoder.getVersion(), HtsCodecResolverTest.V1_0);
         }
     }

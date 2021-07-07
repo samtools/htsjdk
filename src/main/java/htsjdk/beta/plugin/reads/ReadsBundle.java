@@ -24,11 +24,11 @@ import java.util.function.Function;
 
 /**
  * A {@link Bundle} specifically for reads and reads-related resources. A {@link ReadsBundle} has a
- * primary resource with content type "READS"; and an optional index resource. ReadsBundles
- * can also contain other resources.
+ * primary resource with content type {@link BundleResourceType#ALIGNED_READS}; and an optional index
+ * resource. ReadsBundles can also contain other resources.
  *
- * {@link ReadsBundle} is primarily a convenience wrapper for the common case where a {@link Bundle}
- * contains read and related resources backed by {@link IOPathResource}s. It mainly provides convenient
+ * {@link ReadsBundle} is primarily a convenience layer for the common case where a {@link Bundle}
+ * contains reads and related resources backed by {@link IOPathResource}s. It provides convenient
  * constructors, and validation for JSON interconversions. For reads sources that are backed by streams or
  * other {@link BundleResource} types, the {@link Bundle} and {@link BundleBuilder} classes can be used
  * directly.
@@ -67,34 +67,34 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
 
     /**
      * Create a {@link ReadsBundle} using the resources in an existing bundle. A resource with content type
-     * "READS" must be present in the resources, or this constructor will throw.
+     * {@link BundleResourceType#ALIGNED_READS} must be present in the resources, or this constructor will throw.
      *
      * Note that this constructor allows existing {@link IOPathResource}s that do not conform to the type
      * {@link T} to be included in the resulting {@link ReadsBundle}.
      *
      * @param resources collection of {@link BundleResource}. the collection must include a resource with
-     *                 content type "READS".
-     * @throws IllegalArgumentException if no resource with content type "READS" is included in the
-     * input {@link BundleResource} collection
+     *                 content type {@link BundleResourceType#ALIGNED_READS}.
+     * @throws IllegalArgumentException if no resource with content type {@link BundleResourceType#ALIGNED_READS} is
+     * included in the input {@link BundleResource} collection
      */
     protected ReadsBundle(final Collection<BundleResource> resources) {
         super(BundleResourceType.ALIGNED_READS, resources);
     }
 
    /**
-    * return the READS {@link BundleResource} for this {@link ReadsBundle}
+    * return the {@link BundleResourceType#ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
     *
-    * @return the READS {@link BundleResource} for this {@link ReadsBundle}
+    * @return the {@link BundleResourceType#ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
     */
     public BundleResource getReads() {
         return getOrThrow(BundleResourceType.ALIGNED_READS);
     }
 
     /**
-     * Get the optional INDEX resource for this {@link ReadsBundle}.
+     * Get the optional {@link BundleResourceType#READS_INDEX} resource for this {@link ReadsBundle}.
      *
-     * @return the optional INDEX {@link BundleResource} for this {@link ReadsBundle}, or Optional.empty if
-     * no index resource is present in the bundle.
+     * @return the optional {@link BundleResourceType#READS_INDEX} resrouce for this {@link ReadsBundle},
+     * or Optional.empty if no index resource is present in the bundle.
      */
     public Optional<BundleResource> getIndex() {
         return get(BundleResourceType.READS_INDEX);
@@ -123,9 +123,10 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
 
     /**
      * Create a {@link ReadsBundle} from a JSON string with all IOPathResources using an IOPath-derived
-     * class of type T.
+     * class of type {@code T}.
+     *
      * @param jsonString the string to use to create the {@link ReadsBundle}
-     * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
+     * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type {@code T}
      * @param <T> the type of
      * @return a newly created {@link ReadsBundle}
      */
@@ -138,6 +139,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
     /**
      * Find the companion index for a reads source, and create a new {@link ReadsBundle} containing the
      * reads and the companion index, if one can be found.
+     *
      * @param reads the reads source to use
      * @return a {@link ReadsBundle} containing reads and companion index, if it can be found
      */

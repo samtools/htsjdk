@@ -76,7 +76,7 @@ public class BundleTest extends HtsjdkTest {
         final Iterator<BundleResource> it = bundle.iterator();
         while (it.hasNext()) {
             final BundleResource ir = it.next();
-            if (ir.getContentTypeString().equals(BundleResourceType.ALIGNED_READS)) {
+            if (ir.getContentType().equals(BundleResourceType.ALIGNED_READS)) {
                 Assert.assertEquals(ir, BundleResourceTestData.readsWithFormat);
             } else {
                 Assert.assertEquals(ir, BundleResourceTestData.indexNoFormat);

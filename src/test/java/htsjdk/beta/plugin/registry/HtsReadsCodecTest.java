@@ -47,7 +47,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
         try (final ReadsDecoder readsDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
             Assert.assertNotNull(readsDecoder);
-            Assert.assertEquals(readsDecoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(readsDecoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsDecoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
 
             final SAMFileHeader samFileHeader = readsDecoder.getHeader();
@@ -64,7 +64,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
         try (final ReadsDecoder readsDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
             Assert.assertNotNull(readsDecoder);
-            Assert.assertEquals(readsDecoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(readsDecoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsDecoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
 
             final SAMFileHeader samFileHeader = readsDecoder.getHeader();
@@ -84,7 +84,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
         try (final ReadsDecoder readsDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(readsDecoder);
-            Assert.assertEquals(readsDecoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(readsDecoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsDecoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
 
             final SAMFileHeader samFileHeader = readsDecoder.getHeader();
@@ -101,7 +101,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
         try (final ReadsEncoder readsEncoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
             Assert.assertNotNull(readsEncoder);
-            Assert.assertEquals(readsEncoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(readsEncoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsEncoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
 
             readsEncoder.setHeader(new SAMFileHeader());
@@ -118,7 +118,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
                 ReadsFormats.BAM,
                 BAMCodec.BAM_DEFAULT_VERSION)) {
             Assert.assertNotNull(readsEncoder);
-            Assert.assertEquals(readsEncoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(readsEncoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsEncoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
         }
     }
@@ -132,9 +132,9 @@ public class HtsReadsCodecTest extends HtsjdkTest {
              final ReadsEncoder readsEncoder = HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
 
             Assert.assertNotNull(readDecoder);
-            Assert.assertEquals(readDecoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(readDecoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertNotNull(readsEncoder);
-            Assert.assertEquals(readsEncoder.getFormat(), ReadsFormats.BAM);
+            Assert.assertEquals(readsEncoder.getFileFormat(), ReadsFormats.BAM);
 
             final SAMFileHeader samFileHeader = readDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);

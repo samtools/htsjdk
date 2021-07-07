@@ -147,7 +147,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         ValidationUtils.nonNull(bundle, "bundle");
 
         final BundleResource bundleResource = getPrimaryResource(bundle, true);
-        final Optional<String> optFormatString = bundleResource.getFormatString();
+        final Optional<String> optFormatString = bundleResource.getFileFormat();
         final List<C> candidateCodecs = resolveForFormat(optFormatString);
 
         final List<C> resolvedCodecs = bundleResource.getIOPath().isPresent() ?
@@ -168,7 +168,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * <p>
      * For resources that are ambiguous (i.e., a stream, which has no file extension that can be used
      * to infer a format), the bundle resource must specify a format
-     * (see {@link BundleResource#getFormatString()}) that corresponds to one of the formats for the
+     * (see {@link BundleResource#getFileFormat()}) that corresponds to one of the formats for the
      * content type used by this codec type. The newest available version of that file format will
      * be used.
      * <p>
@@ -189,7 +189,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * (protocol scheme, file extension, and query parameters) are used to determine the file format used.
      * <p>
      * For resources that are ambiguous (i.e., a stream which has no file extension that can be used to infer
-     * a file format), the bundle resource must specify a format (see {@link BundleResource#getFormatString()})
+     * a file format), the bundle resource must specify a format (see {@link BundleResource#getFileFormat()})
      * that corresponds to one of the formats for the {@code requiredContentType} used by this resolver.
      *
      * @param bundle the bundle to use for encoding
@@ -202,7 +202,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         ValidationUtils.nonNull(htsVersion, "htsVersion");
 
         final BundleResource bundleResource = getPrimaryResource(bundle, false);
-        final Optional<String> optFormatString = bundleResource.getFormatString();
+        final Optional<String> optFormatString = bundleResource.getFileFormat();
         final List<C> candidateCodecs = resolveForFormat(optFormatString);
 
         final Optional<IOPath> ioPath = bundleResource.getIOPath();
@@ -219,7 +219,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
     }
 
     /**
-     * Obtain a list of codecs that claim to support file format {@code format} string
+     * Get a list of codecs that claim to support file format {@code format} string
      *
      * @param format the format string of the input
      * @return The list of registered codecs that claim to support some version of file format {@code format}
@@ -233,7 +233,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
     }
 
     /**
-     * Obtain a list of codecs that claim to support version {@code formatVersion} of file format
+     * Get a list of codecs that claim to support version {@code formatVersion} of file format
      * {@code format}.
      *
      * @param format the input format
@@ -250,7 +250,8 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
     }
 
     /**
-     * Return a list of all codecs of the type {@code C} managed by this resolver
+     * Geg a list of all codecs of the type {@code C} managed by this resolver.
+     *
      * @return a list of all codecs of the type {@code C} managed by this resolver
      */
     public List<C> getCodecs() {

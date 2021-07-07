@@ -4,7 +4,7 @@ import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsContentType;
 
 /**
- *  Defines the type parameters instantiated for variants codecs.
+ *  Base class for all {@link HtsContentType#VARIANT_CONTEXTS} codecs.
  */
 public interface VariantsCodec extends HtsCodec<VariantsDecoderOptions, VariantsEncoderOptions> {
 

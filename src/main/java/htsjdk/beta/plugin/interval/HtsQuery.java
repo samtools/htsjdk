@@ -17,7 +17,7 @@ import java.util.List;
 public interface HtsQuery<RECORD> extends Iterable<RECORD> {
 
     /**
-     * return an iterator of all records in the underlying resource
+     * Get an iterator of all records in the underlying resource.
      *
      * @return an iterator of all records in the underlying resource
      */
@@ -28,7 +28,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     // Start temporary common query interface default implementations.
 
     /**
-     * return true if the underlying resource is queryable
+     * Gte true if the underlying resource is queryable.
      *
      * @return true if the underlying resource is queryable. this may be true even if the underlying
      * resource returns false for {@link #hasIndex()}
@@ -36,7 +36,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     boolean isQueryable();
 
     /**
-     * return true if the underlying resource has an index
+     * Return true if the underlying resource has an index.
      *
      * @return true if the underlying resource has an index
      */
@@ -45,7 +45,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     // NOTE: this method is retained for all decoders to support examples such as rsID for variants,
     // readname for reads, etc.
     /**
-     * Obtain an iterator over all records from the underlying resource that match the query string
+     * Get an iterator over all records from the underlying resource that match the query string
      *
      * @param queryString decoder specific query string
      * @return an iterator over all records from the underlying resource that match the query string
@@ -56,7 +56,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that match the query arguments
+     * Get an iterator over all records from the underlying resource that match the query arguments
      *
      * @param queryName name to match
      * @param start start of query interval
@@ -73,7 +73,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that match the query arguments
+     * Get an iterator over all records from the underlying resource that match the query arguments
      *
      * @param queryName name to match
      * @param start start of query interval
@@ -85,7 +85,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that match the query arguments
+     * Gte an iterator over all records from the underlying resource that match the query arguments
      *
      * @param queryName name to match
      * @param start start of query interval
@@ -97,7 +97,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that match the query arguments
+     * Get an iterator over all records from the underlying resource that match the query arguments
      *
      * @param interval interval to match
      * @param queryRule query rule to use, from {@link HtsQueryRule}
@@ -108,7 +108,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that overlap the query interval
+     * Get an iterator over all records from the underlying resource that overlap the query interval
      *
      * @param interval interval to match
      * @return an iterator over all records from the underlying resource that overlap the query interval
@@ -118,7 +118,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that are contained within
+     * Get an iterator over all records from the underlying resource that are contained within
      * the query interval
      *
      * @param interval interval to match
@@ -130,7 +130,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that match the query arguments
+     * Get an iterator over all records from the underlying resource that match the query arguments
      *
      * @param intervals list of intervals to match
      * @param queryRule query rule to use, from {@link HtsQueryRule}
@@ -141,7 +141,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
         throw new HtsjdkPluginException("query not implemented for this decoder"); }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that overlap the query intervals
+     * Get an iterator over all records from the underlying resource that overlap the query intervals
      *
      * @param intervals list of intervals to use
      * @return an iterator over all records from the underlying resource that overlap the query intervals
@@ -151,7 +151,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Obtain an iterator over all records from the underlying resource that are contained within the query intervals
+     * Get an iterator over all records from the underlying resource that are contained within the query intervals
      *
      * @param intervals list of intervals to use
      * @return an iterator over all records from the underlying resource that are contained within the query intervals
@@ -162,7 +162,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
 
     //TODO: match reads that have this start; we *could* just use an HtsInterval with span==1 ? do we need this ?
     /**
-     * Obtain an iterator over all records from the underlying resource that overlap the start position
+     * Get an iterator over all records from the underlying resource that overlap the start position
      *
      * @param queryName name to match
      * @param start start position to overlap

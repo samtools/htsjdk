@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+/**
+  * BAM v1.0 decoder.
+ */
 public class BAMDecoderV1_0 extends BAMDecoder {
     private final SamReader samReader;
     private final SAMFileHeader samFileHeader;

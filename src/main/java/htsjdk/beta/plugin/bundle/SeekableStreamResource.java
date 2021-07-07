@@ -47,7 +47,7 @@ public class SeekableStreamResource extends InputStreamResource {
     }
 
     /**
-     * get the {@link SeekableStream} managed by this resource as an {@link InputStream}
+     * Get the {@link SeekableStream} managed by this resource as an {@link InputStream}.
      *
      * @return the seekable stream managed by this resource, without resetting the stream's state
      */
@@ -64,7 +64,7 @@ public class SeekableStreamResource extends InputStreamResource {
      * {@inheritDoc}
      *
      * @param signatureProbeLength {@inheritDoc}
-     * @return Obtain a SignatureProbeStream on this resource. Resets the underlying seekable stream.
+     * @return Get a SignatureProbeStream on this resource. Resets the underlying seekable stream.
      */
     @Override
     public SignatureStream getSignatureStream(final int signatureProbeLength) {

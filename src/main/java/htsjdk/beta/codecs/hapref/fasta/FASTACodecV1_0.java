@@ -16,7 +16,7 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.utils.ValidationUtils;
 
 /**
- * A FASTA codec.
+ * The v1.0 FASTA codec.
  */
 public class FASTACodecV1_0 implements HaploidReferenceCodec {
 

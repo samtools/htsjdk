@@ -56,9 +56,9 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
         ValidationUtils.nonEmpty(resources,"resource collection");
 
         resources.forEach(r -> {
-            if (null != this.resources.putIfAbsent(r.getContentTypeString(), r)) {
+            if (null != this.resources.putIfAbsent(r.getContentType(), r)) {
                 throw new IllegalArgumentException(
-                        String.format("Attempt to add a duplicate resource for bundle key: %s", r.getContentTypeString()));
+                        String.format("Attempt to add a duplicate resource for bundle key: %s", r.getContentType()));
             }
         });
         this.primaryContentType = primaryContentType;
@@ -72,7 +72,7 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
     }
 
     /**
-     * Return the BundleResource for the provided targetContentType string.
+     * Get the BundleResource for the provided targetContentType string.
      *
      * @param targetContentType the content type to be retrieved from the bundle
      * @return an Optional<BundleResource> that contains the targetContent type
@@ -83,7 +83,7 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
     }
 
     /**
-     * Return the BundleResource for the provided targetContentType string, or throw if
+     * Get the BundleResource for the provided targetContentType string, or throw if
      * no such resource exists.
      *
      * @param requiredContentType the content type to be retrieved from the bundle
@@ -101,13 +101,15 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
     }
 
     /**
-     * Return the primary content type for this bundle.
+     * Get the primary content type for this bundle.
+     *
      * @return the primary content type for this bundle
      */
     public String getPrimaryContentType() { return primaryContentType; }
 
     /**
-     * Return the primary {@link BundleResource} for this bundle.
+     * Get the primary {@link BundleResource} for this bundle.
+     *
      * @return the primary {@link BundleResource} for this bundle.
      */
     public BundleResource getPrimaryResource() {
@@ -122,7 +124,8 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
     }
 
     /**
-     * Obtain an iterator of BundleResources for this bundle.
+     * Get an iterator of BundleResources for this bundle.
+     *
      * @return iterator of BundleResources for this bundle.
      */
     @Override

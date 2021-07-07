@@ -96,21 +96,21 @@ public class HtsCodecRegistry {
     }
 
     /**
-     * return the {@link HaploidReferenceResolver} for this registry
+     * Get the {@link HaploidReferenceResolver} for this registry.
      *
      * @return the {@link HaploidReferenceResolver} for this registry
      */
     public synchronized HaploidReferenceResolver getHaploidReferenceResolver() { return htsHaploidReferenceResolver; }
 
     /**
-     * return the {@link ReadsResolver} for this registry
+     * Get the {@link ReadsResolver} for this registry.
      *
      * @return the {@link ReadsResolver} for this registry
      */
     public synchronized ReadsResolver getReadsResolver() { return htsReadsResolver; }
 
     /**
-     * return the {@link VariantsResolver} for this registry
+     * Get the {@link VariantsResolver} for this registry.
      *
      * @return the {@link VariantsResolver} for this registry
      */

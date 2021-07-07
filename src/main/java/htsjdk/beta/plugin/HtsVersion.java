@@ -18,6 +18,7 @@ public class HtsVersion implements Comparable<HtsVersion> {
 
     /**
      * Construct a 3 part version number.
+     *
      * @param major major version number
      * @param minor minor version number
      * @param patch patch number
@@ -31,6 +32,7 @@ public class HtsVersion implements Comparable<HtsVersion> {
     /**
      * Construct a 3 part version number from a string withe the format {@code major.minor.patch}, where
      * each of major/minor/patch is an integer.
+     *
      * @param versionString the version string from which to construct this version
      */
     public HtsVersion(final String versionString) {
@@ -49,7 +51,7 @@ public class HtsVersion implements Comparable<HtsVersion> {
     }
 
     /**
-     * return the major version integer for this version
+     * Get the major version integer for this version.
      *
      * @return the major version integer for this version
      */
@@ -58,7 +60,7 @@ public class HtsVersion implements Comparable<HtsVersion> {
     }
 
     /**
-     * return the minor version integer for this version
+     * Get the minor version integer for this version.
      *
      * @return the minor version integer for this version
      */
@@ -67,7 +69,7 @@ public class HtsVersion implements Comparable<HtsVersion> {
     }
 
     /**
-     * return the patch version integer for this version
+     * Get the patch version integer for this version.
      *
      * @return the patch version integer for this version
      */

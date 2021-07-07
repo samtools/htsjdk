@@ -42,7 +42,7 @@ public class IOPathUtils {
     }
 
     /**
-     * Return the entire contents of an IOPath as a string.
+     * Get the entire contents of an IOPath as a string.
      *
      * @param ioPath
      * @return a UTF-8 string representation of the file contents

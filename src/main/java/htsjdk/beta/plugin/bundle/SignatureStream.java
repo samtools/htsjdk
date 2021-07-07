@@ -8,7 +8,6 @@ import java.io.ByteArrayInputStream;
  */
 public final class SignatureStream extends ByteArrayInputStream {
     final int signaturePrefixLength;
-    final byte[] signaturePrefix;
 
     /**
      * Create a signature probe stream containing the first signaturePrefixLength bytes of an input
@@ -26,18 +25,13 @@ public final class SignatureStream extends ByteArrayInputStream {
     public SignatureStream(final int signaturePrefixLength, final byte[] signaturePrefix) {
         super(signaturePrefix);
         this.signaturePrefixLength = signaturePrefixLength;
-        this.signaturePrefix = signaturePrefix;
     }
 
     /**
-     * return the maximum number of bytes that can be consumed from this stream
+     * Get the maximum number of bytes that can be consumed from this stream.
      *
      * @return the maximum number of bytes that can be consumed from this stream.
      */
     public final int getSignaturePrefixLength() { return signaturePrefixLength;}
-
-    public final byte[] getSignaturePrefix() {
-        return signaturePrefix;
-    }
 
 }

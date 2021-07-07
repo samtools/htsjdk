@@ -44,12 +44,12 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
     public String getDisplayName() { return displayName; }
 
     @Override
-    public String getContentTypeString() {
+    public String getContentType() {
         return contentType;
     }
 
     @Override
-    public Optional<String> getFormatString() {
+    public Optional<String> getFileFormat() {
         return Optional.ofNullable(format);
     }
 
@@ -80,8 +80,8 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
                 "%s (%s): %s/%s",
                 getClass().getSimpleName(),
                 getDisplayName(),
-                getContentTypeString(),
-                getFormatString().orElse("NONE"));
+                getContentType(),
+                getFileFormat().orElse("NONE"));
     }
 
     @Override

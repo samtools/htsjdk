@@ -11,7 +11,8 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import java.util.Optional;
 
 /**
- * Base class for CRAM encoders.
+ /**
+ * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} decoders.
  */
 public abstract class CRAMEncoder implements ReadsEncoder {
     // TODO: presorted
@@ -26,7 +27,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     }
 
     @Override
-    final public String getFormat() { return ReadsFormats.CRAM; }
+    final public String getFileFormat() { return ReadsFormats.CRAM; }
 
     @Override
     final public String getDisplayName() { return displayName; }

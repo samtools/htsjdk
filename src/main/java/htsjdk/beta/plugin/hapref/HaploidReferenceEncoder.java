@@ -1,10 +1,11 @@
 package htsjdk.beta.plugin.hapref;
 
+import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsEncoder;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 
 /**
- *  Defines the type parameters instantiated for haploid reference encoders.
+ *  Base class for all {@link HtsContentType#HAPLOID_REFERENCE}  encoders.
  */
 public interface HaploidReferenceEncoder extends HtsEncoder<SAMSequenceDictionary, ReferenceSequence> { }

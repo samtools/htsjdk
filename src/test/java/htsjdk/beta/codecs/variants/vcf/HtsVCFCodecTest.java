@@ -35,11 +35,11 @@ public class HtsVCFCodecTest extends HtsjdkTest {
              final VariantsEncoder variantsEncoder = HtsDefaultRegistry.getVariantsResolver().getVariantsEncoder(outputPath)) {
 
             Assert.assertNotNull(variantsDecoder);
-            Assert.assertEquals(variantsDecoder.getFormat(), VariantsFormats.VCF);
+            Assert.assertEquals(variantsDecoder.getFileFormat(), VariantsFormats.VCF);
             Assert.assertEquals(variantsDecoder.getVersion(), VCFCodecV4_2.VCF_V42_VERSION);
 
             Assert.assertNotNull(variantsEncoder);
-            Assert.assertEquals(variantsEncoder.getFormat(), VariantsFormats.VCF);
+            Assert.assertEquals(variantsEncoder.getFileFormat(), VariantsFormats.VCF);
             Assert.assertEquals(variantsEncoder.getVersion(), VCFCodecV4_2.VCF_V42_VERSION);
 
             final VCFHeader vcfHeader = variantsDecoder.getHeader();

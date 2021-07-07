@@ -25,7 +25,7 @@ public class HtsTestDecoder implements ReadsDecoder {
     }
 
     @Override
-    public String getFormat() { return htsFormat; }
+    public String getFileFormat() { return htsFormat; }
 
     @Override
     public HtsVersion getVersion() {

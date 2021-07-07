@@ -4,10 +4,12 @@ import htsjdk.samtools.util.BlockGunzipper;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import htsjdk.utils.ValidationUtils;
 
-//These option classes establish a default for every option; keeps them insulated from changes to
-// SamReaderFactory; and ensure that getters never return null
+/**
+ * Decoder options for BAM decoders. This class establishes a default for every option; keeps them
+ * insulated from changes to SamReaderFactory; and ensure that getters never return null.
+ */
 public class BAMDecoderOptions {
-    //SAMRecordFactory isn't carried over from SAMReaderFactory tothese options, since it
+    //SAMRecordFactory isn't carried over from SAMReaderFactory to these options, since it
     // populates SAMRecords with a SamReader. Most of the codec implementations don't use a
     // SamReader (those that do are temporary), and we don't want the plugin APIs to have a
     // dependency on that.

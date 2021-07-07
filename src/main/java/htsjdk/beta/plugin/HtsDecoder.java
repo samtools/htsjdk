@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin;
 
+import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.interval.HtsQuery;
 import java.io.Closeable;
 
@@ -17,26 +18,29 @@ public interface HtsDecoder<H extends HtsHeader, R extends HtsRecord>
         extends HtsQuery<R>, Closeable {
 
     /**
-     * Return a string for the file format supported by this decoder
+     * Get the name of the file format supported by this decoder.The format name defines the underlying
+     * format handled by this decoder, and also corresponds to the format of the primary bundle
+     * resource that is required when decoding (see {@link htsjdk.beta.plugin.bundle.BundleResourceType}
+     * and {@link BundleResource#getFileFormat()}).
      *
-     * @return the file format supported by this decoder
+     * @return the name of the underlying file format handled by this decoder
      */
-    String getFormat();
+    String getFileFormat();
 
     /**
-     * Return the version of the file format supported by this decoder.
+     * Get the version of the file format supported by this decoder.
      */
     HtsVersion getVersion();
 
     /**
-     * return a user-friendly display name for this decoder
+     * Get a user-friendly display name for this decoder.
      *
      * @return a user-friendly display name for this decoder for use in error and warning messages
      */
     String getDisplayName();
 
     /**
-     * return the file header for this decoder
+     * Get the file header for this decoder.
      *
      * @return the file header for this decoder, of type {@code H}
      */

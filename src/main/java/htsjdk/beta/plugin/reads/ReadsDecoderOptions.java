@@ -16,7 +16,7 @@ import java.util.function.Function;
 // finish cloud wrapper implementation
 
 /**
- * ReadsDecoderOptions (shared/common).
+ * Reads decoder options (shared/common).
  */
 public class ReadsDecoderOptions implements HtsDecoderOptions {
     private ValidationStringency validationStringency   = ValidationStringency.STRICT;

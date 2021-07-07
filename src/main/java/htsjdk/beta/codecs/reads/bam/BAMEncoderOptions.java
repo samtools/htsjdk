@@ -6,6 +6,9 @@ import htsjdk.samtools.util.AbstractAsyncWriter;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 
+/**
+ * Encoder options for BAM encoders.
+ */
 public class BAMEncoderOptions {
     // SAM ?:   private SamFlagField samFlagFieldOutput = SamFlagField.NONE;
     private boolean createOutputIndex = Defaults.CREATE_INDEX;
