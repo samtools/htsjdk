@@ -8,8 +8,7 @@ import htsjdk.beta.exception.HtsjdkPluginException;
 
 //TODO: Master TODO list:
 // - prevent the decoders that use SamReaderFactory from automatically resolving index files
-// - change "contentSubType" to "format". then it would match the codec terminology
-// - change codec format to content type ?
+// - unify on contentType/format (change bundle "contentSubType" to "format", codec type to content type )?
 // - javadoc/final/ValidateArgs
 // - Incomplete: BAM/CRAM de/encoder options, VCF 4.2, FASTA codecs, respect presorted in Reads encoders
 // - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?

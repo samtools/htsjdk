@@ -3,6 +3,7 @@ package htsjdk.beta.plugin.interval;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Locatable;
+import htsjdk.utils.PrivateAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.util.Arrays;
@@ -22,6 +23,7 @@ public class HtsIntervalUtils {
      * @param dictionary sequence dictionary to use to convert string query names to contig index
      * @return a QueryInterval equivalent to {@code interval}
      */
+    @PrivateAPI
     public static QueryInterval toQueryInterval(final HtsInterval interval, final SAMSequenceDictionary dictionary) {
         return new QueryInterval(
                 dictionary.getSequenceIndex(interval.getQueryName()),
@@ -35,6 +37,7 @@ public class HtsIntervalUtils {
      * @param interval {@link HtsInterval} to convert
      * @return a Locatable equivalent to {@code interval}
      */
+    @PrivateAPI
     public static Locatable toLocatable(final HtsInterval interval) {
         return new Locatable() {
             @Override
@@ -67,6 +70,7 @@ public class HtsIntervalUtils {
      * @param intervals list of {@link HtsInterval}s to convert
      * @return a list of {@link Locatable}
      */
+    @PrivateAPI
     public static List<Locatable> toLocatableList(final List<HtsInterval> intervals) {
         ValidationUtils.nonNull(intervals, "interval list");
         return intervals
@@ -82,6 +86,7 @@ public class HtsIntervalUtils {
      * @param dictionary sequence dictionary to use
      * @return array of {@link QueryInterval}
      */
+    @PrivateAPI
     public static QueryInterval[] toQueryIntervalArray(
             final List<HtsInterval> intervals,
             final SAMSequenceDictionary dictionary) {
@@ -99,6 +104,7 @@ public class HtsIntervalUtils {
      * @param dictionary seuence dictionary to use for the conversion
      * @return list of {@link HtsInterval}
      */
+    @PrivateAPI
     public static List<HtsInterval> fromQueryIntervalArray(
             final QueryInterval[] queryIntervals,
             final SAMSequenceDictionary dictionary) {
@@ -115,6 +121,7 @@ public class HtsIntervalUtils {
      * @return an integer representation of {@code coord} if the conversion is safe
      * @throws IllegalArgumentException if converting results in overflow
      */
+    @PrivateAPI
     public static int toIntegerSafe(final long coord) {
         try {
             return Math.toIntExact(coord);
