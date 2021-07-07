@@ -59,7 +59,7 @@ public class SeekableStreamResource extends InputStreamResource {
      * @return Obtain a SignatureProbeStream on this resource. Resets the underlying seekable stream.
      */
     @Override
-    public SignatureStream getSignatureProbeStream(final int signatureProbeLength) {
+    public SignatureStream getSignatureStream(final int signatureProbeLength) {
         //we don't want to call the super class' implementation here
         final byte[] signaturePrefix = new byte[signatureProbeLength];
         try {

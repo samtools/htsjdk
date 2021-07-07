@@ -57,7 +57,8 @@ public interface BundleResource {
 
     /**
      * @return a {@link SignatureStream} over the first {@code signatureProbeLength} bytes of this
-     * resource, for use with signature probing for codec resolution.
+     * resource, for use with signature probing for codec resolution. Only applicable to resources for
+     * which {@link #hasInputType()} is true.
      *
      * Note that this method requires access to the first {@code signatureProbeLength} bytes of the underlying
      * resource. {@link BundleResource} implementations that are backed by raw streams that can only be consumed
@@ -65,7 +66,7 @@ public interface BundleResource {
      * stream in order to allow subsequent callers of the {@link #getInputStream()}) method to be presented with
      * the entire stream, including the signature. Calls to this method may have the side effect of changing
      * or resetting the current position of the underlying stream; serial calls to
-     * {@link #getSignatureProbeStream} on the same object are not necessarily idempotent; and implementations
+     * {@link #getSignatureStream} on the same object are not necessarily idempotent; and implementations
      * are free to throw to prevent serial calls to this method.
      *
      * @param signatureProbeLength the number of bytes of the underlying resource to include in the
@@ -78,9 +79,10 @@ public interface BundleResource {
      *                             that the {@link SignatureStream} contains a semantically meaningful fragment
      *                             of the underlying input.
      *
-     * @throws IllegalArgumentException if this method has previously been called on this resource
+     * @throws IllegalArgumentException if this method has previously been called on this resource, or if
+     * {@link #hasInputType()} is false for this resource
      */
-    SignatureStream getSignatureProbeStream(final int signatureProbeLength);
+    SignatureStream getSignatureStream(final int signatureProbeLength);
 
     /**
      * @return true if the type of this resource makes it suitable for use as a source of input.

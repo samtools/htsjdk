@@ -63,12 +63,17 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     @Override
     public boolean hasSeekableStream() {
         // if hasFileSystemProvider is true, we'll be able to obtain a seekable stream
-        // on the underlying path; otherwise return false.
+        // on the underlying path; otherwise return false
         return ioPath.hasFileSystemProvider();
     }
 
     @Override
     public Optional<SeekableStream> getSeekableStream() {
+        if (!hasSeekableStream()) {
+            throw new IllegalArgumentException(String.format(
+                    "A SeekableStream cannot be obtained for a URI (%s) for which no file system provider is installed",
+                    getIOPath().get().getURI()));
+        }
         try {
             return Optional.of(new SeekablePathStream(getIOPath().get().toPath()));
         } catch (final IOException e) {
@@ -77,16 +82,11 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     }
 
     @Override
-    public SignatureStream getSignatureProbeStream(final int signatureProbeLength) {
+    public SignatureStream getSignatureStream(final int signatureProbeLength) {
         ValidationUtils.validateArg(signatureProbeLength > 0, "signature probe length size must be > 0");
-
-        // get a stream on the underlying IOPath, get a reuseable signature probe buffer,
-        try (final InputStream is = getInputStream().get();
-             final InputStream inputStream = new BufferedInputStream(is, signatureProbeLength)) {
+        try (final InputStream inputStream = getInputStream().get()) {
             final byte[] signaturePrefix = new byte[signatureProbeLength];
-            inputStream.mark(signatureProbeLength);
             inputStream.read(signaturePrefix);
-            inputStream.reset();
             return new SignatureStream(signatureProbeLength, signaturePrefix);
         } catch (final IOException e) {
             throw new RuntimeIOException(

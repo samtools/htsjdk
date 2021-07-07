@@ -54,25 +54,25 @@ public class InputStreamResource extends BundleResourceBase {
     }
 
     @Override
-    public SignatureStream getSignatureProbeStream(final int signatureProbeLength) {
+    public SignatureStream getSignatureStream(final int signatureProbeLength) {
         ValidationUtils.validateArg(signatureProbeLength > 0, "signatureProbeLength must be > 0");
 
         if (bufferedInputStream != null) {
             throw new HtsjdkPluginException(
-                    String.format("Only one SignatureProbeStream stream can be created for an Input stream resource"));
+                    String.format("Only one SignatureStream stream can be created for an InputStream resource"));
         }
 
         final byte[] signaturePrefix = new byte[signatureProbeLength];
         try {
-            // for an InputStreamResource, we don't want this code to close the actual rawInputStream that
-            // was provided by the caller, since we don't have any way to reconstitute it, so don't use
-            // try-with-resources
+            // we don't want this code to close the actual rawInputStream that was provided by the caller,
+            // since we don't have any way to reconstitute it, so don't use try-with-resources
             bufferedInputStream = new BufferedInputStream(rawInputStream, signatureProbeLength);
             // mark, read, and then reset the buffered stream so that when the actual stream is consumed
             // once signature probing is complete, it will be consumed from the beginning
             bufferedInputStream.mark(signatureProbeLength);
             bufferedInputStream.read(signaturePrefix);
-            // reset the buffered input stream so the next consumer sees the beginning of the stream
+            // reset the buffered input stream, which will be returned by the next call to {@link getInputStream},
+            // so the next consumer sees the stream from the beginning
             bufferedInputStream.reset();
         } catch (final IOException e) {
             throw new RuntimeIOException(

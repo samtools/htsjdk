@@ -172,9 +172,6 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
             SAMRecord record1 = null;
             SAMRecord record2 = null;
             int count1 = 0;
-            int count2 = 0;
-            int beforeCount = 0;
-            int afterCount = 0;
             while (true) {
                 if (record1 == null && iter1.hasNext()) {
                     record1 = iter1.next();
@@ -182,7 +179,6 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
                 }
                 if (record2 == null && iter2.hasNext()) {
                     record2 = iter2.next();
-                    count2++;
                 }
                 if (record1 == null && record2 == null) {
                     break;
@@ -190,7 +186,6 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
                 if (record1 == null) {
                     checkPassesFilter(false, record2, sequence, startPos, endPos, queryRule);
                     record2 = null;
-                    afterCount++;
                     continue;
                 }
                 assertNotNull(record2);
@@ -198,7 +193,6 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
                 if (ordering > 0) {
                     checkPassesFilter(false, record2, sequence, startPos, endPos, queryRule);
                     record2 = null;
-                    beforeCount++;
                     continue;
                 }
                 assertTrue(ordering == 0);
@@ -209,10 +203,6 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
                 record1 = null;
                 record2 = null;
             }
-            verbose("Checked " + count1 + " records against " + count2 + " records.");
-            verbose("Found " + (count2 - beforeCount - afterCount) + " records matching.");
-            verbose("Found " + beforeCount + " records before.");
-            verbose("Found " + afterCount + " records after.");
             return count1;
         }
     }
@@ -220,13 +210,6 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
     private static void checkPassesFilter(final boolean expected, final SAMRecord record, final String sequence, final int startPos, final int endPos, final HtsQueryRule queryRule) {
         final boolean passes = passesFilter(record, sequence, startPos, endPos, queryRule);
         if (passes != expected) {
-            //System.out.println("Error: Record erroneously " +
-            //        (passes ? "passed" : "failed") +
-            //        " filter.");
-            //System.out.println(" Record: " + record.getSAMString());
-            //System.out.println(" Filter: " + sequence + ":" +
-            //        startPos + "-" + endPos +
-            //        " (" + (queryRule == HtsQueryRule.CONTAINED ? "contained" : "overlapping") + ")");
             assertEquals(passes, expected);
         }
     }
@@ -290,12 +273,6 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
             return false;
         } else {
             return o1.equals(o2);
-        }
-    }
-
-    private void verbose(final String text) {
-        if (mVerbose) {
-            System.out.println("# " + text);
         }
     }
 

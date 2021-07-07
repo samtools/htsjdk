@@ -303,8 +303,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
 
     private List<C> resolveForDecodingStream(final BundleResource bundleResource, final List<C> candidateCodecs) {
         final int streamPrefixSize = getMaxSignatureProbeLength(candidateCodecs);
-        final SignatureStream signatureStream =
-                bundleResource.getSignatureProbeStream(streamPrefixSize);
+        final SignatureStream signatureStream = bundleResource.getSignatureStream(streamPrefixSize);
         return candidateCodecs.stream()
                 .filter(codec -> canDecodeInputStreamSignature(
                         codec,
@@ -356,7 +355,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
                             bundleResource,
                             inputPath.getURI().getScheme()));
         }
-        return bundleResource.getSignatureProbeStream(streamPrefixSize);
+        return bundleResource.getSignatureStream(streamPrefixSize);
     }
 
     private static<T extends HtsCodec<?, ?, ?>> boolean canDecodeInputStreamSignature(
