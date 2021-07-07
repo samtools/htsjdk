@@ -11,12 +11,12 @@ import java.util.Optional;
  */
 public interface HtsFormat<F extends Enum<F>> {
     /**
-     * A method that accepts a content subtype string and returns the matching instance of the file format enum
+     * A method that accepts a format string and returns the matching instance of the file format enum
      * from {@link F}
      *
-     * @param contentSubType the content subtype to be converted
-     * @return an instance of the file format enum {@link F} that corresponds to {@code contentSubType}, or
+     * @param format the format String to be converted
+     * @return an instance of the file format enum {@link F} that corresponds to {@code format}, or
      * Optional.empty if there is no match
      */
-    Optional<F> contentSubTypeToFormat(final String contentSubType);
+    Optional<F> formatStringToEnum(final String format);
 }

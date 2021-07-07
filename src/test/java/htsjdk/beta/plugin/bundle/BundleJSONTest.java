@@ -35,11 +35,11 @@ public class BundleJSONTest extends HtsjdkTest {
                                 "  \"schemaVersion\":\"0.1.0\",\n" +
                                 "  \"primary\":\"ALIGNED_READS\",\n" +
                                 "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsWithContentSubType) +
-                                "\",\"subtype\":\"BAM\"}\n" +
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat) +
+                                "\",\"format\":\"BAM\"}\n" +
                                 "}\n",
                         BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(BundleResourceTestData.readsWithContentSubType)
+                        Arrays.asList(BundleResourceTestData.readsWithFormat)
                 },
                 {
                         "{\n" +
@@ -47,10 +47,10 @@ public class BundleJSONTest extends HtsjdkTest {
                                 "  \"schemaVersion\":\"0.1.0\",\n" +
                                 "  \"primary\":\"ALIGNED_READS\",\n" +
                                 "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsNoContentSubType) + "\"}\n" +
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat) + "\"}\n" +
                                 "}\n",
                         BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(BundleResourceTestData.readsNoContentSubType)
+                        Arrays.asList(BundleResourceTestData.readsNoFormat)
                 },
                 {
                         "{\n" +
@@ -58,16 +58,16 @@ public class BundleJSONTest extends HtsjdkTest {
                                 "  \"schemaVersion\":\"0.1.0\",\n" +
                                 "  \"primary\":\"ALIGNED_READS\",\n" +
                                 "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexWithContentSubType) +
-                                "\",\"subtype\":\"BAI\"},\n" +
+                                getURIStringFromIOPath(BundleResourceTestData.indexWithFormat) +
+                                "\",\"format\":\"BAI\"},\n" +
                                 "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsWithContentSubType) +
-                                "\",\"subtype\":\"BAM\"}\n" +
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat) +
+                                "\",\"format\":\"BAM\"}\n" +
                                 "}\n",
                         BundleResourceType.ALIGNED_READS,
                         Arrays.asList(
-                                BundleResourceTestData.readsWithContentSubType,
-                                BundleResourceTestData.indexWithContentSubType)
+                                BundleResourceTestData.readsWithFormat,
+                                BundleResourceTestData.indexWithFormat)
                 },
                 {
                         "{\n" +
@@ -75,16 +75,16 @@ public class BundleJSONTest extends HtsjdkTest {
                                 "  \"schemaVersion\":\"0.1.0\",\n" +
                                 "  \"primary\":\"ALIGNED_READS\",\n" +
                                 "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexWithContentSubType) +
-                                "\",\"subtype\":\"BAI\"},\n" +
+                                getURIStringFromIOPath(BundleResourceTestData.indexWithFormat) +
+                                "\",\"format\":\"BAI\"},\n" +
                                 "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsNoContentSubType) +
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat) +
                                 "\"}\n" +
                                 "}\n",
                         BundleResourceType.ALIGNED_READS,
                         Arrays.asList(
-                                BundleResourceTestData.readsNoContentSubType,
-                                BundleResourceTestData.indexWithContentSubType)
+                                BundleResourceTestData.readsNoFormat,
+                                BundleResourceTestData.indexWithFormat)
                 },
                 {
                         "{\n" +
@@ -92,30 +92,30 @@ public class BundleJSONTest extends HtsjdkTest {
                                 "  \"schemaVersion\":\"0.1.0\",\n" +
                                 "  \"primary\":\"ALIGNED_READS\",\n" +
                                 "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexNoContentSubType) +
+                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat) +
                                 "\"},\n" +
                                 "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsWithContentSubType) +
-                                "\",\"subtype\":\"BAM\"}\n" +
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat) +
+                                "\",\"format\":\"BAM\"}\n" +
                                 "}\n",
                         BundleResourceType.ALIGNED_READS,
                         Arrays.asList(
-                                BundleResourceTestData.readsWithContentSubType,
-                                BundleResourceTestData.indexNoContentSubType) },
+                                BundleResourceTestData.readsWithFormat,
+                                BundleResourceTestData.indexNoFormat) },
                 {
                         "{\n" +
                                 "  \"schemaName\":\"htsbundle\",\n" +
                                 "  \"schemaVersion\":\"0.1.0\",\n" +
                                 "  \"primary\":\"ALIGNED_READS\",\n" +
                                 "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexNoContentSubType) + "\"},\n" +
+                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat) + "\"},\n" +
                                 "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsNoContentSubType) + "\"}\n" +
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat) + "\"}\n" +
                                 "}\n",
                         BundleResourceType.ALIGNED_READS,
                         Arrays.asList(
-                                BundleResourceTestData.readsNoContentSubType,
-                                BundleResourceTestData.indexNoContentSubType)
+                                BundleResourceTestData.readsNoFormat,
+                                BundleResourceTestData.indexNoFormat)
                 },
 
                 // bundle with a single resource that has a custom content type
@@ -137,17 +137,17 @@ public class BundleJSONTest extends HtsjdkTest {
                                 "  \"schemaVersion\":\"0.1.0\",\n" +
                                 "  \"primary\":\"ALIGNED_READS\",\n" +
                                 "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexNoContentSubType) +
+                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat) +
                                 "\"},\n" +
                                 "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsNoContentSubType) +
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat) +
                                 "\"},\n" +
                                 "  \"CUSTOM\":{\"path\":\"" + getURIStringFromIOPath(CUSTOM_RESOURCE) + "\"}\n" +
                                 "}\n",
                         BundleResourceType.ALIGNED_READS,
                         Arrays.asList(
-                                BundleResourceTestData.readsNoContentSubType,
-                                BundleResourceTestData.indexNoContentSubType,
+                                BundleResourceTestData.readsNoFormat,
+                                BundleResourceTestData.indexNoFormat,
                                 CUSTOM_RESOURCE)
                 },
         };
@@ -216,17 +216,17 @@ public class BundleJSONTest extends HtsjdkTest {
 
                 // missing primary property
                 { "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"myreads" +
-                        ".bam\",\"subtype\":\"BAM\"}}",
+                        ".bam\",\"format\":\"BAM\"}}",
                         "missing the required property primary"},
 
                 // primary property is present, but the resource it specifies is not in the bundle
                 { "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"myreads" +
-                        ".bam\",\"subtype\":\"BAM\"},\"primary\":\"MISSING_RESOURCE\"}",
+                        ".bam\",\"format\":\"BAM\"},\"primary\":\"MISSING_RESOURCE\"}",
                         "not present in the bundle's resources"},
 
                 // syntax error (missing quote in before schemaName
                 { "{\"schemaVersion\":\"0.1.0\",schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"myreads" +
-                        ".bam\",\"subtype\":\"BAM\"},\"primary\":\"ALIGNED_READS\"}",
+                        ".bam\",\"format\":\"BAM\"},\"primary\":\"ALIGNED_READS\"}",
                         "Invalid JSON near position: 25" },
                 // no enclosing {} -> UnsupportedOperationException (no text message)
                 {"\"schemaName\":\"htsbundle\", \"schemaVersion\":\"0.1.0\"",

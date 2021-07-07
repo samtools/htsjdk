@@ -141,7 +141,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsFormat, ReadsCodec>{
      * Return a {@link ReadsEncoder} suitable for encoding to {@code outputBundle}, using the options
      * in {@code readsEncoderOptions}. The outputBundle must include a primary resource with a file
      * extension suitable for determining the appropriate file format to use; or the resource must include
-     * a subContentType. The newest version of the selected file format available will be used.
+     * a format. The newest version of the selected file format available will be used.
      * To request a specific file format and/or version, use
      * {@link #getReadsEncoder(Bundle, ReadsEncoderOptions, ReadsFormat, HtsVersion)}.
      *

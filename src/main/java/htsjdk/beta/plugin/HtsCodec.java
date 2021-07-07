@@ -8,7 +8,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * Base interface implemented by all {@link htsjdk.beta.plugin} codecs.
  * <H3>Codecs</H3>
  * <p>
- *     Each version of a file format supported by the {@link htsjdk.beta.plugin} framework is
+ *     Each version of a data format supported by the {@link htsjdk.beta.plugin} framework is
  *     represented by a trio of related components:
  * <ul>
  *     <li>a codec that implements {@link HtsCodec}</li>
@@ -16,7 +16,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li>a decoder that implements {@link HtsDecoder}</li>
  * </ul>
  * <p>
- *     Classes that implement {@link HtsCodec} are discovered, instantiated, and registered, either dynamically
+ *     Classes that implement {@link HtsCodec} are discovered, instantiated, and registered either dynamically
  *     at runtime, via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}'s {@link java.util.ServiceLoader}
  *     code, or manually via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)}
  *     method. {@link HtsCodec} objects are lightweight and long-lived, and are used by the framework
@@ -29,21 +29,22 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <p>
  * <H3>Codec Types</H3>
  *     The plugin framework supports four different types of codec/encoder/decoder trios, enumerated
- *     by the values in {@link HtsCodecType}:
+ *     by the values in {@link HtsContentType}:
  * <p>
  * <ul>
- *     <li> {@link HtsCodecType#ALIGNED_READS} </li>
- *     <li> {@link HtsCodecType#HAPLOID_REFERENCE} </li>
- *     <li> {@link HtsCodecType#VARIANT_CONTEXTS} </li>
- *     <li> {@link HtsCodecType#FEATURES} </li>
+ *     <li> {@link HtsContentType#ALIGNED_READS} </li>
+ *     <li> {@link HtsContentType#HAPLOID_REFERENCE} </li>
+ *     <li> {@link HtsContentType#VARIANT_CONTEXTS} </li>
+ *     <li> {@link HtsContentType#FEATURES} </li>
  * </ul>
  * <p>
- *     Each of these codec types has an associated set of type-specific codec/decoder/encoder interfaces
- *     that are defined by the framework. The type-specific interfaces extend generic base interfaces,
- *     with type instantiations that are appropriate for that codec type. (as an example, see
- *     {@link htsjdk.beta.plugin.reads.ReadsDecoder} which is a specialization of
- *     {@link htsjdk.beta.plugin.HtsDecoder}. The component trios for the various implementations a given type
- *     expose the same type-specific interfaces, but over a different combination of file format/version.
+ *     The plugin framework defines a corresponding set of codec/decoder/encoder interfaces for each of these
+ *     content types. These interfaces extend generic base interfaces with type instantiations appropriate for
+ *     that content type (as an example, see {@link htsjdk.beta.plugin.reads.ReadsDecoder} which is a
+ *     specialization of {@link htsjdk.beta.plugin.HtsDecoder}, and defines the interface for decoders for
+ *     content type {@link HtsContentType#ALIGNED_READS}. The component trios for the various content type
+ *     implementations expose the same type-specific interfaces, each over a different combination of file
+ *     format and version.
  * <p>
  * The generic, base interfaces that are common to all codecs, encoders, and decoders are:
  * <ul>
@@ -57,20 +58,20 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     {@link htsjdk.beta.plugin.bundle.Bundle} implementation </li>
  * </ul>
  * <p>
- *     The packages containing the definitions of the type-specific interfaces that correspond to
- *     the four different codec types are defined in:
+ *     The packages containing the definitions of the content type-specific interfaces that correspond to
+ *     the four different content types defined in:
  * <p>
  * <ul>
- *     <li> For {@link HtsCodecType#ALIGNED_READS} codecs, see the {@link htsjdk.beta.plugin.reads} package </li>
- *     <li> For {@link HtsCodecType#HAPLOID_REFERENCE} codecs, see the {@link htsjdk.beta.plugin.hapref} package </li>
- *     <li> For {@link HtsCodecType#VARIANT_CONTEXTS} codecs, see the {@link htsjdk.beta.plugin.variants} package </li>
- *     <li> For {@link HtsCodecType#FEATURES} codecs, see the {@link htsjdk.beta.plugin.features} package </li>
+ *     <li> For {@link HtsContentType#ALIGNED_READS} codecs, see the {@link htsjdk.beta.plugin.reads} package </li>
+ *     <li> For {@link HtsContentType#HAPLOID_REFERENCE} codecs, see the {@link htsjdk.beta.plugin.hapref} package </li>
+ *     <li> For {@link HtsContentType#VARIANT_CONTEXTS} codecs, see the {@link htsjdk.beta.plugin.variants} package </li>
+ *     <li> For {@link HtsContentType#FEATURES} codecs, see the {@link htsjdk.beta.plugin.features} package </li>
  * </ul>
  * <p>
  * <H3>Example Codec Type: Reads Codecs</H3>
  * <p>
  *     As an example, the {@link htsjdk.beta.plugin.reads} package defines the following interfaces
- *     that extend the generic base interfaces, for codecs with type {@link HtsCodecType#ALIGNED_READS}:
+ *     that extend the generic base interfaces, for codecs with type {@link HtsContentType#ALIGNED_READS}:
  * <ul>
  *     <li> {@link htsjdk.beta.plugin.reads.ReadsCodec}: reads codec interface, extends the generic
  *     {@link HtsCodec} interface </li>
@@ -87,14 +88,12 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * </ul>
  * <H3>Codec Resolution Protocol</H3>
  * <p>
- *     The plugin framework uses a series of probes to inspect input and output resources in order to determine
- *     which file format/version, and thus which codec, should be used to use to obtain an encoder or decoder for
- *     that resource. Much of this work is delegated to the HtsCodec methods to allow them to determine which
- *     codecs recognize the presented resource.
+ *     The plugin framework uses the registered codecs to conduct a series of probes of the structure
+ *     and format of an input or output resource in order to find a matching codec that can produce
+ *     an appropriate encoder or decoder for the resource.
  * <p>
- *     The values returned from these methods are used by the framework to prune the list of candidate codecs.
- * <p>
- *     During codec resolution, the methods are called in the following order:
+ *     The values returned from the codec methods are used by the framework to prune a list of candidate
+ *     codecs. During codec resolution, the codec methods are called in the following order:
  * <ol>
  *     <li> {@link #ownsURI(IOPath)} </li>
  *     <li> {@link #canDecodeURI(IOPath)} </li>
@@ -110,13 +109,13 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * </ul>
  * <H3>Codecs That Use a Custom URI Format or Protocol Scheme</H3>
  * <p>
- *     Most file formats consist of a single file resides on a file system that is supported by a
+ *     Many file formats consist of a single file that resides on a file system that is supported by a
  *     {@link java.nio} file system provider. Codecs that support such formats are generally agnostic
  *     about the IOPath/URI protocol scheme used to identify their resources, and assume that file contents
  *     can be accessed directly via a single stream created via a {@link java.nio} file system provider.
  * <p>
- *     However some file formats require a specific, well known URI format or protocol scheme, often
- *     used to identify a remote or otherwise specially-formatted resource, such as a local database format
+ *     However some file formats use a specific, well known URI format or protocol scheme, often
+ *     to identify a remote or otherwise specially-formatted resource, such as a local database format
  *     that is distributed across multiple physical files. These codecs may bypass direct file {@link java.nio}
  *     system access, and instead use specialized code to access their underlying resources.
  * <p>
@@ -126,10 +125,11 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     not require or assume a particular URI format, and is agnostic about URI scheme.
  *     <p>
  *     In contrast, the {@link htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2.HtsgetBAMCodecV1_2} codec
- *     only handles remote resources that are  accessible via the "http://" protocol. It uses {@code http}
- *     to access the underlying resource, and bypasses direct {@link java.nio} file system access.
+ *     is a specialized codec that handles remote resources via the "http://" protocol.
+ *     It uses {@code http} to access the underlying resource, and bypasses direct {@link java.nio}
+ *     file system access.
  * <p>
- *     Codecs that use such a custom URI format or protocol scheme such as {@code htsget} must be able
+ *     Codecs that use a custom URI format or protocol scheme such as {@code htsget} must be able
  *     to determine if they can decode or encode a resource purely by inspecting the IOPath/URI. Such
  *     codes should follow these guidelines:
  *     <ul>
@@ -146,7 +146,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
  * <p>
  *     <ul>
  *         <li>
- *             An HtsCodec class should implement only a single version, of a single file format.
+ *             An HtsCodec class should implement only a single version of a single file format.
  *         </li>
  *         <li>
  *             HtsCodec instances may be shared across multiple registries, and should generally be immutable
@@ -165,14 +165,15 @@ public interface HtsCodec<
         extends Upgradeable {
 
     /**
-     * @return the {@link HtsCodecType} for this codec. The {@link HtsCodecType} dictates the interfaces
-     * exposed by the codec, as well as the HEADER and RECORD types exposed by the {@link HtsEncoder} and
-     * {@link HtsDecoder}s for this codec. Each implementation of the same type exposes the same interfaces,
-     * but over a different file format or version. For example, both the BAM and HTSGET_BAM codecs have
-     * codec type {@link HtsCodecType#ALIGNED_READS}, and are derived from {@link htsjdk.beta.plugin.reads.ReadsCodec},
-     * but the serialized file formats and access mechanisms for the two codecs are different).
+     * @return the {@link HtsContentType} for this codec. The {@link HtsContentType} is used by callers to
+     * determine the content type managed by this codec, as well as the HEADER and RECORD types used by the
+     * codec's {@link HtsEncoder} and {@link HtsDecoder}s. Each implementation of the same content type
+     * exposes the same interfaces, but over a different file format or version. For example, both the BAM
+     * and HTSGET_BAM codecs have codec type {@link HtsContentType#ALIGNED_READS}, and are derived from
+     * {@link htsjdk.beta.plugin.reads.ReadsCodec}, but the serialized file formats and access mechanisms for
+     * the two codecs are different).
      */
-    HtsCodecType getCodecType();
+    HtsContentType getContentType();
 
     /**
      * The file format supported by this codec. Taken from the values in {@code F}.

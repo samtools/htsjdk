@@ -12,7 +12,7 @@ public class BundleResourceTest extends HtsjdkTest {
     public Object[][] getInputOutputTestData() {
         return new Object[][]{
                 // bundle resource, isInput, isOutput
-                { BundleResourceTestData.readsWithContentSubType, true, true},
+                { BundleResourceTestData.readsWithFormat, true, true},
                 { new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.ALIGNED_READS), true, false},
                 { new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName", BundleResourceType.ALIGNED_READS), false, true},
         };
@@ -30,8 +30,8 @@ public class BundleResourceTest extends HtsjdkTest {
 
                 // equal
                 {
-                        BundleResourceTestData.readsWithContentSubType,
-                        BundleResourceTestData.readsWithContentSubType,
+                        BundleResourceTestData.readsWithFormat,
+                        BundleResourceTestData.readsWithFormat,
                         true
                 },
                 {
@@ -47,8 +47,8 @@ public class BundleResourceTest extends HtsjdkTest {
                         true
                 },
                 {
-                        BundleResourceTestData.readsNoContentSubType,
-                        BundleResourceTestData.readsNoContentSubType,
+                        BundleResourceTestData.readsNoFormat,
+                        BundleResourceTestData.readsNoFormat,
                         true
                 },
                 {
@@ -78,13 +78,13 @@ public class BundleResourceTest extends HtsjdkTest {
                         false
                 },
                 {
-                        BundleResourceTestData.readsWithContentSubType,
-                        BundleResourceTestData.readsNoContentSubType,
+                        BundleResourceTestData.readsWithFormat,
+                        BundleResourceTestData.readsNoFormat,
                         false
                 },
                 {
-                        BundleResourceTestData.indexWithContentSubType,
-                        BundleResourceTestData.readsNoContentSubType,
+                        BundleResourceTestData.indexWithFormat,
+                        BundleResourceTestData.readsNoFormat,
                         false
                 },
 
@@ -162,10 +162,10 @@ public class BundleResourceTest extends HtsjdkTest {
     @DataProvider(name="toStringTestData")
     public Object[][] getToStringTestData() {
         return new Object[][]{
-                {BundleResourceTestData.readsWithContentSubType, "IOPathResource (file://myreads.bam): ALIGNED_READS/BAM"},
-                {BundleResourceTestData.readsNoContentSubType, "IOPathResource (file://myreads.bam): ALIGNED_READS/NONE"},
-                {BundleResourceTestData.indexNoContentSubType, "IOPathResource (file://myreads.bai): READS_INDEX/NONE"},
-                {BundleResourceTestData.indexWithContentSubType, "IOPathResource (file://myreads.bai): READS_INDEX/BAI"},
+                {BundleResourceTestData.readsWithFormat, "IOPathResource (file://myreads.bam): ALIGNED_READS/BAM"},
+                {BundleResourceTestData.readsNoFormat, "IOPathResource (file://myreads.bam): ALIGNED_READS/NONE"},
+                {BundleResourceTestData.indexNoFormat, "IOPathResource (file://myreads.bai): READS_INDEX/NONE"},
+                {BundleResourceTestData.indexWithFormat, "IOPathResource (file://myreads.bai): READS_INDEX/BAI"},
                 {new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.ALIGNED_READS),
                         "InputStreamResource (displayName): ALIGNED_READS/NONE"},
                 {new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM),

@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.hapref;
 
 import htsjdk.beta.plugin.HtsCodec;
-import htsjdk.beta.plugin.HtsCodecType;
+import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.beta.plugin.HtsEncoderOptions;
 
@@ -13,6 +13,6 @@ import htsjdk.beta.plugin.HtsEncoderOptions;
 public interface HaploidReferenceCodec extends HtsCodec<HaploidReferenceFormat, HtsDecoderOptions, HtsEncoderOptions> {
 
     @Override
-    default HtsCodecType getCodecType() { return HtsCodecType.HAPLOID_REFERENCE; }
+    default HtsContentType getContentType() { return HtsContentType.HAPLOID_REFERENCE; }
 
 }

@@ -15,16 +15,16 @@ public enum ReadsFormat implements HtsFormat<ReadsFormat> {
     HTSGET_BAM;
 
     /**
-     * Convert a string content subtype to an file format value from this enum, or Optional.empty() if
+     * Convert a format string to an file format value from this enum, or Optional.empty() if
      * no value matches.
      *
-     * @param contentSubType string content subtype
-     * @return enum value from {@link ReadsFormat} that matches {@code contentSubType}
+     * @param format string format
+     * @return enum value from {@link ReadsFormat} that matches {@code format}
      */
-    public Optional<ReadsFormat> contentSubTypeToFormat(final String contentSubType) {
-        ValidationUtils.nonNull(contentSubType, "contentSubType");
+    public Optional<ReadsFormat> formatStringToEnum(final String format) {
+        ValidationUtils.nonNull(format, "format");
         for (final ReadsFormat f : ReadsFormat.values()) {
-            if (f.name().equals(contentSubType)) {
+            if (f.name().equals(format)) {
                 return Optional.of(f);
             }
         }

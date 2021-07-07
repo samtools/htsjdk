@@ -11,18 +11,18 @@ public class BundleResourceTestData {
     public final static IOPath READS_FILE = new HtsPath("file://myreads.bam");
     public final static IOPath READS_INDEX = new HtsPath("file://myreads.bai");
 
-    public static final IOPathResource readsWithContentSubType = new IOPathResource(
+    public static final IOPathResource readsWithFormat = new IOPathResource(
             READS_FILE,
             BundleResourceType.ALIGNED_READS,
             BundleResourceType.READS_BAM);
-    public static final IOPathResource readsNoContentSubType =new IOPathResource(
+    public static final IOPathResource readsNoFormat =new IOPathResource(
             READS_FILE,
             BundleResourceType.ALIGNED_READS);
-    public static final IOPathResource indexWithContentSubType = new IOPathResource(
+    public static final IOPathResource indexWithFormat = new IOPathResource(
             READS_INDEX,
             BundleResourceType.READS_INDEX,
             BundleResourceType.READS_INDEX_BAI);
-    public static final IOPathResource indexNoContentSubType = new IOPathResource(
+    public static final IOPathResource indexNoFormat = new IOPathResource(
             READS_INDEX,
             BundleResourceType.READS_INDEX);
 

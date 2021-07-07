@@ -31,12 +31,12 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     /**
      * @param ioPath The IOPath for this resource. May not be null.
      * @param contentType The content type for this resource. May not be mull or 0-length.
-     * @param contentSubType The content subtype for this resource. May not be null or 0-length.
+     * @param format The format for this resource. May not be null or 0-length.
      */
-    public IOPathResource(final IOPath ioPath, final String contentType, final String contentSubType) {
+    public IOPathResource(final IOPath ioPath, final String contentType, final String format) {
         super(ValidationUtils.nonNull(ioPath, "ioPath").getRawInputString(),
                 contentType,
-                contentSubType);
+                format);
         this.ioPath = ioPath;
     }
 

@@ -29,14 +29,14 @@ public class SeekableStreamResource extends InputStreamResource {
      * @param seekableStream The {@link SeekableStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
-     * @param contentSubType The content subtype for this resource. May not be null or 0-length.
+     * @param format The format for this resource. May not be null or 0-length.
      */
     public SeekableStreamResource(
             final SeekableStream seekableStream,
             final String displayName,
             final String contentType,
-            final String contentSubType) {
-        super(seekableStream, displayName, contentType, contentSubType);
+            final String format) {
+        super(seekableStream, displayName, contentType, format);
         ValidationUtils.nonNull(seekableStream, "seekable input stream");
         this.seekableStream = seekableStream;
     }

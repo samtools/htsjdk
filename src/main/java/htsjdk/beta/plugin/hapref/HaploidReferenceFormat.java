@@ -13,16 +13,16 @@ public enum HaploidReferenceFormat implements HtsFormat<HaploidReferenceFormat> 
     FASTA;
 
     /**
-     * Convert a string content subtype to an file format value from this enum, or Optional.empty() if
+     * Convert a string representing a format to a file format value from this enum, or Optional.empty() if
      * no value matches.
      *
-     * @param contentSubType string content subtype
-     * @return enum value from {@link HaploidReferenceFormat} that matches {@code contentSubType}
+     * @param format string format
+     * @return enum value from {@link HaploidReferenceFormat} that matches {@code format}
      */
-    public Optional<HaploidReferenceFormat> contentSubTypeToFormat(final String contentSubType) {
-        ValidationUtils.nonNull(contentSubType, "contentSubType");
+    public Optional<HaploidReferenceFormat> formatStringToEnum(final String format) {
+        ValidationUtils.nonNull(format, "format");
         for (final HaploidReferenceFormat f : HaploidReferenceFormat.values()) {
-            if (f.name().equals(contentSubType)) {
+            if (f.name().equals(format)) {
                 return Optional.of(f);
             }
         }

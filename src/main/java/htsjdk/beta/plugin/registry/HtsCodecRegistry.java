@@ -8,11 +8,14 @@ import htsjdk.beta.exception.HtsjdkPluginException;
 
 //TODO: Master TODO list:
 // - prevent the decoders that use SamReaderFactory from automatically resolving index files
-// - unify on contentType/format (change bundle "contentSubType" to "format", codec type to content type )?
 // - javadoc/final/ValidateArgs
 // - Incomplete: BAM/CRAM de/encoder options, VCF 4.2, FASTA codecs, respect presorted in Reads encoders
 // - Missing: SAM/CRAM 2.1/VCF 4.1, 4.3 (read only)/BCF codec ?
 // - finish adding tests
+//      rules for how to resolve input index
+//      large number of inputs where the caller asserts the content type, format, version
+//      add a test where the expected file extension isn't present (what are the rules for canDecode* ?)
+//      make sure *writable* HtsBAMGet encoder custom protocol schemes (though we don't have any ? genomicsDB ?)
 // - finish content type inference
 // - implement a built-in cloud channel wrapper and replace the lambdas currently exposed as options
 // - fix CRAM codec access to the eliminate FastaDecoder getReferenceSequenceFile accessor
@@ -28,12 +31,13 @@ import htsjdk.beta.exception.HtsjdkPluginException;
 /**
  * A registry for tracking {@link HtsCodec} instances.
  *
- * A registry is populated with objects that implement {@link HtsCodec}, which are either discovered
+ * Registries are populated with objects that implement {@link HtsCodec}, which are either discovered
  * and registered dynamically at startup (see {@link HtsDefaultRegistry}), or manually registered via
  * the {@link #registerCodec(HtsCodec)} method (see {@link HtsCodecRegistry#createPrivateRegistry()}).
  *
- * A global static immutable registry is maintained by {@link HtsDefaultRegistry}. A private registry
- * that is mutable can be created with {@link HtsCodecRegistry#createPrivateRegistry()}.
+ * A global static immutable registry is maintained by {@link HtsDefaultRegistry}. A private mutable
+ * registry that can be used with custom codecs can be created with
+ * {@link HtsCodecRegistry#createPrivateRegistry()}.
  */
 public class HtsCodecRegistry {
     private final HaploidReferenceResolver htsHaploidReferenceResolver = new HaploidReferenceResolver();;
@@ -47,7 +51,7 @@ public class HtsCodecRegistry {
     HtsCodecRegistry() { }
 
     /**
-     * Add a codec to the registry. If a codec that supports the same (format, version) values as
+     * Add a codec to the registry. If a codec that supports the same (format, version) as
      * the new codec (determined by {@link HtsCodec#getFileFormat()} and {@link HtsCodec#getVersion()}
      * methods) is already registered, the new registry is update to contain the new codec, and the
      * previously registered codec is returned.
@@ -57,7 +61,7 @@ public class HtsCodecRegistry {
      * was previously registered
      */
     public synchronized HtsCodec<?, ?, ?> registerCodec(final HtsCodec<?, ?, ?> codec) {
-        switch (codec.getCodecType()) {
+        switch (codec.getContentType()) {
             case HAPLOID_REFERENCE:
                 return htsHaploidReferenceResolver.registerCodec((HaploidReferenceCodec) codec);
 

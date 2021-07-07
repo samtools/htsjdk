@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.reads;
 
 import htsjdk.beta.plugin.HtsCodec;
-import htsjdk.beta.plugin.HtsCodecType;
+import htsjdk.beta.plugin.HtsContentType;
 
 /**
  * Base class for all reads codecs. Defines th type parameters instantiated for reads codecs.
@@ -9,6 +9,6 @@ import htsjdk.beta.plugin.HtsCodecType;
 public interface ReadsCodec extends HtsCodec<ReadsFormat, ReadsDecoderOptions, ReadsEncoderOptions> {
 
     @Override
-    default HtsCodecType getCodecType() { return HtsCodecType.ALIGNED_READS; }
+    default HtsContentType getContentType() { return HtsContentType.ALIGNED_READS; }
 
 }

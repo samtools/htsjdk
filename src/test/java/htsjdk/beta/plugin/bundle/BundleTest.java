@@ -14,8 +14,8 @@ import java.util.Iterator;
 // "schemaName":"htsbundle",
 // "schemaVersion":"0.1.0",
 // "READS",
-// "READS_INDEX":{"path":"myFile.bai","subtype":"NONE"},
-// "READS":{"path":"myFile.bam","subtype":"NONE"}
+// "READS_INDEX":{"path":"myFile.bai","format":"NONE"},
+// "READS":{"path":"myFile.bam","format":"NONE"}
 // }
 
 public class BundleTest extends HtsjdkTest {
@@ -70,16 +70,16 @@ public class BundleTest extends HtsjdkTest {
     public void testResourceIterator() {
         final Bundle bundle =
                 new BundleBuilder()
-                        .addPrimary(BundleResourceTestData.readsWithContentSubType)
-                        .addSecondary(BundleResourceTestData.indexNoContentSubType)
+                        .addPrimary(BundleResourceTestData.readsWithFormat)
+                        .addSecondary(BundleResourceTestData.indexNoFormat)
                         .build();
         final Iterator<BundleResource> it = bundle.iterator();
         while (it.hasNext()) {
             final BundleResource ir = it.next();
             if (ir.getContentType().equals(BundleResourceType.ALIGNED_READS)) {
-                Assert.assertEquals(ir, BundleResourceTestData.readsWithContentSubType);
+                Assert.assertEquals(ir, BundleResourceTestData.readsWithFormat);
             } else {
-                Assert.assertEquals(ir, BundleResourceTestData.indexNoContentSubType);
+                Assert.assertEquals(ir, BundleResourceTestData.indexNoFormat);
             }
         }
     }

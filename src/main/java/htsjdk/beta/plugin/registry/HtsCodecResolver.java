@@ -51,7 +51,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
      *                            to locate the primary resource when attempting to resolve the bundle to a codec
      * @param htsFormatEnumInstance any instance of the {@code F} enum. the actual instance passed is not
      *                             significant; any instance of the enum {@code F} will work. The value is
-     *                             used to access the {@link HtsFormat#contentSubTypeToFormat(String)} method of
+     *                             used to access the {@link HtsFormat#formatStringToEnum(String)} method of
      *                             {@link HtsFormat}.
      */
     public HtsCodecResolver(final String requiredContentType, F htsFormatEnumInstance) {
@@ -153,7 +153,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         ValidationUtils.nonNull(bundle, "bundle");
 
         final BundleResource bundleResource = getPrimaryResource(bundle, true);
-        final Optional<F> optFormat = getFormatForContentSubType(bundleResource);
+        final Optional<F> optFormat = getFormatForFormatString(bundleResource);
         final List<C> candidatesCodecs = resolveForFormat(optFormat);
 
         final List<C> resolvedCodecs = bundleResource.getIOPath().isPresent() ?
@@ -173,7 +173,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
      * file extension, and query parameters) are used to determine the file format used.
      * <p>
      * Note that for resources that are ambiguous (i.e., a stream, which has no file extension), the bundle
-     * resource must include a subContentType that corresponds to one of the formats for the content
+     * resource must include a format that corresponds to one of the formats for the content
      * type used by this codec type. The newest version of the file format will be used.
      * <p>
      * To request a specific version or format, see {@link #resolveForEncoding(Bundle, HtsVersion)}
@@ -193,7 +193,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
      * scheme, file extension, and query parameters) are used to determine the file format used.
      * <p>
      * Note that for resources that are ambiguous (i.e., a stream which has no file extension), the bundle
-     * resource must include a subContentType that corresponds to one of the formats for the content
+     * resource must include a format that corresponds to one of the formats for the content
      * type used by this codec type.
      *
      * @param bundle the bundle to use for encoding
@@ -206,7 +206,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         ValidationUtils.nonNull(htsVersion, "htsVersion");
 
         final BundleResource bundleResource = getPrimaryResource(bundle, false);
-        final Optional<F> optFormat = getFormatForContentSubType(bundleResource);
+        final Optional<F> optFormat = getFormatForFormatString(bundleResource);
         final List<C> candidateCodecs = resolveForFormat(optFormat);
 
         final Optional<IOPath> ioPath = bundleResource.getIOPath();
@@ -383,7 +383,7 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         }
     }
 
-    // Get our initial candidate codec list, either filtered by content subtype if one is present,
+    // Get our initial candidate codec list, either filtered by format if one is present,
     // or otherwise all registered codecs for this codec format.
     private List<C> resolveForFormat(final Optional<F> optFormat) {
         final List<C> candidateCodecs =
@@ -442,19 +442,19 @@ public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCod
         return bundleResource;
     }
 
-    private Optional<F> getFormatForContentSubType(final BundleResource bundleResource) {
-        final Optional<String> optContentSubType = bundleResource.getContentSubType();
-        final Optional<F> optFormat = optContentSubType.flatMap(
-                contentSubType -> htsFormatEnumInstance.contentSubTypeToFormat(contentSubType));
-        if (optContentSubType.isPresent() && !optFormat.isPresent()) {
-            // throw if the resource contentSubType is present, but doesn't map to any format supported by the content
+    private Optional<F> getFormatForFormatString(final BundleResource bundleResource) {
+        final Optional<String> optResourceFormat = bundleResource.getFormat();
+        final Optional<F> optFormatEnum = optResourceFormat.flatMap(
+                resourceFormat -> htsFormatEnumInstance.formatStringToEnum(resourceFormat));
+        if (optResourceFormat.isPresent() && !optFormatEnum.isPresent()) {
+            // throw if the resource format is present, but doesn't map to any format supported by the content
             throw new IllegalArgumentException(
-                    String.format("The sub-content type (%s) found in the bundle resource (%s) does not correspond to any known subtype for content type (%s)",
-                            optContentSubType.get(),
+                    String.format("The format (%s) specified in the bundle resource (%s) does not correspond to any known format for content type (%s)",
+                            optResourceFormat.get(),
                             bundleResource,
                             requiredContentType));
         }
-        return optFormat;
+        return optFormatEnum;
     }
 
     @PrivateAPI

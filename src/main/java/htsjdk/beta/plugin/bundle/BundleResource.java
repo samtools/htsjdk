@@ -22,9 +22,9 @@ public interface BundleResource {
     String getContentType();
 
     /**
-     * @return the content subtype for this resource, or Optional.empty if not present
+     * @return the format for this resource, or Optional.empty if not present
      */
-    Optional<String> getContentSubType();
+    Optional<String> getFormat();
 
     /**
      * @return an IOPath for this resource, or Optional.empty if not present

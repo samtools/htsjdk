@@ -13,17 +13,17 @@ public enum VariantsFormat implements HtsFormat<VariantsFormat> {
     BCF;
 
     /**
-     * Convert a string content subtype to an file format value from this enum, or Optional.empty() if
+     * Convert a format string to a file format value from this enum, or Optional.empty() if
      * no value matches.
      *
-     * @param contentSubType string content subtype
-     * @return enum value from {@link VariantsFormat} that matches {@code contentSubType}, or Optional.empty() if
+     * @param format string forat
+     * @return enum value from {@link VariantsFormat} that matches {@code format}, or Optional.empty() if
      * no value matches
      */
-    public Optional<VariantsFormat> contentSubTypeToFormat(final String contentSubType) {
-        ValidationUtils.nonNull(contentSubType, "contentSubType");
+    public Optional<VariantsFormat> formatStringToEnum(final String format) {
+        ValidationUtils.nonNull(format, "format");
         for (final VariantsFormat f : VariantsFormat.values()) {
-            if (f.name().equals(contentSubType)) {
+            if (f.name().equals(format)) {
                 return Optional.of(f);
             }
         }

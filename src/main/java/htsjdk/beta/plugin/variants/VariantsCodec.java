@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.variants;
 
 import htsjdk.beta.plugin.HtsCodec;
-import htsjdk.beta.plugin.HtsCodecType;
+import htsjdk.beta.plugin.HtsContentType;
 
 /**
  *  Defines the type parameters instantiated for variants codecs.
@@ -9,6 +9,6 @@ import htsjdk.beta.plugin.HtsCodecType;
 public interface VariantsCodec extends HtsCodec<VariantsFormat, VariantsDecoderOptions, VariantsEncoderOptions> {
 
     @Override
-    default HtsCodecType getCodecType() { return HtsCodecType.VARIANT_CONTEXTS; }
+    default HtsContentType getContentType() { return HtsContentType.VARIANT_CONTEXTS; }
 
 }

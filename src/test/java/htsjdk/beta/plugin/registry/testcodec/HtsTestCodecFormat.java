@@ -11,9 +11,9 @@ public enum HtsTestCodecFormat implements HtsFormat<HtsTestCodecFormat> {
     FILE_FORMAT_3,
     FILE_FORMAT_4;
 
-    public Optional<HtsTestCodecFormat> contentSubTypeToFormat(final String contentSubType) {
+    public Optional<HtsTestCodecFormat> formatStringToEnum(final String format) {
         for (final HtsTestCodecFormat f : HtsTestCodecFormat.values()) {
-            if (f.name().equals(contentSubType)) {
+            if (f.name().equals(format)) {
                 return Optional.of(f);
             }
         }

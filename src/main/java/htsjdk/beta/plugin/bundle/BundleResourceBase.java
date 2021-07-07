@@ -16,7 +16,7 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
     private static final long serialVersionUID = 1L;
     private final String displayName;
     private final String contentType;
-    private final String contentSubType;
+    private final String format;
 
     /**
      *
@@ -24,19 +24,19 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
      *                    0 length.
      * @param contentType The content type for this resource. Can be any string, but it must be unique within a
      *                    given bundle. May not be null or zero length.
-     * @param contentSubType The (optional) content subtype for this resource. Can be any string, i.e, "BAM" for
-     *                       a resource with content type "READS". Predefined content subtype strings are defined
+     * @param format The (optional) format for this resource. Can be any string, i.e, "BAM" for
+     *                       a resource with content type "READS". Predefined format strings are defined
      *                       in {@link BundleResourceType}.
      */
     public BundleResourceBase(
             final String displayName,
             final String contentType,
-            final String contentSubType) {
+            final String format) {
         ValidationUtils.nonEmpty(displayName, "display name");
         ValidationUtils.nonEmpty(contentType, "content type");
         this.displayName = displayName;
         this.contentType = contentType;
-        this.contentSubType = contentSubType;
+        this.format = format;
     }
 
     @Override
@@ -48,8 +48,8 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
     }
 
     @Override
-    public Optional<String> getContentSubType() {
-        return Optional.ofNullable(contentSubType);
+    public Optional<String> getFormat() {
+        return Optional.ofNullable(format);
     }
 
     @Override
@@ -80,7 +80,7 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
                 getClass().getSimpleName(),
                 getDisplayName(),
                 getContentType(),
-                getContentSubType().orElse("NONE"));
+                getFormat().orElse("NONE"));
     }
 
     @Override
@@ -92,14 +92,14 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
 
         if (!displayName.equals(that.displayName)) return false;
         if (!contentType.equals(that.contentType)) return false;
-        return contentSubType != null ? contentSubType.equals(that.contentSubType) : that.contentSubType == null;
+        return format != null ? format.equals(that.format) : that.format == null;
     }
 
     @Override
     public int hashCode() {
         int result = displayName.hashCode();
         result = 31 * result + contentType.hashCode();
-        result = 31 * result + (contentSubType != null ? contentSubType.hashCode() : 0);
+        result = 31 * result + (format != null ? format.hashCode() : 0);
         return result;
     }
 }

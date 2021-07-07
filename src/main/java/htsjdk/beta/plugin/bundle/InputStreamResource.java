@@ -36,14 +36,14 @@ public class InputStreamResource extends BundleResourceBase {
      * @param inputStream The {@link InputStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
-     * @param contentSubType The content subtype for this resource. May not be null or 0-length.
+     * @param format The format for this resource. May not be null or 0-length.
      */
     public InputStreamResource(
             final InputStream inputStream,
             final String displayName,
             final String contentType,
-            final String contentSubType) {
-        super(displayName, contentType, contentSubType);
+            final String format) {
+        super(displayName, contentType, format);
         ValidationUtils.nonNull(inputStream, "input stream");
         this.rawInputStream = inputStream;
     }

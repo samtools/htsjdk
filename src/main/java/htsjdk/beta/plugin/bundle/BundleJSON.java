@@ -28,7 +28,7 @@ public class BundleJSON {
     public static final String JSON_PROPERTY_SCHEMA_VERSION   = "schemaVersion";
     public static final String JSON_PROPERTY_PRIMARY          = "primary";
     public static final String JSON_PROPERTY_PATH             = "path";
-    public static final String JSON_PROPERTY_SUB_CONTENT_TYPE = "subtype";
+    public static final String JSON_PROPERTY_FORMAT           = "format";
     public static final String JSON_SCHEMA_NAME               = "htsbundle";
     public static final String JSON_SCHEMA_VERSION            = "0.1.0"; // TODO: bump this to 1.0.0
 
@@ -61,8 +61,8 @@ public class BundleJSON {
 
             // generate JSON for each bundle resource
             final Json resourceJSON = Json.object().set(JSON_PROPERTY_PATH, resourcePath.get().getURIString());
-            if (bundleResource.getContentSubType().isPresent()) {
-                resourceJSON.set(JSON_PROPERTY_SUB_CONTENT_TYPE, bundleResource.getContentSubType().get());
+            if (bundleResource.getFormat().isPresent()) {
+                resourceJSON.set(JSON_PROPERTY_FORMAT, bundleResource.getFormat().get());
             }
             outerJSON.set(bundleResource.getContentType(), resourceJSON);
         });
@@ -121,13 +121,13 @@ public class BundleJSON {
 
             jsonDocument.asJsonMap().forEach((String contentType, Json jsonDoc) -> {
                 if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
-                    final Json subContentType = jsonDoc.at(JSON_PROPERTY_SUB_CONTENT_TYPE);
+                    final Json format = jsonDoc.at(JSON_PROPERTY_FORMAT);
                     final IOPathResource ioPathResource = new IOPathResource(
                             ioPathConstructor.apply(getPropertyAsString(JSON_PROPERTY_PATH, jsonDoc)),
                             contentType,
-                            subContentType == null ?
+                            format == null ?
                                     null :
-                                    getPropertyAsString(JSON_PROPERTY_SUB_CONTENT_TYPE, jsonDoc));
+                                    getPropertyAsString(JSON_PROPERTY_FORMAT, jsonDoc));
                     resources.add(ioPathResource);
                 }
             });
@@ -168,14 +168,14 @@ public class BundleJSON {
             final List<String> formattedResources = new ArrayList<>();
             jsonDocument.asJsonMap().forEach((String contentType, Json jsonDoc) -> {
                 if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
-                    final Json subContentType = jsonDoc.at(JSON_PROPERTY_SUB_CONTENT_TYPE);
+                    final Json format = jsonDoc.at(JSON_PROPERTY_FORMAT);
                     final StringBuilder resSB = new StringBuilder();
-                    if (subContentType != null) {
+                    if (format != null) {
                         resSB.append(String.format("{\"%s\":\"%s\",\"%s\":\"%s\"}",
                                 JSON_PROPERTY_PATH,
                                 getPropertyAsString(JSON_PROPERTY_PATH, jsonDoc),
-                                JSON_PROPERTY_SUB_CONTENT_TYPE,
-                                getPropertyAsString(JSON_PROPERTY_SUB_CONTENT_TYPE, jsonDoc)));
+                                JSON_PROPERTY_FORMAT,
+                                getPropertyAsString(JSON_PROPERTY_FORMAT, jsonDoc)));
                     } else {
                         resSB.append(String.format("{\"%s\":\"%s\"}",
                                 JSON_PROPERTY_PATH,

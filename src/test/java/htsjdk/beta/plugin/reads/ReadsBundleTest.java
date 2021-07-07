@@ -45,7 +45,7 @@ public class ReadsBundleTest extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNoReadsInSerializedBundle() {
-        final String vcfJSON = "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"VARIANT_CONTEXTS\":{\"path\":\"my.vcf\",\"subtype\":\"VCF\"},\"primary\":\"VARIANT_CONTEXTS\"}";
+        final String vcfJSON = "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"VARIANT_CONTEXTS\":{\"path\":\"my.vcf\",\"format\":\"VCF\"},\"primary\":\"VARIANT_CONTEXTS\"}";
         try {
             ReadsBundle.getReadsBundleFromString(vcfJSON);
         } catch (final IllegalArgumentException e) {
@@ -71,14 +71,14 @@ public class ReadsBundleTest extends HtsjdkTest {
 
                 // json string, primary key, corresponding array of resources
                 {
-                    // without contentSubtype included
+                    // without format included
                     "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"" + BAM_FILE + "\"},\"primary\":\"ALIGNED_READS\"}",
                     new ReadsBundle<IOPath>(new HtsPath(BAM_FILE))
                 },
                 {
-                    // with contentSubtype included
-                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"" + BAM_FILE + "\",\"subtype\":\"BAM\"},\"primary\":\"ALIGNED_READS\"}",
-                    // ReadsBundle doesn't automatically infer contentSubtype, so create one manually
+                    // with format included
+                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"" + BAM_FILE + "\",\"format\":\"BAM\"},\"primary\":\"ALIGNED_READS\"}",
+                    // ReadsBundle doesn't automatically infer format, so create one manually
                     new ReadsBundle(
                             new BundleBuilder().addPrimary(
                                     new IOPathResource(new HtsPath(BAM_FILE), BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM))

@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
 import htsjdk.beta.plugin.HtsCodec;
-import htsjdk.beta.plugin.HtsCodecType;
+import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.SignatureProbingStream;
@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 // NOTE: Unlike real codec, this codec has configurable parameters that allow it to impersonate several different
-// kinds fictional file formats and versions for a fictional codec type, supporting various sub content types,
+// kinds fictional file formats and versions for a fictional codec type, supporting various formats,
 // versions, protocol schemes, and stream signatures.
 //
 // Its ok for it to be dynamically discovered when running in a test configuration, but it should
@@ -61,10 +61,10 @@ public class HtsTestCodec implements HtsCodec<
     }
 
     @Override
-    public HtsCodecType getCodecType() {
-        //this isn't really an ALIGNED_READS codec, but codecs are constrianed by type to use a value from
-        // the HtsCodecType enum
-        return HtsCodecType.ALIGNED_READS;
+    public HtsContentType getContentType() {
+        //this isn't really an ALIGNED_READS codec, but codecs are constrained by type to use a value from
+        // the HtsContentType enum
+        return HtsContentType.ALIGNED_READS;
     }
 
     @Override
