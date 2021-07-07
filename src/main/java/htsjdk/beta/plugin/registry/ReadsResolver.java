@@ -2,7 +2,9 @@ package htsjdk.beta.plugin.registry;
 
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsBundle;
+import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormat;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -17,22 +19,23 @@ import htsjdk.utils.ValidationUtils;
 
 /**
  * Class with methods for resolving inputs and outputs to reads encoders and decoders.
- *
- * Provides typesafe access layer over the {@link HtsCodecResolver} thats used by
- * the {@link HtsCodecRegistry} to manage reads codecs (see {@link HtsCodecRegistry#getReadsCodecResolver()}).
- * It exposes methods that accept common types, such as IOPath, with automatic conversion to types
- * appropriate for reads such as {@link ReadsBundle}, and argument and return types that conform to
- * those used by {@link htsjdk.beta.plugin.reads.ReadsCodec}s, such as
- * {@link htsjdk.beta.plugin.reads.ReadsEncoder},
- * {@link htsjdk.beta.plugin.reads.ReadsEncoder}, and
+ * <p>
+ * Provides a convenient typesafe layer over the {@link HtsCodecResolver} thats used by an
+ * {@link HtsCodecRegistry} to manage {@link ReadsCodec}s
+ * (see {@link HtsCodecRegistry#getHaploidReferenceResolver()}).
+ * <p>
+ * Provides typesafe conversion of argument and return types to types that conform to those used with
+ * {@link ReadsCodec}s, such as {@link ReadsDecoder}, {@link ReadsEncoder},
  * {@link htsjdk.beta.plugin.reads.ReadsDecoderOptions}.
  */
-public class HtsReadsCodecs {
+public class ReadsResolver extends HtsCodecResolver<ReadsFormat, ReadsCodec>{
 
-    HtsReadsCodecs() {}
-
-    //***********************
-    // Decoders
+    /**
+     * Create a ReadsResolver.
+     */
+    public ReadsResolver() {
+        super(BundleResourceType.ALIGNED_READS, ReadsFormat.BAM);
+    }
 
     /**
      * Return a {@link ReadsDecoder} suitable for decoding {@code inputPath}. The {@code inputPath} is
@@ -41,8 +44,9 @@ public class HtsReadsCodecs {
      * @param inputPath the IOPath to be decoded
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputPath}
      */
-    public static ReadsDecoder getReadsDecoder(final IOPath inputPath) {
+    public ReadsDecoder getReadsDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "Input path");
+
         //TODO: this resolves the index automatically
         return getReadsDecoder(ReadsBundle.resolveIndex(inputPath), new ReadsDecoderOptions());
     }
@@ -56,11 +60,12 @@ public class HtsReadsCodecs {
      * @param readsDecoderOptions options to use
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputPath}
      */
-    public static ReadsDecoder getReadsDecoder(
+    public ReadsDecoder getReadsDecoder(
             final IOPath inputPath,
             final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputPath, "Input path");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
+
         //TODO: this resolves the index automatically
         return getReadsDecoder(ReadsBundle.resolveIndex(inputPath), readsDecoderOptions);
     }
@@ -72,8 +77,9 @@ public class HtsReadsCodecs {
      * @param inputBundle the bundle to be decoded
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputBundle}
      */
-    public static ReadsDecoder getReadsDecoder(final Bundle inputBundle) {
+    public ReadsDecoder getReadsDecoder(final Bundle inputBundle) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
+
         return getReadsDecoder(inputBundle, new ReadsDecoderOptions());
     }
 
@@ -87,19 +93,14 @@ public class HtsReadsCodecs {
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputBundle}
      */
     @SuppressWarnings("unchecked")
-    public static ReadsDecoder getReadsDecoder(
+    public ReadsDecoder getReadsDecoder(
             final Bundle inputBundle,
             final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
 
-        return (ReadsDecoder) HtsCodecRegistry.getReadsCodecResolver()
-                .resolveForDecoding(inputBundle)
-                .getDecoder(inputBundle, readsDecoderOptions);
+        return (ReadsDecoder) resolveForDecoding(inputBundle).getDecoder(inputBundle, readsDecoderOptions);
     }
-
-    //***********************
-    // Encoders
 
     /**
      * Return a {@link ReadsEncoder} suitable for encoding to {@code outputPath}. The path must include
@@ -110,8 +111,9 @@ public class HtsReadsCodecs {
      * @param outputPath the IOPath target for encoding
      * @return a {@link ReadsEncoder} suitable for encoding to {@code outputPath}
      */
-    public static ReadsEncoder getReadsEncoder(final IOPath outputPath) {
+    public ReadsEncoder getReadsEncoder(final IOPath outputPath) {
         ValidationUtils.nonNull(outputPath, "Output path");
+
         return getReadsEncoder(outputPath, new ReadsEncoderOptions());
     }
 
@@ -124,9 +126,9 @@ public class HtsReadsCodecs {
      *
      * @param outputPath target path to encode
      * @param readsEncoderOptions {@link ReadsEncoderOptions} options to be used by the encoder
-     * @return
+     * @return {@link ReadsEncoder} suitable for encoding to {@code outputPath}
      */
-    public static ReadsEncoder getReadsEncoder(
+    public ReadsEncoder getReadsEncoder(
             final IOPath outputPath,
             final ReadsEncoderOptions readsEncoderOptions) {
         ValidationUtils.nonNull(outputPath, "Output path");
@@ -145,18 +147,16 @@ public class HtsReadsCodecs {
      *
      * @param outputBundle target output to encode to
      * @param readsEncoderOptions {@link ReadsEncoderOptions} to be used by the encoder
-     * @return
+     * @return {@link ReadsEncoder} suitable for encoding to {@code outputPath}
      */
     @SuppressWarnings("unchecked")
-    public static ReadsEncoder getReadsEncoder(
+    public ReadsEncoder getReadsEncoder(
             final Bundle outputBundle,
             final ReadsEncoderOptions readsEncoderOptions) {
         ValidationUtils.nonNull(outputBundle, "outputBundle");
         ValidationUtils.nonNull(readsEncoderOptions, "Encoder options");
 
-        return (ReadsEncoder) HtsCodecRegistry.getReadsCodecResolver()
-                .resolveForEncoding(outputBundle)
-                .getEncoder(outputBundle, readsEncoderOptions);
+        return (ReadsEncoder) resolveForEncoding(outputBundle).getEncoder(outputBundle, readsEncoderOptions);
     }
 
     /**
@@ -170,7 +170,7 @@ public class HtsReadsCodecs {
      * @return {@link ReadsEncoder} suitable for encoding to {@code outputBundle}
      */
     @SuppressWarnings("unchecked")
-    public static ReadsEncoder getReadsEncoder(
+    public ReadsEncoder getReadsEncoder(
             final Bundle outputBundle,
             final ReadsEncoderOptions readsEncoderOptions,
             final ReadsFormat readsFormat,
@@ -179,8 +179,7 @@ public class HtsReadsCodecs {
         ValidationUtils.nonNull(readsFormat, "Reads format");
         ValidationUtils.nonNull(formatVersion, "File format version");
 
-        return (ReadsEncoder) HtsCodecRegistry.getReadsCodecResolver()
-                .resolveForFormatAndVersion(readsFormat, formatVersion)
+        return (ReadsEncoder) resolveForFormatAndVersion(readsFormat, formatVersion)
                 .getEncoder(outputBundle, readsEncoderOptions);
     }
 

@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
-import htsjdk.beta.plugin.registry.HtsReadsCodecs;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.CRAMCRAIIndexer;
@@ -678,7 +678,7 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
         try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
             int count = 0;
@@ -723,7 +723,8 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                         .setValidationStringency(ValidationStringency.LENIENT)
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
-        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+        try (final ReadsDecoder cramDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions)) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
             SAMRecord firstRecord;
@@ -759,7 +760,8 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                         .setValidationStringency(ValidationStringency.LENIENT)
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
-        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+        try (final ReadsDecoder cramDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions)) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
             SAMRecord firstRecord;
@@ -797,7 +799,7 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 new ReadsDecoderOptions()
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
         try (final ReadsDecoder cramDecoder =
-                     HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> it = getIterator.apply(cramDecoder)) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
@@ -835,7 +837,8 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 new ReadsDecoderOptions()
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
-        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+        try (final ReadsDecoder cramDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions)) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
             try (final CloseableIterator<SAMRecord> it = cramDecoder.iterator()) {
@@ -864,7 +867,8 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 new ReadsDecoderOptions()
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
-        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
+        try (final ReadsDecoder cramDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> origIt = cramDecoder.iterator()) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
@@ -899,7 +903,8 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 new ReadsDecoderOptions()
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
         int count = 0;
-        try (final ReadsDecoder cramDecoder = HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
+        try (final ReadsDecoder cramDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> it = cramDecoder.queryUnmapped()) {
             Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
             while (it.hasNext()) {
@@ -943,7 +948,7 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                     new ReadsDecoderOptions()
                             .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
             try (final ReadsDecoder cramDecoder =
-                         HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions)) {
+                         HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions)) {
                  Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
 
                  try (final CloseableIterator<SAMRecord> firstIterator = cramDecoder.queryOverlapping(

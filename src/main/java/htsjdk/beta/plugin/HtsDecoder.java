@@ -33,7 +33,7 @@ public interface HtsDecoder<F extends Enum<F> & HtsFormat<F>, H extends HtsHeade
     String getDisplayName();
 
     /**
-     * @return the file format header for this decoder, of type {@link H}
+     * @return the file format header for this decoder, of type {@code H}
      */
     H getHeader();
 

@@ -6,9 +6,9 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
 import htsjdk.beta.plugin.bundle.InputStreamResource;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.registry.HtsReadsCodecs;
 import htsjdk.beta.plugin.reads.ReadsFormat;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -25,7 +25,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
     public void testBAMDecoder() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "example.bam");
 
-        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsReadsCodecs.getReadsDecoder(inputPath)) {
+        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
             Assert.assertNotNull(bamDecoder);
             Assert.assertEquals(bamDecoder.getFormat(), ReadsFormat.BAM);
 
@@ -39,7 +39,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
     @Test
     public void testBAMEncoder() {
         final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
-        try (final BAMEncoder bamEncoder = (BAMEncoder) HtsReadsCodecs.getReadsEncoder(outputPath)) {
+        try (final BAMEncoder bamEncoder = (BAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
             Assert.assertNotNull(bamEncoder);
             Assert.assertEquals(bamEncoder.getFormat(), ReadsFormat.BAM);
         }
@@ -74,10 +74,9 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
         roundTripFromBundle(inputBundle, outputPath);
     }
 
-    //TODO: change all the args to Bundle when the registry methods are filled out
     private void roundTripFromBundle(final Bundle inputBundle, final IOPath outputPath) {
-        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsReadsCodecs.getReadsDecoder(inputBundle);
-             final BAMEncoder bamEncoder = (BAMEncoder) HtsReadsCodecs.getReadsEncoder(outputPath)) {
+        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputBundle);
+             final BAMEncoder bamEncoder = (BAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
 
             Assert.assertNotNull(bamDecoder);
             Assert.assertEquals(bamDecoder.getFormat(), ReadsFormat.BAM);

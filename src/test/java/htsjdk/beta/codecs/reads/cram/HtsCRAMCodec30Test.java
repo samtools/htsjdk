@@ -3,9 +3,9 @@ package htsjdk.beta.codecs.reads.cram;
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.exception.HtsjdkIOException;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.registry.HtsReadsCodecs;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormat;
@@ -29,7 +29,8 @@ public class HtsCRAMCodec30Test extends HtsjdkTest {
         final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions()
                 .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
-        try (final CRAMDecoder cramDecoder = (CRAMDecoder) HtsReadsCodecs.getReadsDecoder(inputPath, readsDecoderOptions)) {
+        try (final CRAMDecoder cramDecoder =
+                     (CRAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(cramDecoder);
             Assert.assertEquals(cramDecoder.getFormat(), ReadsFormat.CRAM);
 
@@ -51,8 +52,10 @@ public class HtsCRAMCodec30Test extends HtsjdkTest {
                 new ReadsEncoderOptions().setCRAMEncoderOptions(new CRAMEncoderOptions().setReferencePath(referencePath));
 
 
-        try (final CRAMDecoder cramDecoder = (CRAMDecoder) HtsReadsCodecs.getReadsDecoder(cramInputPath, readsDecoderOptions);
-             final CRAMEncoder cramEncoder = (CRAMEncoder) HtsReadsCodecs.getReadsEncoder(cramOutputPath, readsEncoderOptions)) {
+        try (final CRAMDecoder cramDecoder = (CRAMDecoder)
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions);
+             final CRAMEncoder cramEncoder = (CRAMEncoder)
+                     HtsDefaultRegistry.getReadsResolver().getReadsEncoder(cramOutputPath, readsEncoderOptions)) {
 
             Assert.assertNotNull(cramDecoder);
             Assert.assertEquals(cramDecoder.getFormat(), ReadsFormat.CRAM);
@@ -86,7 +89,8 @@ public class HtsCRAMCodec30Test extends HtsjdkTest {
         final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions()
                 .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
-        try (final CRAMDecoder cramDecoder = (CRAMDecoder) HtsReadsCodecs.getReadsDecoder(inputPath, readsDecoderOptions)) {
+        try (final CRAMDecoder cramDecoder = (CRAMDecoder)
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(cramDecoder);
             Assert.assertEquals(cramDecoder.getFormat(), ReadsFormat.CRAM);
 

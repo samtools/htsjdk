@@ -5,9 +5,9 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleBuilder;
 import htsjdk.beta.plugin.reads.ReadsBundle;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.registry.HtsReadsCodecs;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
@@ -93,7 +93,8 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
                         .addPrimary(new IOPathResource(TEST_BAM, BundleResourceType.ALIGNED_READS))
                         .addSecondary(new IOPathResource(TEST_BAI, BundleResourceType.READS_INDEX))
                         .build();
-        try (final ReadsDecoder bamDecoder = HtsReadsCodecs.getReadsDecoder(readsBundle, new ReadsDecoderOptions());
+        try (final ReadsDecoder bamDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle, new ReadsDecoderOptions());
              final CloseableIterator<SAMRecord> it =
                     bamDecoder.query("chr1", 202661637, 202661812, queryRule)) {
             Assert.assertEquals(countElements(it), expected);
@@ -198,7 +199,8 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
     }
 
     private static List<String> getReferenceNames(final IOPath bamFile) {
-        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsReadsCodecs.getReadsDecoder(bamFile)) {
+        try (final BAMDecoder bamDecoder = (BAMDecoder)
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(bamFile)) {
             final List<String> result = new ArrayList<>();
             final List<SAMSequenceRecord> seqRecords = bamDecoder.getHeader().getSequenceDictionary().getSequences();
             for (final SAMSequenceRecord seqRecord : seqRecords) {
@@ -214,8 +216,10 @@ public class HtsBAMCodecQueryTest extends HtsjdkTest {
         verbose("Testing query " + sequence + ":" + startPos + "-" + endPos + " ...");
 
         final ReadsBundle readsBundleWithIndex = ReadsBundle.resolveIndex(bamFile);
-        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsReadsCodecs.getReadsDecoder(readsBundleWithIndex);
-             final BAMDecoder bamDecoder2 = (BAMDecoder) HtsReadsCodecs.getReadsDecoder(readsBundleWithIndex)) {
+        try (final BAMDecoder bamDecoder = (BAMDecoder)
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundleWithIndex);
+             final BAMDecoder bamDecoder2 = (BAMDecoder)
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundleWithIndex)) {
             final Iterator<SAMRecord> iter1 = bamDecoder.query(sequence, startPos, endPos, queryRule);
             final Iterator<SAMRecord> iter2 = bamDecoder2.iterator();
             // Compare ordered iterators.

@@ -14,6 +14,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.utils.PrivateAPI;
 
 import java.io.IOException;
 
@@ -101,8 +102,12 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         throw new HtsjdkPluginException("Not implemented");
     }
 
-    //TODO: can we remove the need to have this getter; it may require porting CRAMFileReader
-    // over so that it uses the new API
+    //TODO: we need a solution here doesn't require access to this getter...its necessary because
+    // the generic decoder interface is an iterable<ReferenceSequence>, but we need the native (indexed
+    // by contig) interface implemented on ReferenceSequenceFile to create a ReferenceSource, so we
+    // need to cast the decoder to get access to the ReferenceSequenceFile; it might be possible to
+    // write a CRAMReferenceSource implementation that uses the HtsQuery interface query(String)
+    @PrivateAPI
     public ReferenceSequenceFile getReferenceSequenceFile() {
         return referenceSequenceFile;
     }

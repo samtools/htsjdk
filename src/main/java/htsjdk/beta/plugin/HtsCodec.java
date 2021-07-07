@@ -16,16 +16,16 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li>a decoder that implements {@link HtsDecoder}</li>
  * </ul>
  * <p>
- *     Classes that implement {@link HtsCodec} are either discovered, instantiated, and registered dynamically
- *     at runtime via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}'s {@link java.util.ServiceLoader}
- *     code, or are manually registered via the
- *     {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)} method.
- *     {@link HtsCodec} objects are lightweight and long-lived, and are used by the framework
+ *     Classes that implement {@link HtsCodec} are discovered, instantiated, and registered, either dynamically
+ *     at runtime, via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry}'s {@link java.util.ServiceLoader}
+ *     code, or manually via the {@link htsjdk.beta.plugin.registry.HtsCodecRegistry#registerCodec(HtsCodec)}
+ *     method. {@link HtsCodec} objects are lightweight and long-lived, and are used by the framework
  *     to resolve requests for an {@link HtsEncoder} or {@link HtsDecoder} that matches a given resource.
  *     <p>
- *     The primary responsibility of an {@link HtsCodec} is to participate in the framework's codec resolution
- *     process, and to instantiate and return an appropriate {@link HtsEncoder} or {@link HtsDecoder} on demand
- *     once a match is found.
+ *     The primary responsibility of an {@link HtsCodec} is to satisfy requests made by the framework during
+ *     the codec resolution process, to inspect and recognize input URIs and stream resources that match the
+ *     codec's supported format and version, and to instantiate and return an {@link HtsEncoder} or
+ *     {@link HtsDecoder} on demand once a match is made.
  * <p>
  * <H3>Codec Types</H3>
  *     The plugin framework supports four different types of codec/encoder/decoder trios, enumerated
@@ -141,11 +141,22 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *         <li>always return 0 from the {@link #getSignatureProbeLength()} method</li>
  *         <li>always return 0 from the {@link #getSignatureLength()} method</li>
  *     </ul>
+ * <p>
+ * <H3>Codec Implementation Guidelines</H3>
+ * <p>
+ *     <ul>
+ *         <li>
+ *             An HtsCodec class should implement only a single version, of a single file format.
+ *         </li>
+ *         <li>
+ *             HtsCodec instances may be shared across multiple registries, and should generally be immutable
+ *             (HtsEncoder and HtsDecoder implementations may be mutable).
+ *         </li>
+ *     </ul>
  * </p>
- * @param <F> a {@link java.lang.Enum} that implements {@link HtsFormat}, with a value for each file format
- *          handled by this codec
- * @param <D> decoder options type for this codec
- * @param <E> encoder options type for this codec
+ * @param <F> the format enum type for this codec. must also implement {@link HtsFormat}
+ * @param <D> the decoder options type for this codec
+ * @param <E> the encoder options type for this codec
  */
 public interface HtsCodec<
         F extends Enum<F> & HtsFormat<F>,
@@ -189,7 +200,7 @@ public interface HtsCodec<
 
     /**
      * Returning true from this method indicates that this codec "owns" the URI contained in
-     * {@code ioPath} ({@see IOPath#getURI()}).
+     * {@code ioPath} see ({@link IOPath#getURI()}).
      * A codec "owns" the URI only if it explicitly recognizes and handles the protocol scheme in the
      * URI, or recognizes the rest of the URI as being well-formed for the codec's file format
      * (including the file extension if appropriate, and any query parameters).
@@ -221,7 +232,7 @@ public interface HtsCodec<
     /**
      * Return true if the URI for <code>ioPath</code> (obtained via {@link IOPath#getURI()} appears to
      * conform to the expected URI format this codec's file format. Most implementations only look at
-     * the file extension {@see htsjdk.io.IOPath#hasExtension}. For codecs that implement formats that
+     * the file extension see {@link htsjdk.io.IOPath#hasExtension}. For codecs that implement formats that
      * use well known, specific file extensions, the codec should reject inputs that do not conform to
      * any of the expected extensions. If the format does not use a specific extension, or if the codec
      * cannot determine if it can decode the underlying resource without inspecting the underlying stream,

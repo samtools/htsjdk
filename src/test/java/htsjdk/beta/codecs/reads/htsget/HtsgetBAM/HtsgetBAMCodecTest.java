@@ -2,9 +2,9 @@ package htsjdk.beta.codecs.reads.htsget.HtsgetBAM;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.registry.HtsReadsCodecs;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -33,7 +33,8 @@ public class HtsgetBAMCodecTest extends HtsjdkTest {
 
     @Test
     public void testGetHeader() {
-        final ReadsDecoder htsgetDecoder = HtsReadsCodecs.getReadsDecoder(htsgetBAM, new ReadsDecoderOptions());
+        final ReadsDecoder htsgetDecoder =
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(htsgetBAM, new ReadsDecoderOptions());
         final SAMFileHeader expectedHeader = SamReaderFactory.makeDefault().open(bamFile).getFileHeader();
         final SAMFileHeader actualHeader = htsgetDecoder.getHeader();
         Assert.assertEquals(actualHeader, expectedHeader);
@@ -41,7 +42,8 @@ public class HtsgetBAMCodecTest extends HtsjdkTest {
 
     @Test
     public void testQueryInterval() throws IOException {
-        final ReadsDecoder htsgetDecoder = HtsReadsCodecs.getReadsDecoder(htsgetBAM, new ReadsDecoderOptions());
+        final ReadsDecoder htsgetDecoder =
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(htsgetBAM, new ReadsDecoderOptions());
         final QueryInterval[] query = new QueryInterval[]{new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
         try (final SamReader fileReader = SamReaderFactory.makeDefault().open(bamFile);
              final CloseableIterator<SAMRecord> csiIterator = fileReader.query(query, false)) {

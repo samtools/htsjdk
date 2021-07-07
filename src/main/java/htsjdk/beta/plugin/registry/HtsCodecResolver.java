@@ -22,40 +22,41 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Class used to resolve an input or output resource to an appropriate codec (encoder/decoder) for a
- * single codec type. Methods in this class accept a bundle, and/or additional arguments, and return
- * one or more codecs appropriate for encoding or decoding a resource.
+ * Class with methods used to resolve an input or output resource to a codec that can supply an encoder
+ * or decoder for that resource. Each resolver manages a single {@link HtsCodec} type, defined by the type
+ * parameters used to instantiate the resolver.
  * <p>
- * The resolver methods use a series of probes to inspect resource structure and format in order
- * to determine the file format and version being requested, delegating calls to registered codecs,
- * in order to find a matching codec.
- *
+ * Methods in this class accept a bundle, and/or additional arguments, and return one or more matching
+ * codecs. The resolution methods use a series of probes to inspect resource structure and format
+ * to determine the file format and version for the target resource, in order to find codecs that
+ * claim to be able to process the resource.
+ *</p>
  * @param <F> enum representing the possible formats for this codec type, implements HtsFormat<F>
  * @param <C> the HtsCodec type managed by this resolver
  */
-public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCodec<F, ?, ?>> {
+public class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends HtsCodec<F, ?, ?>> {
     private static final Log LOG = Log.getInstance(HtsCodecResolver.class);
 
     final static String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
     final static String MULTIPLE_SUPPORTING_CODECS_ERROR = "Multiple codecs accept the provided resource";
 
     private final String requiredContentType;
-    private final HtsFormat<F> htsFormatEnum;
+    private final F htsFormatEnumInstance;
     private final Map<F, Map<HtsVersion, C>> codecs = new HashMap<>();
 
     /**
-     * Create a resolver for a given codec type, defined by the type parameters {@code F} and {@code C}.
+     * Create a resolver for a given {@link HtsCodec} type, defined by the type parameters {@code F} and {@code C}.
      *
      * @param requiredContentType the primary content type this resolver will use to interrogate a bundle
      *                            to locate the primary resource when attempting to resolve the bundle to a codec
-     * @param htsFormatEnum any instance of Enum that implements {@link HtsFormat>}. the actual instance passed
-     *                      herr is not meaningful; any instance of the required Enum will suffice. the value is used
-     *                      to call the {@link HtsFormat#contentSubTypeToFormat(String)} >} instance method on
-     *                      the Enum class
+     * @param htsFormatEnumInstance any instance of the {@code F} enum. the actual instance passed is not
+     *                             significant; any instance of the enum {@code F} will work. The value is
+     *                             used to access the {@link HtsFormat#contentSubTypeToFormat(String)} method of
+     *                             {@link HtsFormat}.
      */
-    public HtsCodecResolver(final String requiredContentType, final HtsFormat<F> htsFormatEnum) {
+    public HtsCodecResolver(final String requiredContentType, F htsFormatEnumInstance) {
         this.requiredContentType = requiredContentType;
-        this.htsFormatEnum = htsFormatEnum;
+        this.htsFormatEnumInstance = htsFormatEnumInstance;
     }
 
     /**
@@ -143,7 +144,7 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
      * </p>
      *
      * @param bundle the bundle to resolve to a codec
-     * @return a codec that can decode the bundle resources
+     * @return a codec that can decode the bundle resource
      *
      * @throws RuntimeException if the input resolves to more than one codec. this usually indicates that the
      * registry contains a poorly behaved codec.
@@ -167,7 +168,7 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
     }
 
     /**
-     * Inspect a bundle and find a codec that can encode content based on the primary resource.
+     * Inspect a bundle and find a codec that can encode to the primary resource.
      * For bundles with a primary resource that is an IOPath, the structure of the IOPath (protocol scheme,
      * file extension, and query parameters) are used to determine the file format used.
      * <p>
@@ -187,11 +188,11 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
     public C resolveForEncoding(final Bundle bundle) { return resolveForEncoding(bundle, HtsVersion.NEWEST_VERSION); }
 
     /**
-     * Inspect a bundle and find a codec that can encode content based on the primary resource and the version
+     * Inspect a bundle and find a codec that can encode to the primary resource using the format version
      * requested. For bundles with a primary resource that is an IOPath, the structure of the IOPath (protocol
      * scheme, file extension, and query parameters) are used to determine the file format used.
      * <p>
-     * Note that for resources that are ambiguous (i.e., a stream, which has no file extension), the bundle
+     * Note that for resources that are ambiguous (i.e., a stream which has no file extension), the bundle
      * resource must include a subContentType that corresponds to one of the formats for the content
      * type used by this codec type.
      *
@@ -235,8 +236,8 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
     }
 
     /**
-     * Obtain a list of codecs that claim to support version {@code formatVersion} of file format {@code format}
-     * of type {@code F}.
+     * Obtain a list of codecs that claim to support version {@code formatVersion} of file format
+     * {@code format} of type {@code F}.
      *
      * @param format the input format of type {@code F}
      * @param formatVersion the version of {@code format} requested
@@ -444,7 +445,7 @@ public final class HtsCodecResolver<F extends Enum<F> & HtsFormat<F>, C extends 
     private Optional<F> getFormatForContentSubType(final BundleResource bundleResource) {
         final Optional<String> optContentSubType = bundleResource.getContentSubType();
         final Optional<F> optFormat = optContentSubType.flatMap(
-                contentSubType -> htsFormatEnum.contentSubTypeToFormat(contentSubType));
+                contentSubType -> htsFormatEnumInstance.contentSubTypeToFormat(contentSubType));
         if (optContentSubType.isPresent() && !optFormat.isPresent()) {
             // throw if the resource contentSubType is present, but doesn't map to any format supported by the content
             throw new IllegalArgumentException(

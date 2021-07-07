@@ -1,7 +1,7 @@
 package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.beta.codecs.hapref.fasta.FASTADecoderV1_0;
-import htsjdk.beta.plugin.registry.HtsHaploidReferenceCodecs;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.reads.ReadsCodec;
@@ -30,17 +30,18 @@ public abstract class CRAMCodec implements ReadsCodec {
     }
 
     public static CRAMReferenceSource getCRAMReferenceSource(final IOPath referencePath) {
-        //TODO: we need something better here than requiring this case...its necessary because the
-        // generic decoder interface is an iterable<ReferenceSequence>, but we need the native (indexed
-        // by contig) interface implemented on ReferenceSequenceFile, so we need to cast the decoder in
-        // order to get access to the ReferenceSequenceFile
-        // maybe the indexing interface could handle this via query(String)
-        final FASTADecoderV1_0 fastaV1Decoder = (FASTADecoderV1_0) HtsHaploidReferenceCodecs.getHapRefDecoder(referencePath);
-        if (fastaV1Decoder == null) {
+        final FASTADecoderV1_0 fastaDecoder = (FASTADecoderV1_0)
+                HtsDefaultRegistry.getHaploidReferenceResolver().getHapRefDecoder(referencePath);
+        if (fastaDecoder == null) {
             throw new HtsjdkException(String.format("Unable to get reference codec for %s", referencePath));
         }
 
-        final ReferenceSequenceFile refSeqFile = fastaV1Decoder.getReferenceSequenceFile();
+        //TODO: we need a solution here doesn't require access to this getter...its necessary because
+        // the generic decoder interface is an iterable<ReferenceSequence>, but we need the native (indexed
+        // by contig) interface implemented on ReferenceSequenceFile to create a ReferenceSource, so we
+        // need to cast the decoder to get access to the ReferenceSequenceFile; it might be possible to
+        // write a CRAMReferenceSource implementation that uses the HtsQuery interface query(String)
+        final ReferenceSequenceFile refSeqFile = fastaDecoder.getReferenceSequenceFile();
         return new ReferenceSource(refSeqFile);
     }
 
