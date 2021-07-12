@@ -18,21 +18,21 @@ import htsjdk.beta.exception.HtsjdkPluginException;
  * custom codecs can be created with {@link HtsCodecRegistry#createPrivateRegistry()}.
  */
 public class HtsCodecRegistry {
-    private final HaploidReferenceResolver htsHaploidReferenceResolver = new HaploidReferenceResolver();;
+    private final HaploidReferenceResolver htsHaploidReferenceResolver = new HaploidReferenceResolver();
     private final ReadsResolver htsReadsResolver = new ReadsResolver();
     private final VariantsResolver htsVariantsResolver = new VariantsResolver();
 
     /**
-     * Create a registry. Package protected to prevent use outside of the registry package. To create
+     * Create a registry. Protected to prevent use outside of the registry package. To create
      * a private registry from outside the registry package, use {@link #createPrivateRegistry}.
      */
-    HtsCodecRegistry() { }
+    protected HtsCodecRegistry() { }
 
     /**
-     * Add a codec to the registry. If a codec that supports the same (format, version) as
-     * the new codec (determined by {@link HtsCodec#getFileFormat()} and {@link HtsCodec#getVersion()}
-     * methods) is already registered, the new registry is update to contain the new codec, and the
-     * previously registered codec is returned.
+     * Add a codec to the registry. If a codec that supports the same (format, version) (determined
+     * by {@link HtsCodec#getFileFormat()} and {@link HtsCodec#getVersion()} methods) is already
+     * registered, the new registry is updated to contain the new codec, and the previously registered
+     * codec is returned.
      *
      * @param codec the codec to be added
      * @return a previously registered codec with the same (format, version), or null if no codec

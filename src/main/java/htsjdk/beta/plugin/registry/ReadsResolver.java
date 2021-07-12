@@ -14,8 +14,6 @@ import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
-//TODO: should we add an arguments/overloads that control index resolution for the non-bundles methods ?
-
 /**
  * Class with methods for resolving inputs and outputs to reads encoders and decoders.
  * <p>
@@ -38,7 +36,8 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
 
     /**
      * Get a {@link ReadsDecoder} suitable for decoding {@code inputPath}. The {@code inputPath} is
-     * inspected to determine the appropriate file format/version.
+     * inspected to determine the appropriate file format/version. The index is automatically resolved.
+     * To bypass index resolution, use {@link #getReadsDecoder}.
      *
      * @param inputPath the IOPath to be decoded
      * @return a {@link ReadsDecoder} suitable for decoding {@code inputPath}
@@ -49,14 +48,14 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     public ReadsDecoder getReadsDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "Input path");
 
-        //TODO: this resolves the index automatically
         return getReadsDecoder(ReadsBundle.resolveIndex(inputPath), new ReadsDecoderOptions());
     }
 
     /**
      * Grt a {@link ReadsDecoder} suitable for decoding {@code inputPath} using options in
      * {@code readsDecoderOptions}. The {@code inputPath} is inspected to determine the appropriate
-     * file format/version.
+     * file format/version. The index is automatically resolved. To bypass index resolution, use
+     * {@link #getReadsDecoder}.
      *
      * @param inputPath the IOPath to be decoded
      * @param readsDecoderOptions options to use
@@ -71,7 +70,6 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
         ValidationUtils.nonNull(inputPath, "Input path");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
 
-        //TODO: this resolves the index automatically
         return getReadsDecoder(ReadsBundle.resolveIndex(inputPath), readsDecoderOptions);
     }
 

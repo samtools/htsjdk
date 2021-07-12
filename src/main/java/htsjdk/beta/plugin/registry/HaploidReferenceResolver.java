@@ -42,9 +42,11 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
     @SuppressWarnings("unchecked")
     public HaploidReferenceDecoder getHapRefDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "inputPath");
+
         final Bundle referenceBundle = new BundleBuilder().addPrimary(
                 new IOPathResource(inputPath, BundleResourceType.HAPLOID_REFERENCE)).build();
         final HaploidReferenceCodec haploidReferenceCodec = resolveForDecoding(referenceBundle);
+
         return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(referenceBundle, null);
     }
 }

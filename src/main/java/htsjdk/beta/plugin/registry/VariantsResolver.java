@@ -45,6 +45,8 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * that the registry contains an incorrectly written codec.
      */
     public VariantsDecoder getVariantsDecoder(final IOPath inputPath) {
+        ValidationUtils.nonNull(inputPath, "Input path");
+
         return getVariantsDecoder(inputPath, new VariantsDecoderOptions());
     }
 
@@ -119,6 +121,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      */
     public VariantsEncoder getVariantsEncoder(final IOPath outputPath) {
         ValidationUtils.nonNull(outputPath, "Output path");
+
         return getVariantsEncoder(outputPath, new VariantsEncoderOptions());
     }
 
@@ -136,7 +139,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
             final IOPath outputPath,
             final VariantsEncoderOptions variantsEncoderOptions) {
         ValidationUtils.nonNull(outputPath, "Output path");
-        ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options must not be null");
+        ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options");
 
         final Bundle outputBundle = new BundleBuilder()
                 .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANT_CONTEXTS))
@@ -158,13 +161,15 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
             final Bundle outputBundle,
             final VariantsEncoderOptions variantsEncoderOptions) {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
+        ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options");
+
         final VariantsCodec variantsCodec = resolveForEncoding(outputBundle);
         return (VariantsEncoder) variantsCodec.getEncoder(outputBundle, variantsEncoderOptions);
     }
 
     /**
-     * Get a {@link VariantsEncoder} suitable for encoding to {@code outputBundle} using {@code variantsEncoderOptions},
-     * specifying a version and output format.
+     * Get a {@link VariantsEncoder} suitable for encoding to {@code outputBundle} using
+     * {@code variantsEncoderOptions}, specifying a version and output format.
      *
      * @param outputBundle output bundle containing resources to encode to
      * @param variantsEncoderOptions options to use
@@ -182,6 +187,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
             final String variantsFormat,
             final HtsVersion formatVersion) {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
+        ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options");
         ValidationUtils.nonNull(variantsFormat, "Format");
         ValidationUtils.nonNull(formatVersion, "Format version");
 

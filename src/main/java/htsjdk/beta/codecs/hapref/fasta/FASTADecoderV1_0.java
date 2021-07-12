@@ -102,11 +102,11 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         throw new HtsjdkPluginException("Not implemented");
     }
 
-    //TODO: we need a solution here doesn't require access to this getter...its necessary because
-    // the generic decoder interface is an iterable<ReferenceSequence>, but we need the native (indexed
-    // by contig) interface implemented on ReferenceSequenceFile to create a ReferenceSource, so we
-    // need to cast the decoder to get access to the ReferenceSequenceFile; it might be possible to
-    // write a CRAMReferenceSource implementation that uses the HtsQuery interface query(String)
+    //TODO: we need a solution here that doesn't depend on this getter...its necessary because
+    // the generic decoder interface exports an iterable<ReferenceSequence>, but we need the native
+    // (indexed by contig) interface implemented on ReferenceSequenceFile to create a ReferenceSource,
+    // it might be possible to write a CRAMReferenceSource implementation that uses the HtsQuery
+    // interface query(String)
     @PrivateAPI
     public ReferenceSequenceFile getReferenceSequenceFile() {
         return referenceSequenceFile;

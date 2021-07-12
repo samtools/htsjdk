@@ -10,10 +10,8 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Optional;
 import java.util.function.Function;
 
-//TODO:
-// not carried forward from SamReaderFactory:
-//  SAMRecordFactory (doesn't appear to ever ACTUALLY be used in htsjdk or gatk)
-// finish cloud wrapper implementation
+// Note: options not carried forward from SamReaderFactory:
+//  SAMRecordFactory (doesn't appear to ever ACTUALLY be used in htsjdk, gatk or picard)
 
 /**
  * Reads decoder options (shared/common).

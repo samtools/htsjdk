@@ -4,7 +4,8 @@ import htsjdk.utils.ValidationUtils;
 
 /**
  * A class for representing 3-part versions with major, minor and patch segments. Used by
- * {@link HtsCodec}, {@link HtsEncoder} and {@link HtsDecoder} for HTS file format versions.
+ * {@link HtsCodec}, {@link HtsEncoder} and {@link HtsDecoder} for HTS file format and codec
+ * versions.
  */
 public class HtsVersion implements Comparable<HtsVersion> {
     /** Sentinel constant used to indicate the newest version available */

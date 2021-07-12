@@ -102,8 +102,8 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     }
 
     protected static SamReader getSamReader(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
-        // note that some reads decoder options, such as cloud wrapper values, need to be propagate to the
-        // samInputResource
+        // note that some reads decoder options, such as cloud wrapper values, need to be propagated
+        // directly to the samInputResource, not SamReaderFactory
         final SamInputResource samInputResource =
                 ReadsCodecUtils.bundleToSamInputResource(inputBundle, readsDecoderOptions);
 

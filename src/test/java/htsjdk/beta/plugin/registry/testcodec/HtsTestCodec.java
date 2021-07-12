@@ -1,6 +1,5 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
-import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
@@ -21,15 +20,12 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Optional;
 
-// NOTE: Unlike real codec, this codec has configurable parameters that allow it to impersonate several different
-// kinds fictional file formats and versions for a fictional codec type, supporting various formats,
-// versions, protocol schemes, and stream signatures.
+// NOTE: Unlike a real codec, this codec has configurable parameters that allow it to impersonate
+// several different fictional (reads) file formats and versions, using various custom protocol
+// schemes, file extensions and stream signatures.
 //
-// Its ok for it to be dynamically discovered when running in a test configuration, but it should
-// never be discovered/included at runtime.
-//
-// The stream signature used by this codec is always: format concatenated with version# (for FORMAT_2, version
-// "1.0.0", the embedded signature would be be "FORMAT_21.0.0".
+// The stream signature format used by this codec is always: "format" concatenated with "version#"
+// (for FORMAT_2, version "1.0.0", the embedded signature would be be "FORMAT_21.0.0").
 //
 public class HtsTestCodec implements ReadsCodec {
     private final HtsVersion htsVersion;
@@ -40,9 +36,10 @@ public class HtsTestCodec implements ReadsCodec {
 
     public HtsTestCodec() {
         // This codec is for registry testing only, and should only be instantiated by test code
-        // using the other (non-standard) configuration constructor. Since this no-arg constructor
-        // is the one that will be called if this codec is instantiated through normal dynamic codec
-        // discovery, throw if it ever gets called.
+        // using the other (non-standard) constructor that allows it to be configured with test
+        // parameters. Since this no-arg constructor is the one that will be called if the codec
+        // is ever instantiated through normal codec discovery, throw if it ever gets called, since
+        // it probably indicates a packaging issue.
         throw new HtsjdkPluginException("The HtsTestCodec codec should never be instantiated using the no-arg constructor");
     }
 
@@ -52,8 +49,7 @@ public class HtsTestCodec implements ReadsCodec {
             final HtsVersion htsVersion,
             final String fileExtension,
             final String protocolScheme,
-            final boolean useGzippedInputs
-    ) {
+            final boolean useGzippedInputs) {
         this.htsFormat              = htsFormat;
         this.htsVersion             = htsVersion;
         this.fileExtension          = fileExtension;
@@ -63,8 +59,9 @@ public class HtsTestCodec implements ReadsCodec {
 
     @Override
     public HtsContentType getContentType() {
-        // being a test codec, this isn't really an ALIGNED_READS codec, but codecs are constrained by the known
-        // content types from the HtsContentType enum, so this has to masquerade ad one of those
+        // being a test codec, this isn't a real ALIGNED_READS codec, but since all codecs are
+        // constrained to be one of the known content types from the HtsContentType enum, it has
+        // to masquerade as one of those, so we use aligned reads (it also implements ReadsCodec)
         return HtsContentType.ALIGNED_READS;
     }
 
