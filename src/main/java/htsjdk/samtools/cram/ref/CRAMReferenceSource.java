@@ -2,12 +2,10 @@ package htsjdk.samtools.cram.ref;
 
 import htsjdk.samtools.SAMSequenceRecord;
 
-import java.io.Closeable;
-
 /**
  * Interface used to supply a reference source when reading CRAM files.
  */
-public interface CRAMReferenceSource extends Closeable {
+public interface CRAMReferenceSource {
 
     /**
      * getReferenceBases
@@ -21,9 +19,4 @@ public interface CRAMReferenceSource extends Closeable {
      * bases representing the requested sequence, or null if the sequence cannot be found
      */
     byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, final boolean tryNameVariants);
-
-    /**
-     * Close any resources held by the CRAMReferenceSource.
-     */
-    default void close() { };
 }

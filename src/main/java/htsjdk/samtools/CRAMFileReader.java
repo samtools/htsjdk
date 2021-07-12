@@ -466,7 +466,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         CloserUtil.close(iterator);
         CloserUtil.close(inputStream);
         CloserUtil.close(mIndex);
-        CloserUtil.close(referenceSource);
     }
 
     @Override
