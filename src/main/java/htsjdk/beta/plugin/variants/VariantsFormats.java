@@ -7,10 +7,10 @@ public class VariantsFormats {
     /**
      * VCF format.
      */
-    public final static String VCF = "VCF";
+    public static final String VCF = "VCF";
 
     /**
      * BCF format.
      */
-    public final static String BCF = "BCF";
+    public static final String BCF = "BCF";
 }

@@ -8,21 +8,21 @@ public class ReadsFormats {
     /**
      * SAM file format.
      */
-    public final static String SAM = "SAM";
+    public static final String SAM = "SAM";
 
     /**
      * BAM file format.
      */
-    public final static String BAM = "BAM";
+    public static final String BAM = "BAM";
 
     /**
      * CRAM file format.
      */
-    public final static String CRAM = "CRAM";
+    public static final String CRAM = "CRAM";
 
     /**
      * GA4GH htsget BAM format.
      */
-    public final static String HTSGET_BAM = "HTSGET_BAM";
+    public static final String HTSGET_BAM = "HTSGET_BAM";
 
 }
