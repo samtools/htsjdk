@@ -16,7 +16,7 @@ import java.util.Set;
 public abstract class BAMCodec implements ReadsCodec {
     public static final HtsVersion BAM_DEFAULT_VERSION = new HtsVersion(1, 0,0);
 
-    private static final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.BAM));
+    private static final Set<String> extensionMap = new HashSet<>(Arrays.asList(FileExtensions.BAM));
 
     @Override
     public String getFileFormat() { return ReadsFormats.BAM; }

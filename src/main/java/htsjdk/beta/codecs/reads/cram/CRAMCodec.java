@@ -19,7 +19,7 @@ import java.util.Set;
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} codecs.
  */
 public abstract class CRAMCodec implements ReadsCodec {
-    private static final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.CRAM));
+    private static final Set<String> extensionMap = new HashSet<>(Arrays.asList(FileExtensions.CRAM));
 
     @Override
     public String getFileFormat() { return ReadsFormats.CRAM; }

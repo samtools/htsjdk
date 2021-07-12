@@ -24,7 +24,7 @@ import java.util.Set;
 public abstract class HtsgetBAMCodec implements ReadsCodec {
     public static final HtsVersion HTSGET_VERSION = new HtsVersion(1, 2, 0);
 
-    private final Set<String> extensionMap = new HashSet(Arrays.asList(FileExtensions.BAM));
+    private final Set<String> extensionMap = new HashSet<>(Arrays.asList(FileExtensions.BAM));
 
     @Override
     /**

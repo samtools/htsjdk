@@ -143,7 +143,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      * @param reads the reads source to use
      * @return a {@link ReadsBundle} containing reads and companion index, if it can be found
      */
-    public static ReadsBundle resolveIndex(final IOPath reads) {
+    public static ReadsBundle<IOPath> resolveIndex(final IOPath reads) {
         return resolveIndex(reads, HtsPath::new);
     }
 

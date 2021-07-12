@@ -151,7 +151,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
         ValidationUtils.nonNull(outputPath, "Output path");
         ValidationUtils.nonNull(readsEncoderOptions, "Encoder options");
 
-        return getReadsEncoder(new ReadsBundle(outputPath), readsEncoderOptions);
+        return getReadsEncoder(new ReadsBundle<>(outputPath), readsEncoderOptions);
     }
 
     /**

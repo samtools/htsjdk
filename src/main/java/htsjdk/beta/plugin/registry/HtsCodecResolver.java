@@ -232,7 +232,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         if (allCodecsForFormat != null) {
             return allCodecsForFormat.values().stream().collect(Collectors.toList());
         }
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
     /**

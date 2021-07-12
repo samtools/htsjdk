@@ -169,12 +169,12 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
 
     // create an iterator wrapper that can notify this decoder when its closed, so the decoder can ensure
     // that only one iterator is ever outstanding at a time
-    private CloseableIterator<SAMRecord> getIteratorMonitor(final Supplier<CloseableIterator> newIterator) {
+    private CloseableIterator<SAMRecord> getIteratorMonitor(final Supplier<CloseableIterator<SAMRecord>> newIterator) {
         if (iteratorExists == true) {
             throw new IllegalStateException("This decoder already has an existing iterator open");
         } else {
             iteratorExists = true;
-            return new CloseableIteratorMonitor(newIterator.get());
+            return new CloseableIteratorMonitor<>(newIterator.get());
         }
     }
 

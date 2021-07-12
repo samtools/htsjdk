@@ -4,6 +4,7 @@ package htsjdk.beta.exception;
  * Exception type for all exceptions caused at runtime by HTSJDK.
  */
 public class HtsjdkException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructs an HtsjdkException.

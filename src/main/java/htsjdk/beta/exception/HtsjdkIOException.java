@@ -4,6 +4,7 @@ package htsjdk.beta.exception;
  * A RuntimeException-derived class for propagating IOExceptions caught and rethrown by the plugin framework.
  */
 public class HtsjdkIOException extends HtsjdkException {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Construct an HtsjdkIOException.

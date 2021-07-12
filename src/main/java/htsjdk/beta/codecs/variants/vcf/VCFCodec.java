@@ -15,10 +15,13 @@ import java.util.Set;
 public abstract class VCFCodec implements VariantsCodec {
 
     // FileExtensions.VCF_LIST includes BCF, which we don't want included here
-    private static final Set<String> extensionMap = new HashSet() {{
-        add(FileExtensions.VCF);
-        add(FileExtensions.COMPRESSED_VCF);
-    }};
+    private static final Set<String> extensionMap = new HashSet<String>() {
+        private static final long serialVersionUID = 1L;
+        {
+            add(FileExtensions.VCF);
+            add(FileExtensions.COMPRESSED_VCF);
+        }
+    };
 
     @Override
     public String getFileFormat() { return VariantsFormats.VCF; }

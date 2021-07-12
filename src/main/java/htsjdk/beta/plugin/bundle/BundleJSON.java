@@ -33,11 +33,13 @@ public class BundleJSON {
     public static final String JSON_SCHEMA_VERSION            = "0.1.0"; // TODO: bump this to 1.0.0
 
     final private static Set<String> TOP_LEVEL_PROPERTIES = Collections.unmodifiableSet(
-            new HashSet<String>() {{
-                add(JSON_PROPERTY_SCHEMA_NAME);
-                add(JSON_PROPERTY_SCHEMA_VERSION);
-                add(JSON_PROPERTY_PRIMARY);
-        }});
+            new HashSet<String>() {
+                private static final long serialVersionUID = 1L;
+                {
+                    add(JSON_PROPERTY_SCHEMA_NAME);
+                    add(JSON_PROPERTY_SCHEMA_VERSION);
+                    add(JSON_PROPERTY_PRIMARY);
+                }});
 
     /**
      * Serialize this bundle to a JSON string representation. All resources in the bundle must
