@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 
+import htsjdk.beta.plugin.HtsHeader;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Log;
@@ -35,7 +36,7 @@ import java.util.function.Supplier;
 /**
  * Header information from a SAM or BAM file.
  */
-public class SAMFileHeader extends AbstractSAMHeaderRecord
+public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
 {
     public static final String VERSION_TAG = "VN";
     public static final String SORT_ORDER_TAG = "SO";

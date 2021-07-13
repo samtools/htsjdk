@@ -1,6 +1,7 @@
 package htsjdk.beta.plugin.bundle;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.io.HtsPath;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -11,16 +12,16 @@ public class BundleResourceTest extends HtsjdkTest {
     public Object[][] getInputOutputTestData() {
         return new Object[][]{
                 // bundle resource, isInput, isOutput
-                { BundleResourceTestData.readsWithContentSubType, true, true},
-                { new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.READS), true, false},
-                { new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName", BundleResourceType.READS), false, true},
+                { BundleResourceTestData.readsWithFormat, true, true},
+                { new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.ALIGNED_READS), true, false},
+                { new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName", BundleResourceType.ALIGNED_READS), false, true},
         };
     }
 
     @Test(dataProvider = "inputOutputTestData")
     public void testIsInputOutput(final BundleResource resource, final boolean expectedIsInput, final boolean expectedIsOutput) {
-        Assert.assertEquals(resource.isInput(), expectedIsInput);
-        Assert.assertEquals(resource.isOutput(), expectedIsOutput);
+        Assert.assertEquals(resource.hasInputType(), expectedIsInput);
+        Assert.assertEquals(resource.hasOutputType(), expectedIsOutput);
     }
 
     @DataProvider(name="resourceEqualityTestData")
@@ -29,109 +30,121 @@ public class BundleResourceTest extends HtsjdkTest {
 
                 // equal
                 {
-                        BundleResourceTestData.readsWithContentSubType,
-                        BundleResourceTestData.readsWithContentSubType,
+                        BundleResourceTestData.readsWithFormat,
+                        BundleResourceTestData.readsWithFormat,
                         true
                 },
                 {
-                        BundleResourceTestData.readsNoContentSubType,
-                        BundleResourceTestData.readsNoContentSubType,
+                        // force two separate IOPath instances for which == is false
+                        new IOPathResource(
+                                BundleResourceTestData.READS_FILE,
+                                BundleResourceType.ALIGNED_READS,
+                                BundleResourceType.READS_BAM),
+                        new IOPathResource(
+                                new HtsPath(BundleResourceTestData.READS_FILE.getRawInputString()),
+                                BundleResourceType.ALIGNED_READS,
+                                BundleResourceType.READS_BAM),
                         true
                 },
                 {
-                        new IOPathResource(BundleResourceTestData.READS_FILE, BundleResourceType.READS),
-                        new IOPathResource(BundleResourceTestData.READS_FILE, BundleResourceType.READS),
+                        BundleResourceTestData.readsNoFormat,
+                        BundleResourceTestData.readsNoFormat,
+                        true
+                },
+                {
+                        new IOPathResource(BundleResourceTestData.READS_FILE, BundleResourceType.ALIGNED_READS),
+                        new IOPathResource(BundleResourceTestData.READS_FILE, BundleResourceType.ALIGNED_READS),
                         true
                 },
                 {
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         true
                 },
                 {
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         true
                 },
 
                 // not equal
                 {
-                        new IOPathResource(BundleResourceTestData.READS_FILE, BundleResourceType.READS),
+                        new IOPathResource(BundleResourceTestData.READS_FILE, BundleResourceType.ALIGNED_READS),
                         new IOPathResource(BundleResourceTestData.READS_FILE, "NOTREADS"),
                         false
                 },
                 {
-                        BundleResourceTestData.readsWithContentSubType,
-                        BundleResourceTestData.readsNoContentSubType,
+                        BundleResourceTestData.readsWithFormat,
+                        BundleResourceTestData.readsNoFormat,
                         false
                 },
                 {
-                        BundleResourceTestData.indexWithContentSubType,
-                        BundleResourceTestData.readsNoContentSubType,
+                        BundleResourceTestData.indexWithFormat,
+                        BundleResourceTestData.readsNoFormat,
                         false
                 },
 
                 // not equal inputstreams
                 {
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "differentDisplayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         false
                 },
                 {
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.READS, BundleResourceType.READS_BAM),
+                                BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM),
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         false
                 },
                 {
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.READS, BundleResourceType.READS_BAM),
+                                BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM),
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.READS, BundleResourceType.READS_CRAM),
+                                BundleResourceType.ALIGNED_READS, BundleResourceType.READS_CRAM),
                         false
                 },
                 {
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName",
-                                BundleResourceType.VARIANTS),
+                                BundleResourceType.VARIANT_CONTEXTS),
                         false
                 },
 
                 // not equal outputstreams
                 {
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "differentDisplayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         false
                 },
                 {
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.READS, BundleResourceType.READS_BAM),
+                                BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM),
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         false
                 },
                 {
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.READS, BundleResourceType.READS_BAM),
+                                BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM),
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.READS, BundleResourceType.READS_CRAM),
+                                BundleResourceType.ALIGNED_READS, BundleResourceType.READS_CRAM),
                         false
                 },
                 {
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.READS),
+                                BundleResourceType.ALIGNED_READS),
                         new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName",
-                                BundleResourceType.VARIANTS),
+                                BundleResourceType.VARIANT_CONTEXTS),
                         false
                 },
         };
@@ -149,18 +162,18 @@ public class BundleResourceTest extends HtsjdkTest {
     @DataProvider(name="toStringTestData")
     public Object[][] getToStringTestData() {
         return new Object[][]{
-                {BundleResourceTestData.readsWithContentSubType, "IOPathResource (file://myreads.bam): READS/BAM"},
-                {BundleResourceTestData.readsNoContentSubType, "IOPathResource (file://myreads.bam): READS/NONE"},
-                {BundleResourceTestData.indexNoContentSubType, "IOPathResource (file://myreads.bai): READS_INDEX/NONE"},
-                {BundleResourceTestData.indexWithContentSubType, "IOPathResource (file://myreads.bai): READS_INDEX/BAI"},
-                {new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.READS),
-                        "InputStreamResource (displayName): READS/NONE"},
-                {new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.READS, BundleResourceType.READS_BAM),
-                        "InputStreamResource (displayName): READS/BAM"},
-                {new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName", BundleResourceType.READS),
-                        "OutputStreamResource (displayName): READS/NONE"},
-                {new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName", BundleResourceType.READS, BundleResourceType.READS_BAM),
-                        "OutputStreamResource (displayName): READS/BAM"},
+                {BundleResourceTestData.readsWithFormat, "IOPathResource (file://myreads.bam): ALIGNED_READS/BAM"},
+                {BundleResourceTestData.readsNoFormat, "IOPathResource (file://myreads.bam): ALIGNED_READS/NONE"},
+                {BundleResourceTestData.indexNoFormat, "IOPathResource (file://myreads.bai): READS_INDEX/NONE"},
+                {BundleResourceTestData.indexWithFormat, "IOPathResource (file://myreads.bai): READS_INDEX/BAI"},
+                {new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.ALIGNED_READS),
+                        "InputStreamResource (displayName): ALIGNED_READS/NONE"},
+                {new InputStreamResource(BundleResourceTestData.fakeInputStream, "displayName", BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM),
+                        "InputStreamResource (displayName): ALIGNED_READS/BAM"},
+                {new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName", BundleResourceType.ALIGNED_READS),
+                        "OutputStreamResource (displayName): ALIGNED_READS/NONE"},
+                {new OutputStreamResource(BundleResourceTestData.fakeOutputStream, "displayName", BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM),
+                        "OutputStreamResource (displayName): ALIGNED_READS/BAM"},
         };
     }
 

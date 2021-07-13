@@ -1,0 +1,10 @@
+# Reference codecs
+htsjdk.beta.codecs.hapref.fasta.FASTACodecV1_0
+
+# Reads codecs
+htsjdk.beta.codecs.reads.bam.bamV1_0.BAMCodecV1_0
+htsjdk.beta.codecs.reads.cram.cramV3_0.CRAMCodecV3_0
+htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2.HtsgetBAMCodecV1_2
+
+# Variants codecs
+htsjdk.beta.codecs.variants.vcf.vcfv4_2.VCFCodecV4_2

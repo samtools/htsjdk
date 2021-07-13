@@ -50,10 +50,11 @@ public final class BundleBuilder {
     }
 
     /**
-     * Create a bundle from accumulated builder state, and reset the builder state. At least one (primary)
-     * resource must have been previously added to create a valid bundle.
+     * Create a bundle from this builder's accumulated builder state, and reset the builder state. At
+     * least one (primary) resource must have been previously added to create a valid bundle.
      *
-     * @return a {@link Bundle}.
+     * @return a {@link Bundle}
+     * @throws IllegalStateException if no primary resouuce has been added
      */
     public Bundle build() {
         if (primaryResource == null) {

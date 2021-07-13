@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-//TODO: We need to publish the used for these Bundles schema once its finalized.
+//TODO: Once the schema is finalized, we need to bump the version # to 1.0, and publish it.
 
 /**
  * Methods for serializing and deserializing Bundles to and from JSON strings.
@@ -28,16 +28,18 @@ public class BundleJSON {
     public static final String JSON_PROPERTY_SCHEMA_VERSION   = "schemaVersion";
     public static final String JSON_PROPERTY_PRIMARY          = "primary";
     public static final String JSON_PROPERTY_PATH             = "path";
-    public static final String JSON_PROPERTY_SUB_CONTENT_TYPE = "subtype";
+    public static final String JSON_PROPERTY_FORMAT           = "format";
     public static final String JSON_SCHEMA_NAME               = "htsbundle";
     public static final String JSON_SCHEMA_VERSION            = "0.1.0"; // TODO: bump this to 1.0.0
 
     final private static Set<String> TOP_LEVEL_PROPERTIES = Collections.unmodifiableSet(
-            new HashSet<String>() {{
-                add(JSON_PROPERTY_SCHEMA_NAME);
-                add(JSON_PROPERTY_SCHEMA_VERSION);
-                add(JSON_PROPERTY_PRIMARY);
-        }});
+            new HashSet<String>() {
+                private static final long serialVersionUID = 1L;
+                {
+                    add(JSON_PROPERTY_SCHEMA_NAME);
+                    add(JSON_PROPERTY_SCHEMA_VERSION);
+                    add(JSON_PROPERTY_PRIMARY);
+                }});
 
     /**
      * Serialize this bundle to a JSON string representation. All resources in the bundle must
@@ -61,8 +63,8 @@ public class BundleJSON {
 
             // generate JSON for each bundle resource
             final Json resourceJSON = Json.object().set(JSON_PROPERTY_PATH, resourcePath.get().getURIString());
-            if (bundleResource.getContentSubType().isPresent()) {
-                resourceJSON.set(JSON_PROPERTY_SUB_CONTENT_TYPE, bundleResource.getContentSubType().get());
+            if (bundleResource.getFileFormat().isPresent()) {
+                resourceJSON.set(JSON_PROPERTY_FORMAT, bundleResource.getFileFormat().get());
             }
             outerJSON.set(bundleResource.getContentType(), resourceJSON);
         });
@@ -121,13 +123,13 @@ public class BundleJSON {
 
             jsonDocument.asJsonMap().forEach((String contentType, Json jsonDoc) -> {
                 if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
-                    final Json subContentType = jsonDoc.at(JSON_PROPERTY_SUB_CONTENT_TYPE);
+                    final Json format = jsonDoc.at(JSON_PROPERTY_FORMAT);
                     final IOPathResource ioPathResource = new IOPathResource(
                             ioPathConstructor.apply(getPropertyAsString(JSON_PROPERTY_PATH, jsonDoc)),
                             contentType,
-                            subContentType == null ?
+                            format == null ?
                                     null :
-                                    getPropertyAsString(JSON_PROPERTY_SUB_CONTENT_TYPE, jsonDoc));
+                                    getPropertyAsString(JSON_PROPERTY_FORMAT, jsonDoc));
                     resources.add(ioPathResource);
                 }
             });
@@ -168,14 +170,14 @@ public class BundleJSON {
             final List<String> formattedResources = new ArrayList<>();
             jsonDocument.asJsonMap().forEach((String contentType, Json jsonDoc) -> {
                 if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
-                    final Json subContentType = jsonDoc.at(JSON_PROPERTY_SUB_CONTENT_TYPE);
+                    final Json format = jsonDoc.at(JSON_PROPERTY_FORMAT);
                     final StringBuilder resSB = new StringBuilder();
-                    if (subContentType != null) {
+                    if (format != null) {
                         resSB.append(String.format("{\"%s\":\"%s\",\"%s\":\"%s\"}",
                                 JSON_PROPERTY_PATH,
                                 getPropertyAsString(JSON_PROPERTY_PATH, jsonDoc),
-                                JSON_PROPERTY_SUB_CONTENT_TYPE,
-                                getPropertyAsString(JSON_PROPERTY_SUB_CONTENT_TYPE, jsonDoc)));
+                                JSON_PROPERTY_FORMAT,
+                                getPropertyAsString(JSON_PROPERTY_FORMAT, jsonDoc)));
                     } else {
                         resSB.append(String.format("{\"%s\":\"%s\"}",
                                 JSON_PROPERTY_PATH,

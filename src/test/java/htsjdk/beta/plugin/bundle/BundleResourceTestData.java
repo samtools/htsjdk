@@ -11,18 +11,18 @@ public class BundleResourceTestData {
     public final static IOPath READS_FILE = new HtsPath("file://myreads.bam");
     public final static IOPath READS_INDEX = new HtsPath("file://myreads.bai");
 
-    public static final IOPathResource readsWithContentSubType = new IOPathResource(
+    public static final IOPathResource readsWithFormat = new IOPathResource(
             READS_FILE,
-            BundleResourceType.READS,
+            BundleResourceType.ALIGNED_READS,
             BundleResourceType.READS_BAM);
-    public static final IOPathResource readsNoContentSubType =new IOPathResource(
+    public static final IOPathResource readsNoFormat =new IOPathResource(
             READS_FILE,
-            BundleResourceType.READS);
-    public static final IOPathResource indexWithContentSubType = new IOPathResource(
+            BundleResourceType.ALIGNED_READS);
+    public static final IOPathResource indexWithFormat = new IOPathResource(
             READS_INDEX,
             BundleResourceType.READS_INDEX,
             BundleResourceType.READS_INDEX_BAI);
-    public static final IOPathResource indexNoContentSubType = new IOPathResource(
+    public static final IOPathResource indexNoFormat = new IOPathResource(
             READS_INDEX,
             BundleResourceType.READS_INDEX);
 
@@ -36,12 +36,14 @@ public class BundleResourceTestData {
     public static final InputStream fakeInputStream = new InputStream() {
         @Override
         public int read() throws IOException {
+            // should never get here
             throw new IllegalStateException();
         }
     };
     public static final OutputStream fakeOutputStream = new OutputStream() {
         @Override
         public void write(int b) throws IOException {
+            // should never get here
             throw new IllegalStateException();
         }
     };

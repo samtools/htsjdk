@@ -1,18 +1,21 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.OutputStream;
 import java.util.Optional;
 
 /**
- * An output resource backed by an {@link java.io.OutputStream}.
+ * A {@link BundleResource} backed by an {@link java.io.OutputStream}.
  */
 public class OutputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
     private final OutputStream outputStream;
 
     /**
+     * Create a {@link BundleResource} backed by an OutputStream, specifying a display name and content type.
+     *
      * @param outputStream The {@link OutputStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
@@ -22,17 +25,19 @@ public class OutputStreamResource extends BundleResourceBase {
     }
 
     /**
+     * Create a BundleResource backed by an OutputStream, specifying a display name, content type and format.
+     *
      * @param outputStream The {@link OutputStream} to use for this resource. May not be null.
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
-     * @param contentSubType The content subtype for this resource. May not be null or 0-length.
+     * @param format The format for this resource. May not be null or 0-length.
      */
     public OutputStreamResource(
             final OutputStream outputStream,
             final String displayName,
             final String contentType,
-            final String contentSubType) {
-        super(displayName, contentType, contentSubType);
+            final String format) {
+        super(displayName, contentType, format);
         ValidationUtils.nonNull(outputStream, "output stream");
         this.outputStream = outputStream;
     }
@@ -43,7 +48,19 @@ public class OutputStreamResource extends BundleResourceBase {
     }
 
     @Override
-    public boolean isOutput() { return true; }
+    public SignatureStream getSignatureStream(int signatureProbeLength) {
+        throw new RuntimeException(
+                "Cannot create a signature stream for an output stream resource. Use hasInputType to determine if signature stream ");
+    }
+
+    @Override
+    public Optional<SeekableStream> getSeekableStream() {
+        throw new RuntimeException(
+                "Cannot create a signature stream on an output stream resource. Use hasSeekableStream to determine if signature stream can be used as seekable stream");
+    }
+
+    @Override
+    public boolean hasOutputType() { return true; }
 
     @Override
     public boolean equals(Object o) {
