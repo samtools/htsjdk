@@ -47,7 +47,7 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     public Optional<IOPath> getIOPath() { return Optional.of(ioPath); }
 
     /**
-     * {@InheritDoc}
+     * {@inheritDoc}
      *
      * return a new stream for the IOPath managed by this resource
      *

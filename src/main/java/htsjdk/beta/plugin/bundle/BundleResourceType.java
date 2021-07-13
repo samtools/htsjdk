@@ -45,4 +45,7 @@ public class BundleResourceType {
      */
     public static final String REFERENCE_DICTIONARY = "REFERENCE_DICTIONARY";
 
+    // General secondary content types
+    public static final String MD5 = "MD5";
+
 }

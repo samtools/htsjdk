@@ -4,7 +4,7 @@ import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.utils.ValidationUtils;
 
-//TODO: Wild cards, i.e., end of reference/contig
+//TODO: wild cards 0, +, end of reference/contig
 
 /**
  * An concrete query interval implementation of {@link HtsInterval} used for random access queries on

@@ -7,8 +7,6 @@ import htsjdk.utils.ValidationUtils;
 import java.util.Collections;
 import java.util.List;
 
-//TODO: use wild cards, i.e., 0 for end of reference/contig?
-
 /**
  * Common query interface for {@link htsjdk.beta.plugin.HtsDecoder}s
  *

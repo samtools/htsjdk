@@ -2,6 +2,7 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
+import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
@@ -18,6 +19,7 @@ import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.utils.PrivateAPI;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,6 +32,15 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     private final SamReader samReader;
     private final SAMFileHeader samFileHeader;
 
+    /**
+     * Create a V1.0 BAM decoder for the given input bundle. The primary resource in the bundle must
+     * have content type {@link BundleResourceType#ALIGNED_READS}, and the resource must be an
+     * appropriate format and version for this encoder (to find an encoder for a bundle, see
+     * {@link htsjdk.beta.plugin.registry.ReadsResolver}.
+     *
+     * @param inputBundle bundle to decoder
+     * @param readsDecoderOptions options to use
+     */
     public BAMDecoderV1_0(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         super(inputBundle, readsDecoderOptions);
         samReader = getSamReader(inputBundle, readsDecoderOptions);
@@ -87,9 +98,9 @@ public class BAMDecoderV1_0 extends BAMDecoder {
     }
 
     @Override
-    public Optional<SAMRecord> queryMate(final SAMRecord rec) {
+    public Optional<SAMRecord> queryMate(final SAMRecord samRecord) {
         assertIndexProvided();
-        return Optional.ofNullable(samReader.queryMate(rec));
+        return Optional.ofNullable(samReader.queryMate(samRecord));
     }
 
     @Override
@@ -101,27 +112,38 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         }
     }
 
-    protected static SamReader getSamReader(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
+    // Propagate all reads decoder options and bam decoder options to either a SamReaderFactory
+    // or a SamInputResource, and return the resulting
+    private static SamReader getSamReader(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         // note that some reads decoder options, such as cloud wrapper values, need to be propagated
-        // directly to the samInputResource, not SamReaderFactory
+        // to the samInputResource, not to the SamReaderFactory
         final SamInputResource samInputResource =
                 ReadsCodecUtils.bundleToSamInputResource(inputBundle, readsDecoderOptions);
 
         final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault();
         ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions);
-        ReadsCodecUtils.bamDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions.getBAMDecoderOptions());
+        bamDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions.getBAMDecoderOptions());
 
         return samReaderFactory.open(samInputResource);
     }
 
+    public static void bamDecoderOptionsToSamReaderFactory(
+            final SamReaderFactory samReaderFactory,
+            final BAMDecoderOptions bamDecoderOptions) {
+        samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
+        samReaderFactory.setUseAsyncIo(bamDecoderOptions.isUseAsyncIO());
+        samReaderFactory.setOption(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS,
+                bamDecoderOptions.isValidateCRCChecksums());
+    }
+
     // the stated contract for decoders is that the index must be included in the bundle in order to use
-    // index queries, but this uses BAMFileReader which *always* tries to resolve the index, which would
-    // violate that, so enforce the contract manually so that someday when we use a different implementation,
-    // no backward compatibility issue will be introduced
+    // index queries, but this uses BAMFileReader, which *always* tries to resolve the index, which would
+    // violate that and allow some cases to work that shouldn't, so enforce the contract manually so that
+    // someday when we use a different implementation, no backward compatibility issue will be introduced
     private void assertIndexProvided() {
         if (!indexProvidedInInputBundle()) {
             throw new IllegalArgumentException(String.format(
-                    "An index resource must be provided in the resource bundle to make index queries: %s",
+                    "To make index queries, an index resource must be provided in the resource bundle: %s",
                     inputBundle
             ));
         }

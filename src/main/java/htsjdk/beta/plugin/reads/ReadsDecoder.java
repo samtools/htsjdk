@@ -16,7 +16,7 @@ import java.util.Optional;
 public interface ReadsDecoder extends HtsDecoder<SAMFileHeader, SAMRecord>, ReadsQuery<SAMRecord> {
 
     /**
-     * {@InheritDoc}
+     * {@inheritDoc}
      *
      * Requires an index resource to be included in the input {@link Bundle}.
      */
@@ -24,7 +24,7 @@ public interface ReadsDecoder extends HtsDecoder<SAMFileHeader, SAMRecord>, Read
     CloseableIterator<SAMRecord> queryUnmapped();
 
     /**
-     * {@InheritDoc}
+     * {@inheritDoc}
      *
      * Requires an index resource to be included in the input {@link Bundle}.
      */

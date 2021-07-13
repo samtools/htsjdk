@@ -51,21 +51,6 @@ final public class ReadsCodecUtils {
                 readsDecoderOptions.isDontMemoryMapIndexes());
     }
 
-    /**
-     * @PrivateAPI
-     */
-    @PrivateAPI
-    public static void bamDecoderOptionsToSamReaderFactory(
-            final SamReaderFactory samReaderFactory,
-            final BAMDecoderOptions bamDecoderOptions) {
-        samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
-        samReaderFactory.setOption(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS,
-                bamDecoderOptions.isIncludeSourceInRecords());
-        samReaderFactory.setUseAsyncIo(bamDecoderOptions.isUseAsyncIO());
-        samReaderFactory.setOption(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS,
-                bamDecoderOptions.isValidateCRCChecksums());
-    }
-
     private static SamInputResource readsToSamInputResource(
             final Bundle inputBundle,
             final String contentType,
@@ -78,10 +63,10 @@ final public class ReadsCodecUtils {
 
         if (readsInput.hasSeekableStream()) {
             if (readsInput.getIOPath().isPresent()) {
-                if (readsDecoderOptions.getDataWrapper().isPresent()) {
+                if (readsDecoderOptions.getReadsChannelTransformer().isPresent()) {
                     //TODO: use a local cloud channel wrapper instead of requiring the user to pass a lambda
                     return SamInputResource.of(readsInput.getIOPath().get().toPath(),
-                            readsDecoderOptions.getDataWrapper().get());
+                            readsDecoderOptions.getReadsChannelTransformer().get());
                 } else {
                     return SamInputResource.of(readsInput.getIOPath().get().toPath());
                 }
@@ -103,10 +88,10 @@ final public class ReadsCodecUtils {
             final BundleResource indexResource = indexInput.get();
             if (indexResource.getIOPath().isPresent()) {
                 if (indexResource.getIOPath().isPresent()) {
-                    if (readsDecoderOptions.getIndexWrapper().isPresent()) {
+                    if (readsDecoderOptions.getIndexChannelTransformer().isPresent()) {
                         //TODO: use a local cloud channel wrapper instead of requiring the user to pass a lambda
                         SamInputResource.of(indexResource.getIOPath().get().toPath(),
-                                readsDecoderOptions.getIndexWrapper().get());
+                                readsDecoderOptions.getIndexChannelTransformer().get());
                         samInputResource.index(indexResource.getIOPath().get().toPath());
                     } else if (indexResource.getSeekableStream().isPresent()) {
                         samInputResource.index(indexResource.getSeekableStream().get());

@@ -26,7 +26,7 @@ import htsjdk.beta.plugin.variants.VariantsFormats;
  */
 public enum HtsContentType {
 
-    //TODO: where would a FASTQ codec fit ? in the same category (which implies the same interfaces) ?
+    //where would a FASTQ codec fit ? in the same category (which implies the same interfaces) ?
     /**
      * Haploid reference content type (see {@link HaploidReferenceFormats} for related formats)
      */

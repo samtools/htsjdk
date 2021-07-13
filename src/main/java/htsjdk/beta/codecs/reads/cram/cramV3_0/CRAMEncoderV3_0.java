@@ -18,6 +18,14 @@ public class CRAMEncoderV3_0 extends CRAMEncoder {
     final private ReadsEncoderOptions readsEncoderOptions;
     private CRAMFileWriter cramFileWriter;
 
+    /**
+     * Create a CRAM encoder for the given output bundle. The primary resource in the bundle must
+     * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
+     * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
+     *
+     * @param outputBundle bundle to encode
+     * @param readsEncoderOptions options to use
+     */
     public CRAMEncoderV3_0(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         super(outputBundle, readsEncoderOptions);
         this.readsEncoderOptions = readsEncoderOptions;

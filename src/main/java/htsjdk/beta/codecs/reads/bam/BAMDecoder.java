@@ -15,6 +15,15 @@ public abstract class BAMDecoder implements ReadsDecoder {
     protected final ReadsDecoderOptions readsDecoderOptions;
     private final String displayName;
 
+    /**
+     * Create a BAM decoder for the given input bundle. The primary resource in the bundle must
+     * have content type {@link BundleResourceType#ALIGNED_READS}, and the resource must be an
+     * appropriate format and version for this encoder (to find an encoder for a bundle, see
+     * {@link htsjdk.beta.plugin.registry.ReadsResolver}.
+     *
+     * @param inputBundle bundle to decoder
+     * @param readsDecoderOptions options to use
+     */
     public BAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputBundle,"inputBundle");
         ValidationUtils.nonNull(readsDecoderOptions, "readsDecoderOptions");

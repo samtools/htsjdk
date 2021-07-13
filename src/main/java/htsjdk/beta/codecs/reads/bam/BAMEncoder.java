@@ -14,6 +14,14 @@ public abstract class BAMEncoder implements ReadsEncoder {
     protected final ReadsEncoderOptions readsEncoderOptions;
     final private String displayName;
 
+    /**
+     * Create a BAM encoder for the given output bundle. The primary resource in the bundle must
+     * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
+     * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
+     *
+     * @param outputBundle bundle to encode
+     * @param readsEncoderOptions options to use
+     */
     public BAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;

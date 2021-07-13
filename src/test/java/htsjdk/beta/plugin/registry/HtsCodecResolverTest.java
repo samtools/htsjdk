@@ -34,21 +34,17 @@ import java.util.List;
 // Tests for resolving codec (encoder/decoder) requests given a set of input/output resources and a list
 // of registered codecs.
 public class HtsCodecResolverTest extends HtsjdkTest {
-    // all of the test codecs created here have the same codec (content) type, with each codec varying by
-    // format, version, or protocol scheme
-    final static String TEST_CODEC_CONTENT_TYPE = "TEST_CODEC_CONTENT_TYPE";
-
-    // parameters for file format 1
+    // config parameters for file format 1
     final static String FORMAT_1_FORMAT_NAME = HtsTestCodecFormats.FILE_FORMAT_1;
     final static String FORMAT_1_STREAM_SIGNATURE = HtsTestCodecFormats.FILE_FORMAT_1;
     final static String FORMAT_1_FILE_EXTENSION = ".f1";
 
-    // parameters for file format 2
+    // config parameters for file format 2
     final static String FORMAT_2_FORMAT_NAME = HtsTestCodecFormats.FILE_FORMAT_2;
     final static String FORMAT_2_STREAM_SIGNATURE = HtsTestCodecFormats.FILE_FORMAT_2;
     final static String FORMAT_2_FILE_EXTENSION = ".f2";
 
-    // parameters for file format 3, which uses a custom protocol scheme
+    // config parameters for file format 3, which uses a custom protocol scheme
     final static String FORMAT_3_FORMAT_NAME = HtsTestCodecFormats.FILE_FORMAT_3;
     final static String FORMAT_3_FILE_EXTENSION = ".f3";
     final static String FORMAT_3_PROTOCOL_SCHEME = "ps3";

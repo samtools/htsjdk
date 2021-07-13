@@ -72,8 +72,7 @@ public class HtsCodecRegistryTest extends HtsjdkTest {
 
     private Bundle getCustomIOPathBundle() {
         final Bundle bundle = HtsCodecResolverTest.makeInputIOPathBundleWithContent(
-                //TODO: this should be HtsContentType.ALIGNED_READS,
-                HtsContentType.ALIGNED_READS.name(),
+                BundleResourceType.ALIGNED_READS,
                 HtsTestCodecFormats.FILE_FORMAT_1,
                 HtsCodecResolverTest.FORMAT_1_FILE_EXTENSION,
                 HtsTestCodecFormats.FILE_FORMAT_1 + HtsCodecResolverTest.V1_0,

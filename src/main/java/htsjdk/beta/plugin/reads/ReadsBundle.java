@@ -212,7 +212,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
             } else if (ext.equals((FileExtensions.SAM))) {
                 return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_SAM));
             }
-            //TODO: else SRA, htsget,...
+            //TODO: finish this, else SRA, htsget,...
         }
         return Optional.empty();
     }

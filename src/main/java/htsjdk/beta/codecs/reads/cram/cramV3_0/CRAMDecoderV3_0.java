@@ -129,44 +129,6 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
         cramReader.close();
     }
 
-    private CRAMFileReader getCRAMReader(final ReadsDecoderOptions readsDecoderOptions) {
-        final CRAMFileReader cramFileReader;
-
-        final BundleResource readsInput = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
-        final Optional<BundleResource> indexInput = inputBundle.get(BundleResourceType.READS_INDEX);
-        if (indexInput.isPresent()) {
-            final BundleResource indexResource = indexInput.get();
-            if (!indexResource.hasSeekableStream()) {
-                throw new IllegalArgumentException(String.format(
-                        "A seekable stream is required for CRAM index inputs but was not provided: %s",
-                        indexResource
-                ));
-            }
-            final SeekableStream seekableIndexStream = indexResource.getSeekableStream().get();
-            try {
-                cramFileReader = new CRAMFileReader(
-                        readsInput.getSeekableStream().get(),
-                        seekableIndexStream,
-                        getCRAMReferenceSource(),
-                        readsDecoderOptions.getValidationStringency());
-            } catch (IOException e) {
-                throw new HtsjdkIOException(e);
-            }
-        } else {
-            try {
-                cramFileReader = new CRAMFileReader(
-                        readsInput.getInputStream().get(),
-                        (SeekableStream) null,
-                        getCRAMReferenceSource(),
-                        readsDecoderOptions.getValidationStringency());
-            } catch (IOException e) {
-                throw new HtsjdkIOException(e);
-            }
-        }
-
-        return cramFileReader;
-    }
-
     // create an iterator wrapper that can notify this decoder when its closed, so the decoder can ensure
     // that only one iterator is ever outstanding at a time
     private CloseableIterator<SAMRecord> getIteratorMonitor(final Supplier<CloseableIterator<SAMRecord>> newIterator) {
