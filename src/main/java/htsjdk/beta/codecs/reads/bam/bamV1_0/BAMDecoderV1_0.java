@@ -65,17 +65,17 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public boolean isQueryable() {
-        return ReadsCodecUtils.bundleContainsIndex(inputBundle) && samReader.isQueryable();
+        return ReadsCodecUtils.bundleContainsIndex(getInputBundle()) && samReader.isQueryable();
     }
 
     @Override
     public boolean hasIndex() {
-        return ReadsCodecUtils.bundleContainsIndex(inputBundle) && samReader.hasIndex();
+        return ReadsCodecUtils.bundleContainsIndex(getInputBundle()) && samReader.hasIndex();
     }
 
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
-        ReadsCodecUtils.assertBundleContainsIndex(inputBundle);
+        ReadsCodecUtils.assertBundleContainsIndex(getInputBundle());
         final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
                 intervals,
                 samFileHeader.getSequenceDictionary());
@@ -84,7 +84,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
-        ReadsCodecUtils.assertBundleContainsIndex(inputBundle);
+        ReadsCodecUtils.assertBundleContainsIndex(getInputBundle());
         return samReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start));
     }
 
@@ -92,13 +92,13 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
-        ReadsCodecUtils.assertBundleContainsIndex(inputBundle);
+        ReadsCodecUtils.assertBundleContainsIndex(getInputBundle());
         return samReader.queryUnmapped();
     }
 
     @Override
     public Optional<SAMRecord> queryMate(final SAMRecord samRecord) {
-        ReadsCodecUtils.assertBundleContainsIndex(inputBundle);
+        ReadsCodecUtils.assertBundleContainsIndex(getInputBundle());
         return Optional.ofNullable(samReader.queryMate(samRecord));
     }
 
@@ -107,7 +107,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         try {
             samReader.close();
         } catch (IOException e) {
-            throw new HtsjdkIOException(String.format("Exception closing input stream %s on", inputBundle), e);
+            throw new HtsjdkIOException(String.format("Exception closing input stream %s on", getInputBundle()), e);
         }
     }
 

@@ -11,8 +11,8 @@ import htsjdk.utils.ValidationUtils;
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} decoders.
  */
 public abstract class BAMDecoder implements ReadsDecoder {
-    protected final Bundle inputBundle;
-    protected final ReadsDecoderOptions readsDecoderOptions;
+    private final Bundle inputBundle;
+    private final ReadsDecoderOptions readsDecoderOptions;
     private final String displayName;
 
     /**
@@ -38,4 +38,21 @@ public abstract class BAMDecoder implements ReadsDecoder {
     @Override
     final public String getDisplayName() { return displayName; }
 
+    /**
+     * Get the input {@link Bundle} for this decoder.
+     *
+     * @return the input {@link Bundle} for this decoder
+     */
+    public Bundle getInputBundle() {
+        return inputBundle;
+    }
+
+    /**
+     * Get the {@link ReadsDecoderOptions} for this decoder.
+     *
+     * @return the {@link ReadsDecoderOptions} for this decoder.
+     */
+    public ReadsDecoderOptions getReadsDecoderOptions() {
+        return readsDecoderOptions;
+    }
 }

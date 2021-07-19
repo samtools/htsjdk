@@ -31,7 +31,7 @@ public class VCFEncoderV4_2 extends VCFEncoder {
 
     @Override
     public void setHeader(final VCFHeader vcfHeader) {
-        vcfWriter = getVCFWriter(variantsEncoderOptions, vcfHeader);
+        vcfWriter = getVCFWriter(getVariantsEncoderOptions(), vcfHeader);
         vcfWriter.writeHeader(vcfHeader);
     }
 
@@ -48,7 +48,7 @@ public class VCFEncoderV4_2 extends VCFEncoder {
     }
 
     private VariantContextWriter getVCFWriter(final VariantsEncoderOptions variantsEncoderOptions, final VCFHeader vcfHeader) {
-        final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
+        final BundleResource variantsResource = getOutputBundle().getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
         if (variantsResource.getIOPath().isPresent()) {
             final VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
             return builder

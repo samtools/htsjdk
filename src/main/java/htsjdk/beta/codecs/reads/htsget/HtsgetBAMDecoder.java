@@ -12,8 +12,8 @@ import htsjdk.beta.plugin.reads.ReadsFormats;
  * {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_HTSGET_BAM} decoding.
  */
 public abstract class HtsgetBAMDecoder implements ReadsDecoder {
-    protected final Bundle inputBundle;
-    protected final ReadsDecoderOptions readsDecoderOptions;
+    private final Bundle inputBundle;
+    private final ReadsDecoderOptions readsDecoderOptions;
     private final String displayName;
 
     public HtsgetBAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
@@ -33,4 +33,21 @@ public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     @Override
     final public String getDisplayName() { return displayName; }
 
+    /**
+     * Get the input {@link Bundle} for this decoder.
+     *
+     * @return the input {@link Bundle} for this decoder
+     */
+    public Bundle getInputBundle() {
+        return inputBundle;
+    }
+
+    /**
+     * Get the {@link ReadsDecoderOptions} for this decoder.
+     *
+     * @return the {@link ReadsDecoderOptions} for this decoder.
+     */
+    public ReadsDecoderOptions getReadsDecoderOptions() {
+        return readsDecoderOptions;
+    }
 }

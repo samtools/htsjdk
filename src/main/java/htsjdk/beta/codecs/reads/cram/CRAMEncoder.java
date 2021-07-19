@@ -19,8 +19,8 @@ import htsjdk.utils.PrivateAPI;
  */
 @PrivateAPI
 public abstract class CRAMEncoder implements ReadsEncoder {
-    protected final Bundle outputBundle;
-    protected final ReadsEncoderOptions readsEncoderOptions;
+    private final Bundle outputBundle;
+    private final ReadsEncoderOptions readsEncoderOptions;
     private final String displayName;
 
     private CRAMFileWriter cramFileWriter;
@@ -102,6 +102,24 @@ public abstract class CRAMEncoder implements ReadsEncoder {
                     outputResource.getDisplayName());
             return cramFileWriter;
         }
+    }
+
+    /**
+     * Get the output {@link Bundle} for this encoder.
+     *
+     * @return the output {@link Bundle} for this encoder
+     */
+    public Bundle getOutputBundle() {
+        return outputBundle;
+    }
+
+    /**
+     * Get the {@link ReadsEncoderOptions} for this encoder.
+     *
+     * @return the {@link ReadsEncoderOptions} for this encoder.
+     */
+    public ReadsEncoderOptions getReadsEncoderOptions() {
+        return readsEncoderOptions;
     }
 
 }

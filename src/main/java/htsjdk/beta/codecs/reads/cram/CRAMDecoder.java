@@ -34,10 +34,8 @@ import java.util.function.Supplier;
  */
 @PrivateAPI
 public abstract class CRAMDecoder implements ReadsDecoder {
-    //TODO: make public getters for these
-    protected final Bundle inputBundle;
-    protected final ReadsDecoderOptions readsDecoderOptions;
-
+    private final Bundle inputBundle;
+    private final ReadsDecoderOptions readsDecoderOptions;
     private final String displayName;
     private final SAMFileHeader samFileHeader;
     private boolean iteratorExists = false;
@@ -188,6 +186,24 @@ public abstract class CRAMDecoder implements ReadsDecoder {
         }
         // reset the iterator monitor
         iteratorExists = newState;
+    }
+
+    /**
+     * Get the input {@link Bundle} for this decoder.
+     *
+     * @return the input {@link Bundle} for this decoder
+     */
+    public Bundle getInputBundle() {
+        return inputBundle;
+    }
+
+    /**
+     * Get the {@link ReadsDecoderOptions} for this decoder.
+     *
+     * @return the {@link ReadsDecoderOptions} for this decoder.
+     */
+    public ReadsDecoderOptions getReadsDecoderOptions() {
+        return readsDecoderOptions;
     }
 
     // Iterator wrapper to monitor attempts to open more than one iterator.

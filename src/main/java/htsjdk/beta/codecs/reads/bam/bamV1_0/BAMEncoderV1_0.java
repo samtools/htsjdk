@@ -8,7 +8,6 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.samtools.BAMFileWriter;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
@@ -41,7 +40,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
 
     @Override
     public void setHeader(final SAMFileHeader samFileHeader) {
-        samFileWriter = getBAMFileWriter(readsEncoderOptions, samFileHeader);
+        samFileWriter = getBAMFileWriter(getReadsEncoderOptions(), samFileHeader);
     }
 
     @Override
@@ -81,9 +80,9 @@ public class BAMEncoderV1_0 extends BAMEncoder {
 
         final boolean preSorted = readsEncoderOptions.isPreSorted();
 
-        final BundleResource readsResource = outputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
-        final Optional<BundleResource> optIndexResource = outputBundle.get(BundleResourceType.READS_INDEX);
-        final Optional<BundleResource> optMD5Resource = outputBundle.get(BundleResourceType.MD5);
+        final BundleResource readsResource = getOutputBundle().getOrThrow(BundleResourceType.ALIGNED_READS);
+        final Optional<BundleResource> optIndexResource = getOutputBundle().get(BundleResourceType.READS_INDEX);
+        final Optional<BundleResource> optMD5Resource = getOutputBundle().get(BundleResourceType.MD5);
 
         //TODO: BAMFileWriter currently only supports writing an index to a plain file, so for now
         // throw if an index is requested on any other type

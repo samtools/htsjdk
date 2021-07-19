@@ -2,6 +2,7 @@ package htsjdk.beta.codecs.reads.bam;
 
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
@@ -10,10 +11,9 @@ import htsjdk.beta.plugin.reads.ReadsEncoder;
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} encoders.
  */
 public abstract class BAMEncoder implements ReadsEncoder {
-    //TODO: make public getters for these
-    protected final Bundle outputBundle;
-    protected final ReadsEncoderOptions readsEncoderOptions;
-    final private String displayName;
+    private final Bundle outputBundle;
+    private final ReadsEncoderOptions readsEncoderOptions;
+    private final String displayName;
 
     /**
      * Create a BAM encoder for the given output bundle. The primary resource in the bundle must
@@ -34,5 +34,23 @@ public abstract class BAMEncoder implements ReadsEncoder {
 
     @Override
     final public String getDisplayName() { return displayName; }
+
+    /**
+     * Get the output {@link Bundle} for this encoder.
+     *
+     * @return the output {@link Bundle} for this encoder
+     */
+    public Bundle getOutputBundle() {
+        return outputBundle;
+    }
+
+    /**
+     * Get the {@link ReadsEncoderOptions} for this encoder.
+     *
+     * @return the {@link ReadsEncoderOptions} for this encoder.
+     */
+    public ReadsEncoderOptions getReadsEncoderOptions() {
+        return readsEncoderOptions;
+    }
 
 }
