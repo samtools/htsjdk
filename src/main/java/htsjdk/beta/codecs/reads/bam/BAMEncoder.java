@@ -2,7 +2,6 @@ package htsjdk.beta.codecs.reads.bam;
 
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
@@ -20,8 +19,8 @@ public abstract class BAMEncoder implements ReadsEncoder {
      * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *
-     * @param outputBundle bundle to encode
-     * @param readsEncoderOptions options to use
+     * @param outputBundle outoput{@link Bundle} to encode
+     * @param readsEncoderOptions {@link ReadsEncoderOptions} to use
      */
     public BAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         this.outputBundle = outputBundle;

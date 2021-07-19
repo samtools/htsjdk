@@ -19,7 +19,7 @@ import java.util.Set;
  * Base class for concrete implementations of reads codecs that handle
  * {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_HTSGET_BAM} codecs.
  *
- * Note writing to htsget is not supported, so there is no Htsget encoder.
+ * Note: writing to htsget is not supported, so there is no Htsget encoder.
  */
 public abstract class HtsgetBAMCodec implements ReadsCodec {
     public static final HtsVersion HTSGET_VERSION = new HtsVersion(1, 2, 0);

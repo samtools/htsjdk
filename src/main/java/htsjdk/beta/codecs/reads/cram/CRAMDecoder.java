@@ -153,6 +153,24 @@ public abstract class CRAMDecoder implements ReadsDecoder {
         }
     }
 
+    /**
+     * Get the input {@link Bundle} for this decoder.
+     *
+     * @return the input {@link Bundle} for this decoder
+     */
+    public Bundle getInputBundle() {
+        return inputBundle;
+    }
+
+    /**
+     * Get the {@link ReadsDecoderOptions} for this decoder.
+     *
+     * @return the {@link ReadsDecoderOptions} for this decoder.
+     */
+    public ReadsDecoderOptions getReadsDecoderOptions() {
+        return readsDecoderOptions;
+    }
+
     // TODO: If we've been handed a CRAMReferenceSource from the caller, then we don't want to close it
     // when the decoder is closed, but if we create it, then we need to close it.
     //TODO: creation of the source should be separate from the getting of the source, and the result
@@ -186,24 +204,6 @@ public abstract class CRAMDecoder implements ReadsDecoder {
         }
         // reset the iterator monitor
         iteratorExists = newState;
-    }
-
-    /**
-     * Get the input {@link Bundle} for this decoder.
-     *
-     * @return the input {@link Bundle} for this decoder
-     */
-    public Bundle getInputBundle() {
-        return inputBundle;
-    }
-
-    /**
-     * Get the {@link ReadsDecoderOptions} for this decoder.
-     *
-     * @return the {@link ReadsDecoderOptions} for this decoder.
-     */
-    public ReadsDecoderOptions getReadsDecoderOptions() {
-        return readsDecoderOptions;
     }
 
     // Iterator wrapper to monitor attempts to open more than one iterator.

@@ -21,8 +21,8 @@ public abstract class BAMDecoder implements ReadsDecoder {
      * appropriate format and version for this encoder (to find an encoder for a bundle, see
      * {@link htsjdk.beta.plugin.registry.ReadsResolver}.
      *
-     * @param inputBundle bundle to decoder
-     * @param readsDecoderOptions options to use
+     * @param inputBundle input {@link Bundle} to decode
+     * @param readsDecoderOptions {@link ReadsDecoderOptions} to use
      */
     public BAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputBundle,"inputBundle");

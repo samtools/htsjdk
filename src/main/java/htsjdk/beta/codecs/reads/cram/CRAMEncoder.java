@@ -22,7 +22,6 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     private final Bundle outputBundle;
     private final ReadsEncoderOptions readsEncoderOptions;
     private final String displayName;
-
     private CRAMFileWriter cramFileWriter;
 
     /**
@@ -64,6 +63,24 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     }
 
     /**
+     * Get the output {@link Bundle} for this encoder.
+     *
+     * @return the output {@link Bundle} for this encoder
+     */
+    public Bundle getOutputBundle() {
+        return outputBundle;
+    }
+
+    /**
+     * Get the {@link ReadsEncoderOptions} for this encoder.
+     *
+     * @return the {@link ReadsEncoderOptions} for this encoder.
+     */
+    public ReadsEncoderOptions getReadsEncoderOptions() {
+        return readsEncoderOptions;
+    }
+
+    /**
      * Return a {@link CRAMReferenceSource} using the {@link ReadsEncoderOptions}, or a default source.
      *
      * @param readsEncoderOptions options to use
@@ -102,24 +119,6 @@ public abstract class CRAMEncoder implements ReadsEncoder {
                     outputResource.getDisplayName());
             return cramFileWriter;
         }
-    }
-
-    /**
-     * Get the output {@link Bundle} for this encoder.
-     *
-     * @return the output {@link Bundle} for this encoder
-     */
-    public Bundle getOutputBundle() {
-        return outputBundle;
-    }
-
-    /**
-     * Get the {@link ReadsEncoderOptions} for this encoder.
-     *
-     * @return the {@link ReadsEncoderOptions} for this encoder.
-     */
-    public ReadsEncoderOptions getReadsEncoderOptions() {
-        return readsEncoderOptions;
     }
 
 }

@@ -136,5 +136,4 @@ public class BAMDecoderV1_0 extends BAMDecoder {
                 bamDecoderOptions.isValidateCRCChecksums());
     }
 
-
 }
