@@ -1,15 +1,15 @@
-package htsjdk.beta.codecs.reads.cram.cramV3_0;
+package htsjdk.beta.codecs.reads.cram.cramV2_1;
 
 import htsjdk.beta.codecs.reads.cram.CRAMEncoder;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 
 /**
- * CRAM v3.0 encoder.
+ * CRAM v2.1 encoder.
  */
-public class CRAMEncoderV3_0 extends CRAMEncoder {
+public class CRAMEncoderV2_1 extends CRAMEncoder {
 
     /**
      * Create a CRAM encoder for the given output bundle. The primary resource in the bundle must
@@ -19,13 +19,13 @@ public class CRAMEncoderV3_0 extends CRAMEncoder {
      * @param outputBundle bundle to encode
      * @param readsEncoderOptions options to use
      */
-    public CRAMEncoderV3_0(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
+    public CRAMEncoderV2_1(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         super(outputBundle, readsEncoderOptions);
     }
 
     @Override
     public HtsVersion getVersion() {
-        return CRAMCodecV3_0.VERSION_3_0;
+        return CRAMCodecV2_1.VERSION_2_1;
     }
 
 }

@@ -20,7 +20,7 @@ import java.io.IOException;
  * BAM v1.0 codec.
  */
 public class BAMCodecV1_0 extends BAMCodec {
-    protected static final HtsVersion VERSION_1 = new HtsVersion(1, 0, 0);
+    public static final HtsVersion VERSION_1 = new HtsVersion(1, 0, 0);
 
     @Override
     public HtsVersion getVersion() {

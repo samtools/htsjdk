@@ -10,6 +10,7 @@ import htsjdk.beta.plugin.reads.ReadsEncoder;
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} encoders.
  */
 public abstract class BAMEncoder implements ReadsEncoder {
+    //TODO: make public getters for these
     protected final Bundle outputBundle;
     protected final ReadsEncoderOptions readsEncoderOptions;
     final private String displayName;

@@ -14,7 +14,6 @@ import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.CRAMCRAIIndexer;
 import htsjdk.samtools.QueryInterval;
-import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamFiles;
@@ -40,26 +39,19 @@ import java.util.function.Function;
 // CRAM 2.1/30 CRAMFileReader implementation. The tests here are modified to use the plugin framework APIs.
 // Any tests in CRAMIndexQueryTest that use a CRAM 2.1 test file are disabled here, since this file is
 // testing the 3.0 codec implementation.
-//TODO: when the CRAM 2.1 plugin codec is implemented, this file should be cloned, and
-// the commented out tests (which are all 2.1) can be reenabled.
-public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
+public class HtsCRAMCodec30And21QueryTest extends HtsjdkTest {
     private static final IOPath TEST_DATA_DIR = new HtsPath("src/test/resources/htsjdk/samtools/cram/");
 
-    //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-    //private static final IOPath cramQueryWithBAI = new HtsPath(TEST_DATA_DIR + "cramQueryWithBAI.cram");
+    private static final IOPath cramQueryWithBAI = new HtsPath(TEST_DATA_DIR + "cramQueryWithBAI.cram");
     private static final IOPath cramQueryWithCRAI = new HtsPath(TEST_DATA_DIR + "cramQueryWithCRAI.cram");
     private static IOPath cramQueryWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryWithCRAI
     private static final IOPath cramQueryReference = new HtsPath(TEST_DATA_DIR + "human_g1k_v37.20.21.10M-10M200k.fasta");
 
-    // NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-    //private static final IOPath cramQueryReadsWithBAI = new HtsPath(TEST_DATA_DIR +  "cramQueryTest.cram");
-    // NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-    //private static IOPath cramQueryReadsWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryReadsWithBAI
+    private static final IOPath cramQueryReadsWithBAI = new HtsPath(TEST_DATA_DIR +  "cramQueryTest.cram");
+    private static IOPath cramQueryReadsWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryReadsWithBAI
 
-    //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-    //private static final IOPath cramQueryTestEmptyWithBAI = new HtsPath(TEST_DATA_DIR + "cramQueryTestEmpty.cram");
-    //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-    //private static IOPath cramQueryTestEmptyWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryTestEmptyWithBAI
+    private static final IOPath cramQueryTestEmptyWithBAI = new HtsPath(TEST_DATA_DIR + "cramQueryTestEmpty.cram");
+    private static IOPath cramQueryTestEmptyWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryTestEmptyWithBAI
     private static final IOPath cramQueryReadsReference = new HtsPath(TEST_DATA_DIR + "../hg19mini.fasta");
 
     // htsjdk currently generates .bai index files instead of .crai due to https://github.com/samtools/htsjdk/issues/531;
@@ -77,28 +69,25 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 tempCRAIOut
         );
 
-        //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-        //cramQueryReadsWithLocalCRAI = IOPathUtils.createTempPath("cramQueryReadsWithLocalCRAI.", ".cram");
-        //tempCRAIOut = new HtsPath(cramQueryReadsWithLocalCRAI.getURIString() + ".crai");
-        //tempCRAIOut.toPath().toFile().deleteOnExit();
-        //cramQueryReadsWithLocalCRAI.toPath().toFile().deleteOnExit();
-        //createLocalCRAMAndCRAI(
-        //        cramQueryReadsWithBAI,
-        //        cramQueryReadsWithLocalCRAI,
-        //        tempCRAIOut
-        //);
+        cramQueryReadsWithLocalCRAI = IOPathUtils.createTempPath("cramQueryReadsWithLocalCRAI.", ".cram");
+        tempCRAIOut = new HtsPath(cramQueryReadsWithLocalCRAI.getURIString() + ".crai");
+        tempCRAIOut.toPath().toFile().deleteOnExit();
+        cramQueryReadsWithLocalCRAI.toPath().toFile().deleteOnExit();
+        createLocalCRAMAndCRAI(
+                cramQueryReadsWithBAI,
+                cramQueryReadsWithLocalCRAI,
+                tempCRAIOut
+        );
 
-        //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-        //cramQueryTestEmptyWithLocalCRAI = IOPathUtils.createTempPath("cramQueryTestEmptyWithLocalCRAI.", ".cram");
-        //tempCRAIOut = new HtsPath(cramQueryTestEmptyWithLocalCRAI.getURIString() +".crai");
-        //tempCRAIOut.toPath().toFile().deleteOnExit();
-        //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-        //cramQueryTestEmptyWithLocalCRAI.toPath().toFile().deleteOnExit();
-        //createLocalCRAMAndCRAI(
-        //        cramQueryTestEmptyWithBAI,
-        //        cramQueryTestEmptyWithLocalCRAI,
-        //        tempCRAIOut
-        //);
+        cramQueryTestEmptyWithLocalCRAI = IOPathUtils.createTempPath("cramQueryTestEmptyWithLocalCRAI.", ".cram");
+        tempCRAIOut = new HtsPath(cramQueryTestEmptyWithLocalCRAI.getURIString() +".crai");
+        tempCRAIOut.toPath().toFile().deleteOnExit();
+        cramQueryTestEmptyWithLocalCRAI.toPath().toFile().deleteOnExit();
+        createLocalCRAMAndCRAI(
+                cramQueryTestEmptyWithBAI,
+                cramQueryTestEmptyWithLocalCRAI,
+                tempCRAIOut
+        );
     }
 
     private void createLocalCRAMAndCRAI(
@@ -118,37 +107,30 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
         return new Object[][] {
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}},
 
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 100009, 100011), new String[]{"a", "b", "c", "d", "e"}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 100009, 100011), new String[]{"a", "b", "c", "d", "e"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100009, 100011), new String[]{"a", "b", "c", "d", "e"}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100009, 100011), new String[]{"a", "b", "c", "d", "e"}},
 
                 // interval with 1 start
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 1, 100010), new String[]{"a", "b", "c", "d"}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 1, 100010), new String[]{"a", "b", "c", "d"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 1, 100010), new String[]{"a", "b", "c", "d"}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 1, 100010), new String[]{"a", "b", "c", "d"}},
 
                 // interval with 0 end
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 100015, 0), new String[]{"a", "b", "c", "d", "e", "f"}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 100015, 0), new String[]{"a", "b", "c", "d", "e", "f"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100015, 0), new String[]{"a", "b", "c", "d", "e", "f"}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100015, 0), new String[]{"a", "b", "c", "d", "e", "f"}},
 
                 // interval with 1 start and 0 end
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 1, 0), new String[]{"a", "b", "c", "d", "e", "f",  "f"}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 1, 0), new String[]{"a", "b", "c", "d", "e", "f",  "f"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 1, 0), new String[]{"a", "b", "c", "d", "e", "f",  "f"}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 1, 0), new String[]{"a", "b", "c", "d", "e", "f",  "f"}},
 
                 //totally empty cram file
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryTestEmptyWithBAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[]{}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryTestEmptyWithLocalCRAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[]{}},
+                {cramQueryTestEmptyWithBAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[]{}},
+                {cramQueryTestEmptyWithLocalCRAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[]{}},
 
                 { new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.cram"),
                         new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.fa"),
@@ -248,32 +230,26 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
         return new Object[][] {
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 100013, 100070), new String[]{"f", "f",}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 100013, 100070), new String[]{"f", "f",}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100013, 100070), new String[]{"f", "f"}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100013, 100070), new String[]{"f", "f"}},
 
                 // interval with 1 start
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 1, 100100), new String[]{"e", "f", "f"}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 1, 100100), new String[]{"e", "f", "f"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 1, 100100), new String[]{"e", "f", "f"}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 1, 100100), new String[]{"e", "f", "f"}},
 
                 // interval with 0 end
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 100010, 0), new String[]{"d", "e", "f", "f",}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 100010, 0), new String[]{"d", "e", "f", "f",}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100010, 0), new String[]{"d", "e", "f", "f",}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 100010, 0), new String[]{"d", "e", "f", "f",}},
 
                 // interval with 1 start and 0 end
                 {cramQueryWithCRAI, cramQueryReference, new QueryInterval(0, 1, 0), new String[]{"a", "b", "c", "d", "e", "f",  "f"}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new QueryInterval(0, 1, 0), new String[]{"a", "b", "c", "d", "e", "f",  "f"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 1, 0), new String[]{"a", "b", "c", "d", "e", "f",  "f"}},
+                {cramQueryWithBAI, cramQueryReference, new QueryInterval(0, 1, 0), new String[]{"a", "b", "c", "d", "e", "f",  "f"}},
 
                 //totally empty cram file
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryTestEmptyWithBAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[]{}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryTestEmptyWithLocalCRAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[]{}},
+                {cramQueryTestEmptyWithBAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[]{}},
+                {cramQueryTestEmptyWithLocalCRAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[]{}},
 
                 { new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.cram"),
                         new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.fa"),
@@ -347,86 +323,69 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 {cramQueryWithLocalCRAI, cramQueryReference,
                         new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
                         new String[]{"a", "b", "c", "d", "e"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
-                //        new String[]{"a", "b", "c", "d", "e"}},
+                {cramQueryWithBAI, cramQueryReference,
+                        new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
+                        new String[]{"a", "b", "c", "d", "e"}},
                 // no matching reads
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 300, 310), new QueryInterval(1, 300, 310)},
-                //        new String[]{}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 300, 310), new QueryInterval(1, 300, 310)},
-                //        new String[]{}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 300, 310), new QueryInterval(1, 300, 310)},
+                        new String[]{}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 300, 310), new QueryInterval(1, 300, 310)},
+                        new String[]{}},
                 // matching reads from first interval only
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 205, 206), new QueryInterval(3, 300, 301)},
-                //        new String[]{"a", "b"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 205, 206), new QueryInterval(3, 300, 301)},
-                //        new String[]{"a", "b"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 205, 206), new QueryInterval(3, 300, 301)},
+                        new String[]{"a", "b"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 205, 206), new QueryInterval(3, 300, 301)},
+                        new String[]{"a", "b"}},
                 // matching reads from last interval only
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(3, 700, 701)},
-                //        new String[]{"k"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(3, 700, 701)},
-                //        new String[]{"k"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(3, 700, 701)},
+                        new String[]{"k"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(3, 700, 701)},
+                        new String[]{"k"}},
                 //matching reads from each interval
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 205, 206), new QueryInterval(3, 700, 701)},
-                //        new String[]{"a", "b", "k"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 205, 206), new QueryInterval(3, 700, 701)},
-                //        new String[]{"a", "b", "k"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 205, 206), new QueryInterval(3, 700, 701)},
+                        new String[]{"a", "b", "k"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 205, 206), new QueryInterval(3, 700, 701)},
+                        new String[]{"a", "b", "k"}},
                 //matching reads from each interval - 4 intervals
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{
-                //                new QueryInterval(0, 200, 201), new QueryInterval(1, 500, 501),
-                //                new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 701)},
-                //        new String[]{"a", "f", "i", "k"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{
-                //                new QueryInterval(0, 200, 201), new QueryInterval(1, 500, 501),
-                //                new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 701)},
-                //        new String[]{"a", "f", "i", "k"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{
+                                new QueryInterval(0, 200, 201), new QueryInterval(1, 500, 501),
+                                new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 701)},
+                        new String[]{"a", "f", "i", "k"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{
+                                new QueryInterval(0, 200, 201), new QueryInterval(1, 500, 501),
+                                new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 701)},
+                        new String[]{"a", "f", "i", "k"}},
                 // first read is before the first interval
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 701)},
-                //        new String[]{"i", "k"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 701)},
-                //        new String[]{"i", "k"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 701)},
+                        new String[]{"i", "k"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 701)},
+                        new String[]{"i", "k"}},
                 // first interval is before the first read
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 201)},
-                //        new String[]{"a"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 201)},
-                //        new String[]{"a"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 201)},
+                        new String[]{"a"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 201)},
+                        new String[]{"a"}},
                 // intervals in reverse order
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 201)},
-                //        new String[]{"a"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 201)},
-                //        new String[]{"a"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 201)},
+                        new String[]{"a"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 201)},
+                        new String[]{"a"}},
         };
     }
 
@@ -457,19 +416,16 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
     public Object[][] otherMultipleIntervals() {
         return new Object[][]{
                 // accept an empty QueryIntervalArray
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference,
-                //        new QueryInterval[]{},
-                //        new String[]{}},
+                {cramQueryWithBAI, cramQueryReference,
+                        new QueryInterval[]{},
+                        new String[]{}},
                 // intervals overlapping - optimized to a single interval
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 1000, 1030), new QueryInterval(0, 1020, 1076)},
-                //        new String[]{"d"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 1000, 1030), new QueryInterval(0, 1020, 1076)},
-                //        new String[]{"d"}}
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 1000, 1030), new QueryInterval(0, 1020, 1076)},
+                        new String[]{"d"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 1000, 1030), new QueryInterval(0, 1020, 1076)},
+                        new String[]{"d"}}
         };
     }
 
@@ -514,86 +470,69 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 {cramQueryWithLocalCRAI, cramQueryReference,
                         new QueryInterval[]{new QueryInterval(0, 100008, 100008), new QueryInterval(0, 100013, 0)},
                         new String[]{"f", "f"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100008, 100008), new QueryInterval(0, 100013, 0)},
-                //        new String[]{"f", "f"}},
+                {cramQueryWithBAI, cramQueryReference,
+                        new QueryInterval[]{new QueryInterval(0, 100008, 100008), new QueryInterval(0, 100013, 0)},
+                        new String[]{"f", "f"}},
                 // no matching reads
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 300, 310), new QueryInterval(1, 300, 310)},
-                //        new String[]{}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 300, 310), new QueryInterval(1, 300, 310)},
-                //        new String[]{}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 300, 310), new QueryInterval(1, 300, 310)},
+                        new String[]{}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 300, 310), new QueryInterval(1, 300, 310)},
+                        new String[]{}},
                 // matching reads from first interval only
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 205, 305), new QueryInterval(3, 300, 301)},
-                //        new String[]{"b", "c"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 205, 305), new QueryInterval(3, 300, 301)},
-                //        new String[]{"b", "c"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 205, 305), new QueryInterval(3, 300, 301)},
+                        new String[]{"b", "c"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 205, 305), new QueryInterval(3, 300, 301)},
+                        new String[]{"b", "c"}},
                 // matching reads from last interval only
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(3, 700, 776)},
-                //        new String[]{"k"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(3, 700, 776)},
-                //        new String[]{"k"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(3, 700, 776)},
+                        new String[]{"k"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(3, 700, 776)},
+                        new String[]{"k"}},
                 //matching reads from each interval
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 200, 281), new QueryInterval(3, 700, 776)},
-                //        new String[]{"a", "b", "k"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 200, 281), new QueryInterval(3, 700, 776)},
-                //        new String[]{"a", "b", "k"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 200, 281), new QueryInterval(3, 700, 776)},
+                        new String[]{"a", "b", "k"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 200, 281), new QueryInterval(3, 700, 776)},
+                        new String[]{"a", "b", "k"}},
                 //matching reads from each interval - 4 intervals
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{
-                //                new QueryInterval(0, 200, 281), new QueryInterval(1, 500, 576),
-                //                new QueryInterval(2, 300, 376), new QueryInterval(3, 700, 776)},
-                //        new String[]{"a", "b", "f", "i", "k"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{
-                //                new QueryInterval(0, 200, 281), new QueryInterval(1, 500, 576),
-                //                new QueryInterval(2, 300, 376), new QueryInterval(3, 700, 776)},
-                //        new String[]{"a", "b", "f", "i", "k"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{
+                                new QueryInterval(0, 200, 281), new QueryInterval(1, 500, 576),
+                                new QueryInterval(2, 300, 376), new QueryInterval(3, 700, 776)},
+                        new String[]{"a", "b", "f", "i", "k"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{
+                                new QueryInterval(0, 200, 281), new QueryInterval(1, 500, 576),
+                                new QueryInterval(2, 300, 376), new QueryInterval(3, 700, 776)},
+                        new String[]{"a", "b", "f", "i", "k"}},
                 // first read is before the first interval
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 776)},
-                //        new String[]{"k"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 776)},
-                //        new String[]{"k"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 776)},
+                        new String[]{"k"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(2, 300, 301), new QueryInterval(3, 700, 776)},
+                        new String[]{"k"}},
                 // first interval is before the first read
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 276)},
-                //        new String[]{"a"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 276)},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented        new String[]{"a"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 276)},
+                        new String[]{"a"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 100, 101), new QueryInterval(0, 200, 276)},
+                        new String[]{"a"}},
                 // intervals in reverse order
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 200, 276), new QueryInterval(0, 100, 101)},
-                //        new String[]{"a"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
-                //        new QueryInterval[]{new QueryInterval(0, 200, 276), new QueryInterval(0, 100, 101)},
-                //        new String[]{"a"}},
+                {cramQueryReadsWithBAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 200, 276), new QueryInterval(0, 100, 101)},
+                        new String[]{"a"}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference,
+                        new QueryInterval[]{new QueryInterval(0, 200, 276), new QueryInterval(0, 100, 101)},
+                        new String[]{"a"}},
         };
     }
 
@@ -622,13 +561,10 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
         return new Object[][] {
                 {cramQueryWithCRAI, cramQueryReference, new String[]{"g", "h", "h", "i", "i"}},
                 {cramQueryWithLocalCRAI, cramQueryReference, new String[]{"g", "h", "h", "i", "i"}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, new String[]{"g", "h", "h", "i", "i"}},
+                {cramQueryWithBAI, cramQueryReference, new String[]{"g", "h", "h", "i", "i"}},
                 //no unmapped reads
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithBAI, cramQueryReadsReference, new String[]{}},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryReadsWithLocalCRAI, cramQueryReadsReference, new String[]{}}
+                {cramQueryReadsWithBAI, cramQueryReadsReference, new String[]{}},
+                {cramQueryReadsWithLocalCRAI, cramQueryReadsReference, new String[]{}}
         };
     }
 
@@ -652,8 +588,7 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 // cram file, reference, query contig, alignment start query, number of reads with matching alignment start
                 {cramQueryWithCRAI, cramQueryReference, "20", 100013, 2},
                 {cramQueryWithLocalCRAI, cramQueryReference, "20", 100013, 2},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                // {cramQueryWithBAI, cramQueryReference, "20", 100013, 2},
+                {cramQueryWithBAI, cramQueryReference, "20", 100013, 2},
                 // tests to ensure that query results on inputs that have matching reads that are followed by reads
                 // in the same container that don't match the alignment start are properly constrained to only the
                 // matching reads
@@ -681,7 +616,6 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
         try (final ReadsDecoder cramDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
             int count = 0;
             while (it.hasNext()) {
                 it.next();
@@ -697,8 +631,7 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                 // cram, reference, query contig, query start, name of read mates at alignment start
                 {cramQueryWithCRAI, cramQueryReference, "20", 100013, "f"},
                 {cramQueryWithLocalCRAI, cramQueryReference, "20", 100013, "f"},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference, "20", 100013, "f"},
+                {cramQueryWithBAI, cramQueryReference, "20", 100013, "f"},
                 {new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.cram"),
                         new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.fa"),
                         "Mito", 631, "IL29_4505:7:30:11521:4492#2"},
@@ -726,8 +659,6 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
 
         try (final ReadsDecoder cramDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
-
             SAMRecord firstRecord;
             SAMRecord firstRecordMate;
              try (final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
@@ -767,8 +698,6 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
 
         try (final ReadsDecoder cramDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
-
             SAMRecord firstRecord;
             SAMRecord firstRecordMate;
             try (final CloseableIterator<SAMRecord> it = cramDecoder.queryStart(queryContig, alignmentStart)) {
@@ -809,9 +738,7 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                         .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
         try (final ReadsDecoder cramDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions);
-             final CloseableIterator<SAMRecord> it = getIterator.apply(cramDecoder)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
-
+            final CloseableIterator<SAMRecord> it = getIterator.apply(cramDecoder)) {
             int count = 0;
             while (it.hasNext()) {
                 final SAMRecord samRec = it.next();
@@ -821,21 +748,19 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
             }
             Assert.assertEquals(count, expectedNames.length);
         }
-
     }
 
 
     @DataProvider(name = "iteratorStateTests")
     public Object[][] iteratorStateQueries() {
         return new Object[][] {
-                {cramQueryWithCRAI, cramQueryReference, 12, 1},
-                {cramQueryWithLocalCRAI, cramQueryReference, 12, 1},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference}
+                {cramQueryWithCRAI, cramQueryReference, 12, 7},
+                {cramQueryWithLocalCRAI, cramQueryReference, 12, 7},
+                {cramQueryWithBAI, cramQueryReference, 12, 7}
         };
     }
 
-    @Test(dataProvider="iteratorStateTests", expectedExceptions= SAMException.class)
+    @Test(dataProvider="iteratorStateTests")
     public void testSerialQueries(
             final IOPath cramInputPath,
             final IOPath referencePath,
@@ -848,8 +773,6 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
 
         try (final ReadsDecoder cramDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
-
             try (final CloseableIterator<SAMRecord> it = cramDecoder.iterator()) {
                 Assert.assertEquals(consumeIterator(it), expectedTotalCount);
             }
@@ -865,7 +788,7 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
         }
     }
 
-    @Test(dataProvider="iteratorStateTests", expectedExceptions= IllegalStateException.class)
+    @Test(dataProvider="iteratorStateTests", expectedExceptions = IllegalStateException.class)
     public void testRejectParallelQueries(
             final IOPath cramInputPath,
             final IOPath referencePath,
@@ -879,8 +802,6 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
         try (final ReadsDecoder cramDecoder =
                      HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions);
              final CloseableIterator<SAMRecord> origIt = cramDecoder.iterator()) {
-            Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
-
             // opening a second iterator while the first one is still open should throw
             cramDecoder.queryOverlapping("20", 100013, 100070);
         }
@@ -931,9 +852,8 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                         new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}, 5},
                 {cramQueryWithLocalCRAI, cramQueryReference,
                         new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}, 5},
-                //NOTE: this requires a CRAM 2.1 HtsCodec which is not yet implemented
-                //{cramQueryWithBAI, cramQueryReference,
-                //        new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}, 5},
+                {cramQueryWithBAI, cramQueryReference,
+                        new QueryInterval(0, 100009, 100009), new String[]{"a", "b", "c"}, 5},
         };
     }
 
@@ -958,8 +878,6 @@ public class HtsCRAMCodec30QueryTest extends HtsjdkTest {
                             .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
             try (final ReadsDecoder cramDecoder =
                          HtsDefaultRegistry.getReadsResolver().getReadsDecoder(cramInputPath, readsDecoderOptions)) {
-                 Assert.assertEquals(cramDecoder.getVersion(), new HtsVersion(3, 0, 0));
-
                  try (final CloseableIterator<SAMRecord> firstIterator = cramDecoder.queryOverlapping(
                          HtsIntervalUtils.fromQueryIntervalArray(
                                  new QueryInterval[]{interval},

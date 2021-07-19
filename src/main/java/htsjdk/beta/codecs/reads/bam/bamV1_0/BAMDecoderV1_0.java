@@ -19,7 +19,6 @@ import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.utils.PrivateAPI;
 
 import java.io.IOException;
 import java.util.List;
@@ -43,7 +42,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
      */
     public BAMDecoderV1_0(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         super(inputBundle, readsDecoderOptions);
-        samReader = getSamReader(inputBundle, readsDecoderOptions);
+        samReader = getSamReader(inputBundle, readsDecoderOptions, SamReaderFactory.makeDefault());
         samFileHeader = samReader.getFileHeader();
     }
 
@@ -66,17 +65,17 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public boolean isQueryable() {
-        return indexProvidedInInputBundle() && samReader.isQueryable();
+        return ReadsCodecUtils.bundleContainsIndex(inputBundle) && samReader.isQueryable();
     }
 
     @Override
     public boolean hasIndex() {
-        return indexProvidedInInputBundle() && samReader.hasIndex();
+        return ReadsCodecUtils.bundleContainsIndex(inputBundle) && samReader.hasIndex();
     }
 
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
-        assertIndexProvided();
+        ReadsCodecUtils.assertBundleContainsIndex(inputBundle);
         final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
                 intervals,
                 samFileHeader.getSequenceDictionary());
@@ -85,7 +84,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
-        assertIndexProvided();
+        ReadsCodecUtils.assertBundleContainsIndex(inputBundle);
         return samReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start));
     }
 
@@ -93,13 +92,13 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
-        assertIndexProvided();
+        ReadsCodecUtils.assertBundleContainsIndex(inputBundle);
         return samReader.queryUnmapped();
     }
 
     @Override
     public Optional<SAMRecord> queryMate(final SAMRecord samRecord) {
-        assertIndexProvided();
+        ReadsCodecUtils.assertBundleContainsIndex(inputBundle);
         return Optional.ofNullable(samReader.queryMate(samRecord));
     }
 
@@ -112,22 +111,23 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         }
     }
 
-    // Propagate all reads decoder options and bam decoder options to either a SamReaderFactory
-    // or a SamInputResource, and return the resulting
-    private static SamReader getSamReader(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
+    // Propagate all reads decoder options and all bam decoder options to either a SamReaderFactory
+    // or a SamInputResource, and return the resulting SamReader
+    private static SamReader getSamReader(
+            final Bundle inputBundle,
+            final ReadsDecoderOptions readsDecoderOptions,
+            final SamReaderFactory samReaderFactory) {
         // note that some reads decoder options, such as cloud wrapper values, need to be propagated
         // to the samInputResource, not to the SamReaderFactory
         final SamInputResource samInputResource =
                 ReadsCodecUtils.bundleToSamInputResource(inputBundle, readsDecoderOptions);
-
-        final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault();
-        ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions);
+        ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
         bamDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions.getBAMDecoderOptions());
 
         return samReaderFactory.open(samInputResource);
     }
 
-    public static void bamDecoderOptionsToSamReaderFactory(
+    private static void bamDecoderOptionsToSamReaderFactory(
             final SamReaderFactory samReaderFactory,
             final BAMDecoderOptions bamDecoderOptions) {
         samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
@@ -136,21 +136,5 @@ public class BAMDecoderV1_0 extends BAMDecoder {
                 bamDecoderOptions.isValidateCRCChecksums());
     }
 
-    // the stated contract for decoders is that the index must be included in the bundle in order to use
-    // index queries, but this uses BAMFileReader, which *always* tries to resolve the index, which would
-    // violate that and allow some cases to work that shouldn't, so enforce the contract manually so that
-    // someday when we use a different implementation, no backward compatibility issue will be introduced
-    private void assertIndexProvided() {
-        if (!indexProvidedInInputBundle()) {
-            throw new IllegalArgumentException(String.format(
-                    "To make index queries, an index resource must be provided in the resource bundle: %s",
-                    inputBundle
-            ));
-        }
-    }
-
-    private boolean indexProvidedInInputBundle() {
-        return inputBundle.get(BundleResourceType.READS_INDEX).isPresent();
-    }
 
 }

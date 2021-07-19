@@ -9,7 +9,6 @@ import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.samtools.cram.structure.CramHeader;
 
 import java.io.IOException;
@@ -20,7 +19,7 @@ import java.util.Arrays;
  */
 public class CRAMCodecV3_0 extends CRAMCodec {
     public static final HtsVersion VERSION_3_0 = new HtsVersion(3, 0, 0);
-    protected static final String CRAM_MAGIC = new String(CramHeader.MAGIC) + "\3\0";
+    private static final String CRAM_MAGIC_3_0 = new String(CramHeader.MAGIC) + "\3\0";
 
     @Override
     public HtsVersion getVersion() {
@@ -29,7 +28,7 @@ public class CRAMCodecV3_0 extends CRAMCodec {
 
     @Override
     public int getSignatureLength() {
-        return CRAM_MAGIC.length();
+        return CRAM_MAGIC_3_0.length();
     }
 
     @Override
@@ -40,7 +39,7 @@ public class CRAMCodecV3_0 extends CRAMCodec {
             if (numRead < getSignatureLength()) {
                 throw new HtsjdkIOException(String.format("Failure reading content from stream for %s", sourceName));
             }
-            return Arrays.equals(signatureBytes, CRAM_MAGIC.getBytes());
+            return Arrays.equals(signatureBytes, getSignatureString().getBytes());
         } catch (IOException e) {
             throw new HtsjdkIOException(String.format("Failure reading content from stream for %s", sourceName));
         }
@@ -57,8 +56,6 @@ public class CRAMCodecV3_0 extends CRAMCodec {
     }
 
     @Override
-    public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new HtsjdkPluginException("Not implemented");
-    }
+    protected String getSignatureString() { return CRAM_MAGIC_3_0; }
 
 }
