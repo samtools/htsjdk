@@ -5,11 +5,15 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
+import htsjdk.utils.PrivateAPI;
 import htsjdk.utils.ValidationUtils;
 
 /**
+ * @PrivateAPI
+ *
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} decoders.
  */
+@PrivateAPI
 public abstract class BAMDecoder implements ReadsDecoder {
     private final Bundle inputBundle;
     private final ReadsDecoderOptions readsDecoderOptions;
@@ -24,6 +28,7 @@ public abstract class BAMDecoder implements ReadsDecoder {
      * @param inputBundle input {@link Bundle} to decode
      * @param readsDecoderOptions {@link ReadsDecoderOptions} to use
      */
+    @PrivateAPI
     public BAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputBundle,"inputBundle");
         ValidationUtils.nonNull(readsDecoderOptions, "readsDecoderOptions");

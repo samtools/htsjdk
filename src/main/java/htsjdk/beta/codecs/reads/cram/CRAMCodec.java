@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * @PrivateAPI
+ *
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} codecs.
  */
 @PrivateAPI

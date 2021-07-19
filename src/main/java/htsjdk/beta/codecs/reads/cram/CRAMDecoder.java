@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
+ * @PrivateAPI
+ *
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} decoders.
  */
 @PrivateAPI
@@ -42,6 +44,8 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     private final SamReader samReader;
 
     /**
+     * @PrivateAPI
+     *
      * Common constructor for CRAM decoders.
      *
      * @param inputBundle an {@link Bundle} containing cram resource

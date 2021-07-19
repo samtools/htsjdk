@@ -7,6 +7,8 @@ import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 
 /**
+ * @PrivateAPI
+ *
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} encoders.
  */
 public abstract class BAMEncoder implements ReadsEncoder {
@@ -15,6 +17,8 @@ public abstract class BAMEncoder implements ReadsEncoder {
     private final String displayName;
 
     /**
+     * @PrivateAPI
+     *
      * Create a BAM encoder for the given output bundle. The primary resource in the bundle must
      * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).

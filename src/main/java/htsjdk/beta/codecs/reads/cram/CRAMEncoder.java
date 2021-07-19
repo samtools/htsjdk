@@ -14,7 +14,8 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.utils.PrivateAPI;
 
 /**
- /**
+ * @PrivateAPI
+ *
  * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} decoders.
  */
 @PrivateAPI
@@ -25,6 +26,8 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     private CRAMFileWriter cramFileWriter;
 
     /**
+     * @PrivateAPI
+     *
      * Create a CRAM encoder for the given output bundle. The primary resource in the bundle must
      * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
