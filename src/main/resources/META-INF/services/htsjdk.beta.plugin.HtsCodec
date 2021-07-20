@@ -8,4 +8,9 @@ htsjdk.beta.codecs.reads.cram.cramV3_0.CRAMCodecV3_0
 htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2.HtsgetBAMCodecV1_2
 
 # Variants codecs
+htsjdk.beta.codecs.variants.vcf.vcfv3_2.VCFCodecV3_2
+htsjdk.beta.codecs.variants.vcf.vcfv3_3.VCFCodecV3_3
+htsjdk.beta.codecs.variants.vcf.vcfv4_0.VCFCodecV4_0
+htsjdk.beta.codecs.variants.vcf.vcfv4_1.VCFCodecV4_1
 htsjdk.beta.codecs.variants.vcf.vcfv4_2.VCFCodecV4_2
+htsjdk.beta.codecs.variants.vcf.vcfv4_3.VCFCodecV4_3

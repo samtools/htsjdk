@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin.registry;
 
+import htsjdk.beta.codecs.variants.vcf.vcfv4_2.VCFCodecV4_2;
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.HtsVersion;
@@ -163,7 +164,9 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
         ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options");
 
-        final VariantsCodec variantsCodec = resolveForEncoding(outputBundle);
+        //TODO: NOTE: we can't allow the resolver to choose the newest registered codec when writing a
+        // VCF, since the newest codec is v4.3, which has no encoder, so for now explicitly select v4.2
+        final VariantsCodec variantsCodec = resolveForEncoding(outputBundle, VCFCodecV4_2.VCF_V42_VERSION);
         return (VariantsEncoder) variantsCodec.getEncoder(outputBundle, variantsEncoderOptions);
     }
 

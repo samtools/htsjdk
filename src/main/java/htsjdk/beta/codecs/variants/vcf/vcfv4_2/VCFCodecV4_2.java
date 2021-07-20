@@ -22,36 +22,12 @@ import java.util.zip.GZIPInputStream;
  * VCF V4.2 codec.
  */
 public class VCFCodecV4_2 extends VCFCodec {
-    public static final HtsVersion VCF_V42_VERSION = new HtsVersion(4, 2,0);
-    protected static final String VCF_V42_MAGIC = "##fileformat=VCFv4.2";
+    public static final HtsVersion VCF_V42_VERSION = new HtsVersion(4,2,0);
+
+    private static final String VCF_V42_MAGIC = "##fileformat=VCFv4.2";
 
     @Override
     public HtsVersion getVersion() { return VCF_V42_VERSION; }
-
-    @Override
-    public int getSignatureLength() {
-        return VCF_V42_MAGIC.length();
-    }
-
-    @Override
-    public int getSignatureProbeLength() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
-
-    @Override
-    public boolean canDecodeSignature(final SignatureStream probingInputStream, final String sourceName) {
-        final byte[] signatureBytes = new byte[getSignatureLength()];
-        try {
-            final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(probingInputStream) ?
-                    new GZIPInputStream(probingInputStream) :
-                    probingInputStream;
-            final int numRead = wrappedInputStream.read(signatureBytes);
-            if (numRead < 0) {
-                throw new HtsjdkIOException(String.format("0 bytes read from input stream for %s", sourceName));
-            }
-        } catch (IOException e) {
-            throw new HtsjdkIOException(String.format("Failure reading signature from stream for %s", sourceName), e);
-        }
-        return Arrays.equals(VCF_V42_MAGIC.getBytes(), signatureBytes);
-    }
 
     @Override
     public VCFDecoder getDecoder(final Bundle inputBundle, final VariantsDecoderOptions decoderOptions) {
@@ -67,5 +43,8 @@ public class VCFCodecV4_2 extends VCFCodec {
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         throw new HtsjdkPluginException("Not yet implemented");
     }
+
+    @Override
+    protected String getSignatureString() { return VCF_V42_MAGIC; }
 
 }

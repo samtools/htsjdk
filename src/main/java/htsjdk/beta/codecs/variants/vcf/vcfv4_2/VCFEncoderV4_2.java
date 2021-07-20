@@ -18,8 +18,13 @@ import static htsjdk.variant.variantcontext.writer.Options.INDEX_ON_THE_FLY;
  * VCF V4.2 encoder.
  */
 public class VCFEncoderV4_2 extends VCFEncoder {
-    private VariantContextWriter vcfWriter;
 
+    /**
+     * Create a new VCF V4.2 encoder.
+     *
+     * @param outputBundle the output {@link Bundle} to encoder
+     * @param variantsEncoderOptions the {@link VariantsEncoderOptions} to use
+     */
     public VCFEncoderV4_2(final Bundle outputBundle, final VariantsEncoderOptions variantsEncoderOptions) {
         super(outputBundle,variantsEncoderOptions);
     }
@@ -29,34 +34,4 @@ public class VCFEncoderV4_2 extends VCFEncoder {
         return VCFCodecV4_2.VCF_V42_VERSION;
     }
 
-    @Override
-    public void setHeader(final VCFHeader vcfHeader) {
-        vcfWriter = getVCFWriter(getVariantsEncoderOptions(), vcfHeader);
-        vcfWriter.writeHeader(vcfHeader);
-    }
-
-    @Override
-    public void write(final VariantContext variantContext) {
-        vcfWriter.add(variantContext);
-    }
-
-    @Override
-    public void close() {
-        if (vcfWriter != null) {
-            vcfWriter.close();
-        }
-    }
-
-    private VariantContextWriter getVCFWriter(final VariantsEncoderOptions variantsEncoderOptions, final VCFHeader vcfHeader) {
-        final BundleResource variantsResource = getOutputBundle().getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
-        if (variantsResource.getIOPath().isPresent()) {
-            final VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
-            return builder
-                    .setOutputPath(variantsResource.getIOPath().get().toPath())
-                    .unsetOption(INDEX_ON_THE_FLY)
-                    .build();
-        } else {
-            throw new HtsjdkPluginException("VCF writer to stream not yet implemented");
-        }
-    }
 }
