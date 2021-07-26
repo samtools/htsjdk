@@ -1,23 +1,33 @@
 package htsjdk.beta.codecs.variants.vcf;
 
+import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.plugin.interval.HtsInterval;
+import htsjdk.beta.plugin.interval.HtsIntervalUtils;
+import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.variants.VariantsDecoder;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsFormats;
+import htsjdk.io.IOPath;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.AbstractVCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * @PrivateAPI
@@ -28,11 +38,9 @@ import java.io.IOException;
 public abstract class VCFDecoder implements VariantsDecoder {
     private final Bundle inputBundle;
     private final VariantsDecoderOptions variantsDecoderOptions;
-    private final AbstractVCFCodec vcfCodec;
     private final String displayName;
     private final FeatureReader<VariantContext> vcfReader;
     private final VCFHeader vcfHeader;
-
 
     /**
      * @PrivateAPI
@@ -50,10 +58,9 @@ public abstract class VCFDecoder implements VariantsDecoder {
             final AbstractVCFCodec vcfCodec,
             final VariantsDecoderOptions variantsDecoderOptions) {
         this.inputBundle = inputBundle;
-        this.vcfCodec = vcfCodec;
         this.variantsDecoderOptions = variantsDecoderOptions;
         this.displayName = inputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS).getDisplayName();
-        vcfReader = getVCFReader(vcfCodec, variantsDecoderOptions);
+        vcfReader = getVCFReader(inputBundle, vcfCodec, variantsDecoderOptions);
         vcfHeader = (VCFHeader) vcfReader.getHeader();
     }
 
@@ -73,18 +80,70 @@ public abstract class VCFDecoder implements VariantsDecoder {
         try {
             return vcfReader.iterator();
         } catch (IOException e) {
-            throw new HtsjdkIOException("Exception creating variant context iterator", e);
+            throw new HtsjdkIOException(String.format("Exception creating variant context iterator for %s", displayName), e);
         }
     }
 
     @Override
     public boolean isQueryable() {
-        throw new HtsjdkPluginException("Not implemented");
+        return vcfReader.isQueryable();
     }
 
     @Override
     public boolean hasIndex() {
-        throw new HtsjdkPluginException("Not implemented");
+        return vcfReader.isQueryable();
+    }
+
+    public CloseableIterator<VariantContext> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
+        ValidationUtils.nonNull(intervals, "interval list");
+
+        if (intervals.size() > 1) {
+            //TODO: implement lists, sorting, merging, and ensuring that features that overlap more than one interval
+            // are only returned once
+            throw new HtsjdkPluginException(String.format("query for lists not implemented for decoder %s", displayName));
+        }
+        if (queryRule != HtsQueryRule.OVERLAPPING) {
+            //TODO: implement overlapping
+            throw new HtsjdkPluginException(String.format("query for lists not implemented for decoder %s", displayName));
+        }
+
+        try {
+            return vcfReader.query(HtsIntervalUtils.toLocatableList(intervals).get(0));
+        } catch (final IOException e) {
+            throw new HtsjdkIOException(String.format("Exception processing queryStart on VCFDecoder %s", displayName), e);
+        }
+    }
+
+    @Override
+    public CloseableIterator<VariantContext> query(final String queryString) {
+        return queryStart(queryString, 1);
+    }
+
+    @Override
+    public CloseableIterator<VariantContext> queryStart(final String queryName, final long start) {
+        ValidationUtils.validateArg(isQueryable(), String.format("Decoder %s is not queryable", displayName));
+        if (vcfHeader == null) {
+            throw new HtsjdkException(String.format(
+                    "A valid VCF header is required to execute a query, but is not present: %s.",
+                    displayName));
+        }
+        final SAMSequenceDictionary seqDict = vcfHeader.getSequenceDictionary();
+        if (seqDict == null) {
+            throw new HtsjdkException(String.format("No  sequence dictionary is present in the input: %s.", displayName));
+        }
+        final SAMSequenceRecord samSequenceRecord = seqDict.getSequence(queryName);
+        if (samSequenceRecord == null) {
+            throw new HtsjdkException(String.format(
+                    "The query name %s is not present in the dictionary provided in the input: %s.",
+                    queryName,
+                    displayName));
+        }
+        final int length = samSequenceRecord.getSequenceLength();
+        try {
+            return vcfReader.query(queryName, HtsIntervalUtils.toIntegerSafe(start), length);
+        } catch (final IOException e) {
+            throw new HtsjdkIOException(String.format("Exception processing queryStart on VCFDecoder", displayName), e);
+        }
     }
 
     @Override
@@ -114,20 +173,57 @@ public abstract class VCFDecoder implements VariantsDecoder {
         return variantsDecoderOptions;
     }
 
-    //TODO: need to also look at the bundle to find the index input/stream
-    private FeatureReader<VariantContext> getVCFReader(
+    private static FeatureReader<VariantContext> getVCFReader(
+            final Bundle inputBundle,
             final AbstractVCFCodec vcfCodec,
             final VariantsDecoderOptions decoderOptions) {
-        final BundleResource variantsResource = getInputBundle().getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
-        if (variantsResource.getIOPath().isPresent()) {
-            final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(
-                    variantsResource.getIOPath().get().toPath().toString(),
-                    vcfCodec,
-                    false);
-            return reader;
-        } else {
+        final BundleResource variantsResource = inputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
+        if (!variantsResource.hasInputType()) {
+            throw new IllegalArgumentException(String.format(
+                    "The provided %s resource (%s) must be a readable/input resource",
+                    BundleResourceType.VARIANT_CONTEXTS,
+                    variantsResource));
+        } else if (!variantsResource.getIOPath().isPresent()) {
             throw new HtsjdkPluginException("VCF reader from stream not implemented");
         }
+        final IOPath variantsIOPath = variantsResource.getIOPath().get();
+        final Optional<IOPath> indexIOPath = getIndexIOPath(inputBundle);
+
+        //TODO: this resolves the index automatically. it should check to make sure the provided index
+        // matches the one that is automatically resolved, otherwise throw since the request will not be honored
+        return AbstractFeatureReader.getFeatureReader(
+                variantsIOPath.toPath().toString(),
+                indexIOPath.isPresent() ?
+                        indexIOPath.get().toPath().toString() :
+                        null,
+                vcfCodec,
+                indexIOPath.isPresent(),
+                decoderOptions.getVariantsChannelTransformer().isPresent() ?
+                        decoderOptions.getVariantsChannelTransformer().get() :
+                        null,
+                decoderOptions.getIndexChannelTransformer().isPresent() ?
+                        decoderOptions.getIndexChannelTransformer().get() :
+                        null
+        );
+    }
+
+    // the underlying readers can't handle index streams, so  for now we can only handle IOPaths
+    private static Optional<IOPath> getIndexIOPath(final Bundle inputBundle) {
+        final Optional<BundleResource> optIndexResource = inputBundle.get(BundleResourceType.VARIANTS_INDEX);
+        if (!optIndexResource.isPresent()) {
+            return Optional.empty();
+        }
+        final BundleResource indexResource = optIndexResource.get();
+        if (!indexResource.hasInputType()) {
+            throw new IllegalArgumentException(String.format(
+                "The provided %s index resource (%s) must be a readable/input resource",
+                BundleResourceType.VARIANTS_INDEX,
+               indexResource));
+        }
+        if (!indexResource.getIOPath().isPresent()) {
+            throw new HtsjdkPluginException("Reading a VCF index from a stream not implemented");
+        }
+        return indexResource.getIOPath();
     }
 
 }

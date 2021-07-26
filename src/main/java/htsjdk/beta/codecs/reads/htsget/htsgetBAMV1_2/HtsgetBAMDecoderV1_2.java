@@ -33,7 +33,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
         final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
         if (!readsResource.getIOPath().isPresent()) {
             throw new IllegalArgumentException(String.format(
-                    "Htsget requires an IOPath input resource. The bundle resource %s doesn't contain the required IOPath",
+                    "Htsget requires an IOPath input resource. The bundle resource %s doesn't contain the required IOPath.",
                     readsResource.getDisplayName()));
         }
         try {
@@ -45,7 +45,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
                     false);
         } catch (IOException e) {
             throw new HtsjdkIOException(
-                    String.format("Failure opening Htsget reader on %s", readsResource.getIOPath().get().toString()), e);
+                    String.format("Failure opening Htsget reader on %s", readsResource.getIOPath().get()), e);
         }
     }
 
@@ -63,56 +63,57 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> iterator() {
-        throw new HtsjdkPluginException("Not implemented");
+        return htsgetReader.getIterator();
     }
 
     @Override
     public boolean isQueryable() {
-        throw new HtsjdkPluginException("Not implemented");
+        return htsgetReader.isQueryable();
     }
 
     @Override
     public boolean hasIndex() {
-        throw new HtsjdkPluginException("Not implemented");
+        return htsgetReader.hasIndex();
     }
 
     @Override
     public CloseableIterator<SAMRecord> query(final String queryString) {
-        return null;
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public CloseableIterator<SAMRecord> query(final String queryName, final long start, final long end, final HtsQueryRule queryRule) {
-        return null;
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryOverlapping(final String queryName, final long start, final long end) {
-        return null;
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryContained(final String queryName, final long start, final long end) {
-        return null;
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public CloseableIterator<SAMRecord> query(final HtsInterval interval, final HtsQueryRule queryRule) {
-        return null;
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryOverlapping(final HtsInterval interval) {
-        return null;
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryContained(final HtsInterval interval) {
-        return null;
+        throw new HtsjdkPluginException("Not implemented");
     }
 
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
+        //TODO: need to sort intervals
         return htsgetReader.query(
                 HtsIntervalUtils.toLocatableList(intervals),
                 queryRule == HtsQueryRule.CONTAINED == true);
@@ -120,26 +121,29 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryOverlapping(final List<HtsInterval> intervals) {
+        //TODO: need to sort intervals
         throw new HtsjdkPluginException("queryOverlapping not implemented for htsget bam reader");
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryContained(final List<HtsInterval> intervals) {
+        //TODO: need to sort intervals
         throw new HtsjdkPluginException("queryContained not implemented for htsget bam reader");
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
-        throw new HtsjdkPluginException("queryStart not implemented for htsget bam reader");
+        return htsgetReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start));
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
-        throw new HtsjdkPluginException("queryMate not implemented for htsget bam reader");
+        return htsgetReader.queryUnmapped();
     }
 
     @Override
     public Optional<SAMRecord> queryMate(final SAMRecord rec) {
+        //reader doesn't support this
         throw new HtsjdkPluginException("queryMate not implemented for htsget bam reader");
     }
 }

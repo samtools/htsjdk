@@ -23,7 +23,10 @@ public abstract class BAMEncoder implements ReadsEncoder {
      * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *
-     * @param outputBundle outoput{@link Bundle} to encode
+     * NOTE: callers that provide an output stream resource should provide a buffered output stream
+     * if buffering is desired, since the encoder does not provide an additional buffering layer.
+     *
+     * @param outputBundle output {@link Bundle} to encode
      * @param readsEncoderOptions {@link ReadsEncoderOptions} to use
      */
     public BAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {

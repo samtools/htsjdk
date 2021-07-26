@@ -107,7 +107,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         try {
             samReader.close();
         } catch (IOException e) {
-            throw new HtsjdkIOException(String.format("Exception closing input stream %s on", getInputBundle()), e);
+            throw new HtsjdkIOException(String.format("Exception closing reader for %s", getInputBundle()), e);
         }
     }
 

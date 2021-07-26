@@ -45,6 +45,11 @@ public class BAMEncoderV1_0 extends BAMEncoder {
 
     @Override
     public void write(final SAMRecord record) {
+        if (samFileWriter == null) {
+            throw new IllegalStateException(String.format(
+                    "A SAMFileHeader must be established before a BAM writer can be established %s",
+                    getDisplayName()));
+        }
         samFileWriter.addAlignment(record);
     }
 
@@ -58,7 +63,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
     /**
      *  Propagate BAMEncoderOptions to a SAMFileWriterFactory.
      */
-    private void bamEncoderOptionsToSamWriterFactory(
+    private static void bamEncoderOptionsToSamWriterFactory(
             final BAMEncoderOptions bamEncoderOptions,
             final SAMFileWriterFactory samFileWriterFactory) {
         samFileWriterFactory.setDeflaterFactory(bamEncoderOptions.getDeflaterFactory());
@@ -99,7 +104,8 @@ public class BAMEncoderV1_0 extends BAMEncoder {
         // it chooses, so throw if an md5 resource is specified since we can't direct it to the specified
         // resource
         if (optMD5Resource.isPresent()) {
-            throw new HtsjdkPluginException("Can't yet specify an MD5 resource name");
+            throw new HtsjdkPluginException(String.format(
+                    "Specifying an an MD5 resource name not yet implemented on %s", getDisplayName()));
         }
 
         if (readsResource.getIOPath().isPresent()) {
@@ -114,4 +120,5 @@ public class BAMEncoderV1_0 extends BAMEncoder {
                     readsResource.getOutputStream().get());
         }
     }
+
 }

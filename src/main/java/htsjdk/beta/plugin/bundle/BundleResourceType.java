@@ -41,6 +41,11 @@ public class BundleResourceType {
     public static final String READS_INDEX_CSI = "CSI";
 
     /**
+     * secondary content types names for primary content type {@link #VARIANT_CONTEXTS} resources
+     */
+    public static final String VARIANTS_INDEX = "VARIANTS_INDEX";
+
+    /**
      * secondary content type names for {@link BundleResourceType#HAPLOID_REFERENCE} resources
      */
     public static final String REFERENCE_DICTIONARY = "REFERENCE_DICTIONARY";

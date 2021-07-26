@@ -145,7 +145,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
         final Bundle outputBundle = new BundleBuilder()
                 .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANT_CONTEXTS))
                 .build();
-        return getVariantsEncoder(outputBundle, new VariantsEncoderOptions());
+        return getVariantsEncoder(outputBundle, variantsEncoderOptions);
     }
 
     /**
@@ -164,7 +164,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
         ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options");
 
-        //TODO: NOTE: we can't allow the resolver to choose the newest registered codec when writing a
+        //NOTE: we can't allow the resolver to choose the newest registered codec when writing a
         // VCF, since the newest codec is v4.3, which has no encoder, so for now explicitly select v4.2
         final VariantsCodec variantsCodec = resolveForEncoding(outputBundle, VCFCodecV4_2.VCF_V42_VERSION);
         return (VariantsEncoder) variantsCodec.getEncoder(outputBundle, variantsEncoderOptions);

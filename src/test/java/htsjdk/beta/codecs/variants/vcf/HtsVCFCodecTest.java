@@ -10,6 +10,7 @@ import htsjdk.beta.codecs.variants.vcf.vcfv4_3.VCFCodecV4_3;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
+import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.variants.VariantsDecoder;
@@ -28,34 +29,37 @@ public class HtsVCFCodecTest extends HtsjdkTest {
     private Object[][] vcfReadWriteTests() {
         return new Object[][] {
                 // one test case for each supported VCF version
-                // TODO: these require ALLOW_MISSING_FIELDS_IN_HEADER to be wired up
-                //{ new HtsPath(VARIANTS_TEST_DIR + "tribble/vcfexample.vcf"), VCFCodecV3_2.VCF_V32_VERSION },
-                //{ new HtsPath(VARIANTS_TEST_DIR + "tribble/tabix/trioDup.vcf"), VCFCodecV3_3.VCF_V33_VERSION },
+                { new HtsPath(VARIANTS_TEST_DIR + "variant/vcfexampleV3.2.vcf"), VCFCodecV3_2.VCF_V32_VERSION },
+                { new HtsPath(VARIANTS_TEST_DIR + "tribble/tabix/trioDup.vcf"), VCFCodecV3_3.VCF_V33_VERSION },
                 { new HtsPath(VARIANTS_TEST_DIR + "variant/HiSeq.10000.vcf"), VCFCodecV4_0.VCF_V40_VERSION },
                 { new HtsPath(VARIANTS_TEST_DIR + "variant/dbsnp_135.b37.1000.vcf"), VCFCodecV4_1.VCF_V41_VERSION },
                 { new HtsPath(VARIANTS_TEST_DIR + "variant/vcf42HeaderLines.vcf"), VCFCodecV4_2.VCF_V42_VERSION },
                 { new HtsPath(VARIANTS_TEST_DIR + "variant/NA12891.vcf.gz"), VCFCodecV4_2.VCF_V42_VERSION },
-                // v4.3 is left out since these tests write to the newest VCF version (4.2), but we can't write a header
-                // from a v4.3 source since it will (correctly) be rejected by the v4.2 writer
+                // v4.3 is left out since these tests write to the newest writeable VCF version (4.2), but we can't
+                // write a header from a v4.3 source since it will (correctly) be rejected by the v4.2 writer
         };
     }
 
     @Test(dataProvider = "vcfReadWriteTests")
     public void testRoundTripVCF(final IOPath inputPath, final HtsVersion expectedCodecVersion) {
-        roundTripVCF(inputPath, expectedCodecVersion);
+        readWriteVCF(inputPath, expectedCodecVersion);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testRejectWritingV43HeaderAsV42()  {
         // read vcf v4.3 and try to write it to a vcf v4.2 (header is rejected)
-        roundTripVCF(new HtsPath(VARIANTS_TEST_DIR + "variant/vcf43/all43Features.vcf"), VCFCodecV4_3.VCF_V43_VERSION);
+        readWriteVCF(new HtsPath(VARIANTS_TEST_DIR + "variant/vcf43/all43Features.vcf"), VCFCodecV4_3.VCF_V43_VERSION);
     }
 
-    private void roundTripVCF(final IOPath inputPath, final HtsVersion expectedCodecVersion) {
+    private void readWriteVCF(final IOPath inputPath, final HtsVersion expectedCodecVersion) {
         final IOPath outputPath = IOUtils.createTempPath("pluginVariants", ".vcf");
 
+        // some test files require "AllowMissingFields" options for writing
+        final VariantsEncoderOptions variantsEncoderOptions = new VariantsEncoderOptions().setAllowFieldsMissingFromHeader(true);
         try (final VariantsDecoder variantsDecoder = HtsDefaultRegistry.getVariantsResolver().getVariantsDecoder(inputPath);
-             final VariantsEncoder variantsEncoder = HtsDefaultRegistry.getVariantsResolver().getVariantsEncoder(outputPath)) {
+             final VariantsEncoder variantsEncoder = HtsDefaultRegistry.getVariantsResolver().getVariantsEncoder(
+                     outputPath,
+                     variantsEncoderOptions)) {
 
             Assert.assertNotNull(variantsDecoder);
             Assert.assertEquals(variantsDecoder.getFileFormat(), VariantsFormats.VCF);

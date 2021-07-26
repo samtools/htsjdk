@@ -77,7 +77,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
         try {
             samReader.close();
         } catch (final IOException e) {
-            throw new HtsjdkIOException("Failure closing CRAM reader stream", e);
+            throw new HtsjdkIOException(String.format("Failure closing CRAM reader stream", getDisplayName()), e);
         }
     }
 
@@ -119,10 +119,11 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     public Optional<SAMRecord> queryMate(SAMRecord rec) {
         ValidationUtils.nonNull(rec, "rec");
         if (!rec.getReadPairedFlag()) {
-            throw new IllegalArgumentException("queryMate called for unpaired read.");
+            throw new IllegalArgumentException(String.format("queryMate called for unpaired read on %s.", getDisplayName()));
         }
         if (rec.getFirstOfPairFlag() == rec.getSecondOfPairFlag()) {
-            throw new IllegalArgumentException("SAMRecord must be either first and second of pair, but not both.");
+            throw new IllegalArgumentException(String.format("SAMRecord must be either first and second of pair, but not both (%s).",
+                    getDisplayName()));
         }
         final boolean firstOfPair = rec.getFirstOfPairFlag();
         // its important that this method closes the iterators it creates, since otherwise the caller
@@ -136,7 +137,9 @@ public abstract class CRAMDecoder implements ReadsDecoder {
                 final SAMRecord next = it.next();
                 if (!next.getReadPairedFlag()) {
                     if (rec.getReadName().equals(next.getReadName())) {
-                        throw new SAMFormatException("Paired and unpaired reads with same name: " + rec.getReadName());
+                        throw new SAMFormatException(String.format("Paired and unpaired reads with same name: %s (on %s)",
+                                rec.getReadName(),
+                                getInputBundle()));
                     }
                     continue;
                 }
@@ -147,8 +150,11 @@ public abstract class CRAMDecoder implements ReadsDecoder {
                 }
                 if (rec.getReadName().equals(next.getReadName())) {
                     if (mateRec != null) {
-                        throw new SAMFormatException("Multiple SAMRecord with read name " + rec.getReadName() +
-                                " for " + (firstOfPair ? "second" : "first") + " end.");
+                        throw new SAMFormatException(
+                                String.format("Multiple SAMRecord with read name %s for %s end on %s.",
+                                        rec.getReadName(),
+                                        (firstOfPair ? "second" : "first"),
+                                        getInputBundle()));
                     }
                     mateRec = next;
                 }
@@ -200,10 +206,11 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     private void toggleIteratorExists(final boolean newState) {
         if (iteratorExists == newState) {
             if (iteratorExists == true) {
-                throw new IllegalStateException("The previous iterator must be closed before starting a new iterator");
+                throw new IllegalStateException(String.format(
+                        "The previous iterator must be closed before starting a new iterator on %s", getDisplayName()));
             } else {
                 // this indicates a problem with this codec
-                throw new HtsjdkPluginException("No outstanding iterator exists");
+                throw new HtsjdkPluginException(String.format("No outstanding iterator exists for %s", getDisplayName()));
             }
         }
         // reset the iterator monitor

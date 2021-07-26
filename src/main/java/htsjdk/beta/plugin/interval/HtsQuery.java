@@ -49,7 +49,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
      * @return an iterator over all records from the underlying resource that match the query string
      */
     default CloseableIterator<RECORD> query(final String queryString) {
-        ValidationUtils.validateArg(isQueryable(), "Reader is not queryable");
+        ValidationUtils.validateArg(isQueryable(), "Decoder is not queryable");
         throw new HtsjdkPluginException("query not implemented for this decoder");
     }
 
@@ -135,8 +135,9 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
      * @return an iterator over all records from the underlying resource that match the query arguments
      */
     default CloseableIterator<RECORD> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
-        ValidationUtils.validateArg(isQueryable(), "Reader is not queryable");
-        throw new HtsjdkPluginException("query not implemented for this decoder"); }
+        ValidationUtils.validateArg(isQueryable(), "Decoder is not queryable");
+        throw new HtsjdkPluginException("query not implemented for this decoder");
+    }
 
     /**
      * Get an iterator over all records from the underlying resource that overlap the query intervals
@@ -167,7 +168,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
      * @return an iterator over all records from the underlying resource that overlap the start position
      */
     default CloseableIterator<RECORD> queryStart(final String queryName, final long start) {
-        ValidationUtils.validateArg(isQueryable(), "Reader is not queryable");
+        ValidationUtils.validateArg(isQueryable(), "Decoder is not queryable");
         throw new HtsjdkPluginException("queryStart not implemented for this decoder");
     }
 
