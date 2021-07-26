@@ -61,7 +61,7 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
                         new Bundle(BundleResourceType.ALIGNED_READS, Collections.singletonList(
                                 new InputStreamResource(
                                         inputPath.getInputStream(),
-                                        "test cram stream",
+                                        "test bam stream",
                                         BundleResourceType.ALIGNED_READS)
                         )),
                         outputPath

@@ -279,36 +279,54 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
             if (!uriOwners.isEmpty()) {
                 return uriOwners;
             } else {
-                final int maxSignatureProbeLength = getMaxSignatureProbeLength(candidateCodecs);
-                try (final SignatureStream probingStream =
-                        getIOPathSignatureProbingStream(bundleResource, maxSignatureProbeLength)) {
-                    // closing this stream is a no-op since its backed by a byte array..
-                    return candidateCodecs.stream()
-                            .filter(codec -> codec.canDecodeURI(ioPath))
-                            .filter(codec -> canDecodeInputStreamSignature(
-                                    codec,
-                                    probingStream, maxSignatureProbeLength,
-                                    bundleResource.getDisplayName()
-                            ))
-                            .collect(Collectors.toList());
-                } catch (IOException e) {
-                    throw new RuntimeIOException("error closing signature stream", e);
-                }
+                // we need to create a new tream over the underlying signature bytes for each codec,
+                // since some implementations may not reset the stream correctly
+                final byte[] signatureBuffer = getSignatureProbeBuffer(bundleResource, candidateCodecs);
+                return candidateCodecs.stream()
+                        .filter(codec -> codec.canDecodeURI(ioPath))
+                        .filter(codec -> codec.canDecodeSignature(
+                                new SignatureStream(signatureBuffer.length, signatureBuffer),
+                                bundleResource.getDisplayName()))
+                        .collect(Collectors.toList());
             }
         }
         return Collections.emptyList();
     }
 
     private List<C> resolveForDecodingStream(final BundleResource bundleResource, final List<C> candidateCodecs) {
-        final int streamPrefixSize = getMaxSignatureProbeLength(candidateCodecs);
-        final SignatureStream signatureStream = bundleResource.getSignatureStream(streamPrefixSize);
+        final byte[] signatureBuffer = getSignatureProbeBuffer(bundleResource, candidateCodecs);
         return candidateCodecs.stream()
-                .filter(codec -> canDecodeInputStreamSignature(
-                        codec,
-                        signatureStream, streamPrefixSize,
-                        bundleResource.getDisplayName()
-                ))
+                .filter(codec -> codec.canDecodeSignature(
+                        new SignatureStream(signatureBuffer.length, signatureBuffer),
+                        bundleResource.getDisplayName()))
                 .collect(Collectors.toList());
+    }
+
+    private final byte[] getSignatureProbeBuffer(
+            final BundleResource bundleResource,
+            final List<C> candidateCodecs) {
+        final int maxSignatureProbeLength = getMaxSignatureProbeLength(candidateCodecs);
+        try (final SignatureStream probingStream =
+                bundleResource.getIOPath().isPresent() ?
+                        getIOPathSignatureProbingStream(bundleResource, maxSignatureProbeLength) :
+                        bundleResource.getSignatureStream(maxSignatureProbeLength)) {
+            // we need to recreate a stream over the underlying signature for each codec,
+            // since some implementations may use their own mark/reset pairs
+            final byte[] signatureBytes = new byte[probingStream.getSignaturePrefixLength()];
+            final int readSize = probingStream.read(signatureBytes);
+            if (readSize != maxSignatureProbeLength) {
+                throw new HtsjdkPluginException(
+                        String.format("Failure to read %d bytes from signature stream for %s (only read %d)",
+                                maxSignatureProbeLength,
+                                bundleResource,
+                                readSize));
+            }
+            return signatureBytes;
+        } catch (IOException e) {
+            throw new RuntimeIOException(
+                    String.format("error closing signature stream for %s", bundleResource.getDisplayName()),
+                    e);
+        }
     }
 
     private List<C> resolveForEncodingIOPath(final IOPath ioPath, final List<C> candidateCodecs) {
@@ -354,17 +372,6 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
                             inputPath.getURI().getScheme()));
         }
         return bundleResource.getSignatureStream(streamPrefixSize);
-    }
-
-    private static<T extends HtsCodec<?, ?>> boolean canDecodeInputStreamSignature(
-            final T codec,
-            final SignatureStream signatureStream,
-            final int signatureProbeLength,
-            final String displayName) {
-        signatureStream.mark(signatureProbeLength);
-        final boolean canDecode = codec.canDecodeSignature(signatureStream, displayName);
-        signatureStream.reset();
-        return canDecode;
     }
 
     private List<C> filterByVersion(final List<C> candidateCodecs, final HtsVersion htsVersion) {

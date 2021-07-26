@@ -42,7 +42,7 @@ public class BAMDecoderV1_0 extends BAMDecoder {
      */
     public BAMDecoderV1_0(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         super(inputBundle, readsDecoderOptions);
-        samReader = getSamReader(inputBundle, readsDecoderOptions, SamReaderFactory.makeDefault());
+        samReader = ReadsCodecUtils.getSamReader(inputBundle, readsDecoderOptions, SamReaderFactory.makeDefault());
         samFileHeader = samReader.getFileHeader();
     }
 
@@ -109,31 +109,6 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         } catch (IOException e) {
             throw new HtsjdkIOException(String.format("Exception closing reader for %s", getInputBundle()), e);
         }
-    }
-
-    // Propagate all reads decoder options and all bam decoder options to either a SamReaderFactory
-    // or a SamInputResource, and return the resulting SamReader
-    private static SamReader getSamReader(
-            final Bundle inputBundle,
-            final ReadsDecoderOptions readsDecoderOptions,
-            final SamReaderFactory samReaderFactory) {
-        // note that some reads decoder options, such as cloud wrapper values, need to be propagated
-        // to the samInputResource, not to the SamReaderFactory
-        final SamInputResource samInputResource =
-                ReadsCodecUtils.bundleToSamInputResource(inputBundle, readsDecoderOptions);
-        ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
-        bamDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions.getBAMDecoderOptions());
-
-        return samReaderFactory.open(samInputResource);
-    }
-
-    private static void bamDecoderOptionsToSamReaderFactory(
-            final SamReaderFactory samReaderFactory,
-            final BAMDecoderOptions bamDecoderOptions) {
-        samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
-        samReaderFactory.setUseAsyncIo(bamDecoderOptions.isUseAsyncIO());
-        samReaderFactory.setOption(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS,
-                bamDecoderOptions.isValidateCRCChecksums());
     }
 
 }

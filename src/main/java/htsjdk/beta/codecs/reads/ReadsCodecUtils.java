@@ -1,10 +1,12 @@
 package htsjdk.beta.codecs.reads;
 
+import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResource;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.utils.PrivateAPI;
 
@@ -95,6 +97,34 @@ final public class ReadsCodecUtils {
                     inputBundle
             ));
         }
+    }
+
+    /**
+     * Propagate all reads decoder options and all bam decoder options to either a SamReaderFactory
+     * or a SamInputResource, and return the resulting SamReader
+     */
+    @PrivateAPI
+    public static SamReader getSamReader(
+            final Bundle inputBundle,
+            final ReadsDecoderOptions readsDecoderOptions,
+            final SamReaderFactory samReaderFactory) {
+        // note that some reads decoder options, such as cloud wrapper values, need to be propagated
+        // to the samInputResource, not to the SamReaderFactory
+        final SamInputResource samInputResource =
+                ReadsCodecUtils.bundleToSamInputResource(inputBundle, readsDecoderOptions);
+        ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
+        bamDecoderOptionsToSamReaderFactory(samReaderFactory, readsDecoderOptions.getBAMDecoderOptions());
+
+        return samReaderFactory.open(samInputResource);
+    }
+
+    private static void bamDecoderOptionsToSamReaderFactory(
+            final SamReaderFactory samReaderFactory,
+            final BAMDecoderOptions bamDecoderOptions) {
+        samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
+        samReaderFactory.setUseAsyncIo(bamDecoderOptions.isUseAsyncIO());
+        samReaderFactory.setOption(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS,
+                bamDecoderOptions.isValidateCRCChecksums());
     }
 
     // convert an input bundle to a SamInputResource
