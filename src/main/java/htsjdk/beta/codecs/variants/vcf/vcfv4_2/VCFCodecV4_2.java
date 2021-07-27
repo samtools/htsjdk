@@ -4,19 +4,11 @@ import htsjdk.beta.codecs.variants.vcf.VCFCodec;
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
 import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
 import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.SignatureStream;
-import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.samtools.util.BlockCompressedStreamConstants;
-import htsjdk.samtools.util.IOUtil;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.zip.GZIPInputStream;
+import htsjdk.utils.ValidationUtils;
 
 /**
  * VCF V4.2 codec.
@@ -31,11 +23,17 @@ public class VCFCodecV4_2 extends VCFCodec {
 
     @Override
     public VCFDecoder getDecoder(final Bundle inputBundle, final VariantsDecoderOptions decoderOptions) {
+        ValidationUtils.nonNull(inputBundle, "inputBundle");
+        ValidationUtils.nonNull(decoderOptions, "decoderOptions");
+
         return new VCFDecoderV4_2(inputBundle, decoderOptions);
     }
 
     @Override
     public VCFEncoder getEncoder(final Bundle outputBundle, final VariantsEncoderOptions encoderOptions) {
+        ValidationUtils.nonNull(outputBundle, "outputBundle");
+        ValidationUtils.nonNull(encoderOptions, "encoderOptions");
+
         return new VCFEncoderV4_2(outputBundle, encoderOptions);
     }
 

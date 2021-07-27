@@ -14,6 +14,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;
 
@@ -41,6 +42,9 @@ public abstract class CRAMEncoder implements ReadsEncoder {
      */
     @PrivateAPI
     public CRAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
+        ValidationUtils.nonNull(outputBundle, "outputBundle");
+        ValidationUtils.nonNull(readsEncoderOptions, "readsEncoderOptions");
+
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
         this.displayName = outputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
@@ -54,6 +58,8 @@ public abstract class CRAMEncoder implements ReadsEncoder {
 
     @Override
     public void setHeader(final SAMFileHeader samFileHeader) {
+        ValidationUtils.nonNull(samFileHeader, "samFileHeader");
+
         if (cramFileWriter != null) {
             throw new IllegalStateException(String.format(
                     "A SAMFileHeader has already been has already been set for encoder %s", getDisplayName()));
@@ -63,10 +69,11 @@ public abstract class CRAMEncoder implements ReadsEncoder {
 
     @Override
     public void write(final SAMRecord record) {
+        ValidationUtils.nonNull(record, "record");
+
         if (cramFileWriter == null) {
             throw new IllegalStateException(
-                    String.format("A SAMFileHeader must be set to establish a CRAM writerfor %s",
-                            getDisplayName()));
+                    String.format("A SAMFileHeader must be set to establish a CRAM writer for %s", getDisplayName()));
         }
         cramFileWriter.addAlignment(record);
     }
@@ -99,11 +106,13 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     /**
      * Return a {@link CRAMReferenceSource} using the {@link ReadsEncoderOptions}, or a default source.
      *
-     * @param readsEncoderOptions options to use
+     * @param cramEncoderOptions CRAMEncoderOptions options to use
      * @return a {@link CRAMReferenceSource}
      */
-    private static CRAMReferenceSource getCRAMReferenceSource(final ReadsEncoderOptions readsEncoderOptions) {
-        final CRAMEncoderOptions cramEncoderOptions = readsEncoderOptions.getCRAMEncoderOptions();
+    @PrivateAPI
+    public static CRAMReferenceSource getCRAMReferenceSource(final CRAMEncoderOptions cramEncoderOptions) {
+        ValidationUtils.nonNull(cramEncoderOptions, "cramEncoderOptions");
+
         if (cramEncoderOptions.getReferenceSource().isPresent()) {
             return cramEncoderOptions.getReferenceSource().get();
         } else if (cramEncoderOptions.getReferencePath().isPresent()) {
@@ -116,7 +125,6 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     }
 
     private CRAMFileWriter getCRAMWriter(final SAMFileHeader samFileHeader, final ReadsEncoderOptions readsEncoderOptions) {
-
         // the CRAMFileWriter constructors assume presorted; so if we're presorted, use the CRAMFileWriters
         // directly so we can support writing to a stream
         if (readsEncoderOptions.isPreSorted()) {
@@ -124,19 +132,20 @@ public abstract class CRAMEncoder implements ReadsEncoder {
             if (outputResource.getIOPath().isPresent()) {
                 cramFileWriter = new CRAMFileWriter(
                         outputResource.getIOPath().get().getOutputStream(),
-                        getCRAMReferenceSource(readsEncoderOptions),
+                        getCRAMReferenceSource(readsEncoderOptions.getCRAMEncoderOptions()),
                         samFileHeader,
                         outputResource.getIOPath().get().toString());
                 return cramFileWriter;
             } else {
                 cramFileWriter = new CRAMFileWriter(
                         outputResource.getOutputStream().get(),
-                        getCRAMReferenceSource(readsEncoderOptions),
+                        getCRAMReferenceSource(readsEncoderOptions.getCRAMEncoderOptions()),
                         samFileHeader,
                         outputResource.getDisplayName());
                 return cramFileWriter;
             }
         } else {
+            // this path uses SAMFileWriterFactory to ensure presorted==false is handled correctly
             final SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();
             final boolean preSorted = readsEncoderOptions.isPreSorted();
 

@@ -8,6 +8,7 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
+import htsjdk.utils.ValidationUtils;
 
 /**
  * VCF V4.0 codec.
@@ -22,11 +23,17 @@ public class VCFCodecV4_0 extends VCFCodec {
 
     @Override
     public VCFDecoder getDecoder(final Bundle inputBundle, final VariantsDecoderOptions decoderOptions) {
+        ValidationUtils.nonNull(inputBundle, "inputBundle");
+        ValidationUtils.nonNull(decoderOptions, "decoderOptions");
+
         return new VCFDecoderV4_0(inputBundle, decoderOptions);
     }
 
     @Override
     public VCFEncoder getEncoder(final Bundle outputBundle, final VariantsEncoderOptions encoderOptions) {
+        ValidationUtils.nonNull(outputBundle, "outputBundle");
+        ValidationUtils.nonNull(encoderOptions, "encoderOptions");
+
         return new VCFEncoderV4_0(outputBundle, encoderOptions);
     }
 

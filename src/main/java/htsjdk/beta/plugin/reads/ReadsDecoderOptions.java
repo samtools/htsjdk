@@ -19,7 +19,7 @@ import java.util.function.Function;
  */
 public class ReadsDecoderOptions implements HtsDecoderOptions {
     private ValidationStringency validationStringency   = ValidationStringency.STRICT;
-    private boolean eagerlyDecode                       = false;
+    private boolean eagerlyDecode                       = false;  // honored by BAM and HtsGet
     private boolean cacheFileBasedIndexes               = false;  // honored by BAM and CRAM
     private boolean dontMemoryMapIndexes                = false;  // honored by BAM and CRAM
     //TODO: replace these with a prefetch size args, and use a local channel wrapper implementation

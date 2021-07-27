@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
@@ -47,7 +47,8 @@ public class SeekableStreamResource extends InputStreamResource {
     }
 
     /**
-     * Get the {@link SeekableStream} managed by this resource as an {@link InputStream}.
+     * Get the {@link SeekableStream} managed by this resource as an {@link InputStream}. Does not
+     * alter or reset the underlying stream.
      *
      * @return the seekable stream managed by this resource, without resetting the stream's state
      */
@@ -79,7 +80,7 @@ public class SeekableStreamResource extends InputStreamResource {
             // reset the buffered input stream so the next consumer sees the beginning of the stream
             seekableStream.seek(0);
         } catch (final IOException e) {
-            throw new RuntimeIOException(
+            throw new HtsjdkIOException(
                     String.format("Error creating signature probe for seekable stream resource with prefix size %d",
                             signatureProbeLength),
                     e);

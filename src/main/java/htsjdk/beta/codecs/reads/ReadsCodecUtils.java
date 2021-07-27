@@ -83,7 +83,7 @@ final public class ReadsCodecUtils {
      * @PrivateAPI
      *
      * The stated contract for decoders is that the index must be included in the bundle in order to use
-     * index queries, but this uses BAMFileReader, which *always* tries to resolve the index, which would
+     * index queries, but some codecs use readers that *always* tries to resolve the index, which would
      * violate that and allow some cases to work that shouldn't, so enforce the contract manually so that
      * someday when we use a different implementation, no backward compatibility issue will be introduced.
      *
@@ -118,7 +118,8 @@ final public class ReadsCodecUtils {
         return samReaderFactory.open(samInputResource);
     }
 
-    private static void bamDecoderOptionsToSamReaderFactory(
+    @PrivateAPI
+    public static void bamDecoderOptionsToSamReaderFactory(
             final SamReaderFactory samReaderFactory,
             final BAMDecoderOptions bamDecoderOptions) {
         samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());

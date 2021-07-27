@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.BufferedInputStream;
@@ -83,10 +83,9 @@ public class InputStreamResource extends BundleResourceBase {
             bufferedInputStream.read(signaturePrefix);
             bufferedInputStream.reset();
         } catch (final IOException e) {
-            throw new RuntimeIOException(
+            throw new HtsjdkIOException(
                     String.format("Error during signature probing on %s with prefix size %d",
-                            this.getDisplayName(),
-                            signatureProbeLength),
+                            this.getDisplayName(), signatureProbeLength),
                     e);
         }
         return new SignatureStream(signatureProbeLength, signaturePrefix);

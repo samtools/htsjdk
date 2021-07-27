@@ -3,12 +3,12 @@ package htsjdk.beta.codecs.variants.vcf.vcfv4_3;
 import htsjdk.beta.codecs.variants.vcf.VCFCodec;
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
 import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
-import htsjdk.beta.codecs.variants.vcf.vcfv4_2.VCFEncoderV4_2;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
+import htsjdk.utils.ValidationUtils;
 
 /**
  * VCF V4.3 codec.
@@ -23,6 +23,9 @@ public class VCFCodecV4_3 extends VCFCodec {
 
     @Override
     public VCFDecoder getDecoder(final Bundle inputBundle, final VariantsDecoderOptions decoderOptions) {
+        ValidationUtils.nonNull(inputBundle, "inputBundle");
+        ValidationUtils.nonNull(decoderOptions, "decoderOptions");
+
         return new VCFDecoderV4_3(inputBundle, decoderOptions);
     }
 

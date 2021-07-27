@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin.bundle;
 
-import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.OutputStream;
@@ -49,14 +49,8 @@ public class OutputStreamResource extends BundleResourceBase {
 
     @Override
     public SignatureStream getSignatureStream(int signatureProbeLength) {
-        throw new RuntimeException(
+        throw new HtsjdkException(
                 "Cannot create a signature stream for an output stream resource. Use hasInputType to determine if signature stream ");
-    }
-
-    @Override
-    public Optional<SeekableStream> getSeekableStream() {
-        throw new RuntimeException(
-                "Cannot create a signature stream on an output stream resource. Use hasSeekableStream to determine if signature stream can be used as seekable stream");
     }
 
     @Override

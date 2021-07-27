@@ -57,6 +57,10 @@ public abstract class VCFDecoder implements VariantsDecoder {
             final Bundle inputBundle,
             final AbstractVCFCodec vcfCodec,
             final VariantsDecoderOptions variantsDecoderOptions) {
+        ValidationUtils.nonNull(inputBundle, "inputBundle");
+        ValidationUtils.nonNull(vcfCodec, "vcfCodec");
+        ValidationUtils.nonNull(variantsDecoderOptions, "variantsDecoderOptions");
+
         this.inputBundle = inputBundle;
         this.variantsDecoderOptions = variantsDecoderOptions;
         this.displayName = inputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS).getDisplayName();
@@ -86,42 +90,52 @@ public abstract class VCFDecoder implements VariantsDecoder {
 
     @Override
     public boolean isQueryable() {
+        VariantsCodecUtils.assertBundleContainsIndex(getInputBundle());
         return vcfReader.isQueryable();
     }
 
     @Override
     public boolean hasIndex() {
+        VariantsCodecUtils.assertBundleContainsIndex(getInputBundle());
         return vcfReader.isQueryable();
     }
 
     public CloseableIterator<VariantContext> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         ValidationUtils.nonNull(intervals, "interval list");
+        ValidationUtils.validateArg(!intervals.isEmpty(), "interval list must contain intervals");
+        VariantsCodecUtils.assertBundleContainsIndex(getInputBundle());
 
         if (intervals.size() > 1) {
             //TODO: implement lists, sorting, merging, and ensuring that features that overlap more than one interval
             // are only returned once
-            throw new HtsjdkPluginException(String.format("query for lists not implemented for decoder %s", displayName));
+            throw new HtsjdkPluginException(String.format("query for lists not yet implemented for decoder %s", displayName));
         }
         if (queryRule != HtsQueryRule.OVERLAPPING) {
             //TODO: implement overlapping
-            throw new HtsjdkPluginException(String.format("query for lists not implemented for decoder %s", displayName));
+            throw new HtsjdkPluginException(String.format("query for contained intervals not implemented for this decoder %s", displayName));
         }
 
         try {
             return vcfReader.query(HtsIntervalUtils.toLocatableList(intervals).get(0));
         } catch (final IOException e) {
-            throw new HtsjdkIOException(String.format("Exception processing queryStart on VCFDecoder %s", displayName), e);
+            throw new HtsjdkIOException(String.format("Exception processing query on VCFDecoder %s", displayName), e);
         }
     }
 
     @Override
     public CloseableIterator<VariantContext> query(final String queryString) {
+        ValidationUtils.nonNull(queryString, "queryString");
+        VariantsCodecUtils.assertBundleContainsIndex(getInputBundle());
+
         return queryStart(queryString, 1);
     }
 
     @Override
     public CloseableIterator<VariantContext> queryStart(final String queryName, final long start) {
+        ValidationUtils.nonNull(queryName, "queryName");
         ValidationUtils.validateArg(isQueryable(), String.format("Decoder %s is not queryable", displayName));
+        VariantsCodecUtils.assertBundleContainsIndex(getInputBundle());
+
         if (vcfHeader == null) {
             throw new HtsjdkException(String.format(
                     "A valid VCF header is required to execute a query, but is not present: %s.",

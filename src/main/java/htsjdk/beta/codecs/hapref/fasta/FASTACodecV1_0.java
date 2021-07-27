@@ -19,7 +19,6 @@ import htsjdk.utils.ValidationUtils;
  * The v1.0 FASTA codec.
  */
 public class FASTACodecV1_0 implements HaploidReferenceCodec {
-
     public static final HtsVersion VERSION_1 = new HtsVersion(1, 0, 0);
 
     @Override
@@ -39,6 +38,8 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
 
     @Override
     public boolean canDecodeSignature(final SignatureStream signatureStream, final String sourceName) {
+        ValidationUtils.nonNull(signatureStream, "signatureStream");
+        ValidationUtils.nonNull(sourceName, "sourceName");
         int ch = signatureStream.read();
         if (ch == -1) {
             throw new HtsjdkIOException(
@@ -49,17 +50,21 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
+        ValidationUtils.nonNull(ioPath, "ioPath");
         return FileExtensions.FASTA.stream().anyMatch(ext-> ioPath.hasExtension(ext));
     }
 
    @Override
     public HaploidReferenceDecoder getDecoder(final Bundle inputBundle, final HaploidReferenceDecoderOptions options) {
-        ValidationUtils.validateArg(options == null, "reference reader options must be null");
+       ValidationUtils.nonNull(inputBundle, "input bundle");
+       ValidationUtils.nonNull(options, "reference encoder options");
         return new FASTADecoderV1_0(inputBundle);
     }
 
     @Override
     public HaploidReferenceEncoder getEncoder(final Bundle outputBundle, final HaploidReferenceEncoderOptions options) {
+        ValidationUtils.nonNull(outputBundle, "output bundle");
+        ValidationUtils.nonNull(options, "reference encoder options");
         throw new HtsjdkPluginException("FASTA encoder not implemented");
     }
 

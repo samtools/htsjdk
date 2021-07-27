@@ -128,7 +128,8 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     }
 
     /**
-     * Get an iterator over all records from the underlying resource that match the query arguments
+     * Get an iterator over all records from the underlying resource that match the query arguments.
+     * Callers much ensure that the intervals are in increasing order and do not overlap or abut.
      *
      * @param intervals list of intervals to match
      * @param queryRule query rule to use, from {@link HtsQueryRule}

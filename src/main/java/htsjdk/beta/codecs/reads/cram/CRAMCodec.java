@@ -15,6 +15,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -35,11 +36,16 @@ public abstract class CRAMCodec implements ReadsCodec {
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
+        ValidationUtils.nonNull(ioPath, "ioPath");
+
         return extensionMap.stream().anyMatch(ext-> ioPath.hasExtension(ext));
     }
 
     @Override
     public boolean canDecodeSignature(final SignatureStream signatureStream, final String sourceName) {
+        ValidationUtils.nonNull(signatureStream, "signatureStream");
+        ValidationUtils.nonNull(sourceName, "sourceName");
+
         try {
             final byte[] signatureBytes = new byte[getSignatureLength()];
             final int numRead = signatureStream.read(signatureBytes);
@@ -59,6 +65,8 @@ public abstract class CRAMCodec implements ReadsCodec {
 
     @PrivateAPI
     static CRAMReferenceSource getCRAMReferenceSource(final IOPath referencePath) {
+        ValidationUtils.nonNull(referencePath, "referencePath");
+
         final FASTADecoderV1_0 fastaDecoder = (FASTADecoderV1_0)
                 HtsDefaultRegistry.getHaploidReferenceResolver().getHapRefDecoder(referencePath);
         if (fastaDecoder == null) {

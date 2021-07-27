@@ -6,6 +6,7 @@ import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.ValidationUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ public abstract class BAMCodec implements ReadsCodec {
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
+        ValidationUtils.nonNull(ioPath, "ioPath");
         return extensionMap.stream().anyMatch(ext-> ioPath.hasExtension(ext));
     }
 

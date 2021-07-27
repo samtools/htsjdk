@@ -392,6 +392,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
         try {
             testCodecs.resolveForDecoding(bundle);
         } catch (final RuntimeException e) {
+            // the test cases here throw both IllegalArgumentException and HtsjdkException, so catch RuntimeException
             Assert.assertTrue(e.getMessage().contains(expectedMessage));
             throw e;
         }

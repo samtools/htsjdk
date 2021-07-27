@@ -7,7 +7,6 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormats;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
@@ -23,7 +22,7 @@ import java.io.IOException;
  */
 public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     private final String displayName;
-    protected Bundle haprefBundle;
+    protected Bundle inputBundle;
 
     @Override
     public String getDisplayName() { return displayName; }
@@ -31,7 +30,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     private final ReferenceSequenceFile referenceSequenceFile;
 
     public FASTADecoderV1_0(final Bundle inputBundle) {
-        this.haprefBundle = inputBundle;
+        this.inputBundle = inputBundle;
         this.displayName = inputBundle.getPrimaryResource().getDisplayName();
         final BundleResource referenceResource = inputBundle.getOrThrow(BundleResourceType.HAPLOID_REFERENCE);
         if (referenceResource.getIOPath().isPresent()) {
@@ -55,7 +54,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
 
     @Override
     public SAMSequenceDictionary getHeader() {
-        throw new HtsjdkPluginException("Not implemented");
+        return referenceSequenceFile.getSequenceDictionary();
     }
 
     @Override
@@ -94,12 +93,12 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
 
     @Override
     public boolean isQueryable() {
-        throw new HtsjdkPluginException("Not implemented");
+        return hasIndex();
     }
 
     @Override
     public boolean hasIndex() {
-        throw new HtsjdkPluginException("Not implemented");
+        return bundleContainsIndex(inputBundle) && referenceSequenceFile.isIndexed();
     }
 
     //TODO: we need a solution here that doesn't depend on this getter...its necessary because
@@ -121,6 +120,16 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
                 throw new HtsjdkIOException(e);
             }
         }
+    }
+
+    /**
+     * Return true if the input {@link Bundle} contains a reads index resource
+     *
+     * @param inputBundle input {@link Bundle} to inspect
+     * @return true if input {@link Bundle} contains a reads index resource
+     */
+    private static boolean bundleContainsIndex(final Bundle inputBundle) {
+        return inputBundle.get(BundleResourceType.READS_INDEX).isPresent();
     }
 
 }

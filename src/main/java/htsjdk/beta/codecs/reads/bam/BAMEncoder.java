@@ -5,6 +5,7 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
+import htsjdk.utils.ValidationUtils;
 
 /**
  * @PrivateAPI
@@ -30,6 +31,9 @@ public abstract class BAMEncoder implements ReadsEncoder {
      * @param readsEncoderOptions {@link ReadsEncoderOptions} to use
      */
     public BAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
+        ValidationUtils.nonNull(outputBundle,"outputBundle");
+        ValidationUtils.nonNull(readsEncoderOptions, "readsEncoderOptions");
+
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
         this.displayName = outputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();

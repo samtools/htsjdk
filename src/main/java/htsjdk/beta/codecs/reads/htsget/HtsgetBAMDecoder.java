@@ -23,7 +23,7 @@ public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     }
 
     @Override
-    final public String getFileFormat() { return ReadsFormats.BAM; }
+    public String getFileFormat() { return ReadsFormats.HTSGET_BAM; }
 
     @Override
     public HtsVersion getVersion() {

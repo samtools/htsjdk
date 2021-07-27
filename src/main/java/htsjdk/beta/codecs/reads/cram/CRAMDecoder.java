@@ -53,6 +53,9 @@ public abstract class CRAMDecoder implements ReadsDecoder {
      */
     @PrivateAPI
     public CRAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
+        ValidationUtils.nonNull(inputBundle, "inputBundle");
+        ValidationUtils.nonNull(readsDecoderOptions, "inputBundle");
+
         this.inputBundle = inputBundle;
         this.readsDecoderOptions = readsDecoderOptions;
         this.displayName = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
@@ -86,16 +89,19 @@ public abstract class CRAMDecoder implements ReadsDecoder {
 
     @Override
     public boolean isQueryable() {
-        return samReader.isQueryable();
+        return ReadsCodecUtils.bundleContainsIndex(getInputBundle()) && samReader.isQueryable();
     }
 
     @Override
     public boolean hasIndex() {
-        return samReader.hasIndex();
+        return ReadsCodecUtils.bundleContainsIndex(getInputBundle()) && samReader.hasIndex();
     }
 
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
+        ValidationUtils.nonNull(intervals, "intervals");
+        ValidationUtils.nonNull(queryRule, "queryRule");
+
         final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
                 intervals,
                 samFileHeader.getSequenceDictionary());
@@ -104,6 +110,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
+        ValidationUtils.nonNull(queryName, "queryName");
         return getIteratorMonitor(() -> samReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start)));
     }
 
@@ -118,6 +125,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     @Override
     public Optional<SAMRecord> queryMate(SAMRecord rec) {
         ValidationUtils.nonNull(rec, "rec");
+
         if (!rec.getReadPairedFlag()) {
             throw new IllegalArgumentException(String.format("queryMate called for unpaired read on %s.", getDisplayName()));
         }
@@ -185,7 +193,10 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     // when the decoder is closed, but if we create it, then we need to close it.
     //TODO: creation of the source should be separate from the getting of the source, and the result
     // cached, so we don't create multiple reference Sources
-    private static CRAMReferenceSource getCRAMReferenceSource(final CRAMDecoderOptions cramDecoderOptions) {
+    @PrivateAPI
+    public static CRAMReferenceSource getCRAMReferenceSource(final CRAMDecoderOptions cramDecoderOptions) {
+        ValidationUtils.nonNull(cramDecoderOptions, "cramDecoderOptions");
+
         if (cramDecoderOptions.getReferenceSource().isPresent()) {
             return cramDecoderOptions.getReferenceSource().get();
         } else if (cramDecoderOptions.getReferencePath().isPresent()) {

@@ -15,10 +15,10 @@ import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -75,6 +75,9 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
+        ValidationUtils.nonNull(intervals, "intervals");
+        ValidationUtils.nonNull(queryRule, "queryRule");
+
         ReadsCodecUtils.assertBundleContainsIndex(getInputBundle());
         final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
                 intervals,
@@ -84,6 +87,8 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
+        ValidationUtils.nonNull(queryName, "queryName");
+
         ReadsCodecUtils.assertBundleContainsIndex(getInputBundle());
         return samReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start));
     }
@@ -98,6 +103,8 @@ public class BAMDecoderV1_0 extends BAMDecoder {
 
     @Override
     public Optional<SAMRecord> queryMate(final SAMRecord samRecord) {
+        ValidationUtils.nonNull(samRecord, "samRecord");
+
         ReadsCodecUtils.assertBundleContainsIndex(getInputBundle());
         return Optional.ofNullable(samReader.queryMate(samRecord));
     }

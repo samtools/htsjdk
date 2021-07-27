@@ -38,7 +38,7 @@ public class HtsVersion implements Comparable<HtsVersion> {
      */
     public HtsVersion(final String versionString) {
         ValidationUtils.nonNull(versionString);
-        final String[] parts = versionString.split(".", 0);
+        final String[] parts = versionString.split("\\.");
         if (parts.length != 3) {
             throw new IllegalArgumentException(String.format("Unable parse version string as major.minor.patch: '%s'", versionString));
         }
@@ -103,9 +103,6 @@ public class HtsVersion implements Comparable<HtsVersion> {
         return String.format(FORMAT_STRING, getMajorVersion(), getMinorVersion(), getPatchVersion());
     }
 
-    //TODO: needs tests
-    //a negative integer, zero, or a positive integer as this object
-    //is less than, equal to, or greater than the specified object.
     @Override
     public int compareTo(HtsVersion o) {
         ValidationUtils.nonNull(o);

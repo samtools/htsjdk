@@ -49,6 +49,7 @@ public class BundleResourceType {
      * secondary content type names for {@link BundleResourceType#HAPLOID_REFERENCE} resources
      */
     public static final String REFERENCE_DICTIONARY = "REFERENCE_DICTIONARY";
+    public static final String REFERENCE_INDEX = "REFERENCE_INDEX";
 
     // General secondary content types
     public static final String MD5 = "MD5";

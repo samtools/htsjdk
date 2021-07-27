@@ -12,6 +12,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;
 
@@ -40,14 +41,16 @@ public class BAMEncoderV1_0 extends BAMEncoder {
 
     @Override
     public void setHeader(final SAMFileHeader samFileHeader) {
+        ValidationUtils.nonNull(samFileHeader, "samFileHeader");
         samFileWriter = getBAMFileWriter(getReadsEncoderOptions(), samFileHeader);
     }
 
     @Override
     public void write(final SAMRecord record) {
+        ValidationUtils.nonNull(record, "record");
         if (samFileWriter == null) {
             throw new IllegalStateException(String.format(
-                    "A SAMFileHeader must be established before a BAM writer can be established %s",
+                    "A SAMFileHeader must be established before records can be written for %s",
                     getDisplayName()));
         }
         samFileWriter.addAlignment(record);
@@ -78,7 +81,6 @@ public class BAMEncoderV1_0 extends BAMEncoder {
     private SAMFileWriter getBAMFileWriter(
             final ReadsEncoderOptions readsEncoderOptions,
             final SAMFileHeader samFileHeader) {
-
         final BAMEncoderOptions bamEncoderOptions = readsEncoderOptions.getBAMEncoderOptions();
         final SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();
         bamEncoderOptionsToSamWriterFactory(bamEncoderOptions, samFileWriterFactory);

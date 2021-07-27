@@ -31,6 +31,7 @@ public class SAMCodecV1_0Test {
             Assert.assertNotNull(samDecoder);
             Assert.assertEquals(samDecoder.getFileFormat(), ReadsFormats.SAM);
             Assert.assertEquals(samDecoder.getVersion(), SAMCodecV1_0.VERSION_1);
+            Assert.assertTrue(samDecoder.getDisplayName().contains(inputPath.toString()));
             Assert.assertEquals(samDecoder.isQueryable(), false);
             Assert.assertEquals(samDecoder.hasIndex(), false);
 
@@ -85,9 +86,13 @@ public class SAMCodecV1_0Test {
 
             Assert.assertNotNull(samDecoder);
             Assert.assertEquals(samDecoder.getFileFormat(), ReadsFormats.SAM);
+            Assert.assertTrue(samDecoder.getDisplayName().contains(
+                    inputBundle.get(BundleResourceType.ALIGNED_READS).get().getDisplayName()));
+
             Assert.assertNotNull(samEncoder);
             Assert.assertEquals(samEncoder.getFileFormat(), ReadsFormats.SAM);
             Assert.assertEquals(samEncoder.getVersion(), SAMCodecV1_0.VERSION_1);
+            Assert.assertTrue(samEncoder.getDisplayName().contains(outputPath.toString()));
 
             final SAMFileHeader samFileHeader = samDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);

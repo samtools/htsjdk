@@ -9,7 +9,6 @@ import htsjdk.utils.ValidationUtils;
  * General reads encoder options.
  */
 public class ReadsEncoderOptions implements HtsEncoderOptions {
-
     private boolean isPreSorted = false;
     private BAMEncoderOptions bamEncoderOptions = new BAMEncoderOptions();
     private CRAMEncoderOptions cramEncoderOptions =  new CRAMEncoderOptions();

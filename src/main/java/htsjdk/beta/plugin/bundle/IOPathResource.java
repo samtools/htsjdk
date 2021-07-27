@@ -1,9 +1,9 @@
 package htsjdk.beta.plugin.bundle;
 
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
@@ -84,7 +84,7 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
         try {
             return Optional.of(new SeekablePathStream(getIOPath().get().toPath()));
         } catch (final IOException e) {
-            throw new RuntimeIOException(toString(), e);
+            throw new HtsjdkIOException(toString(), e);
         }
     }
 
@@ -96,7 +96,7 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
             inputStream.read(signaturePrefix);
             return new SignatureStream(signatureProbeLength, signaturePrefix);
         } catch (final IOException e) {
-            throw new RuntimeIOException(
+            throw new HtsjdkIOException(
                     String.format("Error getting a signature probe stream with probe length %d", signatureProbeLength),
                     e);
         }

@@ -10,6 +10,7 @@ import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,13 +26,13 @@ import java.util.zip.GZIPInputStream;
  */
 @PrivateAPI
 public abstract class VCFCodec implements VariantsCodec {
-
     // FileExtensions.VCF_LIST includes BCF, which we don't want included here
     private static final Set<String> extensionMap = new HashSet<String>() {
         private static final long serialVersionUID = 1L;
         {
             add(FileExtensions.VCF);
             add(FileExtensions.COMPRESSED_VCF);
+            add(".vcf.bgz");
         }
     };
 
@@ -40,6 +41,8 @@ public abstract class VCFCodec implements VariantsCodec {
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
+        ValidationUtils.nonNull(ioPath, "ioPath");
+
         return extensionMap.stream().anyMatch(ext-> ioPath.hasExtension(ext));
     }
 
@@ -53,6 +56,9 @@ public abstract class VCFCodec implements VariantsCodec {
 
     @Override
     public boolean canDecodeSignature(final SignatureStream probingInputStream, final String sourceName) {
+        ValidationUtils.nonNull(probingInputStream, "probingInputStream");
+        ValidationUtils.nonNull(sourceName, "sourceName");
+
         final byte[] signatureBytes = new byte[getSignatureLength()];
         try {
             final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(probingInputStream) ?

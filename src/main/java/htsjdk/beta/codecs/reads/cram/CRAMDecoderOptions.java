@@ -31,10 +31,11 @@ public class CRAMDecoderOptions {
      * @throws IllegalArgumentException if a reference path is already set on these options
      */
     public CRAMDecoderOptions setReferenceSource(final CRAMReferenceSource referenceSource) {
-        ValidationUtils.validateArg(referencePath == null,
-                String.format(
+        if (referencePath != null) {
+            throw new IllegalStateException(String.format(
                         "Reference source and reference path are mutually exclusive. Reference path already has value %s.",
                         referencePath.getRawInputString()));
+        }
         this.referencePath = null;
         this.referenceSource = referenceSource;
         return this;
@@ -58,10 +59,11 @@ public class CRAMDecoderOptions {
      * @throws IllegalArgumentException if a reference source is already set on these options
      */
     public CRAMDecoderOptions setReferencePath(final IOPath referencePath) {
-        ValidationUtils.validateArg(referenceSource == null,
-                String.format(
-                        "Reference path and reference source are mutually exclusive. Reference source already has value %s.",
-                        referenceSource));
+        if (referenceSource != null) {
+            throw new IllegalStateException(String.format(
+                    "Reference path and reference source are mutually exclusive. Reference source already has value %s.",
+                    referenceSource));
+        }
         this.referenceSource = null;
         this.referencePath = referencePath;
         return this;

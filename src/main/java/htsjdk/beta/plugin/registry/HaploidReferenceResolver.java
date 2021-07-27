@@ -8,6 +8,7 @@ import htsjdk.beta.plugin.bundle.BundleResourceType;
 import htsjdk.beta.plugin.bundle.IOPathResource;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
+import htsjdk.beta.plugin.hapref.HaploidReferenceDecoderOptions;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
@@ -31,7 +32,7 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
     }
 
     /**
-     * Gat a {@link HaploidReferenceDecoder} for the given inputPath.
+     * Get a {@link HaploidReferenceDecoder} for the given inputPath.
      *
      * @param inputPath the path to the resource to be decoded
      * @return a HaploidReferenceDecoder for the given inputPath
@@ -47,6 +48,25 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
                 new IOPathResource(inputPath, BundleResourceType.HAPLOID_REFERENCE)).build();
         final HaploidReferenceCodec haploidReferenceCodec = resolveForDecoding(referenceBundle);
 
-        return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(referenceBundle, null);
+        return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(
+                referenceBundle,
+                new HaploidReferenceDecoderOptions());
+    }
+
+    /**
+     * Get a {@link HaploidReferenceDecoder} for the given input Bundle.
+     *
+     * @param inputBundle the path to the bundle containing the resoource to be decoded
+     * @return a HaploidReferenceDecoder for the given inputPath
+     *
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
+     */
+    public HaploidReferenceDecoder getHapRefDecoder(final Bundle inputBundle) {
+        ValidationUtils.nonNull(inputBundle, "inputPath");
+
+        final HaploidReferenceCodec haploidReferenceCodec = resolveForDecoding(inputBundle);
+        return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(inputBundle, new HaploidReferenceDecoderOptions());
     }
 }

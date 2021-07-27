@@ -8,6 +8,7 @@ import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.utils.ValidationUtils;
 
 /**
  * CRAM v2.1 codec
@@ -28,11 +29,17 @@ public class CRAMCodecV2_1 extends CRAMCodec {
 
     @Override
     public CRAMDecoder getDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
+        ValidationUtils.nonNull(inputBundle, "inputBundle");
+        ValidationUtils.nonNull(readsDecoderOptions, "readsDecoderOptions");
+
         return new CRAMDecoderV2_1(inputBundle, readsDecoderOptions);
     }
 
     @Override
     public CRAMEncoder getEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
+        ValidationUtils.nonNull(outputBundle, "outputBundle");
+        ValidationUtils.nonNull(readsEncoderOptions, "readsEncoderOptions");
+
         return new CRAMEncoderV2_1(outputBundle, readsEncoderOptions);
     }
 

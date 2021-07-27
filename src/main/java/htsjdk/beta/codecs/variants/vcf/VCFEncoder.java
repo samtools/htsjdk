@@ -10,6 +10,7 @@ import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.io.IOPath;
 import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
@@ -44,6 +45,9 @@ public abstract class VCFEncoder implements VariantsEncoder {
      */
     @PrivateAPI
     public VCFEncoder(final Bundle outputBundle, final VariantsEncoderOptions variantsEncoderOptions) {
+        ValidationUtils.nonNull(outputBundle, "outputBundle");
+        ValidationUtils.nonNull(variantsEncoderOptions, "variantsEncoderOptions");
+
         this.outputBundle = outputBundle;
         this.variantsEncoderOptions = variantsEncoderOptions;
         this.displayName = outputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS).getDisplayName();
@@ -57,12 +61,16 @@ public abstract class VCFEncoder implements VariantsEncoder {
 
     @Override
     public void setHeader(final VCFHeader vcfHeader) {
+        ValidationUtils.nonNull(vcfHeader, "vcfHeader");
+
         vcfWriter = getVCFWriter(getOutputBundle(), getVariantsEncoderOptions());
         vcfWriter.writeHeader(vcfHeader);
     }
 
     @Override
     public void write(final VariantContext variantContext) {
+        ValidationUtils.nonNull(variantContext, "variantContext");
+
         if (vcfWriter == null) {
             throw new IllegalStateException("The VCF encoder must have a valid header before records can be written");
         }

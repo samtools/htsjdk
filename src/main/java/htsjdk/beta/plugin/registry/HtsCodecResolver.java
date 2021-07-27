@@ -1,5 +1,6 @@
 package htsjdk.beta.plugin.registry;
 
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.bundle.Bundle;
@@ -9,7 +10,6 @@ import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.PrivateAPI;
 import htsjdk.utils.ValidationUtils;
 
@@ -323,7 +323,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
             }
             return signatureBytes;
         } catch (IOException e) {
-            throw new RuntimeIOException(
+            throw new HtsjdkIOException(
                     String.format("error closing signature stream for %s", bundleResource.getDisplayName()),
                     e);
         }

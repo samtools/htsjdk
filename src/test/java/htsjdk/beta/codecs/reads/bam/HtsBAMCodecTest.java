@@ -1,6 +1,7 @@
 package htsjdk.beta.codecs.reads.bam;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.beta.codecs.reads.bam.bamV1_0.BAMCodecV1_0;
 import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.bundle.Bundle;
 import htsjdk.beta.plugin.bundle.BundleResourceType;
@@ -28,6 +29,8 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
         try (final BAMDecoder bamDecoder = (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
             Assert.assertNotNull(bamDecoder);
             Assert.assertEquals(bamDecoder.getFileFormat(), ReadsFormats.BAM);
+            Assert.assertTrue(bamDecoder.getDisplayName().contains(inputPath.toString()));
+            Assert.assertTrue(bamDecoder.getVersion().equals(BAMCodecV1_0.VERSION_1));
 
             final SAMFileHeader samFileHeader = bamDecoder.getHeader();
             Assert.assertNotNull(samFileHeader);
@@ -42,6 +45,8 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
         try (final BAMEncoder bamEncoder = (BAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
             Assert.assertNotNull(bamEncoder);
             Assert.assertEquals(bamEncoder.getFileFormat(), ReadsFormats.BAM);
+            Assert.assertTrue(bamEncoder.getVersion().equals(BAMCodecV1_0.VERSION_1));
+            Assert.assertTrue(bamEncoder.getDisplayName().contains(outputPath.toString()));
         }
     }
 
