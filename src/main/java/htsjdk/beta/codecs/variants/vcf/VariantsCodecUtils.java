@@ -1,7 +1,7 @@
 package htsjdk.beta.codecs.variants.vcf;
 
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.utils.PrivateAPI;
 
 /**

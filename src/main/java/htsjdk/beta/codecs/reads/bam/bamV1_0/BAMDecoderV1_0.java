@@ -2,9 +2,8 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
-import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;

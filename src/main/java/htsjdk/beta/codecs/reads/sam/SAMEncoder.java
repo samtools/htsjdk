@@ -1,7 +1,7 @@
 package htsjdk.beta.codecs.reads.sam;
 
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.reads.ReadsFormats;
 /**
  * @PrivateAPI
  *
- * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_SAM} encoders.
+ * Base class for {@link BundleResourceType#READS_SAM} encoders.
  */
 public abstract class SAMEncoder implements ReadsEncoder {
     private final Bundle outputBundle;

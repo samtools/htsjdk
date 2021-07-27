@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.variants.vcf.vcfv3_2;
 
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.variant.vcf.VCF3Codec;
 

@@ -4,7 +4,7 @@ import htsjdk.beta.codecs.reads.cram.CRAMCodec;
 import htsjdk.beta.codecs.reads.cram.CRAMDecoder;
 import htsjdk.beta.codecs.reads.cram.CRAMEncoder;
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.cram.structure.CramHeader;

@@ -1,18 +1,9 @@
 package htsjdk.beta.codecs.variants.vcf.vcfv4_2;
 
 import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResource;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
-import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFHeader;
-
-import static htsjdk.variant.variantcontext.writer.Options.INDEX_ON_THE_FLY;
 
 /**
  * VCF V4.2 encoder.

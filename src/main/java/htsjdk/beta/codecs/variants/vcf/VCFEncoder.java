@@ -2,9 +2,9 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.HtsContentType;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResource;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.variants.VariantsEncoder;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.beta.plugin.variants.VariantsFormats;

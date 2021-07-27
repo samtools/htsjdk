@@ -2,8 +2,8 @@ package htsjdk.beta.plugin.registry.testcodec;
 
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.SignatureStream;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.reads.ReadsCodec;

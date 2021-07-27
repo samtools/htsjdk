@@ -1,6 +1,7 @@
 package htsjdk.beta.plugin;
 
-import htsjdk.beta.plugin.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
 
 import java.io.Closeable;
 
@@ -15,7 +16,7 @@ public interface HtsEncoder<H extends HtsHeader, R extends HtsRecord> extends Cl
     /**
      * Get the name of the file format supported by this encoder. The format name defines the underlying
      * format handled by this encoder, and also corresponds to the format of the primary bundle
-     * resource that is required when encoding (see {@link htsjdk.beta.plugin.bundle.BundleResourceType}
+     * resource that is required when encoding (see {@link BundleResourceType}
      * and {@link BundleResource#getFileFormat()}).
      *
      * @return the name of the underlying file format handled by this encoder

@@ -1,4 +1,4 @@
-package htsjdk.beta.plugin.bundle;
+package htsjdk.beta.io.bundle;
 
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;

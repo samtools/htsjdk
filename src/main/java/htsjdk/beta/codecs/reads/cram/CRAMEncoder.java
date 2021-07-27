@@ -1,9 +1,9 @@
 package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResource;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
@@ -21,7 +21,7 @@ import java.util.Optional;
 /**
  * @PrivateAPI
  *
- * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} decoders.
+ * Base class for {@link BundleResourceType#READS_CRAM} decoders.
  */
 @PrivateAPI
 public abstract class CRAMEncoder implements ReadsEncoder {

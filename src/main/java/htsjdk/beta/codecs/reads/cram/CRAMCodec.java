@@ -3,11 +3,12 @@ package htsjdk.beta.codecs.reads.cram;
 import htsjdk.beta.codecs.hapref.fasta.FASTADecoderV1_0;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.bundle.SignatureStream;
-import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.beta.exception.HtsjdkException;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.io.IOPath;
+import htsjdk.beta.plugin.HtsVersion;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
@@ -25,7 +26,7 @@ import java.util.Set;
 /**
  * @PrivateAPI
  *
- * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} codecs.
+ * Base class for {@link BundleResourceType#READS_CRAM} codecs.
  */
 @PrivateAPI
 public abstract class CRAMCodec implements ReadsCodec {

@@ -2,7 +2,7 @@ package htsjdk.beta.plugin.registry.testcodec;
 
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.SAMFileHeader;

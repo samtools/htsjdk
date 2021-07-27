@@ -1,14 +1,14 @@
 package htsjdk.beta.plugin.reads;
 
 import htsjdk.beta.io.IOPathUtils;
-import htsjdk.beta.plugin.bundle.BundleJSON;
+import htsjdk.beta.io.bundle.BundleJSON;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleBuilder;
-import htsjdk.beta.plugin.bundle.IOPathResource;
-import htsjdk.beta.plugin.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleBuilder;
+import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;

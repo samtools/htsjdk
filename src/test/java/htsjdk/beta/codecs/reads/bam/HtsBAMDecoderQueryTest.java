@@ -1,15 +1,15 @@
 package htsjdk.beta.codecs.reads.bam;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleBuilder;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleBuilder;
 import htsjdk.beta.plugin.reads.ReadsBundle;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SAMRecord;

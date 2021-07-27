@@ -1,11 +1,11 @@
 package htsjdk.beta.codecs.hapref.fasta;
 
-import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoderOptions;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoder;
-import htsjdk.beta.plugin.bundle.SignatureStream;
+import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoderOptions;

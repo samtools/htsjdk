@@ -1,4 +1,4 @@
-package htsjdk.beta.plugin.bundle;
+package htsjdk.beta.io.bundle;
 
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.IOPath;

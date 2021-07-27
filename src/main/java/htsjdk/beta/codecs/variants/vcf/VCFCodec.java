@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsContentType;
-import htsjdk.beta.plugin.bundle.SignatureStream;
+import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.plugin.variants.VariantsFormats;

@@ -1,9 +1,9 @@
 package htsjdk.beta.codecs.reads;
 
 import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResource;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;

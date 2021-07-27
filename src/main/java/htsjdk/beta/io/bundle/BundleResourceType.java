@@ -1,4 +1,4 @@
-package htsjdk.beta.plugin.bundle;
+package htsjdk.beta.io.bundle;
 
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.reads.ReadsFormats;

@@ -3,8 +3,8 @@ package htsjdk.beta.codecs.reads.cram;
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 /**
  * @PrivateAPI
  *
- * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_CRAM} decoders.
+ * Base class for {@link BundleResourceType#READS_CRAM} decoders.
  */
 @PrivateAPI
 public abstract class CRAMDecoder implements ReadsDecoder {

@@ -2,10 +2,10 @@ package htsjdk.beta.codecs.reads.sam;
 
 import htsjdk.beta.codecs.reads.sam.samV1_0.SAMCodecV1_0;
 import htsjdk.beta.plugin.IOUtils;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.bundle.IOPathResource;
-import htsjdk.beta.plugin.bundle.InputStreamResource;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.InputStreamResource;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsFormats;

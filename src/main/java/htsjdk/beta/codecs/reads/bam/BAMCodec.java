@@ -1,5 +1,6 @@
 package htsjdk.beta.codecs.reads.bam;
 
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;
@@ -15,7 +16,7 @@ import java.util.Set;
 /**
  * @PrivateAPI
  *
- * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} codecs.
+ * Base class for {@link BundleResourceType#READS_BAM} codecs.
  */
 @PrivateAPI
 public abstract class BAMCodec implements ReadsCodec {

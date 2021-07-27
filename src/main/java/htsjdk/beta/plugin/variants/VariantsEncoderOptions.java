@@ -1,5 +1,7 @@
 package htsjdk.beta.plugin.variants;
 
+import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.OutputStreamResource;
 import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.samtools.Defaults;
 
@@ -12,7 +14,7 @@ public class VariantsEncoderOptions implements HtsEncoderOptions {
 
 
     /**
-     * Get the buffer size used when writing to an {@link htsjdk.beta.plugin.bundle.IOPathResource}. Defaults
+     * Get the buffer size used when writing to an {@link IOPathResource}. Defaults
      * to {@link Defaults#NON_ZERO_BUFFER_SIZE}.
      *
      * @return the buffer size used when writing to an IOPath
@@ -22,9 +24,9 @@ public class VariantsEncoderOptions implements HtsEncoderOptions {
     }
 
     /**
-     * Set an output buffer size to use when writing to an {@link htsjdk.beta.plugin.bundle.IOPathResource}.
+     * Set an output buffer size to use when writing to an {@link IOPathResource}.
      * Does not affect writing to OutputStreams supplied by the user as a
-     * {@link htsjdk.beta.plugin.bundle.OutputStreamResource}. Set to 0 for no buffering.
+     * {@link OutputStreamResource}. Set to 0 for no buffering.
      * Defaults to {@link Defaults#NON_ZERO_BUFFER_SIZE}.
      *
      * @param bufferSize the buffer size to use

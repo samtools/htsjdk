@@ -2,7 +2,7 @@ package htsjdk.beta.plugin.reads;
 
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsDecoder;
-import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;

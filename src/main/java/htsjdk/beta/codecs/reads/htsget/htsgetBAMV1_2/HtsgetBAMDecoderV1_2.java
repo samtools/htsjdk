@@ -1,9 +1,9 @@
 package htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2;
 
 import htsjdk.beta.codecs.reads.htsget.HtsgetBAMDecoder;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResource;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Version 1.2 of {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_HTSGET_BAM} decoder.
+ * Version 1.2 of {@link BundleResourceType#READS_HTSGET_BAM} decoder.
  */
 public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 

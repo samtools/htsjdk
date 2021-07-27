@@ -1,8 +1,8 @@
 package htsjdk.beta.codecs.reads.cram.cramV3_0;
 
 import htsjdk.beta.codecs.reads.cram.CRAMEncoder;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 

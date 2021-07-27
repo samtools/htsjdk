@@ -2,11 +2,11 @@ package htsjdk.beta.plugin.reads;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.io.IOPathUtils;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleBuilder;
-import htsjdk.beta.plugin.bundle.BundleJSON;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleBuilder;
+import htsjdk.beta.io.bundle.BundleJSON;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import org.testng.Assert;

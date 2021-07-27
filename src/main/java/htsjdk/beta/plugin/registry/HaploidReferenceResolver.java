@@ -2,10 +2,10 @@ package htsjdk.beta.plugin.registry;
 
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleBuilder;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleBuilder;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoderOptions;

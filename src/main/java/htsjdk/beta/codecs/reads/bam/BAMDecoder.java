@@ -1,7 +1,7 @@
 package htsjdk.beta.codecs.reads.bam;
 
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
@@ -11,7 +11,7 @@ import htsjdk.utils.ValidationUtils;
 /**
  * @PrivateAPI
  *
- * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_BAM} decoders.
+ * Base class for {@link BundleResourceType#READS_BAM} decoders.
  */
 @PrivateAPI
 public abstract class BAMDecoder implements ReadsDecoder {

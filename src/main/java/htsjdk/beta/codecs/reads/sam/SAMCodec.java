@@ -1,7 +1,8 @@
 package htsjdk.beta.codecs.reads.sam;
 
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.plugin.bundle.SignatureStream;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.io.IOPath;
@@ -14,7 +15,7 @@ import java.util.Arrays;
 /**
  * @PrivateAPI
  *
- * Base class for {@link htsjdk.beta.plugin.bundle.BundleResourceType#READS_SAM} codecs.
+ * Base class for {@link BundleResourceType#READS_SAM} codecs.
  */
 @PrivateAPI
 public abstract class SAMCodec implements ReadsCodec {

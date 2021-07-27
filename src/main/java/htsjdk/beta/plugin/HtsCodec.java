@@ -1,11 +1,12 @@
 package htsjdk.beta.plugin;
 
-import htsjdk.beta.plugin.bundle.BundleResource;
-import htsjdk.beta.plugin.bundle.SignatureStream;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.registry.HtsCodecRegistry;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.bundle.Bundle;
+import htsjdk.beta.io.bundle.Bundle;
 
 /**
  * Base interface implemented by all {@link htsjdk.beta.plugin} codecs.
@@ -64,8 +65,8 @@ import htsjdk.beta.plugin.bundle.Bundle;
  *     <li> {@link HtsDecoder}: base decoder interface </li>
  *     <li> {@link HtsDecoderOptions}: base options interface for decoders </li>
  *     <li>  a class with string constants for each supported file format for that type </li>
- *     <li> {@link htsjdk.beta.plugin.bundle.Bundle}: a optional type-specific
- *     {@link htsjdk.beta.plugin.bundle.Bundle} implementation </li>
+ *     <li> {@link Bundle}: a optional type-specific
+ *     {@link Bundle} implementation </li>
  * </ul>
  * <p>
  *     The packages containing the content type-specific interface definitions for each of
@@ -189,7 +190,7 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * Get the name of the file format supported by this codec. The format name defines the underlying
      * format handled by this codec, and also corresponds to the format of the primary bundle
      * resource that is required when decoding or encoding (see
-     * {@link htsjdk.beta.plugin.bundle.BundleResourceType} and {@link BundleResource#getFileFormat()}).
+     * {@link BundleResourceType} and {@link BundleResource#getFileFormat()}).
      *
      * @return the name of the underlying file format handled by this codec
      */

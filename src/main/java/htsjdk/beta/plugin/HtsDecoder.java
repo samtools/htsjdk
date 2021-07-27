@@ -1,6 +1,7 @@
 package htsjdk.beta.plugin;
 
-import htsjdk.beta.plugin.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsQuery;
 import java.io.Closeable;
 
@@ -20,7 +21,7 @@ public interface HtsDecoder<H extends HtsHeader, R extends HtsRecord>
     /**
      * Get the name of the file format supported by this decoder.The format name defines the underlying
      * format handled by this decoder, and also corresponds to the format of the primary bundle
-     * resource that is required when decoding (see {@link htsjdk.beta.plugin.bundle.BundleResourceType}
+     * resource that is required when decoding (see {@link BundleResourceType}
      * and {@link BundleResource#getFileFormat()}).
      *
      * @return the name of the underlying file format handled by this decoder
