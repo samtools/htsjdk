@@ -13,7 +13,7 @@ import htsjdk.utils.ValidationUtils;
  * Encoder options specific to BAM encoders.
  */
 public class BAMEncoderOptions {
-    public static int DEAFULT_MAX_RECORDS_IN_RAM = 500000;
+    public static final int DEAFULT_MAX_RECORDS_IN_RAM = 500000;
 
     private boolean useAsyncIo = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
     private int asyncOutputBufferSize = AbstractAsyncWriter.DEFAULT_QUEUE_SIZE;
