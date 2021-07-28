@@ -1,5 +1,6 @@
 package htsjdk.beta.codecs.reads.sam;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.reads.sam.samV1_0.SAMCodecV1_0;
 import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.io.bundle.Bundle;
@@ -20,7 +21,7 @@ import org.testng.annotations.Test;
 
 import java.util.Collections;
 
-public class SAMCodecV1_0Test {
+public class SAMCodecV1_0Test extends HtsjdkTest {
     final IOPath TEST_DIR = new HtsPath("src/test/resources/htsjdk/samtools/");
 
     @Test
