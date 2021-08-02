@@ -1,5 +1,6 @@
 package htsjdk.beta.codecs.variants.vcf;
 
+import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.io.bundle.Bundle;
@@ -105,24 +106,19 @@ public abstract class VCFEncoder implements VariantsEncoder {
     private static VariantContextWriter getVCFWriter(
             final Bundle outputBundle,
             final VariantsEncoderOptions variantsEncoderOptions) {
-        final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
-        if (variantsResource.getIOPath().isPresent()) {
-            VariantContextWriterBuilder writerBuilder = variantsEncoderOptionsToVariantContextWriterBuilder
-                    (variantsEncoderOptions, outputBundle.get(BundleResourceType.VARIANTS_INDEX).isPresent());
-            setWriterBuilderOutputs(outputBundle, writerBuilder);
-            return writerBuilder
-                    .setOutputPath(variantsResource.getIOPath().get().toPath())
-                    .build();
-        } else {
-            throw new HtsjdkUnsupportedOperationException("Writing a VCF to stream not yet implemented");
-        }
+        final VariantContextWriterBuilder writerBuilder =
+                variantsEncoderOptionsToVariantContextWriterBuilder(
+                        variantsEncoderOptions,
+                        outputBundle.get(BundleResourceType.VARIANTS_INDEX).isPresent()
+                );
+        setWriterBuilderOutputs(writerBuilder, outputBundle);
+        return writerBuilder.build();
     }
 
     // propagate VariantsEncoderOptions -> VariantContextWriterBuilder
     private static VariantContextWriterBuilder variantsEncoderOptionsToVariantContextWriterBuilder(
             final VariantsEncoderOptions variantsEncoderOptions,
             final boolean createIndex) {
-
         final VariantContextWriterBuilder vcWriterBuilder = new VariantContextWriterBuilder();
         vcWriterBuilder.clearOptions();
 
@@ -156,8 +152,8 @@ public abstract class VCFEncoder implements VariantsEncoder {
     }
 
     private static void setWriterBuilderOutputs(
-            final Bundle outputBundle,
-            final VariantContextWriterBuilder writerBuilder) {
+            final VariantContextWriterBuilder writerBuilder,
+            final Bundle outputBundle) {
         final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
         if (!variantsResource.hasOutputType()) {
             throw new IllegalArgumentException(String.format(
@@ -167,22 +163,47 @@ public abstract class VCFEncoder implements VariantsEncoder {
         }
 
         final Optional<IOPath> optIndexIOPath = getIndexIOPath(outputBundle);
-        if (!variantsResource.getIOPath().isPresent()) {
+        if (variantsResource.getIOPath().isPresent()) {
             final IOPath variantsIOPath = variantsResource.getIOPath().get();
             if (optIndexIOPath.isPresent()) {
                 //TODO: this resolves the index automatically. it should check to make sure the provided index
                 // matches the one that is automatically resolved, otherwise throw since the request will not be honored
             }
             writerBuilder.setOutputPath(variantsIOPath.toPath());
+            validateImputedOutputType(variantsIOPath);
         } else if (variantsResource.getOutputStream().isPresent()) {
             if (optIndexIOPath.isPresent()) {
-                throw new IllegalArgumentException();
+                throw new HtsjdkUnsupportedOperationException(String.format(
+                        "Can't write a VCF index to file %s when output is written to a stream %s",
+                        optIndexIOPath.get(),
+                        variantsResource));
             }
             // VariantContextWriterBuilder doesn't provide any buffering, but if we were to wrap the provided
             // stream in a buffered stream here, we wouldn't be able to properly control the flushing or lifetime
             // of the underlying stream. we don't want to close the user's stream, but the user doesn't have
             // access to the buffering layer. so just let them provide the buffering stream from the start.
+
+            // This method unconditionally sets the output type to VariantContextWriterBuilder.OutputType.VCF_STREAM,
+            // which has the limitation that you can never write BLOCK_COMPRESSED output to a stream.
             writerBuilder.setOutputVCFStream(variantsResource.getOutputStream().get());
+        }
+    }
+
+    // Calling VariantContextWriterBuilder.setOutputPath has a side effect of setting the output type, based
+    // on the file extension, by calling VariantContextWriterBuilder.determineOutputTypeFromFile(Path). So do
+    // a sanity check to ensure that it got set to a VCF type (VCF or BLOCK_COMPRESSED_VCF), and not something
+    // like BCF. We can't retrieve the value used by the writer directly from the writer, but we can call the
+    // same method the writer uses and check the return value.
+    private static void validateImputedOutputType(final IOPath variantsIOPath) {
+        final VariantContextWriterBuilder.OutputType imputedOutputType =
+                VariantContextWriterBuilder.determineOutputTypeFromFile(variantsIOPath.toPath());
+        if (imputedOutputType != VariantContextWriterBuilder.OutputType.VCF &&
+                imputedOutputType != VariantContextWriterBuilder.OutputType.BLOCK_COMPRESSED_VCF) {
+            throw new HtsjdkPluginException(String.format(
+                    "An unsupported output type %s was derived for the resource %s ",
+                    imputedOutputType,
+                    variantsIOPath.getRawInputString()
+            ));
         }
     }
 

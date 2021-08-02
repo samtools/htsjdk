@@ -275,6 +275,5 @@ class VCFWriter extends IndexingVariantContextWriter {
             throw new IllegalArgumentException(String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
         }
 
-
     }
 }

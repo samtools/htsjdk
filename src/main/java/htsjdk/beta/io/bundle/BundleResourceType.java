@@ -2,6 +2,7 @@ package htsjdk.beta.io.bundle;
 
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.reads.ReadsFormats;
+import htsjdk.beta.plugin.variants.VariantsFormats;
 
 /**
  * Namespace for standard constants to specify content type and format for resources
@@ -44,6 +45,11 @@ public class BundleResourceType {
      * secondary content types names for primary content type {@link #VARIANT_CONTEXTS} resources
      */
     public static final String VARIANTS_INDEX = "VARIANTS_INDEX";
+
+    /**
+     * file format names for content type {@link BundleResourceType#VARIANT_CONTEXTS}
+     */
+    public static final String VARIANTS_VCF = VariantsFormats.VCF;
 
     /**
      * secondary content type names for {@link BundleResourceType#HAPLOID_REFERENCE} resources
