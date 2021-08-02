@@ -27,11 +27,11 @@ public class ReadsDecoderOptionsTest extends HtsjdkTest {
     @Test
     public void testEagerlyDecode() {
         final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions();
-        Assert.assertEquals(readsDecoderOptions.isEagerlyDecode(), false);
+        Assert.assertEquals(readsDecoderOptions.isDecodeEagerly(), false);
 
         final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault();
-        readsDecoderOptions.setEagerlyDecode(true);
-        Assert.assertEquals(readsDecoderOptions.isEagerlyDecode(), true);
+        readsDecoderOptions.setDecodeEagerly(true);
+        Assert.assertEquals(readsDecoderOptions.isDecodeEagerly(), true);
         ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
         //TODO: need a way to verify factory propagation
     }
@@ -39,11 +39,11 @@ public class ReadsDecoderOptionsTest extends HtsjdkTest {
     @Test
     public void testCacheFileBasedIndexes() {
         final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions();
-        Assert.assertEquals(readsDecoderOptions.isCacheFileBasedIndexes(), false);
+        Assert.assertEquals(readsDecoderOptions.isFileBasedIndexCached(), false);
 
         final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault();
-        readsDecoderOptions.setCacheFileBasedIndexes(true);
-        Assert.assertEquals(readsDecoderOptions.isCacheFileBasedIndexes(), true);
+        readsDecoderOptions.setFileBasedIndexCached(true);
+        Assert.assertEquals(readsDecoderOptions.isFileBasedIndexCached(), true);
         ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
         //TODO: need a way to verify factory propagation
     }
@@ -51,11 +51,11 @@ public class ReadsDecoderOptionsTest extends HtsjdkTest {
     @Test
     public void testDontMemoryMapIndexesIndexes() {
         final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions();
-        Assert.assertEquals(readsDecoderOptions.isDontMemoryMapIndexes(), false);
+        Assert.assertEquals(readsDecoderOptions.isMemoryMapIndexes(), true);
 
         final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault();
-        readsDecoderOptions.setDontMemoryMapIndexes(true);
-        Assert.assertEquals(readsDecoderOptions.isDontMemoryMapIndexes(), true);
+        readsDecoderOptions.setMemoryMapIndexes(false);
+        Assert.assertEquals(readsDecoderOptions.isMemoryMapIndexes(), false);
         ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
         //TODO: need a way to verify factory propagation
     }

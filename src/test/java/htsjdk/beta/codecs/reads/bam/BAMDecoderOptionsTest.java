@@ -10,11 +10,11 @@ public class BAMDecoderOptionsTest extends HtsjdkTest {
     @Test
     public void testUseAsyncIO() {
         final BAMDecoderOptions bamDecoderOptions = new BAMDecoderOptions();
-        final boolean defaultUseAsyncIO = bamDecoderOptions.isUseAsyncIO();
+        final boolean defaultUseAsyncIO = bamDecoderOptions.isAsyncIO();
         Assert.assertFalse(defaultUseAsyncIO);
 
-        bamDecoderOptions.setUseAsyncIO(true);
-        Assert.assertEquals(bamDecoderOptions.isUseAsyncIO(), true);
+        bamDecoderOptions.setAsyncIO(true);
+        Assert.assertEquals(bamDecoderOptions.isAsyncIO(), true);
     }
 
     @Test
@@ -23,8 +23,8 @@ public class BAMDecoderOptionsTest extends HtsjdkTest {
         final boolean defaultValidateCRCChecksums = bamDecoderOptions.isValidateCRCChecksums();
         Assert.assertFalse(defaultValidateCRCChecksums);
 
-        bamDecoderOptions.setUseAsyncIO(true);
-        Assert.assertEquals(bamDecoderOptions.isUseAsyncIO(), true);
+        bamDecoderOptions.setAsyncIO(true);
+        Assert.assertEquals(bamDecoderOptions.isAsyncIO(), true);
     }
 
     @Test

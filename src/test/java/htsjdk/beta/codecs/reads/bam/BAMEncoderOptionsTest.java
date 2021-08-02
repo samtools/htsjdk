@@ -21,11 +21,11 @@ public class BAMEncoderOptionsTest extends HtsjdkTest {
     @Test
     public void testUseAsyncIO() {
         final BAMEncoderOptions bamEncoderOptions = new BAMEncoderOptions();
-        final boolean defaultUseAsyncIO = bamEncoderOptions.isUseAsyncIo();
+        final boolean defaultUseAsyncIO = bamEncoderOptions.isAsyncIo();
         Assert.assertFalse(defaultUseAsyncIO);
 
         bamEncoderOptions.setUseAsyncIo(true);
-        Assert.assertEquals(bamEncoderOptions.isUseAsyncIo(), true);
+        Assert.assertEquals(bamEncoderOptions.isAsyncIo(), true);
 
     }
 
@@ -77,12 +77,12 @@ public class BAMEncoderOptionsTest extends HtsjdkTest {
         final int TEST_RECORDS_IN_RAM = 2;
 
         final BAMEncoderOptions bamEncoderOptions = new BAMEncoderOptions();
-        final int defaultRecordsInRAM = bamEncoderOptions.getMaxRecordsInRam();
+        final int defaultRecordsInRAM = bamEncoderOptions.getMaxRecordsInRAM();
         Assert.assertEquals(defaultRecordsInRAM, DEFAULT_MAX_RECORDS_IN_RAM);
 
         Assert.assertNotEquals(defaultRecordsInRAM, TEST_RECORDS_IN_RAM);
-        bamEncoderOptions.setMaxRecordsInRam(TEST_RECORDS_IN_RAM);
-        Assert.assertEquals(bamEncoderOptions.getMaxRecordsInRam(), TEST_RECORDS_IN_RAM);
+        bamEncoderOptions.setMaxRecordsInRAM(TEST_RECORDS_IN_RAM);
+        Assert.assertEquals(bamEncoderOptions.getMaxRecordsInRAM(), TEST_RECORDS_IN_RAM);
     }
 
 }

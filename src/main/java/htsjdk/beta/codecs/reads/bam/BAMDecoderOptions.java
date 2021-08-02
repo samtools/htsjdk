@@ -23,10 +23,10 @@ public class BAMDecoderOptions {
     private boolean validateCRCChecksums    = false;
 
     /**
-     * Get the {@link InflaterFactory} included in these options. Defaults to
+     * Get the {@link InflaterFactory} used for these options. Defaults to
      * {@link BlockGunzipper#getDefaultInflaterFactory()}.
      *
-     * @return the {@link InflaterFactory} included in these options
+     * @return the {@link InflaterFactory} used for these options
      */
     public InflaterFactory getInflaterFactory() {
         return inflaterFactory;
@@ -50,7 +50,7 @@ public class BAMDecoderOptions {
      *
      * @return true if async IO is enabled for these options
      */
-    public boolean isUseAsyncIO() {
+    public boolean isAsyncIO() {
         return useAsyncIO;
     }
 
@@ -61,7 +61,7 @@ public class BAMDecoderOptions {
      * @param useAsyncIO true if async IO should be used,otherwise false
      * @return updated BAMDecoderOptions
      */
-    public BAMDecoderOptions setUseAsyncIO(final boolean useAsyncIO) {
+    public BAMDecoderOptions setAsyncIO(final boolean useAsyncIO) {
         this.useAsyncIO = useAsyncIO;
         return this;
     }

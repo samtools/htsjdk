@@ -11,37 +11,34 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Optional;
 import java.util.function.Function;
 
-// Note: options not carried forward from SamReaderFactory:
-//  SAMRecordFactory (doesn't appear to ever ACTUALLY be used in htsjdk, gatk or picard)
-
 /**
  * Reads decoder options (shared/common).
  */
 public class ReadsDecoderOptions implements HtsDecoderOptions {
     private ValidationStringency validationStringency   = ValidationStringency.STRICT;
     private boolean eagerlyDecode                       = false;  // honored by BAM and HtsGet
-    private boolean cacheFileBasedIndexes               = false;  // honored by BAM and CRAM
-    private boolean dontMemoryMapIndexes                = false;  // honored by BAM and CRAM
+    private boolean fileBasedIndexCached                = false;  // honored by BAM and CRAM
+    private boolean memoryMapIndexes                    = true;   // honored by BAM and CRAM
     //TODO: replace these with a prefetch size args, and use a local channel wrapper implementation
     private Function<SeekableByteChannel, SeekableByteChannel> readsChannelTransformer;
     private Function<SeekableByteChannel, SeekableByteChannel> indexChannelTransformer;
-
     private BAMDecoderOptions bamDecoderOptions         = new BAMDecoderOptions();
     private CRAMDecoderOptions cramDecoderOptions       = new CRAMDecoderOptions();
 
     /**
-     * Get the {@link ValidationStringency} for these options. Defaults to {@link ValidationStringency#STRICT}.
+     * Get the {@link ValidationStringency} used for these options. Defaults to {@link ValidationStringency#STRICT}.
      *
-     * @return the {@link ValidationStringency} for these options
+     * @return the {@link ValidationStringency} used for these options
      */
     public ValidationStringency getValidationStringency() {
         return validationStringency;
     }
 
     /**
-     * Set the {@link ValidationStringency} for these options. Defaults value is {@link ValidationStringency#STRICT}.
+     * Set the {@link ValidationStringency} used for these options. Defaults value is
+     * {@link ValidationStringency#STRICT}.
      *
-     * @param validationStringency the {@link ValidationStringency} for these options
+     * @param validationStringency the {@link ValidationStringency} used for these options
      * @return updated ReadsDecoderOptions
      */
     public ReadsDecoderOptions setValidationStringency(final ValidationStringency validationStringency) {
@@ -51,62 +48,62 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
     }
 
     /**
-     * Get eagerly decoding state.
+     * Get eagerly decoding state used for these options.
      *
      * @return true if eager decoding is enabled, otherwise false
      */
-    public boolean isEagerlyDecode() {
+    public boolean isDecodeEagerly() {
         return eagerlyDecode;
     }
 
     /**
-     * Set the eagerly decoding state.
+     * Set the eagerly decoding state used for these options.
      *
      * @param eagerlyDecode true if eagerly decode is set, otherwise false
      * @return updated ReadsDecoderOptions
      */
-    public ReadsDecoderOptions setEagerlyDecode(final boolean eagerlyDecode) {
+    public ReadsDecoderOptions setDecodeEagerly(final boolean eagerlyDecode) {
         this.eagerlyDecode = eagerlyDecode;
         return this;
     }
 
     /**
-     * Get the file based index cache setting.
+     * Get the file based index cache setting used for these options.
      *
      * @return true if caching is enabled for index files, otherwise false
      */
-    public boolean isCacheFileBasedIndexes() {
-        return cacheFileBasedIndexes;
+    public boolean isFileBasedIndexCached() {
+        return fileBasedIndexCached;
     }
 
     /**
-     * Set file based index caching.
+     * Set id file based index caching is enabled for these options.
      *
-     * @param cacheFileBasedIndexes true to set caching, otherwise false
+     * @param fileBasedIndexCached true to enable caching, otherwise false
      * @return updated ReadsDecoderOptions
      */
-    public ReadsDecoderOptions setCacheFileBasedIndexes(final boolean cacheFileBasedIndexes) {
-        this.cacheFileBasedIndexes = cacheFileBasedIndexes;
+    public ReadsDecoderOptions setFileBasedIndexCached(final boolean fileBasedIndexCached) {
+        this.fileBasedIndexCached = fileBasedIndexCached;
         return this;
     }
 
     /**
-     * Get the don't memory map index state.
+     * Get whether mapping indexes is enabled. Defaults to true.
      *
-     * @return true if indexes are not memory mapped, otherwise false
+     * @return true if indexes are memory mapped, otherwise false
      */
-    public boolean isDontMemoryMapIndexes() {
-        return dontMemoryMapIndexes;
+    public boolean isMemoryMapIndexes() {
+        return memoryMapIndexes;
     }
 
     /**
-     * Set the don't memory map index state.
+     * Set whether memory mapping indexes is enabled. Defaults to true.
      *
-     * @param dontMemoryMapIndexes true if indexes are not memory mapped, otherwise false
+     * @param memoryMapIndexes true if indexes are memory mapped, otherwise false
      * @return updated ReadsDecoderOptions
      */
-    public ReadsDecoderOptions setDontMemoryMapIndexes(final boolean dontMemoryMapIndexes) {
-        this.dontMemoryMapIndexes = dontMemoryMapIndexes;
+    public ReadsDecoderOptions setMemoryMapIndexes(final boolean memoryMapIndexes) {
+        this.memoryMapIndexes = memoryMapIndexes;
         return this;
     }
 
@@ -118,7 +115,7 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
     public BAMDecoderOptions getBAMDecoderOptions() { return bamDecoderOptions; }
 
     /**
-     * Set the {@link BAMDecoderOptions} for these ReadsDecoderOptions.
+     * Set the {@link BAMDecoderOptions} used for these options.
      *
      * @param bamDecoderOptions the {@link BAMDecoderOptions} for these ReadsDecoderOptions
      * @return updated ReadsDecoderOptions

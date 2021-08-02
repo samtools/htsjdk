@@ -15,14 +15,36 @@ import htsjdk.utils.ValidationUtils;
 public class BAMEncoderOptions {
     public static final int DEAFULT_MAX_RECORDS_IN_RAM = 500000;
 
+    private int outputBufferSize = Defaults.BUFFER_SIZE;
     private boolean useAsyncIo = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
     private int asyncOutputBufferSize = AbstractAsyncWriter.DEFAULT_QUEUE_SIZE;
-    private int outputBufferSize = Defaults.BUFFER_SIZE;
     private IOPath tempDirPath = new HtsPath(IOUtil.getDefaultTmpDirPath().toString());
     private int compressionLevel = BlockCompressedOutputStream.getDefaultCompressionLevel();
-    private Integer maxRecordsInRam = DEAFULT_MAX_RECORDS_IN_RAM;
+    private Integer maxRecordsInRAM = DEAFULT_MAX_RECORDS_IN_RAM;
     private DeflaterFactory deflaterFactory = BlockCompressedOutputStream.getDefaultDeflaterFactory();
     // SAM only ?:   private SamFlagField samFlagFieldOutput = SamFlagField.NONE;
+
+    /**
+     * Get the output buffer size for these options. This determines the size of the output
+     * stream buffer used when writing outputs. Default value is {@link Defaults#BUFFER_SIZE}.
+     *
+     * @return the buffer size for these options
+     */
+    public int getOutputBufferSize() {
+        return outputBufferSize;
+    }
+
+    /**
+     * Set the buffer size for these options. This determines the size of the output stream buffer used
+     * when writing outputs. Defaults value is {@link Defaults#BUFFER_SIZE}.
+     *
+     * @param outputBufferSize the buffer size for these options
+     * @return updated options
+     */
+    public BAMEncoderOptions setOutputBufferSize(final int outputBufferSize) {
+        this.outputBufferSize = outputBufferSize;
+        return this;
+    }
 
     /**
      * Determine if async IO is enabled for these options. Defaults to
@@ -30,7 +52,7 @@ public class BAMEncoderOptions {
      *
      * @return true if async IO is enabled, otherwise false
      */
-    public boolean isUseAsyncIo() {
+    public boolean isAsyncIo() {
         return useAsyncIo;
     }
 
@@ -57,7 +79,7 @@ public class BAMEncoderOptions {
     }
 
     /**
-     * Get the async output buffer size used for these options. If and only if using asynchronous IO
+     * Get the async output buffer size used for these options. If and only if using asynchronous IO,
      * sets the maximum number of records that can be buffered per writer before producers will block
      * when trying to write another record.
      *
@@ -70,45 +92,24 @@ public class BAMEncoderOptions {
     }
 
     /**
-     * Get the output buffer size for these options. This determines the size of the output
-     * stream buffer used when writing outputs. Default value is {@link Defaults#BUFFER_SIZE}.
+     * Get the temporary directory path used for these options. The temporary directory path is used for
+     * temporary files created during output sorting operations. Defaults value is
+     * {@link IOUtil#getDefaultTmpDirPath()}.
      *
-     * @return the buffer size for these options
+     * @return the temp directory path to use for these options
      */
-    public int getOutputBufferSize() {
-        return outputBufferSize;
-    }
-
-    /**
-     * Set the buffer size for these options. This determines the size of the output stream buffer used
-     * when writing outputs. Defaults value is {@link Defaults#BUFFER_SIZE}.
-     *
-     * @param outputBufferSize the buffer size for these options
-     * @return updated options
-     */
-    public BAMEncoderOptions setOutputBufferSize(final int outputBufferSize) {
-        this.outputBufferSize = outputBufferSize;
-        return this;
-    }
-
-    /**
-     * Get the temporary directory path for these options. The temporary directory path is used for temporary
-     * files created during output sorting operations. Defaults value is {@link IOUtil#getDefaultTmpDirPath()}.
-     *
-     * @return the temp directory path to be used for these options
-     */
-    public IOPath getTempDirPath() {
+    public IOPath getTemporaryDirectory() {
         return tempDirPath;
     }
 
     /**
-     * Get the temporary directory path these options. The temporary directory path is used for temporary
+     * Get the temporary directory path for these options. The temporary directory path is used for temporary
      * files created during output sorting operations. Defaults value is  {@link IOUtil#getDefaultTmpDirPath()}.
      *
      * @param tempDirPath temporary directory path to use
      * @return updated options
      */
-    public BAMEncoderOptions setTempDirPath(final IOPath tempDirPath) {
+    public BAMEncoderOptions setTemporaryDirectory(final IOPath tempDirPath) {
         ValidationUtils.nonNull(tempDirPath, "tempDirPath");
         this.tempDirPath = tempDirPath;
         return this;
@@ -150,12 +151,12 @@ public class BAMEncoderOptions {
      *
      * @return the maximum records kept in ram before spilling to disk for these options
      */
-    public int getMaxRecordsInRam() {
-        return maxRecordsInRam;
+    public int getMaxRecordsInRAM() {
+        return maxRecordsInRAM;
     }
 
     /**
-     * Get the maximum records kept in ram before spilling to disk for these options. Maximum records in RAM
+     * Get the maximum records kept in RAM before spilling to disk for these options. Maximum records in RAM
      * determines the amount of memory used by the writer when sorting output during writing.
      * When writing very large sorted SAM files, you may need use this option in order to avoid running out of
      * file handles. The RAM available to the JVM may need to be increased in order to hold the specified
@@ -163,11 +164,11 @@ public class BAMEncoderOptions {
      *
      * Defaults value is {@link BAMEncoderOptions#DEAFULT_MAX_RECORDS_IN_RAM}.
      *
-     * @param maxRecordsInRam the maximum records kept in ram before spilling to disk. may be null.
+     * @param maxRecordsInRAM the maximum records kept in ram before spilling to disk. may be null.
      * @return updated options
      */
-    public BAMEncoderOptions setMaxRecordsInRam(int maxRecordsInRam) {
-        this.maxRecordsInRam = maxRecordsInRam;
+    public BAMEncoderOptions setMaxRecordsInRAM(int maxRecordsInRAM) {
+        this.maxRecordsInRAM = maxRecordsInRAM;
         return this;
     }
 

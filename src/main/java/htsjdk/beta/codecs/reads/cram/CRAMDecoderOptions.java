@@ -2,7 +2,6 @@ package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.io.IOPath;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
-import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;
 
