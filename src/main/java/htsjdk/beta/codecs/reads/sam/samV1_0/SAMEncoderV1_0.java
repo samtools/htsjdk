@@ -11,14 +11,14 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 
 import java.util.Optional;
 
 /**
  * SAM v1.0 encoder.
  */
-@PrivateAPI
+@InternalAPI
 public class SAMEncoderV1_0 extends SAMEncoder {
     private SAMFileWriter samFileWriter;
 

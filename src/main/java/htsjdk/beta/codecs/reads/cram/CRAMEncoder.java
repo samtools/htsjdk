@@ -13,17 +13,17 @@ import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Base class for {@link BundleResourceType#READS_CRAM} decoders.
  */
-@PrivateAPI
+@InternalAPI
 public abstract class CRAMEncoder implements ReadsEncoder {
     private final Bundle outputBundle;
     private final ReadsEncoderOptions readsEncoderOptions;
@@ -31,7 +31,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
     private CRAMFileWriter cramFileWriter;
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * Create a CRAM encoder for the given output bundle. The primary resource in the bundle must
      * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
@@ -40,7 +40,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
      * @param outputBundle bundle to encode
      * @param readsEncoderOptions options to use
      */
-    @PrivateAPI
+    @InternalAPI
     public CRAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         ValidationUtils.nonNull(outputBundle, "outputBundle");
         ValidationUtils.nonNull(readsEncoderOptions, "readsEncoderOptions");
@@ -109,7 +109,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
      * @param cramEncoderOptions CRAMEncoderOptions options to use
      * @return a {@link CRAMReferenceSource}
      */
-    @PrivateAPI
+    @InternalAPI
     public static CRAMReferenceSource getCRAMReferenceSource(final CRAMEncoderOptions cramEncoderOptions) {
         ValidationUtils.nonNull(cramEncoderOptions, "cramEncoderOptions");
 

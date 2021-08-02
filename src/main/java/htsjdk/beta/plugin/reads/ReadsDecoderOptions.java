@@ -4,7 +4,7 @@ import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
 import htsjdk.beta.codecs.reads.cram.CRAMDecoderOptions;
 import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.nio.channels.SeekableByteChannel;
@@ -156,7 +156,7 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
      *
      * @return the channel transformer for the reads resource if present, otherwise Optional.empty()
      */
-    @PrivateAPI
+    @InternalAPI
     public Optional<Function<SeekableByteChannel, SeekableByteChannel>> getReadsChannelTransformer() {
         return Optional.ofNullable(readsChannelTransformer);
     }
@@ -168,7 +168,7 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
      * @param readsChannelTransformer the channel transformer to be used. may be null
      * @return updated ReadsDecoderOptions
      */
-    @PrivateAPI
+    @InternalAPI
     public ReadsDecoderOptions setReadsChannelTransformer(
             final Function<SeekableByteChannel, SeekableByteChannel> readsChannelTransformer) {
         this.readsChannelTransformer = readsChannelTransformer;
@@ -181,7 +181,7 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
      *
      * @return the channel transformer for the index resource if present, otherwise Optional.empty()
      */
-    @PrivateAPI
+    @InternalAPI
     public Optional<Function<SeekableByteChannel, SeekableByteChannel>> getIndexChannelTransformer() {
         return Optional.ofNullable(indexChannelTransformer);
     }
@@ -193,7 +193,7 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
      * @param indexChannelTransformer the channel transformer to be used. may be null.
      * @return updated ReadsDecoderOptions
      */
-    @PrivateAPI
+    @InternalAPI
     public ReadsDecoderOptions setIndexChannelTransformer(
             final Function<SeekableByteChannel, SeekableByteChannel> indexChannelTransformer) {
         this.indexChannelTransformer = indexChannelTransformer;

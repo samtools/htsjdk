@@ -8,20 +8,20 @@ import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 
 import java.util.Optional;
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Utilities for use by reads encoder/decoder implementations.
  */
-@PrivateAPI
+@InternalAPI
 final public class ReadsCodecUtils {
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * Convert an input {@link Bundle} containing reads to a {@link SamInputResource}.
      *
@@ -30,7 +30,7 @@ final public class ReadsCodecUtils {
      *
      * @return a {@link SamInputResource}
      */
-    @PrivateAPI
+    @InternalAPI
     public static SamInputResource bundleToSamInputResource(
             final Bundle inputBundle,
             final ReadsDecoderOptions readsDecoderOptions) {
@@ -47,14 +47,14 @@ final public class ReadsCodecUtils {
     }
 
     /**
-     * @PrivateAPI
+     * InternalAPII
      *
      * Propagate options from a {@link ReadsDecoderOptions} to a SamReaderFactory.
      *
      * @param readsDecoderOptions {@link ReadsDecoderOptions} to use
      * @param samReaderFactory {@link SamReaderFactory}
      */
-    @PrivateAPI
+    @InternalAPI
     public static void readsDecoderOptionsToSamReaderFactory(
             final ReadsDecoderOptions readsDecoderOptions,
             final SamReaderFactory samReaderFactory) {
@@ -67,20 +67,20 @@ final public class ReadsCodecUtils {
     }
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * Return true if the input {@link Bundle} contains a reads index resource
      *
      * @param inputBundle input {@link Bundle} to inspect
      * @return true if input {@link Bundle} contains a reads index resource
      */
-    @PrivateAPI
+    @InternalAPI
     public static boolean bundleContainsIndex(final Bundle inputBundle) {
         return inputBundle.get(BundleResourceType.READS_INDEX).isPresent();
     }
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * The stated contract for decoders is that the index must be included in the bundle in order to use
      * index queries, but some codecs use readers that *always* tries to resolve the index, which would
@@ -89,7 +89,7 @@ final public class ReadsCodecUtils {
      *
      * @param inputBundle input {@link Bundle} to inspect
      */
-    @PrivateAPI
+    @InternalAPI
     public static void assertBundleContainsIndex(final Bundle inputBundle) {
         if (!bundleContainsIndex(inputBundle)) {
             throw new IllegalArgumentException(String.format(
@@ -103,7 +103,7 @@ final public class ReadsCodecUtils {
      * Propagate all reads decoder options and all bam decoder options to either a SamReaderFactory
      * or a SamInputResource, and return the resulting SamReader
      */
-    @PrivateAPI
+    @InternalAPI
     public static SamReader getSamReader(
             final Bundle inputBundle,
             final ReadsDecoderOptions readsDecoderOptions,
@@ -118,7 +118,7 @@ final public class ReadsCodecUtils {
         return samReaderFactory.open(samInputResource);
     }
 
-    @PrivateAPI
+    @InternalAPI
     public static void bamDecoderOptionsToSamReaderFactory(
             final SamReaderFactory samReaderFactory,
             final BAMDecoderOptions bamDecoderOptions) {

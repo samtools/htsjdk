@@ -15,7 +15,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
@@ -24,11 +24,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Base class for {@link BundleResourceType#READS_CRAM} codecs.
  */
-@PrivateAPI
+@InternalAPI
 public abstract class CRAMCodec implements ReadsCodec {
     protected static final Set<String> extensionMap = new HashSet<>(Arrays.asList(FileExtensions.CRAM));
 
@@ -64,7 +64,7 @@ public abstract class CRAMCodec implements ReadsCodec {
         throw new HtsjdkPluginException("Not implemented");
     }
 
-    @PrivateAPI
+    @InternalAPI
     static CRAMReferenceSource getCRAMReferenceSource(final IOPath referencePath) {
         ValidationUtils.nonNull(referencePath, "referencePath");
 

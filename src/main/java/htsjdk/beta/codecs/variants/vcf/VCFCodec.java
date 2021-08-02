@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
@@ -20,11 +20,11 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Base class for concrete implementations of {@link HtsContentType#VARIANT_CONTEXTS} codecs.
  */
-@PrivateAPI
+@InternalAPI
 public abstract class VCFCodec implements VariantsCodec {
     // FileExtensions.VCF_LIST includes BCF, which we don't want included here
     private static final Set<String> extensionMap = new HashSet<String>() {

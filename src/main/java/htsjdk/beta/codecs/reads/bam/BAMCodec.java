@@ -6,7 +6,7 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.util.Arrays;
@@ -14,11 +14,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Base class for {@link BundleResourceType#READS_BAM} codecs.
  */
-@PrivateAPI
+@InternalAPI
 public abstract class BAMCodec implements ReadsCodec {
     public static final HtsVersion BAM_DEFAULT_VERSION = new HtsVersion(1, 0,0);
 

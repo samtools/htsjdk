@@ -6,18 +6,18 @@ import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.io.IOPath;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Base class for {@link BundleResourceType#READS_SAM} codecs.
  */
-@PrivateAPI
+@InternalAPI
 public abstract class SAMCodec implements ReadsCodec {
     private static String SAM_HEADER_SENTINEL = "@HD";
     private static String SAM_EXTENSION = ".sam";

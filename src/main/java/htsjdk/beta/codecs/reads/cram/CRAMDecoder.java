@@ -21,7 +21,7 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
@@ -30,11 +30,11 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Base class for {@link BundleResourceType#READS_CRAM} decoders.
  */
-@PrivateAPI
+@InternalAPI
 public abstract class CRAMDecoder implements ReadsDecoder {
     private final Bundle inputBundle;
     private final ReadsDecoderOptions readsDecoderOptions;
@@ -44,14 +44,14 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     private final SamReader samReader;
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * Common constructor for CRAM decoders.
      *
      * @param inputBundle an {@link Bundle} containing cram resource
      * @param readsDecoderOptions {@link ReadsDecoderOptions} to use.
      */
-    @PrivateAPI
+    @InternalAPI
     public CRAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputBundle, "inputBundle");
         ValidationUtils.nonNull(readsDecoderOptions, "inputBundle");
@@ -193,7 +193,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     // when the decoder is closed, but if we create it, then we need to close it.
     //TODO: creation of the source should be separate from the getting of the source, and the result
     // cached, so we don't create multiple reference Sources
-    @PrivateAPI
+    @InternalAPI
     public static CRAMReferenceSource getCRAMReferenceSource(final CRAMDecoderOptions cramDecoderOptions) {
         ValidationUtils.nonNull(cramDecoderOptions, "cramDecoderOptions");
 

@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.variants;
 
 import htsjdk.beta.plugin.HtsDecoderOptions;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 
 import java.nio.channels.SeekableByteChannel;
 import java.util.Optional;
@@ -20,7 +20,7 @@ public class VariantsDecoderOptions implements HtsDecoderOptions {
      *
      * @return the channel transformer for the reads resource if present, otherwise Optional.empty()
      */
-    @PrivateAPI
+    @InternalAPI
     public Optional<Function<SeekableByteChannel, SeekableByteChannel>> getVariantsChannelTransformer() {
         return Optional.ofNullable(variantsChannelTransformer);
     }
@@ -32,7 +32,7 @@ public class VariantsDecoderOptions implements HtsDecoderOptions {
      * @param variantsChannelTransformer the channel transformer to be used. may be null
      * @return updated VariantsDecoderOptions
      */
-    @PrivateAPI
+    @InternalAPI
     public VariantsDecoderOptions setVariantsChannelTransformer(
             final Function<SeekableByteChannel, SeekableByteChannel> variantsChannelTransformer) {
         this.variantsChannelTransformer = variantsChannelTransformer;
@@ -45,7 +45,7 @@ public class VariantsDecoderOptions implements HtsDecoderOptions {
      *
      * @return the channel transformer for the index resource if present, otherwise Optional.empty()
      */
-    @PrivateAPI
+    @InternalAPI
     public Optional<Function<SeekableByteChannel, SeekableByteChannel>> getIndexChannelTransformer() {
         return Optional.ofNullable(indexChannelTransformer);
     }
@@ -57,7 +57,7 @@ public class VariantsDecoderOptions implements HtsDecoderOptions {
      * @param indexChannelTransformer the channel transformer to be used. may be null.
      * @return updated VariantsDecoderOptions
      */
-    @PrivateAPI
+    @InternalAPI
     public VariantsDecoderOptions setIndexChannelTransformer(
             final Function<SeekableByteChannel, SeekableByteChannel> indexChannelTransformer) {
         this.indexChannelTransformer = indexChannelTransformer;

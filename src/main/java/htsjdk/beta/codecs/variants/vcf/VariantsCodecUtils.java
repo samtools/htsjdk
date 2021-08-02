@@ -2,29 +2,29 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 
 /**
  * Utilities for VCF codec implementations.
  */
-@PrivateAPI
+@InternalAPI
 public class VariantsCodecUtils {
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * Return true if the input {@link Bundle} contains a variants index resource
      *
      * @param inputBundle input {@link Bundle} to inspect
      * @return true if input {@link Bundle} contains a variants index resource
      */
-    @PrivateAPI
+    @InternalAPI
     public static boolean bundleContainsIndex(final Bundle inputBundle) {
         return inputBundle.get(BundleResourceType.VARIANTS_INDEX).isPresent();
     }
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * The stated contract for decoders is that the index must be included in the bundle in order to use
      * index queries, but some codecs use readers that *always* tries to resolve the index, which would
@@ -33,7 +33,7 @@ public class VariantsCodecUtils {
      *
      * @param inputBundle input {@link Bundle} to inspect
      */
-    @PrivateAPI
+    @InternalAPI
     public static void assertBundleContainsIndex(final Bundle inputBundle) {
         if (!bundleContainsIndex(inputBundle)) {
             throw new IllegalArgumentException(String.format(

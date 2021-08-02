@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.variants.VariantsEncoder;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.io.IOPath;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -21,11 +21,11 @@ import java.util.Optional;
 
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Base class for concrete implementations of {@link HtsContentType#VARIANT_CONTEXTS} encoders.
  */
-@PrivateAPI
+@InternalAPI
 public abstract class VCFEncoder implements VariantsEncoder {
     private final Bundle outputBundle;
     private final VariantsEncoderOptions variantsEncoderOptions;
@@ -33,7 +33,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
     private VariantContextWriter vcfWriter;
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * Create a new VCF encoder from a {@link Bundle}.
      *
@@ -43,7 +43,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
      * @param outputBundle the output {@link Bundle} to encode
      * @param variantsEncoderOptions the {@link VariantsEncoderOptions} to use
      */
-    @PrivateAPI
+    @InternalAPI
     public VCFEncoder(final Bundle outputBundle, final VariantsEncoderOptions variantsEncoderOptions) {
         ValidationUtils.nonNull(outputBundle, "outputBundle");
         ValidationUtils.nonNull(variantsEncoderOptions, "variantsEncoderOptions");

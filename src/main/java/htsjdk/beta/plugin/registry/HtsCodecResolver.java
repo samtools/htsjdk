@@ -10,7 +10,7 @@ import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.Log;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;
@@ -463,7 +463,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         return bundleResource;
     }
 
-    @PrivateAPI
+    @InternalAPI
     static <C extends HtsCodec<?, ?>> C getOneOrThrow(
             final List<C> resolvedCodecs,
             final Supplier<String> contextMessage) {

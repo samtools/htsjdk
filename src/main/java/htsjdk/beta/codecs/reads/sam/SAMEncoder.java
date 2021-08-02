@@ -7,7 +7,7 @@ import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 
 /**
- * @PrivateAPI
+ * InternalAPI
  *
  * Base class for {@link BundleResourceType#READS_SAM} encoders.
  */
@@ -17,7 +17,7 @@ public abstract class SAMEncoder implements ReadsEncoder {
     private final String displayName;
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * Create a SAM encoder for the given output bundle. The primary resource in the bundle must
      * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,

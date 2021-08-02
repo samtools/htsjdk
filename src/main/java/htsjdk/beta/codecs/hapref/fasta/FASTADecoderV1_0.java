@@ -13,7 +13,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 
 import java.io.IOException;
 
@@ -106,7 +106,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     // (indexed by contig) interface implemented on ReferenceSequenceFile to create a ReferenceSource,
     // it might be possible to write a CRAMReferenceSource implementation that uses the HtsQuery
     // interface query(String)
-    @PrivateAPI
+    @InternalAPI
     public ReferenceSequenceFile getReferenceSequenceFile() {
         return referenceSequenceFile;
     }

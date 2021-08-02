@@ -19,7 +19,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
-import htsjdk.utils.PrivateAPI;
+import htsjdk.utils.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.AbstractVCFCodec;
@@ -30,11 +30,11 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @PrivateAPI
+ * InternalAPII
  *
  * Base class for concrete implementations of {@link HtsContentType#VARIANT_CONTEXTS} decoders.
  */
-@PrivateAPI
+@InternalAPI
 public abstract class VCFDecoder implements VariantsDecoder {
     private final Bundle inputBundle;
     private final VariantsDecoderOptions variantsDecoderOptions;
@@ -43,7 +43,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
     private final VCFHeader vcfHeader;
 
     /**
-     * @PrivateAPI
+     * InternalAPI
      *
      * Create a new VCF decoder.
      *
@@ -51,7 +51,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
      * @param vcfCodec the {@link AbstractVCFCodec} to use for this decoder
      * @param variantsDecoderOptions the {@link VariantsDecoderOptions} for this decoder
      */
-    @PrivateAPI
+    @InternalAPI
     @SuppressWarnings("unchecked")
     public VCFDecoder(
             final Bundle inputBundle,
