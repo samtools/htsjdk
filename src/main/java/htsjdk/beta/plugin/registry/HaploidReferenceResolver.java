@@ -41,32 +41,73 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
      * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
-    public HaploidReferenceDecoder getHapRefDecoder(final IOPath inputPath) {
+    public HaploidReferenceDecoder getHaploidReferenceDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "inputPath");
+
+        return getHaploidReferenceDecoder(inputPath, new HaploidReferenceDecoderOptions());
+    }
+
+    /**
+     * Get a {@link HaploidReferenceDecoder} suitable for decoding {@code inputPath} using options in
+     * {@code HaploidReferenceDecoderOptions}. The {@code inputPath} is inspected to determine the appropriate
+     * file format/version. The index is automatically resolved. To bypass index resolution, use
+     * {@link #getHaploidReferenceDecoder}.
+     *
+     * @param inputPath the IOPath to be decoded
+     * @param HaploidReferenceDecoderOptions options to use
+     * @return a {@link HaploidReferenceDecoder} suitable for decoding {@code inputPath}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
+     */
+    public HaploidReferenceDecoder getHaploidReferenceDecoder(
+            final IOPath inputPath,
+            final HaploidReferenceDecoderOptions HaploidReferenceDecoderOptions) {
+        ValidationUtils.nonNull(inputPath, "Input path");
+        ValidationUtils.nonNull(HaploidReferenceDecoderOptions, "Decoder options");
 
         final Bundle referenceBundle = new BundleBuilder().addPrimary(
                 new IOPathResource(inputPath, BundleResourceType.HAPLOID_REFERENCE)).build();
-        final HaploidReferenceCodec haploidReferenceCodec = resolveForDecoding(referenceBundle);
 
-        return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(
-                referenceBundle,
-                new HaploidReferenceDecoderOptions());
+        return getHaploidReferenceDecoder(referenceBundle, HaploidReferenceDecoderOptions);
     }
 
     /**
      * Get a {@link HaploidReferenceDecoder} for the given input Bundle.
      *
-     * @param inputBundle the path to the bundle containing the resoource to be decoded
+     * @param inputBundle the path to the bundle containing the resource to be decoded
      * @return a HaploidReferenceDecoder for the given inputPath
      *
      * @throws HtsjdkException if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      * that the registry contains an incorrectly written codec.
      */
-    public HaploidReferenceDecoder getHapRefDecoder(final Bundle inputBundle) {
+    public HaploidReferenceDecoder getHaploidReferenceDecoder(final Bundle inputBundle) {
         ValidationUtils.nonNull(inputBundle, "inputPath");
 
-        final HaploidReferenceCodec haploidReferenceCodec = resolveForDecoding(inputBundle);
-        return (HaploidReferenceDecoder) haploidReferenceCodec.getDecoder(inputBundle, new HaploidReferenceDecoderOptions());
+        return getHaploidReferenceDecoder(inputBundle, new HaploidReferenceDecoderOptions());
     }
+
+    /**
+     * Get a {@link HaploidReferenceDecoder} suitable for decoding {@code inputBundle} using options in
+     * {@code HaploidReferenceDecoderOptions}. The {@code inputBundle} is inspected to determine the appropriate
+     * file format/version.
+     *
+     * @param inputBundle the bundle to be decoded
+     * @param HaploidReferenceDecoderOptions {@link HaploidReferenceDecoderOptions} options to be used by the decoder
+     * @return a {@link HaploidReferenceDecoder} suitable for decoding {@code inputBundle}
+     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
+     * that the registry contains an incorrectly written codec.
+     */
+    @SuppressWarnings("unchecked")
+    public HaploidReferenceDecoder getHaploidReferenceDecoder(
+            final Bundle inputBundle,
+            final HaploidReferenceDecoderOptions HaploidReferenceDecoderOptions) {
+        ValidationUtils.nonNull(inputBundle, "Input bundle");
+        ValidationUtils.nonNull(HaploidReferenceDecoderOptions, "Decoder options");
+
+        return (HaploidReferenceDecoder) resolveForDecoding(inputBundle).getDecoder(inputBundle, HaploidReferenceDecoderOptions);
+    }
+
 }

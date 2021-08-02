@@ -69,7 +69,7 @@ public abstract class CRAMCodec implements ReadsCodec {
         ValidationUtils.nonNull(referencePath, "referencePath");
 
         final FASTADecoderV1_0 fastaDecoder = (FASTADecoderV1_0)
-                HtsDefaultRegistry.getHaploidReferenceResolver().getHapRefDecoder(referencePath);
+                HtsDefaultRegistry.getHaploidReferenceResolver().getHaploidReferenceDecoder(referencePath);
         if (fastaDecoder == null) {
             throw new HtsjdkException(String.format("Unable to get reference codec for %s", referencePath));
         }

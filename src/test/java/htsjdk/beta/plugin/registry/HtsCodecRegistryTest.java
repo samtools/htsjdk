@@ -26,7 +26,7 @@ public class HtsCodecRegistryTest extends HtsjdkTest {
         final IOPath inputPath = new HtsPath(TEST_DIR + "/hg19mini.fasta");
 
         try (final HaploidReferenceDecoder hapRefDecoder =
-                     HtsDefaultRegistry.getHaploidReferenceResolver().getHapRefDecoder(inputPath)) {
+                     HtsDefaultRegistry.getHaploidReferenceResolver().getHaploidReferenceDecoder(inputPath)) {
             Assert.assertNotNull(hapRefDecoder);
             Assert.assertEquals(hapRefDecoder.getFileFormat(), HaploidReferenceFormats.FASTA);
             Assert.assertEquals(hapRefDecoder.getVersion(), FASTACodecV1_0.VERSION_1);
