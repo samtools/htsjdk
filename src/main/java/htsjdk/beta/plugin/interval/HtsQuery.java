@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin.interval;
 
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.utils.ValidationUtils;
 
@@ -50,7 +50,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
      */
     default CloseableIterator<RECORD> query(final String queryString) {
         ValidationUtils.validateArg(isQueryable(), "Decoder is not queryable");
-        throw new HtsjdkPluginException("query not implemented for this decoder");
+        throw new HtsjdkUnsupportedOperationException("query(string) not implemented for this decoder");
     }
 
     /**
@@ -137,7 +137,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
      */
     default CloseableIterator<RECORD> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         ValidationUtils.validateArg(isQueryable(), "Decoder is not queryable");
-        throw new HtsjdkPluginException("query not implemented for this decoder");
+        throw new HtsjdkUnsupportedOperationException("query(intervals, queryRule) not implemented for this decoder");
     }
 
     /**
@@ -170,7 +170,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
      */
     default CloseableIterator<RECORD> queryStart(final String queryName, final long start) {
         ValidationUtils.validateArg(isQueryable(), "Decoder is not queryable");
-        throw new HtsjdkPluginException("queryStart not implemented for this decoder");
+        throw new HtsjdkUnsupportedOperationException("queryStart not implemented for this decoder");
     }
 
 }

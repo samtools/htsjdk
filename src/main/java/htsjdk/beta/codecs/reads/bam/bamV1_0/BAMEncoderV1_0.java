@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 
 import htsjdk.beta.codecs.reads.bam.BAMEncoder;
 import htsjdk.beta.codecs.reads.bam.BAMEncoderOptions;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.BundleResource;
@@ -98,7 +98,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
             if (indexResource.getIOPath().isPresent()) {
                 samFileWriterFactory.setCreateIndex(true);
             } else {
-                throw new HtsjdkPluginException("Writing a BAM index to a stream is not yet supported");
+                throw new HtsjdkUnsupportedOperationException("Writing a BAM index to a stream is not yet supported");
             }
         }
 
@@ -106,7 +106,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
         // it chooses, so throw if an md5 resource is specified since we can't direct it to the specified
         // resource
         if (optMD5Resource.isPresent()) {
-            throw new HtsjdkPluginException(String.format(
+            throw new HtsjdkUnsupportedOperationException(String.format(
                     "Specifying an an MD5 resource name not yet implemented on %s", getDisplayName()));
         }
 

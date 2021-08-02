@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.beta.codecs.hapref.fasta.FASTADecoderV1_0;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.SignatureStream;
@@ -61,7 +61,7 @@ public abstract class CRAMCodec implements ReadsCodec {
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new HtsjdkPluginException("Not implemented");
+        throw new HtsjdkUnsupportedOperationException("Version upgrade not implemented");
     }
 
     @InternalAPI

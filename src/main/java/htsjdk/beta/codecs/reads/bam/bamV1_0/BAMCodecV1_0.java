@@ -9,7 +9,7 @@ import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.samtools.SamStreams;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.utils.ValidationUtils;
@@ -60,7 +60,7 @@ public class BAMCodecV1_0 extends BAMCodec {
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new HtsjdkPluginException("Not yet implemented");
+        throw new HtsjdkUnsupportedOperationException("Upgrade not yet implemented");
     }
 
 }

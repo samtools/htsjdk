@@ -6,6 +6,7 @@ import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -137,7 +138,7 @@ public class HtsTestCodec implements ReadsCodec {
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new HtsjdkPluginException("Not yet implemented");
+        throw new HtsjdkUnsupportedOperationException("Version upgrade not yet implemented");
     }
 
 }

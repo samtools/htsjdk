@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.HtsgetBAMFileReader;
 import htsjdk.samtools.SAMFileHeader;
@@ -78,7 +78,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public CloseableIterator<SAMRecord> query(final String queryString) {
-        throw new HtsjdkPluginException("Not implemented");
+        throw new HtsjdkUnsupportedOperationException("query(string) not implemented");
     }
 
     @Override
@@ -101,6 +101,6 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
     @Override
     public Optional<SAMRecord> queryMate(final SAMRecord rec) {
         //reader doesn't support this
-        throw new HtsjdkPluginException("queryMate not implemented for htsget bam reader");
+        throw new HtsjdkUnsupportedOperationException("queryMate not implemented for htsget BAM reader");
     }
 }

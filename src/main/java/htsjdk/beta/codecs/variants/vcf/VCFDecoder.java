@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
@@ -108,11 +108,11 @@ public abstract class VCFDecoder implements VariantsDecoder {
         if (intervals.size() > 1) {
             //TODO: implement lists, sorting, merging, and ensuring that features that overlap more than one interval
             // are only returned once
-            throw new HtsjdkPluginException(String.format("query for lists not yet implemented for decoder %s", displayName));
+            throw new HtsjdkUnsupportedOperationException(String.format("query for lists not yet implemented for decoder %s", displayName));
         }
         if (queryRule != HtsQueryRule.OVERLAPPING) {
             //TODO: implement overlapping
-            throw new HtsjdkPluginException(String.format("query for contained intervals not implemented for this decoder %s", displayName));
+            throw new HtsjdkUnsupportedOperationException(String.format("query for contained intervals not implemented for this decoder %s", displayName));
         }
 
         try {
@@ -198,7 +198,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
                     BundleResourceType.VARIANT_CONTEXTS,
                     variantsResource));
         } else if (!variantsResource.getIOPath().isPresent()) {
-            throw new HtsjdkPluginException("VCF reader from stream not implemented");
+            throw new HtsjdkUnsupportedOperationException("VCF reader from stream not implemented");
         }
         final IOPath variantsIOPath = variantsResource.getIOPath().get();
         final Optional<IOPath> indexIOPath = getIndexIOPath(inputBundle);
@@ -235,7 +235,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
                indexResource));
         }
         if (!indexResource.getIOPath().isPresent()) {
-            throw new HtsjdkPluginException("Reading a VCF index from a stream not implemented");
+            throw new HtsjdkUnsupportedOperationException("Reading a VCF index from a stream not implemented");
         }
         return indexResource.getIOPath();
     }

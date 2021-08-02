@@ -59,7 +59,7 @@ public class InputStreamResourceTest extends HtsjdkTest {
         }
     }
 
-    @Test(expectedExceptions = HtsjdkException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testSerialGetSignatureStreamThrows() throws IOException {
         final InputStreamResource inputStreamResource = makeInputStreamResource(testBuffer);
         try (final SignatureStream signatureStream = inputStreamResource.getSignatureStream(TEST_STREAM_SIZE)) {

@@ -7,7 +7,7 @@ import htsjdk.beta.plugin.hapref.HaploidReferenceDecoderOptions;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoder;
 import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoderOptions;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsVersion;
@@ -65,11 +65,11 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     public HaploidReferenceEncoder getEncoder(final Bundle outputBundle, final HaploidReferenceEncoderOptions options) {
         ValidationUtils.nonNull(outputBundle, "output bundle");
         ValidationUtils.nonNull(options, "reference encoder options");
-        throw new HtsjdkPluginException("FASTA encoder not implemented");
+        throw new HtsjdkUnsupportedOperationException("FASTA encoder not implemented");
     }
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new HtsjdkPluginException("Not implemented");
+        throw new HtsjdkUnsupportedOperationException("Not implemented");
     }
 }

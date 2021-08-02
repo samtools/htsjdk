@@ -1,6 +1,6 @@
 package htsjdk.beta.codecs.variants.vcf;
 
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
@@ -114,7 +114,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
                     .setOutputPath(variantsResource.getIOPath().get().toPath())
                     .build();
         } else {
-            throw new HtsjdkPluginException("VCF writer to stream not yet implemented");
+            throw new HtsjdkUnsupportedOperationException("Writing a VCF to stream not yet implemented");
         }
     }
 
@@ -199,7 +199,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
                     indexResource));
         }
         if (!indexResource.getIOPath().isPresent()) {
-            throw new HtsjdkPluginException("Writing a VCF index to a stream not implemented");
+            throw new HtsjdkUnsupportedOperationException("Writing a VCF index to a stream not implemented");
         }
         return indexResource.getIOPath();
     }

@@ -1,6 +1,6 @@
 package htsjdk.beta.codecs.reads.cram;
 
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
@@ -160,7 +160,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
                 if (indexResource.getIOPath().isPresent()) {
                     samFileWriterFactory.setCreateIndex(true);
                 } else {
-                    throw new HtsjdkPluginException("Writing a CRAM index to a stream is not yet supported");
+                    throw new HtsjdkUnsupportedOperationException("Writing a CRAM index to a stream is not yet supported");
                 }
             }
 
@@ -168,7 +168,7 @@ public abstract class CRAMEncoder implements ReadsEncoder {
             // it chooses, so throw if an md5 resource is specified since we can't direct it to the specified
             // resource
             if (optMD5Resource.isPresent()) {
-                throw new HtsjdkPluginException("Can't yet specify an MD5 resource name");
+                throw new HtsjdkUnsupportedOperationException("Can't yet specify an MD5 resource name");
             }
 
             final CRAMEncoderOptions cramEncoderOptions = readsEncoderOptions.getCRAMEncoderOptions();

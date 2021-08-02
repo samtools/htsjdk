@@ -3,7 +3,7 @@ package htsjdk.beta.codecs.variants.vcf.vcfv4_3;
 import htsjdk.beta.codecs.variants.vcf.VCFCodec;
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
 import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
@@ -31,12 +31,12 @@ public class VCFCodecV4_3 extends VCFCodec {
 
     @Override
     public VCFEncoder getEncoder(final Bundle outputBundle, final VariantsEncoderOptions encoderOptions) {
-        throw new HtsjdkPluginException("Version v4.3 VCF encoder not yet implemented");
+        throw new HtsjdkUnsupportedOperationException("Version v4.3 VCF encoder not yet implemented");
     }
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new HtsjdkPluginException("Not yet implemented");
+        throw new HtsjdkUnsupportedOperationException("Version upgrade not yet implemented");
     }
 
     @Override

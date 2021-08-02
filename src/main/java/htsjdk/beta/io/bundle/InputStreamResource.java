@@ -1,7 +1,6 @@
 package htsjdk.beta.io.bundle;
 
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.BufferedInputStream;
@@ -63,7 +62,7 @@ public class InputStreamResource extends BundleResourceBase {
     public SignatureStream getSignatureStream(final int signatureProbeLength) {
         ValidationUtils.validateArg(signatureProbeLength > 0, "signatureProbeLength must be > 0");
         if (bufferedInputStream != null) {
-            throw new HtsjdkPluginException(
+            throw new IllegalStateException(
                     String.format("Only one SignatureStream stream can be created for an InputStream resource"));
         }
 

@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.reads.htsget.HtsgetBAM;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.reads.htsget.HtsgetBAMCodec;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
@@ -112,7 +112,7 @@ public class HtsgetBAMCodecTest extends HtsjdkTest {
         }
     }
 
-    @Test(expectedExceptions = HtsjdkPluginException.class)
+    @Test(expectedExceptions = HtsjdkUnsupportedOperationException.class)
     public void testRejectQueryMate() {
         SAMRecord samRec = null;
         try (final ReadsDecoder htsgetDecoder =

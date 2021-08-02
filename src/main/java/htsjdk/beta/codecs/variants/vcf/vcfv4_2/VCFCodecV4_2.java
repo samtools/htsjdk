@@ -3,11 +3,11 @@ package htsjdk.beta.codecs.variants.vcf.vcfv4_2;
 import htsjdk.beta.codecs.variants.vcf.VCFCodec;
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
 import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
-import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.utils.ValidationUtils;
 
 /**
@@ -39,7 +39,7 @@ public class VCFCodecV4_2 extends VCFCodec {
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new HtsjdkPluginException("Not yet implemented");
+        throw new HtsjdkUnsupportedOperationException("Version upgrade not yet implemented");
     }
 
     @Override

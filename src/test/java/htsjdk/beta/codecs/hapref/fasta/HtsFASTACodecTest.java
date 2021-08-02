@@ -1,7 +1,7 @@
 package htsjdk.beta.codecs.hapref.fasta;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.IOPathUtils;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleBuilder;
@@ -80,7 +80,7 @@ public class HtsFASTACodecTest extends HtsjdkTest {
         }
     }
 
-    @Test(expectedExceptions = HtsjdkPluginException.class)
+    @Test(expectedExceptions = HtsjdkUnsupportedOperationException.class)
     public void testRejectFASTAEncoder() {
         final IOPath outPath = IOPathUtils.createTempPath("testFastEncoder", ".fasta");
         new FASTACodecV1_0().getEncoder(

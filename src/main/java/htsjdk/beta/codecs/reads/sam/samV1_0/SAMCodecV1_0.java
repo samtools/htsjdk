@@ -3,7 +3,7 @@ package htsjdk.beta.codecs.reads.sam.samV1_0;
 import htsjdk.beta.codecs.reads.sam.SAMCodec;
 import htsjdk.beta.codecs.reads.sam.SAMDecoder;
 import htsjdk.beta.codecs.reads.sam.SAMEncoder;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -30,7 +30,7 @@ public class SAMCodecV1_0 extends SAMCodec {
 
     @Override
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
-        throw new HtsjdkPluginException("Not yet implemented");
+        throw new HtsjdkUnsupportedOperationException("Version upgrade not yet implemented");
     }
 
 }

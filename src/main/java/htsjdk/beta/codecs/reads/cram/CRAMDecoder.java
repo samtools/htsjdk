@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
@@ -221,7 +221,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
                         "The previous iterator must be closed before starting a new iterator on %s", getDisplayName()));
             } else {
                 // this indicates a problem with this codec
-                throw new HtsjdkPluginException(String.format("No outstanding iterator exists for %s", getDisplayName()));
+                throw new IllegalStateException(String.format("No outstanding iterator exists for %s", getDisplayName()));
             }
         }
         // reset the iterator monitor

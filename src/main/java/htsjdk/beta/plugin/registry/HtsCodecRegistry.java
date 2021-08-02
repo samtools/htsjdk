@@ -5,7 +5,7 @@ import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.exception.HtsjdkPluginException;
-
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 /**
  * A registry for tracking {@link HtsCodec} instances.
  * <p>
@@ -50,10 +50,10 @@ public class HtsCodecRegistry {
                 return htsVariantsResolver.registerCodec((VariantsCodec) codec);
 
             case FEATURES:
-                throw new HtsjdkPluginException("Features codec type not yet implemented");
+                throw new HtsjdkUnsupportedOperationException("Features codec type not yet implemented");
 
             default:
-                throw new HtsjdkPluginException("Unknown codec type");
+                throw new HtsjdkPluginException(String.format("Unknown codec content type %s", codec.getContentType()));
         }
     }
 

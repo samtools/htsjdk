@@ -1,6 +1,6 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
@@ -38,12 +38,12 @@ public class HtsTestEncoder implements ReadsEncoder {
 
     @Override
     public void setHeader(SAMFileHeader header) {
-        throw new HtsjdkPluginException("Not implemented by test codec");
+        throw new HtsjdkUnsupportedOperationException("setHeader not implemented by test codec");
     }
 
     @Override
     public void write(SAMRecord record) {
-        throw new HtsjdkPluginException("Not implemented by test codec");
+        throw new HtsjdkUnsupportedOperationException("write not implemented by test codec");
     }
 
     @Override
