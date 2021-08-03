@@ -10,7 +10,7 @@ import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.Log;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;

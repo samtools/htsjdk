@@ -1,4 +1,4 @@
-package htsjdk.utils;
+package htsjdk.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;

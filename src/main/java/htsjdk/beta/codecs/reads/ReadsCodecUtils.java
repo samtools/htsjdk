@@ -8,7 +8,7 @@ import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 
 import java.util.Optional;
 

@@ -4,7 +4,7 @@ import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
 import htsjdk.beta.codecs.reads.cram.CRAMDecoderOptions;
 import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.nio.channels.SeekableByteChannel;

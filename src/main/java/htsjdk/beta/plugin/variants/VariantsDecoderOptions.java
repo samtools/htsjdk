@@ -1,7 +1,7 @@
 package htsjdk.beta.plugin.variants;
 
 import htsjdk.beta.plugin.HtsDecoderOptions;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 
 import java.nio.channels.SeekableByteChannel;
 import java.util.Optional;
