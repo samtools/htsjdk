@@ -19,7 +19,7 @@ public class BAMDecoderOptions {
     // (all, including splitting) index creation into htsjdk.
 
     private InflaterFactory inflaterFactory = BlockGunzipper.getDefaultInflaterFactory();
-    private boolean useAsyncIO              = Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS;
+    private boolean asyncIO                 = Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS;
     private boolean validateCRCChecksums    = false;
 
     /**
@@ -51,18 +51,18 @@ public class BAMDecoderOptions {
      * @return true if async IO is enabled for these options
      */
     public boolean isAsyncIO() {
-        return useAsyncIO;
+        return asyncIO;
     }
 
     /**
      * Set whether async IO is enable for these options. Defaults value is
      * {@link Defaults#USE_ASYNC_IO_READ_FOR_SAMTOOLS}.
      *
-     * @param useAsyncIO true if async IO should be used,otherwise false
+     * @param asyncIO true if async IO should be used, otherwise false
      * @return updated BAMDecoderOptions
      */
-    public BAMDecoderOptions setAsyncIO(final boolean useAsyncIO) {
-        this.useAsyncIO = useAsyncIO;
+    public BAMDecoderOptions setAsyncIO(final boolean asyncIO) {
+        this.asyncIO = asyncIO;
         return this;
     }
 

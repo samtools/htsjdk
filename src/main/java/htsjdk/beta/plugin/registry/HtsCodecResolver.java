@@ -73,8 +73,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
             return null;
         } else {
             // update the version map for this codec
-            final C oldCodec = versionMap.get(codec.getVersion());
-            versionMap.put(codec.getVersion(), codec);
+            final C oldCodec = versionMap.put(codec.getVersion(), codec);
             if (oldCodec != null) {
                 LOG.warn(String.format("A previously registered HTS codec (%s) was replaced with the (%s) codec ",
                         oldCodec.getDisplayName(),
@@ -349,7 +348,7 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         // find the longest signature probe length of any candidate
         return candidateCodecs.stream()
                 .map(codec -> codec.getSignatureProbeLength())
-                .reduce(0, (a, b) -> Integer.max(a, b));
+                .max(Integer::compare).orElse(0);
     }
 
     private SignatureStream getIOPathSignatureProbingStream(

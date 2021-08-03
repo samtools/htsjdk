@@ -36,14 +36,16 @@ public interface HtsEncoder<H extends HtsHeader, R extends HtsRecord> extends Cl
     String getDisplayName();
 
     /**
-     * Set the file format header for this decoder, of type {@link H}.
+     * Set the file format header for this decoder, of type {@link H}. {@link #setHeader(HtsHeader)} must be
+     * called before {@link #write(HtsRecord)} can be called.
      *
      * @param header to use
      */
     void setHeader(H header);
 
     /**
-     * Write a single record to the underlying output.
+     * Write a single record to the underlying output. {@link #write(HtsRecord)} may only called after
+     * {@link #setHeader(HtsHeader)} has been called.
      *
      * @param record record to write
      */

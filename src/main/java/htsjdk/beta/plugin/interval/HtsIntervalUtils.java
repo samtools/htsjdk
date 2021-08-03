@@ -101,7 +101,7 @@ public class HtsIntervalUtils {
     /**
      *
      * @param queryIntervals list of {@link QueryInterval} to convert
-     * @param dictionary seuence dictionary to use for the conversion
+     * @param dictionary sequence dictionary to use for the conversion
      * @return list of {@link HtsInterval}
      */
     @InternalAPI

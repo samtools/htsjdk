@@ -21,12 +21,12 @@ public class BAMEncoderOptionsTest extends HtsjdkTest {
     @Test
     public void testUseAsyncIO() {
         final BAMEncoderOptions bamEncoderOptions = new BAMEncoderOptions();
-        final boolean defaultUseAsyncIO = bamEncoderOptions.isAsyncIo();
+        final boolean defaultUseAsyncIO = bamEncoderOptions.isAsyncIO();
         Assert.assertFalse(defaultUseAsyncIO);
 
-        bamEncoderOptions.setUseAsyncIo(true);
-        Assert.assertEquals(bamEncoderOptions.isAsyncIo(), true);
-
+        bamEncoderOptions.setAsyncIO(true);
+        Assert.assertEquals(bamEncoderOptions.isAsyncIO(), true);
+        // we have no way to verify that this is propagated since we cant interrogate the underlying writer
     }
 
     @Test

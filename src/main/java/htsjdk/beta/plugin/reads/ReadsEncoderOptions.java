@@ -9,29 +9,29 @@ import htsjdk.utils.ValidationUtils;
  * General reads encoder options.
  */
 public class ReadsEncoderOptions implements HtsEncoderOptions {
-    private boolean isPreSorted = false;
+    private boolean preSorted = false;
     private BAMEncoderOptions bamEncoderOptions = new BAMEncoderOptions();
-    private CRAMEncoderOptions cramEncoderOptions =  new CRAMEncoderOptions();
+    private CRAMEncoderOptions cramEncoderOptions = new CRAMEncoderOptions();
 
     /**
-     * Get the isPresorted setting for these options. Defaults to false. Is isPresorted is false, output
-     * is assumed to be unsorted, and will be sorted as needed on write.
+     * Get the preSorted setting for these options. Default value is false. If isPresorted is false, output
+     * will be sorted as needed on write.
      *
-     * @return true if isPreSorted is true, otherwise false
+     * @return true if preSorted is true, otherwise false
      */
     public boolean isPreSorted() {
-        return isPreSorted;
+        return preSorted;
     }
 
     /**
-     * Set the isPresorted state for these options. Default value is false. Is isPresorted is false, output
-     * is assumed to be unsorted, and will be sorted as needed on write.
+     * Set the preSorted setting for these options. Default value is false. If preSorted is false, output
+     * will be sorted as needed on write.
      *
-     * @param preSorted the isPresorted state for these options
+     * @param preSorted the preSorted state for these options
      * @return updated ReadsEncoderOptions
      */
     public ReadsEncoderOptions setPreSorted(boolean preSorted) {
-        isPreSorted = preSorted;
+        this.preSorted = preSorted;
         return this;
     }
 

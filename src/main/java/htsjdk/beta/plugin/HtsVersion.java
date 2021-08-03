@@ -47,7 +47,7 @@ public class HtsVersion implements Comparable<HtsVersion> {
             minorVersion = Integer.parseInt(parts[1]);
             patchVersion = Integer.parseInt(parts[2]);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(String.format("Can parse version string: '%s'", versionString));
+            throw new IllegalArgumentException(String.format("Can't parse version string: '%s'", versionString));
         }
     }
 

@@ -15,13 +15,13 @@ import htsjdk.utils.ValidationUtils;
 public class BAMEncoderOptions {
     public static final int DEAFULT_MAX_RECORDS_IN_RAM = 500000;
 
-    private int outputBufferSize = Defaults.BUFFER_SIZE;
-    private boolean useAsyncIo = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
-    private int asyncOutputBufferSize = AbstractAsyncWriter.DEFAULT_QUEUE_SIZE;
-    private IOPath tempDirPath = new HtsPath(IOUtil.getDefaultTmpDirPath().toString());
-    private int compressionLevel = BlockCompressedOutputStream.getDefaultCompressionLevel();
-    private Integer maxRecordsInRAM = DEAFULT_MAX_RECORDS_IN_RAM;
-    private DeflaterFactory deflaterFactory = BlockCompressedOutputStream.getDefaultDeflaterFactory();
+    private int outputBufferSize                = Defaults.BUFFER_SIZE;
+    private boolean asyncIO                     = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
+    private int asyncOutputBufferSize           = AbstractAsyncWriter.DEFAULT_QUEUE_SIZE;
+    private IOPath tempDirPath                  = new HtsPath(IOUtil.getDefaultTmpDirPath().toString());
+    private int compressionLevel                = BlockCompressedOutputStream.getDefaultCompressionLevel();
+    private Integer maxRecordsInRAM             = DEAFULT_MAX_RECORDS_IN_RAM;
+    private DeflaterFactory deflaterFactory     = BlockCompressedOutputStream.getDefaultDeflaterFactory();
     // SAM only ?:   private SamFlagField samFlagFieldOutput = SamFlagField.NONE;
 
     /**
@@ -52,18 +52,18 @@ public class BAMEncoderOptions {
      *
      * @return true if async IO is enabled, otherwise false
      */
-    public boolean isAsyncIo() {
-        return useAsyncIo;
+    public boolean isAsyncIO() {
+        return asyncIO;
     }
 
     /**
      * Set whether to enable async IO for these options.
      *
-     * @param useAsyncIo true to enable async IO, false to disable.
+     * @param asyncIO true to enable async IO, false to disable.
      * @return updated options
      */
-    public BAMEncoderOptions setUseAsyncIo(final boolean useAsyncIo) {
-        this.useAsyncIo = useAsyncIo;
+    public BAMEncoderOptions setAsyncIO(final boolean asyncIO) {
+        this.asyncIO = asyncIO;
         return this;
     }
 

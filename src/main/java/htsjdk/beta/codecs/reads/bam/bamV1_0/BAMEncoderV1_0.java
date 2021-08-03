@@ -73,7 +73,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
         samFileWriterFactory.setCompressionLevel(bamEncoderOptions.getCompressionLevel());
         samFileWriterFactory.setTempDirectory(bamEncoderOptions.getTemporaryDirectory().toPath().toFile());
         samFileWriterFactory.setBufferSize(bamEncoderOptions.getOutputBufferSize());
-        samFileWriterFactory.setUseAsyncIo(bamEncoderOptions.isAsyncIo());
+        samFileWriterFactory.setUseAsyncIo(bamEncoderOptions.isAsyncIO());
         samFileWriterFactory.setAsyncOutputBufferSize(bamEncoderOptions.getAsyncOutputBufferSize());
         samFileWriterFactory.setMaxRecordsInRam(bamEncoderOptions.getMaxRecordsInRAM());
     }

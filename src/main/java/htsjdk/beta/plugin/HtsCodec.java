@@ -163,9 +163,18 @@ import htsjdk.beta.io.bundle.Bundle;
  *             (HtsEncoder and HtsDecoder implementations may be mutable).
  *         </li>
  *         <li>
- *             The {@link #getDecoder(Bundle, HtsDecoderOptions)} implementation should not attempt to automatically
- *             resolve a companion index. {@link HtsDecoder}s should only satisfy index queries when the input bundle
- *             explicitly specifies an index resource.
+ *             For file formats that use a separate index resource to handle index queries, the
+ *             {@link #getDecoder(Bundle, HtsDecoderOptions)} implementation should not attempt to automatically
+ *             resolve the companion index in order to satisfy index queries, if the index resource is not provided
+ *             in the input bundle. {@link HtsDecoder}s for such file formats should only satisfy index queries if
+ *             the input bundle explicitly specifies the index resource. For file formats that do no use a separate
+ *             index resource to be specified (such as those that rely on a remote access mechanism), it is permissible
+ *             to satisfy index queries without requiring the index resource to be included in the bundle.
+ *         </li>
+ *         <li>
+ *             Codecs should avoid throwing exceptions from methods used during codec resolution (which includes all
+ *             methods other than {@link #getDecoder(Bundle, HtsDecoderOptions)} and
+ *             {@link #getEncoder(Bundle, HtsEncoderOptions)}).
  *         </li>
  *     </ul>
  * </p>
@@ -178,7 +187,7 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * Get the {@link HtsContentType} for this codec.
      * </p>
      * @return the {@link HtsContentType} for this codec. The {@link HtsContentType} determines the interfaces,
-     * including the HEADER and RECORD types, used by the codec's {@link HtsEncoder} and {@link HtsDecoder}.
+     * including the HEADER and RECORD types, used by this codec's {@link HtsEncoder} and {@link HtsDecoder}.
      * Each implementation of a given content type exposes the same interfaces, but over a different file
      * format or version. For example, both the BAM and HTSGET_BAM codecs have codec type
      * {@link HtsContentType#ALIGNED_READS}, and are derived from {@link htsjdk.beta.plugin.reads.ReadsCodec},
@@ -240,8 +249,13 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * from {@link #canDecodeURI(IOPath)} for the same IOPath.
      *
      * For custom URI handlers, codecs should avoid making remote calls to determine the suitability
-     * of the input resource; the return value for this method should be based only on the format
-     * of the URI that is presented.
+     * or accessibility of the input resource; the return value for this method should be based only on the format
+     * of the URI that is presented. Operations that require remote access that can fail, such as validating
+     * server connectivity, authentication, or authorization, should be deferred until data is requested by the
+     * caller via the codec's {@link HtsEncoder} or {@link HtsDecoder}.
+     *
+     * Since this method is used during codec resolution, implementations should avoid calling methods that
+     * may throw exceptions.
      *
      * @param ioPath the ioPath to inspect
      * @return true if the ioPath's URI represents a custom URI that this codec handles
@@ -262,8 +276,11 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * <p>
      * Implementations should generally not inspect the URI's protocol scheme unless the file format
      * supported by the codec requires the use a specific protocol scheme. For codecs that do own
-     * a specific scheme or URI format, any codec that returns true from {@link #ownsURI(IOPath)} for a
-     * given IOPath must also return true from {@link #canDecodeURI(IOPath)} for the same IOPath.
+     * a specific scheme or URI format, the return values for {@link #ownsURI(IOPath)} and
+     * {@link #canDecodeURI(IOPath)} must always be the same (both true or both false) for a given IOPath.
+     * For codecs that do not use a custom URI (and rely on NIO access), @link #ownsURI(IOPath)} should
+     * always return false, with only the value returned from {@link #canDecodeURI(IOPath)} varying based
+     * on features such as file extension probes.
      * <p>
      * It is never safe to attempt to directly inspect the underlying stream for <code>ioPath</code>
      * in this method. If the stream needs to be inspected, it should be done using the signature stream
@@ -272,6 +289,9 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * For custom URI handlers (see {@link #ownsURI(IOPath)}, codecs should avoid making remote calls
      * to determine the suitability of the input resource; the return value for this method should be based
      * only on the format of the URI that is presented.
+     *
+     * Since this method is used during codec resolution, implementations should avoid calling methods that
+     * may throw exceptions.
      *
      * @param ioPath to be decoded
      * @return true if the codec can provide a decoder to provide this URI
@@ -294,6 +314,9 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * should generally not inspect the stream, and should return false from this method, since the method
      * will never be called with any resource for which {@link #ownsURI} returned true.
      *
+     * Since this method is used during codec resolution, implementations should avoid calling methods that
+     * may throw exceptions.
+     *
      * @param signatureStream the stream to be inspect for the resource's embedded
      *                              signature and version
      * @param sourceName a display name describing the source of the input stream, for use in error messages
@@ -311,6 +334,9 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * </p>
      * Note: Codecs that are custom URI handlers (those that return true for {@link #ownsURI}), should
      * always return 0 from this method.
+     *
+     * Since this method is used during codec resolution, implementations should avoid calling methods that
+     * may throw exceptions.
      */
     int getSignatureLength();
 
@@ -331,6 +357,9 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * <p>
      * Note: Codecs that are custom URI handlers (those that return true for {@link #ownsURI(IOPath)}),
      * should always return 0 from this method when it is called.
+     *
+     * Since this method is used during codec resolution, implementations should avoid calling methods that
+     * may throw exceptions.
      * </p>
      */
     default int getSignatureProbeLength() { return getSignatureLength(); }
