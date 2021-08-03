@@ -2,10 +2,11 @@ package htsjdk.beta.plugin.reads;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.io.IOPathUtils;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleBuilder;
-import htsjdk.beta.plugin.bundle.BundleJSON;
-import htsjdk.beta.plugin.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleBuilder;
+import htsjdk.beta.io.bundle.BundleJSON;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import org.testng.Assert;
@@ -44,11 +45,11 @@ public class ReadsBundleTest extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNoReadsInSerializedBundle() {
-        final String vcfJSON = "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"VARIANTS\":{\"path\":\"my.vcf\",\"subtype\":\"VCF\"},\"primary\":\"VARIANTS\"}";
+        final String vcfJSON = "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"VARIANT_CONTEXTS\":{\"path\":\"my.vcf\",\"format\":\"VCF\"},\"primary\":\"VARIANT_CONTEXTS\"}";
         try {
             ReadsBundle.getReadsBundleFromString(vcfJSON);
         } catch (final IllegalArgumentException e) {
-            Assert.assertTrue(e.getMessage().contains("not present in the resource list"));
+            Assert.assertTrue(e.getMessage().contains("not present in the bundle's resources"));
             throw e;
         }
     }
@@ -70,8 +71,19 @@ public class ReadsBundleTest extends HtsjdkTest {
 
                 // json string, primary key, corresponding array of resources
                 {
-                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"READS\":{\"path\":\"" + BAM_FILE + "\",\"subtype\":\"BAM\"},\"primary\":\"READS\"}",
+                    // without format included
+                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"" + BAM_FILE + "\"},\"primary\":\"ALIGNED_READS\"}",
                     new ReadsBundle<IOPath>(new HtsPath(BAM_FILE))
+                },
+                {
+                    // with format included
+                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"" + BAM_FILE + "\",\"format\":\"BAM\"},\"primary\":\"ALIGNED_READS\"}",
+                    // ReadsBundle doesn't automatically infer format, so create one manually
+                    new ReadsBundle(
+                            new BundleBuilder().addPrimary(
+                                    new IOPathResource(new HtsPath(BAM_FILE), BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM))
+                                    .build()
+                            .getResources())
                 },
         };
     }

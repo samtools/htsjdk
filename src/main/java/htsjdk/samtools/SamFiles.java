@@ -1,6 +1,5 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;

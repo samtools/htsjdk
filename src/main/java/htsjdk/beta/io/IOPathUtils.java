@@ -1,8 +1,8 @@
 package htsjdk.beta.io;
 
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -16,10 +16,10 @@ public class IOPathUtils {
 
     /**
      * Create a temporary file using a given name prefix and name suffix and return a {@link java.nio.file.Path}.
-     * @param prefix
-     * @param suffix
-     * @return temp File that will be deleted on exit
-     * @throws IOException
+     * @param prefix file name prefix to use
+     * @param suffix file name suffix to use
+     * @return IOPath for a temporary file that will be deleted on exit
+     * @throws IOException in IO failures
      */
     public static IOPath createTempPath(final String prefix, final String suffix) {
         try {
@@ -27,24 +27,14 @@ public class IOPathUtils {
             tempFile.deleteOnExit();
             return new HtsPath(tempFile.getAbsolutePath());
         } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+            throw new HtsjdkIOException(e);
         }
     }
 
     /**
-     * Convert a Path to an IOPath, returning null if input was null.
+     * Get the entire contents of an IOPath file as a string.
      *
-     * @param toConvert Path to convert to IOPath
-     * @return a Path, or null if the input was null.
-     */
-    public static IOPath toIOPath(Path toConvert){
-        return null == toConvert ? null : new HtsPath(toConvert.toUri().toString());
-    }
-
-    /**
-     * Return the entire contents of an IOPath as a string.
-     *
-     * @param ioPath
+     * @param ioPath ioPath to consume
      * @return a UTF-8 string representation of the file contents
      */
     public static String getStringFromPath(final IOPath ioPath) {
@@ -58,7 +48,7 @@ public class IOPathUtils {
                     });
             return stringWriter.toString();
         } catch (final IOException e) {
-            throw new RuntimeException(
+            throw new HtsjdkIOException(
                     String.format("Failed to read from: %s", ioPath.getRawInputString()),
                     e);
         }
@@ -74,7 +64,7 @@ public class IOPathUtils {
         try (final BufferedOutputStream bos = new BufferedOutputStream(ioPath.getOutputStream())) {
             bos.write(contents.getBytes());
         } catch (final IOException e) {
-            throw new RuntimeException(
+            throw new HtsjdkIOException(
                     String.format("Failed to write to: %s", ioPath.getRawInputString()),
                     e);
         }

@@ -1,14 +1,14 @@
 package htsjdk.beta.plugin.reads;
 
 import htsjdk.beta.io.IOPathUtils;
-import htsjdk.beta.plugin.bundle.BundleJSON;
+import htsjdk.beta.io.bundle.BundleJSON;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.bundle.BundleResourceType;
-import htsjdk.beta.plugin.bundle.Bundle;
-import htsjdk.beta.plugin.bundle.BundleBuilder;
-import htsjdk.beta.plugin.bundle.IOPathResource;
-import htsjdk.beta.plugin.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleBuilder;
+import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
@@ -24,11 +24,11 @@ import java.util.function.Function;
 
 /**
  * A {@link Bundle} specifically for reads and reads-related resources. A {@link ReadsBundle} has a
- * primary resource with content type "READS"; and an optional index resource. ReadsBundles
- * can also contain other resources.
+ * primary resource with content type {@link BundleResourceType#ALIGNED_READS}; and an optional index
+ * resource. ReadsBundles can also contain other resources.
  *
- * {@link ReadsBundle} is primarily a convenience wrapper for the common case where a {@link Bundle}
- * contains read and related resources backed by {@link IOPathResource}s. It mainly provides convenient
+ * {@link ReadsBundle} is primarily a convenience layer for the common case where a {@link Bundle}
+ * contains reads and related resources backed by {@link IOPathResource}s. It provides convenient
  * constructors, and validation for JSON interconversions. For reads sources that are backed by streams or
  * other {@link BundleResource} types, the {@link Bundle} and {@link BundleBuilder} classes can be used
  * directly.
@@ -42,24 +42,24 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
     private static final Log LOG = Log.getInstance(ReadsBundle.class);
 
     /**
-     * Return a {@link ReadsBundle} containing only a reads resource.
+     * Create a {@link ReadsBundle} containing only a reads resource.
      *
      * @param reads An {@link IOPath}-derived object that represents a source of reads.
      */
     public ReadsBundle(final T reads) {
         this(Arrays.asList(toInputResource(
-                BundleResourceType.READS,
-                ValidationUtils.nonNull(reads, BundleResourceType.READS))));
+                BundleResourceType.ALIGNED_READS,
+                ValidationUtils.nonNull(reads, BundleResourceType.ALIGNED_READS))));
     }
 
     /**
-     * Return a {@link ReadsBundle} containing only reads and an index.
+     * Create a {@link ReadsBundle} containing only reads and an index.
      *
      * @param reads An {@link IOPath}-derived object that represents a source of reads.
      */
     public ReadsBundle(final T reads, final T index) {
         this(Arrays.asList(
-                toInputResource(BundleResourceType.READS, ValidationUtils.nonNull(reads, BundleResourceType.READS)),
+                toInputResource(BundleResourceType.ALIGNED_READS, ValidationUtils.nonNull(reads, BundleResourceType.ALIGNED_READS)),
                 toInputResource(
                         BundleResourceType.READS_INDEX,
                         ValidationUtils.nonNull(index, BundleResourceType.READS_INDEX))));
@@ -67,32 +67,34 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
 
     /**
      * Create a {@link ReadsBundle} using the resources in an existing bundle. A resource with content type
-     * "READS" must be present in the resources, or this constructor will throw.
+     * {@link BundleResourceType#ALIGNED_READS} must be present in the resources, or this constructor will throw.
      *
      * Note that this constructor allows existing {@link IOPathResource}s that do not conform to the type
      * {@link T} to be included in the resulting {@link ReadsBundle}.
      *
      * @param resources collection of {@link BundleResource}. the collection must include a resource with
-     *                 content type "READS".
-     * @throws IllegalArgumentException if no resource with content type "READS" is included in the
-     * input {@link BundleResource} collection
+     *                 content type {@link BundleResourceType#ALIGNED_READS}.
+     * @throws IllegalArgumentException if no resource with content type {@link BundleResourceType#ALIGNED_READS} is
+     * included in the input {@link BundleResource} collection
      */
     protected ReadsBundle(final Collection<BundleResource> resources) {
-        super(BundleResourceType.READS, resources);
+        super(BundleResourceType.ALIGNED_READS, resources);
     }
 
    /**
-     * @return the READS {@link BundleResource} for this {@link ReadsBundle}
-     */
+    * return the {@link BundleResourceType#ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
+    *
+    * @return the {@link BundleResourceType#ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
+    */
     public BundleResource getReads() {
-        return get(BundleResourceType.READS).get();
+        return getOrThrow(BundleResourceType.ALIGNED_READS);
     }
 
     /**
-     * Get the optional INDEX resource for this {@link ReadsBundle}.
+     * Get the optional {@link BundleResourceType#READS_INDEX} resource for this {@link ReadsBundle}.
      *
-     * @return the optional INDEX {@link BundleResource} for this {@link ReadsBundle}, or Optional.empty if
-     * no index resource is present in the bundle.
+     * @return the optional {@link BundleResourceType#READS_INDEX} resrouce for this {@link ReadsBundle},
+     * or Optional.empty if no index resource is present in the bundle.
      */
     public Optional<BundleResource> getIndex() {
         return get(BundleResourceType.READS_INDEX);
@@ -121,9 +123,10 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
 
     /**
      * Create a {@link ReadsBundle} from a JSON string with all IOPathResources using an IOPath-derived
-     * class of type T.
+     * class of type {@code T}.
+     *
      * @param jsonString the string to use to create the {@link ReadsBundle}
-     * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
+     * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type {@code T}
      * @param <T> the type of
      * @return a newly created {@link ReadsBundle}
      */
@@ -136,19 +139,39 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
     /**
      * Find the companion index for a reads source, and create a new {@link ReadsBundle} containing the
      * reads and the companion index, if one can be found.
+     *
+     * @param reads the reads source to use
+     * @return a {@link ReadsBundle} containing reads and companion index, if it can be found
+     */
+    public static ReadsBundle<IOPath> resolveIndex(final IOPath reads) {
+        return resolveIndex(reads, HtsPath::new);
+    }
+
+    /**
+     * Find the companion index for a reads source, and create a new {@link ReadsBundle} containing the
+     * reads and the companion index, if one can be found.
+     *
+     * An index can only be resolved for an IOPath that represents on a file system for which an NIO
+     * provider is installed. Remote paths that use a protocol scheme for which no NIO file system is
+     * available will (silently) not be resolved.
+     *
      * @param reads the reads source to use
      * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
      * @param <T> the IOPath-derived type of the IOPathResources in the new bundle
-     * @return a {@link ReadsBundle} containing reads and companion index, if it canbe found
+     * @return a {@link ReadsBundle} containing reads and companion index, if it can be found
      */
     public static <T extends IOPath> ReadsBundle<T> resolveIndex(
             final T reads,
             final Function<String, T> ioPathConstructor) {
-        final Path index = SamFiles.findIndex(reads.toPath());
-        if (index == null) {
-            return new ReadsBundle<>(reads);
+        if (reads.hasFileSystemProvider()) {
+            final Path index = SamFiles.findIndex(reads.toPath());
+            if (index == null) {
+                return new ReadsBundle<>(reads);
+            } else {
+                return new ReadsBundle<T>(reads, ioPathConstructor.apply(index.toUri().toString()));
+            }
         }
-        return new ReadsBundle<T>(reads, ioPathConstructor.apply(index.toUri().toString()));
+        return new ReadsBundle<>(reads);
     }
 
     public static boolean looksLikeAReadsBundle(final IOPath rawReadPath) {
@@ -166,31 +189,30 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
                         ioPath.getRawInputString(),
                         typePair.get().a));
             }
-            return new IOPathResource(
-                    ioPath,
-                    providedContentType,  // prefer the provided content type
-                    typePair.get().b);
-        } else {
-            return new IOPathResource(
-                    ioPath,
-                    providedContentType);
         }
+        return new IOPathResource(ioPath, providedContentType);
     }
 
-    //try to infer the contentType/contentSubType, i.e., READS/BAM from an IOPath
+    // Try to infer the contentType/format, i.e., READS/BAM from an IOPath. Currently this
+    // exists purely to check for logical inconsistencies. It can detect cases that are illogical
+    // (an IOPath that has format CRAM, but file extension BAM), but it can't determinstically
+    // and correctly infer the types in all cases without reproducing all the logic embedded in all the
+    // codecs (i.e., an htsget IOPath ends in ".bam", but has format HTSGET_BAM, not BAM - detecting
+    // that here would require parsing the entire IOPath structure, which is best left to the codecs
+    // themselves). So for now its advisory, but maybe it should be abandoned altogether.
     private static <T extends IOPath> Optional<Tuple<String, String>> getInferredContentTypes(final T ioPath) {
         ValidationUtils.nonNull(ioPath, "ioPath");
         final Optional<String> extension = ioPath.getExtension();
         if (extension.isPresent()) {
             final String ext = extension.get();
             if (ext.equals(FileExtensions.BAM)) {
-                return Optional.of(new Tuple<>(BundleResourceType.READS, BundleResourceType.READS_BAM));
+                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM));
             } else if (ext.equals(FileExtensions.CRAM)) {
-                return Optional.of(new Tuple<>(BundleResourceType.READS, BundleResourceType.READS_CRAM));
+                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_CRAM));
             } else if (ext.equals((FileExtensions.SAM))) {
-                return Optional.of(new Tuple<>(BundleResourceType.READS, BundleResourceType.READS_SAM));
+                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_SAM));
             }
-            //TODO: else SRA, htsget,...
+            //TODO: finish this, else SRA, htsget,...
         }
         return Optional.empty();
     }
