@@ -316,6 +316,12 @@ public class SAMTextHeaderCodec {
                             SAMValidationError.Type.HEADER_TAG_MULTIPLY_DEFINED, null);
                     continue;
                 }
+                if (keyAndValue[0].length() != 2) {
+                    reportErrorParsingLine("Problem parsing " + HEADER_LINE_START + mHeaderRecordType +
+                            " key:value pair " + keyAndValue[0] + ":<value> key is not two characters",
+                            SAMValidationError.Type.HEADER_TAG_INVALID_KEY, null);
+                    continue;
+                }
                 validateSortOrderValue(keyAndValue);
                 mKeyValuePairs.put(keyAndValue[0], keyAndValue[1]);
             }

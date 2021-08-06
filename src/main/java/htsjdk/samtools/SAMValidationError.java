@@ -235,7 +235,10 @@ public class SAMValidationError implements Serializable {
         CG_TAG_FOUND_IN_ATTRIBUTES,
 
         /** One or more reference sequences in the dictionary are too long for BAI indexing. */
-        REF_SEQ_TOO_LONG_FOR_BAI(Severity.WARNING);
+        REF_SEQ_TOO_LONG_FOR_BAI(Severity.WARNING),
+
+        /** Header tag key contains invalid characters or is not length two */
+        HEADER_TAG_INVALID_KEY;
 
 
         public final Severity severity;
