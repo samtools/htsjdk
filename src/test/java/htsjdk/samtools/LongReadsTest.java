@@ -2,13 +2,19 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.io.IOPathUtils;
+import htsjdk.beta.plugin.reads.ReadsBundle;
+import htsjdk.beta.plugin.reads.ReadsDecoder;
+import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
+import htsjdk.beta.plugin.reads.ReadsEncoder;
+import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
+import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,21 +30,20 @@ public class LongReadsTest extends HtsjdkTest {
     final public void testRoundTripBAM() throws IOException {
         // create a copy of the test bam, with an index, and then compare the header and all reads from
         // the copy with the original
-        final IOPath tmpBAMPath = createBAMCopyWithIndex(PAC_BIO_READS);
+        final IOPath copiedBAMPath = createBAMCopyWithIndex(PAC_BIO_READS);
 
-        try (final SamReader originalReader = SamReaderFactory.makeDefault()
-                .validationStringency((ValidationStringency.STRICT))
-                .setOption(SamReaderFactory.Option.EAGERLY_DECODE, true)
-                .open(PAC_BIO_READS.toPath());
-             final SamReader copyReader = SamReaderFactory.makeDefault()
-                     .validationStringency((ValidationStringency.STRICT))
-                     .setOption(SamReaderFactory.Option.EAGERLY_DECODE, true)
-                     .open(tmpBAMPath.toPath())) {
+        final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions()
+                .setValidationStringency(ValidationStringency.STRICT)
+                .setDecodeEagerly(true);
 
-            Assert.assertEquals(copyReader.getFileHeader(), originalReader.getFileHeader());
+        try (final ReadsDecoder originalDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(PAC_BIO_READS, readsDecoderOptions);
+             final ReadsDecoder copyDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(copiedBAMPath, readsDecoderOptions);
+             final CloseableIterator<SAMRecord> originalIt = originalDecoder.iterator();
+             final CloseableIterator<SAMRecord> copyIt = copyDecoder.iterator()) {
 
-            final SAMRecordIterator originalIt = originalReader.iterator();
-            final SAMRecordIterator copyIt = copyReader.iterator();
+            Assert.assertEquals(copyDecoder.getHeader(), originalDecoder.getHeader());
 
             while (originalIt.hasNext()) {
                 final SAMRecord originalRecord = originalIt.next();
@@ -56,19 +61,22 @@ public class LongReadsTest extends HtsjdkTest {
 
     @Test
     final public void testQueryOverlappingForEachRead() throws IOException {
-        final IOPath tmpBAMPath = createBAMCopyWithIndex(PAC_BIO_READS);
+        final IOPath copiedBAMPath = createBAMCopyWithIndex(PAC_BIO_READS);
 
-        // for each mapped read in the original BAM, query both the original and the copy for
+        // for each mapped read in the original source BAM, query both the original and the copy for
         // all reads that overlap that read's coordinates, and compare the results
-        try (final SamReader sourceReader = SamReaderFactory.makeDefault().open(PAC_BIO_READS.toPath());
-             final SamReader originalReader = SamReaderFactory.makeDefault().open(PAC_BIO_READS.toPath());
-             final SamReader copyReader = SamReaderFactory.makeDefault().open(tmpBAMPath.toPath())) {
-            for (final SAMRecord samRecord : sourceReader) {
+        try (final ReadsDecoder sourceDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(ReadsBundle.resolveIndex(PAC_BIO_READS));
+             final ReadsDecoder originalDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(ReadsBundle.resolveIndex(PAC_BIO_READS));
+             final ReadsDecoder copyDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(ReadsBundle.resolveIndex(copiedBAMPath))) {
+            for (final SAMRecord samRecord : sourceDecoder) {
                 //skip unmapped records since we're going to use the read's coordinates as a query
                 if (!samRecord.getReadUnmappedFlag()) {
-                    try (final SAMRecordIterator originalIt = originalReader.queryOverlapping(
+                    try (final CloseableIterator<SAMRecord> originalIt = originalDecoder.queryOverlapping(
                             samRecord.getContig(), samRecord.getAlignmentStart(), samRecord.getAlignmentEnd());
-                         final SAMRecordIterator copyIt = copyReader.queryOverlapping(
+                         final CloseableIterator<SAMRecord> copyIt = copyDecoder.queryOverlapping(
                                  samRecord.getContig(), samRecord.getAlignmentStart(), samRecord.getAlignmentEnd())) {
                         compareQueryResults(originalIt, copyIt);
                     }
@@ -81,17 +89,20 @@ public class LongReadsTest extends HtsjdkTest {
     final public void testQueryContainedForEachRead() throws IOException {
         final IOPath tmpBAMPath = createBAMCopyWithIndex(PAC_BIO_READS);
 
-        // for each mapped read in the original BAM, query both the original and the copy for
-        // all reads that overlap that read's coordinates, and compare the results
-        try (final SamReader sourceReader = SamReaderFactory.makeDefault().open(PAC_BIO_READS.toPath());
-             final SamReader originalReader = SamReaderFactory.makeDefault().open(PAC_BIO_READS.toPath());
-             final SamReader copyReader = SamReaderFactory.makeDefault().open(tmpBAMPath.toPath())) {
-            for (final SAMRecord samRecord : sourceReader) {
+        // for each mapped read in the original source BAM, query both the original and the copy for
+        // all reads that are contained within that read's coordinates, and compare the results
+        try (final ReadsDecoder sourceDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(ReadsBundle.resolveIndex(PAC_BIO_READS));
+             final ReadsDecoder originalDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(ReadsBundle.resolveIndex(PAC_BIO_READS));
+             final ReadsDecoder copyDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(ReadsBundle.resolveIndex(tmpBAMPath))) {
+            for (final SAMRecord samRecord : sourceDecoder) {
                 //skip unmapped records since we're going to use the read's coordinates as a query
                 if (!samRecord.getReadUnmappedFlag()) {
-                    try (final SAMRecordIterator originalIt = originalReader.queryContained(
+                    try (final CloseableIterator<SAMRecord> originalIt = originalDecoder.queryContained(
                             samRecord.getContig(), samRecord.getAlignmentStart(), samRecord.getAlignmentEnd());
-                         final SAMRecordIterator copyIt = copyReader.queryContained(
+                         final CloseableIterator<SAMRecord> copyIt = copyDecoder.queryContained(
                                  samRecord.getContig(), samRecord.getAlignmentStart(), samRecord.getAlignmentEnd())) {
                         compareQueryResults(originalIt, copyIt);
                     }
@@ -100,26 +111,17 @@ public class LongReadsTest extends HtsjdkTest {
         }
     }
 
-    private void compareQueryResults(final SAMRecordIterator originalIt, final SAMRecordIterator copyIt) {
-        while (originalIt.hasNext()) {
-            final SAMRecord originalRecord = originalIt.next();
-            Assert.assertTrue(copyIt.hasNext());
-            final SAMRecord copyRecord = copyIt.next();
-            Assert.assertEquals(copyRecord, originalRecord);
-        }
-        Assert.assertFalse(copyIt.hasNext());
-    }
-
     @Test
     final public void testQueryUnmapped() throws IOException {
         final IOPath tmpBAMPath = createBAMCopyWithIndex(PAC_BIO_READS);
 
         // get all unmapped reads from the original BAM and the copy and compare the results
-        try (final SamReader originalReader = SamReaderFactory.makeDefault().open(PAC_BIO_READS.toPath());
-             final SamReader copyReader = SamReaderFactory.makeDefault().open(tmpBAMPath.toPath())) {
-
-            final SAMRecordIterator originalIt = originalReader.queryUnmapped();
-            final SAMRecordIterator copyIt = copyReader.queryUnmapped();
+        try (final ReadsDecoder originalDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(ReadsBundle.resolveIndex(PAC_BIO_READS));
+             final ReadsDecoder copyDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(ReadsBundle.resolveIndex(tmpBAMPath));
+            final CloseableIterator<SAMRecord> originalIt = originalDecoder.queryUnmapped();
+            final CloseableIterator<SAMRecord> copyIt = copyDecoder.queryUnmapped()) {
             while (originalIt.hasNext()) {
                 final SAMRecord originalRecord = originalIt.next();
                 Assert.assertTrue(copyIt.hasNext());
@@ -136,46 +138,48 @@ public class LongReadsTest extends HtsjdkTest {
         final List<SAMRecord> samRecords = new ArrayList<>();
         SAMFileHeader samFileHeader;
 
+        final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions()
+                .setValidationStringency(ValidationStringency.STRICT)
+                .setDecodeEagerly(true);
+
         // get the original header, and the original reads in memory
-        try (final SamReader bamReader = SamReaderFactory.makeDefault()
-                .validationStringency((ValidationStringency.STRICT))
-                .setOption(SamReaderFactory.Option.EAGERLY_DECODE, true)
-                .open(PAC_BIO_READS.toPath())) {
-            samFileHeader = bamReader.getFileHeader();
-            for (final SAMRecord r : bamReader) {
+        try (final ReadsDecoder originalDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(
+                             ReadsBundle.resolveIndex(PAC_BIO_READS),
+                             readsDecoderOptions)) {
+            samFileHeader = originalDecoder.getHeader();
+            for (final SAMRecord r : originalDecoder) {
                 samRecords.add(r);
             }
         }
 
-        // reverse the order of the records, and write back out with presorted=false
+        // reverse the order of the records, and write them back out with presorted=false
         final List<SAMRecord> recordsInReverseOrder = new ArrayList(samRecords);
         Collections.reverse(recordsInReverseOrder);
         Assert.assertNotEquals(samRecords, recordsInReverseOrder);
         final IOPath sortedOutputPath = IOPathUtils.createTempPath("testSortOnWrite", ".bam");
-        try (final SAMFileWriter bamWriter =
-                     new SAMFileWriterFactory()
-                             .setCreateIndex(true)
-                             .makeWriter(samFileHeader,
-                                     false, // unsorted
-                                     sortedOutputPath.toPath().toFile(),
-                                     null)) {
+
+        try (final ReadsEncoder bamEncoder = HtsDefaultRegistry.getReadsResolver().getReadsEncoder(
+                new ReadsBundle(sortedOutputPath),
+                new ReadsEncoderOptions().setPreSorted(false))) {
+            bamEncoder.setHeader(samFileHeader);
             for (final SAMRecord samRecord : recordsInReverseOrder) {
-                bamWriter.addAlignment(samRecord);
+                bamEncoder.write(samRecord);
             }
         }
 
-        // now read back in the newly sorted output, and compare with the original
-        try (final SamReader originalReader = SamReaderFactory.makeDefault()
-                .validationStringency((ValidationStringency.STRICT))
-                .setOption(SamReaderFactory.Option.EAGERLY_DECODE, true)
-                .open(PAC_BIO_READS.toPath());
-             final SamReader sortedReader = SamReaderFactory.makeDefault()
-                     .validationStringency((ValidationStringency.STRICT))
-                     .setOption(SamReaderFactory.Option.EAGERLY_DECODE, true)
-                     .open(sortedOutputPath.toPath())) {
-            Assert.assertEquals(sortedReader.getFileHeader(), originalReader.getFileHeader());
-            final SAMRecordIterator originalIt = originalReader.iterator();
-            final SAMRecordIterator sortedIt = sortedReader.iterator();
+        // now read back in both the original and the newly sorted reads that we wrote out, and compare the order
+        try (final ReadsDecoder originalDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(
+                             ReadsBundle.resolveIndex(PAC_BIO_READS),
+                             readsDecoderOptions);
+             final ReadsDecoder sortedDecoder =
+                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(
+                             sortedOutputPath,
+                             readsDecoderOptions);
+             final CloseableIterator<SAMRecord> originalIt = originalDecoder.iterator();
+             final CloseableIterator<SAMRecord> sortedIt = sortedDecoder.iterator()) {
+            Assert.assertEquals(sortedDecoder.getHeader(), originalDecoder.getHeader());
             while (originalIt.hasNext()) {
                 // since only the leftmost coordinate is considered when sorting, the newly sorted reads will not
                 // necessarily be in exactly the same order as the original, so we can't check for read equality,
@@ -184,49 +188,40 @@ public class LongReadsTest extends HtsjdkTest {
             }
             Assert.assertFalse(sortedIt.hasNext());
         }
+
     }
 
     private IOPath createBAMCopyWithIndex(final IOPath originalBAM) {
         final IOPath tmpBAMPath = IOPathUtils.createTempPath("longReadsRoundTrip", ".bam");
-        final SamReader originalReader = SamReaderFactory.makeDefault().open(originalBAM.toPath());
+        // we need a better way to resolve the sibling - we can't use SamFiles.findIndex() because the file has
+        // to already exist
+        final IOPath tempIndexPath = new HtsPath(
+                tmpBAMPath.toPath().resolveSibling(
+                        tmpBAMPath.toPath().getFileName().toString().replaceFirst(".bam", ".bai")).toString());
 
-        try (final SAMFileWriter bamWriter =
-                     new SAMFileWriterFactory().setCreateIndex(true)
-                             .makeWriter(originalReader.getFileHeader(), true, tmpBAMPath.toPath().toFile(), null)) {
-            for (final SAMRecord samRecord : originalReader) {
-                bamWriter.addAlignment(samRecord);
+        try (final ReadsDecoder bamDecoder = HtsDefaultRegistry.getReadsResolver().getReadsDecoder(
+                ReadsBundle.resolveIndex(originalBAM));
+             final ReadsEncoder bamEncoder = HtsDefaultRegistry.getReadsResolver().getReadsEncoder(
+                     new ReadsBundle(tmpBAMPath, tempIndexPath),
+                     new ReadsEncoderOptions().setPreSorted(true))) {
+            bamEncoder.setHeader(bamDecoder.getHeader());
+            for (final SAMRecord samRecord : bamDecoder) {
+                bamEncoder.write(samRecord);
             }
         }
-
-        // delete the index too
-        final Path tempIndexPath = SamFiles.findIndex(tmpBAMPath.toPath());
-        tempIndexPath.toFile().deleteOnExit();
-
+        // mark the index for deletion too once its been created
+        tempIndexPath.toPath().toFile().deleteOnExit();
         return tmpBAMPath;
     }
 
-//    @Test
-//    final public void testGetSomeUnmapped() throws IOException {
-//        final IOPath inputPath = new HtsPath(
-//                "/Users/cnorman/projects/testdata/longreads/NA12878.m64020_190210_035026.bam");
-//        //final IOPath outputPath = IOPathUtils.createTempPath("test", ".bam");
-//        final IOPath outputPath = new HtsPath(
-//                "/Users/cnorman/projects/testdata/longreads/NA12878.m64020_190210_035026.unmapped.bam");
-//        //final Path outputIndexPath = SamFiles.findIndex(outputPath.toPath());
-//        //outputIndexPath.toFile().deleteOnExit();
-//
-//        final SamReader samReader = SamReaderFactory.makeDefault().open(inputPath.toPath());
-//        try (final  SAMRecordIterator it = samReader.queryUnmapped()) {
-//           final SAMFileWriterFactory samWriterFactory = new SAMFileWriterFactory().setCreateIndex(true);
-//           try (final SAMFileWriter samWriter =
-//                        samWriterFactory.makeWriter(samReader.getFileHeader(), true, outputPath.toPath().toFile(), null)) {
-//               while (it.hasNext()) {
-//                   final SAMRecord r = it.next();
-//                   samWriter.addAlignment(r);
-//                   //System.out.println(r.getReadLength());
-//               }
-//           }
-//       }
-//    }
+    private void compareQueryResults(final CloseableIterator<SAMRecord> originalIt, final CloseableIterator<SAMRecord> copyIt) {
+        while (originalIt.hasNext()) {
+            final SAMRecord originalRecord = originalIt.next();
+            Assert.assertTrue(copyIt.hasNext());
+            final SAMRecord copyRecord = copyIt.next();
+            Assert.assertEquals(copyRecord, originalRecord);
+        }
+        Assert.assertFalse(copyIt.hasNext());
+    }
 
 }
