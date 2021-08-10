@@ -116,40 +116,45 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         return mSequenceLength;
     }
 
-    public void setSequenceLength(final int value) {
+    public SAMSequenceRecord setSequenceLength(final int value) {
         mSequenceLength = value;
+        return this;
     }
 
     public String getAssembly() {
         return (String) getAttribute(ASSEMBLY_TAG);
     }
 
-    public void setAssembly(final String value) {
+    public voidSAMSequenceRecord setAssembly(final String value) {
         setAttribute(ASSEMBLY_TAG, value);
+        return this;
     }
 
     public String getSpecies() {
         return (String) getAttribute(SPECIES_TAG);
     }
 
-    public void setSpecies(final String value) {
+    public SAMSequenceRecord setSpecies(final String value) {
         setAttribute(SPECIES_TAG, value);
+        return this;
     }
 
     public String getMd5() {
         return (String) getAttribute(MD5_TAG);
     }
 
-    public void setMd5(final String value) {
+    public SAMSequenceRecord setMd5(final String value) {
         setAttribute(MD5_TAG, value);
+        return this;
     }
 
     public String getDescription() {
         return getAttribute(DESCRIPTION_TAG);
     }
 
-    public void setDescription(final String value) {
+    public SAMSequenceRecord setDescription(final String value) {
         setAttribute(DESCRIPTION_TAG, value);
+        return this;
     }
 
     /**
@@ -160,8 +165,9 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     }
 
     // Private state used only by SAM implementation.
-    public void setSequenceIndex(final int value) {
+    public SAMSequenceRecord setSequenceIndex(final int value) {
         mSequenceIndex = value;
+        return this;
     }
 
     /**
@@ -188,13 +194,14 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     /**
      * Sets the alternative sequence names in the order provided by iteration, removing the previous values.
      */
-    public void setAlternativeSequenceName(final Collection<String> alternativeSequences) {
+    public SAMSequenceRecord setAlternativeSequenceName(final Collection<String> alternativeSequences) {
         if (alternativeSequences == null) {
             setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, null);
         } else {
             // encode all alt sequence names
             encodeAltSequences(alternativeSequences);
         }
+        return this;
     }
 
     private static void validateAltRegExp(final String name) {
