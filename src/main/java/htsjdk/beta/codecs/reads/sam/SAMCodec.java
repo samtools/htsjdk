@@ -6,7 +6,7 @@ import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.io.IOPath;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;

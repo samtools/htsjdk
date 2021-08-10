@@ -1,4 +1,4 @@
-package htsjdk.utils;
+package htsjdk.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;
@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.*;
 
 /**
- * Annotation indicating that a package, class, method, or type is release level "private", even if the
+ * Annotation indicating that a package, class, method, or type is release level "internal", even if the
  * access modifier is "public". {@link InternalAPI} types are intended to be for internal use only, and
  * should not be used by external consumers. Classes and methods with this annotation are subject to
  * modification or removal in future releases without a deprecation warning.

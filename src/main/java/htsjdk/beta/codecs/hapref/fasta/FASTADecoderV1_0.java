@@ -13,7 +13,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 
 import java.io.IOException;
 

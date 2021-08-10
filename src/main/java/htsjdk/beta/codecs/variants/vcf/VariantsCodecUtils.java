@@ -2,7 +2,7 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 
 /**
  * Utilities for VCF codec implementations.

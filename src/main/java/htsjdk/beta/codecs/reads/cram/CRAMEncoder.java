@@ -13,7 +13,7 @@ import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.util.Optional;

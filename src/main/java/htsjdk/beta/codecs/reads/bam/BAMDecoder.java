@@ -5,7 +5,7 @@ import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 /**

@@ -2,7 +2,6 @@ package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
@@ -21,7 +20,7 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.IOException;

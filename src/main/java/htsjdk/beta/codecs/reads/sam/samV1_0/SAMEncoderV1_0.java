@@ -11,7 +11,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.utils.InternalAPI;
+import htsjdk.annotations.InternalAPI;
 
 import java.util.Optional;
 
