@@ -125,7 +125,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         return (String) getAttribute(ASSEMBLY_TAG);
     }
 
-    public voidSAMSequenceRecord setAssembly(final String value) {
+    public SAMSequenceRecord setAssembly(final String value) {
         setAttribute(ASSEMBLY_TAG, value);
         return this;
     }
