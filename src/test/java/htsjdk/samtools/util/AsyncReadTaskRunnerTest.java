@@ -147,10 +147,10 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
                 // should have let the background task run to completion
                 // we can't just check runner.transformCompleteCount.get() == 4
                 // since we may have aborted before the call the transform()
-                Assert.assertEquals(0, testNonBlockingThreadpool.getActiveCount());
-                Assert.assertEquals(0, testBlockingThreadpool.getActiveCount());
-                Assert.assertEquals(0, testNonBlockingThreadpool.getQueue().size());
-                Assert.assertEquals(0, testBlockingThreadpool.getQueue().size());
+                Assert.assertEquals(testNonBlockingThreadpool.getActiveCount(), 0);
+                Assert.assertEquals(testBlockingThreadpool.getActiveCount(), 0);
+                Assert.assertEquals(testNonBlockingThreadpool.getQueue().size(), 0);
+                Assert.assertEquals(testBlockingThreadpool.getQueue().size(), 0);
             }
             testNonBlockingThreadpool.shutdownNow();
             testBlockingThreadpool.shutdownNow();
@@ -200,7 +200,7 @@ public class AsyncReadTaskRunnerTest extends HtsjdkTest {
             result[i] = runner.nextRecord();
         }
         for (int i = 0; i < 8; i++) {
-            Assert.assertEquals(i + 1, result[i]);
+            Assert.assertEquals(result[i], i + 1);
         }
     }
 
