@@ -99,6 +99,26 @@ public class SAMFileHeaderTest extends HtsjdkTest {
         Assert.assertNull(header.getSequence("chr2"));
     }
 
+    @DataProvider
+    public Object[][] dataForInvalidTagKeyTests() {
+        return new Object[][] {
+                {"@RG\tID:A1\tPL:ILLUMINA\tLNID:1\tSM:A2", "key is not two characters"},
+                {"@RG\tID:A1\tSM:A2", ""}
+        };
+    }
+
+    @Test(dataProvider = "dataForInvalidTagKeyTests")
+    public void testInvalidTagKey(String samHeader, String expected) {
+        SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
+        SAMFileHeader header = codec.decode(BufferedLineReader.fromString(samHeader), null);
+        String validationErrors = header.getValidationErrors().toString();
+        if (expected.isEmpty()) {
+            Assert.assertEquals(validationErrors, "[]");
+        } else {
+            Assert.assertTrue(validationErrors.contains(expected));
+        }
+    }
+
     @Test
     public void testWrongTag() {
         String[] testData = new String[]{
