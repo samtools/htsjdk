@@ -52,8 +52,8 @@ public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
         super(name, count, type, description, SupportedHeaderLineType.INFO, source, version);
     }
 
-    public VCFInfoHeaderLine(String line, VCFHeaderVersion version) {
-        super(line, version, SupportedHeaderLineType.INFO);
+    public VCFInfoHeaderLine(String line, VCFHeaderVersion version, Integer lineNumber) {
+        super(line, version, SupportedHeaderLineType.INFO, lineNumber);
     }
 
     // info fields allow flag values
