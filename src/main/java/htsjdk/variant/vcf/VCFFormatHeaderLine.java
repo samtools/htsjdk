@@ -46,10 +46,9 @@ public class VCFFormatHeaderLine extends VCFCompoundHeaderLine {
         super(name, count, type, description, SupportedHeaderLineType.FORMAT);
     }
 
-    public VCFFormatHeaderLine(String line, VCFHeaderVersion version, Integer lineNumber) { {
-        super(line, version, SupportedHeaderLineType.FORMAT, lineNumber);
+    public VCFFormatHeaderLine(String line, VCFHeaderVersion version, Integer lineNumber) {
+            super(line, version, SupportedHeaderLineType.FORMAT, lineNumber);
     }
-
     // format fields do not allow flag values (that wouldn't make much sense, how would you encode this in the genotype).
     @Override
     boolean allowFlagValues() {
