@@ -1480,7 +1480,7 @@ public class VariantContext implements Feature, Serializable {
         // If all alt alleles are NON_REF alleles and ignoreNonRef is true, type will still be null. Therefore, if we
         // have only seen NON_REFs, choose SYMBOLIC
         if (type == null && nonRefAlleleFound) {
-            return Type.SYMBOLIC;
+            return Type.NO_VARIATION;
         }
         return type;
     }
