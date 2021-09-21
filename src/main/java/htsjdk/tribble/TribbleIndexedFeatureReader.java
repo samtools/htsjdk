@@ -92,7 +92,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         if (requireIndex) {
             this.loadIndex();
             if (!this.hasIndex()) {
-                throw new TribbleException("An index is required, but none found.");
+                throw new TribbleException("An index is required, but none found with file ending .idx");
             }
         }
 
@@ -132,7 +132,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (requireIndex) {
                 this.loadIndex();
                 if (!this.hasIndex()) {
-                    throw new TribbleException("An index is required, but none found.");
+                    throw new TribbleException("An index is required, but none found with file ending .idx");
                 }
             }
         }
