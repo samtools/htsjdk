@@ -202,7 +202,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @param lineType     the header line type
      *
      */
-    protected VCFCompoundHeaderLine(String line, VCFHeaderVersion version, SupportedHeaderLineType lineType, Integer lineNumber) {
+    protected VCFCompoundHeaderLine(String line, VCFHeaderVersion version, SupportedHeaderLineType lineType) {
         super(lineType.toString(), "");
 
         final ArrayList<String> expectedTags = new ArrayList(Arrays.asList("ID", "Number", "Type", "Description"));
@@ -240,7 +240,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
             throw new TribbleException(mapping.get("Type") + " is not a valid type in the VCF specification (note that types are case-sensitive)");
         }
         if (type == VCFHeaderLineType.Flag && !allowFlagValues())
-            throw new IllegalArgumentException("Flag is an unsupported type for this kind of field at line number "+ lineNumber);
+            throw new IllegalArgumentException("Flag is an unsupported type for this kind of field at line - " + line);
 
         description = mapping.get("Description");
         if (description == null && ALLOW_UNBOUND_DESCRIPTIONS) // handle the case where there's no description provided

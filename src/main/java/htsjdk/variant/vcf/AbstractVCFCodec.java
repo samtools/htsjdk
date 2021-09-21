@@ -141,7 +141,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         Set<VCFHeaderLine> metaData = new LinkedHashSet<VCFHeaderLine>();
         Set<String> sampleNames = new LinkedHashSet<String>();
         int contigCounter = 0;
-        int headerLineCounter = 1;
         // iterate over all the passed in strings
         for ( String str : headerStrings ) {
             if ( !str.startsWith(VCFHeader.METADATA_INDICATOR) ) {
@@ -190,13 +189,13 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
             } else {
                 if ( str.startsWith(VCFConstants.INFO_HEADER_START) ) {
-                    final VCFInfoHeaderLine info = new VCFInfoHeaderLine(str.substring(7), version, headerLineCounter);
+                    final VCFInfoHeaderLine info = new VCFInfoHeaderLine(str.substring(7), version);
                     metaData.add(info);
                 } else if ( str.startsWith(VCFConstants.FILTER_HEADER_START) ) {
                     final VCFFilterHeaderLine filter = new VCFFilterHeaderLine(str.substring(9), version);
                     metaData.add(filter);
                 } else if ( str.startsWith(VCFConstants.FORMAT_HEADER_START) ) {
-                    final VCFFormatHeaderLine format = new VCFFormatHeaderLine(str.substring(9), version, headerLineCounter);
+                    final VCFFormatHeaderLine format = new VCFFormatHeaderLine(str.substring(9), version);
                     metaData.add(format);
                 } else if ( str.startsWith(VCFConstants.CONTIG_HEADER_START) ) {
                     final VCFContigHeaderLine contig = new VCFContigHeaderLine(str.substring(9), version, VCFConstants.CONTIG_HEADER_START.substring(2), contigCounter++);
@@ -216,7 +215,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                         metaData.add(new VCFHeaderLine(str.substring(2, equals), str.substring(equals+1)));
                 }
             }
-            headerLineCounter++;
         }
 
         setVCFHeader(new VCFHeader(version, metaData, sampleNames), version);
