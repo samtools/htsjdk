@@ -243,6 +243,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     /** The type (cached for performance reasons) of this context */
     protected Type type = null;
 
+    /** The type of this context, cached separately if ignoreNonRef is true */
+    protected Type typeIgnoringNonRef = null;
+
     /** A set of the alleles segregating in this context */
     protected final List<Allele> alleles;
 
@@ -666,10 +669,29 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return the type of this VariantContext
      **/
     public Type getType() {
-        if ( type == null )
-            determineType();
+        return getType(false);
+    }
 
-        return type;
+    /**
+     * Determines (if necessary) and returns the type of this variation by examining the alleles it contains.
+     *
+     * @param ignoreNonRef If set to true, symbolic NON_REF alleles will not be considered for the type determination,
+     *                     which is required for handling GVCF files.
+     * @return the type of this VariantContext
+     **/
+    public Type getType(final boolean ignoreNonRef) {
+        // Make sure we use the correct cached result
+        if (ignoreNonRef) {
+            if (typeIgnoringNonRef == null) {
+                typeIgnoringNonRef = determineType(ignoreNonRef);
+            }
+            return typeIgnoringNonRef;
+        } else {
+            if (type == null) {
+                type = determineType(ignoreNonRef);
+            }
+            return type;
+        }
     }
 
     /**
@@ -1430,29 +1452,33 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    private void determineType() {
-        if ( type == null ) {
-            switch ( getNAlleles() ) {
-                case 0:
-                    throw new IllegalStateException("Unexpected error: requested type of VariantContext with no alleles!" + this);
-                case 1:
-                    // note that this doesn't require a reference allele.  You can be monomorphic independent of having a
-                    // reference allele
-                    type = Type.NO_VARIATION;
-                    break;
-                default:
-                    determinePolymorphicType();
-            }
+    private Type determineType(final boolean ignoreNonRef) {
+        switch ( getNAlleles() ) {
+            case 0:
+                throw new IllegalStateException("Unexpected error: requested type of VariantContext with no alleles!" + this);
+            case 1:
+                // note that this doesn't require a reference allele.  You can be monomorphic independent of having a
+                // reference allele
+                return Type.NO_VARIATION;
+            default:
+                return determinePolymorphicType(ignoreNonRef);
         }
     }
 
-    private void determinePolymorphicType() {
-        type = null;
+    private Type determinePolymorphicType(final boolean ignoreNonRef) {
+        Type type = null;
+        boolean nonRefAlleleFound = false;
 
         // do a pairwise comparison of all alleles against the reference allele
         for ( Allele allele : alleles ) {
             if ( allele == REF )
                 continue;
+
+            // If we see a NON_REF allele and need to ignore it, skip this allele, but signal that we have seen one
+            if (ignoreNonRef && allele.isNonRefAllele()) {
+                nonRefAlleleFound = true;
+                continue;
+            }
 
             // find the type of this allele relative to the reference
             Type biallelicType = typeOfBiallelicVariant(REF, allele);
@@ -1463,10 +1489,15 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             }
             // if the type of this allele is different from that of a previous one, assign it the MIXED type and quit
             else if ( biallelicType != type ) {
-                type = Type.MIXED;
-                return;
+                return Type.MIXED;
             }
         }
+        // If all alt alleles are NON_REF alleles and ignoreNonRef is true, type will still be null. Therefore, if we
+        // have only seen NON_REFs, choose SYMBOLIC
+        if (type == null && nonRefAlleleFound) {
+            return Type.NO_VARIATION;
+        }
+        return type;
     }
 
     private static Type typeOfBiallelicVariant(Allele ref, Allele allele) {
