@@ -27,6 +27,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
@@ -92,7 +93,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         if (requireIndex) {
             this.loadIndex();
             if (!this.hasIndex()) {
-                throw new TribbleException("An index is required, but none found with file ending .idx");
+                throw new TribbleException("An index is required, but none found with file ending " + FileExtensions.TRIBBLE_INDEX);
             }
         }
 
@@ -132,7 +133,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (requireIndex) {
                 this.loadIndex();
                 if (!this.hasIndex()) {
-                    throw new TribbleException("An index is required, but none found with file ending .idx");
+                    throw new TribbleException("An index is required, but none found with file ending " + FileExtensions.TRIBBLE_INDEX);
                 }
             }
         }
