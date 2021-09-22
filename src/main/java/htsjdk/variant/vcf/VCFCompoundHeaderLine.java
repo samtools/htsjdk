@@ -240,7 +240,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
             throw new TribbleException(mapping.get("Type") + " is not a valid type in the VCF specification (note that types are case-sensitive)");
         }
         if (type == VCFHeaderLineType.Flag && !allowFlagValues())
-            throw new IllegalArgumentException("Flag is an unsupported type for this kind of field");
+            throw new IllegalArgumentException("Flag is an unsupported type for this kind of field at line - " + line);
 
         description = mapping.get("Description");
         if (description == null && ALLOW_UNBOUND_DESCRIPTIONS) // handle the case where there's no description provided
