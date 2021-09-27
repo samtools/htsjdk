@@ -57,9 +57,17 @@ public class VCFUtils {
     public static boolean getStrictVCFVersionValidation() { return VCF_STRICT_VERSION_VALIDATION; }
     public static boolean getVerboseVCFLogging() { return VCF_VERBOSE_LOGGING; }
 
-    //TODO: NOTE: The old implementation of this code had side-effects due to mutation of some VCFCompoundHeaderLines
-    //NOTE: These headers must be version >= 4.2 (older headers that are read in via AbstractVCFCodecs are
-    // "repaired" and stamped as VCF4.2 when they're read in).
+    /**
+     * The headers passed in must be version >= 4.2 (older headers that are read in via AbstractVCFCodecs
+     * are "repaired" and stamped as VCF4.2 when they're read in).
+     *
+     * @param headers the set of headers to merge
+     * @param emitWarnings true if warning should be emitted by the merge
+     * @return
+     * @throws IllegalStateException if any header has a version < vcfV4.2
+     * @throws IllegalStateException if any header cannot be upgraded to the newest version amongst
+     * all headers provided
+     */
     public static Set<VCFHeaderLine> smartMergeHeaders(
             final Collection<VCFHeader> headers,
             final boolean emitWarnings) throws IllegalStateException {

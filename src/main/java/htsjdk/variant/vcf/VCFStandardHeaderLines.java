@@ -51,8 +51,6 @@ public class VCFStandardHeaderLines {
     /**
      * Enabling this causes us to repair header lines even if only their descriptions differ.
      */
-    //TODO: this is private, and ALWAYS false...
-    private final static boolean REPAIR_BAD_DESCRIPTIONS = false;
     private static Standards<VCFFormatHeaderLine> formatStandards = new Standards<>();
     private static Standards<VCFInfoHeaderLine> infoStandards = new Standards<>();
 
@@ -60,7 +58,6 @@ public class VCFStandardHeaderLines {
      * Walks over the VCF header and repairs the standard VCF header lines in it, returning a freshly
      * allocated {@link VCFHeader} with standard VCF header lines repaired as necessary.
      */
-    //TODO: Note that this effectively moves lines up to vcf v4.2.
     public static VCFHeader repairStandardHeaderLines(final VCFHeader oldHeader) {
         if (oldHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             // the "repair" operation effectively upgrades old header lines to v4.2 format,
@@ -79,10 +76,8 @@ public class VCFStandardHeaderLines {
             newLines.add(line);
         }
 
-        //TODO: the VCFHeader constructors used here do not preserve any header state that is not captured by
-        // headerLines/sample-names/version
         //NOTE that its possible for this to fail in the (probably rare) case that the repaired
-        //lines (which are "version-less") cannot pass validation against the header version
+        //lines (which are "version-less") fail validation against the header version
         final VCFHeader repairedHeader = new VCFHeader(newLines, oldHeader.getGenotypeSamples());
 
         // the "repair" operation effectively upgrades old header lines to v4.2 format, so the new header should
@@ -202,10 +197,9 @@ public class VCFStandardHeaderLines {
                 final boolean badCount     = line.isFixedCount() && ! badCountType && line.getCount() != standard.getCount();
                 final boolean badType      = line.getType() != standard.getType();
                 final boolean badDesc      = ! line.getDescription().equals(standard.getDescription());
-                final boolean needsRepair  = badCountType || badCount || badType || (REPAIR_BAD_DESCRIPTIONS && badDesc);
+                final boolean needsRepair  = badCountType || badCount || badType;
 
                 if ( needsRepair ) {
-                    // TODO: Should we warn/log when we do this ?
                     if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                         System.err.println("Repairing standard header line for field " + line.getID() + " because"
                                            + (badCountType ? " -- count types disagree; header has " + line.getCountType() + " but standard is " + standard.getCountType() : "")

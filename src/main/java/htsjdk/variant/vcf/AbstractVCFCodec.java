@@ -131,7 +131,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     public abstract boolean canDecodeVersion(final VCFHeaderVersion targetVersion);
 
-    // TODO: Note: This method was lifted from duplicate methods in the codec subclasses.
     /**
      * Reads all of the header from the provided iterator, but reads no further.
      * @param lineIterator the line reader to take header lines from
@@ -148,8 +147,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         // collect metadata lines until we hit the required header line, or a non-metadata line,
         // in which case throw since there was no header line
-        // TODO: Optimization: There is no reason we couldn't just parse the header lines right here
-        // instead of accumulating them in a list and then making another pass to convert them
         while (lineIterator.hasNext()) {
             final String line = lineIterator.peek();
             if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
@@ -356,12 +353,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     public VCFHeaderLine getOtherHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
         final int indexOfEquals = headerLineString.indexOf('=');
         if (indexOfEquals < 1) { // must at least have "?="
-            // TODO: NOTE: the old code silently dropped metadata lines with no "="; now we log, or throw for verbose logging
             if (VCFUtils.getStrictVCFVersionValidation()) {
                 throw new TribbleException.InvalidHeader("Unrecognized metadata line type: " + headerLineString);
             }
             if (VCFUtils.getVerboseVCFLogging()) {
-                // TODO: should this throw
                 logger.warn("Dropping unrecognized metadata line type: " + headerLineString);
             }
             return null;
@@ -464,9 +459,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         return version;
     }
 
-    @Deprecated
-    //TODO: add a date here
-    //TODO: used by Disq
+    @Deprecated // starting after version 2.24.1
+    //Note: this is currently used by Disq
     public VCFHeader setVCFHeader(final VCFHeader newHeader, final VCFHeaderVersion newVersion) {
         ValidationUtils.nonNull(newHeader);
         ValidationUtils.nonNull(newVersion);
@@ -488,19 +482,19 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     public VCFHeader setVCFHeader(final VCFHeader newHeader) {
         ValidationUtils.nonNull(newHeader);
 
-        //TODO: We should really stop doing these repairs when the version is > 4.2
         if (this.doOnTheFlyModifications) {
-            // calling this with a header that is pre-v4.3 will always return a header with version vcfv4.2,
-            // no matter what the header version originally was, since the "repair" operation is essentially
-            // an upgrade of the header to version 4.2
-            //TODO: Do we  need to retain the original header version as header state ?
+            // calling this with a header that has any pre-v4.3 version will always result in a header
+            // with version vcfV4.2, no matter what the header version originally was, since the "repair"
+            // operation is essentially a transform of the header so that it conforms with header line rules
+            // as of 4.2
             this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
         } else {
             this.header = newHeader;
         }
 		this.version = this.header.getVCFHeaderVersion();
-        //TODO: this is no incorrect; the HEADER is updated, but the text transformer should be based on
-        // the ORIGINAL version, not the updated version. It doesn't matter since we never upgrade 4.3, but still
+        // Obtain a text transformer (technically, this should be based on the ORIGINAL header version, not
+        // the updated version after repairStandardHeaderLines is called), but it doesn't matter in practice
+        // since the transformer only differs starting with 4.3.
         this.vcfTextTransformer = getTextTransformerForVCFVersion(this.version);
 
 		return this.header;
@@ -674,7 +668,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         return internedString;
     }
 
-    // TODO: Note: This method was lifted from duplicate methods in the codec subclasses.
     /**
      * parse the filter string, first checking to see if we already have parsed it in a previous attempt
      * @param filterString the string to parse
@@ -949,9 +942,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             alleles.add(allele);
     }
 
-    // TODO: What is the intended meaning of a return value of true ? This class is abstract and can't
-    // decode anything directly, but it will return true for ANY 4.x file when passed a string with
-    // the prefix "##fileformat=VCFv4" (or worse, for any vcf file if passed "##fileformat=VCFv")
     public static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
         try {
             Path path = IOUtil.getPath(potentialInput);

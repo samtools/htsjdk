@@ -49,14 +49,6 @@ import java.util.Set;
 public class VCF3Codec extends AbstractVCFCodec {
     public final static String VCF3_MAGIC_HEADER = "##fileformat=VCFv3";
 
-    public VCF3Codec() {
-        // TODO: This defaults to "Unknown" and winds up in every VariantContext. Setting it
-        // here breaks some GATK4 tests. Should we put useful something here ?
-        //setName(String.format("htsjdk:%s:%s",
-        //        VCFHeaderVersion.VCF3_2.getVersionString(),
-        //        VCFHeaderVersion.VCF3_3.getVersionString()));
-    }
-
     /**
      * Return true if this codec can handle the target version
      * @param targetHeaderVersion

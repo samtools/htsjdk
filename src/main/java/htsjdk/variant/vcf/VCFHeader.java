@@ -123,7 +123,6 @@ public class VCFHeader implements Serializable {
      * sample names.
      */
     public VCFHeader(final VCFHeader toCopy) {
-        // TODO: this constructor doesn't propagate all of the existing header state (writeEngineHeaders, etc)
         this(toCopy.getMetaDataInInputOrder(), toCopy.mGenotypeSampleNames);
     }
 
@@ -154,9 +153,6 @@ public class VCFHeader implements Serializable {
 
         // Establish the version for this header using the ##fileformat metadata line in the metadata list
         this.vcfHeaderVersion = establishInitialHeaderVersion(metaData);
-
-        //TODO: if the metaData thats passed in has no version metadata line, then this header
-        //TODO: won't have one - should that be detected here and manually added if thats the case?
         mMetaData.addAllMetaDataLines(metaData);
         //validate that the provided metadata lines are valid for the version the established version
         mMetaData.validateMetaDataLines(this.vcfHeaderVersion, false);
@@ -558,6 +554,20 @@ public class VCFHeader implements Serializable {
     //TODO: all headers must be v4.2or greater
     // result always has the highet version amongst the merged headers
     // merging can fail if some header lines from the older versions don't conform to the new version
+
+    /**
+     * Merge the header lines from all of the header lines in a set of header. The resulting set includes
+     * all unique lines that appeared in any header. Lines that are duplicated are removed from the result
+     * set. The resulting set is compatible wiht (and contains a fileformat version line for) the highest
+     * version seen in any of the provided headers.
+     *
+     * @param headers the headers to merge
+     * @param emitWarnings true of warnings should be emitted
+     * @return a set of merged VCFHeaderLines
+     * @throws IllegalStateException if any header has a version < vcfV4.2
+     * @throws IllegalStateException if any header cannot be upgraded to the newest version amongst
+     * all headers provided
+     */
     public static Set<VCFHeaderLine> getMergedHeaderLines(final Collection<VCFHeader> headers, final boolean emitWarnings) {
         final VCFMetaDataLines mergedMetaData = new VCFMetaDataLines();
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
@@ -627,6 +637,7 @@ public class VCFHeader implements Serializable {
                 }
             }
         }
+        // this will validate all of the lines against the version line included
         mergedMetaData.setVCFVersion(newestVersion);
 
         // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.

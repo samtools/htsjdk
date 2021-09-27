@@ -119,24 +119,41 @@ public final class VCFMetaDataLines implements Serializable {
     // Create a VCFHeaderLine hashmap key given a key and an id
     private String makeKey(final String nameSpace, final String id) { return nameSpace + KEY_SEPARATOR + id; }
 
-    //TODO: javadoc
-    //TODO: this should prevent the version from going backwards...
     public void setVCFVersion(final VCFHeaderVersion newVCFVersion) {
         ValidationUtils.nonNull(newVCFVersion);
 
-        // call validateMetaDataLines to ensure transition is valid
-        validateMetaDataLines(newVCFVersion, false);
-
-        // remove any existing version line
+        // find any existing version line
         final List<VCFHeaderLine> allFormatLines = mMetaData.values()
                 .stream()
                 .filter(line -> VCFHeaderVersion.isFormatString(line.getKey()))
                 .collect(Collectors.toList());
+        // This class always does not mandate that the list it maintains contains a fileformat line
+        // at all times (its VCFHeader's job to maintain that condition for the header object).
+        // Therefore we can only check for the version going backwards when a ##fileformat actually
+        // line exists. Either way, validate all existing lines.
         if (!allFormatLines.isEmpty()) {
+             if (allFormatLines.size() > 1) {
+                 throw new IllegalStateException(
+                         String.format("The metadata lines class contains more than one version line (%s)",
+                                 allFormatLines.stream()
+                                         .map(VCFHeaderLine::toString)
+                                         .collect(Collectors.joining(","))));
+             }
             final VCFHeaderLine fileFormatLine = allFormatLines.get(0);
-            removeHeaderLine(fileFormatLine);
+            final VCFHeaderVersion currentVersion = VCFHeaderVersion.toHeaderVersion(fileFormatLine.getValue());
+            final int compareTo = newVCFVersion.compareTo(currentVersion);
+                if (compareTo < 0) {
+                    throw new IllegalStateException(String.format(
+                            "New header version %s must be >= existing version %s",
+                            newVCFVersion,
+                            currentVersion));
+                }
+                removeHeaderLine(fileFormatLine);
         }
 
+        // no matter what, call validateMetaDataLines to ensure the version transition is valid WRT any
+        // existing lines
+        validateMetaDataLines(newVCFVersion, false);
         addMetaDataLine(VCFHeader.getHeaderVersionLine(newVCFVersion));
     }
 
@@ -170,7 +187,6 @@ public final class VCFMetaDataLines implements Serializable {
      *                              false allows callers to test whether the metadata lines can be upgraded to
      *                              the proposed targetVersion.
      */
-    //TODO: this should only work when going forward ?
     //TODO: need to tell users how to resolve the case where this fails
     public void validateMetaDataLines(final VCFHeaderVersion targetVersion, final boolean includeFileFormatLine) {
         mMetaData.values()
@@ -206,8 +222,7 @@ public final class VCFMetaDataLines implements Serializable {
     /**
      * @return all of the structured (ID) lines in their original file order, or an empty list if none were present
      */
-    //TODO: does this correctly retain order ?
-    //TODO: does this return Contig header lines ? did it do so previously ?
+    //TODO: does this correctly retain order ? does it return Contig header lines ? did it do so previously ?
     public List<VCFSimpleHeaderLine> getIDHeaderLines() {
         return mMetaData.values().stream()
                 .filter(VCFHeaderLine::isIDHeaderLine)
@@ -237,8 +252,8 @@ public final class VCFMetaDataLines implements Serializable {
     }
 
     //TODO: Is this useful ? It returns the first match for the given key, no matter how many
-    //TODO: there are. Should we deprecate it (and add a new one that returns a collection)
-    //TODO: or just change this one to return a collection ?
+    //there are. Should we deprecate it (and add a new one that returns a collection)
+    //or just change this one to return a collection ?
     /**
      * Get the VCFHeaderLine whose key equals key.  Returns null if no such line exists
      * @param key the key to use to locate the headerline
@@ -311,8 +326,8 @@ public final class VCFMetaDataLines implements Serializable {
     }
 
     //TODO: Is this useful ? It returns the first match for the given key, no matter how many
-    //TODO: there are. Should we deprecate it (and add a new one that returns a collection)
-    //TODO: or just change this one to return a collection ?
+    //there are. Should we deprecate it (and add a new one that returns a collection)
+    //or just change this one to return a collection ?
     /**
      * @param key the of the requested other header line
      * @return the meta data line, or null if there is none

@@ -69,16 +69,6 @@ public class VCFCodec extends AbstractVCFCodec {
     // on VariantContext to do the validation of any contradictory (or malformed) record parameters.
     public final static String VCF4_MAGIC_HEADER = "##fileformat=VCFv4";
 
-    public VCFCodec() {
-        // TODO: This defaults to "Unknown" and winds up in every VariantContext. Setting it
-        // here breaks some GATK4 tests. Should we put useful something here ?
-        //setName(String.format("%s:%s:%s",
-        //            VCFHeaderVersion.VCF4_0.getVersionString(),
-        //            VCFHeaderVersion.VCF4_1.getVersionString(),
-        //            VCFHeaderVersion.VCF4_2.getVersionString())
-        //);
-    }
-
     /**
      * Return true if this codec can handle the target version
      * @param targetHeaderVersion
