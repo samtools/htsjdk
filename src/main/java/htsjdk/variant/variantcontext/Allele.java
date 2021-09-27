@@ -26,7 +26,6 @@
 package htsjdk.variant.variantcontext;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * Immutable representation of an allele.
@@ -128,20 +127,20 @@ public interface Allele extends Comparable<Allele>, Serializable {
 
     String NON_REF_STRING = "<NON_REF>";
     String UNSPECIFIED_ALTERNATE_ALLELE_STRING = "<*>";
-    Allele REF_A = new ByteArrayAllele("A", true);
-    Allele ALT_A = new ByteArrayAllele("A", false);
-    Allele REF_C = new ByteArrayAllele("C", true);
-    Allele ALT_C = new ByteArrayAllele("C", false);
-    Allele REF_G = new ByteArrayAllele("G", true);
-    Allele ALT_G = new ByteArrayAllele("G", false);
-    Allele REF_T = new ByteArrayAllele("T", true);
-    Allele ALT_T = new ByteArrayAllele("T", false);
-    Allele REF_N = new ByteArrayAllele("N", true);
-    Allele ALT_N = new ByteArrayAllele("N", false);
-    Allele SPAN_DEL = new ByteArrayAllele(SPAN_DEL_STRING, false);
-    Allele NO_CALL = new ByteArrayAllele(NO_CALL_STRING, false);
-    Allele NON_REF_ALLELE = new ByteArrayAllele(NON_REF_STRING, false);
-    Allele UNSPECIFIED_ALTERNATE_ALLELE = new ByteArrayAllele(UNSPECIFIED_ALTERNATE_ALLELE_STRING, false);
+    Allele REF_A = new SimpleAllele("A", true);
+    Allele ALT_A = new SimpleAllele("A", false);
+    Allele REF_C = new SimpleAllele("C", true);
+    Allele ALT_C = new SimpleAllele("C", false);
+    Allele REF_G = new SimpleAllele("G", true);
+    Allele ALT_G = new SimpleAllele("G", false);
+    Allele REF_T = new SimpleAllele("T", true);
+    Allele ALT_T = new SimpleAllele("T", false);
+    Allele REF_N = new SimpleAllele("N", true);
+    Allele ALT_N = new SimpleAllele("N", false);
+    Allele SPAN_DEL = new SimpleAllele(SPAN_DEL_STRING, false);
+    Allele NO_CALL = new SimpleAllele(NO_CALL_STRING, false);
+    Allele NON_REF_ALLELE = new SimpleAllele(NON_REF_STRING, false);
+    Allele UNSPECIFIED_ALTERNATE_ALLELE = new SimpleAllele(UNSPECIFIED_ALTERNATE_ALLELE_STRING, false);
 
     // for simple deletion, e.g. "ALT==<DEL>" (note that the spec allows, for now at least, alt alleles like <DEL:ME>)
     @SuppressWarnings("unused")
@@ -188,7 +187,7 @@ public interface Allele extends Comparable<Allele>, Serializable {
                 default: throw new IllegalArgumentException("Illegal base [" + (char)bases[0] + "] seen in the allele");
             }
         } else {
-            return new ByteArrayAllele(bases.clone(), isRef);
+            return new SimpleAllele(bases.clone(), isRef);
         }
     }
 
@@ -372,12 +371,13 @@ public interface Allele extends Comparable<Allele>, Serializable {
      * (in which case the returned allele will be non-Ref).
      *
      * This method is efficient because it can skip the validation of the bases (since the original allele was already validated)
+
      *
      * @param allele  the allele from which to copy the bases
      * @param ignoreRefState  should we ignore the reference state of the input allele and use the default ref state?
      */
     static Allele create(Allele allele, boolean ignoreRefState) {
-        return new ByteArrayAllele(allele.getBases(), allele.isReference() && !ignoreRefState);
+        return new SimpleAllele(allele.getBases(), allele.isReference() && !ignoreRefState);
     }
 
     static boolean oneIsPrefixOfOther(final Allele a1, final Allele a2) {

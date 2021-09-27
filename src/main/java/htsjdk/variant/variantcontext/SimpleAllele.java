@@ -27,13 +27,20 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.samtools.util.StringUtil;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-class ByteArrayAllele implements Allele {
+/**
+ *  An implementation of {@link Allele} which includes a byte[] of the bases in the allele or the symbolic name.
+ *
+ *  This has been made public in order to maintain backwards compatibilty and act as a base for classes which previously
+ *  subclassed Allele before it was converted into an interface.
+ *
+ *  Most users should create alleles using {@link Allele#create(byte)} instead of interacting with this class directly.
+ */
+public class SimpleAllele implements Allele {
 
-    private static long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
     private static final byte[] EMPTY_ALLELE_BASES = new byte[0];
 
@@ -44,7 +51,7 @@ class ByteArrayAllele implements Allele {
     private byte[] bases = null;
 
     // no public way to create an allele
-    protected ByteArrayAllele(final byte[] bases, final boolean isRef) {
+    protected SimpleAllele(final byte[] bases, final boolean isRef) {
         // null alleles are no longer allowed
         if ( Allele.wouldBeNullAllele(bases) ) {
             throw new IllegalArgumentException("Null alleles are not supported");
@@ -73,7 +80,7 @@ class ByteArrayAllele implements Allele {
             throw new IllegalArgumentException("Unexpected base in allele bases \'" + new String(bases)+"\'");
     }
 
-    protected ByteArrayAllele(final String bases, final boolean isRef) {
+    protected SimpleAllele(final String bases, final boolean isRef) {
         this(bases.getBytes(), isRef);
     }
 
@@ -86,7 +93,7 @@ class ByteArrayAllele implements Allele {
      * @param allele  the allele from which to copy the bases
      * @param ignoreRefState  should we ignore the reference state of the input allele and use the default ref state?
      */
-    protected ByteArrayAllele(final ByteArrayAllele allele, final boolean ignoreRefState) {
+    protected SimpleAllele(final SimpleAllele allele, final boolean ignoreRefState) {
         this.bases = allele.bases;
         this.isRef = ignoreRefState ? false : allele.isRef;
         this.isNoCall = allele.isNoCall;
@@ -97,8 +104,8 @@ class ByteArrayAllele implements Allele {
     public boolean isPrefixOf(final Allele other) {
         if (other.length() < this.length()) {
             return false;
-        } else if (other instanceof ByteArrayAllele) {
-            final ByteArrayAllele baOther = (ByteArrayAllele) other;
+        } else if (other instanceof SimpleAllele) {
+            final SimpleAllele baOther = (SimpleAllele) other;
             return isPrefixOfBytes(baOther.bases);
         } else {
             return isPrefixOfBytes(other.getBases());
@@ -255,8 +262,8 @@ class ByteArrayAllele implements Allele {
             return -1;
         else if ( isNonReference() && other.isReference() ) 
             return 1;
-        else if (other instanceof ByteArrayAllele) {
-            final ByteArrayAllele baOther = (ByteArrayAllele) other;
+        else if (other instanceof SimpleAllele) {
+            final SimpleAllele baOther = (SimpleAllele) other;
             return compareBases(baOther.bases);
         } else {
             return compareBases(other.getBases());
