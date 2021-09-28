@@ -5,17 +5,17 @@ import htsjdk.tribble.TribbleException;
 import java.util.Map;
 
 /**
- * TODO: these are not well defined in the VCF 4.3 spec; they appear to require IDs,
- * TODO: and have lots of possible attributes
  */
 public class VCFSampleHeaderLine extends VCFSimpleHeaderLine {
 
     private static final long serialVersionUID = 1L;
 
     public VCFSampleHeaderLine(String line, VCFHeaderVersion version) {
-        // We need to call the V4 parser directly since the V3 parser requires expected tags; validateForVersion
-        // will detect the version incompatibility if we're called on behalf of V3
-        super(VCFConstants.SAMPLE_HEADER_KEY, new VCF4Parser().parseLine(line, null));
+        // We need to use the V4 parser directly, since the V3 parser requires ALL permissible/expected
+        // tags to be supplied, which is inconsistent with modern structured header lines that allow
+        // other tags. So let validateForVersion detect any version incompatibility, ie., if this is ever
+        // called with a V3 version.
+        super(VCFConstants.SAMPLE_HEADER_KEY, new VCF4Parser().parseLine(line, expectedTagOrder));
         validateForVersion(version);
     }
 

@@ -1010,4 +1010,66 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // create a collection of VCFHeaderLine so that contains tests work correctly
         return headers.stream().map(h -> (VCFHeaderLine) h).collect(Collectors.toList());
     }
+
+    @DataProvider(name="duplicateHeaderLineCases")
+    private Object[][] getDuplicateHeaderLineCases() {
+        return new Object[][] {
+
+                // these test use VCFAltHeaderLine to test structured/ID lines, but the behavior should be the same
+                // for any header ID line
+
+                // duplicate IDs, duplicate description; line is dropped due to duplicate ID
+                { new VCFAltHeaderLine("X", "description1"),
+                        new VCFAltHeaderLine("X", "description1"), false },
+                // duplicate IDs, different descriptions;  line is dropped due to duplicate ID
+                { new VCFAltHeaderLine("X", "description1"),
+                        new VCFAltHeaderLine("X", "description2"), false },
+                // different IDs, different descriptions;  line is retained
+                { new VCFAltHeaderLine("X", "description1"),
+                        new VCFAltHeaderLine("Y", "description2"), true },
+                // different IDs, duplicate descriptions;  line is retained
+                { new VCFAltHeaderLine("X", "description"),
+                        new VCFAltHeaderLine("Y", "description"), true },
+
+                // .......unstructured header lines........
+
+                // duplicate key, duplicate value, line is dropped
+                { new VCFHeaderLine("CommandLine", "command"), new VCFHeaderLine("CommandLine", "command"), false },
+                // duplicate key, different value, line is retained
+                { new VCFHeaderLine("CommandLine", "command1>"), new VCFHeaderLine("CommandLine", "command1"), true },
+
+                ///////////////////////////////////////////////////////////////////////////////////////////
+                // since the VCFHeaderLine constructor is public, it can be used erroneously to model header
+                // lines that have structured syntax, but which will not obey structured header line rules,
+                // since those are enabled via VCFSimpleHeaderLine, and VCFHeaderLine is intended to be used
+                // for non-structured lines. so include some tests that simulate this
+
+                // duplicate key, duplicate value (...duplicate ID), line is dropped
+                { new VCFHeaderLine("KEY", "<ID=ID1>"), new VCFHeaderLine("KEY", "<ID=ID1>"), false },
+                // duplicate key, different value (different ID), line is retained
+                { new VCFHeaderLine("KEY", "<ID=ID1>"), new VCFHeaderLine("KEY", "<ID=ID2>"), true },
+
+                //NOTE: this case illustrates how its possible to use the API to cause two structured lines
+                // with duplicate IDs to be retained if they are not modeled as VCFStructuredHeaderLines
+                // duplicate key, different value (but IDENTICAL ID), line is RETAINED
+                { new VCFHeaderLine("KEY", "<ID=ID1>"), new VCFHeaderLine("KEY", "<ID=ID1,ATTRIBUTE=23>"), true },
+
+                // different key, duplicate value, line is retained
+                { new VCFHeaderLine("KEY1", "<ID=ID1>"), new VCFHeaderLine("KEY2", "<ID=ID1>"), true },
+                // different key, different value, line is retained
+                { new VCFHeaderLine("KEY1", "<ID=ID1>"), new VCFHeaderLine("KEY2", "<ID=ID2>"), true },
+
+        };
+    }
+
+    @Test(dataProvider = "duplicateHeaderLineCases")
+    private void testDuplicateHeaderLine(final VCFHeaderLine hl1, final VCFHeaderLine hl2, final boolean expectHL2Retained) {
+        final Set<VCFHeaderLine> lineSet = VCFHeader.getHeaderVersionLineSet(VCFHeaderVersion.VCF4_2);
+        lineSet.add(hl1);
+        lineSet.add(hl2);
+        final VCFHeader vcfHeader = new VCFHeader(lineSet);
+
+        Assert.assertEquals(vcfHeader.getMetaDataInInputOrder().size(), expectHL2Retained ? 3 : 2);
+    }
+
 }

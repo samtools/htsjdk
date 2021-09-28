@@ -125,9 +125,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     /**
-     * Return true if this codec can handle the target version
-     * @param targetVersion
-     * @return true if this codec can handle this version
+     * Return true if this codec can decode files with the target version
+     * @param targetVersion the target version to consider
+     * @return true if this codec can handle targetVersion
      */
     public abstract boolean canDecodeVersion(final VCFHeaderVersion targetVersion);
 
@@ -221,7 +221,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 } else if ( headerLine.startsWith(VCFConstants.SAMPLE_HEADER_START) ) {
                     metaData.add(getSampleHeaderLine(headerLine.substring(SAMPLE_HEADER_OFFSET), sourceVersion));
                 } else {
-                    VCFHeaderLine otherHeaderLine = getOtherHeaderLine(
+                    final VCFHeaderLine otherHeaderLine = getOtherHeaderLine(
                             headerLine.substring(VCFHeader.METADATA_INDICATOR.length()),
                             sourceVersion);
                     if (otherHeaderLine != null)
@@ -369,14 +369,14 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                         headerLineString.substring(indexOfEquals + 1),
                         sourceVersion);
             } else {
-                // for pre-v4.3, fall back to use VCFHeaderLine if there is no ID in order to accommodate
-                // older files that contain lines with structured header line syntax (delimited with "<>"),
+                // for pre-v4.3, fall back to using VCFHeaderLine if there is no ID, in order to accommodate
+                // older files that contain lines with structured header line syntax (delimited by "<...>"),
                 // but which do not contain an ID attribute, i.e., GATK Funcotator uses v4.1 ClinVar test
                 // files with lines like that look like this:
                 //
                 //      "ID=<Description=\"ClinVar Variation ID\">"
                 //
-                // where the key is "ID" and no ID attribute is present
+                // where the key is "ID", and no ID attribute is present
                 return new VCFHeaderLine(headerLineString.substring(0, indexOfEquals), headerLineString.substring(indexOfEquals + 1));
             }
         } else {

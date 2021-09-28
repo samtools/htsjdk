@@ -65,8 +65,9 @@ public class VCFHeader implements Serializable {
      */
     private VCFHeaderVersion vcfHeaderVersion;
 
-    // TODO: Should we reject attempts to add two contig header lines with the same contigIndex ?
-    // TODO: GATK VcfUtilsUnitTest.createHeaderLines test creates headers with contig lines with identical (0) indices
+    //TODO: Should we reject attempts to add two contig header lines with the same contigIndex ?
+    // GATK VcfUtilsUnitTest.createHeaderLines test creates headers with contig lines with identical (0) indices
+
     // The associated meta data
     private final VCFMetaDataLines mMetaData = new VCFMetaDataLines();
 
@@ -102,16 +103,18 @@ public class VCFHeader implements Serializable {
      * Create an empty VCF header with no header lines and no samples
      */
     public VCFHeader() {
-        //TODO: deprecate this (no way to determine the intended version)
         this(getHeaderVersionLineSet(DEFAULT_VCF_VERSION), Collections.emptySet());
     }
 
     /**
-     * Create a VCF header, given a list of meta data and auxiliary tags
+     * Create a VCF header, given a list of meta data and auxiliary tags. The provided metadata
+     * header lin e list MUST contain a version (fileformat) line in order to establish the version
+     * for this header.
      *
      * @param metaData the meta data associated with this header
+     * @throws TribbleException if the provided header line metadata does not include a header line that
+     * establishes the VCF version for the lines
      */
-    //TODO: Note that this now requires the metadata to include a version line
     //TODO: should these constructors be deprecated and replaced with ones that accept LinkHashSet, or should
     // we just document that order matters (for contig lines sort order) ?
     public VCFHeader(final Set<VCFHeaderLine> metaData) {
@@ -127,10 +130,14 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Create a VCF header, given a set of meta data and auxiliary tags
+     * Create a VCF header, given a set of meta data and auxiliary tags. The provided metadata
+     * header lin e list MUST contain a version (fileformat) line in order to establish the version
+     * for this header.
      *
      * @param metaData            set of meta data associated with this header
      * @param genotypeSampleNames the sample names
+     * @throws TribbleException if the provided header line metadata does not include a header line that
+     * establishes the VCF version for the lines
      */
     //TODO: should these constructors be deprecated and replaced with ones that accept LinkHashSet, or should
     // we just document that order matters (for contig lines sort order) ?
@@ -141,9 +148,12 @@ public class VCFHeader implements Serializable {
     /**
      * Create a versioned VCF header.
      *
-     * @param metaData The metadata lines for this header. The set must include a ##fileformat version, and
-     *                the remaining lines must be valid for that version.
+     * @param metaData The metadata lines for this header.The provided metadata
+     * header line list MUST contain a version (fileformat) line in order to establish the version
+     * for this header.
      * @param genotypeSampleNames Sample names for this header.
+     * @throws TribbleException if the provided header line metadata does not include a header line that
+     * establishes the VCF version for the lines
      */
     //TODO: should these constructors be deprecated and replaced with ones that accept LinkHashSet, or should
     // we just document that order matters (for contig lines sort order) ?
@@ -183,24 +193,16 @@ public class VCFHeader implements Serializable {
                     "New header version %s must be >= existing version %s",
                     newVCFVersion,
                     vcfHeaderVersion));
-        } else if (compareTo > 0) {
-            // TODO: This can cause failures in code that used to succeed (i.e. Picard LiftOverVcf tests fail
-            // if they're not modified to remove the embedded version line) since we now retain ##fileformat
-            // lines in the metadata list; the validation code recognizes and validates the embedded ##fileformat
-            // lines against the new version, and throws if they conflict.
-            //
-            // We might want to add a removeHeaderLine method to VCFHeader so that consumers with this problem
-            // such as LiftOverVcf can first manually remove the embedded fileformat line (currently you'd have
-            // to create a new header to achieve that).
-            if (VCFUtils.getVerboseVCFLogging()) {
+        }
+        if (compareTo > 0) {
+           if (VCFUtils.getVerboseVCFLogging()) {
                 logger.warn(String.format("Changing VCFHeader version from %s to %s",
                         vcfHeaderVersion.getVersionString(),
                         newVCFVersion.getVersionString()));
             }
+            mMetaData.setVCFVersion(newVCFVersion);
+            this.vcfHeaderVersion = newVCFVersion;
         }
-
-        mMetaData.setVCFVersion(newVCFVersion);
-        this.vcfHeaderVersion = newVCFVersion;
     }
 
     /**
@@ -376,8 +378,6 @@ public class VCFHeader implements Serializable {
      */
     public Set<VCFHeaderLine> getMetaDataInInputOrder() { return mMetaData.getMetaDataInInputOrder(); }
 
-    //TODO: NOTE: since this returns all of the metadata lines, including the fileformat version line,
-    // in sorted order, the fileformat line is almost certainly not the first line in the list.
     /**
      * Get the metadata associated with this header in sorted order.
      *
@@ -473,26 +473,25 @@ public class VCFHeader implements Serializable {
         return getFilterHeaderLine(id) != null;
     }
 
-    // TODO: Is this useful ? It returns the first match for the given key, even though there
-    // can be multiple lines with the same key should we deprecate this method (and leave it and
-    // add the new one) or just change it to return a collection ?
     /**
      * @param key the of the requested other header line
      * @return the meta data line, or null if there is none
      */
-    //TODO: deprecate this
+    @Deprecated // starting after version 2.24.1 (meaning of "OTHER" is ambiguous, and this selects one from what can be many)
     public VCFHeaderLine getOtherHeaderLine(final String key) { return mMetaData.getOtherHeaderLine(key); }
 
     /**
      * Returns the other HeaderLines in their original ordering, where "other" means any
      * VCFHeaderLine that is not a contig, info, format or filter header line.
      */
+    @Deprecated // starting after version 2.24.1 (meaning of "OTHER" is ambiguous)
     public Collection<VCFHeaderLine> getOtherHeaderLines() { return mMetaData.getOtherHeaderLines(); }
 
     /**
      * If true additional engine headers will be written to the VCF, otherwise only the walker headers will be output.
      * @return true if additional engine headers will be written to the VCF
      */
+    @Deprecated // starting after version 2.24.1
     public boolean isWriteEngineHeaders() {
         return writeEngineHeaders;
     }
@@ -501,6 +500,7 @@ public class VCFHeader implements Serializable {
      * If true additional engine headers will be written to the VCF, otherwise only the walker headers will be output.
      * @param writeEngineHeaders true if additional engine headers will be written to the VCF
      */
+    @Deprecated // starting after version 2.24.1
     public void setWriteEngineHeaders(final boolean writeEngineHeaders) {
         this.writeEngineHeaders = writeEngineHeaders;
     }
@@ -509,6 +509,7 @@ public class VCFHeader implements Serializable {
      * If true, and isWriteEngineHeaders also returns true, the command line will be written to the VCF.
      * @return true if the command line will be written to the VCF
      */
+    @Deprecated // starting after version 2.24.1
     public boolean isWriteCommandLine() {
         return writeCommandLine;
     }
@@ -517,6 +518,7 @@ public class VCFHeader implements Serializable {
      * If true, and isWriteEngineHeaders also returns true, the command line will be written to the VCF.
      * @param writeCommandLine true if the command line will be written to the VCF
      */
+    @Deprecated // starting after version 2.24.1
     public void setWriteCommandLine(final boolean writeCommandLine) {
         this.writeCommandLine = writeCommandLine;
     }
@@ -539,35 +541,20 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Return a set of header lines resulting from merging the header lines from two or more headers. The
-     * headers must be version-compatible as defined by {@link VCFHeaderVersion#versionsAreCompatible}.
-     * @param headers
-     * @param emitWarnings
-     * @return
-     * @throws IllegalStateException
-     */
-    //TODO: this should really return a merged HEADER (or at least the VCFMetaDataLines object that it creates)
-    // and let VCFUtils.smartMergeHeader (which should now be deprecated, just extract the header lines from it;
-    // will also need to add a VCFHeader(VCFMetaDataLines) constructor if we return VCFMetaDataLines
-    //NOTE: These headers must be version >= 4.2 (older headers that are read in via AbstractVCFCodecs are
-    // "repaired" and stamped as VCF4.2 when they're read in).
-    //TODO: all headers must be v4.2or greater
-    // result always has the highet version amongst the merged headers
-    // merging can fail if some header lines from the older versions don't conform to the new version
-
-    /**
      * Merge the header lines from all of the header lines in a set of header. The resulting set includes
      * all unique lines that appeared in any header. Lines that are duplicated are removed from the result
-     * set. The resulting set is compatible wiht (and contains a fileformat version line for) the highest
-     * version seen in any of the provided headers.
+     * set. The resulting set is compatible with (and contains a ##fileformat version line for) the highest
+     * version seen in any of the headers provided in the input collection.
      *
      * @param headers the headers to merge
      * @param emitWarnings true of warnings should be emitted
      * @return a set of merged VCFHeaderLines
-     * @throws IllegalStateException if any header has a version < vcfV4.2
-     * @throws IllegalStateException if any header cannot be upgraded to the newest version amongst
-     * all headers provided
+     * @throws IllegalStateException if any header has a version < vcfV4.2, or if any header line in any
+     * of the input headers is not compatible the newest version amongst all headers provided
      */
+    //TODO: this should really return a merged HEADER (or at least the VCFMetaDataLines object that it creates)
+    // and let VCFUtils.smartMergeHeader (which should now be deprecated, just extract the header lines from it;
+    // will also need to add a VCFHeader(VCFMetaDataLines) constructor if we return VCFMetaDataLines
     public static Set<VCFHeaderLine> getMergedHeaderLines(final Collection<VCFHeader> headers, final boolean emitWarnings) {
         final VCFMetaDataLines mergedMetaData = new VCFMetaDataLines();
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
@@ -592,11 +579,12 @@ public class VCFHeader implements Serializable {
                     continue;
                 }
 
+                // NOTE: Structured header lines are only equal if they have identical attributes
+                // and values (which is different from the previous implementation for some line types, like
+                // compound header lines). So we use a more discriminating "hasEquivalentHeaderLine" to determine
+                // equivalence, and delegate to the actual lines and to do a smart reconciliation.
                 final VCFHeaderLine other = mergedMetaData.hasEquivalentHeaderLine(line);
                 if (other != null && !line.equals(other) ) {
-                    // TODO: NOTE: In order to be equal, structured header lines must have identical attributes
-                    // and values, which is different from the previous implementation for some line types, like
-                    // compound header lines.
                     if (!line.getKey().equals(other.getKey())) {
                         throw new IllegalArgumentException(
                                 String.format("Attempt to merge incompatible header lines %s/%s", line.getKey(), other.getKey()));

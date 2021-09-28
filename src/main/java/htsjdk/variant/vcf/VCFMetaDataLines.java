@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+//TODO:make sure this doesn't have issues with ALT lines (which have IDs with embedded ":")
 /**
  * Class for managing a set of VCFHeaderLines for a VCFHeader.
  */
@@ -108,7 +109,7 @@ public final class VCFMetaDataLines implements Serializable {
             //
             // which would overlap with the key generated for a real FORMAT line with id=bar.
             //
-            // TODO: The previous implementation dropped duplicate keys for unstructured lines, but I don't think
+            // The previous implementation dropped duplicate keys for unstructured lines, but I don't think
             // the spec requires these to be unique. This is more permissive in that it allows duplicate lines such
             // as ##GATKCommandLines to accumulate if they have different values, but retains only one if it has
             // a unique value.
@@ -325,13 +326,11 @@ public final class VCFMetaDataLines implements Serializable {
         return (VCFFilterHeaderLine) mMetaData.get(makeKey(VCFConstants.FILTER_HEADER_KEY, id));
     }
 
-    //TODO: Is this useful ? It returns the first match for the given key, no matter how many
-    //there are. Should we deprecate it (and add a new one that returns a collection)
-    //or just change this one to return a collection ?
     /**
      * @param key the of the requested other header line
      * @return the meta data line, or null if there is none
      */
+    @Deprecated // starting after version 2.24.1 (meaning of "OTHER" is ambiguous, and this selects one from what can be many)
     public VCFHeaderLine getOtherHeaderLine(final String key) {
         for (final VCFHeaderLine next: getOtherHeaderLines()) {
             if (next.getKey().equals(key)) {
@@ -345,7 +344,7 @@ public final class VCFMetaDataLines implements Serializable {
      * Returns the other HeaderLines in their original ordering, where "other" means any
      * VCFHeaderLine that is not a contig, info, format or filter header line.
      */
-    //TODO: the meaning of "OTHER" is ambiguous; should it include pedigree/meta/... etc ?
+    @Deprecated // starting after version 2.24.1 (the meaning of "OTHER" is ambiguous)
     public Collection<VCFHeaderLine> getOtherHeaderLines() {
         return mMetaData.values().stream().filter(
             hl ->

@@ -5,7 +5,7 @@ import htsjdk.tribble.TribbleException;
 
 import java.util.*;
 
-//TODO: Should we validate these alt allele types ?
+//TODO: Should we validate/constrain these to the spec ?
 // Structural Variants
 //   In symbolic alternate alleles for imprecise structural variants, the ID field indicates the type of structural variant,
 //   and can be a colon-separated list of types and subtypes. ID values are case sensitive strings and must not contain
@@ -39,9 +39,9 @@ public class VCFAltHeaderLine extends VCFSimpleHeaderLine {
     );
 
     public VCFAltHeaderLine(final String line, final VCFHeaderVersion version) {
-        // We need to call the V4 parser directly since the V3 parser requires expected tags; validateForVersion
-        // will detect the version incompatibility if we're called on behalf of V3
-        super(VCFConstants.ALT_HEADER_KEY, new VCF4Parser().parseLine(line, expectedTags));
+        // Honor the requested version to choose the parser, and let validateForVersion figure out
+        // whether that version is valid for this line (for example, if this is called with a pre-4.0 version)
+        super(VCFConstants.ALT_HEADER_KEY, VCFHeaderLineTranslator.parseLine(version, line, expectedTags));
         validateForVersion(version);
     }
 
@@ -60,7 +60,6 @@ public class VCFAltHeaderLine extends VCFSimpleHeaderLine {
     @Override
     public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         super.validateForVersion(vcfTargetVersion);
-        //TODO: NOTE: should we have this V4.0 threshold ?
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
             final String message = String.format("%s header lines are not allowed in VCF version %s headers",
                     getKey(),

@@ -29,8 +29,10 @@ import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.utils.ValidationUtils;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -52,18 +54,30 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     public static final String SOURCE_ATTRIBUTE = "Source";
     public static final String VERSION_ATTRIBUTE = "Version";
 
+    // List of expected tags (for this base class, its ID only; subclasses with more required tags
+    // should use a custom tag order if more required tags are expected
+    protected static final List<String> expectedTagOrder = Collections.unmodifiableList(
+            new ArrayList<String>(1) {{ add(ID_ATTRIBUTE); }});
+
     // Map used to retain the attribute/value pairs, in original order. The first entry in the map must be
     // an ID field. The entire map must be immutable to prevent hash values from changing, since these are
-    // often stored in Sets. Its not final to allow for special cases where subclasses have to be able to
-    // "repair" header lines (via a call to updateGenericField) during constructor validation.
+    // often stored in Sets. Its not ACTUALLY immutable to allow for special cases where subclasses have to
+    // be able to "repair" header lines (via a call to updateGenericField) during constructor validation.
     //
     // Otherwise the values here should never change during the lifetime of the header line.
-    //Note: this needs to be a LinkedHashMap so that it preserves order of attributes as presented
+    //TODO: this needs to be a LinkedHashMap so that it preserves order of attributes as presented
+    //TODO: fix this comment, make this actually immutable ? but we can't because of setSource and setDescription
+    // in subclasses, which are deprecated
     private final Map<String, String> genericFields = new LinkedHashMap();
 
+    /**
+     * Constructor that accepts a key and string that represetns the rest of the line (after the ##KEY=").
+     * @param key the key to use for this line
+     * @param line the value part of the line
+     * @param version the target version to validate the line against
+     */
     public VCFSimpleHeaderLine(final String key, final String line, final VCFHeaderVersion version) {
-        // We don't use any expectedTagOrder, since the only required tag is ID.
-        this(key, VCFHeaderLineTranslator.parseLine(version, line, null));
+        this(key, VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrder));
         validate();
         validateForVersion(version);
     }
@@ -75,7 +89,6 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
      * @param id id name to use for this line
      * @param description string that will be added as a "Description" tag to this line
      */
-    //TODO: deprecate these constructors that have no target version ?
     public VCFSimpleHeaderLine(final String key, final String id, final String description) {
         super(key, "");
         genericFields.put(ID_ATTRIBUTE, id);

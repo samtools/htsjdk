@@ -17,12 +17,11 @@ public class VCFPedigreeHeaderLine extends VCFSimpleHeaderLine {
     private static final long serialVersionUID = 1L;
 
     public VCFPedigreeHeaderLine(String line, VCFHeaderVersion version) {
-
-        // TODO: There are quite a few variants for expected tags (See above comment). Should we try to validate these?
-        // TODO: If not, we don't really need to model PEDIGREE as a separate class ?
-        // We need to call the V4 parser directly since the V3 parser requires expected tags; validateForVersion
-        // will detect the version incompatibility if we're called on behalf of V3
-        super(VCFConstants.PEDIGREE_HEADER_KEY, new VCF4Parser().parseLine(line, null));
+        // We need to use the V4 parser directly, since the V3 parser requires ALL permissible/expected
+        // tags to be supplied, which is inconsistent with modern structured header lines that allow
+        // other tags. So let validateForVersion detect any version incompatibility, ie., if this is ever
+        // called with a V3 version.
+        super(VCFConstants.PEDIGREE_HEADER_KEY, new VCF4Parser().parseLine(line, expectedTagOrder));
         validateForVersion(version);
     }
 

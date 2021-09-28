@@ -28,7 +28,7 @@ package htsjdk.variant.vcf;
 import java.util.*;
 
 /**
- * A feature codec for the VCF 4.0, 4.1 and 4.2 specification versions
+ * A feature codec for the VCF 4.0, 4.1, 4.2, and 4.3 specification versions
  *
  * <p>
  * VCF is a text file format (most likely stored in a compressed manner). It contains meta-information lines, a
@@ -84,7 +84,6 @@ public class VCFCodec extends AbstractVCFCodec {
 
     @Override
     public boolean canDecode(final String potentialInput) {
-        // TODO: this will succeed on 4.3 files since it only looks as far as ..."##fileformat=VCFv4"
         return canDecodeFile(potentialInput, VCF4_MAGIC_HEADER);
     }
 

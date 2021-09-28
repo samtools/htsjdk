@@ -74,7 +74,6 @@ public class VCFUtils {
         return VCFHeader.getMergedHeaderLines(headers, emitWarnings);
     }
 
-
     /**
      * Add / replace the contig header lines in the VCFHeader with the in the reference file and master reference dictionary
      *

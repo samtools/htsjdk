@@ -369,7 +369,7 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
         return super.equals(o);
     }
 
-    private boolean equalsExcludingExtraAttributes(VCFCompoundHeaderLine other) {
+    private boolean equalsExcludingExtraAttributes(final VCFCompoundHeaderLine other) {
         return count == other.count &&
                 countType == other.countType &&
                 type == other.type &&
@@ -385,6 +385,7 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
      *
      * @param source  annotation source (case-insensitive, e.g. "dbsnp")
      */
+    @Deprecated // after 2.24.1
     public void setSource(final String source) {
         updateGenericField(SOURCE_ATTRIBUTE, source);
     }
@@ -396,6 +397,7 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
      *
      * @param version exact version (e.g. "138")
      */
+    @Deprecated // after version 2.24.1
     public void setVersion(final String version) {
         updateGenericField(VERSION_ATTRIBUTE, version);
     }

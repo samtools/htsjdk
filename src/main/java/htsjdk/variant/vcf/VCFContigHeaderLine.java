@@ -64,8 +64,10 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
      * @param key            the key for this header line
      * @param contigIndex the contig index for this contig
      */
-    @Deprecated
+    @Deprecated // starting after version 2.24.1
     public VCFContigHeaderLine(final String line, final VCFHeaderVersion version, final String key, final int contigIndex) {
+        // deprecated because this constructor has a parameter to specify the key (??), but for
+        // contig lines the key has to be "contig"
         this(line, version, contigIndex);
         if (!VCFHeader.CONTIG_KEY.equals(key)) {
             logger.warn(String.format(
@@ -82,7 +84,6 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
      * @param version   the vcf header version
      * @param contigIndex the contig index for this contig
      */
-    //TODO: We should either make all header lines have a constructor that takes a version, or none...
     public VCFContigHeaderLine(final String line, final VCFHeaderVersion version, final int contigIndex) {
         this(VCFHeaderLineTranslator.parseLine(
                 version, line, Collections.singletonList(VCFSimpleHeaderLine.ID_ATTRIBUTE)), contigIndex);
@@ -188,9 +189,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
     public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         super.validateForVersion(vcfTargetVersion);
         if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            //TODO: V4.3 The contig names must not use a reserved symbolic allele/exclude the characters
-            // l/r chevron, l/r bracket, colon, asterisk
-            if (!VALID_CONTIG_ID_PATTERN.matcher(getID()).matches()) {
+             if (!VALID_CONTIG_ID_PATTERN.matcher(getID()).matches()) {
                 String message = String.format("Contig headerLineID \"%s\" in \"%s\" header line doesn't conform to VCF contig ID restrictions" ,
                         getID(),
                         getKey());

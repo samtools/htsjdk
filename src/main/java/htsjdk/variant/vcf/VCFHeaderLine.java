@@ -32,8 +32,9 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * <p> Class VCFHeaderLine </p>
- * <p> A class representing a key=value entry in the VCF header, and the base class for all structured header lines </p>
+ * <p> A class representing a key=value entry in the VCF header, and the base class for structured header lines.
+ * Header lines are immutable, and derived classes should maintain immutability.
+ * </p>
  */
 public class VCFHeaderLine implements Comparable, Serializable {
     public static final long serialVersionUID = 1L;
@@ -64,15 +65,10 @@ public class VCFHeaderLine implements Comparable, Serializable {
     }
 
     /**
-     * Get the value
+     * Get the value. May be null.
      *
-     * @return the value
+     * @return the value. may be null (for subclass implementations that use structured values)
      */
-    //TODO: subclasses such as VCFSimpleHeaderLine use a null for the value, so it should be overridden
-    // by those classes so they return an encoded version of the value part of the string (or perhaps
-    // they should pass that in to this class' constructor so it will never be null...which would
-    // require all of these classes to be fully immutable
-    //TODO: OR update javadoc to say this can be null
     public String getValue() {
         return mValue;
     }
@@ -100,20 +96,17 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * to change the version of a VCFHeader by changing it's target version. Validates that the header line
      * conforms to the target version requirements.
      *
-     * Subclasses can override this to provide line-specific version validation, and the overrides should
+     * Subclasses can override this to provide line type-specific version validation, and the overrides should
      * also call super.validateForVersion to allow each class in the class hierarchy to do class-level validation.
      */
-    //TODO: should we implement this for all/any subclasses ?
-    //TODO: this needs to check for the VCFConstants.PEDIGREE key (since pre vcf4.3 PEDGIREE lines are not modeled as
-    // VCFPedigreeHeaderLine) and reject it if the target is >= 4.3
-    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+    protected void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         // If this header line is itself a fileformat/version line,
-        // make sure it doesn't clash with the new targetVersion.
+        // make sure it doesn't clash with the requested vcfTargetVersion.
         if (VCFHeaderVersion.isFormatString(getKey())) {
             if (!vcfTargetVersion.getFormatString().equals(getKey())  ||
                     !vcfTargetVersion.getVersionString().equals(getValue())) {
                 throw new TribbleException(
-                        String.format("The requested version \"%s\" is incompatible with the existing fileformat header line \"%s\"",
+                        String.format("The target version (%s) is incompatible with the header line's content (%s)",
                                 vcfTargetVersion,
                                 this.toStringEncoding()));
             }
@@ -139,10 +132,9 @@ public class VCFHeaderLine implements Comparable, Serializable {
         }
     }
 
-    //TODO: this method and it's overrides should be removed since they're for BCF only, or at least renamed
     /**
-     * By default the header lines won't be added to the dictionary, unless this method will be override
-     * (for example in FORMAT, INFO or FILTER header lines)
+     * By default the header lines won't be added to the BCF dictionary, unless this method is overriden
+     * (for example in FORMAT, INFO or FILTER header lines).
      *
      * @return false
      */
