@@ -215,7 +215,7 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Obtain a VCFHeaderLine set containing only fileformat/version line for the requestedVersion
+     * Obtain a VCFHeaderLine set containing only a fileformat/version line for the requestedVersion
      * @param requestedVersion the version for which a version line should be obtained
      * @return a VCFHeaderLine set containing only fileformat/version line for the requestedVersion
      */
@@ -336,9 +336,8 @@ public class VCFHeader implements Serializable {
     public List<VCFFilterHeaderLine> getFilterLines() { return mMetaData.getFilterLines(); }
 
     /**
-     * @return all of the VCF ID lines in their original file order, or an empty list if none were present
+     * @return all of the VCFSimpleHeaderLine (ID)  lines in their original file order, or an empty list if none are present
      */
-    //TODO: Note that this returns VCFSimpleHeaderLine instead of VCFIDHeaderLine, since thats more useful
     public List<VCFSimpleHeaderLine> getIDHeaderLines() { return mMetaData.getIDHeaderLines(); }
 
     /**
@@ -385,16 +384,28 @@ public class VCFHeader implements Serializable {
      */
     public Set<VCFHeaderLine> getMetaDataInSortedOrder() { return mMetaData.getMetaDataInSortedOrder(); }
 
-    // TODO: Is it useful to retain this method ? It returns the first match for the given key. Should we
-    // TODO: deprecate it (and add a new one that returns a Collection) or just change it to return a Collection ?
-    // TODO: how does this find lines with the key OTHER:key
     /**
      * Get the VCFHeaderLine whose key equals key.  Returns null if no such line exists
-     * @param key
-     * @return
+     * 
+     * //Deprecated. Use {@link #getMetaDataLines(String)}.
+     * 
+     * @param key the key to use to find header lines to return
+     * @return the header line with key "key", or null if none is present
      */
-    public VCFHeaderLine getMetaDataLine(final String key) { return mMetaData.getMetaDataLine(key); }
+    // TODO: decide if we should keep this depending on the the response to https://github.com/samtools/hts-specs/issues/602
+    //@Deprecated // starting after version 2.24.1 (and this selects one from what can be many header lines)
+    public VCFHeaderLine getMetaDataLine(final String key) { 
+        return mMetaData.getMetaDataLines(key).stream().findFirst().orElse(null);
+    }
 
+    /**
+     * Get the VCFHeaderLines whose key equals key.  Returns an empty list if no such lines exist.
+     *
+     * @param key the key to use to find header lines to return
+     * @return the header lines with key "key"
+     */
+    public Collection<VCFHeaderLine> getMetaDataLines(final String key) { return mMetaData.getMetaDataLines(key); }
+    
     /**
      * get the genotyping sample names
      *
@@ -474,17 +485,18 @@ public class VCFHeader implements Serializable {
     }
 
     /**
+     * Deprecated. Use {@link #getOtherHeaderLines()}.
      * @param key the of the requested other header line
      * @return the meta data line, or null if there is none
      */
-    @Deprecated // starting after version 2.24.1 (meaning of "OTHER" is ambiguous, and this selects one from what can be many)
+    // TODO: decide if we should keep this depending on the the response to https://github.com/samtools/hts-specs/issues/602
+    //@Deprecated // starting after version 2.24.1 this selects one from what can be many)
     public VCFHeaderLine getOtherHeaderLine(final String key) { return mMetaData.getOtherHeaderLine(key); }
 
     /**
      * Returns the other HeaderLines in their original ordering, where "other" means any
      * VCFHeaderLine that is not a contig, info, format or filter header line.
      */
-    @Deprecated // starting after version 2.24.1 (meaning of "OTHER" is ambiguous)
     public Collection<VCFHeaderLine> getOtherHeaderLines() { return mMetaData.getOtherHeaderLines(); }
 
     /**

@@ -252,19 +252,27 @@ public final class VCFMetaDataLines implements Serializable {
         return Collections.unmodifiableList(contigLines);
     }
 
-    //TODO: Is this useful ? It returns the first match for the given key, no matter how many
-    //there are. Should we deprecate it (and add a new one that returns a collection)
-    //or just change this one to return a collection ?
     /**
      * Get the VCFHeaderLine whose key equals key.  Returns null if no such line exists
      * @param key the key to use to locate the headerline
      * @return the headerline if found, or null
      */
+    // TODO: decide if we should keep this depending on the the response to https://github.com/samtools/hts-specs/issues/602
     public VCFHeaderLine getMetaDataLine(final String key) {
         return mMetaData.values().stream()
                 .filter(hl -> hl.getKey().equals(key))
                 .findFirst()
                 .orElseGet(() -> null);
+    }
+
+    /**
+     * Get the VCFHeaderLine(s) whose key equals key.  Returns null if no such line exists
+     * @param key the key to use to locate the headerline
+     * @return collection of headerlines
+     */
+    public Collection<VCFHeaderLine> getMetaDataLines(final String key) {
+        return mMetaData.values().stream()
+                .filter(hl -> hl.getKey().equals(key)).collect(Collectors.toList());
     }
 
     /**
@@ -330,7 +338,8 @@ public final class VCFMetaDataLines implements Serializable {
      * @param key the of the requested other header line
      * @return the meta data line, or null if there is none
      */
-    @Deprecated // starting after version 2.24.1 (meaning of "OTHER" is ambiguous, and this selects one from what can be many)
+    // TODO: decide if we should keep this depending on the the response to https://github.com/samtools/hts-specs/issues/602
+    //@Deprecated // starting after version 2.24.1 (meaning of "OTHER" is ambiguous, and this selects one from what can be many)
     public VCFHeaderLine getOtherHeaderLine(final String key) {
         for (final VCFHeaderLine next: getOtherHeaderLines()) {
             if (next.getKey().equals(key)) {
@@ -344,7 +353,6 @@ public final class VCFMetaDataLines implements Serializable {
      * Returns the other HeaderLines in their original ordering, where "other" means any
      * VCFHeaderLine that is not a contig, info, format or filter header line.
      */
-    @Deprecated // starting after version 2.24.1 (the meaning of "OTHER" is ambiguous)
     public Collection<VCFHeaderLine> getOtherHeaderLines() {
         return mMetaData.values().stream().filter(
             hl ->
