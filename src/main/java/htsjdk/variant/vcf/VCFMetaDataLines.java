@@ -64,15 +64,12 @@ public final class VCFMetaDataLines implements Serializable {
             }
         } else {
             final VCFHeaderLine existingLine = mMetaData.get(key);
-            if (existingLine != null && !existingLine.equals(headerLine) && VCFUtils.getVerboseVCFLogging()) {
+            if (existingLine != null && !existingLine.equals(headerLine)) {
                 // Previous htsjdk implementations would round trip lines with duplicate IDs by preserving
                 // them in the master header line list maintained by VCFHeader, but would silently drop them
                 // from the individual typed header line lists, so the duplicates would not be included in
                 // queries for typed line (i.e. via getInfoHeaderLines()). This implementation doesn't retain
                 // the duplicates (the 4.2/4.3 specs expressly forbid it), so they're dropped here.
-                //
-                // TODO: Is it sufficient to log a warning for this case (duplicate key) ? Should we add code
-                // TODO: here to throw only for v4.3+ ? Only if VCFUtils.getStrictVCFVersionValidation is set ? Or both ?
                 final String message = String.format(
                         "Attempt to add header line (%s) collides with existing line header line (%s). " +
                                 "The existing header line will be discarded.",
@@ -186,7 +183,8 @@ public final class VCFMetaDataLines implements Serializable {
      *                              false allows callers to test whether the metadata lines can be upgraded to
      *                              the proposed targetVersion.
      */
-    //TODO: need to tell users how to resolve the case where this fails
+    //TODO: we need to tell users how to resolve the case where this fails due to version validation
+    //i.e, use a custom upgrade tool
     public void validateMetaDataLines(final VCFHeaderVersion targetVersion, final boolean includeFileFormatLine) {
         mMetaData.values()
                 .stream()

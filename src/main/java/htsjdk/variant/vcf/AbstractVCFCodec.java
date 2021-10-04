@@ -353,12 +353,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     public VCFHeaderLine getOtherHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
         final int indexOfEquals = headerLineString.indexOf('=');
         if (indexOfEquals < 1) { // must at least have "?="
-            if (VCFUtils.getStrictVCFVersionValidation()) {
+            if (VCFUtils.isStrictVCFVersionValidation()) {
                 throw new TribbleException.InvalidHeader("Unrecognized metadata line type: " + headerLineString);
             }
-            if (VCFUtils.getVerboseVCFLogging()) {
-                logger.warn("Dropping unrecognized metadata line type: " + headerLineString);
-            }
+            logger.warn("Dropping unrecognized metadata line type: " + headerLineString);
             return null;
         }
         final String headerLineValue = headerLineString.substring(indexOfEquals + 1).trim();

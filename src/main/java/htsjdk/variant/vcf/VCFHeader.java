@@ -189,11 +189,9 @@ public class VCFHeader implements Serializable {
                     vcfHeaderVersion));
         }
         if (compareTo > 0) {
-           if (VCFUtils.getVerboseVCFLogging()) {
-                logger.warn(String.format("Changing VCFHeader version from %s to %s",
-                        vcfHeaderVersion.getVersionString(),
-                        newVCFVersion.getVersionString()));
-            }
+            logger.warn(String.format("Changing VCFHeader version from %s to %s",
+                    vcfHeaderVersion.getVersionString(),
+                    newVCFVersion.getVersionString()));
             mMetaData.setVCFVersion(newVCFVersion);
             this.vcfHeaderVersion = newVCFVersion;
         }
@@ -340,11 +338,9 @@ public class VCFHeader implements Serializable {
      */
     private void checkForDeprecatedGenotypeLikelihoodsKey() {
         if ( hasFormatLine(VCFConstants.GENOTYPE_LIKELIHOODS_KEY) && ! hasFormatLine(VCFConstants.GENOTYPE_PL_KEY) ) {
-            if ( VCFUtils.getVerboseVCFLogging() ) {
-                logger.warn("Found " + VCFConstants.GENOTYPE_LIKELIHOODS_KEY + " format, but no "
-                        + VCFConstants.GENOTYPE_PL_KEY + " field.  We now only manage PL fields internally"
-                        + " automatically adding a corresponding PL field to your VCF header");
-            }
+            logger.warn("Found " + VCFConstants.GENOTYPE_LIKELIHOODS_KEY + " format, but no "
+                    + VCFConstants.GENOTYPE_PL_KEY + " field.  We now only manage PL fields internally"
+                    + " automatically adding a corresponding PL field to your VCF header");
             addMetaDataLine(new VCFFormatHeaderLine(
                     VCFConstants.GENOTYPE_PL_KEY,
                     VCFHeaderLineCount.G,
@@ -640,8 +636,8 @@ public class VCFHeader implements Serializable {
     private VCFHeaderVersion establishInitialHeaderVersion(final Set<VCFHeaderLine> metaData) {
         VCFHeaderLine embeddedVersionLine = getVersionLineFromHeaderLineSet(metaData);
         if (embeddedVersionLine == null) {
-            //TODO: should we relax this/only warn for VCFUtils.getStrictVCFVersionValidation() == false?
-            //I'm inclined to say no, since that might cause downstream issues
+            //we dont relax this even if VCFUtils.getStrictVCFVersionValidation() == false, since that
+            //would confound header version management
             throw new TribbleException("The VCFHeader metadata must include a ##fileformat (version) header line");
         }
         // embeddedVersionLine not null, validate against the provided lines

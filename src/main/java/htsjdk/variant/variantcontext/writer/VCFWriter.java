@@ -236,15 +236,13 @@ class VCFWriter extends IndexingVariantContextWriter {
         final VCFHeaderVersion vcfCurrentVersion = header.getVCFHeaderVersion();
         final VCFHeaderVersion vcfRequestedVersion = VCFHeaderVersion.fromHeaderVersionLine(requestedVersionLine);
         if (!vcfCurrentVersion.equals(vcfRequestedVersion)) {
-            final String message = String.format("Attempting to write a %s VCF header to a %s VCFWriter",
-                    vcfRequestedVersion,
-                    vcfCurrentVersion.getVersionString());
             if (!VCFHeaderVersion.versionsAreCompatible(VCFHeaderVersion.fromHeaderVersionLine(requestedVersionLine), vcfCurrentVersion)) {
-                if (VCFUtils.getStrictVCFVersionValidation()) {
+                final String message = String.format("Attempting to write a %s VCF header to a %s VCFWriter",
+                        vcfRequestedVersion,
+                        vcfCurrentVersion.getVersionString());
+                if (VCFUtils.isStrictVCFVersionValidation()) {
                     throw new TribbleException(message);
                 }
-            }
-            if (VCFUtils.getVerboseVCFLogging()) {
                 logger.warn(message);
             }
         }

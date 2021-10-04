@@ -43,19 +43,34 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class VCFUtils {
 
     private static final Pattern INF_OR_NAN_PATTERN = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
+    private static final boolean DEFAULT_VCF_STRICT_VERSION_VALIDATION = true;
 
-    //TODO: these are temporarily final for now in order to keep spotbugs from failing
-    //Once we settle on the uses for this, we should determine how it gets set. For now its static/global.
-    public static final boolean VCF_STRICT_VERSION_VALIDATION = true;
-    public static final boolean VCF_VERBOSE_LOGGING = true;
+    // a global mutable static - is there an alternative ?
+    // there isn't any other reasonable place to keep this state
+    private static boolean vcfStrictVersionValidation = true;
 
-    public static boolean getStrictVCFVersionValidation() { return VCF_STRICT_VERSION_VALIDATION; }
-    public static boolean getVerboseVCFLogging() { return VCF_VERBOSE_LOGGING; }
+    /**
+     * Determine if strict VCF version validation is enabled. Defaults to true. Strict version validation
+     * ensures that all VCF contents (header and variant contexts) conforms to the established header version.
+     * This should only be disabled when absolutely necessary.
+     *
+     * @return true if strict version validation is enabled
+     */
+    public static boolean isStrictVCFVersionValidation() { return DEFAULT_VCF_STRICT_VERSION_VALIDATION; }
+
+    /**
+     * Enable or disable strict vcf version validation. Defaults to true. Strict version validation
+     * ensures that all VCF contents (header and variant contexts) conforms to the established header version.
+     * This should only be disabled when absolutely necessary.
+     * @param isStrict true to enable strict validation, false to disable
+     */
+    public static void setStrictVCFVersionValidation(final boolean isStrict) {
+        vcfStrictVersionValidation = isStrict;
+    }
 
     /**
      * The headers passed in must be version >= 4.2 (older headers that are read in via AbstractVCFCodecs

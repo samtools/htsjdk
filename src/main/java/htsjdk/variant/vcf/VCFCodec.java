@@ -94,9 +94,7 @@ public class VCFCodec extends AbstractVCFCodec {
     @Override
     protected void reportDuplicateFilterIDs(final String duplicateFilterMessage) {
         // older versions of htsjdk have been silently dropping these for a while, but we can at least warn
-        if (VCFUtils.getVerboseVCFLogging()) {
-            logger.warn(duplicateFilterMessage);
-        }
+        logger.warn(duplicateFilterMessage);
     }
 
     public void reportDuplicateInfoKeyValue(final String key, final String infoLine) {}

@@ -61,13 +61,10 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
 
     // Map used to retain the attribute/value pairs, in original order. The first entry in the map must be
     // an ID field. The entire map must be immutable to prevent hash values from changing, since these are
-    // often stored in Sets. Its not ACTUALLY immutable to allow for special cases where subclasses have to
-    // be able to "repair" header lines (via a call to updateGenericField) during constructor validation.
+    // often stored in Sets. Its not ACTUALLY immutable in orderto allow for special cases where subclasses
+    // have to be able to "repair" header lines (via a call to updateGenericField) during constructor validation.
     //
     // Otherwise the values here should never change during the lifetime of the header line.
-    //TODO: this needs to be a LinkedHashMap so that it preserves order of attributes as presented
-    //TODO: fix this comment, make this actually immutable ? but we can't because of setSource and setDescription
-    // in subclasses, which are deprecated
     private final Map<String, String> genericFields = new LinkedHashMap();
 
     /**
@@ -97,13 +94,13 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     }
 
     /**
-     * Key cannot be null or empty.
+     * Key cannot be null or empty. Note that for attributes where the order is significant, use a LinkedHashMap
+     * to ensure that attribute order is honored.
      *
      * @param key key to use for this header line. can not be null.
      * @param attributeMapping field mappings to use. may not be null. must contain an "ID" field to use as
      *                         a unique id for this line
      */
-    //TODO: this arg needs to be typed as a LinkedHashMap since order is important
     public VCFSimpleHeaderLine(final String key, final Map<String, String> attributeMapping) {
         super(key, "");
         ValidationUtils.nonNull(attributeMapping, "An attribute map is required for structured header lines");

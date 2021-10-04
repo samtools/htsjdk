@@ -174,13 +174,11 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
                     String message = String.format("Tag \"%s\" in \"%s\" header line does not conform to  tag restrictions",
                             getID(),
                             this);
-                    if (VCFUtils.getStrictVCFVersionValidation()) {
+                    if (VCFUtils.isStrictVCFVersionValidation()) {
                         throw new TribbleException.InvalidHeader(message);
                     }
-                    if (VCFUtils.getVerboseVCFLogging()) {
-                        // warn for older versions - this line can't be used as a v4.3 line
-                        logger.warn(message);
-                    }
+                    // warn for older versions - this line can't be used as a v4.3 line
+                    logger.warn(message);
                 }
             });
         }
@@ -301,11 +299,9 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
                     // to retain backward compatibility with previous implementations, we accept (and repair) and the line here.
                     updateGenericField(NUMBER_ATTRIBUTE, "0");
                     lineCount = 0;
-                    if (VCFUtils.getVerboseVCFLogging()) {
-                        logger.warn(String.format("FLAG fields must have a count value of 0, but saw count %d for header line %s. A value of 0 will be used",
-                                lineCount,
-                                getID()));
-                    }
+                    logger.warn(String.format("FLAG fields must have a count value of 0, but saw count %d for header line %s. A value of 0 will be used",
+                            lineCount,
+                            getID()));
                 }
             } else if (lineCount <= 0) {
                 throw new TribbleException.InvalidHeader(

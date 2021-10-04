@@ -33,7 +33,7 @@ public class VCFSampleHeaderLine extends VCFSimpleHeaderLine {
             final String message = String.format("%s header lines are not allowed in VCF version %s headers",
                     getKey(),
                     vcfTargetVersion.toString());
-            if (VCFUtils.getStrictVCFVersionValidation()) {
+            if (VCFUtils.isStrictVCFVersionValidation()) {
                 throw new TribbleException.InvalidHeader(message);
             } else {
                 logger.warn(message);

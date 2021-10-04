@@ -122,7 +122,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
                 this.put(ID_ATTRIBUTE, sequenceRecord.getSequenceName());
                 this.put(LENGTH_ATTRIBUTE, Integer.toString(sequenceRecord.getSequenceLength()));
                 if (assembly != null) {
-                    if (!assembly.equals(sequenceRecord.getAssembly()) && VCFUtils.getVerboseVCFLogging()) {
+                    if (!assembly.equals(sequenceRecord.getAssembly())) {
                         logger.warn(String.format(
                                         "Inconsistent \"assembly\" attribute values found while creating VCFContigLine " +
                                         "(with assembly \"%s\") from SAMSequenceRecord (with assembly \"%s\")",
