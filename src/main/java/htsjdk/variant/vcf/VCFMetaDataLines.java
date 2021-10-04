@@ -8,7 +8,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-//TODO:make sure this doesn't have issues with ALT lines (which have IDs with embedded ":")
 /**
  * Class for managing a set of VCFHeaderLines for a VCFHeader.
  */
@@ -18,13 +17,7 @@ public final class VCFMetaDataLines implements Serializable {
     protected final static Log logger = Log.getInstance(VCFMetaDataLines.class);
 
     // Map of all header lines (including file format version lines)
-    private final Map<String, VCFHeaderLine> mMetaData = new LinkedHashMap<>();
-
-    private static final String KEY_SEPARATOR = ":";
-
-    // Namespace key used for "other" (unstructured, non-ID) metadata lines. This string needs to be different from
-    // any string in the set of legal structured line types in knownStructuredLineKeys.
-    private static final String OTHER_KEY = "OTHER";
+    private final Map<HeaderLineKey, VCFHeaderLine> mMetaData = new LinkedHashMap<>();
 
     /**
      * Add all metadata lines from Set. If a duplicate line is encountered (same key/ID pair for
@@ -47,7 +40,7 @@ public final class VCFMetaDataLines implements Serializable {
      * @throws IllegalArgumentException if a fileformat line is added
      */
     public void addMetaDataLine(final VCFHeaderLine headerLine) {
-        final String key = makeKeyForLine(headerLine);
+        final HeaderLineKey key = makeKeyForLine(headerLine);
         if (VCFHeaderVersion.isFormatString(headerLine.getKey())) {
             // In order to ensure that only one version line is retained, this needs to check for all possible
             // types of version lines (v3.2 used "format" instead of "fileformat")
@@ -59,7 +52,7 @@ public final class VCFMetaDataLines implements Serializable {
                         "Attempt to add a version header line (%s) that collides with an existing line header line (%s). " +
                                 "Use setVCFVersion to change the header version.",
                         headerLine,
-                        mMetaData.get(key));
+                        fileFormatLine.get());
                 throw new TribbleException(message);
             }
         } else {
@@ -81,44 +74,14 @@ public final class VCFMetaDataLines implements Serializable {
         mMetaData.put(key, headerLine);
     }
 
-    /**
-     * Generate a unique key for a VCFHeaderLine. If the header line is a VCFStructuredHeaderLine, the key
-     * is the concatenation of the VCFHeaderLine's key (i.e., the type of the VCFHeaderLine) and the ID for
-     * that VCFHeaderLine (with a ":" separator). Otherwise, we use the concatenation of the OTHER_KEY, the
-     * VCFHeaderLine's key, and a nonce value to ensure that unstructured lines never collide with structured
-     * lines, and also can have duplicate identical instances.
-     *
-     * @param headerLine the {@link VCFHeaderLine} for which a key should be returned
-     * @return the generated key
-     */
-    private String makeKeyForLine(final VCFHeaderLine headerLine) {
-        if (headerLine.isIDHeaderLine()) { // required to have a unique ID
-            // use the line type as the namespace, to ensure unique key/id combination
-            return makeKey(headerLine.getKey(), headerLine.getID());
-        } else {
-            // Allow duplicate unstructured "other" keys, as long as they have different values. Prepend
-            // the string "OTHER" to prevent a non-structured line from having a key that overlaps a key
-            // key for a "known" structured line type, such as:
-            //
-            //  ##FORMAT:bar=...
-            //
-            // which would overlap with the key generated for a real FORMAT line with id=bar.
-            //
-            // The previous implementation dropped duplicate keys for unstructured lines, but I don't think
-            // the spec requires these to be unique. This is more permissive in that it allows duplicate lines such
-            // as ##GATKCommandLines to accumulate if they have different values, but retains only one if it has
-            // a unique value.
-            return makeKey(OTHER_KEY, headerLine.getKey() + headerLine.hashCode());
-        }
-    }
-
-    // Create a VCFHeaderLine hashmap key given a key and an id
-    private String makeKey(final String nameSpace, final String id) { return nameSpace + KEY_SEPARATOR + id; }
-
     public void setVCFVersion(final VCFHeaderVersion newVCFVersion) {
         ValidationUtils.nonNull(newVCFVersion);
 
-        // find any existing version line
+        // before we mutate anything, call validateMetaDataLines to ensure the version transition is
+        // going to be valid for any existing lines
+        validateMetaDataLines(newVCFVersion, false);
+
+        // extract any existing version line
         final List<VCFHeaderLine> allFormatLines = mMetaData.values()
                 .stream()
                 .filter(line -> VCFHeaderVersion.isFormatString(line.getKey()))
@@ -147,9 +110,6 @@ public final class VCFMetaDataLines implements Serializable {
                 removeHeaderLine(fileFormatLine);
         }
 
-        // no matter what, call validateMetaDataLines to ensure the version transition is valid WRT any
-        // existing lines
-        validateMetaDataLines(newVCFVersion, false);
         addMetaDataLine(VCFHeader.getHeaderVersionLine(newVCFVersion));
     }
 
@@ -339,6 +299,69 @@ public final class VCFMetaDataLines implements Serializable {
         for ( final VCFHeaderLine line : mMetaData.values() )
             b.append("\n\t").append(line);
         return b.append("\n]").toString();
+    }
+
+    /**
+     * Generate a unique key for a VCFHeaderLine. If the header line is a VCFStructuredHeaderLine, the key
+     * is the concatenation of the VCFHeaderLine's key (i.e., the type of the VCFHeaderLine) and the ID for
+     * that VCFHeaderLine (with a ":" separator). Otherwise, we use the concatenation of the OTHER_KEY, the
+     * VCFHeaderLine's key, and a nonce value to ensure that unstructured lines never collide with structured
+     * lines, and also can have duplicate identical instances.
+     *
+     * @param headerLine the {@link VCFHeaderLine} for which a key should be returned
+     * @return the generated HeaderLineKey
+     */
+    private HeaderLineKey makeKeyForLine(final VCFHeaderLine headerLine) {
+        if (headerLine.isIDHeaderLine()) {
+            // these are required to have a unique ID, so use the line key as the key, and the id as the constraint
+            return makeKey(headerLine.getKey(), headerLine.getID());
+        } else {
+            // Allow duplicate unstructured "other" keys, as long as they have different values. Use
+            // the line key as the key, and the line hashcode as the constraint.
+            //
+            // The previous implementation dropped duplicate keys for unstructured lines, but the spec doesn't
+            // require these to be unique (only to have unique values). This implementation is more permissive in
+            // that it allows lines with duplicate keys to accumulate as long as they have different values, but
+            // retains only one with a unique value.
+            return makeKey(headerLine.getKey(), Integer.toString(headerLine.hashCode()));
+        }
+    }
+
+    // Create a VCFHeaderLine hashmap key given a key and an id
+    private HeaderLineKey makeKey(final String nameSpace, final String id) { return new HeaderLineKey(nameSpace, id); }
+
+    // composite keys used by the metadata lines map
+    private static class HeaderLineKey implements Serializable {
+        public static final long serialVersionUID = 1L;
+
+        final String key;
+        final String constraint;
+
+        public HeaderLineKey(final String key, final String constraint) {
+            this.key = key;
+            this.constraint = constraint;
+        }
+
+        public final String getKey() { return key; }
+        public final String getConstraint() { return constraint; }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final HeaderLineKey that = (HeaderLineKey) o;
+
+            if (!key.equals(that.key)) return false;
+            return constraint.equals(that.constraint);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = key.hashCode();
+            result = 31 * result + constraint.hashCode();
+            return result;
+        }
     }
 }
 
