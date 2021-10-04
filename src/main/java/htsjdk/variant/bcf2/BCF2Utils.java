@@ -98,9 +98,9 @@ public final class BCF2Utils {
         for ( VCFHeaderLine line : header.getMetaDataInInputOrder() ) {
             if ( line.shouldBeAddedToDictionary() ) {
                 if (!line.isIDHeaderLine()) {
-                    //TODO: how do we ensure that shouldBeAddedToDictionary==true only when isIDHeaderLine==true
+                    //is there a better way to ensure that shouldBeAddedToDictionary==true only when isIDHeaderLine==true
                     throw new TribbleException(String.format(
-                            "The header line %s cannot be added to the BCF dictionary if its not an ID header line",
+                            "The header line %s cannot be added to the BCF dictionary since its not an ID header line",
                             line));
                 }
                 if ( ! seen.contains(line.getID())) {
