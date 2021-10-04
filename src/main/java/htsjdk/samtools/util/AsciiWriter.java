@@ -73,7 +73,7 @@ public class AsciiWriter extends Writer {
     @Override
     public void write(final char[] chars, int off, int len) throws IOException {
         String str = new String(chars,off,len);
-        byte[] b = str.getBytes(StandardCharsets.UTF_8);//
+        byte[] b = str.getBytes(StandardCharsets.UTF_8);
         int bufferLength = b.length;
         os.write(b, 0, bufferLength);
     }
