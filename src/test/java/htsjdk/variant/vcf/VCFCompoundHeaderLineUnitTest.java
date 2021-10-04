@@ -183,7 +183,7 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "compatibleMergerData")
     public void testMergeCompatibleCompoundHeaderLines(final String line1, final String line2, final String expectedLine) {
-        VCFCompoundHeaderLine mergedLine = VCFCompoundHeaderLine.getSmartMergedCompoundHeaderLine(
+        VCFCompoundHeaderLine mergedLine = VCFCompoundHeaderLine.getMergedCompoundHeaderLine(
                 new VCFInfoHeaderLine(line1, VCFHeader.DEFAULT_VCF_VERSION),
                 new VCFInfoHeaderLine(line2, VCFHeader.DEFAULT_VCF_VERSION),
                 new VCFHeader.HeaderConflictWarner(false),
@@ -212,7 +212,7 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "incompatibleMergerData", expectedExceptions=IllegalStateException.class)
     public void testMergeIncompatibleCompoundHeaderLines(final String line1, final String line2) {
-        VCFCompoundHeaderLine.getSmartMergedCompoundHeaderLine(
+        VCFCompoundHeaderLine.getMergedCompoundHeaderLine(
                 new VCFInfoHeaderLine(line1, VCFHeader.DEFAULT_VCF_VERSION),
                 new VCFInfoHeaderLine(line2, VCFHeader.DEFAULT_VCF_VERSION),
                 new VCFHeader.HeaderConflictWarner(false),

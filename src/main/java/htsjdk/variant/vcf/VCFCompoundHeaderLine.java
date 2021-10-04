@@ -130,7 +130,7 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
 
     /**
      * Return the description for this header line.
-     * @return
+     * @return the header line's description
      */
     public String getDescription() {
         final String description = getGenericFieldValue(DESCRIPTION_ATTRIBUTE);
@@ -159,69 +159,12 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
         return getGenericFieldValue(VERSION_ATTRIBUTE);
     }
 
-    private VCFHeaderLineType decodeLineType(final String lineTypeString) {
-        if (lineTypeString == null) {
-            throw new TribbleException(String.format("A line type attribute is required for %s header lines", getKey()));
-        } else {
-            try {
-                return VCFHeaderLineType.valueOf(lineTypeString);
-            } catch (IllegalArgumentException e) {
-                throw new TribbleException(String.format(
-                        "\"%s\" is not a valid type for %s header lines (note that types are case-sensitive)",
-                        lineTypeString,
-                        getKey()));
-            }
-        }
-    }
-
-    private VCFHeaderLineCount decodeCountType(final String countString, final VCFHeaderVersion vcfVersion) {
-        if (countString == null) {
-            throw new TribbleException.InvalidHeader(
-                    String.format("A count type/value must be provided for %s header lines.", getID()));
-        }
-        return VCFHeaderLineCount.decode(vcfVersion, countString);
-    }
-
-    //TODO:this method should be replaced with separate overrides for INFO and FORMAT
-    private int decodeCount(final String countString, final VCFHeaderLineCount requestedCountType) {
-        int lineCount = VCFHeaderLineCount.VARIABLE_COUNT;
-        if (requestedCountType.isFixedCount()) {
-            if (countString == null) {
-                throw new TribbleException.InvalidHeader(String.format("Missing count value in VCF header field %s", getID()));
-            }
-            try {
-                lineCount = Integer.parseInt(countString);
-            } catch (NumberFormatException e) {
-                throw new TribbleException.InvalidHeader(String.format("Invalid count value %s in VCF header field %s", lineCount, getID()));
-            }
-            if (getType() == VCFHeaderLineType.Flag) {
-                if (lineCount != 0) {
-                    // This check is here on behalf of INFO lines (which are the only header line type allowed to have Flag
-                    // type). A Flag type with a count value other than 0 violates the spec (at least v4.2 and v4.3), but
-                    // to retain backward compatibility with previous implementations, we accept (and repair) and the line here.
-                    updateGenericField(NUMBER_ATTRIBUTE, "0");
-                    lineCount = 0;
-                    if (VCFUtils.getVerboseVCFLogging()) {
-                        String message = String.format("FLAG fields must have a count value of 0, but saw count %d for header line %s. A value of 0 will be used",
-                                lineCount,
-                                getID());
-                        logger.warn(message);
-                    }
-                }
-            } else if (lineCount <= 0) {
-                    throw new TribbleException.InvalidHeader(
-                            String.format("Invalid count number %d for fixed count in header line with ID %s. For fixed count, the count number must be 1 or higher.",
-                                    lineCount,
-                                    getID()));
-                }
-        }
-        return lineCount;
-    }
-
     /**
      * Called when an attempt is made to add this header line to a header that is know to have a specific
      * version, or when an attempt is made to change the version of header by changing it's target version,
      * to validate that the header line conforms to the target version requirements.
+     *
+     * @param vcfTargetVersion the version agains which to validate
      */
     public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         super.validateForVersion(vcfTargetVersion);
@@ -275,6 +218,105 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
         }
     }
 
+    /**
+     * returns true if we're equal to another compound header line
+     * @param o a compound header line
+     * @return true if equal
+     */
+    @Override
+    public boolean equals(final Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+
+        // let the attribute list determine equality
+        return super.equals(o);
+    }
+
+    /**
+     * Specify annotation source
+     * <p>
+     * This value is optional starting with VCFv4.2.
+     *
+     * @param source  annotation source (case-insensitive, e.g. "dbsnp")
+     */
+    @Deprecated // after 2.24.1
+    public void setSource(final String source) {
+        updateGenericField(SOURCE_ATTRIBUTE, source);
+    }
+
+    /**
+     * Specify annotation version
+     * <p>
+     * This value is optional starting with VCFv4.2.
+     *
+     * @param version exact version (e.g. "138")
+     */
+    @Deprecated // after version 2.24.1
+    public void setVersion(final String version) {
+        updateGenericField(VERSION_ATTRIBUTE, version);
+    }
+
+    private VCFHeaderLineType decodeLineType(final String lineTypeString) {
+        if (lineTypeString == null) {
+            throw new TribbleException(String.format("A line type attribute is required for %s header lines", getKey()));
+        } else {
+            try {
+                return VCFHeaderLineType.valueOf(lineTypeString);
+            } catch (IllegalArgumentException e) {
+                throw new TribbleException(String.format(
+                        "\"%s\" is not a valid type for %s header lines (note that types are case-sensitive)",
+                        lineTypeString,
+                        getKey()));
+            }
+        }
+    }
+
+    private VCFHeaderLineCount decodeCountType(final String countString, final VCFHeaderVersion vcfVersion) {
+        if (countString == null) {
+            throw new TribbleException.InvalidHeader(
+                    String.format("A count type/value must be provided for %s header lines.", getID()));
+        }
+        return VCFHeaderLineCount.decode(vcfVersion, countString);
+    }
+
+    private int decodeCount(final String countString, final VCFHeaderLineCount requestedCountType) {
+        int lineCount = VCFHeaderLineCount.VARIABLE_COUNT;
+        if (requestedCountType.isFixedCount()) {
+            if (countString == null) {
+                throw new TribbleException.InvalidHeader(String.format("Missing count value in VCF header field %s", getID()));
+            }
+            try {
+                lineCount = Integer.parseInt(countString);
+            } catch (NumberFormatException e) {
+                throw new TribbleException.InvalidHeader(String.format("Invalid count value %s in VCF header field %s", lineCount, getID()));
+            }
+            if (getType() == VCFHeaderLineType.Flag) {
+                if (lineCount != 0) {
+                    // This check is here on behalf of INFO lines (which are the only header line type allowed to have Flag
+                    // type). A Flag type with a count value other than 0 violates the spec (at least v4.2 and v4.3), but
+                    // to retain backward compatibility with previous implementations, we accept (and repair) and the line here.
+                    updateGenericField(NUMBER_ATTRIBUTE, "0");
+                    lineCount = 0;
+                    if (VCFUtils.getVerboseVCFLogging()) {
+                        logger.warn(String.format("FLAG fields must have a count value of 0, but saw count %d for header line %s. A value of 0 will be used",
+                                lineCount,
+                                getID()));
+                    }
+                }
+            } else if (lineCount <= 0) {
+                throw new TribbleException.InvalidHeader(
+                        String.format("Invalid count number %d for fixed count in header line with ID %s. For fixed count, the count number must be 1 or higher.",
+                                lineCount,
+                                getID()));
+            }
+        }
+        return lineCount;
+    }
+
     // Create a backing attribute map out of VCFCompoundHeaderLine elements
     private static Map<String, String> createAttributeMap(
             final String headerLineID,
@@ -302,25 +344,26 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
      * case where the merged line requires "promoting" one of the types to the other, a new line of the appropriate
      * type is created by calling the {@code compoundHeaderLineResolver} to produce new line of the correct
      * subclass (INFO or FORMAT).
-     * @param line1
-     * @param line2
-     * @param conflictWarner
+     *
+     * @param line1 first line to merge
+     * @param line2 second line to merge
+     * @param conflictWarner conflict warning manager
      * @param compoundHeaderLineResolver function that accepts two compound header lines of the same type (info or
      *                                   format, and returns a new header line representing the combination of the
      *                                   two input header lines
+     * @param <T> type of VCFCompoundHeaderLine to merge (subclass of VCFCompoundHeaderLine)
      * @return
      */
-    //TODO: does this need to be separated into VCFInfoHeaderLine and VCFFormatHeaderLine ?
-    public static VCFCompoundHeaderLine getSmartMergedCompoundHeaderLine(
-            final VCFCompoundHeaderLine line1,
-            final VCFCompoundHeaderLine line2,
+    static <T extends VCFCompoundHeaderLine> T getMergedCompoundHeaderLine(
+            final T line1,
+            final T line2,
             final VCFHeader.HeaderConflictWarner conflictWarner,
-            BiFunction<VCFCompoundHeaderLine, VCFCompoundHeaderLine, VCFCompoundHeaderLine> compoundHeaderLineResolver)
+            BiFunction<T, T, T> compoundHeaderLineResolver)
     {
         ValidationUtils. nonNull(line1);
         ValidationUtils. nonNull(line2);
 
-        VCFCompoundHeaderLine newLine = line1;
+        T newLine = line1;
 
         // Note: this can drop extra attributes
         if (!line1.equalsExcludingExtraAttributes(line2)) {
@@ -351,55 +394,12 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
         return newLine;
     }
 
-    /**
-     * returns true if we're equal to another compound header line
-     * @param o a compound header line
-     * @return true if equal
-     */
-    @Override
-    public boolean equals(final Object o) {
-        if ( this == o ) {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() ) {
-            return false;
-        }
-
-        // let the attribute list determine equality
-        return super.equals(o);
-    }
-
-    private boolean equalsExcludingExtraAttributes(final VCFCompoundHeaderLine other) {
+    boolean equalsExcludingExtraAttributes(final VCFCompoundHeaderLine other) {
         return count == other.count &&
                 countType == other.countType &&
                 type == other.type &&
                 getKey().equals(other.getKey()) &&
                 getID().equals(other.getID());
-    }
-
-
-    /**
-     * Specify annotation source
-     * <p>
-     * This value is optional starting with VCFv4.2.
-     *
-     * @param source  annotation source (case-insensitive, e.g. "dbsnp")
-     */
-    @Deprecated // after 2.24.1
-    public void setSource(final String source) {
-        updateGenericField(SOURCE_ATTRIBUTE, source);
-    }
-
-    /**
-     * Specify annotation version
-     * <p>
-     * This value is optional starting with VCFv4.2.
-     *
-     * @param version exact version (e.g. "138")
-     */
-    @Deprecated // after version 2.24.1
-    public void setVersion(final String version) {
-        updateGenericField(VERSION_ATTRIBUTE, version);
     }
 
 }

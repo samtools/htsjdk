@@ -139,8 +139,6 @@ public class VCFHeader implements Serializable {
      * @throws TribbleException if the provided header line metadata does not include a header line that
      * establishes the VCF version for the lines
      */
-    //TODO: should these constructors be deprecated and replaced with ones that accept LinkHashSet, or should
-    // we just document that order matters (for contig lines sort order) ?
     public VCFHeader(final Set<VCFHeaderLine> metaData, final Set<String> genotypeSampleNames) {
         this(metaData, new ArrayList<>(genotypeSampleNames));
     }
@@ -155,8 +153,6 @@ public class VCFHeader implements Serializable {
      * @throws TribbleException if the provided header line metadata does not include a header line that
      * establishes the VCF version for the lines
      */
-    //TODO: should these constructors be deprecated and replaced with ones that accept LinkHashSet, or should
-    // we just document that order matters (for contig lines sort order) ?
     public VCFHeader(final Set<VCFHeaderLine> metaData, final List<String> genotypeSampleNames) {
         ValidationUtils.nonNull(metaData);
         ValidationUtils.nonNull(genotypeSampleNames);
@@ -320,7 +316,6 @@ public class VCFHeader implements Serializable {
      *
      * @param dictionary SAMSequenceDictionary to use to create VCFContigHeaderLines for this header
      */
-    //TODO:this implementation should be delegated to VCFMetaDataLines
     public void setSequenceDictionary(final SAMSequenceDictionary dictionary) {
         getContigLines().forEach(hl -> mMetaData.removeHeaderLine(hl));
         dictionary.getSequences().forEach(r -> addMetaDataLine(new VCFContigHeaderLine(r, r.getAssembly())));
@@ -392,9 +387,9 @@ public class VCFHeader implements Serializable {
      * @param key the key to use to find header lines to return
      * @return the header line with key "key", or null if none is present
      */
-    // TODO: decide if we should keep this depending on the the response to https://github.com/samtools/hts-specs/issues/602
     //@Deprecated // starting after version 2.24.1 (and this selects one from what can be many header lines)
-    public VCFHeaderLine getMetaDataLine(final String key) { 
+    // see https://github.com/samtools/hts-specs/issues/602
+    public VCFHeaderLine getMetaDataLine(final String key) {
         return mMetaData.getMetaDataLines(key).stream().findFirst().orElse(null);
     }
 
@@ -489,8 +484,8 @@ public class VCFHeader implements Serializable {
      * @param key the of the requested other header line
      * @return the meta data line, or null if there is none
      */
-    // TODO: decide if we should keep this depending on the the response to https://github.com/samtools/hts-specs/issues/602
     //@Deprecated // starting after version 2.24.1 this selects one from what can be many)
+    // see https://github.com/samtools/hts-specs/issues/602
     public VCFHeaderLine getOtherHeaderLine(final String key) { return mMetaData.getOtherHeaderLine(key); }
 
     /**
@@ -586,7 +581,7 @@ public class VCFHeader implements Serializable {
                     if (newestVersion == null || (source.getVCFHeaderVersion().ordinal() > newestVersion.ordinal())) {
                         newestVersion = sourceHeaderVersion;
                     }
-                    // don't add any version lines yet; wait until the end and we'll add the highest version,
+                    // don't add a version line yet; wait until the end and we'll add the highest version,
                     // and then validate all lines against that
                     continue;
                 }
@@ -601,30 +596,18 @@ public class VCFHeader implements Serializable {
                         throw new IllegalArgumentException(
                                 String.format("Attempt to merge incompatible header lines %s/%s", line.getKey(), other.getKey()));
                     } else if (key.equals(VCFConstants.FORMAT_HEADER_KEY)) {
-                        // Delegate to the resolver function
-                        mergedMetaData.addMetaDataLine(VCFCompoundHeaderLine.getSmartMergedCompoundHeaderLine(
-                                (VCFCompoundHeaderLine) line,
-                                (VCFCompoundHeaderLine) other,
-                                conflictWarner,
-                                (l1, l2) -> new VCFFormatHeaderLine(
-                                                l1.getID(),
-                                                VCFHeaderLineCount.UNBOUNDED,
-                                                l1.getType(),
-                                                l1.getDescription())
-                                )
+                        // Delegate to the format line resolver
+                        mergedMetaData.addMetaDataLine(VCFFormatHeaderLine.getMergedFormatHeaderLine(
+                                (VCFFormatHeaderLine) line,
+                                (VCFFormatHeaderLine) other,
+                                conflictWarner)
                         );
                     } else if (key.equals(VCFConstants.INFO_HEADER_KEY)) {
-                        // Delegate to the resolver function
-                        mergedMetaData.addMetaDataLine(VCFCompoundHeaderLine.getSmartMergedCompoundHeaderLine(
-                                (VCFCompoundHeaderLine) line,
-                                (VCFCompoundHeaderLine) other,
-                                conflictWarner,
-                                (l1, l2) -> new VCFInfoHeaderLine(
-                                        l1.getID(),
-                                        VCFHeaderLineCount.UNBOUNDED,
-                                        l1.getType(),
-                                        l1.getDescription())
-                                )
+                        // Delegate to the info line resolver
+                        mergedMetaData.addMetaDataLine(VCFInfoHeaderLine.getMergedInfoHeaderLine(
+                                (VCFInfoHeaderLine) line,
+                                (VCFInfoHeaderLine) other,
+                                conflictWarner)
                         );
                     } else {
                         // same type of header line; not equal; but not compound(format/info)
@@ -646,8 +629,8 @@ public class VCFHeader implements Serializable {
 
     /**
      * Establish the version for this header using the (required) ##fileformat metadata line in the metadata list.
-     * @param metaData
-     * @throws TribbleException if no fileformat line is included in the metadata lines
+     * @param metaData the metaDataLines to use to determine the version. these must include a ##fileformat line.
+     * @throws TribbleException if no ##fileformat line is included in the metadata lines
      */
     private VCFHeaderVersion establishInitialHeaderVersion(final Set<VCFHeaderLine> metaData) {
         VCFHeaderLine embeddedVersionLine = getVersionLineFromHeaderLineSet(metaData);
@@ -698,7 +681,7 @@ public class VCFHeader implements Serializable {
     /** Only displays a warning if warnings are enabled and an identical warning hasn't been already issued */
     static final class HeaderConflictWarner {
         boolean emitWarnings;
-        Set<String> alreadyIssued = new HashSet<String>();
+        final Set<String> alreadyIssued = new HashSet<>();
 
         protected HeaderConflictWarner( final boolean emitWarnings ) {
             this.emitWarnings = emitWarnings;

@@ -18,8 +18,6 @@ public final class VCFMetaDataLines implements Serializable {
     protected final static Log logger = Log.getInstance(VCFMetaDataLines.class);
 
     // Map of all header lines (including file format version lines)
-    // TODO: Should we reject attempts to add two contig header lines with the same contigIndex ?
-    // TODO: GATK VcfUtilsUnitTest.createHeaderLines test creates headers with contig lines with identical (0) indices
     private final Map<String, VCFHeaderLine> mMetaData = new LinkedHashMap<>();
 
     private static final String KEY_SEPARATOR = ":";
@@ -257,7 +255,7 @@ public final class VCFMetaDataLines implements Serializable {
      * @param key the key to use to locate the headerline
      * @return the headerline if found, or null
      */
-    // TODO: decide if we should keep this depending on the the response to https://github.com/samtools/hts-specs/issues/602
+    //TODO: remove this see https://github.com/samtools/hts-specs/issues/602
     public VCFHeaderLine getMetaDataLine(final String key) {
         return mMetaData.values().stream()
                 .filter(hl -> hl.getKey().equals(key))

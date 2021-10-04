@@ -27,7 +27,7 @@ package htsjdk.variant.vcf;
 
 
 import htsjdk.samtools.util.Log;
-import htsjdk.tribble.TribbleException;
+import htsjdk.utils.ValidationUtils;
 
 /**
  *         <p>
@@ -68,6 +68,37 @@ public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
               version
         );
         validateForVersion(version);
+    }
+
+    /**
+     * Compare two VCFInfoHeaderLine objects to determine if they have compatible number types, and return a
+     * VCFInfoHeaderLine that represents the result of merging these two lines.
+     *
+     * @param infoLine1 first info line to merge
+     * @param infoLine2 second info line to merge
+     * @param conflictWarner conflict warning emitter
+     * @return a merged VCFInfoHeaderLine
+     */
+    public static VCFInfoHeaderLine getMergedInfoHeaderLine(
+            final VCFInfoHeaderLine infoLine1,
+            final VCFInfoHeaderLine infoLine2,
+            final VCFHeader.HeaderConflictWarner conflictWarner)
+    {
+        ValidationUtils. nonNull(infoLine1);
+        ValidationUtils. nonNull(infoLine2);
+        ValidationUtils. nonNull(conflictWarner);
+
+        // delegate to the generic VCFCompoundHeaderLine merger, passing a resolver lambda
+        return VCFCompoundHeaderLine.getMergedCompoundHeaderLine(
+                infoLine1,
+                infoLine2,
+                conflictWarner,
+                (l1, l2) -> new VCFInfoHeaderLine(
+                        l1.getID(),
+                        VCFHeaderLineCount.UNBOUNDED,
+                        l1.getType(),
+                        l1.getDescription())
+        );
     }
 
     @Override
