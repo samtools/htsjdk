@@ -108,15 +108,13 @@ public class VCFHeader implements Serializable {
 
     /**
      * Create a VCF header, given a list of meta data and auxiliary tags. The provided metadata
-     * header lin e list MUST contain a version (fileformat) line in order to establish the version
-     * for this header.
+     * header line list MUST contain a version (fileformat) line in order to establish the version
+     * for the header.
      *
      * @param metaData the meta data associated with this header
      * @throws TribbleException if the provided header line metadata does not include a header line that
      * establishes the VCF version for the lines
      */
-    //TODO: should these constructors be deprecated and replaced with ones that accept LinkHashSet, or should
-    // we just document that order matters (for contig lines sort order) ?
     public VCFHeader(final Set<VCFHeaderLine> metaData) {
         this(metaData, Collections.emptySet());
     }
@@ -480,13 +478,20 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Deprecated. Use {@link #getOtherHeaderLines()}.
+     * Deprecated. Use {@link #getOtherHeaderLines()}. see https://github.com/samtools/hts-specs/issues/602
      * @param key the of the requested other header line
      * @return the meta data line, or null if there is none
      */
-    //@Deprecated // starting after version 2.24.1 this selects one from what can be many)
-    // see https://github.com/samtools/hts-specs/issues/602
-    public VCFHeaderLine getOtherHeaderLine(final String key) { return mMetaData.getOtherHeaderLine(key); }
+    @Deprecated // starting after version 2.24.1 this selects one from what can be many)
+    public VCFHeaderLine getOtherHeaderLine(final String key) {
+        final Collection<VCFHeaderLine> otherLines = mMetaData.getOtherHeaderLines();
+        for (final VCFHeaderLine next: otherLines) {
+            if (next.getKey().equals(key)) {
+                return next;
+            }
+        }
+        return null;
+    }
 
     /**
      * Returns the other HeaderLines in their original ordering, where "other" means any

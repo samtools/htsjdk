@@ -180,15 +180,6 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     }
 
     @Test
-    public void testGetMetaDataLine() {
-        VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines();
-        Assert.assertEquals(
-                md.getFilterHeaderLine(unitTestData.filterLines.get(0).getID()),
-                md.getMetaDataLine(unitTestData.filterLines.get(0).getKey()));
-    }
-
-    @Test
     public void testGetFilterHeaderLine() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
         VCFMetaDataLines md = unitTestData.getFullMetaDataLines();

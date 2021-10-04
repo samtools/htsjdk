@@ -96,8 +96,7 @@ public enum VCFHeaderVersion {
      * @return the VCFHeaderVersion for this string
      * @throws TribbleException.InvalidHeader if the string is not a version string for a recognized supported version
      */
-    //TODO: rename this to fromHeaderVersionLine ?
-    public static VCFHeaderVersion getHeaderVersion(final String versionLine) {
+    public static VCFHeaderVersion fromHeaderVersionLine(final String versionLine) {
         ValidationUtils.nonNull(versionLine, "version line");
         final String[] lineFields = versionLine.split("=");
         if ( lineFields.length != 2 || !isFormatString(lineFields[0].substring(2)) )

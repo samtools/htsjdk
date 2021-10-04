@@ -175,7 +175,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if (headerLineIterator.hasNext()) {
             final String headerVersionLine = headerLineIterator.next();
             if (headerVersionLine.startsWith(VCFHeader.METADATA_INDICATOR)) {
-                final VCFHeaderVersion vcfFileVersion = VCFHeaderVersion.getHeaderVersion(headerVersionLine);
+                final VCFHeaderVersion vcfFileVersion = VCFHeaderVersion.fromHeaderVersionLine(headerVersionLine);
                 if (!canDecodeVersion(vcfFileVersion)) {
                     throw new TribbleException.InvalidHeader(
                             String.format("The \"(%s)\" codec does not support VCF version: %s", getName(), vcfFileVersion));

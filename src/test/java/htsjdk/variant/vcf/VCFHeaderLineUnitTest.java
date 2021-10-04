@@ -17,29 +17,29 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
 
     @Test
     public void testEncodeVCFHeaderLineWithUnescapedQuotes() {
-
         final Map<String, String> attributes = new LinkedHashMap<>();
         attributes.put("ID", "VariantFiltration");
         attributes.put("CommandLineOptions", "filterName=[ANNOTATION] filterExpression=[ANNOTATION == \"NA\" || ANNOTATION <= 2.0]");
 
-        final String encodedAttributes = VCFHeaderLine.toStringEncoding(attributes);
+        final VCFSimpleHeaderLine simpleHeaderLine = new VCFSimpleHeaderLine("someKey", attributes);
+        final String encodedAttributes = simpleHeaderLine.toStringEncoding();
         assertNotNull(encodedAttributes);
 
-        final String expectedEncoding = "<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">";
+        final String expectedEncoding = "someKey=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">";
         assertEquals(encodedAttributes, expectedEncoding);
     }
 
     @Test
     public void testEncodeVCFHeaderLineWithEscapedQuotes() {
-
         final Map<String, String> attributes = new LinkedHashMap<>();
         attributes.put("ID", "VariantFiltration");
         attributes.put("CommandLineOptions", "filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]");
 
-        final String encodedAttributes = VCFHeaderLine.toStringEncoding(attributes);
+        final VCFSimpleHeaderLine simpleHeaderLine = new VCFSimpleHeaderLine("someKey", attributes);
+        final String encodedAttributes = simpleHeaderLine.toStringEncoding();
         assertNotNull(encodedAttributes);
 
-        final String expectedEncoding = "<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">";
+        final String expectedEncoding = "someKey=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">";
         assertEquals(encodedAttributes, expectedEncoding);
     }
 

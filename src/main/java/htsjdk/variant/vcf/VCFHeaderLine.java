@@ -190,12 +190,11 @@ public class VCFHeaderLine implements Comparable, Serializable {
     }
 
     /**
-     * create a string of a mapping pair for the target VCF version
+     * create a string of a mapping pair
      * @param keyValues a mapping of the key-&gt;value pairs to output
      * @return a string, correctly formatted
      */
-    //TODO: this should be removed and folded into toStringEncoding(): String, or else
-    // protected and VisibleForTesting
+    @Deprecated // starting after version 2.24.1
     public static String toStringEncoding(Map<String, ? extends Object> keyValues) {
         StringBuilder builder = new StringBuilder();
         builder.append('<');
