@@ -51,8 +51,8 @@ import java.util.stream.Collectors;
  */
 public class VCFHeader implements Serializable {
     public static final long serialVersionUID = 1L;
-    protected final static Log logger = Log.getInstance(VCFHeader.class);
-    public final static VCFHeaderVersion DEFAULT_VCF_VERSION = VCFHeaderVersion.VCF4_2;
+    protected static final Log logger = Log.getInstance(VCFHeader.class);
+    public static final VCFHeaderVersion DEFAULT_VCF_VERSION = VCFHeaderVersion.VCF4_2;
 
     // the mandatory header fields
     public enum HEADER_FIELDS {
@@ -224,8 +224,8 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Adds a new line to the VCFHeader. If there is an existing header line of the
-     * same type with the same key, and the header version is pre-4.3, the new line is added
+     * Adds a new line to the VCFHeader. If there is an existing header line with the same key (and id, for
+     * structured ID header lines), the new line is added
      * using a modified key to make it unique for BWC; otherwise (in strict validation mode), an
      * exception is thrown since duplicates are not allowed.
      *
@@ -474,8 +474,9 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Deprecated. Use {@link #getOtherHeaderLines()}. see https://github.com/samtools/hts-specs/issues/602
-     * @param key the of the requested other header line
+     * Deprecated. Use {@link #getOtherHeaderLines(String)}. see https://github.com/samtools/hts-specs/issues/602
+     *
+     * @param key the of the requested header line
      * @return the meta data line, or null if there is none
      */
     @Deprecated // starting after version 2.24.1 this selects one from what can be many)
@@ -483,6 +484,7 @@ public class VCFHeader implements Serializable {
         final Collection<VCFHeaderLine> otherLines = mMetaData.getOtherHeaderLines();
         for (final VCFHeaderLine next: otherLines) {
             if (next.getKey().equals(key)) {
+                // note that this returns the first match it finds, which is why this method is deprecated
                 return next;
             }
         }
@@ -490,10 +492,44 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Returns the other HeaderLines in their original ordering, where "other" means any
+     * Returns all "other" VCFHeaderLines, in their original (input) order, where "other" means any
      * VCFHeaderLine that is not a contig, info, format or filter header line.
      */
     public Collection<VCFHeaderLine> getOtherHeaderLines() { return mMetaData.getOtherHeaderLines(); }
+
+    /**
+     * Returns "other" HeaderLines that have the key "key", in their original ordering, where "other"
+     * means any VCFHeaderLine that is not a contig, info, format or filter header line.
+     */
+    //TODO: needs tests
+    public List<VCFHeaderLine> getOtherHeaderLines(final String key) {
+        return mMetaData.getOtherHeaderLines().stream().filter(hl -> hl.getKey().equals(key)).collect(Collectors.toList());
+    }
+
+    /**
+     * Returns a single "other" VCFHeaderLine that has the key "key", where "other"
+     * means any VCFHeaderLine that is not a contig, info, format or filter header line. If more than
+     * one such line is available, throws a TribbleException.
+     *
+     * @param key the key to match
+     * @return a single VCHeaderLine, or null if none
+     * @throws TribbleException if more than one other line matches the key
+     */
+    //TODO: needs tests
+    public VCFHeaderLine getOtherHeaderLineUnique(final String key) {
+        final List<VCFHeaderLine> lineList = getOtherHeaderLines(key);
+        if (lineList.isEmpty()) {
+            return null;
+        } else if (lineList.size() > 1) {
+            throw new TribbleException(
+                    String.format(
+                            "More than one \"other\" header line matches the key \"%s\". Use getOtherHeaderLines() to retrieve multiple lines:",
+                            key,
+                            lineList.stream().map(VCFHeaderLine::toString).collect(Collectors.joining(","))));
+        } else {
+            return lineList.get(0);
+        }
+    }
 
     /**
      * If true additional engine headers will be written to the VCF, otherwise only the walker headers will be output.
@@ -634,7 +670,7 @@ public class VCFHeader implements Serializable {
      * @throws TribbleException if no ##fileformat line is included in the metadata lines
      */
     private VCFHeaderVersion establishInitialHeaderVersion(final Set<VCFHeaderLine> metaData) {
-        VCFHeaderLine embeddedVersionLine = getVersionLineFromHeaderLineSet(metaData);
+        final VCFHeaderLine embeddedVersionLine = getVersionLineFromHeaderLineSet(metaData);
         if (embeddedVersionLine == null) {
             //we dont relax this even if VCFUtils.getStrictVCFVersionValidation() == false, since that
             //would confound header version management

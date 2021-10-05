@@ -33,8 +33,8 @@ public final class VCFMetaDataLines implements Serializable {
 
     /**
      * Add a metadata line to the list. If a duplicate line is encountered (same key/ID pair for
-     * structured lines, or duplicate content for unstructured lines with identical keys)
-     * only the first line will be retained.
+     * structured lines, or duplicate content for unstructured lines with identical keys), the new
+     * line will replace the existing line.
      *
      * @param headerLine header line to attempt to add
      * @throws IllegalArgumentException if a fileformat line is added
@@ -60,11 +60,11 @@ public final class VCFMetaDataLines implements Serializable {
             if (existingLine != null && !existingLine.equals(headerLine)) {
                 // Previous htsjdk implementations would round trip lines with duplicate IDs by preserving
                 // them in the master header line list maintained by VCFHeader, but would silently drop them
-                // from the individual typed header line lists, so the duplicates would not be included in
-                // queries for typed line (i.e. via getInfoHeaderLines()). This implementation doesn't retain
+                // from the individual typed header line lists, so the duplicates would not be returned in
+                // queries for typed lines (i.e. via getInfoHeaderLines()). This implementation doesn't retain
                 // the duplicates (the 4.2/4.3 specs expressly forbid it), so they're dropped here.
                 final String message = String.format(
-                        "Attempt to add header line (%s) collides with existing line header line (%s). " +
+                        "Attempt to add header a line (%s) that collides with an existing line header line (%s). " +
                                 "The existing header line will be discarded.",
                         headerLine,
                         mMetaData.get(key));
