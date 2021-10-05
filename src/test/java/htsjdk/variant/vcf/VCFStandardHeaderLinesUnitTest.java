@@ -190,7 +190,7 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
     @Test(dataProvider = "RepairHeaderTest")
     public void testRepairHeaderTest(final RepairHeaderTest cfg) {
         final Set<VCFHeaderLine> headerLines = new LinkedHashSet<>();
-        headerLines.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        headerLines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         headerLines.add(cfg.original);
 
         final VCFHeader toRepair = new VCFHeader(headerLines);

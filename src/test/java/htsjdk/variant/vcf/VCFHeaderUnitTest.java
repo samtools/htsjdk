@@ -239,7 +239,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 0);
         Assert.assertNotEquals(contigOneNoAssembly.hashCode(), contigOneWithAssembly.hashCode());
 
-        final Set<VCFHeaderLine> headerLineSet = VCFHeader.getHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION);
+        final Set<VCFHeaderLine> headerLineSet = VCFHeader.makeHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION);
         headerLineSet.add(contigOneNoAssembly);
         headerLineSet.add(contigOneWithAssembly);
         Assert.assertEquals(headerLineSet.size(), 3);
@@ -475,7 +475,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     private void doHeaderTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
-        final VCFHeader vcfHeader = new VCFHeader(VCFHeader.getHeaderVersionLineSet(fromVersion), Collections.emptySet());
+        final VCFHeader vcfHeader = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(fromVersion), Collections.emptySet());
         vcfHeader.setVCFHeaderVersion(toVersion);
     }
 
@@ -502,7 +502,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // add in the corresponding fileformat line; create a new versioned header
         // since the version requested in the constructor and the format lines are in sync, there is
         // no conflict, and the resulting header's version should always match the requested version
-        metaDataSet.add(VCFHeader.getHeaderVersionLine(vcfVersion));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(vcfVersion));
         final VCFHeader vcfHeader = new VCFHeader(metaDataSet, Collections.emptySet());
         Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), vcfVersion);
     }
@@ -512,8 +512,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWITHOUTFormatString(); // this (4.2) header is compatible with all 4.x versions
         final int beforeSize = metaDataSet.size();
 
-        metaDataSet.add(VCFHeader.getHeaderVersionLine(VCFHeaderVersion.VCF4_2));
-        metaDataSet.add(VCFHeader.getHeaderVersionLine(VCFHeaderVersion.VCF4_1));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(VCFHeaderVersion.VCF4_2));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(VCFHeaderVersion.VCF4_1));
         Assert.assertEquals(metaDataSet.size(), beforeSize + 2);
 
         // create a new versioned header from this set (containing no fileformat line)
@@ -526,7 +526,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWITHFormatString(); // 4.2 header is compatible with all 4.x versions
 
         //add in the fileformat line; create a new header requesting conflicting version
-        metaDataSet.add(VCFHeader.getHeaderVersionLine(VCFHeaderVersion.VCF4_1));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(VCFHeaderVersion.VCF4_1));
         new VCFHeader(metaDataSet, Collections.emptySet());
     }
 
@@ -536,7 +536,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         // don't request a version; let the header derive it from the embedded format line;
         // the resulting header version should match the format line we embedded
-        metaDataSet.add(VCFHeader.getHeaderVersionLine(vcfVersion));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(vcfVersion));
         final VCFHeader vcfHeader = new VCFHeader(metaDataSet, Collections.emptySet()); //defaults to v4.2
         Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), vcfVersion);
         vcfHeader.setVCFHeaderVersion(vcfVersion);
@@ -555,13 +555,13 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWITHOUTFormatString(); // 4.2 header is compatible with all 4.x versions
 
         //add in a fileformat line that matches the default version; create a new header
-        metaDataSet.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         final VCFHeader vcfHeader = new VCFHeader(metaDataSet, Collections.emptySet());
         Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), VCFHeader.DEFAULT_VCF_VERSION);
 
         //TODO: add a test that adds a format= as well (v3.2) instead of just fileformat
         // now try to add a conflicting fileformat header line
-        vcfHeader.addMetaDataLine(VCFHeader.getHeaderVersionLine(VCFHeaderVersion.VCF4_1));
+        vcfHeader.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeaderVersion.VCF4_1));
     }
 
     @DataProvider
@@ -658,7 +658,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         //TODO: this is bogus and not great for a test.. we're always using the same (vcfV4.2) header line set,
         // but we're declaring it to be some random version for test purposes, even if the lines don't conform to
         // that version, which we get away with since its just a Set...
-        metaDataSet.add(VCFHeader.getHeaderVersionLine(vcfVersion));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(vcfVersion));
         final VCFHeader header = new VCFHeader(metaDataSet);
         Assert.assertEquals(header.getVCFHeaderVersion(), vcfVersion);
 
@@ -666,7 +666,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         //TODO: this is bogus and not great for a test.. we're always using the same (vcfV4.2) header line set,
         // but we're declaring it to be some random version for test purposes, even if the lines don't conform to
         // that version
-        conflictSet.add(VCFHeader.getHeaderVersionLine(conflictingVersion));
+        conflictSet.add(VCFHeader.makeHeaderVersionLine(conflictingVersion));
         final VCFHeader conflictingHeader = new VCFHeader(conflictSet);
         Assert.assertEquals(conflictingHeader.getVCFHeaderVersion(), conflictingVersion);
 
@@ -689,7 +689,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         // since we merged two headers that are identical except for the fileformat line, assert that all
         // the original header lines are in the resulting header
-        metaDataSet.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         Assert.assertEquals(mergedHeader.getMetaDataInInputOrder(), mergedSet);
     }
 
@@ -1064,7 +1064,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "duplicateHeaderLineCases")
     private void testDuplicateHeaderLine(final VCFHeaderLine hl1, final VCFHeaderLine hl2, final boolean expectHL2Retained) {
-        final Set<VCFHeaderLine> lineSet = VCFHeader.getHeaderVersionLineSet(VCFHeaderVersion.VCF4_2);
+        final Set<VCFHeaderLine> lineSet = VCFHeader.makeHeaderVersionLineSet(VCFHeaderVersion.VCF4_2);
         lineSet.add(hl1);
         lineSet.add(hl2);
         final VCFHeader vcfHeader = new VCFHeader(lineSet);

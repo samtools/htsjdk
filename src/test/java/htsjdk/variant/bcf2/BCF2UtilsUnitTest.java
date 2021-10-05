@@ -74,7 +74,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
     public void testCreateDictionary() {
         final List<VCFHeaderLine> inputLines = new ArrayList<VCFHeaderLine>();
         int counter = 0;
-        inputLines.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        inputLines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
         inputLines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", String.valueOf(counter++)), counter));
@@ -114,7 +114,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
         final List<VCFHeaderLine> extraLines = new ArrayList<VCFHeaderLine>();
 
         int counter = 0;
-        inputLines.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        inputLines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
         inputLines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", String.valueOf(counter++)), counter));

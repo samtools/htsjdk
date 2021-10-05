@@ -10,7 +10,7 @@ public class VCFHeaderUnitTestData {
 
     // fileformat line
     public final List<VCFHeaderLine> fileformatLines = new ArrayList<VCFHeaderLine>() {{
-        add(VCFHeader.getHeaderVersionLine(canonicalVersion));
+        add(VCFHeader.makeHeaderVersionLine(canonicalVersion));
     }};
 
     // FILTER lines

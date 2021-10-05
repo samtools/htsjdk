@@ -110,7 +110,7 @@ public final class VCFMetaDataLines implements Serializable {
                 removeHeaderLine(fileFormatLine);
         }
 
-        addMetaDataLine(VCFHeader.getHeaderVersionLine(newVCFVersion));
+        addMetaDataLine(VCFHeader.makeHeaderVersionLine(newVCFVersion));
     }
 
     /**

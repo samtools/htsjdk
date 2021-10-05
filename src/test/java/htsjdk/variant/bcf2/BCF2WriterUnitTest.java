@@ -75,7 +75,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final Set<VCFHeaderLine> metaData = new HashSet<>();
         final Set<String> additionalColumns = new HashSet<>();
-        metaData.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        metaData.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         metaData.add(new VCFHeaderLine("two", "2"));
         additionalColumns.add("extra1");
         additionalColumns.add("extra2");

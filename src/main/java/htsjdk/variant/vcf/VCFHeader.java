@@ -103,7 +103,7 @@ public class VCFHeader implements Serializable {
      * Create an empty VCF header with no header lines and no samples
      */
     public VCFHeader() {
-        this(getHeaderVersionLineSet(DEFAULT_VCF_VERSION), Collections.emptySet());
+        this(makeHeaderVersionLineSet(DEFAULT_VCF_VERSION), Collections.emptySet());
     }
 
     /**
@@ -202,7 +202,7 @@ public class VCFHeader implements Serializable {
      * @param requestedVersion the version for which a version line should be obtained
      * @return the version line
      */
-    public static VCFHeaderLine getHeaderVersionLine(final VCFHeaderVersion requestedVersion) {
+    public static VCFHeaderLine makeHeaderVersionLine(final VCFHeaderVersion requestedVersion) {
         return new VCFHeaderLine(requestedVersion.getFormatString(), requestedVersion.getVersionString());
     }
 
@@ -211,8 +211,8 @@ public class VCFHeader implements Serializable {
      * @param requestedVersion the version for which a version line should be obtained
      * @return a VCFHeaderLine set containing only fileformat/version line for the requestedVersion
      */
-    public static Set<VCFHeaderLine> getHeaderVersionLineSet(final VCFHeaderVersion requestedVersion) {
-        return new LinkedHashSet<VCFHeaderLine>() {{ add(VCFHeader.getHeaderVersionLine(requestedVersion)); }};
+    public static Set<VCFHeaderLine> makeHeaderVersionLineSet(final VCFHeaderVersion requestedVersion) {
+        return new LinkedHashSet<VCFHeaderLine>() {{ add(VCFHeader.makeHeaderVersionLine(requestedVersion)); }};
     }
 
    /**

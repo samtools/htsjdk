@@ -41,7 +41,7 @@ public class VCFUtilsTest extends HtsjdkTest {
         //TODO: since no metadata lines are passed in (only requested versions), the headers
         //created this way have no header metadata version lines
         headerVersions.forEach(hv -> headersToMerge.add(
-                new VCFHeader(VCFHeader.getHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION), Collections.emptySet()))
+                new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION), Collections.emptySet()))
         );
         //TODO: this has no assert
         final Set<VCFHeaderLine> resultHeaders = VCFUtils.smartMergeHeaders(headersToMerge, true);
