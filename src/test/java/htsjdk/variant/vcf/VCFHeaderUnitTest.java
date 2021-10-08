@@ -68,7 +68,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void test42FileRoundtrip() throws Exception {
-        // this test ensures that source/version fields are round-tripped properly
+        // this test validates that source/version fields are round-tripped properly
 
         // read an existing VCF
         final File expectedFile = new File("src/test/resources/htsjdk/variant/Vcf4.2WithSourceVersionInfoFields.vcf");
@@ -313,6 +313,11 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             final VCFHeader orderedHeader = new VCFHeader();
             orderedList.forEach(hl -> orderedHeader.addMetaDataLine(hl));
             Assert.assertEquals(orderedList, orderedHeader.getContigLines());
+
+            // now get the contig lines from the header in sorted order; the outrageous header line should be
+            // the first contig, since it has contigIndex 0
+            final SAMSequenceDictionary orderedSeqDict = orderedHeader.getSequenceDictionary();
+            int i = 37;
         }
     }
 
@@ -465,18 +470,13 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="validHeaderVersionTransitions")
-    public void testValidHeaderVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
-        doHeaderTransition(fromVersion, toVersion);
+    public void testSetVCFHeaderVersionValidTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        new VCFHeader(VCFHeader.makeHeaderVersionLineSet(fromVersion), Collections.emptySet()).setVCFHeaderVersion(toVersion);
     }
 
     @Test(dataProvider="invalidHeaderVersionTransitions", expectedExceptions = IllegalStateException.class)
-    public void testInvalidHeaderVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
-        doHeaderTransition(fromVersion, toVersion);
-    }
-
-    private void doHeaderTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
-        final VCFHeader vcfHeader = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(fromVersion), Collections.emptySet());
-        vcfHeader.setVCFHeaderVersion(toVersion);
+    public void testSetVCFHeaderVersionInvalidTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
+        new VCFHeader(VCFHeader.makeHeaderVersionLineSet(fromVersion), Collections.emptySet()).setVCFHeaderVersion(toVersion);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -651,21 +651,23 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     private void doMergeHeadersAcrossVersions(
-            final VCFHeaderVersion vcfVersion,
+            final VCFHeaderVersion initialVersion,
             final VCFHeaderVersion conflictingVersion)
     {
+        //TODO: this is a sketchy way to write a test.. for each test case, we use the same fixed
+        // set of synthesized VCFHeader lines that are essentially VCF42-conforming, then we add a
+        // fileformat line with whatever starting VCFVersion we're using for test purposes, and then
+        // present the resulting set to the VCFHeader constructor. Its conceivable that the constructor
+        // could reject these and throw if any of the lines don't conform to the version. Currently,
+        // the version checking really ony kicks in with 4.3, so as long as the lines we use conform
+        // to that, it does not fail. At some point down the line as these evolve, that might change.
         final Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWITHOUTFormatString();
-        //TODO: this is bogus and not great for a test.. we're always using the same (vcfV4.2) header line set,
-        // but we're declaring it to be some random version for test purposes, even if the lines don't conform to
-        // that version, which we get away with since its just a Set...
-        metaDataSet.add(VCFHeader.makeHeaderVersionLine(vcfVersion));
+        metaDataSet.add(VCFHeader.makeHeaderVersionLine(initialVersion));
         final VCFHeader header = new VCFHeader(metaDataSet);
-        Assert.assertEquals(header.getVCFHeaderVersion(), vcfVersion);
+        Assert.assertEquals(header.getVCFHeaderVersion(), initialVersion);
 
+        //TODO: same comment as above here...
         final Set<VCFHeaderLine> conflictSet = getV42HeaderLinesWITHOUTFormatString();
-        //TODO: this is bogus and not great for a test.. we're always using the same (vcfV4.2) header line set,
-        // but we're declaring it to be some random version for test purposes, even if the lines don't conform to
-        // that version
         conflictSet.add(VCFHeader.makeHeaderVersionLine(conflictingVersion));
         final VCFHeader conflictingHeader = new VCFHeader(conflictSet);
         Assert.assertEquals(conflictingHeader.getVCFHeaderVersion(), conflictingVersion);
@@ -674,22 +676,24 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         headerList.add(header);
         headerList.add(conflictingHeader);
 
-        // smartMergeHeaders strips out fileformat lines and returns the remaining merged header lines
+        // smartMergeHeaders returns a set that has a fileformat line for the most recent version
+        // of any input header provided, so calculate our expected version
+        final VCFHeaderVersion expectedMergedVersion =
+                initialVersion.ordinal() >= conflictingVersion.ordinal() ?
+                        initialVersion :
+                        conflictingVersion;
         final Set<VCFHeaderLine> mergedSet = VCFUtils.smartMergeHeaders(headerList, false);
 
-        // create a header from the merged set, which should default to the newest version from among the
-        // headers that were merged
+        // create a header from the merged set, which should have a version that is the newest version
+        // of any of the headers that were merged
         final VCFHeader mergedHeader = new VCFHeader(mergedSet);
-        Assert.assertEquals(mergedHeader.getVCFHeaderVersion(),
-                vcfVersion.ordinal() >= conflictingVersion.ordinal() ?
-                        vcfVersion : conflictingVersion);
+        Assert.assertEquals(mergedHeader.getVCFHeaderVersion(), expectedMergedVersion);
 
-        // all the header lines in the merged set are also in the resulting header
+        // verify that all the header lines in the merged set are also in the resulting header
         Assert.assertEquals(mergedHeader.getMetaDataInInputOrder(), mergedSet);
 
         // since we merged two headers that are identical except for the fileformat line, assert that all
         // the original header lines are in the resulting header
-        metaDataSet.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         Assert.assertEquals(mergedHeader.getMetaDataInInputOrder(), mergedSet);
     }
 
@@ -964,8 +968,11 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     private Set<VCFHeaderLine> getV42HeaderLinesWITHOUTFormatString() {
         // precondition - create a v42 header and make sure its v42
         final Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWITHFormatString();
-        final VCFHeaderLine versionLine = VCFHeader.getVersionLineFromHeaderLineSet(metaDataSet);
+        final VCFMetaDataLines metaDataLines = new VCFMetaDataLines();
+        metaDataLines.addMetaDataLines(metaDataSet);
+
         // precondition - make sure its v42 to start with
+        final VCFHeaderLine versionLine = metaDataLines.getFileFormatLine();
         Assert.assertEquals(
                 VCFHeaderVersion.toHeaderVersion(versionLine.getValue()),
                 VCFHeaderVersion.VCF4_2);
@@ -980,8 +987,12 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // precondition - create a v42 header and make sure its v42
         final VCFHeader header = createHeaderFromString(VCF42headerStrings);
         final Set<VCFHeaderLine> metaDataSet = new LinkedHashSet<>(header.getMetaDataInInputOrder());
-        final VCFHeaderLine versionLine = VCFHeader.getVersionLineFromHeaderLineSet(metaDataSet);
+
+        final VCFMetaDataLines metaDataLines = new VCFMetaDataLines();
+        metaDataLines.addMetaDataLines(metaDataSet);
+        final VCFHeaderLine versionLine = metaDataLines.getFileFormatLine();
         Assert.assertNotNull(versionLine);
+
         // precondition - make sure its v42 to start with
         Assert.assertEquals(
                 VCFHeaderVersion.toHeaderVersion(versionLine.getValue()),
@@ -1015,7 +1026,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     private Object[][] getDuplicateHeaderLineCases() {
         return new Object[][] {
 
-                // these test use VCFAltHeaderLine to test structured/ID lines, but the behavior should be the same
+                // these tests use VCFAltHeaderLine to test structured/ID lines, but the behavior should be the same
                 // for any header ID line
 
                 // duplicate IDs, duplicate description; line is dropped due to duplicate ID
@@ -1036,7 +1047,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 // duplicate key, duplicate value, line is dropped
                 { new VCFHeaderLine("CommandLine", "command"), new VCFHeaderLine("CommandLine", "command"), false },
                 // duplicate key, different value, line is retained
-                { new VCFHeaderLine("CommandLine", "command1>"), new VCFHeaderLine("CommandLine", "command1"), true },
+                { new VCFHeaderLine("CommandLine", "command1"), new VCFHeaderLine("CommandLine", "command2"), true },
 
                 ///////////////////////////////////////////////////////////////////////////////////////////
                 // since the VCFHeaderLine constructor is public, it can be used erroneously to model header
@@ -1058,7 +1069,6 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 { new VCFHeaderLine("KEY1", "<ID=ID1>"), new VCFHeaderLine("KEY2", "<ID=ID1>"), true },
                 // different key, different value, line is retained
                 { new VCFHeaderLine("KEY1", "<ID=ID1>"), new VCFHeaderLine("KEY2", "<ID=ID2>"), true },
-
         };
     }
 
@@ -1070,6 +1080,76 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFHeader vcfHeader = new VCFHeader(lineSet);
 
         Assert.assertEquals(vcfHeader.getMetaDataInInputOrder().size(), expectHL2Retained ? 3 : 2);
+    }
+
+// test getOtherHeaderLine(key), getOtherHeaderLineUnique(key)
+// Validate resulting version when mixing versions (retain highest version ?)
+// Validate that sample name ordering is preserved
+// Validate that we detect multiple contigs with the same index
+// Check/test whether the order of sample names in VCFHeader constructors/getters has to be/are preserved
+
+    @Test
+    public void testInconsistentContigOrder() {
+        try (final VCFFileReader vcfReader = new VCFFileReader(
+                new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
+            // start with a header with a bunch of contig lines
+            final VCFHeader header = vcfReader.getFileHeader();
+            final List<VCFContigHeaderLine> originalContigLines = header.getContigLines();
+            Assert.assertTrue(originalContigLines.size() > 0);
+
+            // create a list of contig header lines using the contig lines from the file as returned
+            // by getContigLines, and sticking one new contig line in themiddle that has an ID that collides
+            // with an existing line
+            final List<VCFContigHeaderLine> orderedContigLines = new ArrayList<>();
+            final int splitInTheMiddle = originalContigLines.size() / 2;
+            // add half of the existing lines to a new list
+            orderedContigLines.addAll(originalContigLines.subList(0, splitInTheMiddle));
+            // add an new line to the list, that has a duplicate ID (id 0 - this should be rejected
+            // as a duplicate, but is not)
+            final VCFContigHeaderLine newContigLine = new VCFContigHeaderLine(
+                    "<ID=newContigID,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">",
+                    VCFHeaderVersion.VCF4_2,
+                    "contig",
+                    0);
+            orderedContigLines.add(newContigLine);
+            // make sure the new contig line was really added
+            Assert.assertTrue(orderedContigLines.contains(newContigLine));
+            // now add the rest of the lines to the list
+            orderedContigLines.addAll(originalContigLines.subList(splitInTheMiddle, originalContigLines.size()));
+            Assert.assertEquals(originalContigLines.size() + 1, orderedContigLines.size());
+
+            // create a new header from the ordered list
+            final VCFHeader orderedHeader = new VCFHeader();
+            orderedContigLines.forEach(hl -> orderedHeader.addMetaDataLine(hl));
+            // test that getContigLines honors the input order,and retains the new contig line
+            Assert.assertEquals(orderedContigLines, orderedHeader.getContigLines());
+
+            // now get a samDictionary, and make sure it contains the new contig line
+            final SAMSequenceDictionary samDictionary = orderedHeader.getSequenceDictionary();
+            Assert.assertNotNull(samDictionary.getSequence("newContigID"));
+
+            //
+            // Now retrieve all the header lines in sorted order.
+            //
+            // The new line is not actually included in the returned set, since the lines are returned in a treeset,
+            // and VCFContigHeaderLine has a compareTo implementation that is inconsistent with equals, which considers
+            // the new line and the existing line with the same index to be the same line. So only one is returned.
+            //
+            // The set itself however claims that the line is included (sortedLines.contains(newContigLine) returns
+            // true) because the comparable implementation considers the other (original) VCFContigHeaderLine to
+            // be equal to the new line since it has the same contig index.
+            final Set<VCFHeaderLine> sortedLines = orderedHeader.getMetaDataInSortedOrder();
+            boolean newLineIsPresent = false;
+            for (final VCFHeaderLine sortedLine : sortedLines) {
+                newLineIsPresent = sortedLine.isIDHeaderLine()
+                        && sortedLine.getKey().equals("contig")
+                        && sortedLine.getID().equals("newContigID");
+            }
+            Assert.assertFalse(sortedLines.contains(newContigLine));
+            //TODO: this SHOULD return true, but doesn't because the new line is not actually present in the treeset,
+            // even though the set says it is
+            Assert.assertFalse(newLineIsPresent);
+        }
     }
 
 }

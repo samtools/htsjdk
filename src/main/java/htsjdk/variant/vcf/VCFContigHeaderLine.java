@@ -231,7 +231,10 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
     /**
      * IT IS CRITICAL THAT THIS BE OVERRIDDEN SO WE SORT THE CONTIGS IN THE CORRECT ORDER
      *
-     * Note: this class has a natural ordering that is inconsistent with equals()
+     * NOTE: this class has a natural ordering that is inconsistent with equals(). This results
+     * in inconsistent behavior when these lines are used in the sets that are created/accepted
+     * by VCFHeader (ie., getMetaDataInSortedOrder will filter out VCFContigHeaderLines that are
+     * returned by getMetaDataInInputOrder or getContigheaderLines).
      */
     @Override
     public int compareTo(final Object other) {

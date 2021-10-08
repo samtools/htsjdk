@@ -69,7 +69,8 @@ public enum VCFHeaderVersion {
 
     /**
      * are we a valid version string of some type
-     * @param version the version string
+     * @param version the version string (the part of the header line that specifies the version,
+     *               i.e., "VCFv4.3" if the line is "##fileformat=VCFv4.3")
      * @return true if we're valid of some type, false otherwise
      */
     public static boolean isVersionString(String version){
@@ -77,7 +78,8 @@ public enum VCFHeaderVersion {
     }
 
     /**
-     * are we a valid format string for some type
+     * are we a valid format string for some type (the key part of the header line that specifies a version,
+     *               i.e., "fileformat" if the line is "##fileformat=VCFv4.3")
      * @param format the format string
      * @return true if we're valid of some type, false otherwise
      */
@@ -109,7 +111,7 @@ public enum VCFHeaderVersion {
     }
 
     /**
-     * @return A VCF ##fileformat=version metadata string for the supplied version.
+     * @return A VCF "##fileformat=version" metadata string for the supplied version.
      */
     public String toHeaderVersionLine() {
         return String.format("%s%s=%s", VCFHeader.METADATA_INDICATOR, getFormatString(), getVersionString());

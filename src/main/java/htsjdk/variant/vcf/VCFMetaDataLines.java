@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 /**
  * Class for managing a set of VCFHeaderLines for a VCFHeader.
+ * This class does not mandate that the list it maintains always contains a fileformat line
+ * (its VCFHeader's job to maintain that condition for the header).
  */
 //Visible to allow disq Kryo registration for serialization
 public final class VCFMetaDataLines implements Serializable {
@@ -17,7 +19,9 @@ public final class VCFMetaDataLines implements Serializable {
     protected final static Log logger = Log.getInstance(VCFMetaDataLines.class);
 
     // Map of all header lines (including file format version lines)
-    private final Map<HeaderLineKey, VCFHeaderLine> mMetaData = new LinkedHashMap<>();
+    private final Map<HeaderLineMapKey, VCFHeaderLine> mMetaData = new LinkedHashMap<>();
+
+    //TODO: should this cache the fileformat line so we don't have to go find it...
 
     /**
      * Add all metadata lines from Set. If a duplicate line is encountered (same key/ID pair for
@@ -27,7 +31,7 @@ public final class VCFMetaDataLines implements Serializable {
      * @param newMetaData Set of lines to be added to the list.
      * @throws IllegalArgumentException if a fileformat line is added
      */
-    public void addAllMetaDataLines(final Set<VCFHeaderLine> newMetaData) {
+    public void addMetaDataLines(final Set<VCFHeaderLine> newMetaData) {
         newMetaData.forEach(this::addMetaDataLine);
     }
 
@@ -36,28 +40,20 @@ public final class VCFMetaDataLines implements Serializable {
      * structured lines, or duplicate content for unstructured lines with identical keys), the new
      * line will replace the existing line.
      *
-     * @param headerLine header line to attempt to add
-     * @throws IllegalArgumentException if a fileformat line is added
+     * @param newMetaDataLine header line to attempt to add
+     * @throws IllegalArgumentException if the line being added is a fileformat (VCF version) line
+     * that has a different version that any version line that already exists in the metadata lines
+     * maintained by this object, and any existing version line fails to validate against the new
+     * version
      */
-    public void addMetaDataLine(final VCFHeaderLine headerLine) {
-        final HeaderLineKey key = makeKeyForLine(headerLine);
-        if (VCFHeaderVersion.isFormatString(headerLine.getKey())) {
-            // In order to ensure that only one version line is retained, this needs to check for all possible
-            // types of version lines (v3.2 used "format" instead of "fileformat")
-            final Optional<VCFHeaderLine> fileFormatLine = getOtherHeaderLines().stream()
-                    .filter(line -> VCFHeaderVersion.isFormatString(line.getKey()))
-                    .findAny();
-            if (fileFormatLine.isPresent() && !fileFormatLine.get().equals(headerLine)) {
-                final String message = String.format(
-                        "Attempt to add a version header line (%s) that collides with an existing line header line (%s). " +
-                                "Use setVCFVersion to change the header version.",
-                        headerLine,
-                        fileFormatLine.get());
-                throw new TribbleException(message);
-            }
+    public void addMetaDataLine(final VCFHeaderLine newMetaDataLine) {
+        final HeaderLineMapKey newMapKey = makeKeyForLine(newMetaDataLine);
+        if (VCFHeaderVersion.isFormatString(newMetaDataLine.getKey())) {
+            // setVCFVersion calls addMetaDataLine back after removing the exiting key with a new version
+            setVCFVersion(VCFHeaderVersion.toHeaderVersion(newMetaDataLine.getValue()));
         } else {
-            final VCFHeaderLine existingLine = mMetaData.get(key);
-            if (existingLine != null && !existingLine.equals(headerLine)) {
+            final VCFHeaderLine existingLine = mMetaData.get(newMapKey);
+            if (existingLine != null && !existingLine.equals(newMetaDataLine)) {
                 // Previous htsjdk implementations would round trip lines with duplicate IDs by preserving
                 // them in the master header line list maintained by VCFHeader, but would silently drop them
                 // from the individual typed header line lists, so the duplicates would not be returned in
@@ -66,51 +62,43 @@ public final class VCFMetaDataLines implements Serializable {
                 final String message = String.format(
                         "Attempt to add header a line (%s) that collides with an existing line header line (%s). " +
                                 "The existing header line will be discarded.",
-                        headerLine,
-                        mMetaData.get(key));
+                        newMetaDataLine,
+                        mMetaData.get(newMapKey));
                 logger.warn(message);
             }
+            mMetaData.put(newMapKey, newMetaDataLine);
         }
-        mMetaData.put(key, headerLine);
     }
 
+    /**
+     * Establish a new VCF Version for this line list. This requires validating any existing lines against
+     * the new version, removing an existing version line if one exists, and then adding a new fileformat
+     * line to the list.
+     * @param newVCFVersion new VCF Version to use for this line list
+     * @throws TribbleException if the new version is older than the previous version, or if any existing
+     * line fails to validate against the new version
+     */
     public void setVCFVersion(final VCFHeaderVersion newVCFVersion) {
         ValidationUtils.nonNull(newVCFVersion);
 
-        // before we mutate anything, call validateMetaDataLines to ensure the version transition is
-        // going to be valid for any existing lines
-        validateMetaDataLines(newVCFVersion, false);
-
-        // extract any existing version line
-        final List<VCFHeaderLine> allFormatLines = mMetaData.values()
-                .stream()
-                .filter(line -> VCFHeaderVersion.isFormatString(line.getKey()))
-                .collect(Collectors.toList());
-        // This class always does not mandate that the list it maintains contains a fileformat line
-        // at all times (its VCFHeader's job to maintain that condition for the header object).
-        // Therefore we can only check for the version going backwards when a ##fileformat actually
-        // line exists. Either way, validate all existing lines.
-        if (!allFormatLines.isEmpty()) {
-             if (allFormatLines.size() > 1) {
-                 throw new IllegalStateException(
-                         String.format("The metadata lines class contains more than one version line (%s)",
-                                 allFormatLines.stream()
-                                         .map(VCFHeaderLine::toString)
-                                         .collect(Collectors.joining(","))));
-             }
-            final VCFHeaderLine fileFormatLine = allFormatLines.get(0);
-            final VCFHeaderVersion currentVersion = VCFHeaderVersion.toHeaderVersion(fileFormatLine.getValue());
-            final int compareTo = newVCFVersion.compareTo(currentVersion);
-                if (compareTo < 0) {
-                    throw new IllegalStateException(String.format(
-                            "New header version %s must be >= existing version %s",
-                            newVCFVersion,
-                            currentVersion));
-                }
-                removeHeaderLine(fileFormatLine);
+        final VCFHeaderLine currentVersionLine = getFileFormatLine();
+        if (currentVersionLine != null) {
+            final VCFHeaderVersion currentVCFVersion = VCFHeaderVersion.toHeaderVersion(currentVersionLine.getValue());
+            final int compareTo = newVCFVersion.compareTo(currentVCFVersion);
+            if (compareTo < 0) {
+                throw new TribbleException(String.format(
+                        "New header version %s must be >= existing version %s",
+                        newVCFVersion,
+                        currentVCFVersion));
+            }
+            // make sure we validate the meta data lines and throw if any line fails BEFORE we mutate anything
+            validateMetaDataLines(newVCFVersion, false);
+            removeMetaDataLine(currentVersionLine);
         }
 
-        addMetaDataLine(VCFHeader.makeHeaderVersionLine(newVCFVersion));
+        // add the line directly, don't call addMetaDataLine here to prevent mutual recursion back to this method
+        final VCFHeaderLine newVersionLine = VCFHeader.makeHeaderVersionLine(newVCFVersion);
+        mMetaData.put(makeKeyForLine(newVersionLine), newVersionLine);
     }
 
     /**
@@ -125,12 +113,13 @@ public final class VCFMetaDataLines implements Serializable {
     }
 
     /**
-     * Remove the headerline matching this headerline (determined by makeKeyForLine) if it exists
+     * Remove the headerline matching this headerline (determined by makeKeyForLine) if it exists. This
+     * only removes a header line if it is an exact match of the line provided.
      *
      * @param headerLine the header line to remove
      * @return The headerline removed, or null of no matching headerline was found
      */
-    public VCFHeaderLine removeHeaderLine(final VCFHeaderLine headerLine) {
+    public VCFHeaderLine removeMetaDataLine(final VCFHeaderLine headerLine) {
         return mMetaData.remove(makeKeyForLine(headerLine));
     }
 
@@ -149,18 +138,7 @@ public final class VCFMetaDataLines implements Serializable {
         mMetaData.values()
                 .stream()
                 .filter(line -> !VCFHeaderVersion.isFormatString(line.getKey()) || includeFileFormatLine)
-                .forEach(line -> validateMetaDataLine(targetVersion, line));
-    }
-
-    /**
-     * Validate all metadata lines against the target version, including the case where the headerLine is
-     * itself a fileformat line with a version, in case it clashes.
-     *
-     * @param targetVersion the version for which to validate
-     * @param vcfHeaderLine the headerline to validate
-     */
-    public void validateMetaDataLine(final VCFHeaderVersion targetVersion, final VCFHeaderLine vcfHeaderLine) {
-        vcfHeaderLine.validateForVersion(targetVersion);
+                .forEach(line -> line.validateForVersion(targetVersion));
     }
 
     /**
@@ -173,7 +151,7 @@ public final class VCFMetaDataLines implements Serializable {
     }
 
     public Set<VCFHeaderLine> getMetaDataInSortedOrder() {
-        return Collections.unmodifiableSet(new TreeSet<>(mMetaData.values()));
+        return Collections.unmodifiableSet(new LinkedHashSet<>(new TreeSet<>(mMetaData.values())));
     }
 
     /**
@@ -254,21 +232,6 @@ public final class VCFMetaDataLines implements Serializable {
         return (VCFFormatHeaderLine) mMetaData.get(makeKey(VCFConstants.FORMAT_HEADER_KEY, id));
     }
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof VCFMetaDataLines)) return false;
-
-        final VCFMetaDataLines that = (VCFMetaDataLines) o;
-
-        return mMetaData.equals(that.mMetaData);
-    }
-
-    @Override
-    public int hashCode() {
-        return mMetaData.hashCode();
-    }
-
     /**
      * @param id the id of the requested header line
      * @return the meta data line, or null if there is none
@@ -292,6 +255,34 @@ public final class VCFMetaDataLines implements Serializable {
         .collect(Collectors.toCollection(ArrayList::new));
     }
 
+    /**
+     * The version/fileformat header line if one exists, otherwise null.
+     * @return The version/fileformat header line if one exists, otherwise null.
+     */
+    public VCFHeaderLine getFileFormatLine() {
+        // find any existing version line(s). since there are multiple possible keys that
+        // represent version lines (old V3 specs used "format" instead of "fileformat")
+        final List<VCFHeaderLine> existingVersionLines = mMetaData.values()
+                .stream()
+                .filter(line -> VCFHeaderVersion.isFormatString(line.getKey()))
+                .collect(Collectors.toList());
+
+        // This class doesn't mandate that the list it maintains always contains a fileformat line
+        // (its VCFHeader's job to maintain that condition for the header).
+        if (!existingVersionLines.isEmpty()) {
+            if (existingVersionLines.size() > 1) {
+                throw new IllegalStateException(
+                        String.format("The metadata lines class contains more than one version line (%s)",
+                                existingVersionLines.stream()
+                                        .map(VCFHeaderLine::toString)
+                                        .collect(Collectors.joining(","))));
+            }
+            return existingVersionLines.get(0);
+        } else {
+            return null;
+        }
+    }
+
     @Override
     public String toString() {
         final StringBuilder b = new StringBuilder();
@@ -299,6 +290,21 @@ public final class VCFMetaDataLines implements Serializable {
         for ( final VCFHeaderLine line : mMetaData.values() )
             b.append("\n\t").append(line);
         return b.append("\n]").toString();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (!(o instanceof VCFMetaDataLines)) return false;
+
+        final VCFMetaDataLines that = (VCFMetaDataLines) o;
+
+        return mMetaData.equals(that.mMetaData);
+    }
+
+    @Override
+    public int hashCode() {
+        return mMetaData.hashCode();
     }
 
     /**
@@ -309,9 +315,9 @@ public final class VCFMetaDataLines implements Serializable {
      * lines, and also can have duplicate identical instances.
      *
      * @param headerLine the {@link VCFHeaderLine} for which a key should be returned
-     * @return the generated HeaderLineKey
+     * @return the generated HeaderLineMapKey
      */
-    private HeaderLineKey makeKeyForLine(final VCFHeaderLine headerLine) {
+    private HeaderLineMapKey makeKeyForLine(final VCFHeaderLine headerLine) {
         if (headerLine.isIDHeaderLine()) {
             // these are required to have a unique ID, so use the line key as the key, and the id as the constraint
             return makeKey(headerLine.getKey(), headerLine.getID());
@@ -328,16 +334,16 @@ public final class VCFMetaDataLines implements Serializable {
     }
 
     // Create a VCFHeaderLine hashmap key given a key and an id
-    private HeaderLineKey makeKey(final String nameSpace, final String id) { return new HeaderLineKey(nameSpace, id); }
+    private HeaderLineMapKey makeKey(final String nameSpace, final String id) { return new HeaderLineMapKey(nameSpace, id); }
 
     // composite keys used by the metadata lines map
-    private static class HeaderLineKey implements Serializable {
+    private static class HeaderLineMapKey implements Serializable {
         public static final long serialVersionUID = 1L;
 
         final String key;
         final String constraint;
 
-        public HeaderLineKey(final String key, final String constraint) {
+        public HeaderLineMapKey(final String key, final String constraint) {
             this.key = key;
             this.constraint = constraint;
         }
@@ -350,7 +356,7 @@ public final class VCFMetaDataLines implements Serializable {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final HeaderLineKey that = (HeaderLineKey) o;
+            final HeaderLineMapKey that = (HeaderLineMapKey) o;
 
             if (!key.equals(that.key)) return false;
             return constraint.equals(that.constraint);

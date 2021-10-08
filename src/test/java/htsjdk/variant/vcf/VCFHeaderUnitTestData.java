@@ -77,7 +77,7 @@ public class VCFHeaderUnitTestData {
 
     public VCFMetaDataLines getFullMetaDataLines() {
         final VCFMetaDataLines md = new VCFMetaDataLines();
-        md.addAllMetaDataLines(getFullMetaDataLinesAsSet());
+        md.addMetaDataLines(getFullMetaDataLinesAsSet());
         return md;
     }
 
