@@ -61,8 +61,8 @@ public class VCFStandardHeaderLines {
     public static VCFHeader repairStandardHeaderLines(final VCFHeader oldHeader) {
         if (oldHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             // the "repair" operation effectively upgrades old header lines to v4.2 format,
-            // but we don't "back-version" headers that are already newee than that v4.3+,
-            // so skip repair for newer headers
+            // but we don't "back-version" headers that are already newer than v4.2, so skip
+            // repair for newer headers
             return oldHeader;
         }
 
@@ -83,7 +83,7 @@ public class VCFStandardHeaderLines {
         // the "repair" operation effectively upgrades old header lines to v4.2 format, so the new header should
         // reflect that since it may no longer conform to it's original version
         // new header reflects that
-        repairedHeader.setVCFHeaderVersion(VCFHeaderVersion.VCF4_2);
+        repairedHeader.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeaderVersion.VCF4_2));
         return repairedHeader;
     }
 

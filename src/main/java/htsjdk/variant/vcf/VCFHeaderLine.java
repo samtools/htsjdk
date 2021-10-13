@@ -99,7 +99,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * Subclasses can override this to provide line type-specific version validation, and the overrides should
      * also call super.validateForVersion to allow each class in the class hierarchy to do class-level validation.
      */
-    protected void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         // If this header line is itself a fileformat/version line,
         // make sure it doesn't clash with the requested vcfTargetVersion.
         if (VCFHeaderVersion.isFormatString(getKey())) {

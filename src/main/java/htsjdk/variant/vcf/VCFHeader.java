@@ -39,15 +39,20 @@ import java.util.stream.Collectors;
 /**
  * A class to represent a VCF header.
  *
- * VCFHeaders maintain a VCFHeaderVersion that is established via the following precedence:
+ * A VCFHeader has a "current" VCFHeaderVersion that is established when the header is constructed. If
+ * metadata lines are provided to the constructor, a ##fileformat line must be included, and all lines
+ * in that are provided must be valid for the specified version. If no metadata lines are initially
+ * provided, the default version {@link VCFHeader#DEFAULT_VCF_VERSION} will be used.
  *
- *  - derived from a ##fileformat line embedded in the metadata lines list
- *  - supplied in a constructor
- *  - the default header version, currently vcfv42
+ * Each line in the list is always guaranteed to be valid for the current version, and any line added must
+ * conform to the current version (as defined by the VCF specification). If a new line is added that fails to
+ * validate against the current version, or a new line that changes the current version, and an existing line
+ * in the list fails to validate against the new version, an exception will be thrown.
  *
- *  Any attempt to add metadata lines, or change the header version via {@link #setVCFHeaderVersion} will
- *  trigger a validation pass against the metadata lines to ensure they conform to the rules defined by
- *  the VCF specification for that version.
+ * Once a header version is established, it can be changed by adding a new file format/version line (see
+ * {@link VCFHeader#makeHeaderVersionLine)} (the new version line will replace any existing line), but only
+ * if the new version is newer than the previous version. Attempts to move the version to an older version
+ * will result in an exception.
  */
 public class VCFHeader implements Serializable {
     public static final long serialVersionUID = 1L;
@@ -59,16 +64,10 @@ public class VCFHeader implements Serializable {
         CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO
     }
 
-
-    //TODO: Should we reject attempts to add two contig header lines with the same contigIndex ?
-    // GATK VcfUtilsUnitTest.createHeaderLines test creates headers with contig lines with identical (0) indices
-    /**
-     * The VCF version for this header; once a header version is established, it can only be
-     * changed subject to the version transition rules defined by {@link #setVCFHeaderVersion}.
-     */
-    //TODO we need to ensure that this never gets out of sync with the VCFMetaDataLines content.
+    // the VCF version for this header
     private VCFHeaderVersion vcfHeaderVersion;
-    // The associated meta data
+
+    // header meta data
     private final VCFMetaDataLines mMetaData = new VCFMetaDataLines();
 
     // the list of auxiliary tags
@@ -100,7 +99,8 @@ public class VCFHeader implements Serializable {
     private boolean writeCommandLine = true;
 
     /**
-     * Create an empty VCF header with no header lines and no samples
+     * Create an empty VCF header with no header lines and no samples. Defaults to
+     * VCF version {@link VCFHeader#DEFAULT_VCF_VERSION}.
      */
     public VCFHeader() {
         this(makeHeaderVersionLineSet(DEFAULT_VCF_VERSION), Collections.emptySet());
@@ -109,11 +109,12 @@ public class VCFHeader implements Serializable {
     /**
      * Create a VCF header, given a list of meta data and auxiliary tags. The provided metadata
      * header line list MUST contain a version (fileformat) line in order to establish the version
-     * for the header.
+     * for the header, and each metadata line must be valid for that version.
      *
      * @param metaData the meta data associated with this header
      * @throws TribbleException if the provided header line metadata does not include a header line that
-     * establishes the VCF version for the lines
+     * establishes the VCF version for the lines, or if any line does not conform to the established
+     * version
      */
     public VCFHeader(final Set<VCFHeaderLine> metaData) {
         this(metaData, Collections.emptySet());
@@ -129,13 +130,14 @@ public class VCFHeader implements Serializable {
 
     /**
      * Create a VCF header, given a set of meta data and auxiliary tags. The provided metadata
-     * header lin e list MUST contain a version (fileformat) line in order to establish the version
-     * for this header.
+     * list MUST contain a version (fileformat) line in order to establish the version
+     * for this header, and each metadata line must be valid for that version.
      *
      * @param metaData            set of meta data associated with this header
      * @param genotypeSampleNames the sample names
      * @throws TribbleException if the provided header line metadata does not include a header line that
-     * establishes the VCF version for the lines
+     * establishes the VCF version for the lines, or if any line does not conform to the established
+     * version
      */
     public VCFHeader(final Set<VCFHeaderLine> metaData, final Set<String> genotypeSampleNames) {
         this(metaData, new ArrayList<>(genotypeSampleNames));
@@ -146,23 +148,24 @@ public class VCFHeader implements Serializable {
      *
      * @param metaData The metadata lines for this header.The provided metadata
      * header line list MUST contain a version (fileformat) line in order to establish the version
-     * for this header.
+     * for this header, and each metadata line must be valid for that version.
      * @param genotypeSampleNames Sample names for this header.
      * @throws TribbleException if the provided header line metadata does not include a header line that
-     * establishes the VCF version for the lines
+     * establishes the VCF version for the lines, or if any line does not conform to the established
+     * version
      */
     public VCFHeader(final Set<VCFHeaderLine> metaData, final List<String> genotypeSampleNames) {
         ValidationUtils.nonNull(metaData);
         ValidationUtils.nonNull(genotypeSampleNames);
 
-        // Establish the version for this header using the ##fileformat metadata line in the metadata list
+        // propagate the lines and establish the version for this header; note that if multiple version
+        // lines are presented in the set, a warning will be issued, only the last one will be retained,
+        // and the header version will be established using the last version line encountered
         mMetaData.addMetaDataLines(metaData);
-        vcfHeaderVersion = establishInitialHeaderVersion();
-        //validate that the provided metadata lines are valid for the established version
-        mMetaData.validateMetaDataLines(vcfHeaderVersion, false);
+        vcfHeaderVersion = initializeHeaderVersion();
+        mMetaData.validateMetaDataLines(vcfHeaderVersion);
 
         checkForDeprecatedGenotypeLikelihoodsKey();
-
         if ( genotypeSampleNames.size() != new HashSet<>(genotypeSampleNames).size() )
             throw new TribbleException.InvalidHeader("BUG: VCF header has duplicate sample names");
 
@@ -171,35 +174,9 @@ public class VCFHeader implements Serializable {
         buildVCFReaderMaps(genotypeSampleNames);
     }
 
-    /**
-     * Set the header version for this header, subject to {@link VCFMetaDataLines#validateMetaDataLines}.
-     * @param newVCFVersion the new version to use for this header
-     * @throws TribbleException if the requested header version is not compatible with the existing header lines
-     */
-    public void setVCFHeaderVersion(final VCFHeaderVersion newVCFVersion) {
-        ValidationUtils.nonNull(newVCFVersion, "A non-null VCFHeaderVersion must be provided");
-
-        final int compareTo = newVCFVersion.compareTo(vcfHeaderVersion);
-        if (compareTo < 0) {
-            // we can't necessarily validate versions older than 4.2, so don't allow the version
-            // to ever go backward, only forward
-            throw new IllegalStateException(String.format(
-                    "New header version %s must be >= existing version %s",
-                    newVCFVersion,
-                    vcfHeaderVersion));
-        }
-        if (compareTo > 0) {
-            logger.warn(String.format("Changing VCFHeader version from %s to %s",
-                    vcfHeaderVersion.getVersionString(),
-                    newVCFVersion.getVersionString()));
-            mMetaData.setVCFVersion(newVCFVersion);
-            this.vcfHeaderVersion = newVCFVersion;
-        }
-    }
-
    /**
     * Get the header version for this header.
-    * @return the VCFHeaderVersion for this header.
+    * @return the VCFHeaderVersion for this header. will not be null
     */
     public VCFHeaderVersion getVCFHeaderVersion() {
         return vcfHeaderVersion;
@@ -213,8 +190,17 @@ public class VCFHeader implements Serializable {
      * @param headerLine header line to attempt to add
      */
     public void addMetaDataLine(final VCFHeaderLine headerLine) {
-        headerLine.validateForVersion(vcfHeaderVersion);
+        // propagate the new line to the metadata lines object
         mMetaData.addMetaDataLine(headerLine);
+
+        // update the current version in case this line triggered a version change
+        final VCFHeaderVersion newHeaderVersion = mMetaData.getVCFVersion();
+        if (!newHeaderVersion.equals(vcfHeaderVersion)) {
+            validateVersionTransition(vcfHeaderVersion, newHeaderVersion);
+        }
+        vcfHeaderVersion = newHeaderVersion;
+        headerLine.validateForVersion(vcfHeaderVersion);
+
         checkForDeprecatedGenotypeLikelihoodsKey();
     }
 
@@ -264,11 +250,13 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * @return all of the VCF header lines of the ##contig form in order, or an empty list if none were present
+     * Return all contig line in SORTED order, where the sort order is determined by contig index.
+     * Note that this behavior differs from other VCFHeader methods that return lines in input oder.
+     *
+     * @return all of the VCF header lines of the ##contig form in SORTED order, or an empty list if none were present
      */
     public List<VCFContigHeaderLine> getContigLines() {
-        // this must preserve input order
-        //TODO: should this preserve input order or contig (index) order
+        // this must return lines in SORTED order
         return mMetaData.getContigLines();
    }
 
@@ -280,6 +268,7 @@ public class VCFHeader implements Serializable {
      * information.
      */
     public SAMSequenceDictionary getSequenceDictionary() {
+        // this must ensure that the lines used to create the dictionary are sorted by contig index
         final List<VCFContigHeaderLine> contigHeaderLines = this.getContigLines();
         return contigHeaderLines.isEmpty() ? null  :
                 new SAMSequenceDictionary(
@@ -482,7 +471,6 @@ public class VCFHeader implements Serializable {
      * Returns "other" HeaderLines that have the key "key", in their original ordering, where "other"
      * means any VCFHeaderLine that is not a contig, info, format or filter header line.
      */
-    //TODO: needs tests
     public List<VCFHeaderLine> getOtherHeaderLines(final String key) {
         return mMetaData.getOtherHeaderLines().stream().filter(hl -> hl.getKey().equals(key)).collect(Collectors.toList());
     }
@@ -496,7 +484,6 @@ public class VCFHeader implements Serializable {
      * @return a single VCHeaderLine, or null if none
      * @throws TribbleException if more than one other line matches the key
      */
-    //TODO: needs tests
     public VCFHeaderLine getOtherHeaderLineUnique(final String key) {
         final List<VCFHeaderLine> lineList = getOtherHeaderLines(key);
         if (lineList.isEmpty()) {
@@ -610,7 +597,7 @@ public class VCFHeader implements Serializable {
                 // equivalence, and delegate to the actual lines and to do a smart reconciliation.
                 final VCFHeaderLine other = mergedMetaData.hasEquivalentHeaderLine(line);
                 if (other != null && !line.equals(other) ) {
-                    if (!line.getKey().equals(other.getKey())) {
+                    if (!key.equals(other.getKey())) {
                         throw new IllegalArgumentException(
                                 String.format("Attempt to merge incompatible header lines %s/%s", line.getKey(), other.getKey()));
                     } else if (key.equals(VCFConstants.FORMAT_HEADER_KEY)) {
@@ -628,8 +615,10 @@ public class VCFHeader implements Serializable {
                                 conflictWarner)
                         );
                     } else {
-                        // same type of header line; not equal; but not compound(format/info)
-                        // preserve the existing one; this may drop attributes/values
+                        // same type of header line, but not compound(format/info), and not equal,
+                        // so preserve the existing line; this may drop attributes/values.
+                        // note that for contig lines, since the new one has the same ID, we don't need
+                        // to add a new line, just retaining the existing one is fine
                         conflictWarner.warn(line, "Ignoring header line already in map: this header line = " +
                                 line + " already present header = " + other);
                     }
@@ -638,8 +627,8 @@ public class VCFHeader implements Serializable {
                 }
             }
         }
-        // this will validate all of the lines against the version line included
-        mergedMetaData.setVCFVersion(newestVersion);
+        //TODO: this no longer does the validation
+        mergedMetaData.addMetaDataLine(VCFHeader.makeHeaderVersionLine(newestVersion));
 
         // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
         return new LinkedHashSet<>(mergedMetaData.getMetaDataInInputOrder());
@@ -702,14 +691,38 @@ public class VCFHeader implements Serializable {
      * Establish the version for this header using the (required) ##fileformat metadata line in the metadata list.
      * @throws TribbleException if no ##fileformat line is included in the metadata lines
      */
-    private VCFHeaderVersion establishInitialHeaderVersion() {
-        final VCFHeaderLine embeddedVersionLine = mMetaData.getFileFormatLine();
-        if (embeddedVersionLine == null) {
+    private VCFHeaderVersion initializeHeaderVersion() {
+        final VCFHeaderVersion metaDataVersion = mMetaData.getVCFVersion();
+        if (metaDataVersion == null) {
             //we dont relax this even if VCFUtils.getStrictVCFVersionValidation() == false, since that
             //would confound subsequent header version management
             throw new TribbleException("The VCFHeader metadata must include a ##fileformat (version) header line");
         }
-        return VCFHeaderVersion.toHeaderVersion(embeddedVersionLine.getValue());
+        return metaDataVersion;
+    }
+
+    private void validateVersionTransition(
+            final VCFHeaderVersion previousVersion,
+            final VCFHeaderVersion newVersion) {
+        final int compareTo = newVersion.compareTo(previousVersion);
+        if (compareTo < 0) {
+            // We only allow going forward to a newer version, not backwards to an older one, since there
+            // is really no way to validate old header lines (pre vcfV4.2). The only way to create a header with
+            // an old version is to create it that way from the start.
+            // to be created with the old version from the start.
+            throw new TribbleException(String.format(
+                    "When changing a header version, the new header version %s must be > the previous version %s",
+                    newVersion,
+                    previousVersion));
+        } else if (compareTo > 0) {
+            logger.warn(String.format("Changing VCFHeader version from %s to %s",
+                    previousVersion.getVersionString(),
+                    newVersion.getVersionString()));
+
+            // the version moved forward, so validate ALL of the existing lines in the list to ensure
+            // that the transition is valid
+            mMetaData.validateMetaDataLines(newVersion);
+        }
     }
 
     /** Only displays a warning if warnings are enabled and an identical warning hasn't been already issued */

@@ -213,7 +213,7 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     public void testValidateMetaDataLinesConflictingVersion(final VCFHeaderVersion vcfVersion) {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
         VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
-        md.validateMetaDataLines(vcfVersion, true);
+        md.validateMetaDataLines(vcfVersion);
     }
 
     @Test(dataProvider="conflictingVCFVersions", expectedExceptions = TribbleException.class)
@@ -228,7 +228,7 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     public void testValidateMetaDataLinesValidVersion() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
         VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
-        md.validateMetaDataLines(unitTestData.canonicalVersion, true);
+        md.validateMetaDataLines(unitTestData.canonicalVersion);
     }
 
     @Test

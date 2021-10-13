@@ -31,7 +31,6 @@ import htsjdk.utils.ValidationUtils;
 /**
  * information that identifies each header version
  */
-//TODO: add a comparator
 public enum VCFHeaderVersion {
     // Keep this list in increasing (ordinal) order, since isAtLeastAsRecentAs depends on it
     VCF3_2("VCRv3.2", "format"),
