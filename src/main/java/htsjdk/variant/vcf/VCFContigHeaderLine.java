@@ -120,7 +120,9 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
         // preserve order of keys in contig line (ID, length, assembly)
         this(new LinkedHashMap<String, String>() {{
                 this.put(ID_ATTRIBUTE, sequenceRecord.getSequenceName());
-                this.put(LENGTH_ATTRIBUTE, Integer.toString(sequenceRecord.getSequenceLength()));
+                if (sequenceRecord.getSequenceLength() != 0) {
+                    this.put(LENGTH_ATTRIBUTE, Integer.toString(sequenceRecord.getSequenceLength()));
+                }
                 if (assembly != null) {
                     if (!assembly.equals(sequenceRecord.getAssembly())) {
                         logger.warn(String.format(

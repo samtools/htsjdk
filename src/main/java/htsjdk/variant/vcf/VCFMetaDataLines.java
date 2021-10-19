@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  *    getInfoHeaderLines(), but would still be serialized on write.)
  */
 //Visible to allow disq Kryo registration for serialization
-//TODO: annotate this class as InternalAPI when its rebased on master
+//TODO: annotate this class as InternalAPI when its rebased and has access to the InternalAPI annotation
 final class VCFMetaDataLines implements Serializable {
     public static final long serialVersionUID = 1L;
     protected final static Log logger = Log.getInstance(VCFMetaDataLines.class);
@@ -163,10 +163,10 @@ final class VCFMetaDataLines implements Serializable {
      * @return a set of the meta data
      */
     public Set<VCFHeaderLine> getMetaDataInSortedOrder() {
-        // Use an intermediate treeset to get the correct sorting (via the header line
-        // comparators), but returned a LinkedHashSet because TreeSet has a `contains`
-        // implementation based on comparator equality that can lead to inconsistent
-        // results for header lines types like VCFContigHeaderLine that have a compareTo
+        // Use an intermediate TreeSet to get the correct sort order (via the header line
+        // comparators), but return an (unmodifiable) LinkedHashSet because TreeSet has a
+        // `contains` implementation based on comparator equality that can lead to inconsistent
+        // results for header line types like VCFContigHeaderLine that have a compareTo
         // implementation that is inconsistent with equals.
         return Collections.unmodifiableSet(new LinkedHashSet<>(new TreeSet<>(mMetaData.values())));
     }

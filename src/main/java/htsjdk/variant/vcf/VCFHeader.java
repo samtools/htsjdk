@@ -26,6 +26,9 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceDictionaryUtils;
+import htsjdk.samtools.SAMSequenceDictionaryUtils.SequenceDictionaryCompatibility;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -553,41 +556,43 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Merge the header lines from all of the header lines in a set of header. The resulting set includes
-     * all unique lines that appeared in any header. Lines that are duplicated are removed from the result
-     * set. The resulting set is compatible with (and contains a ##fileformat version line for) the highest
-     * version seen in any of the headers provided in the input collection.
-     *
-     * @param headers the headers to merge
-     * @param emitWarnings true of warnings should be emitted
-     * @return a set of merged VCFHeaderLines
-     * @throws IllegalStateException if any header has a version < vcfV4.2, or if any header line in any
-     * of the input headers is not compatible the newest version amongst all headers provided
-     */
-    //TODO: this should really return a merged HEADER (or at least the VCFMetaDataLines object that it creates)
-    // and let VCFUtils.smartMergeHeader (which should now be deprecated, just extract the header lines from it;
-    // will also need to add a VCFHeader(VCFMetaDataLines) constructor if we return VCFMetaDataLines
+      * Merge the header lines from all of the header lines in a set of header. The resulting set includes
+      * all unique lines that appeared in any header. Lines that are duplicated are removed from the result
+      * set. The resulting set is compatible with (and contains a ##fileformat version line for) the highest
+      * version seen in any of the headers provided in the input collection.
+      *
+      * @param headers the headers to merge
+      * @param emitWarnings true of warnings should be emitted
+      * @return a set of merged VCFHeaderLines
+      * @throws TribbleException if any header has a version < vcfV4.2, or if any header line in any
+      * of the input headers is not compatible the newest version amongst all headers provided
+      */
     public static Set<VCFHeaderLine> getMergedHeaderLines(final Collection<VCFHeader> headers, final boolean emitWarnings) {
         final VCFMetaDataLines mergedMetaData = new VCFMetaDataLines();
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
         final Set<VCFHeaderVersion> vcfVersions = new HashSet<>(headers.size());
 
+        final SAMSequenceDictionary commonSequenceDictionary = getCommonSequenceDictionaryOrThrow(headers);
+
         VCFHeaderVersion newestVersion = null;
-        for ( final VCFHeader source : headers ) {
-            final VCFHeaderVersion sourceHeaderVersion = source.getVCFHeaderVersion();
+        for ( final VCFHeader sourceHeader : headers ) {
+            final VCFHeaderVersion sourceHeaderVersion = sourceHeader.getVCFHeaderVersion();
             if (!sourceHeaderVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
                 throw new TribbleException(String.format("Cannot merge a VCFHeader with version (%s) that is older than version %s",
                         sourceHeaderVersion, VCFHeaderVersion.VCF4_2));
             }
             vcfVersions.add(sourceHeaderVersion);
-            for ( final VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
+            for ( final VCFHeaderLine line : sourceHeader.getMetaDataInSortedOrder()) {
                 final String key = line.getKey();
                 if (VCFHeaderVersion.isFormatString(key)) {
-                    if (newestVersion == null || (source.getVCFHeaderVersion().ordinal() > newestVersion.ordinal())) {
+                    if (newestVersion == null || (sourceHeader.getVCFHeaderVersion().ordinal() > newestVersion.ordinal())) {
                         newestVersion = sourceHeaderVersion;
                     }
                     // don't add a version line yet; wait until the end and we'll add the highest version,
                     // and then validate all lines against that
+                    continue;
+                } else if (key.equals(CONTIG_KEY)) {
+                    //drop contig lines entirely, and add the commonSequenceDictionary at the end
                     continue;
                 }
 
@@ -627,11 +632,112 @@ public class VCFHeader implements Serializable {
                 }
             }
         }
-        //TODO: this no longer does the validation
-        mergedMetaData.addMetaDataLine(VCFHeader.makeHeaderVersionLine(newestVersion));
 
-        // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
-        return new LinkedHashSet<>(mergedMetaData.getMetaDataInInputOrder());
+        // create a set of all of our merged header lines, add in the new version, create
+        // a header, add the sequence dictionary, and return the resulting lines
+        final Set<VCFHeaderLine> mergedLines = VCFHeader.makeHeaderVersionLineSet(newestVersion);
+        mergedLines.addAll(mergedMetaData.getMetaDataInInputOrder());
+        final VCFHeader mergedHeader = new VCFHeader(
+                mergedLines,
+                Collections.emptySet()
+        );
+        if (commonSequenceDictionary != null) {
+            mergedHeader.setSequenceDictionary(commonSequenceDictionary);
+        }
+
+        return new LinkedHashSet<>(mergedHeader.getMetaDataInSortedOrder());
+    }
+
+    // Create a common sequence dictionary from a set of dictionaries in VCFHeaders, as long as the headers
+    // either have identical dictionaries, or dictionaries where one dictionary is a subset of another. It
+    // cannot merge any dictionary that has a (disjoint) contig that is not already ordered wrt/all other
+    // common contigs.
+    private static SAMSequenceDictionary getCommonSequenceDictionaryOrThrow(final Collection<VCFHeader> headers) {
+        SAMSequenceDictionary candidateDictionary = null;
+        for ( final VCFHeader sourceHeader : headers ) {
+            final VCFHeaderVersion sourceHeaderVersion = sourceHeader.getVCFHeaderVersion();
+            if (!sourceHeaderVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
+                throw new TribbleException(String.format(
+                        "Cannot merge a VCFHeader (with version %s) that is is older than version %s",
+                        sourceHeaderVersion,
+                        VCFHeaderVersion.VCF4_2));
+            }
+
+            final SAMSequenceDictionary sourceDictionary = sourceHeader.getSequenceDictionary();
+            if (candidateDictionary == null) {
+                candidateDictionary = sourceDictionary;
+            } else {
+                // first, compare with checkContigOrdering on
+                final SequenceDictionaryCompatibility compatibility =
+                        SAMSequenceDictionaryUtils.compareDictionaries(
+                                candidateDictionary,
+                                sourceDictionary,
+                                true);
+                switch (compatibility) {
+                    case IDENTICAL: // existing candidateDictionary is identical to sourceDictionary, so keep it
+                    case SUPERSET:  // existing candidateDictionary is a superset of sourceDictionary, so keep it
+                        break;
+
+                    case COMMON_SUBSET:
+                        // There exists a common subset of equivalent contigs, but that isn't sufficient for
+                        // merging purposes, unless one is a superset of the other. So, try again, in both comparison
+                        // directions, with checkContigOrdering off, to see if one is a superset of the other, and
+                        // if so retain the superset.
+                    case DIFFERENT_INDICES:
+                        // The dictionaries have at least some common contigs, but with different relative indices.
+                        // For merging purposes, this is ok, as long as one dictionary is strict superset of the other,
+                        // since the superset has all of the contigs already ordered. So, try again, in both comparison
+                        // directions, with checkContigOrdering off, to see if one is a superset of the other, and
+                        // if so retain the superset.
+                        if (SequenceDictionaryCompatibility.SUPERSET ==
+                                SAMSequenceDictionaryUtils.compareDictionaries(
+                                        candidateDictionary,
+                                        sourceDictionary,
+                                        false)) {
+                            break; // keep our candidate
+                        } else if (SequenceDictionaryCompatibility.SUPERSET ==
+                                SAMSequenceDictionaryUtils.compareDictionaries(
+                                        sourceDictionary,
+                                        candidateDictionary,
+                                        false)) {
+                            candidateDictionary = sourceDictionary; // take the sourceDictionary as the new candidate
+                        } else {
+                            // dictionaries are disjoint, and we have no basis to choose a merge order for the
+                            // non-common contigs, so give up
+                            throw new TribbleException(
+                                    getHeaderDictionaryFailureMessage(
+                                            candidateDictionary, sourceHeader, sourceDictionary, compatibility));
+                        }
+                        break;
+
+                    case NO_COMMON_CONTIGS:              // no overlap between dictionaries
+                    case UNEQUAL_COMMON_CONTIGS:         // common subset has contigs that have the same name but different lengths
+                    case NON_CANONICAL_HUMAN_ORDER:      // human reference detected but the order of the contigs is non-standard (lexicographic, for example)
+                    case OUT_OF_ORDER:                   // the two dictionaries overlap but the overlapping contigs occur in different
+                    default:
+                        throw new TribbleException(
+                                getHeaderDictionaryFailureMessage(
+                                        candidateDictionary, sourceHeader, sourceDictionary, compatibility));
+                }
+            }
+        }
+        return candidateDictionary;
+    }
+
+    private static String getHeaderDictionaryFailureMessage(
+            final SAMSequenceDictionary commonSequenceDictionary,
+            final VCFHeader sourceHeader,
+            final SAMSequenceDictionary sourceSequenceDictionary,
+            final SequenceDictionaryCompatibility failureReason) {
+        // return a nice long message that attempts to print out as much of the offending context as is reasonable,
+        // without printing the entire context, since the headers and sequence dictionaries can have thousands of entries
+        return String.format(
+                "Attempt to merge a VCFHeader containing a sequence dictionary that is incompatible with other merged headers, failed due to %s:" +
+                        "\n\nHeader Dictionary:\n\n%1.2000s\n\nCommon Dictionary:\n\n%1.2000s\n\nSource Header:\n\n%1.2000s",
+                failureReason,
+                sourceSequenceDictionary.getSequences().stream().map(SAMSequenceRecord::toString).collect(Collectors.joining("\n")),
+                commonSequenceDictionary.getSequences().stream().map(SAMSequenceRecord::toString).collect(Collectors.joining("\n")),
+                sourceHeader.getContigLines().stream().map(VCFContigHeaderLine::toString).collect(Collectors.joining("\n")));
     }
 
     /**
