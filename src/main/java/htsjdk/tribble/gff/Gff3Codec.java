@@ -73,7 +73,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private int currentLine = 0;
 
     /** give a chance filter out some keys in the EXTRA_FIELDS column */
-    private Predicate<String> acceptExtraFieldKey = KEY -> true;
+    private Predicate<String> filterOutAttribute = KEY -> false;
     
     public Gff3Codec() {
         this(DecodeDepth.DEEP);
@@ -90,18 +90,18 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     }
 
     /** set a Predicate to give a chance to filter out some fields in the extra-fields column in order to reduce the memory burden.
-     * The default predicate accepts all
-     * @param acceptExtraFieldKey the predicate
+     * The default predicate keeps all
+     * @param filterOutAttribute the predicate
      * @return this codec
      */
-    public Gff3Codec setExtraFieldPredicate(final Predicate<String> acceptExtraFieldKey) {
+    public Gff3Codec setFilterOutAttribute(final Predicate<String> filterOutAttribute) {
         /* check required keys are always kept */
         for(final String key : new String[] {Gff3Constants.PARENT_ATTRIBUTE_KEY,Gff3BaseData.ID_ATTRIBUTE_KEY,Gff3BaseData.NAME_ATTRIBUTE_KEY}) {
-        if (!acceptExtraFieldKey.test(key)) {
+        if (filterOutAttribute.test(key)) {
             throw new IllegalArgumentException("Predicate should always accept " + key);
             }
         }
-        this.acceptExtraFieldKey = acceptExtraFieldKey;
+        this.filterOutAttribute = filterOutAttribute;
         return this;
         }
     
@@ -238,7 +238,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
             final Map<String, List<String>> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
             /* remove attibutes if they fail 'acceptExtraFieldKey' */
-            attributes.keySet().removeIf(KEY->!this.acceptExtraFieldKey.test(KEY));
+            attributes.keySet().removeIf(KEY->this.filterOutAttribute.test(KEY));
             return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
         } catch (final NumberFormatException ex ) {
             throw new TribbleException("Cannot read integer value for start/end position from line " + currentLine + ".  Line is: " + line, ex);
