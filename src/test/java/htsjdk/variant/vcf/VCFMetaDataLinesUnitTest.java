@@ -71,27 +71,27 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     @Test
     public void testRetainFullHeaderLines() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines();
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines();
 
-        Assert.assertEquals(md.getMetaDataInInputOrder().size(), unitTestData.getFullMetaDataLinesAsSet().size());
-        Assert.assertEquals(md.getMetaDataInSortedOrder().size(), unitTestData.getFullMetaDataLinesAsSet().size());
+        Assert.assertEquals(md.getMetaDataInInputOrder().size(), unitTestData.getTestMetaDataLinesSet().size());
+        Assert.assertEquals(md.getMetaDataInSortedOrder().size(), unitTestData.getTestMetaDataLinesSet().size());
 
-        Assert.assertEquals(unitTestData.formatLines, md.getFormatHeaderLines());
-        Assert.assertEquals(unitTestData.filterLines, md.getFilterLines());
-        Assert.assertEquals(unitTestData.infoLines, md.getInfoHeaderLines());
-        Assert.assertEquals(unitTestData.contigLines, md.getContigLines());
-        Assert.assertEquals(unitTestData.filterLines, md.getFilterLines());
+        Assert.assertEquals(unitTestData.getTestFormatLines(), md.getFormatHeaderLines());
+        Assert.assertEquals(unitTestData.getTestFilterLines(), md.getFilterLines());
+        Assert.assertEquals(unitTestData.getTestInfoLines(), md.getInfoHeaderLines());
+        Assert.assertEquals(unitTestData.getTestContigLines(), md.getContigLines());
+        Assert.assertEquals(unitTestData.getTestFilterLines(), md.getFilterLines());
 
         Set<VCFHeaderLine> otherLines = new LinkedHashSet<>();
-        otherLines.addAll(unitTestData.fileformatLines);
-        otherLines.addAll(unitTestData.miscLines);
+        otherLines.addAll(unitTestData.getTestDefaultFileFormatLine());
+        otherLines.addAll(unitTestData.getTestMiscellaneousLines());
         Assert.assertEquals(otherLines, md.getOtherHeaderLines());
     }
 
     @Test
     public void testAddRemoveOtherMetaDataLine() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines();
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines();
 
         int beforeAllSize = md.getMetaDataInInputOrder().size();
         int beforeStructuredSize = md.getIDHeaderLines().size();
@@ -115,7 +115,7 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     @Test
     public void testAddRemoveUniqueStructuredLine() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines();
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines();
 
         int beforeAllSize = md.getMetaDataInInputOrder().size();
         int beforeStructuredSize = md.getIDHeaderLines().size();
@@ -142,7 +142,7 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     @Test
     public void testAddRemoveDuplicateStructuredLine() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines();
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines();
 
         int beforeAllSize = md.getMetaDataInInputOrder().size();
         int beforeStructuredSize = md.getIDHeaderLines().size();
@@ -173,31 +173,31 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     @Test
     public void testGetEquivalentHeaderLine() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines();
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines();
         Assert.assertEquals(md.getFilterHeaderLine(
-                unitTestData.filterLines.get(0).getID()),
-                md.hasEquivalentHeaderLine(unitTestData.filterLines.get(0)));
+                unitTestData.getTestFilterLines().get(0).getID()),
+                md.hasEquivalentHeaderLine(unitTestData.getTestFilterLines().get(0)));
     }
 
     @Test
     public void testGetFilterHeaderLine() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines();
-        Assert.assertEquals(md.getFilterHeaderLine(unitTestData.filterLines.get(0).getID()), unitTestData.filterLines.get(0));
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines();
+        Assert.assertEquals(md.getFilterHeaderLine(unitTestData.getTestFilterLines().get(0).getID()), unitTestData.getTestFilterLines().get(0));
     }
 
     @Test
     public void testGetInfoHeaderLine() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines();
-        Assert.assertEquals(md.getInfoHeaderLine(unitTestData.infoLines.get(0).getID()), unitTestData.infoLines.get(0));
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines();
+        Assert.assertEquals(md.getInfoHeaderLine(unitTestData.getTestInfoLines().get(0).getID()), unitTestData.getTestInfoLines().get(0));
     }
 
     @Test
     public void testGetFormatHeaderLine() {
         VCFHeaderUnitTestData testData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = testData.getFullMetaDataLines();
-        Assert.assertEquals(md.getFormatHeaderLine(testData.formatLines.get(0).getID()), testData.formatLines.get(0));
+        VCFMetaDataLines md = testData.getTestMetaDataLines();
+        Assert.assertEquals(md.getFormatHeaderLine(testData.getTestFormatLines().get(0).getID()), testData.getTestFormatLines().get(0));
     }
 
     @DataProvider(name="conflictingVCFVersions")
@@ -212,29 +212,29 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     @Test(dataProvider="conflictingVCFVersions", expectedExceptions = TribbleException.class)
     public void testValidateMetaDataLinesConflictingVersion(final VCFHeaderVersion vcfVersion) {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines(); // contains a VCFv42 fileformat line
         md.validateMetaDataLines(vcfVersion);
     }
 
     @Test(dataProvider="conflictingVCFVersions", expectedExceptions = TribbleException.class)
     public void testValidateMetaDataLineConflictingVersion(final VCFHeaderVersion vcfVersion) {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines(); // contains a VCFv42 fileformat line
         md.getMetaDataInInputOrder().forEach(hl -> hl.validateForVersion(vcfVersion));
     }
 
-    //TODO neither of these tests test anything in VCFMetaDataLines
+    //TODO neither of these tests test anything in VCFMetaDataLines ??
     @Test
     public void testValidateMetaDataLinesValidVersion() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines(); // contains a VCFv42 fileformat line
         md.validateMetaDataLines(unitTestData.canonicalVersion);
     }
 
     @Test
     public void testValidateMetaDataLineValidVersion() {
         VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        VCFMetaDataLines md = unitTestData.getFullMetaDataLines(); // contains a VCFv42 fileformat line
+        VCFMetaDataLines md = unitTestData.getTestMetaDataLines(); // contains a VCFv42 fileformat line
         md.getMetaDataInInputOrder().forEach(hl -> hl.validateForVersion(unitTestData.canonicalVersion));
     }
 }

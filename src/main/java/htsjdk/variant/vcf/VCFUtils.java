@@ -86,7 +86,7 @@ public class VCFUtils {
     public static Set<VCFHeaderLine> smartMergeHeaders(
             final Collection<VCFHeader> headers,
             final boolean emitWarnings) throws IllegalStateException {
-        return VCFHeader.getMergedHeaderLines(headers, emitWarnings);
+        return VCFHeaderMerger.getMergedHeaderLines(headers, emitWarnings);
     }
 
     /**
