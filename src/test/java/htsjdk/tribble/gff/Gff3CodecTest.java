@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -69,6 +70,26 @@ public class Gff3CodecTest extends HtsjdkTest {
         Assert.assertEquals(countTotalFeatures, expectedTotalFeatures);
     }
 
+    @Test(dataProvider = "basicDecodeDataProvider")
+    public void codecFilterExtraFieldTest(final Path inputGff3, final int expectedTotalFeatures) throws IOException {
+        final Gff3Codec codec = new Gff3Codec(Gff3Codec.DecodeDepth.SHALLOW);
+        Assert.assertTrue(codec.canDecode(inputGff3.toAbsolutePath().toString()));
+        final Set<String> skip_attributes = new HashSet<>(Arrays.asList("version","rank","biotype","transcript_support_level","mgi_id","havana_gene","tag"));
+        codec.setExtraFieldPredicate(S -> !skip_attributes.contains(S));
+        final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputGff3.toAbsolutePath().toString(), null,codec, false);
+        int countTotalFeatures = 0;
+        for (final Gff3Feature feature : reader.iterator()) {
+            for(final String key : skip_attributes) {
+                Assert.assertTrue(feature.getAttribute(key).isEmpty());
+            }
+            countTotalFeatures++;
+        }
+
+        Assert.assertEquals(countTotalFeatures, expectedTotalFeatures);
+    }
+
+    
+    
     @Test(dataProvider = "basicDecodeDataProvider")
     public void basicShallowDecodeTest(final Path inputGff3, final int expectedTotalFeatures) throws IOException {
         Assert.assertTrue((new Gff3Codec(Gff3Codec.DecodeDepth.SHALLOW)).canDecode(inputGff3.toAbsolutePath().toString()));

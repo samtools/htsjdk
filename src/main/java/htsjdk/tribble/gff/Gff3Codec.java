@@ -22,6 +22,7 @@ import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -71,6 +72,9 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     private int currentLine = 0;
 
+    /** give a chance filter out some keys in the EXTRA_FIELDS column */
+    private Predicate<String> acceptExtraFieldKey = KEY -> true;
+    
     public Gff3Codec() {
         this(DecodeDepth.DEEP);
     }
@@ -85,6 +89,22 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         SHALLOW
     }
 
+    /** set a Predicate to give a chance to filter out some fields in the extra-fields column in order to reduce the memory burden.
+     * The default predicate accepts all
+     * @param acceptExtraFieldKey the predicate
+     * @return this codec
+     */
+    public Gff3Codec setExtraFieldPredicate(final Predicate<String> acceptExtraFieldKey) {
+        /* check required keys are always kept */
+        for(final String key : new String[] {Gff3Constants.PARENT_ATTRIBUTE_KEY,Gff3BaseData.ID_ATTRIBUTE_KEY,Gff3BaseData.NAME_ATTRIBUTE_KEY}) {
+        if (!acceptExtraFieldKey.test(key)) {
+            throw new IllegalArgumentException("Predicate should always accept " + key);
+            }
+        }
+        this.acceptExtraFieldKey = acceptExtraFieldKey;
+        return this;
+        }
+    
     @Override
     public Gff3Feature decode(final LineIterator lineIterator) throws IOException {
         return decode(lineIterator, decodeDepth);
@@ -200,7 +220,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         return attributes;
     }
 
-    static private Gff3BaseData parseLine(final String line, final int currentLine) {
+    private Gff3BaseData parseLine(final String line, final int currentLine) {
         final List<String> splitLine = ParsingUtils.split(line, Gff3Constants.FIELD_DELIMITER);
 
         if (splitLine.size() != NUM_FIELDS) {
@@ -217,6 +237,8 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(Gff3Constants.UNDEFINED_FIELD_VALUE) ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
             final Map<String, List<String>> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
+            /* remove attibutes if they fail 'acceptExtraFieldKey' */
+            attributes.keySet().removeIf(KEY->!this.acceptExtraFieldKey.test(KEY));
             return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
         } catch (final NumberFormatException ex ) {
             throw new TribbleException("Cannot read integer value for start/end position from line " + currentLine + ".  Line is: " + line, ex);

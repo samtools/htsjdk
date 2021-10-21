@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 public class Gff3BaseData {
-    private static final String ID_ATTRIBUTE_KEY = "ID";
-    private static final String NAME_ATTRIBUTE_KEY = "Name";
+    static final String ID_ATTRIBUTE_KEY = "ID";
+    static final String NAME_ATTRIBUTE_KEY = "Name";
     private static final String ALIAS_ATTRIBUTE_KEY = "Alias";
     private final String contig;
     private final String source;
