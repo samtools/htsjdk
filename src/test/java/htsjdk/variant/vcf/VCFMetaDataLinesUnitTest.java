@@ -10,6 +10,7 @@ import java.util.*;
 
 public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
 
+    //TODO: need to update these test cases
     @DataProvider(name="keyCollisions")
     public Object[][] keyCollisions() {
         return new Object[][]{
@@ -60,8 +61,7 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="keyCollisions")
-    public void testKeyCollision(final VCFHeaderLine line1, final VCFHeaderLine line2, final boolean expectCollision)
-    {
+    public void testKeyCollision(final VCFHeaderLine line1, final VCFHeaderLine line2, final boolean expectCollision) {
         VCFMetaDataLines mdLines = new VCFMetaDataLines();
         mdLines.addMetaDataLine(line1);
         mdLines.addMetaDataLine(line2);

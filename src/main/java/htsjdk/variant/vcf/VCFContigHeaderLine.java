@@ -116,6 +116,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
      *
      * @return VCFContigHeaderLine for the SAMSequenceRecord
      */
+    //TODO: if this is new in my branch, add tests, otherwise remove it
     public VCFContigHeaderLine(final SAMSequenceRecord sequenceRecord, final String assembly) {
         // preserve order of keys in contig line (ID, length, assembly)
         this(new LinkedHashMap<String, String>() {{

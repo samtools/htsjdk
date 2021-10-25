@@ -370,21 +370,21 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
                 // number, then this value should be 1. However, if the INFO field describes a pair
                 // of numbers, then this value should be 2 and so on. If the number of possible
                 // values varies, is unknown, or is unbounded, then this value should be '.'.
-                conflictWarner.warn(line1, "Promoting header field Number to . due to number differences in header lines: " + line1 + " " + line2);
+                conflictWarner.warn("Promoting header field Number to . due to number differences in header lines: " + line1 + " " + line2);
                 newLine = compoundHeaderLineResolver.apply(line1, line2);
             } else if (line1.getType() == VCFHeaderLineType.Integer && line2.getType() == VCFHeaderLineType.Float) {
                 // promote key to Float
-                conflictWarner.warn(line1, "Promoting Integer to Float in header: " + line2);
+                conflictWarner.warn("Promoting Integer to Float in header: " + line2);
                 newLine = line2;
             } else if (line1.getType() == VCFHeaderLineType.Float && line2.getType() == VCFHeaderLineType.Integer) {
                 // promote key to Float
-                conflictWarner.warn(line1, "Promoting Integer to Float in header: " + line2);
+                conflictWarner.warn("Promoting Integer to Float in header: " + line2);
             } else {
                 throw new IllegalStateException("Incompatible header types, collision between these two types: " + line1 + " " + line2);
             }
         }
         if (!line1.getDescription().equals(line2.getDescription())) {
-            conflictWarner.warn(line1, "Allowing unequal description fields through: keeping " + line2 + " excluding " + line1);
+            conflictWarner.warn("Allowing unequal description fields through: keeping " + line2 + " excluding " + line1);
         }
 
         return newLine;

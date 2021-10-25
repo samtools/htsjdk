@@ -655,9 +655,9 @@ public class VCFHeader implements Serializable {
             this.emitWarnings = emitWarnings;
         }
 
-        public void warn(final VCFHeaderLine line, final String msg) {
-            if ( emitWarnings && ! alreadyIssued.contains(line.getKey()) ) {
-                alreadyIssued.add(line.getKey());
+        public void warn(final String msg) {
+            if ( emitWarnings && ! alreadyIssued.contains(msg) ) {
+                alreadyIssued.add(msg);
                 logger.warn(msg);
             }
         }

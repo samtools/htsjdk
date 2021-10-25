@@ -1,5 +1,7 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
@@ -10,10 +12,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 public class VCFHeaderMergerUnitTest extends VariantBaseTest {
 
@@ -160,19 +164,9 @@ public class VCFHeaderMergerUnitTest extends VariantBaseTest {
                 fullHeader.getMetaDataInSortedOrder());
     }
 
-    @DataProvider
-    public Object[][] testDictionaryMergingData() {
-        return new Object[][]{
-                {"diagnosis_targets_testfile.vcf"},  // numerically ordered contigs
-
-                //TODO: this fails now because the test file has lexicographically ordered contigs
-                //{"dbsnp_135.b37.1000.vcf"}          // lexicographically ordered contigs
-        };
-    }
-
-    @Test(dataProvider = "testDictionaryMergingData")
-    public void testDictionaryMerging(final String vcfFileName) {
-        final VCFHeader headerOne = new VCFFileReader(new File(variantTestDataRoot + vcfFileName), false).getFileHeader();
+    @Test
+    public void testDictionaryMergingDuplicateFile() {
+        final VCFHeader headerOne = new VCFFileReader(new File(variantTestDataRoot + "diagnosis_targets_testfile.vcf"), false).getFileHeader();
         final VCFHeader headerTwo = new VCFHeader(headerOne); // deep copy
         final List<String> sampleList = new ArrayList<>();
         sampleList.addAll(headerOne.getSampleNamesInOrder());
@@ -188,7 +182,136 @@ public class VCFHeaderMergerUnitTest extends VariantBaseTest {
     }
 
     // test merging dictionary subsets, in each direction
-    // test failure for unmergable dictionaries
+    // test failure for unmergeable dictionaries
+    //      use MultiVariantDataSourceUnitTest.testGetName and testGetSequenceDictionary test cases (have disjoint dictionaries)
+    // test merging headers where one or both have no sequence dictionary
+    //      make sure merging succeeds as long as NONE of the headers have a sequence dictionary ?
+
     // test merging across versions with lines that fail the new version (PEDIGREE, ALT ?)
     // test mering where compound lines have different attributes
+
+    @DataProvider(name="vcfHeaderDictionaryMergePositive")
+    private Object[][] getVCFHeaderDictionaryMergePositive() {
+        return new Object[][] {
+                {
+                    // input dictionary list, expected merged dictionary
+                        Arrays.asList(
+                                createTestVCFHeaderWithSAMDictionary(createTestSAMDictionary(1, 2)),
+                                createTestVCFHeaderWithSAMDictionary(createTestSAMDictionary(1, 2))
+                        ),
+                        createTestSAMDictionary(1, 2)
+                }
+        };
+    }
+
+    @Test(dataProvider = "vcfHeaderDictionaryMergePositive")
+    private void testVCFHeaderDictionaryMergePositive(
+            final List<VCFHeader> sourceHeaders, final SAMSequenceDictionary expectedDictionary) {
+        final Set<VCFHeaderLine> mergedHeaderLines = VCFHeaderMerger.getMergedHeaderLines(sourceHeaders, false);
+        final VCFHeader mergedHeader = new VCFHeader(mergedHeaderLines);
+        Assert.assertEquals(mergedHeader.getSequenceDictionary(), expectedDictionary);
+    }
+
+    @DataProvider(name="vcfHeaderDictionaryMergeNegative")
+    private Object[][] getVCFHeaderDictionaryMergeNegative() {
+        final SAMSequenceDictionary canonicalHumanOrder = getDictionaryInCanonicalHumanOrder();
+        final SAMSequenceDictionary nonCanonicalHumanOrder = getDictionaryInNonCanonicalHumanOrder();
+        final SAMSequenceDictionary dictionaryWithLengths100 = getDictionaryWithLengths(100);
+        final SAMSequenceDictionary dictionaryWithLengths200 =  getDictionaryWithLengths(200);
+
+        final SAMSequenceDictionary forwardDictionary = createTestSAMDictionary(1, 2);
+        final SAMSequenceDictionary reverseDictionary = createReverseDictionary(forwardDictionary);
+
+        return new Object[][] {
+                {
+                    // SequenceDictionaryCompatibility.NO_COMMON_CONTIGS
+                        Arrays.asList(
+                                createTestVCFHeaderWithSAMDictionary(createTestSAMDictionary(1, 2)),
+                                createTestVCFHeaderWithSAMDictionary(createTestSAMDictionary(5, 2)))
+                },
+                {
+                    // SequenceDictionaryCompatibility.OUT_OF_ORDER
+                        Arrays.asList(
+                                createTestVCFHeaderWithSAMDictionary(forwardDictionary),
+                                createTestVCFHeaderWithSAMDictionary(reverseDictionary))
+                },
+                {
+                    // SequenceDictionaryCompatibility.UNEQUAL_COMMON_CONTIGS common subset has contigs that have the same name but different lengths
+                        Arrays.asList(
+                                createTestVCFHeaderWithSAMDictionary(dictionaryWithLengths100),
+                                createTestVCFHeaderWithSAMDictionary(dictionaryWithLengths200))
+                },
+                {
+                    // SequenceDictionaryCompatibility.NON_CANONICAL_HUMAN_ORDER human reference detected but the order of the contigs is non-standard (lexicographic, for example)
+                        Arrays.asList(
+                                createTestVCFHeaderWithSAMDictionary(getDictionaryInCanonicalHumanOrder()),
+                                createTestVCFHeaderWithSAMDictionary(getDictionaryInNonCanonicalHumanOrder()))
+                },
+        };
+    }
+
+    @Test(dataProvider = "vcfHeaderDictionaryMergeNegative", expectedExceptions = TribbleException.class)
+    private void testVCFHeaderDictionaryMergeNegative(final List<VCFHeader> sourceHeaders) {
+        VCFHeaderMerger.getMergedHeaderLines(sourceHeaders, false);
+    }
+
+    private final SAMSequenceDictionary createTestSAMDictionary(final int startSequence, final int numSequences) {
+        final SAMSequenceDictionary samDictionary = new SAMSequenceDictionary();
+        IntStream.range(startSequence, startSequence + numSequences + 1).forEachOrdered(
+                i -> samDictionary.addSequence(new SAMSequenceRecord(Integer.valueOf(i).toString(), i)));
+        return samDictionary;
+    }
+
+    private final VCFHeader createTestVCFHeaderWithSAMDictionary(final SAMSequenceDictionary samDictionary) {
+        final VCFHeader vcfHeader = createTestVCFHeader();
+        vcfHeader.setSequenceDictionary(samDictionary);
+        return vcfHeader;
+    }
+
+    private SAMSequenceDictionary getDictionaryInNonCanonicalHumanOrder() {
+        final List<SAMSequenceRecord> sequences = new ArrayList<>();
+        sequences.add(new SAMSequenceRecord("1", 100));
+        sequences.add(new SAMSequenceRecord("10", 100));
+        sequences.add(new SAMSequenceRecord("2", 100));
+        return new SAMSequenceDictionary(sequences);
+    }
+
+    private SAMSequenceDictionary getDictionaryInCanonicalHumanOrder() {
+        final List<SAMSequenceRecord> sequences = new ArrayList<>();
+        sequences.add(new SAMSequenceRecord("1", 100));
+        sequences.add(new SAMSequenceRecord("2", 100));
+        sequences.add(new SAMSequenceRecord("10", 100));
+        return new SAMSequenceDictionary(sequences);
+    }
+
+    private SAMSequenceDictionary getDictionaryWithLengths(final int length) {
+        final List<SAMSequenceRecord> sequences = new ArrayList<>();
+        sequences.add(new SAMSequenceRecord("1", length));
+        sequences.add(new SAMSequenceRecord("2", length));
+        sequences.add(new SAMSequenceRecord("3", length));
+        return new SAMSequenceDictionary(sequences);
+
+    }
+
+    private SAMSequenceDictionary createReverseDictionary(final SAMSequenceDictionary forwardDictionary){
+        // its not sufficient to just reverse the order of the sequences, since VCFHeader honors the contig
+        // indices, but SAMSequenceDictionary mutates them to match the input order, so we need to create
+        // an entirely new sequence dictionary using entirely new sequence records with contig indices that
+        // match the input order
+        final List<SAMSequenceRecord> reverseSequences = new ArrayList<>(forwardDictionary.getSequences());
+        Collections.reverse(reverseSequences);
+        final SAMSequenceDictionary reverseDictionary = new SAMSequenceDictionary();
+        for (final SAMSequenceRecord samSequenceRecord : reverseSequences) {
+            final SAMSequenceRecord newSequenceRecord = new SAMSequenceRecord(
+                    samSequenceRecord.getSequenceName(),
+                    samSequenceRecord.getSequenceLength());
+            reverseDictionary.addSequence(newSequenceRecord);
+        }
+        return reverseDictionary;
+    }
+
+    private final VCFHeader createTestVCFHeader() {
+        return new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION));
+    }
+
 }

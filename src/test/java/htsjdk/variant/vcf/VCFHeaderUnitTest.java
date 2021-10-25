@@ -281,6 +281,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testGetContigLinesHonorsSortOrder() {
+        // NOTE: this test file has *lexicographically* ordered contigs
         try (final VCFFileReader vcfReader = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
             // start with a header with a bunch of contig lines
             final VCFHeader header = vcfReader.getFileHeader();
