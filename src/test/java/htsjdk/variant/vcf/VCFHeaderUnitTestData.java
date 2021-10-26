@@ -1,5 +1,6 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.SynchronousLineReader;
 import org.testng.Assert;
@@ -9,12 +10,12 @@ import java.util.*;
 
 // Unit test data used by unit tests for VCFHeader, VCFMetaDataLines, and VCFHeaderLine hierarchy.
 public class VCFHeaderUnitTestData {
-    public final static VCFHeaderVersion canonicalVersion = VCFHeader.DEFAULT_VCF_VERSION;
+    public final static VCFHeaderVersion TEST_VERSION = VCFHeader.DEFAULT_VCF_VERSION;
 
     // fileformat line
     public static List<VCFHeaderLine> getTestDefaultFileFormatLine() {
         return new ArrayList<VCFHeaderLine>() {{
-            add(VCFHeader.makeHeaderVersionLine(canonicalVersion));
+            add(VCFHeader.makeHeaderVersionLine(TEST_VERSION));
         }};
     }
 
@@ -120,8 +121,6 @@ public class VCFHeaderUnitTestData {
                         "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
     }
 
-
-    //TODO: what IS this thing ?
     public static final String VCF42headerStrings_with_negativeOne =
             "##fileformat=VCFv4.2\n" +
                     "##filedate=2010-06-21\n" +
@@ -146,14 +145,14 @@ public class VCFHeaderUnitTestData {
         final Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWITHFormatString();
         final VCFMetaDataLines metaDataLines = new VCFMetaDataLines();
         metaDataLines.addMetaDataLines(metaDataSet);
-        final VCFHeaderLine versionLine = metaDataLines.getFileFormatLine();
+        final VCFHeaderLine versionLine = metaDataLines.getExistingFileFormatLine();
         Assert.assertEquals(
                 VCFHeaderVersion.toHeaderVersion(versionLine.getValue()),
                 VCFHeaderVersion.VCF4_2);
 
         // remove the 4.2 version line from the original set, verify, and return the set with no fileformat string
         metaDataSet.remove(versionLine);
-        Assert.assertNull(VCFHeader.getVersionLineFromHeaderLineSet(metaDataSet));
+        Assert.assertNull(getVersionLineFromHeaderLineSet(metaDataSet));
         return metaDataSet;
     }
 
@@ -174,6 +173,31 @@ public class VCFHeaderUnitTestData {
                 new LineIteratorImpl(new SynchronousLineReader(new StringReader(headerStr))));
         Assert.assertEquals(header.getMetaDataInInputOrder().size(), VCF_4_HEADER_STRING_COUNT);
         return header;
+    }
+
+    /**
+     * Find and return the VCF fileformat/version line
+     *
+     * Return null if no fileformat/version lines are found
+     */
+    private static VCFHeaderLine getVersionLineFromHeaderLineSet(final Set<VCFHeaderLine> metaDataLines) {
+        VCFHeaderLine versionLine = null;
+        final List<VCFHeaderLine> formatLines = new ArrayList<>();
+        for (final VCFHeaderLine headerLine : metaDataLines) {
+            if (VCFHeaderVersion.isFormatString(headerLine.getKey())) {
+                formatLines.add(headerLine);
+            }
+        }
+
+        if (!formatLines.isEmpty()) {
+            if (formatLines.size() > 1) {
+                //throw if there are duplicate version lines
+                throw new TribbleException("Multiple version header lines found in header line list");
+            }
+            return formatLines.get(0);
+        }
+
+        return versionLine;
     }
 
 }

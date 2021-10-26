@@ -6,9 +6,12 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.TribbleException;
 import htsjdk.utils.ValidationUtils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -64,30 +67,36 @@ public class VCFHeaderMerger {
                 // single line, so we use a more discriminating "hasEquivalentHeaderLine" to detect logical
                 // duplicates, and delegate to the individual header line implementations to do a smart
                 // reconciliation.
-                final VCFHeaderLine other = mergedMetaData.hasEquivalentHeaderLine(line);
+                final VCFHeaderLine other = mergedMetaData.findEquivalentHeaderLine(line);
                 if (other != null && !line.equals(other)) {
-                    if (!key.equals(other.getKey())) {
-                        throw new TribbleException(
-                                String.format("Attempt to merge incompatible header lines %s/%s", line.getKey(), other.getKey()));
-                    } else if (key.equals(VCFConstants.FORMAT_HEADER_KEY)) {
-                        // Delegate to the format line resolver
-                        mergedMetaData.addMetaDataLine(VCFFormatHeaderLine.getMergedFormatHeaderLine(
-                                (VCFFormatHeaderLine) line,
-                                (VCFFormatHeaderLine) other,
-                                conflictWarner)
+                    if (key.equals(VCFConstants.FORMAT_HEADER_KEY)) {
+                        // Delegate to the FORMAT line resolver
+                        mergedMetaData.addMetaDataLine(
+                                VCFFormatHeaderLine.getMergedFormatHeaderLine(
+                                    (VCFFormatHeaderLine) line,
+                                    (VCFFormatHeaderLine) other,
+                                    conflictWarner)
                         );
                     } else if (key.equals(VCFConstants.INFO_HEADER_KEY)) {
-                        // Delegate to the info line resolver
-                        mergedMetaData.addMetaDataLine(VCFInfoHeaderLine.getMergedInfoHeaderLine(
-                                (VCFInfoHeaderLine) line,
-                                (VCFInfoHeaderLine) other,
-                                conflictWarner)
+                        // Delegate to the INFO line resolver
+                        mergedMetaData.addMetaDataLine(
+                                VCFInfoHeaderLine.getMergedInfoHeaderLine(
+                                    (VCFInfoHeaderLine) line,
+                                    (VCFInfoHeaderLine) other,
+                                    conflictWarner)
                         );
+                    } else if (line.isIDHeaderLine()) {
+                        // equivalent ID header line, but not a compound(format/info) line, and also not strictly equal
+                        // to the existing line: preserve the existing line (this *may* drop attributes/values if the
+                        // dropped line has additional attributes)
+                        conflictWarner.warn(
+                                String.format("Dropping duplicate header line %s during header merge, retaining equivalent line %s",
+                                        line,
+                                        other));
                     } else {
-                        // same type of header line, but not compound(format/info), and also not equal,
-                        // so preserve the existing line; this *may* drop attributes/values.
-                        conflictWarner.warn("Ignoring header line already in map: this header line = " +
-                                line + " already present header = " + other);
+                        // a non-structured line with a duplicate key of an existing line, but a different value,
+                        // retain the new line in addition to the old one
+                        mergedMetaData.addMetaDataLine(line);
                     }
                 } else {
                     mergedMetaData.addMetaDataLine(line);
@@ -138,15 +147,30 @@ public class VCFHeaderMerger {
         return newestVersion;
     }
 
-    // Create a common sequence dictionary from a set of dictionaries in VCFHeaders, as long as the headers
-    // either have identical dictionaries, or dictionaries where one dictionary is a subset of another. It
-    // cannot merge any dictionary that has a (disjoint) contig that is not already ordered wrt/all other
-    // common contigs.
+    // Create a common sequence dictionary from the set of dictionaries in VCFHeaders, as long as
+    // the headers either have identical dictionaries, or each dictionary is a subset of a common
+    // superset that has all of the contigs ordered w/r/t each other. Otherwise throw.
     private static SAMSequenceDictionary getCommonSequenceDictionaryOrThrow(
             final Collection<VCFHeader> headers,
             final VCFHeader.HeaderConflictWarner conflictWarner) {
         SAMSequenceDictionary candidateDictionary = null;
-        for ( final VCFHeader sourceHeader : headers ) {
+
+        // Because we're doing pairwise comparisons and always selecting the best dictionary as
+        // our running candidate, we need to visit the headers in order of dictionary size
+        // (largest first). This prevents a premature failure where an individual pairwise
+        // comparison erroneously fails because the source is pairwise incompatible with the
+        // running candidate, and the common superset exists but we just haven't seen it yet.
+        final List<VCFHeader> headersByDictionarySize = new ArrayList<>(headers);
+        Collections.sort(
+                headersByDictionarySize,
+                new Comparator<VCFHeader>() {
+                    @Override
+                    public int compare(final VCFHeader hdr1, final VCFHeader hdr2) {
+                        return Integer.compare(getDictionarySize(hdr1), getDictionarySize(hdr2));
+                    }
+                }.reversed());
+
+        for ( final VCFHeader sourceHeader : headersByDictionarySize ) {
             final SAMSequenceDictionary sourceDictionary = sourceHeader.getSequenceDictionary();
             if (sourceDictionary != null) {
                 if (candidateDictionary == null) {
@@ -163,17 +187,12 @@ public class VCFHeaderMerger {
                         case SUPERSET:  // existing candidateDictionary is a superset of sourceDictionary, so keep it
                             break;
 
-                        case COMMON_SUBSET:
-                            // There exists a common subset of equivalent contigs, but that isn't sufficient for
-                            // merging purposes, unless one is a superset of the other. So, try again, in both comparison
-                            // directions, with checkContigOrdering off, to see if one is a superset of the other, and
-                            // if so retain the superset.
+                        case COMMON_SUBSET: // fall through
                         case DIFFERENT_INDICES:
-                            // The dictionaries have at least some common contigs, but with different relative indices.
-                            // For merging purposes, this is ok, as long as one dictionary is strict superset of the other,
-                            // since the superset has all of the contigs already ordered. So, try again, in both comparison
-                            // directions, with checkContigOrdering off, to see if one is a superset of the other, and
-                            // if so retain the superset.
+                            // There exists a common subset of contigs, but for merging purposes we have a slightly
+                            // stricter requirement, that one dictionary is a superset of the other. So try the
+                            // comparison again with checkContigOrdering off, in both directions. If one is a
+                            // superset of the other, retain the superset.
                             if (SAMSequenceDictionaryUtils.SequenceDictionaryCompatibility.SUPERSET ==
                                     SAMSequenceDictionaryUtils.compareDictionaries(
                                             candidateDictionary,
@@ -215,13 +234,19 @@ public class VCFHeaderMerger {
         return candidateDictionary;
     }
 
+    private static Integer getDictionarySize(final VCFHeader hdr) {
+        final SAMSequenceDictionary dictionary = hdr.getSequenceDictionary();
+        return dictionary == null ? 0 : dictionary.size();
+    }
+
     private static String createHeaderDictionaryFailureMessage(
             final SAMSequenceDictionary commonSequenceDictionary,
             final VCFHeader sourceHeader,
             final SAMSequenceDictionary sourceSequenceDictionary,
             final SAMSequenceDictionaryUtils.SequenceDictionaryCompatibility failureReason) {
-        // return a nice long message that attempts to print out as much of the offending context as is reasonable,
-        // without printing the entire context, since the headers and sequence dictionaries can have thousands of entries
+        // return a nice long message that includes as much of the offending context as is reasonable,
+        // without printing the entire context, since the headers and sequence dictionaries can have
+        // thousands of entries
         return String.format(
                 "Attempt to merge a VCFHeader sequence dictionary that is incompatible with the merger header, failed due to %s:" +
                         "\n\nHeader Dictionary:\n\n%1.2000s\n\nCommon Dictionary:\n\n%1.2000s\n\nSource Header:\n\n%1.2000s",

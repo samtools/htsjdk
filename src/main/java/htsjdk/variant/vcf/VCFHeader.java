@@ -26,9 +26,6 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceDictionaryUtils;
-import htsjdk.samtools.SAMSequenceDictionaryUtils.SequenceDictionaryCompatibility;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -228,31 +225,6 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * Find and return the VCF fileformat/version line
-     *
-     * Return null if no fileformat/version lines are found
-     */
-    protected static VCFHeaderLine getVersionLineFromHeaderLineSet(final Set<VCFHeaderLine> metaDataLines) {
-        VCFHeaderLine versionLine = null;
-        final List<VCFHeaderLine> formatLines = new ArrayList<>();
-        for (final VCFHeaderLine headerLine : metaDataLines) {
-            if (VCFHeaderVersion.isFormatString(headerLine.getKey())) {
-                formatLines.add(headerLine);
-            }
-        }
-
-        if (!formatLines.isEmpty()) {
-            if (formatLines.size() > 1) {
-                //throw if there are duplicate version lines
-                throw new TribbleException("Multiple version header lines found in header line list");
-            }
-            return formatLines.get(0);
-        }
-
-        return versionLine;
-    }
-
-    /**
      * Return all contig line in SORTED order, where the sort order is determined by contig index.
      * Note that this behavior differs from other VCFHeader methods that return lines in input oder.
      *
@@ -288,7 +260,9 @@ public class VCFHeader implements Serializable {
      */
     public void setSequenceDictionary(final SAMSequenceDictionary dictionary) {
         getContigLines().forEach(hl -> mMetaData.removeMetaDataLine(hl));
-        dictionary.getSequences().forEach(r -> addMetaDataLine(new VCFContigHeaderLine(r, r.getAssembly())));
+        if (dictionary != null) {
+            dictionary.getSequences().forEach(r -> addMetaDataLine(new VCFContigHeaderLine(r, r.getAssembly())));
+        }
     }
 
     public VariantContextComparator getVCFRecordComparator() {
@@ -476,6 +450,22 @@ public class VCFHeader implements Serializable {
      */
     public List<VCFHeaderLine> getOtherHeaderLines(final String key) {
         return mMetaData.getOtherHeaderLines().stream().filter(hl -> hl.getKey().equals(key)).collect(Collectors.toList());
+    }
+
+    /**
+     * Adds a single "other" VCFHeaderLine that has key "key". Any lines with that key that already exist
+     * in the header will be removed. This method can only be used to set unique non-structured (non-ID)
+     * header lines.
+     *
+     * @param uniqueLine the unique line to add
+     * @throws TribbleException if the line to be added is an ID line.
+     */
+    public void addOtherHeaderLineUnique(final VCFHeaderLine uniqueLine) {
+        if (uniqueLine.isIDHeaderLine()) {
+            throw new TribbleException(String.format("Only non-ID header lines can be added using this method: %s", uniqueLine));
+        }
+        getOtherHeaderLines(uniqueLine.getKey()).forEach(hl -> mMetaData.removeMetaDataLine(hl));
+        addMetaDataLine(uniqueLine);
     }
 
     /**

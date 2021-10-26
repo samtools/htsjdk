@@ -44,7 +44,7 @@ public class VCFUtilsTest extends HtsjdkTest {
 
         final VCFMetaDataLines metaDataLines = new VCFMetaDataLines();
         metaDataLines.addMetaDataLines(mergedHeaderLines);
-        final VCFHeaderLine versionLine = metaDataLines.getFileFormatLine();
+        final VCFHeaderLine versionLine = metaDataLines.getExistingFileFormatLine();
         Assert.assertEquals(VCFHeaderVersion.toHeaderVersion(versionLine.getValue()), expectedVersion);
     }
 
