@@ -15,7 +15,7 @@ jobs:
           - java: 17
             experimental: true
       fail-fast: false
-    continue-on-error: {{ matrix.experimental }}
+    continue-on-error: ${{ matrix.experimental }}
     name: Java ${{ matrix.Java }} build and test
     steps:
       - uses: actions/checkout@v2
