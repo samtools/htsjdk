@@ -33,10 +33,9 @@ import java.util.Arrays;
 /**
  *  An implementation of {@link Allele} which includes a byte[] of the bases in the allele or the symbolic name.
  *
- *  This has been made public in order to maintain backwards compatibilty and act as a base for classes which previously
- *  subclassed Allele before it was converted into an interface.
+ *  This has been made public as a base for classes which need to subclass Allele.
  *
- *  Most users should create alleles using {@link Allele#create(byte)} instead of interacting with this class directly.
+ *  Most users should create alleles using {@link Allele#create(byte[])} instead of interacting with this class directly.
  */
 public class SimpleAllele implements Allele {
 
