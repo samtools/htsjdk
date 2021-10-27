@@ -11,9 +11,10 @@ jobs:
     strategy:
       matrix:
         java: [ 8, 11, 17 ]
+        experimental: [false]
         include:
           - java: 17
-            experimental: [true]
+            experimental: true
       fail-fast: false
     continue-on-error: ${{ matrix.experimental }}
     name: Java ${{ matrix.Java }} build and test
