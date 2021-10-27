@@ -1,7 +1,11 @@
 # This is a github actions workflow which runs htsjdk tests and spotbugs.
 
-name: Java CI with Gradle
-on: [pull_request, workflow_dispatch]
+name: Build and Test
+on:
+  push:
+    branches: [master]
+  pull_request
+  workflow_dispatch
 
 jobs:
   test:
