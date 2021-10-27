@@ -1,5 +1,5 @@
 [![Coverage Status](https://codecov.io/gh/samtools/htsjdk/branch/master/graph/badge.svg)](https://codecov.io/gh/samtools/htsjdk)
-[![Build and Test](https://github.com/samtools/htsjdk/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/samtools/htsjdk/actions/workflows/tests.yml)
+[![Build and Test](https://github.com/samtools/htsjdk/actions/workflows/tests.yml/badge.svg?branch=master&event=push)](https://github.com/samtools/htsjdk/actions/workflows/tests.yml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.samtools/htsjdk/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.samtools%22%20AND%20a%3A%22htsjdk%22)
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/samtools/htsjdk)
 [![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
