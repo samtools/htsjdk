@@ -12,9 +12,9 @@ jobs:
       matrix:
         java: [ 8, 11 ]
         experimental: [false]
-        include:
-          - java: 17
-            experimental: true
+#        include:
+#          - java: 17
+#            experimental: true
       fail-fast: false
     continue-on-error: ${{ matrix.experimental }}
     name: Java ${{ matrix.Java }} build and test
@@ -26,14 +26,14 @@ jobs:
           java-version: ${{ matrix.Java }}
           distribution: 'adopt'
           cache: gradle
-      - name: Install Samtools
-        run: scripts/install-samtools.sh
-      - name: Start the htsget server
-        run: scripts/htsget-scripts/start-htsget-test-server.sh
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Compile with Gradle
         run: ./gradlew compileJava
+      - name: Install Samtools
+        run: scripts/install-samtools.sh
+      - name: Start the htsget server
+        run: scripts/htsget-scripts/start-htsget-test-server.sh
       - name: Run tests
         run: ./gradlew test jacocoTestReport
       - name: Upload to codecov
