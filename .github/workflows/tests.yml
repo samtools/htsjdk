@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ 8, 11, 17]
+        java: [ 8, 11, 17 ]
         include:
           - java: 17
-            experimental: true
+            experimental: [true]
       fail-fast: false
     continue-on-error: ${{ matrix.experimental }}
     name: Java ${{ matrix.Java }} build and test
