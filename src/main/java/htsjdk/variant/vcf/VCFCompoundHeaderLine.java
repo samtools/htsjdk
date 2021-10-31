@@ -142,8 +142,21 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
     public VCFHeaderLineType getType() { return type; }
 
     public VCFHeaderLineCount getCountType() { return countType; }
+
+    /**
+     * @return true if this header line has a fixed integer count type ({@link #getCountType()}
+     * equals {@link VCFHeaderLineCount#INTEGER})
+     */
     public boolean isFixedCount() { return countType.isFixedCount(); }
 
+    /**
+     * @return the integer count for this header line if the header has a fixed integer
+     * count type ({@link #isFixedCount()} is true). A TribbleException is thrown if the
+     * header line does not have a fixed integer count type ({@link #getCountType()} equals
+     * {@link VCFHeaderLineCount#INTEGER}).
+     *
+     * @throws TribbleException if the {@link VCFHeaderLineCount} is not a fixed integer
+     */
     public int getCount() {
         if (!isFixedCount()) {
             throw new TribbleException("Header line count request when count type is not an integer");
@@ -348,7 +361,7 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
      *                                   format, and returns a new header line representing the combination of the
      *                                   two input header lines
      * @param <T> type of VCFCompoundHeaderLine to merge (subclass of VCFCompoundHeaderLine)
-     * @return
+     * @return the merged line if one can be created
      */
     static <T extends VCFCompoundHeaderLine> T getMergedCompoundHeaderLine(
             final T line1,
@@ -356,38 +369,46 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
             final VCFHeader.HeaderConflictWarner conflictWarner,
             BiFunction<T, T, T> compoundHeaderLineResolver)
     {
-        ValidationUtils. nonNull(line1);
-        ValidationUtils. nonNull(line2);
+        ValidationUtils.nonNull(line1);
+        ValidationUtils.nonNull(line2);
+        ValidationUtils.validateArg(line1.getKey().equals(line2.getKey()) && line1.getID().equals(line2.getID()),
+                "header lines must have the same type to merge");
+        T mergedLine = line1;
 
-        T newLine = line1;
-
-        // Note: this can drop extra attributes
         if (!line1.equalsExcludingExtraAttributes(line2)) {
+            if (getCompoundLineDifferenceScore(line1, line2) > 1) {
+                // merge lines if they have zero or one mergeable differences, but if there are multiple
+                // differences, call the headers incompatible and bail, since we need to choose one line
+                // or the other as the merge line (we can't do generic field-level resolution)
+                throw new TribbleException(
+                        String.format("Incompatible header merge, can't merge lines with multiple attribute differences %s/%s.",
+                                line1, line2));
+            }
             if (line1.getType().equals(line2.getType())) {
-                // The lines are different in some way, but have a common type.
+                // The lines have a common type.
                 // The Number entry is an Integer that describes the number of values that can be
                 // included with the INFO field. For example, if the INFO field contains a single
                 // number, then this value should be 1. However, if the INFO field describes a pair
                 // of numbers, then this value should be 2 and so on. If the number of possible
                 // values varies, is unknown, or is unbounded, then this value should be '.'.
                 conflictWarner.warn("Promoting header field Number to . due to number differences in header lines: " + line1 + " " + line2);
-                newLine = compoundHeaderLineResolver.apply(line1, line2);
+                mergedLine = compoundHeaderLineResolver.apply(line1, line2);
             } else if (line1.getType() == VCFHeaderLineType.Integer && line2.getType() == VCFHeaderLineType.Float) {
                 // promote key to Float
                 conflictWarner.warn("Promoting Integer to Float in header: " + line2);
-                newLine = line2;
+                mergedLine = line2;
             } else if (line1.getType() == VCFHeaderLineType.Float && line2.getType() == VCFHeaderLineType.Integer) {
                 // promote key to Float
                 conflictWarner.warn("Promoting Integer to Float in header: " + line2);
             } else {
-                throw new IllegalStateException("Incompatible header types, collision between these two types: " + line1 + " " + line2);
+                throw new IllegalStateException("Attempt to merge incompatible headers, can't merge these lines: " + line1 + " " + line2);
             }
         }
         if (!line1.getDescription().equals(line2.getDescription())) {
             conflictWarner.warn("Allowing unequal description fields through: keeping " + line2 + " excluding " + line1);
         }
 
-        return newLine;
+        return mergedLine;
     }
 
     boolean equalsExcludingExtraAttributes(final VCFCompoundHeaderLine other) {
@@ -398,4 +419,15 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
                 getID().equals(other.getID());
     }
 
+    private static <T extends VCFCompoundHeaderLine> int getCompoundLineDifferenceScore(final T line1, final T line2) {
+        final int dataTypeDiffers = line1.getType().equals(line2.getType()) ? 0 : 1; // data type
+        final int countTypeDiffers = line1.getCountType().equals(line2.getCountType()) ? 0 : 1; // count type
+        // getCount is only valid if the getCountType==Integer
+        final int countDiffers =
+                (countTypeDiffers == 0 &&
+                        line1.getCountType().equals(VCFHeaderLineCount.INTEGER) &&
+                        line2.getCountType().equals(VCFHeaderLineCount.INTEGER) &&
+                        line1.getCount() != line2.getCount()) ? 1 : 0;
+        return dataTypeDiffers + countTypeDiffers + countDiffers;
+    }
 }

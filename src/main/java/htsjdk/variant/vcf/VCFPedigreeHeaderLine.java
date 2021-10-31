@@ -34,7 +34,6 @@ public class VCFPedigreeHeaderLine extends VCFSimpleHeaderLine {
      */
     @Override
     public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
-        super.validateForVersion(vcfTargetVersion);
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             // previous to VCFv4.3, the PEDIGREE line did not have an ID. Such lines are not modeled by this
             // class (since it is derived from VCFSimpleHeaderLine). Therefore instances of this class always

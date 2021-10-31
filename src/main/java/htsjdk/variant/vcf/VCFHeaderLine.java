@@ -110,6 +110,16 @@ public class VCFHeaderLine implements Comparable, Serializable {
                                 vcfTargetVersion,
                                 this.toStringEncoding()));
             }
+        } else if (getKey().equals(VCFConstants.PEDIGREE_HEADER_KEY)) {
+            // previous to vcf4.3, PEDIGREE header lines are not modeled as VCFPedigreeHeaderLine because they
+            // were not structured header lines(had no ID), so we need to check HERE to see if an attempt is
+            // being made to use one of those old-style pedigree lines in a newer-versioned header, and reject
+            // it if so
+            if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+                throw new TribbleException(String.format("A pedigree line with no ID cannot be merged with version %s lines: %s",
+                        vcfTargetVersion,
+                        this));
+            }
         }
     }
 

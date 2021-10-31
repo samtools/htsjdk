@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
  *    preserve such lines in a master line list, but would silently drop them from the typed
  *    lookup lists, so such duplicates would never be returned in queries for typed lines such as
  *    getInfoHeaderLines(), but would still be serialized on write.)
+ *
+ *    This class does NOT validate that the lines contained are valid for the current version (that is
+ *    the caller's responsibilty).
  */
 //Visible to allow disq Kryo registration for serialization
 //TODO: annotate this class as InternalAPI when its rebased and has access to the InternalAPI annotation

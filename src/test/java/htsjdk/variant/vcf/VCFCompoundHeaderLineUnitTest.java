@@ -160,32 +160,32 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
         Assert.assertEquals(headerLine1.equals(headerLine2), expectedEquals);
     }
 
-    @DataProvider(name = "compatibleMergerData")
-    public Object[][] getMergerData() {
+    @DataProvider(name = "mergeCompatibleInfoLines")
+    public Object[][] getMergeCompatibleInfoLines() {
         return new Object[][]{
                 {
-                        "<ID=FOO,Number=A,Type=Float,Description=\"foo\">",
-                        "<ID=FOO,Number=A,Type=Integer,Description=\"foo\">",
-                        "<ID=FOO,Number=A,Type=Float,Description=\"foo\">"  // merged result, promote to float
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=Float,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=Float,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),  // merged result, promote to float
                 },
                 {
-                        "<ID=FOO,Number=A,Type=Integer,Description=\"foo\">",
-                        "<ID=FOO,Number=A,Type=Float,Description=\"foo\">",
-                        "<ID=FOO,Number=A,Type=Float,Description=\"foo\">"  // merged result, promote to float
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=Float,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=Float,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION)  // merged result, promote to float
                 },
                 {
-                        "<ID=FOO,Number=A,Type=Integer,Description=\"foo\">",
-                        "<ID=FOO,Number=G,Type=Integer,Description=\"foo\">",
-                        "<ID=FOO,Number=.,Type=Integer,Description=\"foo\">"  // merged result, resolve as new unbounded
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("<ID=FOO,Number=G,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("<ID=FOO,Number=.,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION)  // merged result, resolve as new unbounded
                 },
         };
     }
 
-    @Test(dataProvider = "compatibleMergerData")
-    public void testMergeCompatibleCompoundHeaderLines(final String line1, final String line2, final String expectedLine) {
+    @Test(dataProvider = "mergeCompatibleInfoLines")
+    public void testMergeIncompatibleInfoLines(final VCFInfoHeaderLine line1, final VCFInfoHeaderLine line2, final VCFInfoHeaderLine expectedLine) {
         VCFCompoundHeaderLine mergedLine = VCFCompoundHeaderLine.getMergedCompoundHeaderLine(
-                new VCFInfoHeaderLine(line1, VCFHeader.DEFAULT_VCF_VERSION),
-                new VCFInfoHeaderLine(line2, VCFHeader.DEFAULT_VCF_VERSION),
+                line1,
+                line2,
                 new VCFHeader.HeaderConflictWarner(false),
                 (l1, l2) -> new VCFInfoHeaderLine(
                         l1.getID(),
@@ -193,28 +193,28 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
                         l1.getType(),
                         l1.getDescription())
         );
-        Assert.assertEquals(mergedLine, new VCFInfoHeaderLine(expectedLine, VCFHeader.DEFAULT_VCF_VERSION));
+        Assert.assertEquals(mergedLine, expectedLine);
     }
 
-    @DataProvider(name = "incompatibleMergerData")
-    public Object[][] getIncompatibleMergerData() {
+    @DataProvider(name = "mergeIncompatibleInfoLines")
+    public Object[][] getMergeIncompatibleInfoLines() {
         return new Object[][]{
                 {
-                        "<ID=FOO,Number=A,Type=Integer,Description=\"foo\">",
-                        "<ID=FOO1,Number=0,Type=Flag,Description=\"foo\">"
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=Integer,Description=\"foo\">",VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("<ID=FOO,Number=0,Type=Flag,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
                 },
                 {
-                        "<ID=FOO,Number=A,Type=String,Description=\"foo\">",
-                        "<ID=FOO,Number=37,Type=Integer,Description=\"foo\">"
+                        new VCFInfoHeaderLine("<ID=FOO,Number=A,Type=String,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("<ID=FOO,Number=37,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION),
                 },
         };
     }
 
-    @Test(dataProvider = "incompatibleMergerData", expectedExceptions=IllegalStateException.class)
-    public void testMergeIncompatibleCompoundHeaderLines(final String line1, final String line2) {
+    @Test(dataProvider = "mergeIncompatibleInfoLines", expectedExceptions=TribbleException.class)
+    public void testMergeIncompatibleInfoLines(final VCFInfoHeaderLine line1, final VCFInfoHeaderLine line2) {
         VCFCompoundHeaderLine.getMergedCompoundHeaderLine(
-                new VCFInfoHeaderLine(line1, VCFHeader.DEFAULT_VCF_VERSION),
-                new VCFInfoHeaderLine(line2, VCFHeader.DEFAULT_VCF_VERSION),
+                line1,
+                line2,
                 new VCFHeader.HeaderConflictWarner(false),
                 (l1, l2) -> { throw new IllegalArgumentException("lambda should never execute - this exception should never be thrown"); }
         );

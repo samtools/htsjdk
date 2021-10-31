@@ -47,9 +47,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
-import static htsjdk.variant.vcf.VCFConstants.*;
-
-
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
     protected final static Log logger = Log.getInstance(AbstractVCFCodec.class);
 
@@ -205,21 +202,21 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 sampleNames = parsePrimaryHeaderLine(headerLine);
             } else {
                 if ( headerLine.startsWith(VCFConstants.INFO_HEADER_START) ) {
-                    metaData.add(getInfoHeaderLine(headerLine.substring(INFO_HEADER_OFFSET), sourceVersion));
+                    metaData.add(getInfoHeaderLine(headerLine.substring(VCFConstants.INFO_HEADER_OFFSET), sourceVersion));
                 } else if ( headerLine.startsWith(VCFConstants.FILTER_HEADER_START) ) {
-                    metaData.add(getFilterHeaderLine(headerLine.substring(FILTER_HEADER_OFFSET), sourceVersion));
+                    metaData.add(getFilterHeaderLine(headerLine.substring(VCFConstants.FILTER_HEADER_OFFSET), sourceVersion));
                 } else if ( headerLine.startsWith(VCFConstants.FORMAT_HEADER_START) ) {
-                    metaData.add(getFormatHeaderLine(headerLine.substring(FORMAT_HEADER_OFFSET), sourceVersion));
+                    metaData.add(getFormatHeaderLine(headerLine.substring(VCFConstants.FORMAT_HEADER_OFFSET), sourceVersion));
                 } else if ( headerLine.startsWith(VCFConstants.CONTIG_HEADER_START) ) {
-                    metaData.add(getContigHeaderLine(headerLine.substring(CONTIG_HEADER_OFFSET), sourceVersion, contigCounter++));
+                    metaData.add(getContigHeaderLine(headerLine.substring(VCFConstants.CONTIG_HEADER_OFFSET), sourceVersion, contigCounter++));
                 } else if ( headerLine.startsWith(VCFConstants.ALT_HEADER_START) ) {
-                    metaData.add(getAltHeaderLine(headerLine.substring(ALT_HEADER_OFFSET), sourceVersion));
+                    metaData.add(getAltHeaderLine(headerLine.substring(VCFConstants.ALT_HEADER_OFFSET), sourceVersion));
                 } else if ( headerLine.startsWith(VCFConstants.PEDIGREE_HEADER_START) ) {
-                    metaData.add(getPedigreeHeaderLine(headerLine.substring(PEDIGREE_HEADER_OFFSET), sourceVersion));
+                    metaData.add(getPedigreeHeaderLine(headerLine.substring(VCFConstants.PEDIGREE_HEADER_OFFSET), sourceVersion));
                 } else if ( headerLine.startsWith(VCFConstants.META_HEADER_START) ) {
-                    metaData.add(getMetaHeaderLine(headerLine.substring(META_HEADER_OFFSET), sourceVersion));
+                    metaData.add(getMetaHeaderLine(headerLine.substring(VCFConstants.META_HEADER_OFFSET), sourceVersion));
                 } else if ( headerLine.startsWith(VCFConstants.SAMPLE_HEADER_START) ) {
-                    metaData.add(getSampleHeaderLine(headerLine.substring(SAMPLE_HEADER_OFFSET), sourceVersion));
+                    metaData.add(getSampleHeaderLine(headerLine.substring(VCFConstants.SAMPLE_HEADER_OFFSET), sourceVersion));
                 } else {
                     final VCFHeaderLine otherHeaderLine = getOtherHeaderLine(
                             headerLine.substring(VCFHeader.METADATA_INDICATOR.length()),
@@ -315,7 +312,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if (sourceVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             return new VCFPedigreeHeaderLine(headerLineString, sourceVersion);
         } else {
-            return new VCFHeaderLine(PEDIGREE_HEADER_KEY, headerLineString);
+            return new VCFHeaderLine(VCFConstants.PEDIGREE_HEADER_KEY, headerLineString);
         }
     }
 

@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
 
+import static htsjdk.variant.vcf.VCFConstants.PEDIGREE_HEADER_KEY;
+
 public class VCFHeaderMergerUnitTest extends VariantBaseTest {
 
     @DataProvider(name="mergeValidVersions")
@@ -104,6 +106,25 @@ public class VCFHeaderMergerUnitTest extends VariantBaseTest {
     @Test(dataProvider="mergeInvalidVersions", expectedExceptions = TribbleException.class)
     public void testMergeInvalidVersions(final List<VCFHeaderVersion> headerVersions) {
         doHeaderMergeForVersions(headerVersions);
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testMergeWithValidationFailure() {
+        // test mixing header versions where the old version header has a line that fails validation
+        // using the resulting (newer) version
+
+        // create a 4.2 header with a 4.2 style pedigree line (one that has no ID)
+        final Set<VCFHeaderLine> oldHeaderLines = VCFHeader.makeHeaderVersionLineSet(VCFHeaderVersion.VCF4_2);
+        oldHeaderLines.add(new VCFHeaderLine(PEDIGREE_HEADER_KEY, "<Name_0=G0-ID,Name_1=G1-ID>"));
+        final VCFHeader oldHeader = new VCFHeader(oldHeaderLines);
+        Assert.assertEquals(oldHeader.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_2);
+
+        // now create a simple 4.3 header; the merge should fail because the old PEDIGREE line isn't valid
+        // for 4.3 (for which pedigree lines mut have an ID)
+        final VCFHeader newHeader = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeaderVersion.VCF4_3));
+        Assert.assertEquals(newHeader.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+
+        VCFHeaderMerger.getMergedHeaderLines(Arrays.asList(oldHeader, newHeader),true);
     }
 
     private Set<VCFHeaderLine> doHeaderMergeForVersions(final List<VCFHeaderVersion> headerVersions) {
@@ -381,6 +402,91 @@ public class VCFHeaderMergerUnitTest extends VariantBaseTest {
         Assert.assertEquals(mergedLines.size(), 3);
         Assert.assertTrue(mergedLines.contains(fooLine));
         Assert.assertTrue(mergedLines.contains(barLine));
+    }
+
+    @DataProvider(name = "compatibleInfoLines")
+    public Object[][] getMergerData() {
+        return new Object[][]{
+                // 2 lines to merge, expected result
+                {
+                    // mixed number, promote to "."
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=A,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=.,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        "AB"
+                },
+                {
+                    // mixed number type, promote to float
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Integer,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        "AB"
+                },
+                {
+                        // mixed number type in reverse direction, promote to float
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Integer,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        "AB"
+                },
+        };
+    }
+
+    @Test(dataProvider = "compatibleInfoLines")
+    public void testMergeCompatibleInfoLines(final VCFInfoHeaderLine line1, final VCFInfoHeaderLine line2, final VCFInfoHeaderLine expectedLine, final String id) {
+        final VCFHeader hdr1 = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION), Collections.EMPTY_SET);
+        hdr1.addMetaDataLine(line1);
+
+        final VCFHeader hdr2 = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION), Collections.EMPTY_SET);
+        hdr2.addMetaDataLine(line2);
+
+        final VCFHeader mergedHeader = new VCFHeader(VCFHeaderMerger.getMergedHeaderLines(Arrays.asList(hdr1, hdr2), true));
+        Assert.assertEquals(mergedHeader.getInfoHeaderLine(id), expectedLine);
+    }
+
+    @DataProvider(name = "mergeIncompatibleInfoLines")
+    public Object[][] getMergeIncompatibleInfoLines() {
+        return new Object[][]{
+                // 2 lines to merge, expected result
+                {
+                        // mixed number AND number type (multiple different attributes)
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=A,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Integer,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=.,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        "AB"
+                },
+                {
+                        // mixed number AND number type  (multiple different attributes), reverse direction
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=1,Type=Integer,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=A,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        new VCFInfoHeaderLine("INFO=<ID=AB,Number=.,Type=Float,Description=\"Allele Balance for hets (ref/(ref+alt))\">",
+                                VCFHeader.DEFAULT_VCF_VERSION),
+                        "AB"
+                },
+        };
+    }
+
+    @Test(dataProvider = "mergeIncompatibleInfoLines", expectedExceptions=TribbleException.class)
+    public void testMergeIncompatibleInfoLines(final VCFInfoHeaderLine line1, final VCFInfoHeaderLine line2, final VCFInfoHeaderLine expectedLine, final String id) {
+        final VCFHeader hdr1 = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION), Collections.EMPTY_SET);
+        hdr1.addMetaDataLine(line1);
+        final VCFHeader hdr2 = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeader.DEFAULT_VCF_VERSION), Collections.EMPTY_SET);
+        hdr2.addMetaDataLine(line2);
+        new VCFHeader(VCFHeaderMerger.getMergedHeaderLines(Arrays.asList(hdr1, hdr2), true));
     }
 
     private final SAMSequenceDictionary createTestSAMDictionary(final int startSequence, final int numSequences) {

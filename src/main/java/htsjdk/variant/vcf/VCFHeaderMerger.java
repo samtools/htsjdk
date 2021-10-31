@@ -248,8 +248,8 @@ public class VCFHeaderMerger {
         // without printing the entire context, since the headers and sequence dictionaries can have
         // thousands of entries
         return String.format(
-                "Attempt to merge a VCFHeader sequence dictionary that is incompatible with the merger header, failed due to %s:" +
-                        "\n\nHeader Dictionary:\n\n%1.2000s\n\nCommon Dictionary:\n\n%1.2000s\n\nSource Header:\n\n%1.2000s",
+                "Can't merge VCF headers with incompatible sequence dictionaries, merge failed due to %s:" +
+                        "\n\nHeader dictionary:\n\n%1.2000s\n\nis incompatible with the common dictionary:\n\n%1.2000s\n\nOffending VCF header:\n\n%1.2000s\n",
                 failureReason,
                 sourceSequenceDictionary.getSequences().stream().map(SAMSequenceRecord::toString).collect(Collectors.joining("\n")),
                 commonSequenceDictionary.getSequences().stream().map(SAMSequenceRecord::toString).collect(Collectors.joining("\n")),

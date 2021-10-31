@@ -27,18 +27,23 @@ public class VCFPedigreeHeaderLineUnitTest extends HtsjdkTest {
         };
     }
 
-    private static final String PEDIGREE_STRING = "PEDIGREE=<ID=id,Description=desc>";
+    private static final String PEDIGREE_STRING_4_2 = "PEDIGREE=<Description=desc>";
+    private static final String PEDIGREE_STRING_4_3 = "PEDIGREE=<ID=id,Description=desc>";
 
     @Test(dataProvider="allowedVCFVersions")
     public void testAllowedVersions(final VCFHeaderVersion vcfAllowedVersion) {
-        final VCFPedigreeHeaderLine vcfLine = new VCFPedigreeHeaderLine(PEDIGREE_STRING, vcfAllowedVersion);
+        final VCFPedigreeHeaderLine vcfLine = new VCFPedigreeHeaderLine(
+                vcfAllowedVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) ?
+                        PEDIGREE_STRING_4_3 :
+                        PEDIGREE_STRING_4_2,
+                vcfAllowedVersion);
         Assert.assertEquals("id", vcfLine.getID());
         Assert.assertEquals("desc", vcfLine.getGenericFieldValue(VCFSimpleHeaderLine.DESCRIPTION_ATTRIBUTE));
     }
 
     @Test(dataProvider="rejectedVCFVersions",expectedExceptions=TribbleException.class)
     public void testRejectedVersions(final VCFHeaderVersion vcfAllowedVersion) {
-        new VCFPedigreeHeaderLine(PEDIGREE_STRING, vcfAllowedVersion);
+        new VCFPedigreeHeaderLine(PEDIGREE_STRING_4_2, vcfAllowedVersion);
     }
 
 
