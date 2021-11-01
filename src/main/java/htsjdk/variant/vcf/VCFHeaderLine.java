@@ -30,6 +30,7 @@ import htsjdk.utils.ValidationUtils;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * <p> A class representing a key=value entry in the VCF header, and the base class for structured header lines.
@@ -92,23 +93,24 @@ public class VCFHeaderLine implements Comparable, Serializable {
     }
 
     /**
-     * Called when an attempt is made to add this VCFHeaderLine to a VCFHeader, or when an attempt is made
-     * to change the version of a VCFHeader by changing it's target version. Validates that the header line
-     * conforms to the target version requirements.
-     *
+     * Validates this line against the given version.
      * Subclasses can override this to provide line type-specific version validation, and the overrides should
      * also call super.validateForVersion to allow each class in the class hierarchy to do class-level validation.
+     *
+     * @return Optional containing String describing validation error if this line is incompatible with
+     * provided version, otherwise returns an empty Optional.
      */
-    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<String> getValidationError(final VCFHeaderVersion vcfTargetVersion) {
         // If this header line is itself a fileformat/version line,
         // make sure it doesn't clash with the requested vcfTargetVersion.
         if (VCFHeaderVersion.isFormatString(getKey())) {
-            if (!vcfTargetVersion.getFormatString().equals(getKey())  ||
-                    !vcfTargetVersion.getVersionString().equals(getValue())) {
-                throw new TribbleException(
-                        String.format("The target version (%s) is incompatible with the header line's content (%s)",
-                                vcfTargetVersion,
-                                this.toStringEncoding()));
+            if (!vcfTargetVersion.getFormatString().equals(getKey()) ||
+                !vcfTargetVersion.getVersionString().equals(getValue())
+            ) {
+                return Optional.of(String.format("The target version (%s) is incompatible with the header line's content (%s)",
+                    vcfTargetVersion,
+                    this.toStringEncoding()
+                ));
             }
         } else if (getKey().equals(VCFConstants.PEDIGREE_HEADER_KEY)) {
             // previous to vcf4.3, PEDIGREE header lines are not modeled as VCFPedigreeHeaderLine because they
@@ -116,10 +118,25 @@ public class VCFHeaderLine implements Comparable, Serializable {
             // being made to use one of those old-style pedigree lines in a newer-versioned header, and reject
             // it if so
             if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-                throw new TribbleException(String.format("A pedigree line with no ID cannot be merged with version %s lines: %s",
-                        vcfTargetVersion,
-                        this));
+                return Optional.of(String.format("A pedigree line with no ID cannot be merged with version %s lines: %s",
+                    vcfTargetVersion,
+                    this
+                ));
             }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Called when an attempt is made to add this VCFHeaderLine to a VCFHeader, or when an attempt is made
+     * to change the version of a VCFHeader by changing its target version. Validates that the header line
+     * conforms to the target version requirements.
+     */
+    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+        final Optional<String> error = getValidationError(vcfTargetVersion);
+        if (error.isPresent()) {
+            throw new TribbleException.VCFVersionValidationFailure(vcfTargetVersion, error.get());
         }
     }
 

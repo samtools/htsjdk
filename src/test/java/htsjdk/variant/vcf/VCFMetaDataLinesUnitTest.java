@@ -229,29 +229,6 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
         Assert.assertEquals(md.getFormatHeaderLine(testData.getTestFormatLines().get(0).getID()), testData.getTestFormatLines().get(0));
     }
 
-    @DataProvider(name="conflictingVCFVersions")
-    public Object[][] vcfVersions() {
-        return new Object[][]{
-                {VCFHeaderVersion.VCF4_0},
-                {VCFHeaderVersion.VCF4_1},
-                {VCFHeaderVersion.VCF4_3}
-        };
-    }
-
-    @Test(dataProvider="conflictingVCFVersions", expectedExceptions = TribbleException.class)
-    public void testValidateMetaDataLinesConflictingVersion(final VCFHeaderVersion vcfVersion) {
-        final VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        final VCFMetaDataLines md = unitTestData.getTestMetaDataLines(); // contains a VCFv42 fileformat line
-        md.validateMetaDataLines(vcfVersion);
-    }
-
-    @Test(dataProvider="conflictingVCFVersions", expectedExceptions = TribbleException.class)
-    public void testValidateMetaDataLineConflictingVersion(final VCFHeaderVersion vcfVersion) {
-        final VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-        final VCFMetaDataLines md = unitTestData.getTestMetaDataLines(); // contains a VCFv42 fileformat line
-        md.getMetaDataInInputOrder().forEach(hl -> hl.validateForVersion(vcfVersion));
-    }
-
     @Test
     public void testAddRemoveVersionLine() {
         final VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();

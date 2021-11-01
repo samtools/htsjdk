@@ -31,6 +31,7 @@ import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.GenotypeLikelihoods;
 import htsjdk.variant.variantcontext.VariantContext;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
@@ -179,22 +180,39 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
      *
      * @param vcfTargetVersion the version agains which to validate
      */
-    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
-        super.validateForVersion(vcfTargetVersion);
+    public Optional<String> getValidationError(final VCFHeaderVersion vcfTargetVersion) {
+        // Not very nice functional style, but it avoids having to wrap the
+        // entire body of the function apart from the super call in a lambda
+        // Ideally we'd like a combinator like Optional<T> orElse(Supplier<? extends Optional<T>> other)
+        final Optional<String> superError = super.getValidationError(vcfTargetVersion);
+        if (superError.isPresent()) {
+            return superError;
+        }
+
+        // The VCF 4.3 spec does not phrase this restriction as one on the form of the ID value of
+        // INFO/FORMAT lines but instead on the INFO/FORMAT fixed field key values (c.f. section 1.6.1).
+        // However, the key values correspond to INFO/FORMAT header lines defining the attribute and its type,
+        // so we do the validation here
         if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            getGenericFields().forEach((k, v) -> {
-                if (!VALID_HEADER_ID_PATTERN.matcher(k).matches()) {
-                    String message = String.format("Tag \"%s\" in \"%s\" header line does not conform to  tag restrictions",
-                            getID(),
-                            this);
-                    if (VCFUtils.isStrictVCFVersionValidation()) {
-                        throw new TribbleException.InvalidHeader(message);
-                    }
+            if (!validHeaderID(getID())) {
+                final String message = String.format("Tag \"%s\" in \"%s\" header line does not conform to  tag restrictions",
+                    getID(),
+                    this
+                );
+                if (VCFUtils.isStrictVCFVersionValidation()) {
+                    return Optional.of(message);
+                } else {
                     // warn for older versions - this line can't be used as a v4.3 line
                     logger.warn(message);
                 }
-            });
+            }
         }
+
+        return Optional.empty();
+    }
+
+    protected boolean validHeaderID(final String id) {
+        return VALID_HEADER_ID_PATTERN.matcher(id).matches();
     }
 
     /**

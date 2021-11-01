@@ -71,6 +71,7 @@ final class VCFMetaDataLines implements Serializable {
      * @param newMetaDataLine header line to attempt to add
      * @returns an existing (equivalent) header line that was replaced by newMetaDataLine, if any, otherwise
      * null
+     * TODO version validation is no longer triggered here, update javadoc
      * @throws IllegalArgumentException if the line being added is a fileformat (VCF version) line,
      * and if any existing line fails to validate against the new version
      */
@@ -147,14 +148,28 @@ final class VCFMetaDataLines implements Serializable {
 
     /**
      * Validate all metadata lines except the file format line against a target version.
-     * If this returns true, the these lines can be upgraded to targetVersion. If false, the metadata lines
-     * must be manually updated.
+     * Throws {@link TribbleException.VCFVersionValidationFailure} if any line is incompatible with the given version.
      * @param targetVersion the target version to validate against
      */
     //TODO: we need to tell users how to resolve the case where this fails due to version validation
     //i.e, use a custom upgrade tool
     public void validateMetaDataLines(final VCFHeaderVersion targetVersion) {
-        mMetaData.values().forEach(headerLine -> headerLine.validateForVersion(targetVersion));
+        mMetaData.values().forEach(headerLine -> {
+            if (!VCFHeaderVersion.isFormatString(headerLine.getKey())) {
+                headerLine.validateForVersion(targetVersion);
+            }
+        });
+    }
+
+    /**
+     * Validate all metadata lines except the file format line against a target version.
+     *
+     * @param targetVersion the target version to validate against
+     * @return an unmodifiable Map from {@link VCFHeaderLine} to Strings describing the reason why the line is
+     * incompatible with targetVersion. The returned map is empty if validation succeeded for all lines.
+     */
+    public Map<VCFHeaderLine, String> getValidationErrors(final VCFHeaderVersion targetVersion) {
+        return new VCFValidationFailures(mMetaData.values(), targetVersion);
     }
 
     /**
@@ -491,6 +506,25 @@ final class VCFMetaDataLines implements Serializable {
             int result = key.hashCode();
             result = 31 * result + constraint.hashCode();
             return result;
+        }
+    }
+
+    private static class VCFValidationFailures extends AbstractMap<VCFHeaderLine, String> {
+        private final Map<VCFHeaderLine, String> failures;
+
+        public VCFValidationFailures(final Collection<VCFHeaderLine> lines, final VCFHeaderVersion version) {
+            // Use a LinkedHashMap so errors are reported in order
+            this.failures = new LinkedHashMap<>();
+            for (final VCFHeaderLine line : lines) {
+                if (!VCFHeaderVersion.isFormatString(line.getKey())) {
+                    line.getValidationError(version).ifPresent(e -> this.failures.put(line, e));
+                }
+            }
+        }
+
+        @Override
+        public Set<Entry<VCFHeaderLine, String>> entrySet() {
+            return failures.entrySet();
         }
     }
 }

@@ -136,7 +136,7 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
         };
     }
 
-    @Test(dataProvider="incompatibleVersions", expectedExceptions=TribbleException.class)
+    @Test(dataProvider="incompatibleVersions", expectedExceptions=TribbleException.VCFVersionValidationFailure.class)
     public void testValidateForVersionFails(final VCFHeaderVersion vcfVersion, final VCFHeaderVersion incompatibleVersion) {
         VCFHeaderLine headerLine = new VCFHeaderLine(vcfVersion.getFormatString(), vcfVersion.getVersionString());
         headerLine.validateForVersion(incompatibleVersion);

@@ -1,8 +1,7 @@
 package htsjdk.variant.vcf;
 
-import htsjdk.tribble.TribbleException;
-
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * A class representing PEDIGREE fields in the VCF header. Applicable starting with version VCFv4.3.
@@ -33,20 +32,23 @@ public class VCFPedigreeHeaderLine extends VCFSimpleHeaderLine {
      * Validate that this header line conforms to the target version.
      */
     @Override
-    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<String> getValidationError(final VCFHeaderVersion vcfTargetVersion) {
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             // previous to VCFv4.3, the PEDIGREE line did not have an ID. Such lines are not modeled by this
             // class (since it is derived from VCFSimpleHeaderLine). Therefore instances of this class always
             // represent VCFv4.3 or higher. So throw if the requested version is less than 4.3.
             final String message = String.format("%s header lines are not allowed in VCF version %s headers",
-                    getKey(),
-                    vcfTargetVersion);
+                getKey(),
+                vcfTargetVersion
+            );
             if (VCFUtils.isStrictVCFVersionValidation()) {
-                throw new TribbleException.InvalidHeader(message);
+                return Optional.of(message);
             } else {
                 logger.warn(message);
             }
         }
+
+        return Optional.empty();
     }
 
 }

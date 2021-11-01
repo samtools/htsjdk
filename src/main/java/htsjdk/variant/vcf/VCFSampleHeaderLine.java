@@ -1,8 +1,7 @@
 package htsjdk.variant.vcf;
 
-import htsjdk.tribble.TribbleException;
-
 import java.util.Map;
+import java.util.Optional;
 
 /**
  */
@@ -27,18 +26,25 @@ public class VCFSampleHeaderLine extends VCFSimpleHeaderLine {
      * Validate that this header line conforms to the target version.
      */
     @Override
-    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
-        super.validateForVersion(vcfTargetVersion);
+    public Optional<String> getValidationError(final VCFHeaderVersion vcfTargetVersion) {
+        final Optional<String> superError = super.getValidationError(vcfTargetVersion);
+        if (superError.isPresent()) {
+            return superError;
+        }
+
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
             final String message = String.format("%s header lines are not allowed in VCF version %s headers",
-                    getKey(),
-                    vcfTargetVersion.toString());
+                getKey(),
+                vcfTargetVersion
+            );
             if (VCFUtils.isStrictVCFVersionValidation()) {
-                throw new TribbleException.InvalidHeader(message);
+                return Optional.of(message);
             } else {
                 logger.warn(message);
             }
         }
+
+        return Optional.empty();
     }
 
 }

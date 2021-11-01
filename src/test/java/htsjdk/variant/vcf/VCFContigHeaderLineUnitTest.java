@@ -34,6 +34,25 @@ public class VCFContigHeaderLineUnitTest extends HtsjdkTest {
         Assert.assertEquals(headerline.getID(), expectedIDString);
     }
 
+    @DataProvider(name = "invalidIDs")
+    public Object[][] getInvalidIDs() {
+        return new Object[][]{
+            // IDs cannot start with '*'
+            {"<ID=*a>"},
+            // IDs cannot start with '='
+            // The parser cannot handle attributes starting with '=' so we cannot express this test case
+            // {"<ID==a>"},
+            // IDs cannot contain '{'
+            {"<ID=1{>"},
+        };
+    }
+
+    @Test(dataProvider = "invalidIDs", expectedExceptions = TribbleException.VCFVersionValidationFailure.class)
+    public void testInvalidIDs(final String lineString) {
+        // TODO change to VCFHeader.DEFAULT_VCF_VERSION
+        new VCFContigHeaderLine(lineString, VCFHeaderVersion.VCF4_3, 1);
+    }
+
     @Test(expectedExceptions=TribbleException.class)
     public void testRejectNegativeIndex() {
         new VCFContigHeaderLine("<ID=contig1,length=100>", VCFHeader.DEFAULT_VCF_VERSION, -1);

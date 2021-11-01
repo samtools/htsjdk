@@ -74,6 +74,27 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
         Assert.assertEquals(headerline.getGenericFieldValue(attribute), expectedValue);
     }
 
+    @DataProvider (name = "invalidIDs")
+    public Object[][] getInvalidLines() {
+        return new Object[][] {
+            // ID cannot start with number
+            {"<ID=1A,Number=A,Type=Integer,Description=\"foo\">"},
+            // ID cannot start with '.''
+            {"<ID=.A,Number=A,Type=Integer,Description=\"foo\">"},
+            // Test that IDs with the special thousand genomes key as a prefix are rejected
+            // The thousand genomes key is only accepted for VCFInfoHeaderLine and is tested in VCFInfoHeaderLineUnitTest
+            {"<ID=1000GA,Number=A,Type=Integer,Description=\"foo\">"},
+            // Contains invalid character '&'
+            {"<ID=A&,Number=A,Type=Integer,Description=\"foo\">"},
+        };
+    }
+
+    @Test(dataProvider = "invalidIDs", expectedExceptions = TribbleException.VCFVersionValidationFailure.class)
+    public void testGetValidationError(final String lineString) {
+        // TODO change to VCFHeader.DEFAULT_VCF_VERSION
+        new VCFInfoHeaderLine(lineString, VCFHeaderVersion.VCF4_3);
+    }
+
     @DataProvider (name = "headerLineTypes")
     public Object[][] getHeaderLineTypes() {
         return new Object[][] {

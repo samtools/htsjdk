@@ -557,7 +557,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_1);
     }
 
-    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    @Test(expectedExceptions = TribbleException.VCFVersionValidationFailure.class)
     public void testConstructorWithInvalidLineForVersion() {
         final Set<VCFHeaderLine> metaDataSet = VCFHeaderUnitTestData.getV42HeaderLinesWITHOUTFormatString(); // this (4.2) header is compatible with all 4.x versions
         metaDataSet.add(VCFHeader.makeHeaderVersionLine(VCFHeaderVersion.VCF4_2));
@@ -567,7 +567,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         new VCFHeader(metaDataSet, Collections.emptySet());
     }
 
-    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    @Test(expectedExceptions = TribbleException.VCFVersionValidationFailure.class)
     public void testAddMetaDataLineInvalidForVersion() {
         final Set<VCFHeaderLine> metaDataSet = VCFHeaderUnitTestData.getV42HeaderLinesWITHOUTFormatString(); // this (4.2) header is compatible with all 4.x versions
         metaDataSet.add(VCFHeader.makeHeaderVersionLine(VCFHeaderVersion.VCF4_2));

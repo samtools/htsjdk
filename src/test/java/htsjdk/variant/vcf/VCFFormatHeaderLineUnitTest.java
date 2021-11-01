@@ -2,6 +2,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.tribble.TribbleException;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**

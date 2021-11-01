@@ -24,6 +24,8 @@
 package htsjdk.tribble;
 
 
+import htsjdk.variant.vcf.VCFHeaderVersion;
+
 /**
  * @author Aaron
  *
@@ -84,6 +86,12 @@ public class TribbleException extends RuntimeException {
     // capture other internal codec exceptions
     public static class InternalCodecException extends TribbleException {
         public InternalCodecException(String message) { super (message); }
+    }
+
+    public static class VCFVersionValidationFailure extends TribbleException {
+        public VCFVersionValidationFailure(final VCFHeaderVersion version, final String f) {
+            super(String.format("VCF version validation for version %s failed with error: %s", version, f));
+        }
     }
 
     // //////////////////////////////////////////////////////////////////////

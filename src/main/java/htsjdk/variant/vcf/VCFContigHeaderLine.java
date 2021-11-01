@@ -32,6 +32,7 @@ import htsjdk.tribble.TribbleException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -189,16 +190,22 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
      * Validate that this header line conforms to the target version.
      */
     @Override
-    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
-        super.validateForVersion(vcfTargetVersion);
+    public Optional<String> getValidationError(final VCFHeaderVersion vcfTargetVersion) {
+        final Optional<String> superError = super.getValidationError(vcfTargetVersion);
+        if (superError.isPresent()) {
+            return superError;
+        }
+
         if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
              if (!VALID_CONTIG_ID_PATTERN.matcher(getID()).matches()) {
-                String message = String.format("Contig headerLineID \"%s\" in \"%s\" header line doesn't conform to VCF contig ID restrictions" ,
-                        getID(),
-                        getKey());
-                throw new TribbleException.InvalidHeader(message);
+                return Optional.of(String.format("Contig headerLineID \"%s\" in \"%s\" header line doesn't conform to VCF contig ID restrictions" ,
+                    getID(),
+                    getKey()
+                ));
             }
         }
+
+        return Optional.empty();
     }
 
     public Integer getContigIndex() {

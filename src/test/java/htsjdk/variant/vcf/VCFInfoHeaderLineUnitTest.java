@@ -62,6 +62,17 @@ public class VCFInfoHeaderLineUnitTest extends HtsjdkTest {
         };
     }
 
+    @Test
+    public void testAllow1000GKey() {
+        final VCFInfoHeaderLine line = new VCFInfoHeaderLine(
+            "INFO=<ID=1000G,Number=0,Type=Flag,Description=1000G>",
+            VCFHeader.DEFAULT_VCF_VERSION
+        );
+
+        // TODO change to VCFHeader.DEFAULT_VCF_VERSION
+        Assert.assertFalse(line.getValidationError(VCFHeaderVersion.VCF4_3).isPresent());
+    }
+
     @Test(dataProvider = "mergeIncompatibleInfoLines", expectedExceptions= TribbleException.class)
     public void testMergeIncompatibleInfoLines(
             final VCFInfoHeaderLine infoHeaderLine1,

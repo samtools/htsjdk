@@ -102,6 +102,11 @@ public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
     }
 
     @Override
+    protected boolean validHeaderID(final String id) {
+        return super.validHeaderID(id) || id.equals(VCFConstants.THOUSAND_GENOMES_KEY);
+    }
+
+    @Override
     public boolean shouldBeAddedToDictionary() {
         return true;
     }

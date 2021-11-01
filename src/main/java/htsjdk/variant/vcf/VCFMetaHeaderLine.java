@@ -1,8 +1,7 @@
 package htsjdk.variant.vcf;
 
-import htsjdk.tribble.TribbleException;
-
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * A class representing META fields in the VCF header.
@@ -27,15 +26,15 @@ public class VCFMetaHeaderLine extends VCFSimpleHeaderLine {
      * Validate that this header line conforms to the target version.
      */
     @Override
-    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<String> getValidationError(final VCFHeaderVersion vcfTargetVersion) {
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            throw new TribbleException.InvalidHeader(
-                    String.format("%s header lines are not allowed in VCF version %s headers",
-                            getKey(),
-                            vcfTargetVersion.toString())
-            );
+            return Optional.of(String.format("%s header lines are not allowed in VCF version %s headers",
+                getKey(),
+                vcfTargetVersion
+            ));
         }
-        super.validateForVersion(vcfTargetVersion);
+
+        return super.getValidationError(vcfTargetVersion);
     }
 
 }
