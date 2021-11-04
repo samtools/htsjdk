@@ -72,7 +72,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     private int currentLine = 0;
 
-    /** give a chance filter out some keys in the EXTRA_FIELDS column */
+    /** Optional filter to remove keys from the EXTRA_FIELDS column */
     private Predicate<String> filterOutAttribute = KEY -> false;
     
     public Gff3Codec() {
