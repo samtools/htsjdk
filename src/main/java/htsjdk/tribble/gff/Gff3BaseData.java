@@ -9,9 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 public class Gff3BaseData {
-    static final String ID_ATTRIBUTE_KEY = "ID";
-    static final String NAME_ATTRIBUTE_KEY = "Name";
-    private static final String ALIAS_ATTRIBUTE_KEY = "Alias";
     private final String contig;
     private final String source;
     private final String type;
@@ -38,9 +35,9 @@ public class Gff3BaseData {
         this.phase = phase;
         this.strand = strand;
         this.attributes = copyAttributesSafely(attributes);
-        this.id = Gff3Codec.extractSingleAttribute(attributes.get(ID_ATTRIBUTE_KEY));
-        this.name = Gff3Codec.extractSingleAttribute(attributes.get(NAME_ATTRIBUTE_KEY));
-        this.aliases = attributes.getOrDefault(ALIAS_ATTRIBUTE_KEY, Collections.emptyList());
+        this.id = Gff3Codec.extractSingleAttribute(attributes.get(Gff3Constants.ID_ATTRIBUTE_KEY));
+        this.name = Gff3Codec.extractSingleAttribute(attributes.get(Gff3Constants.NAME_ATTRIBUTE_KEY));
+        this.aliases = attributes.getOrDefault(Gff3Constants.ALIAS_ATTRIBUTE_KEY, Collections.emptyList());
         this.hashCode = computeHashCode();
     }
 

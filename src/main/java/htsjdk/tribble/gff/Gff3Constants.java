@@ -10,4 +10,7 @@ public class Gff3Constants {
      public static final String UNDEFINED_FIELD_VALUE = ".";
      public static final String PARENT_ATTRIBUTE_KEY = "Parent";
      public final static char END_OF_LINE_CHARACTER = '\n';
+     public static final String ID_ATTRIBUTE_KEY = "ID";
+     public static final String NAME_ATTRIBUTE_KEY = "Name";
+     public static final String ALIAS_ATTRIBUTE_KEY = "Alias";
 }

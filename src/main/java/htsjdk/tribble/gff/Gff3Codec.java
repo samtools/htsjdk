@@ -72,38 +72,37 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     private int currentLine = 0;
 
-    /** Optional filter to remove keys from the EXTRA_FIELDS column */
-    private Predicate<String> filterOutAttribute = KEY -> false;
+    /** filter to removing keys from the EXTRA_FIELDS column */
+    private final Predicate<String> filterOutAttribute;
     
     public Gff3Codec() {
         this(DecodeDepth.DEEP);
     }
 
     public Gff3Codec(final DecodeDepth decodeDepth) {
+        this(decodeDepth, KEY -> false);
+    }
+
+    /**
+     * @param decodeDepth a value from DecodeDepth
+     * @param filterOutAttribute  filter to remove keys from the EXTRA_FIELDS column
+     */
+    public Gff3Codec(final DecodeDepth decodeDepth, final Predicate<String> filterOutAttribute) {
         super(Gff3Feature.class);
         this.decodeDepth = decodeDepth;
+        this.filterOutAttribute = filterOutAttribute;
+        /* check required keys are always kept */
+        for (final String key : new String[] {Gff3Constants.PARENT_ATTRIBUTE_KEY, Gff3Constants.ID_ATTRIBUTE_KEY, Gff3Constants.NAME_ATTRIBUTE_KEY}) {
+            if (filterOutAttribute.test(key)) {
+                throw new IllegalArgumentException("Predicate should always accept " + key);
+                }
+        }
     }
 
     public enum DecodeDepth {
         DEEP ,
         SHALLOW
     }
-
-    /** set a Predicate to give a chance to filter out some fields in the extra-fields column in order to reduce the memory burden.
-     * The default predicate keeps all
-     * @param filterOutAttribute the predicate
-     * @return this codec
-     */
-    public Gff3Codec setFilterOutAttribute(final Predicate<String> filterOutAttribute) {
-        /* check required keys are always kept */
-        for(final String key : new String[] {Gff3Constants.PARENT_ATTRIBUTE_KEY,Gff3BaseData.ID_ATTRIBUTE_KEY,Gff3BaseData.NAME_ATTRIBUTE_KEY}) {
-        if (filterOutAttribute.test(key)) {
-            throw new IllegalArgumentException("Predicate should always accept " + key);
-            }
-        }
-        this.filterOutAttribute = filterOutAttribute;
-        return this;
-        }
     
     @Override
     public Gff3Feature decode(final LineIterator lineIterator) throws IOException {
@@ -149,7 +148,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
 
 
-        final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(parseLine(line, currentLine));
+        final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(parseLine(line, currentLine, this.filterOutAttribute));
         activeFeatures.add(thisFeature);
         if (depth == DecodeDepth.DEEP) {
             //link to parents/children/co-features
@@ -220,7 +219,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         return attributes;
     }
 
-    private Gff3BaseData parseLine(final String line, final int currentLine) {
+    private static Gff3BaseData parseLine(final String line, final int currentLine, final Predicate<String> filterOutAttribute) {
         final List<String> splitLine = ParsingUtils.split(line, Gff3Constants.FIELD_DELIMITER);
 
         if (splitLine.size() != NUM_FIELDS) {
@@ -237,8 +236,8 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(Gff3Constants.UNDEFINED_FIELD_VALUE) ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
             final Map<String, List<String>> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
-            /* remove attibutes if they fail 'acceptExtraFieldKey' */
-            attributes.keySet().removeIf(KEY->this.filterOutAttribute.test(KEY));
+            /* remove attibutes matching 'filterOutAttribute' */
+            attributes.keySet().removeIf(filterOutAttribute);
             return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
         } catch (final NumberFormatException ex ) {
             throw new TribbleException("Cannot read integer value for start/end position from line " + currentLine + ".  Line is: " + line, ex);

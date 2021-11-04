@@ -72,8 +72,7 @@ public class Gff3CodecTest extends HtsjdkTest {
     @Test(dataProvider = "basicDecodeDataProvider")
     public void codecFilterOutFieldsTest(final Path inputGff3, final int expectedTotalFeatures) throws IOException {
         final Set<String> skip_attributes = new HashSet<>(Arrays.asList("version","rank","biotype","transcript_support_level","mgi_id","havana_gene","tag"));
-        final Gff3Codec codec = new Gff3Codec(Gff3Codec.DecodeDepth.SHALLOW).
-                setFilterOutAttribute(S->skip_attributes.contains(S));
+        final Gff3Codec codec = new Gff3Codec(Gff3Codec.DecodeDepth.SHALLOW, S->skip_attributes.contains(S));
         Assert.assertTrue(codec.canDecode(inputGff3.toAbsolutePath().toString()));
         final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputGff3.toAbsolutePath().toString(), null,codec, false);
         int countTotalFeatures = 0;
