@@ -42,11 +42,7 @@ import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.vcf.VCFCodec;
-import htsjdk.variant.vcf.VCFFileReader;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLine;
-import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -154,7 +150,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             writer.add(createVC(header));
         }
         final VCFCodec codec = new VCFCodec();
-        codec.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
+        codec.setVCFHeader(header);
 
         try (BlockCompressedInputStream bcis = new BlockCompressedInputStream(fakeVCFFile);
                 FileInputStream fis = new FileInputStream(fakeVCFFile)) {
@@ -228,7 +224,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
      */
     private static VCFHeader createFakeHeader(final Set<VCFHeaderLine> metaData, final Set<String> additionalColumns,
                                              final SAMSequenceDictionary sequenceDict) {
-        metaData.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_0.getFormatString(), VCFHeaderVersion.VCF4_0.getVersionString()));
+        metaData.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
         metaData.add(new VCFHeaderLine("two", "2"));
         additionalColumns.add("extra1");
         additionalColumns.add("extra2");
@@ -330,6 +326,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @DataProvider(name = "vcfExtensionsDataProvider")
     public Object[][]vcfExtensionsDataProvider() {
         return new Object[][] {
+                //TODO: fix this BCF problem!
                 // TODO: BCF doesn't work because header is not properly constructed.
                 // {".bcf"},
                 {FileExtensions.VCF},

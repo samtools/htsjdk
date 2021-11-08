@@ -110,6 +110,11 @@ public class Defaults {
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
+    /**
+     * Strict VCF version validation.  Default = true.
+     */
+    public static final boolean STRICT_VCF_VERSION_VALIDATION;
+
 
     public static final String SAMJDK_PREFIX = "samjdk.";
     static {
@@ -134,6 +139,7 @@ public class Defaults {
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
+        STRICT_VCF_VERSION_VALIDATION = getBooleanProperty("strict_version_validation", true);
     }
 
     /**
