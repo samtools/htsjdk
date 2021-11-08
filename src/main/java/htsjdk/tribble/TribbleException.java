@@ -86,6 +86,12 @@ public class TribbleException extends RuntimeException {
         public InternalCodecException(String message) { super (message); }
     }
 
+    public static class VersionValidationFailure extends TribbleException {
+        public VersionValidationFailure(final String message) {
+            super(String.format("Version validation failure: %s", message));
+        }
+    }
+
     // //////////////////////////////////////////////////////////////////////
     // Index exceptions
     // //////////////////////////////////////////////////////////////////////
