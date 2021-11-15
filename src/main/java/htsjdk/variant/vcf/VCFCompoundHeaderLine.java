@@ -323,11 +323,11 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
                     // This check is here on behalf of INFO lines (which are the only header line type allowed to have Flag
                     // type). A Flag type with a count value other than 0 violates the spec (at least v4.2 and v4.3), but
                     // to retain backward compatibility with previous implementations, we accept (and repair) and the line here.
-                    updateGenericField(NUMBER_ATTRIBUTE, "0");
-                    lineCount = 0;
                     logger.warn(String.format("FLAG fields must have a count value of 0, but saw count %d for header line %s. A value of 0 will be used",
                             lineCount,
                             getID()));
+                    updateGenericField(NUMBER_ATTRIBUTE, "0");
+                    lineCount = 0;
                 }
             } else if (lineCount <= 0) {
                 throw new TribbleException.InvalidHeader(
