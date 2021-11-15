@@ -172,11 +172,6 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
         Assert.assertEquals(md.getFilterLines().size(), beforeFilterSize);
     }
 
-//    @Test
-//    public void testAddRemoveContigLine() {
-//        final VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
-//    }
-
     @Test
     public void testHasEquivalentHeaderLinePositive() {
         final VCFHeaderUnitTestData unitTestData = new VCFHeaderUnitTestData();
@@ -348,6 +343,27 @@ public class VCFMetaDataLinesUnitTest extends HtsjdkTest {
         Assert.assertEquals(sortedLines3.get(0), vcfContigLine3);
         Assert.assertEquals(sortedLines3.get(1), vcfContigLine1);
         Assert.assertEquals(sortedLines3.get(2), vcfContigLine2);
+    }
+
+    @Test
+    public void testFileFormatLineFirstInSet() {
+        final Set<VCFHeaderLine> orderedLineSet = new LinkedHashSet<>();
+        orderedLineSet.addAll(VCFHeaderUnitTestData.getV42HeaderLinesWITHOUTFormatString());
+        orderedLineSet.stream().forEach(l -> Assert.assertFalse(VCFHeaderVersion.isFormatString(l.getKey())));
+        // add the file format line last
+        orderedLineSet.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        final VCFMetaDataLines metaDataLines = new VCFMetaDataLines();
+        metaDataLines.addMetaDataLines(orderedLineSet);
+
+        final Collection<VCFHeaderLine> inputOrderLines = metaDataLines.getMetaDataInInputOrder();
+        final Optional<VCFHeaderLine> optFirstInputOrderLine = inputOrderLines.stream().findFirst();
+        Assert.assertTrue(optFirstInputOrderLine.isPresent());
+        Assert.assertTrue(VCFHeaderVersion.isFormatString(optFirstInputOrderLine.get().getKey()));
+
+        final Collection<VCFHeaderLine> sortedOrderLines = metaDataLines.getMetaDataInInputOrder();
+        final Optional<VCFHeaderLine> optFirstSortedOrderLine = sortedOrderLines.stream().findFirst();
+        Assert.assertTrue(optFirstSortedOrderLine.isPresent());
+        Assert.assertTrue(VCFHeaderVersion.isFormatString(optFirstSortedOrderLine.get().getKey()));
     }
 
 }

@@ -147,7 +147,7 @@ public class VCFHeaderUnitTestData {
         metaDataLines.addMetaDataLines(metaDataSet);
         final VCFHeaderLine versionLine = metaDataLines.getFileFormatLine();
         Assert.assertEquals(
-                VCFHeaderVersion.toHeaderVersion(versionLine.getValue()),
+                metaDataLines.getVCFVersion(),
                 VCFHeaderVersion.VCF4_2);
 
         // remove the 4.2 version line from the original set, verify, and return the set with no fileformat string
