@@ -144,10 +144,11 @@ final class VCFMetaDataLines implements Serializable {
     }
 
     /**
-     * Validate all metadata lines except the file format line against a target version.
+     * Validate all metadata lines, excluding the file format line against a target version.
      * Throws {@link TribbleException.VersionValidationFailure} if any line is incompatible with the given version.
      * @param targetVersion the target version to validate against
-     * @throws TribbleException if any existing line fails to validate against {@code targetVersion}
+     * @throws {@link TribbleException.VersionValidationFailure} if any existing line fails to validate against
+     * {@code targetVersion}
      */
     //TODO: we need to tell users how to resolve the case where this fails due to version validation
     //i.e, use a custom upgrade tool
