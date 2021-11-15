@@ -65,9 +65,6 @@ public class VCFHeader implements HtsHeader, Serializable {
         CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO
     }
 
-    // the VCF version for this header
-    private VCFHeaderVersion vcfHeaderVersion;
-
     // header meta data
     private final VCFMetaDataLines mMetaData = new VCFMetaDataLines();
 
@@ -163,7 +160,7 @@ public class VCFHeader implements HtsHeader, Serializable {
         // lines are presented in the set, a warning will be issued, only the last one will be retained,
         // and the header version will be established using the last version line encountered
         mMetaData.addMetaDataLines(metaData);
-        vcfHeaderVersion = initializeHeaderVersion();
+        final VCFHeaderVersion vcfHeaderVersion = initializeHeaderVersion();
         mMetaData.validateMetaDataLines(vcfHeaderVersion);
 
         checkForDeprecatedGenotypeLikelihoodsKey();
@@ -180,7 +177,7 @@ public class VCFHeader implements HtsHeader, Serializable {
     * @return the VCFHeaderVersion for this header. will not be null
     */
     public VCFHeaderVersion getVCFHeaderVersion() {
-        return vcfHeaderVersion;
+        return mMetaData.getVCFVersion();
     }
 
     /**
@@ -191,16 +188,12 @@ public class VCFHeader implements HtsHeader, Serializable {
      * @param headerLine header line to attempt to add
      */
     public void addMetaDataLine(final VCFHeaderLine headerLine) {
-        // propagate the new line to the metadata lines object
+        // propagate the new line to the metadata lines object, and if the version changed, validate
+        // the lines against the new version
+        final VCFHeaderVersion oldHeaderVersion = mMetaData.getVCFVersion();
         mMetaData.addMetaDataLine(headerLine);
-
-        // update the current version in case this line triggered a version change
         final VCFHeaderVersion newHeaderVersion = mMetaData.getVCFVersion();
-        if (!newHeaderVersion.equals(vcfHeaderVersion)) {
-            validateVersionTransition(vcfHeaderVersion, newHeaderVersion);
-        }
-        vcfHeaderVersion = newHeaderVersion;
-        headerLine.validateForVersion(vcfHeaderVersion);
+        validateVersionTransition(headerLine, oldHeaderVersion, newHeaderVersion);
 
         checkForDeprecatedGenotypeLikelihoodsKey();
     }
@@ -574,7 +567,6 @@ public class VCFHeader implements HtsHeader, Serializable {
         if (samplesWereAlreadySorted != vcfHeader.samplesWereAlreadySorted) return false;
         if (writeEngineHeaders != vcfHeader.writeEngineHeaders) return false;
         if (writeCommandLine != vcfHeader.writeCommandLine) return false;
-        if (vcfHeaderVersion != vcfHeader.vcfHeaderVersion) return false;
         if (!mMetaData.equals(vcfHeader.mMetaData)) return false;
         if (mGenotypeSampleNames != null ? !mGenotypeSampleNames.equals(vcfHeader.mGenotypeSampleNames) :
                 vcfHeader.mGenotypeSampleNames != null)
@@ -588,8 +580,7 @@ public class VCFHeader implements HtsHeader, Serializable {
 
     @Override
     public int hashCode() {
-        int result = vcfHeaderVersion.hashCode();
-        result = 31 * result + mMetaData.hashCode();
+        int result = mMetaData.hashCode();
         result = 31 * result + (mGenotypeSampleNames != null ? mGenotypeSampleNames.hashCode() : 0);
         result = 31 * result + (samplesWereAlreadySorted ? 1 : 0);
         result = 31 * result + (sampleNamesInOrder != null ? sampleNamesInOrder.hashCode() : 0);
@@ -614,26 +605,29 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     private void validateVersionTransition(
-            final VCFHeaderVersion previousVersion,
+            final VCFHeaderLine newHeaderLine,
+            final VCFHeaderVersion currentVersion,
             final VCFHeaderVersion newVersion) {
-        final int compareTo = newVersion.compareTo(previousVersion);
+        final int compareTo = newVersion.compareTo(currentVersion);
+
+        // We only allow going forward to a newer version, not backwards to an older one, since there
+        // is really no way to validate old header lines (pre vcfV4.2). If the version moved forward,
+        // revalidate all the lines, otherwise only validate the new header line.
         if (compareTo < 0) {
-            // We only allow going forward to a newer version, not backwards to an older one, since there
-            // is really no way to validate old header lines (pre vcfV4.2). The only way to create a header with
-            // an old version is to create it that way from the start.
-            // to be created with the old version from the start.
             throw new TribbleException(String.format(
                     "When changing a header version, the new header version %s must be > the previous version %s",
                     newVersion,
-                    previousVersion));
+                    currentVersion));
         } else if (compareTo > 0) {
             logger.debug(() -> String.format("Updating VCFHeader version from %s to %s",
-                    previousVersion.getVersionString(),
+                    currentVersion.getVersionString(),
                     newVersion.getVersionString()));
 
             // the version moved forward, so validate ALL of the existing lines in the list to ensure
             // that the transition is valid
             mMetaData.validateMetaDataLines(newVersion);
+        } else {
+            newHeaderLine.validateForVersion(newVersion);
         }
     }
 

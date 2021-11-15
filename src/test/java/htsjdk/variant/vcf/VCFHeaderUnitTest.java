@@ -516,15 +516,6 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test(expectedExceptions = TribbleException.class)
-    public void testAddLineWithValidationFailure() {
-        // create a 4.3 header, and then try to add an old-style pedigree line (one that has no ID)
-        // which should cause a failure
-        final VCFHeader vcfHeader = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeaderVersion.VCF4_3));
-        vcfHeader.addMetaDataLine(new VCFHeaderLine(VCFConstants.PEDIGREE_HEADER_KEY, "<Name_0=G0-ID,Name_1=G1-ID>"));
-    }
-
-
-    @Test(expectedExceptions = TribbleException.class)
     public void testConstructorRequiresFileFormatLine() {
         final Set<VCFHeaderLine> metaDataSet = VCFHeaderUnitTestData.getV42HeaderLinesWITHOUTFormatString(); // 4.2 header is compatible with all 4.x versions
         // create a new header from this set (containing no fileformat line), no requested version in constructor
@@ -577,6 +568,14 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final Map<String, String> attributes = new LinkedHashMap<>();
         attributes.put("ID", "id");
         header.addMetaDataLine(new VCFPedigreeHeaderLine(attributes));
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testAddMetaDataLineWithValidationFailure() {
+        // create a 4.3 header, and then try to add an old-style pedigree line (one that has no ID)
+        // which should cause a failure
+        final VCFHeader vcfHeader = new VCFHeader(VCFHeader.makeHeaderVersionLineSet(VCFHeaderVersion.VCF4_3));
+        vcfHeader.addMetaDataLine(new VCFHeaderLine(VCFConstants.PEDIGREE_HEADER_KEY, "<Name_0=G0-ID,Name_1=G1-ID>"));
     }
 
     @Test(expectedExceptions = TribbleException.class)
