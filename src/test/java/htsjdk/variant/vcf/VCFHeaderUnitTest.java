@@ -601,6 +601,26 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void testFileFormatLineFirstInSet() {
+        final Set<VCFHeaderLine> orderedLineSet = new LinkedHashSet<>();
+        orderedLineSet.addAll(VCFHeaderUnitTestData.getV42HeaderLinesWITHOUTFormatString());
+        orderedLineSet.stream().forEach(l -> Assert.assertFalse(VCFHeaderVersion.isFormatString(l.getKey())));
+        // add the file format line last
+        orderedLineSet.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        final VCFHeader vcfHeader = new VCFHeader(orderedLineSet, Collections.EMPTY_SET);
+
+        final Collection<VCFHeaderLine> inputOrderLines = vcfHeader.getMetaDataInInputOrder();
+        final Optional<VCFHeaderLine> optFirstInputOrderLine = inputOrderLines.stream().findFirst();
+        Assert.assertTrue(optFirstInputOrderLine.isPresent());
+        Assert.assertTrue(VCFHeaderVersion.isFormatString(optFirstInputOrderLine.get().getKey()));
+
+        final Collection<VCFHeaderLine> sortedOrderLines = vcfHeader.getMetaDataInSortedOrder();
+        final Optional<VCFHeaderLine> optFirstSortedOrderLine = sortedOrderLines.stream().findFirst();
+        Assert.assertTrue(optFirstSortedOrderLine.isPresent());
+        Assert.assertTrue(VCFHeaderVersion.isFormatString(optFirstSortedOrderLine.get().getKey()));
+    }
+
+    @Test
     public void testPreserveSequenceDictionaryAttributes() {
         // Round trip a SAMSequenceDictionary with attributes, through a VCFHeader, and back
         // to a SAMSequenceDictionary with the same attributes.

@@ -92,8 +92,7 @@ public class VCFHeaderMergerUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> mergedHeaderLines = doHeaderMergeForVersions(headerVersions);
         final VCFMetaDataLines metaDataLines = new VCFMetaDataLines();
         metaDataLines.addMetaDataLines(mergedHeaderLines);
-        final VCFHeaderLine versionLine = metaDataLines.getFileFormatLine();
-        Assert.assertEquals(VCFHeaderVersion.toHeaderVersion(versionLine.getValue()), expectedVersion);
+        Assert.assertEquals(metaDataLines.getVCFVersion(), expectedVersion);
 
         // now create a new header using the merged VersionLines, and make sure *it* has the expected version
         final VCFHeader mergedHeader = new VCFHeader(mergedHeaderLines);
