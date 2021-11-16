@@ -148,10 +148,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         final List<DataSeries> seriesToUse = new ArrayList<>();
         // skip the ones this implementation doesn't use
         for (final DataSeries ds : DataSeries.values()) {
-            if (ds != DataSeries.TM_TestMark
-                    && ds != DataSeries.TV_TestMark
-                    && ds != DataSeries.QQ_scores
-                    && ds != DataSeries.BB_Bases) {
+            if (!StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK.contains(ds))
+             {
                 seriesToUse.add(ds);
             }
         }

@@ -63,6 +63,10 @@ public enum DataSeries {
     // Auxiliary Tags
 
     TL_TagIdList                        (DataSeriesType.INT,        "TL", 13),
+
+    // Retained for backward compatibility on CRAM read. See https://github.com/samtools/hts-specs/issues/598
+    // https://github.com/samtools/htsjdk/issues/1571
+
     TC_TagCount                         (DataSeriesType.INT,        "TC", 14),
     TN_TagNameAndType                   (DataSeriesType.INT,        "TN", 15),
 

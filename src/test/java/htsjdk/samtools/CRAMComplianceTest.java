@@ -3,8 +3,15 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
+import htsjdk.samtools.cram.structure.CompressionHeader;
+import htsjdk.samtools.cram.structure.CompressionHeaderEncodingMap;
+import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.samtools.cram.structure.DataSeries;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
 
@@ -23,6 +30,7 @@ import java.util.List;
  * Created by vadim on 28/04/2015.
  */
 public class CRAMComplianceTest extends HtsjdkTest {
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
     @FunctionalInterface
     public interface TriConsumer<T1, T2, T3> {
@@ -358,6 +366,41 @@ public class CRAMComplianceTest extends HtsjdkTest {
             Assert.assertEquals(cramRecords.size(), originalBAMRecords.size());
             for (int i = 0; i < originalBAMRecords.size(); i++) {
                 Assert.assertEquals(cramRecords.get(i), originalBAMRecords.get(i));
+            }
+        }
+    }
+
+    @Test(description = "TC and TN should not be present in the output CRAM file")
+    public void testObsoleteDataSeriesNotWritten() throws IOException {
+
+        // 1301_slice_aux.cram has legacy dataseries TC, TN present in it.
+        // TC, TN are now removed and are no longer written by htsjdk
+        // This file is used to test if CRAM reader can ignore these dataseries.
+        // 1301_slice_aux.cram is taken from hts-specs repo. It uses reference files, ce.fa and ce.fa.fai.
+        // 1301_slice_aux.cram file: https://github.com/samtools/hts-specs/blob/master/test/cram/3.0/passed/1301_slice_aux.cram
+        // Reference files: https://github.com/samtools/hts-specs/tree/master/test/cram
+        final File sourceFile = new File(TEST_DATA_DIR, "1301_slice_aux.cram");
+        final File referenceFile = new File(TEST_DATA_DIR, "ce.fa");
+        final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
+        final File tempOutCRAM = File.createTempFile("testRoundTrip", ".cram");
+        tempOutCRAM.deleteOnExit();
+        CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
+        try (final InputStream cramInputStream = new BufferedInputStream(new FileInputStream(tempOutCRAM));
+            final CramContainerIterator containerIterator = new CramContainerIterator(cramInputStream)) {
+            while(containerIterator.hasNext()) {
+
+                // read the container and its CompressionHeader
+                final Container container = containerIterator.next();
+                final CompressionHeader compressionHeader = container.getCompressionHeader();
+
+                // get the CompressionHeaderEncodingMap
+                final CompressionHeaderEncodingMap encodingMap = compressionHeader.getEncodingMap();
+
+                //make sure obsolete DataSeries TC, TN are not present in the CompressionHeaderEncodingMap
+                for (final DataSeries dataseries : CompressionHeaderEncodingMap.DATASERIES_NOT_READ_BY_HTSJDK) {
+                    Assert.assertNull(encodingMap.getEncodingDescriptorForDataSeries(dataseries),
+                            "Unexpected encoding key found: " + dataseries.getCanonicalName());
+                }
             }
         }
     }

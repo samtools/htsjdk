@@ -41,6 +41,7 @@ import htsjdk.utils.ValidationUtils;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
+import htsjdk.samtools.util.Log;
 
 /**
  * Maintains a map of DataSeries to EncodingDescriptor, and a second map that contains the compressor to use
@@ -63,6 +64,15 @@ import java.util.*;
  * is mapped to the codec that actually transfers data to and from underlying Slice blocks.
  */
 public class CompressionHeaderEncodingMap {
+
+    // Set of obsolete DataSeries that are ignored on CRAM read
+    public static final Set<DataSeries> DATASERIES_NOT_READ_BY_HTSJDK = Collections.unmodifiableSet(new LinkedHashSet<DataSeries>() {{
+        add(DataSeries.TC_TagCount);
+        add(DataSeries.TN_TagNameAndType);
+    }});
+
+    private final static Log LOG = Log.getInstance(CompressionHeaderEncodingMap.class);
+
     // Encoding descriptors for each data series. (These encodings can be either EXTERNAL or CORE, although
     // the spec does not make a clear distinction between EXTERNAL and CODE for encodings; only for blocks.
     // See https://github.com/samtools/hts-specs/issues/426). The encodingMap is used as a template that is
@@ -123,9 +133,9 @@ public class CompressionHeaderEncodingMap {
         putExternalByteArrayStopTabGzipEncoding(encodingStrategy, DataSeries.RN_ReadName);
         putExternalGzipEncoding(encodingStrategy, DataSeries.RS_RefSkip);
         putExternalByteArrayStopTabGzipEncoding(encodingStrategy, DataSeries.SC_SoftClip);
-        putExternalGzipEncoding(encodingStrategy, DataSeries.TC_TagCount);
+        // the TC data series is obsolete
         putExternalGzipEncoding(encodingStrategy, DataSeries.TL_TagIdList);
-        putExternalGzipEncoding(encodingStrategy, DataSeries.TN_TagNameAndType);
+        // the TN data series is obsolete
         putExternalRansOrderOneEncoding(DataSeries.TS_InsertSize);
     }
 
@@ -150,10 +160,17 @@ public class CompressionHeaderEncodingMap {
             final byte[] paramBytes = new byte[paramLen];
             buffer.get(paramBytes);
 
-            // NOTE: the compression associated with this DataSeries is a property of the BLOCK in which it
-            // resides, not of the encoding, so the externalCompressors map isn't populated when reading a
-            // CRAM. The block data will be uncompressed before the codec ever sees it.
-            encodingMap.put(dataSeries, new EncodingDescriptor(id, paramBytes));
+            // if TC, TN DataSeries are present, log a warning and ignore on CRAM read
+            if (DATASERIES_NOT_READ_BY_HTSJDK.contains(dataSeries)) {
+                LOG.warn("Ignoring obsolete CRAM dataseries: " + dataSeries.getCanonicalName());
+            }
+            else {
+
+                // NOTE: the compression associated with this DataSeries is a property of the BLOCK in which it
+                // resides, not of the encoding, so the externalCompressors map isn't populated when reading a
+                // CRAM. The block data will be uncompressed before the codec ever sees it.
+                encodingMap.put(dataSeries, new EncodingDescriptor(id, paramBytes));
+            }
         }
     }
 
