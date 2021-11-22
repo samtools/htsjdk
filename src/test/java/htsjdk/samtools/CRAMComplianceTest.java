@@ -373,12 +373,9 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @Test(description = "TC and TN should not be present in the output CRAM file")
     public void testObsoleteDataSeriesNotWritten() throws IOException {
 
-        // 1301_slice_aux.cram has legacy dataseries TC, TN present in it.
-        // TC, TN are now removed and are no longer written by htsjdk
-        // This file is used to test if CRAM reader can ignore these dataseries.
+        // TC, TN are now removed and are no longer written by htsjdk.
         // 1301_slice_aux.cram is taken from hts-specs repo. It uses reference files, ce.fa and ce.fa.fai.
         // 1301_slice_aux.cram file: https://github.com/samtools/hts-specs/blob/master/test/cram/3.0/passed/1301_slice_aux.cram
-        // Reference files: https://github.com/samtools/hts-specs/tree/master/test/cram
         final File sourceFile = new File(TEST_DATA_DIR, "1301_slice_aux.cram");
         final File referenceFile = new File(TEST_DATA_DIR, "ce.fa");
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
