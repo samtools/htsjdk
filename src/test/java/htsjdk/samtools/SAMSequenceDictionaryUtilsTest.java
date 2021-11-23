@@ -210,17 +210,6 @@ public final class SAMSequenceDictionaryUtilsTest extends HtsjdkTest {
                         dictionaryCompatibility, reportedCompatibility, testDescription));
     }
 
-    @DataProvider(name = "StandardValidationIgnoresContigOrderData")
-    public Object[][] getStandardValidationIgnoresContigOrderData() {
-        return new Object[][] {
-                { Arrays.asList(CHR1_HG19, CHR2_HG19), Arrays.asList(CHR2_HG19, CHR1_HG19) },
-                { Arrays.asList(CHR1_HG19, CHR2_HG19), Arrays.asList(CHR2_HG19, CHR1_HG19, CHR10_HG19) },
-                { Arrays.asList(CHR1_HG19, CHR2_HG19), Arrays.asList(CHR10_HG19, CHR2_HG19, CHR1_HG19) },
-                { Arrays.asList(CHR1_HG19, CHR2_HG19), Arrays.asList(CHR2_HG19, CHR10_HG19, CHR1_HG19) },
-
-        };
-    }
-
     private SAMSequenceDictionary createSequenceDictionary( final List<SAMSequenceRecord> contigs ) {
         final List<SAMSequenceRecord> clonedContigs = new ArrayList<>(contigs.size());
 

@@ -149,7 +149,7 @@ public final class SAMSequenceDictionaryUtils {
      * @param dict2
      * @return
      */
-    private static List<SAMSequenceRecord> findDisequalCommonContigs(Set<String> commonContigs, SAMSequenceDictionary dict1, SAMSequenceDictionary dict2) {
+    public static List<SAMSequenceRecord> findDisequalCommonContigs(Set<String> commonContigs, SAMSequenceDictionary dict1, SAMSequenceDictionary dict2) {
         for ( String name : commonContigs ) {
             SAMSequenceRecord elt1 = dict1.getSequence(name);
             SAMSequenceRecord elt2 = dict2.getSequence(name);
@@ -197,7 +197,7 @@ public final class SAMSequenceDictionaryUtils {
      * @param dict
      * @return
      */
-    private static boolean nonCanonicalHumanContigOrder(SAMSequenceDictionary dict) {
+    public static boolean nonCanonicalHumanContigOrder(SAMSequenceDictionary dict) {
         SAMSequenceRecord chr1 = null, chr2 = null, chr10 = null;
         for ( SAMSequenceRecord elt : dict.getSequences() ) {
             if ( isHumanSeqRecord(elt, CHR1_HG18, CHR1_HG19, CHR1_B36, CHR1_B37) ) chr1 = elt;
