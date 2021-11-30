@@ -478,7 +478,7 @@ public class VCFHeader implements HtsHeader, Serializable {
         } else if (lineList.size() > 1) {
             throw new TribbleException(
                     String.format(
-                            "More than one \"other\" header line matches the key \"%s\". Use getOtherHeaderLines() to retrieve multiple lines:",
+                            "More than one \"other\" header line matches the key \"%s\" (%s). Use getOtherHeaderLines() to retrieve multiple lines:",
                             key,
                             lineList.stream().map(VCFHeaderLine::toString).collect(Collectors.joining(","))));
         } else {
