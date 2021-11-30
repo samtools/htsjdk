@@ -9,9 +9,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
-import htsjdk.variant.vcf.VCFSimpleHeaderLine;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -57,45 +55,149 @@ public class BCF2DictionaryTest extends VariantBaseTest {
         Assert.assertEquals(8, dict_size);
     }
 
-    /*
-    @DataProvider(name = "inconsistentIDXProvider")
-    public Object[][] inconsistentIDXProvider() {
+
+    @DataProvider(name = "invalidIDXProvider")
+    public Object[][] invalidIDXProvider() {
         final List<Object[]> cases = new ArrayList<>();
+        // String lines with inconsistent IDX
+        {
+            final LinkedHashSet<VCFHeaderLine> lines = new LinkedHashSet<>();
+            lines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+            lines.add(new VCFInfoHeaderLine(
+                "<ID=FOO,Number=A,Type=Integer,Description=\"test\",IDX=1>",
+                VCFHeader.DEFAULT_VCF_VERSION
+            ));
+            lines.add(new VCFInfoHeaderLine(
+                "<ID=BAR,Number=A,Type=Integer,Description=\"test\">",
+                VCFHeader.DEFAULT_VCF_VERSION
+            ));
 
-        // TODO can't create FILTER/FORMAT/INFO lines with arbitrary attributes
-        //  should probably be addressed as part of refactoring, would be simpler and more consistent
-        for (final BCFVersion version : BCFVersion.SUPPORTED_VERSIONS) {
-            // String lines with inconsistent IDX
-            {
-                int counter = 0;
-                final List<VCFHeaderLine> inputLines = new ArrayList<>();
-                inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
-                inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)).getGenericFieldValue());
+            final VCFHeader header = new VCFHeader(lines);
+            cases.add(new Object[]{header, BCFVersion.BCF2_2Version, true});
+        }
+        {
+            final LinkedHashSet<VCFHeaderLine> lines = new LinkedHashSet<>();
+            lines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+            lines.add(new VCFInfoHeaderLine(
+                "<ID=FOO,Number=A,Type=Integer,Description=\"test\">",
+                VCFHeader.DEFAULT_VCF_VERSION
+            ));
+            lines.add(new VCFInfoHeaderLine(
+                "<ID=BAR,Number=A,Type=Integer,Description=\"test\",IDX=2>",
+                VCFHeader.DEFAULT_VCF_VERSION
+            ));
 
-                new VCFSimpleHeaderLine()
+            final VCFHeader header = new VCFHeader(lines);
+            cases.add(new Object[]{header, BCFVersion.BCF2_2Version, true});
+        }
+        // Contig lines with inconsistent IDX
+        {
+            final LinkedHashSet<VCFHeaderLine> lines = new LinkedHashSet<>();
+            lines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+            lines.add(new VCFContigHeaderLine(
+                "<ID=chr3,Number=A,Type=Integer,Description=\"test\",IDX=3>",
+                VCFHeader.DEFAULT_VCF_VERSION,
+                3
+            ));
+            lines.add(new VCFContigHeaderLine(
+                "<ID=chr4,Number=A,Type=Integer,Description=\"test\">",
+                VCFHeader.DEFAULT_VCF_VERSION,
+                4
+            ));
 
+            final VCFHeader header = new VCFHeader(lines);
+            cases.add(new Object[]{header, BCFVersion.BCF2_2Version, false});
+        }
+        {
+            final LinkedHashSet<VCFHeaderLine> lines = new LinkedHashSet<>();
+            lines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+            lines.add(new VCFContigHeaderLine(
+                "<ID=chr3,Number=A,Type=Integer,Description=\"test\">",
+                VCFHeader.DEFAULT_VCF_VERSION,
+                3
+            ));
+            lines.add(new VCFContigHeaderLine(
+                "<ID=chr4,Number=A,Type=Integer,Description=\"test\",IDX=4>",
+                VCFHeader.DEFAULT_VCF_VERSION,
+                4
+            ));
 
-                final VCFHeader header = new VCFHeader(new LinkedHashSet<>(inputLines));
-                final BCF2Dictionary dict = BCF2Dictionary.makeBCF2StringDictionary(header, version);
-                cases.add(new Object[]{dict});
-            }
+            final VCFHeader header = new VCFHeader(lines);
+            cases.add(new Object[]{header, BCFVersion.BCF2_2Version, false});
+        }
 
-            // Contig lines with inconsistent IDX
-            {
+        // Headers with one IDX mapped to multiple strings/contigs
+        {
+            final LinkedHashSet<VCFHeaderLine> lines = new LinkedHashSet<>();
+            lines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+            lines.add(new VCFInfoHeaderLine(
+                "<ID=FOO,Number=A,Type=Integer,Description=\"test\",IDX=2>",
+                VCFHeader.DEFAULT_VCF_VERSION
+            ));
+            lines.add(new VCFInfoHeaderLine(
+                "<ID=BAR,Number=A,Type=Integer,Description=\"test\",IDX=2>",
+                VCFHeader.DEFAULT_VCF_VERSION
+            ));
 
-            }
+            final VCFHeader header = new VCFHeader(lines);
+            cases.add(new Object[]{header, BCFVersion.BCF2_2Version, true});
         }
 
         return cases.toArray(new Object[0][]);
     }
 
-    @Test(expectedExceptions = {TribbleException.class})
-    public void inconsistentIDX(final VCFHeader header, final BCFVersion version, final boolean string) {
-        if (string) {
+    @Test(dataProvider = "invalidIDXProvider", expectedExceptions = TribbleException.class)
+    public void invalidIDXUsage(final VCFHeader header, final BCFVersion version, final boolean isString) {
+        if (isString) {
             BCF2Dictionary.makeBCF2StringDictionary(header, version);
         } else {
             BCF2Dictionary.makeBCF2ContigDictionary(header, version);
         }
     }
-     */
+
+    @Test
+    public void testOutOfOrderAndMissingIDX() {
+        final LinkedHashSet<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        lines.add(new VCFInfoHeaderLine(
+            "<ID=FOO,Number=A,Type=Integer,Description=\"test\",IDX=6>",
+            VCFHeader.DEFAULT_VCF_VERSION
+        ));
+        lines.add(new VCFInfoHeaderLine(
+            "<ID=BAR,Number=A,Type=Integer,Description=\"test\",IDX=4>",
+            VCFHeader.DEFAULT_VCF_VERSION
+        ));
+        lines.add(new VCFInfoHeaderLine(
+            "<ID=BAZ,Number=A,Type=Integer,Description=\"test\",IDX=2>",
+            VCFHeader.DEFAULT_VCF_VERSION
+        ));
+        final VCFHeader header = new VCFHeader(lines);
+
+        final BCF2Dictionary stringDict = BCF2Dictionary.makeBCF2StringDictionary(header, BCFVersion.BCF2_2Version);
+        Assert.assertEquals(stringDict.get(6), "FOO");
+        Assert.assertEquals(stringDict.get(4), "BAR");
+        Assert.assertEquals(stringDict.get(2), "BAZ");
+    }
+
+    @Test
+    public void testLinesWithDifferentKeySameIDShareIDX() {
+        final LinkedHashSet<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        lines.add(new VCFInfoHeaderLine(
+            "<ID=FOO,Number=A,Type=Integer,Description=\"test\",IDX=2>",
+            VCFHeader.DEFAULT_VCF_VERSION
+        ));
+        lines.add(new VCFFormatHeaderLine(
+            "<ID=FOO,Number=A,Type=Integer,Description=\"test\",IDX=2>",
+            VCFHeader.DEFAULT_VCF_VERSION
+        ));
+        lines.add(new VCFFilterHeaderLine(
+            "<ID=FOO,Description=\"test\",IDX=2>",
+            VCFHeader.DEFAULT_VCF_VERSION
+        ));
+        final VCFHeader header = new VCFHeader(lines);
+
+        final BCF2Dictionary stringDict = BCF2Dictionary.makeBCF2StringDictionary(header, BCFVersion.BCF2_2Version);
+        Assert.assertEquals(stringDict.get(2), "FOO");
+    }
 }

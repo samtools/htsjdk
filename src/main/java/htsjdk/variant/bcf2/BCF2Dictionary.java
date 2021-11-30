@@ -21,8 +21,7 @@ import java.util.stream.Collectors;
  * Dictionary of strings or contigs for use with a BCF file.
  * <p>
  * Provides an Integer -> String map interface, but determines during construction whether
- * mapping can be stored as an array (if it can be stored as a dense array) or
- * it must be stored using a map.
+ * the mapping can be stored as an array or it must be stored using a map.
  * <p>
  * This class validates that IDX fields are used as required by the BCF 2.2 spec, namely
  * that either all lines of a given dictionary type (contig or FORMAT/INFO/FILTER) have
@@ -126,11 +125,6 @@ public abstract class BCF2Dictionary extends AbstractMap<Integer, String> {
             for (final VCFSimpleHeaderLine line : headerLines) {
                 final String id = line.getID();
                 final int IDX = Integer.parseUnsignedInt(line.getGenericFieldValue(BCF2Codec.IDXField));
-                if (!seen.contains(id)) {
-                    seen.add(id);
-                    maxIDX = Math.max(maxIDX, IDX);
-                    strings.put(IDX, line.getID());
-                }
 
                 // Have we seen this IDX before with a different string?
                 if (strings.containsKey(IDX)) {
@@ -142,6 +136,13 @@ public abstract class BCF2Dictionary extends AbstractMap<Integer, String> {
                         ));
                     }
                 }
+
+                if (!seen.contains(id)) {
+                    seen.add(id);
+                    maxIDX = Math.max(maxIDX, IDX);
+                    strings.put(IDX, line.getID());
+                }
+
             }
             if (maxIDX == seen.size() - 1) {
                 // By the pigeonhole principle, if we have N unique non-negative IDXs numbered starting from 0

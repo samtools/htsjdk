@@ -343,26 +343,22 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     }
 
     @DataProvider
-    public Object[][] bcftoolsRoundTripProvider() {
+    public Object[][] bcftoolsReadsHtsjdkOutputProvider() {
         return new Object[][]{
             {"phased.vcf"},
             {"test1.vcf"},
+            {"test2.vcf"},
             {"NA12891.vcf"},
             {"NA12891.fp.vcf"},
-            {"dbsnp_135.b37.1000.vcf"},
             {"structuralvariants.vcf"},
-            // TODO the test testBCFToolsReadsHtsjdkOutput fails for the following two files
-            //  due to what appears to be a bug in bcftools' VCF output where missing FORMAT
-            //  values are sometimes encoded as an empty string and not '.'
-            //  This seems to have something to do with the affected keys being in trailing
-            //  position in the original VCF (trailing missing values can be dropped), and
-            //  htsjdk reordering FORMAT keys by sorting them alphabetically
+            // These two tests appear to fail because of a bcftools bug
 //            {"ex2.vcf"},
 //            {"test.vcf.bgz"},
+            {"vcf43/all43Features.utf8.vcf"}
         };
     }
 
-    @Test(dataProvider = "bcftoolsRoundTripProvider")
+    @Test(dataProvider = "bcftoolsReadsHtsjdkOutputProvider")
     public void testBCFToolsReadsHtsjdkOutput(final String testFile) throws IOException {
         // Take an input VCF and read it into memory as our expected output
         // Take the same VCF and write it out as a BCF using htsjdk's BCF2Writer, use bcftools to convert from
@@ -382,7 +378,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         ) {
             writer.writeHeader(header);
             for (final VariantContext vc : expectedVariantContexts) {
-                writer.add(vc);
+                writer.add(vc.fullyDecode(header, false));
             }
         }
 
@@ -404,7 +400,23 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         }
     }
 
-    @Test(dataProvider = "bcftoolsRoundTripProvider")
+    @DataProvider
+    public Object[][] htsjdkReadsBCFToolsOutputProvider() {
+        return new Object[][]{
+            {"phased.vcf"},
+            {"test1.vcf"},
+            {"test2.vcf"},
+            {"NA12891.vcf"},
+            {"NA12891.fp.vcf"},
+            {"structuralvariants.vcf"},
+            {"ex2.vcf"},
+            {"test.vcf.bgz"},
+            // bcftools does not to decoding of percent encoded VCFs, so its BCF output contains the literal characters
+//            {"vcf43/all43Features.utf8.vcf"}
+        };
+    }
+
+    @Test(dataProvider = "htsjdkReadsBCFToolsOutputProvider")
     public void testHtsjdkReadsBCFToolsOutput(final String testFile) {
         // Take an input VCF and read it into memory as our expected output
         // Take the same VCF and convert it to BCF using bcftools, then read the BCF into memory again as our actual output
