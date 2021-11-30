@@ -11,6 +11,7 @@ jobs:
   test:
     env:
       HTSJDK_SAMTOOLS_BIN: /usr/bin/samtools
+      HTSJDK_BCFTOOLS_BIN: /usr/bin/bcftools
     runs-on: ubuntu-latest
     strategy:
       matrix:

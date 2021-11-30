@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 
 public class BCFToolsTestUtils {
     private static final String BCFTOOLS_BINARY_ENV_VARIABLE = "HTSJDK_BCFTOOLS_BIN";
-    public static final String expectedBCFtoolsVersion = "1.13";
+    public static final String expectedBCFtoolsVersion = "1.14";
 
     /**
      * @return true if bcftools is available, otherwise false
