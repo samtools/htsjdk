@@ -61,6 +61,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     // we have to store the list of strings that make up the header until they're needed
     protected VCFHeader header = null;
     protected VCFHeaderVersion version = null;
+    private VCFHeaderVersion contextsVersion = null;
 
     // a mapping of the allele
     protected final Map<String, List<Allele>> alleleMap = new HashMap<>(3);
@@ -510,7 +511,11 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 throw new TribbleException("Unrecognized VCF Version Upgrade Policy: " + this.policy);
         }
 
+        // We check and possibly update the version of the header lines inside the codec here, but the VariantContexts
+        // themselves may be expensive to decode and update, so we mark them with their original version so that when
+        // they are decoded, the decoder handles version specific behavior (e.g. percent encoding) correctly
         this.version = this.header.getVCFHeaderVersion();
+        this.contextsVersion = originalVersion;
 		return this.header;
 	}
 
@@ -562,8 +567,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return a variant context object
      */
     private VariantContext parseVCFLine(final String[] parts, final boolean includeGenotypes) {
-        VariantContextBuilder builder = new VariantContextBuilder();
-        builder.version(version);
+        final VariantContextBuilder builder = new VariantContextBuilder();
+        builder.version(contextsVersion);
         builder.source(getName());
 
         // increment the line count
