@@ -26,7 +26,6 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.beta.plugin.HtsRecord;
-import htsjdk.samtools.util.QualityUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -39,11 +38,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -1636,10 +1636,14 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         else {
             // TODO -- warning this is potentially very expensive as it creates copies over and over
             final VariantContextBuilder builder = new VariantContextBuilder(this);
-            fullyDecodeInfo(builder, header, lenientDecoding);
-            fullyDecodeGenotypes(builder, header);
-            builder.fullyDecoded(true);
-            return builder.make();
+            try {
+                decodeInfo(builder, header, lenientDecoding);
+                decodeGenotypes(builder, header, lenientDecoding);
+            } catch (final NumberFormatException | TribbleException e) {
+                // Wrap and rethrow exception with more precise information about VC
+                throw new TribbleException("Failed to fully decode VariantContext " + getContig() + ":" + getStart() + " with cause: " + e.getMessage());
+            }
+            return builder.fullyDecoded(true).make();
         }
     }
 
@@ -1651,145 +1655,156 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return fullyDecoded;
     }
 
-    private final void fullyDecodeInfo(final VariantContextBuilder builder, final VCFHeader header, final boolean lenientDecoding) {
-        builder.attributes(fullyDecodeAttributes(getAttributes(), header, lenientDecoding));
+    private void decodeInfo(
+        final VariantContextBuilder builder,
+        final VCFHeader header,
+        final boolean lenientDecoding
+    ) {
+        decodeAttributes(builder::attribute, id -> getInfoLine(id, header, lenientDecoding), this.getAttributes(), lenientDecoding);
     }
 
-    private final Map<String, Object> fullyDecodeAttributes(final Map<String, Object> attributes,
-                                                            final VCFHeader header,
-                                                            final boolean lenientDecoding) {
-        final Map<String, Object> newAttributes = new HashMap<>(10);
+    private void decodeGenotypes(
+        final VariantContextBuilder builder,
+        final VCFHeader header,
+        final boolean lenientDecoding
+    ) {
+        final GenotypesContext gc = this.getGenotypes();
+        final GenotypesContext newGc = new GenotypesContext(gc.size());
+        for (final Genotype g : this.getGenotypes()) {
+            final GenotypeBuilder gb = new GenotypeBuilder(g);
+            decodeAttributes(gb::attribute, id -> getFormatLine(id, header, lenientDecoding), g.getExtendedAttributes(), lenientDecoding);
+            newGc.add(gb.make());
+        }
+        builder.genotypesNoValidation(newGc);
+    }
 
-        for ( final Map.Entry<String, Object> attr : attributes.entrySet() ) {
-            final String field = attr.getKey();
+    private void decodeAttributes(
+        final BiConsumer<String, Object> put,
+        final Function<String, VCFCompoundHeaderLine> metadataGetter,
+        final Map<String, Object> attributes,
+        final boolean lenientDecoding
+    ) {
+        attributes.forEach((id, value) -> {
+            final VCFCompoundHeaderLine line = metadataGetter.apply(id);
+            final Object decoded = decodeValue(value, line);
 
-            if ( field.equals(VCFConstants.GENOTYPE_FILTER_KEY) )
-                continue; // gross, FT is part of the extended attributes
-
-            final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
-            final Object decoded = decodeValue(field, attr.getValue(), format, header.getVCFHeaderVersion());
-
-            if ( decoded != null &&
-                    ! lenientDecoding
-                    && format.getCountType() != VCFHeaderLineCount.UNBOUNDED
-                    && format.getType() != VCFHeaderLineType.Flag ) { // we expect exactly the right number of elements
-                final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
-                final int expSize = format.getCount(this);
-                if ( obsSize != expSize ) {
-                    throw new TribbleException.InvalidHeader("Discordant field size detected for field " +
-                            field + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values " +
-                            "but the header says this should have " + expSize + " values based on header record " +
-                            format);
+            if (decoded != null && !lenientDecoding
+                && line.getCountType() != VCFHeaderLineCount.UNBOUNDED
+                && line.getType() != VCFHeaderLineType.Flag
+            ) {
+                // We expect exactly the right number of elements
+                final int actualSize = decoded instanceof List ? ((List<?>) decoded).size() : 1;
+                final int expectedSize = line.getCount(this);
+                if (actualSize != expectedSize) {
+                    throw new TribbleException(String.format(
+                        "While decoding field: %s, number of values decoded: %d did not match expected number based on header count: %d",
+                        id, actualSize, expectedSize
+                    ));
                 }
             }
-            newAttributes.put(field, decoded);
-        }
-
-        return newAttributes;
+            put.accept(id, decoded);
+        });
     }
 
     private Object decodeValue(
-        final String field,
         final Object value,
-        final VCFCompoundHeaderLine format,
-        final VCFHeaderVersion version
+        final VCFCompoundHeaderLine line
     ) {
         final boolean percentDecode = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
-        if ( value instanceof String ) {
+        final VCFHeaderLineType type = line.getType();
+        if (value instanceof String) {
             final String string = (String) value;
-            if ( field.equals(VCFConstants.GENOTYPE_PL_KEY) )
-                return GenotypeLikelihoods.fromPLField(string);
-
-            if (field.equals(VCFConstants.GENOTYPE_POSTERIORS_KEY)) {
-                return decodeGPKey(string, version);
-            }
-
-            if ( string.indexOf(',') != -1 ) {
+            if (string.indexOf(',') != -1) {
                 final String[] splits = string.split(",");
                 final List<Object> values = new ArrayList<>(splits.length);
-                for (final String split : splits)
-                    values.add(decodeOne(field, split, format, percentDecode));
+                for (final String split : splits) {
+                    values.add(decodeOne(split, type, percentDecode));
+                }
                 return values;
             } else {
-                return decodeOne(field, string, format, percentDecode);
+                return decodeOne(string, type, percentDecode);
             }
-        } else if ( value instanceof List && (((List<?>) value).get(0)) instanceof String ) {
-            final List<String> asList = (List<String>)value;
+        } else if (value instanceof List && (((List<?>) value).get(0)) instanceof String) {
+            final List<String> asList = (List<String>) value;
             final List<Object> values = new ArrayList<>(asList.size());
-            for ( final String s : asList )
-                values.add(decodeOne(field, s, format, percentDecode));
+            for (final String s : asList) {
+                values.add(decodeOne(s, type, percentDecode));
+            }
             return values;
         } else {
             return value;
         }
-
-        // allowMissingValuesComparedToHeader
     }
 
-    private Object decodeOne(final String field, final String string, final VCFCompoundHeaderLine format, final boolean percentDecode) {
-        try {
-            if ( string.equals(VCFConstants.MISSING_VALUE_v4) )
-                return null;
-            else {
-                switch ( format.getType() ) {
-                    case Character: return string;
-                    case Flag:
-                        final boolean b = Boolean.parseBoolean(string) || string.equals("1");
-                        if (!b)
-                            throw new TribbleException("VariantContext FLAG fields " + field + " cannot contain false values"
-                                    + " as seen at " + getContig() + ":" + getStart());
-                        return true;
-                    case String:    return percentDecode ? VCFPercentEncodedTextTransformer.percentDecode(string) : string;
-                    case Integer:   return Integer.valueOf(string);
-                    case Float:     return VCFUtils.parseVcfDouble(string);
-                    default: throw new TribbleException("Unexpected type for field" + field);
-                }
+    private static Object decodeOne(
+        final String string,
+        final VCFHeaderLineType type,
+        final boolean percentDecode
+    ) {
+        if (string.equals(VCFConstants.MISSING_VALUE_v4))
+            return null;
+        else {
+            switch (type) {
+                case Character: return string;
+                case Flag:
+                    final boolean b = Boolean.parseBoolean(string) || string.equals("1");
+                    if (!b)
+                        throw new TribbleException("VariantContext FLAG fields cannot contain false values");
+                    return true;
+                case String: return percentDecode ? VCFPercentEncodedTextTransformer.percentDecode(string) : string;
+                case Integer: return Integer.valueOf(string);
+                case Float: return VCFUtils.parseVcfDouble(string);
+                default: throw new TribbleException("Unexpected VCF type " + type);
             }
-        } catch (NumberFormatException e) {
-            throw new TribbleException("Could not decode field " + field + " with value " + string + " of declared type " + format.getType());
         }
     }
 
-    private static List<Double> decodeGPKey(final String value, final VCFHeaderVersion version) {
-        final String[] splits = value.split(",");
-        // We need to special-case GP because there is a discrepancy in the scale used to record
-        // its values between pre-4.3 and 4.3+ VCF. Pre-4.3 GP is phred scale encoded while
-        // 4.3+ GP is a linear probability, bringing it in line with other standard keys that
-        // use the P suffix (c.f. VCF 4.3 spec section 7.2).
-
-        // Some tools in the wild apparently already use linear scaled GP, so we have to
-        // be careful about converting inputs. We check whether GP values are already linear
-        // scaled by seeing if the values' sum is approximately equal to 1, like we
-        // would expect if the values were linear scale probabilities.
-        // c.f. https://sourceforge.net/p/vcftools/mailman/vcftools-spec/thread/CEBCD558.FA29%25browning%40u.washington.edu/
-        double sum = 0;
-
-        final List<Double> rawGPValues = new ArrayList<>(splits.length);
-        for (final String s : splits) {
-            final double GP = VCFUtils.parseVcfDouble(s);
-            rawGPValues.add(GP);
-            sum += GP;
-        }
-
-        final boolean wasLinearScale = GeneralUtils.compareDoubles(sum, 1, VCFConstants.VCF_ENCODING_EPSILON) == 0;
-        if (!wasLinearScale && version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            rawGPValues.replaceAll(GP -> QualityUtil.getErrorProbabilityFromPhredScore((int) Math.round(GP)));
-        }
-        return rawGPValues;
-
+    private static VCFCompoundHeaderLine getInfoLine(
+        final String id,
+        final VCFHeader header,
+        final boolean lenientDecoding
+    ) {
+        return getMetadataLine(id, header, lenientDecoding, false);
     }
 
-    private void fullyDecodeGenotypes(final VariantContextBuilder builder, final VCFHeader header) {
-        final GenotypesContext gc = new GenotypesContext();
-        for ( final Genotype g : getGenotypes() ) {
-            gc.add(fullyDecodeGenotypes(g, header));
-        }
-        builder.genotypesNoValidation(gc);
+    private static VCFCompoundHeaderLine getFormatLine(
+        final String id,
+        final VCFHeader header,
+        final boolean lenientDecoding
+    ) {
+        return getMetadataLine(id, header, lenientDecoding, true);
     }
 
-    private final Genotype fullyDecodeGenotypes(final Genotype g, final VCFHeader header) {
-        final Map<String, Object> map = fullyDecodeAttributes(g.getExtendedAttributes(), header, true);
-        return new GenotypeBuilder(g).attributes(map).make();
+    private static VCFCompoundHeaderLine getMetadataLine(
+        final String id,
+        final VCFHeader header,
+        final boolean lenientDecoding,
+        final boolean isFormat
+    ) {
+        // Try getting line from header
+        VCFCompoundHeaderLine line = isFormat ? header.getFormatHeaderLine(id) : header.getInfoHeaderLine(id);
+        if (line == null && !lenientDecoding) {
+            throw new TribbleException(String.format(
+                "No %s header line was found matching ID: %s",
+                isFormat ? "FORMAT" : "INFO", id
+            ));
+        }
+        if (line == null) {
+            // Try to find a matching standard header line
+            line = isFormat
+                ? VCFStandardHeaderLines.getFormatLine(id, false)
+                : VCFStandardHeaderLines.getInfoLine(id, false);
+        }
+        if (line == null) {
+            final String description = "Auto-generated unbounded string "
+                + (isFormat ? "FORMAT" : "INFO")
+                + " header line for " + id;
+            // Decode values as strings, and allow an unbounded number of values
+            line = isFormat
+                ? new VCFFormatHeaderLine(id, VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, description)
+                : new VCFInfoHeaderLine(id, VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, description);
+        }
+        return line;
     }
 
     // ---------------------------------------------------------------------------------------------------------

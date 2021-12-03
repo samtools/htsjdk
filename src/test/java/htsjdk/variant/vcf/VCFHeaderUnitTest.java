@@ -29,6 +29,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.samtools.util.Tuple;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
@@ -836,29 +837,33 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         // read an existing VCF
         final File expectedFile = new File("src/test/resources/htsjdk/variant/Vcf4.2WithSourceVersionInfoFields.vcf");
+        final Tuple<VCFHeader, List<VariantContext>> expectedVCF = readEntireVCFIntoMemory(expectedFile.toPath());
 
         // write the file out into a new copy
         final File actualFile = File.createTempFile("testVcf4.2roundtrip.", FileExtensions.VCF);
         actualFile.deleteOnExit();
 
-        try (final VCFFileReader originalFileReader = new VCFFileReader(expectedFile, false);
-             final VariantContextWriter copyWriter = new VariantContextWriterBuilder()
-                     .setOutputFile(actualFile)
-                     .setReferenceDictionary(createArtificialSequenceDictionary())
-                     .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
-                     .build()
+        try (final VariantContextWriter copyWriter = new VariantContextWriterBuilder()
+                 .setOutputFile(actualFile)
+                 .setReferenceDictionary(createArtificialSequenceDictionary())
+                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                 .build()
         ) {
-            final VCFHeader originalHeader = originalFileReader.getFileHeader();
-
-            copyWriter.writeHeader(originalHeader);
-            for (final VariantContext variantContext : originalFileReader) {
+            copyWriter.writeHeader(expectedVCF.a);
+            for (final VariantContext variantContext : expectedVCF.b) {
                 copyWriter.add(variantContext);
             }
         }
 
-        final String actualContents = new String(Files.readAllBytes(actualFile.toPath()), StandardCharsets.UTF_8);
-        final String expectedContents = new String(Files.readAllBytes(expectedFile.toPath()), StandardCharsets.UTF_8);
-        Assert.assertEquals(actualContents.substring(actualContents.indexOf('\n')), expectedContents.substring(actualContents.indexOf('\n')));
+        final Tuple<VCFHeader, List<VariantContext>> actualVCF = readEntireVCFIntoMemory(actualFile.toPath());
+
+        Assert.assertEquals(actualVCF.b.size(), expectedVCF.b.size());
+        for (int i = 0; i < actualVCF.b.size(); i++) {
+            VariantBaseTest.assertVariantContextsAreEqual(
+                actualVCF.b.get(i).fullyDecode(actualVCF.a, false),
+                expectedVCF.b.get(i).fullyDecode(expectedVCF.a, false)
+            );
+        }
     }
 
     private static final int VCF4headerStringCount = 16; // 17 -1 for the #CHROM... line

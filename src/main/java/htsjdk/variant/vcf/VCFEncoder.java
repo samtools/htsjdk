@@ -1,7 +1,10 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.QualityUtil;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
@@ -104,10 +107,16 @@ public class VCFEncoder {
      * @return the java.lang.Appendable 'vcfOutput'
      * @throws IOException
      */
-    public void write(final Appendable vcfOutput, final VariantContext context) throws IOException {
+    public void write(final Appendable vcfOutput, VariantContext context) throws IOException {
         if (this.header == null) {
             throw new NullPointerException("The header field must be set on the VCFEncoder before encoding records.");
         }
+        // If this context came from a version of VCF different from that of the header which we wrote
+        // we need to decode the VC then re-encode its in-memory representation
+        if (context.getVersion() != header.getVCFHeaderVersion()) {
+            context = context.fullyDecode(header, true);
+        }
+
         // CHROM
         vcfOutput.append(context.getContig()).append(VCFConstants.FIELD_SEPARATOR)
                 // POS
@@ -247,7 +256,7 @@ public class VCFEncoder {
         }
     }
 
-    private static String formatPrimitiveArray(final Object v) {
+    private String formatPrimitiveArray(final Object v) {
         final int len = Array.getLength(v);
         if (len == 0) return VCFConstants.MISSING_VALUE_v4;
         int i = 0;
@@ -273,6 +282,12 @@ public class VCFEncoder {
                 if (i == len) break;
                 s.append(',');
             }
+        } else {
+            for (;;) {
+                s.append(formatVCFField(Array.get(v, i++), false));
+                if (i == len) break;
+                s.append(',');
+            }
         }
         return s.toString();
     }
@@ -287,6 +302,38 @@ public class VCFEncoder {
             s.append(',');
         }
         return s.toString();
+    }
+
+    private String formatGPKey(final Object val) {
+        if (val instanceof List) return formatList((List<?>) val, true);
+        if (!(val instanceof String)) {
+            throw new TribbleException("Value for GP key was of unexpected type: " + val.getClass());
+        }
+        final String[] splits = ((String) val).split(",");
+        // We need to special-case GP because there is a discrepancy in the scale used to record
+        // its values between pre-4.3 and 4.3+ VCF. Pre-4.3 GP is phred scale encoded while
+        // 4.3+ GP is a linear probability, bringing it in line with other standard keys that
+        // use the P suffix (c.f. VCF 4.3 spec section 7.2).
+
+        // Some tools in the wild apparently already use linear scaled GP, so we have to
+        // be careful about converting inputs. We check whether GP values are already linear
+        // scaled by seeing if the values' sum is approximately equal to 1, like we
+        // would expect if the values were linear scale probabilities.
+        // c.f. https://sourceforge.net/p/vcftools/mailman/vcftools-spec/thread/CEBCD558.FA29%25browning%40u.washington.edu/
+        double sum = 0;
+
+        final List<Double> rawGPValues = new ArrayList<>(splits.length);
+        for (final String s : splits) {
+            final double GP = VCFUtils.parseVcfDouble(s);
+            rawGPValues.add(GP);
+            sum += GP;
+        }
+
+        final boolean wasLinearScale = GeneralUtils.compareDoubles(sum, 1, VCFConstants.VCF_ENCODING_EPSILON) == 0;
+        if (!wasLinearScale && header.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            rawGPValues.replaceAll(GP -> QualityUtil.getErrorProbabilityFromPhredScore((int) Math.round(GP)));
+        }
+        return formatList(rawGPValues, true);
     }
 
     /**
@@ -380,6 +427,10 @@ public class VCFEncoder {
                     final String outputValue;
                     if (field.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
                         outputValue = g.isFiltered() ? g.getFilters() : VCFConstants.PASSES_FILTERS_v4;
+                    } else if (field.equals(VCFConstants.GENOTYPE_POSTERIORS_KEY)) {
+                        outputValue = g.hasExtendedAttribute(field)
+                            ? formatGPKey(g.getExtendedAttribute(field))
+                            : VCFConstants.MISSING_VALUE_v4;
                     } else {
                         final IntGenotypeFieldAccessors.Accessor accessor = GENOTYPE_FIELD_ACCESSORS.getAccessor(field);
                         if (accessor != null) {
