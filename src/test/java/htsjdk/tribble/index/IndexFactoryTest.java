@@ -196,12 +196,9 @@ public class IndexFactoryTest extends HtsjdkTest {
     @DataProvider(name = "bcfDataFactory")
     public Object[][] getBCFData(){
         return new Object[][] {
-                //TODO: this needs more test cases, including block compressed and indexed, but bcftools can't
-                // generate indices for BCF2.1 files, which is all HTSJDK can read, and htsjdk also can't read/write
-                // block compressed BCFs (https://github.com/samtools/htsjdk/issues/946)
-                new Object[] {
-                        new File("src/test/resources/htsjdk/variant/serialization_test.bcf")
-                }
+            {new File("src/test/resources/htsjdk/variant/serialization_test_unzipped.bcf")},
+            // TODO: this needs more test cases, including block compressed and indexed
+//            {new File("src/test/resources/htsjdk/variant/serialization_test.bcf")},
         };
     }
 

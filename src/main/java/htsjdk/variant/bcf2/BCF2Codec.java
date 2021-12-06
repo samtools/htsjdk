@@ -193,6 +193,8 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             bcfVersion = BCFVersion.readBCFVersion(inputStream);
             if (bcfVersion == null) {
                 error("Input stream does not contain a BCF encoded file; BCF magic header info not found");
+            } else if (!BCFVersion.SUPPORTED_VERSIONS.contains(bcfVersion)) {
+                error(bcfVersion + " is not supported by htsjdk");
             }
 
             decoder = BCF2Decoder.getDecoder(bcfVersion);

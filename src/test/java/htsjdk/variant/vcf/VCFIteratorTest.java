@@ -91,7 +91,7 @@ public class VCFIteratorTest extends VariantBaseTest {
          * https://github.com/samtools/htsjdk/pull/837#discussion_r139490218
          * https://github.com/samtools/htsjdk/issues/946
          */
-        if(!tmp.getName().endsWith(FileExtensions.COMPRESSED_VCF)) {
+        if(!(tmp.getName().endsWith(FileExtensions.COMPRESSED_VCF) || tmp.getName().endsWith(FileExtensions.BCF))) {
             tmp = File.createTempFile("tmp",FileExtensions.COMPRESSED_VCF);
             tmp.deleteOnExit();
             try(    FileInputStream in = new FileInputStream(filepath);

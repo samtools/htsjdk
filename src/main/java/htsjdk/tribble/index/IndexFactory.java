@@ -595,7 +595,9 @@ public class IndexFactory {
             try {
                 // Since we modified inputPath above, we MUST use this.inputPath for all checks and file creations
                 // for the rest of this method!
-                if (IOUtil.hasBlockCompressedExtension(this.inputPath)) {
+                if (IOUtil.hasBlockCompressedExtension(this.inputPath)
+                    || ((this.inputPath.toString().endsWith(FileExtensions.BCF)) && IOUtil.isGZIPInputStream(IOUtil.openFileForReading(this.inputPath)))
+                ) {
                     final BlockCompressedInputStream bcs = initIndexableBlockCompressedStream(this.inputPath);
                     source = (SOURCE) codec.makeIndexableSourceFromStream(bcs);
                 } else {
@@ -623,7 +625,9 @@ public class IndexFactory {
         private static BlockCompressedInputStream initIndexableBlockCompressedStream(final Path inputPath) {
             // test that this is in fact a valid block compressed file
             try {
-                if (!IOUtil.isBlockCompressed(inputPath, true)) {
+                if (!(IOUtil.isBlockCompressed(inputPath, true)
+                || (inputPath.toString().endsWith(FileExtensions.BCF)) && IOUtil.isGZIPInputStream(IOUtil.openFileForReading(inputPath)))
+                ) {
                     throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.",
                             inputPath.toString());
                 }
