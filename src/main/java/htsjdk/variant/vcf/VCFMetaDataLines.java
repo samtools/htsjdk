@@ -36,9 +36,9 @@ import java.util.stream.Collectors;
  *    This class does NOT validate that the lines contained are valid for the current version (that is
  *    the caller's responsibility).
  */
-//Visible to allow disq Kryo registration for serialization
+//Visible to allow registration for custom serialization
 @InternalAPI
-final class VCFMetaDataLines implements Serializable {
+final public class VCFMetaDataLines implements Serializable {
     public static final long serialVersionUID = 1L;
     protected final static Log logger = Log.getInstance(VCFMetaDataLines.class);
 
