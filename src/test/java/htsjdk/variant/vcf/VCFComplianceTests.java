@@ -17,32 +17,42 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-// Tests that validate htsjdk compliance with the test files in
-// https://github.com/samtools/hts-specs/tree/master/test/vcf.
-//
-// The data providers here filter/exclude many test cases that currently fail, with a comment explaining
-// what causes the failure.
-
+/**
+ * Tests that validate htsjdk VCF compliance using the test files in
+ * https://github.com/samtools/hts-specs/tree/master/test/vcf.
+ *
+ * To run the tests, clone https://github.com/samtools/hts-specs, and initialize
+ * {@code HTS_SPECS_REPO_LOCATION} to the location of the local clone.
+ *
+ * The data providers here filter/exclude many test cases that currently fail, with a comment explaining
+ * what causes the failure (WIP).
+ */
 public class VCFComplianceTests extends HtsjdkTest {
-    //NOTE: to run these tests you need to clone https://github.com/samtools/hts-specs and initialize
-    // this string to the location of the local repo
-    private static final String HTS_SPECS_REPO_LOCATION = "/Users/cnorman/projects/hts-specs/";
+    // To run the tests, clone https://github.com/samtools/hts-specs and initialize
+    // HTS_SPECS_REPO_LOCATION to the location of the local clone.
+    private static final String HTS_SPECS_REPO_LOCATION = "../hts-specs/";
 
-    @DataProvider(name = "42Passed")
+    // test case sub directories
+    private static final String VCF_4_2_PASSED = "test/vcf/4.2/passed/";
+    private static final String VCF_4_2_FAILED = "test/vcf/4.2/failed/";
+    private static final String VCF_4_3_PASSED = "test/vcf/4.3/passed/";
+    private static final String VCF_4_3_FAILED = "test/vcf/4.3/failed/";
+
+    @DataProvider(name = VCF_4_2_PASSED)
     private Object[] getVCF42Passed() {
-        // exclude test cases should be accepted, but are rejected by htsjdk
+        // exclude test cases that should be accepted, but are rejected by htsjdk
         final Set<String> excludeList = new HashSet<String>() {{
             add("passed_meta_pedigree.vcf");    // has blank line/"empty variant" at the end (ends with a line feed)
         }};
-        return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, "test/vcf/4.2/passed/"))
+        return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, VCF_4_2_PASSED))
                 .filter(file -> !excludeList.contains(file.getName()))
                 .toArray();
     }
 
-    @DataProvider(name = "42Failed")
+    @DataProvider(name = VCF_4_2_FAILED)
     private Object[] getVCF42Failed() {
-        // exclude test cases should be rejected due to various defects/malformed constructs, but are not currently
-        // rejected by htsjdk
+        // exclude cases that should be rejected due to various defects/malformed constructs, but are
+        // currently accepted by htsjdk
         final Set<String> excludeList = new HashSet<String>() {{
             add("failed_fileformat_000.vcf");   // empty file format: ##fileformat=
             add("failed_fileformat_001.vcf");   // missing =: ##fileformat=VCF v4.2
@@ -235,13 +245,14 @@ public class VCFComplianceTests extends HtsjdkTest {
             add("failed_body_pos_002.vcf");
         }};
 
-        return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, "test/vcf/4.2/failed/"))
+        return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, VCF_4_2_FAILED))
                 .filter(file -> !excludeList.contains(file.getName()))
                 .toArray();
     }
 
-    @DataProvider(name = "43Passed")
+    @DataProvider(name = VCF_4_3_PASSED)
     private Object[] getVCF43Passed() {
+        // exclude test cases that should be accepted, but are rejected by htsjdk
         final Set<String> excludeList = new HashSet<String>() {{
             add("passed_meta_pedigree.vcf");    // has blank line the end (ends with a line feed)
 
@@ -249,15 +260,15 @@ public class VCFComplianceTests extends HtsjdkTest {
             // ##ALT=<ID=complexcustomcontig!"#$%&'()*+-./;=?@[\]^_`{|}~,Description="Valid ALT metadata custom ID with non-alphanumeric characters">
             add("passed_meta_alt.vcf");
         }};
-        return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, "test/vcf/4.3/passed/"))
+        return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, VCF_4_3_PASSED))
                 .filter(file -> !excludeList.contains(file.getName()))
                 .toArray();
     }
 
-    @DataProvider(name = "43Failed")
+    @DataProvider(name = VCF_4_3_FAILED)
     private Object[] getVCF43Failed() {
-        // exclude test cases should be rejected due to various defects/malformed constructs, but are not currently
-        // rejected by htsjdk
+        // exclude cases that should be rejected due to various defects/malformed constructs, but are
+        // currently accepted by htsjdk
         final Set<String> excludeList = new HashSet<String>() {{
             add("failed_body_alt_003.vcf");
             add("failed_body_alt_005.vcf");
@@ -459,27 +470,27 @@ public class VCFComplianceTests extends HtsjdkTest {
             add("failed_meta_sample_002.vcf");
             add("failed_meta_sample_003.vcf");
         }};
-        return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, "test/vcf/4.3/failed/"))
+        return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, VCF_4_3_FAILED))
                 .filter(file -> !excludeList.contains(file.getName()))
                 .toArray();
     }
 
-    @Test(dataProvider = "42Passed")
+    @Test(dataProvider = VCF_4_2_PASSED)
     public void testVCF42ReadCompliancePassed(final File vcfFileName) {
         doReadTest(vcfFileName);
     }
 
-    @Test(dataProvider = "42Failed", expectedExceptions = TribbleException.class)
+    @Test(dataProvider = VCF_4_2_FAILED, expectedExceptions = TribbleException.class)
     public void testVCF42ReadComplianceFailed(final File vcfFileName) {
         doReadTest(vcfFileName);
     }
 
-    @Test(dataProvider = "43Passed")
+    @Test(dataProvider = VCF_4_3_PASSED)
     public void testVCF43ReadCompliancePassed(final File vcfFileName) {
         doReadTest(vcfFileName);
     }
 
-    @Test(dataProvider = "43Failed", expectedExceptions = TribbleException.class)
+    @Test(dataProvider = VCF_4_3_FAILED, expectedExceptions = TribbleException.class)
     public void testVCF43ReadComplianceFailed(final File vcfFileName) {
         doReadTest(vcfFileName);
     }
