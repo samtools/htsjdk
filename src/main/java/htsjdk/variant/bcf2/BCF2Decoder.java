@@ -47,8 +47,6 @@ public abstract class BCF2Decoder {
 
     public static BCF2Decoder getDecoder(final BCFVersion version) {
         switch (version.getMinorVersion()) {
-            case 1:
-                return new BCF2Decoder.BCF2_1Decoder();
             case 2:
                 return new BCF2Decoder.BCF2_2Decoder();
             default:
@@ -465,14 +463,6 @@ public abstract class BCF2Decoder {
 
 
     public abstract int getPaddingValue(final BCF2Type type);
-
-    public static class BCF2_1Decoder extends BCF2Decoder {
-
-        @Override
-        public int getPaddingValue(final BCF2Type type) {
-            return type.getMissingBytes();
-        }
-    }
 
     public static class BCF2_2Decoder extends BCF2Decoder {
 

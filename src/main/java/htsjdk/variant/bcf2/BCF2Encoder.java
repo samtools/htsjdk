@@ -49,8 +49,6 @@ public abstract class BCF2Encoder {
 
     public static BCF2Encoder getEncoder(final BCFVersion version) {
         switch (version.getMinorVersion()) {
-            case 1:
-                return new BCF2_1Encoder();
             case 2:
                 return new BCF2_2Encoder();
             default:
@@ -322,36 +320,6 @@ public abstract class BCF2Encoder {
     // Version specific behavior
     //
     // --------------------------------------------------------------------------------
-
-    public static class BCF2_1Encoder extends BCF2Encoder {
-
-        @Override
-        public void encodePaddingValue(final BCF2Type type) throws IOException {
-            type.write(type.getMissingBytes(), encodeStream);
-        }
-
-        @Override
-        public byte[] compactStrings(final List<String> strings) {
-            if (strings.isEmpty()) return new byte[0];
-
-            // 1 comma for each string, then add on individual string lengths
-            int size = strings.size();
-            final byte[][] bytes = new byte[strings.size()][];
-            int i = 0;
-            for (final String s : strings) {
-                final byte[] b = s.getBytes(StandardCharsets.UTF_8);
-                size += b.length;
-                bytes[i++] = b;
-            }
-            final ByteBuffer buff = ByteBuffer.allocate(size);
-            for (final byte[] bs : bytes) {
-                buff.put((byte) ',');
-                buff.put(bs);
-            }
-
-            return buff.array();
-        }
-    }
 
     public static class BCF2_2Encoder extends BCF2Encoder {
 
