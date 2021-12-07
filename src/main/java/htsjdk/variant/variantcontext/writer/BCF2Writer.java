@@ -110,7 +110,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
     private final Map<VariantContext, List<String>> genotypeKeys = new HashMap<>();
 
     private BCF2Encoder encoder; // initialized after the header arrives
-
+    private BCFVersion version;
     private BCF2FieldWriterManager fieldWriterManager;
 
     /**
@@ -194,8 +194,12 @@ class BCF2Writer extends IndexingVariantContextWriter {
             // Genotypes data
             final int genotypesLength;
             final BCF2Codec.LazyData lazyData = getLazyData(vc);  // has critical side effects
-            if (lazyData != null) {
-                // we never decoded any data from this BCF file so we don't need to re-encode the samples data
+            final boolean lazyDataUsable = lazyData != null && lazyData.version == this.version;
+            if (lazyDataUsable) {
+                // We never decoded any data from this BCF file, and its contents were already encoded in the same BCF
+                // version as we are currently writing, so we don't need to re-encode the samples data.
+                // Note that the version check is necessary so that we do not write contents encoded using an old
+                // version of BCF as if it were a newer version, as this can cause problems with e.g. MISSING values
                 genotypesLength = lazyData.bytes.length;
             } else {
                 // we have to do work to convert the VC into a BCF2 byte stream
@@ -210,7 +214,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             // Write the encoder's buffer into the output stream
             // If there was no lazy data, this also contains the genotypes data
             encoder.write(outputStream);
-            if (lazyData != null) {
+            if (lazyDataUsable) {
                 // The encoder only contained sites data, so we need to write the lazy data
                 outputStream.write(lazyData.bytes);
             }
@@ -236,7 +240,8 @@ class BCF2Writer extends IndexingVariantContextWriter {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
 
-        encoder = BCF2Encoder.getEncoder(BCF2Codec.ALLOWED_BCF_VERSION);
+        version = getBCFVersionFromHeader(header);
+        encoder = BCF2Encoder.getEncoder(version);
 
         // make sure the header is sorted correctly
         this.header = doNotWriteGenotypes
@@ -271,6 +276,17 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
         // Set up the field encodings
         fieldWriterManager = new BCF2FieldWriterManager(header, stringDictionaryMap, encoder);
+    }
+
+    /**
+     * Determine the appropriate BCF version to use to encode a VCF with based on the version of its VCF header
+     * Note: currently htsjdk only supports one version of BCF (2.2), but this method is here for if/when
+     * new BCF versions are added.
+     * @param header
+     * @return
+     */
+    private static BCFVersion getBCFVersionFromHeader(final VCFHeader header) {
+        return BCF2Codec.ALLOWED_BCF_VERSION;
     }
 
     // --------------------------------------------------------------------------------

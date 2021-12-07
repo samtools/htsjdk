@@ -481,7 +481,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             final LazyGenotypesContext.LazyParser lazyParser =
                 new BCF2LazyGenotypesDecoder(this, siteInfo.alleles, siteInfo.nSamples, siteInfo.nFormatFields, builders);
 
-            final LazyData lazyData = new LazyData(header, siteInfo.nFormatFields, decoder.getRecordBytes());
+            final LazyData lazyData = new LazyData(header, siteInfo.nFormatFields, decoder.getRecordBytes(), bcfVersion);
             final LazyGenotypesContext lazy = new LazyGenotypesContext(lazyParser, lazyData, header.getNGenotypeSamples());
 
             // did we resort the sample names?  If so, we need to load the genotype data
@@ -493,14 +493,16 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     }
 
     public static class LazyData {
-        final public VCFHeader header;
-        final public int nGenotypeFields;
-        final public byte[] bytes;
+        public final VCFHeader header;
+        public final int nGenotypeFields;
+        public final byte[] bytes;
+        public final BCFVersion version;
 
-        public LazyData(final VCFHeader header, final int nGenotypeFields, final byte[] bytes) {
+        public LazyData(final VCFHeader header, final int nGenotypeFields, final byte[] bytes, final BCFVersion version) {
             this.header = header;
             this.nGenotypeFields = nGenotypeFields;
             this.bytes = bytes;
+            this.version = version;
         }
     }
 
