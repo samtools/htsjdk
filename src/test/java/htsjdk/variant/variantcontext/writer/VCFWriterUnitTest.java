@@ -219,7 +219,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
      */
     private static VCFHeader createFakeHeader(final Set<VCFHeaderLine> metaData, final Set<String> additionalColumns,
                                              final SAMSequenceDictionary sequenceDict) {
-        metaData.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
+        metaData.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         metaData.add(new VCFHeaderLine("two", "2"));
         // Explicitly add GT, AD, and BB keys because the .bcf tests that use this fake header require that the header
         // contain INFO/FORMAT lines for all the attributes written

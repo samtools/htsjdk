@@ -198,6 +198,7 @@ public class IndexFactoryTest extends HtsjdkTest {
         return new Object[][] {
             {new File("src/test/resources/htsjdk/variant/serialization_test_unzipped.bcf")},
             // TODO: this needs more test cases, including block compressed and indexed
+            //  The test below, with a bgzipped BCF, fails
 //            {new File("src/test/resources/htsjdk/variant/serialization_test.bcf")},
         };
     }

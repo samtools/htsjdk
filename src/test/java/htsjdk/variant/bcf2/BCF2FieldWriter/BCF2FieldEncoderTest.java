@@ -356,7 +356,6 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
                 });
             }
 
-            // TODO revisit this test once the correct behavior is determined
             // Test encoding for a VC entirely missing genotype data
             {
                 final VariantContext vcMissingGenotypes = new VariantContextBuilder()
@@ -371,7 +370,7 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
                     .make();
                 final byte[] bytes = new byte[]{
                     0x21, // 2 8-bit ints
-                    (byte) BCF2Type.INT8.getMissingBytes(), (byte) BCF2Type.INT8.getMissingBytes(),
+                    (byte) 0, (byte) 0
                 };
                 cases.add(new Object[]{
                     writer, vcMissingGenotypes,

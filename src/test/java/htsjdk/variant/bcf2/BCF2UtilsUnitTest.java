@@ -105,7 +105,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
                     if (i >= 0)
                         allLines.remove(i);
                     allLines.addAll(permutation);
-                    allLines.add(new VCFHeaderLine(VCFHeader.DEFAULT_VCF_VERSION.getFormatString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString()));
+                    allLines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
                     final VCFHeader testHeader = new VCFHeader(new LinkedHashSet<>(allLines));
                     final boolean expectedConsistent = expectedConsistent(testHeader, inputLineCounter);
                     tests.add(new Object[]{new HeaderOrderTestCase(inputHeader, testHeader, expectedConsistent)});

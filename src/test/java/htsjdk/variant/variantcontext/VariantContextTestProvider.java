@@ -233,7 +233,6 @@ public class VariantContextTestProvider extends HtsjdkTest {
         addHeaderLine(metaData, "PL", VCFHeaderLineCount.G, VCFHeaderLineType.Integer);
         addHeaderLine(metaData, "GS", 2, VCFHeaderLineType.String);
         addHeaderLine(metaData, "GV", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String);
-        // TODO changed count type from UNBOUNDED to 1 to match VCF 4.3 spec, but might conflict with existing htsjdk code
         addHeaderLine(metaData, "FT", 1, VCFHeaderLineType.String);
 
         // prep the header
@@ -674,7 +673,6 @@ public class VariantContextTestProvider extends HtsjdkTest {
                         assertEquals(g, expected.getGenotype(g.getSampleName()));
                     } else {
                         // missing
-                        // TODO this may not be correct
                         Assert.assertTrue(g.isNoCall());
                     }
                 }

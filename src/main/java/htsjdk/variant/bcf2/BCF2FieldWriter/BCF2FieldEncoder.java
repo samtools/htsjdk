@@ -237,6 +237,17 @@ abstract class BCF2FieldEncoder {
         void encode() throws IOException {
             for (final Object o : vs) {
                 if (o == null) {
+                    // TODO we encode an entirely missing vector as all EOV, or essentially a 0-length vector
+                    //  padded to the appropriate length with EOV, this encoding is allowed but not required
+                    //  by the spec[1], but bcftools currently does not appear to handle it properly[2],
+                    //  printing such empty vectors in VCF as an empty string and not '.' or '.,.'
+                    //  bcfools encodes empty vectors uniformly as [MISSING, EOV*] which we handle appropriately,
+                    //  and the distinction between partially missing [MISSING, EOV] and fully missing [EOV, EOV]
+                    //  vectors is apparently not required to be preserved by implementations
+                    //  We could either match our output to bcftools' codec or keep it as is, and wait for
+                    //  bcftools to resolve this issue
+                    //  [1] https://github.com/samtools/hts-specs/issues/593#issuecomment-910266633
+                    //  [2] https://github.com/samtools/bcftools/issues/1622
                     encoder.encodePaddingValues(nValues, type);
                 } else if (o instanceof List) {
                     final List<Integer> v = (List<Integer>) o;

@@ -455,8 +455,9 @@ class BCF2FieldWriter {
                         encoder.encodePaddingValues(padding, type);
                     }
                 } else {
-                    // TODO read the spec more closely, look at htslib, this may not be correct
                     // Entirely missing genotype, which we encode as vector of no call
+                    // These cannot be encoded as MISSING values, because the BCF 2.2 spec explicitly forbids
+                    // any negative values in the GT array and MISSING values are negative
                     for (int i = 0; i < nValues; i++) {
                         encoder.encodeRawInt(0, type);
                     }

@@ -170,6 +170,10 @@ public class VCFStandardHeaderLines {
         registerStandard(new VCFFormatHeaderLine(VCFConstants.DEPTH_KEY,              1,                     VCFHeaderLineType.Integer, "Approximate read depth (reads with MQ=255 or with bad mates are filtered)"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY,        VCFHeaderLineCount.G,         VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFHeaderLineCount.R,         VCFHeaderLineType.Integer, "Allelic depths for the ref and alt alleles in the order listed"));
+        // This line's count changed from UNBOUNDED in VCF 4.2 to 1 in VCF 4.3, but we keep it at UNBOUNDED
+        // because VCFStandardHeaderLines is now mainly a facility for upgrading headers from pre-4.2 versions
+        // to conform to the 4.2 spec.
+        // Version upgrading for other versions is more difficult, so we do not rely on VCFStandardHeaderLines
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_FILTER_KEY,    VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String,  "Genotype-level filter"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_SET_KEY,          1,                            VCFHeaderLineType.Integer, "Phasing set (typically the position of the first variant in the set)"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_QUALITY_KEY,      1,                            VCFHeaderLineType.Float,   "Read-backed phasing quality"));

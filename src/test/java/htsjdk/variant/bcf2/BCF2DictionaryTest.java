@@ -27,7 +27,7 @@ public class BCF2DictionaryTest extends VariantBaseTest {
 
         final List<VCFHeaderLine> inputLines = new ArrayList<>();
         int counter = 0;
-        inputLines.add(new VCFHeaderLine(VCFHeader.DEFAULT_VCF_VERSION.getFormatString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString()));
+        inputLines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         inputLines.add(new VCFFilterHeaderLine("l" + counter++));
         inputLines.add(new VCFFilterHeaderLine("l" + counter++));
         inputLines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", String.valueOf(counter++)), counter));

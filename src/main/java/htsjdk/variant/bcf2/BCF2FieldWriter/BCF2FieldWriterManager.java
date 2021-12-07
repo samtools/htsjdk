@@ -5,6 +5,7 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Encoder;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
+import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
@@ -37,7 +38,14 @@ public class BCF2FieldWriterManager {
         formatWriters = new HashMap<>(header.getFormatHeaderLines().size());
         for (final VCFFormatHeaderLine line : header.getFormatHeaderLines()) {
             final String field = line.getID();
-            validateStandardHeader(line, VCFStandardHeaderLines.getFormatLine(field, false));
+            // We skip validation for the FT key because its line count changed between VCF versions 4.2 and 4.3
+            // from UNBOUNDED to 1, while VCFStandardHeaderLines keeps the 4.2 definition.
+            // This does not matter for our BCF writing code because the concrete BCF count encoded in the typing
+            // bytes for strings always has to be determined by inspecting the strings themselves, so this validation
+            // would only produce noisy but harmless warnings.
+            if (!field.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+                validateStandardHeader(line, VCFStandardHeaderLines.getFormatLine(field, false));
+            }
             final int offset = dict.get(field);
             final BCF2FieldWriter.GenotypeWriter writer = BCF2FieldWriter.createGenotypeWriter(line, offset, encoder);
             formatWriters.put(field, writer);
@@ -72,7 +80,7 @@ public class BCF2FieldWriterManager {
         final VCFHeaderLineType actualType = actualLine.getType();
         final VCFHeaderLineType expectedType = expectedLine.getType();
         if (actualType != expectedType) {
-            log.error(String.format(
+            log.warn(String.format(
                 "Header with standard key: `%s` has type: %s which does not match standard type: %s",
                 actualLine.getID(),
                 actualType,
@@ -83,7 +91,7 @@ public class BCF2FieldWriterManager {
         final VCFHeaderLineCount actualCountType = actualLine.getCountType();
         final VCFHeaderLineCount expectedCountType = expectedLine.getCountType();
         if (actualCountType != expectedCountType || actualLine.isFixedCount() && actualLine.getCount() != expectedLine.getCount()) {
-            log.error(String.format(
+            log.warn(String.format(
                 "Header with standard key: `%s` has count: %s which does not match standard count: %s",
                 actualLine.getID(),
                 actualLine.isFixedCount() ? actualLine.getCount() : actualCountType,

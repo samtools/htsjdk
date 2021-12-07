@@ -236,7 +236,6 @@ class BCF2Writer extends IndexingVariantContextWriter {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
 
-        // TODO we default to 2.2 here, is this alright?
         encoder = BCF2Encoder.getEncoder(BCF2Codec.ALLOWED_BCF_VERSION);
 
         // make sure the header is sorted correctly

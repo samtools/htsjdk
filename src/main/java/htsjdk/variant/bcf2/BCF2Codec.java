@@ -48,6 +48,7 @@ import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -219,9 +220,8 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         }
 
         // TODO should follow up on hts-specs and clarify the relationship between ##dictionary and IDX fields
-        // Error on ##dictionary lines, we don't know what to do with them
         if (this.header.getMetaDataInInputOrder().stream().anyMatch(line -> line.getKey().equals("dictionary"))) {
-            throw new TribbleException("Use of the ##dictionary line is not supported");
+            log.warn("Use of the ##dictionary line is not supported");
         }
 
         // create the contig dictionary
@@ -448,7 +448,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         for (int i = 0; i < numInfoFields; i++) {
             final String key = getDictionaryString();
             Object value = decoder.decodeTypedValue();
-            final VCFCompoundHeaderLine metaData = VariantContextUtils.getMetaDataForField(header, key);
+            final VCFInfoHeaderLine metaData = header.getInfoHeaderLine(key);
             if (metaData.getType() == VCFHeaderLineType.Flag) {
                 // Despite contradictory language in the spec, bcftools/htslib encode the "payload" of
                 // FLAG as 0x00 (MISSING type) which we would normally decode as MISSING/null,
@@ -509,7 +509,11 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     }
 
     protected final String getDictionaryString(final int offset) {
-        return stringDictionary.get(offset);
+        final String s = stringDictionary.get(offset);
+        if (s == null) {
+            error("No entry in the string dictionary matching key: " + offset + " was found");
+        }
+        return s;
     }
 
     private BCF2Dictionary makeStringDictionary(final BCFVersion bcfVersion) {
@@ -530,7 +534,11 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      * @return
      */
     private String lookupContigName(final int contigOffset) {
-        return contigDictionary.get(contigOffset);
+        final String s = contigDictionary.get(contigOffset);
+        if (s == null) {
+            error("No entry in the contig dictionary matching key: " + contigOffset + " was found");
+        }
+        return s;
     }
 
     private BCF2Dictionary makeContigDictionary(final BCFVersion bcfVersion) {
