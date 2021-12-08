@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # The MIT License
 #
@@ -28,7 +28,7 @@
 Explain each flag on the command line in plain English
 """
 
-from __future__ import division
+
 import sys
 
 lstFlags = [
@@ -48,10 +48,10 @@ lstFlags = [
     
 
 def explain_sam_flags(iFlags):
-    print iFlags, ":"
+    print(iFlags, ":")
     for strFlagName, iMask in lstFlags:
         if iFlags & iMask:
-            print "\t" + strFlagName
+            print("\t" + strFlagName)
 
 def main(argv=None):
     if argv is None:
