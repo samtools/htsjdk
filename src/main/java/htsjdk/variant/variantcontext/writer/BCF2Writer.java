@@ -194,7 +194,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             // Genotypes data
             final int genotypesLength;
             final BCF2Codec.LazyData lazyData = getLazyData(vc);  // has critical side effects
-            final boolean lazyDataUsable = lazyData != null && lazyData.version == this.version;
+            final boolean lazyDataUsable = lazyData != null && lazyData.version.equals(this.version);
             if (lazyDataUsable) {
                 // We never decoded any data from this BCF file, and its contents were already encoded in the same BCF
                 // version as we are currently writing, so we don't need to re-encode the samples data.
@@ -423,7 +423,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
     }
 
     private void buildSamplesData(final VariantContext vc) throws IOException {
-        fieldWriterManager.writeFormat(vc, genotypeKeys.get(vc));
+        fieldWriterManager.writeFormat(vc, genotypeKeys.computeIfAbsent(vc, v -> v.calcVCFGenotypeKeys(header)));
     }
 
     // --------------------------------------------------------------------------------
