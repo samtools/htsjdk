@@ -254,7 +254,7 @@ public class VariantBaseTest extends HtsjdkTest {
             }
             else {
                 // it's ok to have a binding in x -> null that's absent in y
-                Assert.assertNull(actualValue, act.getKey() + " present in one but not in the other");
+                Assert.assertTrue(isMissingAttribute(actualValue), act.getKey() + " present in one but not in the other");
             }
             expectedKeys.remove(act.getKey());
         }

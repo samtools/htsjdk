@@ -251,10 +251,14 @@ public abstract class BCF2Encoder {
     }
 
     public final void encodeRawVecInt(final int[] vs, final int paddedSize, final BCF2Type type) throws IOException {
+        encodeRawVecInt(vs, type);
+        encodePaddingValues(paddedSize - vs.length, type);
+    }
+
+    public final void encodeRawVecInt(final int[] vs, final BCF2Type type) throws IOException {
         for (final int v : vs) {
             type.write(v, encodeStream);
         }
-        encodePaddingValues(paddedSize - vs.length, type);
     }
 
     public final void encodeRawVecInt(final List<Integer> vs, final BCF2Type type) throws IOException {
@@ -267,16 +271,10 @@ public abstract class BCF2Encoder {
         }
     }
 
-    public final void encodeRawVecInt(final List<Integer> vs, final int paddedSize, final BCF2Type type) throws IOException {
-        encodeRawVecInt(vs, type);
-        encodePaddingValues(paddedSize - vs.size(), type);
-    }
-
-    public final void encodeRawVecFloat(final double[] vs, final int paddedSize) throws IOException {
+    public final void encodeRawVecFloat(final double[] vs) throws IOException {
         for (final double v : vs) {
             encodeRawFloat(v);
         }
-        encodePaddingValues(paddedSize - vs.length, BCF2Type.FLOAT);
     }
 
     public final void encodeRawVecFloat(final List<Double> vs) throws IOException {
@@ -287,11 +285,6 @@ public abstract class BCF2Encoder {
                 encodeRawFloat(v);
             }
         }
-    }
-
-    public final void encodeRawVecFloat(final List<Double> vs, final int paddedSize) throws IOException {
-        encodeRawVecFloat(vs);
-        encodePaddingValues(paddedSize - vs.size(), BCF2Type.FLOAT);
     }
 
     public final void encodePaddingValues(final int size, final BCF2Type type) throws IOException {

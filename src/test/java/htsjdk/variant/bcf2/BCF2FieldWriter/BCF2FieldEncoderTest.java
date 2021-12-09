@@ -122,7 +122,7 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
                 final List<Object> vecsToEncode = Arrays.asList(
                     Arrays.asList(null, 1),  // Internal null should be missing bytes, not EOV
                     new int[]{1},            // Short vector should be EOV padded
-                    null,                    // Entirely missing vector should be all EOV
+                    null,                    // Entirely missing vector should start with one MISSING, then be EOV padded
                     1 << (byteWidth * 8 - 2) // Atomic value should be treated as vector of size 1
                 );
                 final int nValues = 2;
@@ -130,7 +130,7 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
                 final int[] ints = new int[]{
                     intType.getMissingBytes(), 1,
                     1, intType.getEOVBytes(),
-                    intType.getEOVBytes(), intType.getEOVBytes(),
+                    intType.getMissingBytes(), intType.getEOVBytes(),
                     1 << (byteWidth * 8 - 2), intType.getEOVBytes(),
                 };
                 for (final int i : ints) {
@@ -152,7 +152,7 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
             final List<Object> vecsToEncode = Arrays.asList(
                 Arrays.asList(null, 1.0), // Internal null should be missing bytes, not EOV
                 new double[]{1.0},        // Short vector should be EOV padded
-                null,                     // Entirely missing vector should be all EOV
+                null,                     // Entirely missing vector should start with one MISSING, then be EOV padded
                 Double.NaN                // Atomic value should be treated as vector of size 1
             );
             final int nValues = 2;
@@ -160,7 +160,7 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
             final int[] ints = new int[]{
                 BCF2Type.FLOAT.getMissingBytes(), Float.floatToRawIntBits(1.0f),
                 Float.floatToRawIntBits(1.0f), BCF2Type.FLOAT.getEOVBytes(),
-                BCF2Type.FLOAT.getEOVBytes(), BCF2Type.FLOAT.getEOVBytes(),
+                BCF2Type.FLOAT.getMissingBytes(), BCF2Type.FLOAT.getEOVBytes(),
                 Float.floatToRawIntBits((float) Double.NaN), BCF2Type.FLOAT.getEOVBytes(),
             };
             for (final int i : ints) {

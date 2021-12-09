@@ -351,9 +351,8 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             {"NA12891.vcf"},
             {"NA12891.fp.vcf"},
             {"structuralvariants.vcf"},
-            // These two tests appear to fail because of a bcftools bug
-//            {"ex2.vcf"},
-//            {"test.vcf.bgz"},
+            {"ex2.vcf"},
+            {"test.vcf.bgz"},
             {"vcf43/all43Features.utf8.vcf"}
         };
     }

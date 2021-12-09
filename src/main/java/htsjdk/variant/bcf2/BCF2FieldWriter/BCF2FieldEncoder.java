@@ -235,30 +235,33 @@ abstract class BCF2FieldEncoder {
 
         @Override
         void encode() throws IOException {
-            for (final Object o : vs) {
-                if (o == null) {
-                    // TODO we encode an entirely missing vector as all EOV, or essentially a 0-length vector
-                    //  padded to the appropriate length with EOV, this encoding is allowed but not required
-                    //  by the spec[1], but bcftools currently does not appear to handle it properly[2],
-                    //  printing such empty vectors in VCF as an empty string and not '.' or '.,.'
-                    //  bcfools encodes empty vectors uniformly as [MISSING, EOV*] which we handle appropriately,
-                    //  and the distinction between partially missing [MISSING, EOV] and fully missing [EOV, EOV]
-                    //  vectors is apparently not required to be preserved by implementations
-                    //  We could either match our output to bcftools' codec or keep it as is, and wait for
-                    //  bcftools to resolve this issue
-                    //  [1] https://github.com/samtools/hts-specs/issues/593#issuecomment-910266633
-                    //  [2] https://github.com/samtools/bcftools/issues/1622
-                    encoder.encodePaddingValues(nValues, type);
-                } else if (o instanceof List) {
-                    final List<Integer> v = (List<Integer>) o;
-                    encoder.encodeRawVecInt(v, nValues, type);
-                } else if (o instanceof Integer) {
-                    final Integer v = (Integer) o;
-                    encoder.encodeRawInt(v, type);
-                    encoder.encodePaddingValues(nValues - 1, type);
-                } else if (o instanceof int[]) {
-                    final int[] v = (int[]) o;
-                    encoder.encodeRawVecInt(v, nValues, type);
+            if (nValues > 0) {
+                for (final Object o : vs) {
+                    final int valuesWritten;
+                    if (o == null) {
+                        valuesWritten = 0;
+                    } else if (o instanceof List) {
+                        final List<Integer> v = (List<Integer>) o;
+                        encoder.encodeRawVecInt(v, type);
+                        valuesWritten = v.size();
+                    } else if (o instanceof Integer) {
+                        final Integer v = (Integer) o;
+                        encoder.encodeRawInt(v, type);
+                        valuesWritten = 1;
+                    } else if (o instanceof int[]) {
+                        final int[] v = (int[]) o;
+                        encoder.encodeRawVecInt(v, type);
+                        valuesWritten = v.length;
+                    } else {
+                        throw new TribbleException("");
+                    }
+                    // In order to produce output that bcftools can interpret, we always write one MISSING
+                    // value even if the input is entirely absent, which we would otherwise write as a vector of
+                    // all EOV values
+                    if (valuesWritten == 0) {
+                        encoder.encodeRawMissingValue(type);
+                    }
+                    encoder.encodePaddingValues(nValues - Math.max(valuesWritten, 1), type);
                 }
             }
             vs.clear();
@@ -298,19 +301,34 @@ abstract class BCF2FieldEncoder {
 
         @Override
         void encode() throws IOException {
-            for (final Object o : vs) {
-                if (o == null) {
-                    encoder.encodePaddingValues(nValues, type);
-                } else if (o instanceof List) {
-                    final List<Double> v = (List<Double>) o;
-                    encoder.encodeRawVecFloat(v, nValues);
-                } else if (o instanceof Double) {
-                    final Double v = (Double) o;
-                    encoder.encodeRawFloat(v);
-                    encoder.encodePaddingValues(nValues - 1, BCF2Type.FLOAT);
-                } else if (o instanceof double[]) {
-                    final double[] v = (double[]) o;
-                    encoder.encodeRawVecFloat(v, nValues);
+            if (nValues > 0) {
+                for (final Object o : vs) {
+                    final int valuesWritten;
+                    if (o == null) {
+                        valuesWritten = 0;
+                    } else if (o instanceof List) {
+                        final List<Double> v = (List<Double>) o;
+                        encoder.encodeRawVecFloat(v);
+                        valuesWritten = v.size();
+                    } else if (o instanceof Double) {
+                        final Double v = (Double) o;
+                        encoder.encodeRawFloat(v);
+                        valuesWritten = 1;
+                    } else if (o instanceof double[]) {
+                        final double[] v = (double[]) o;
+                        encoder.encodeRawVecFloat(v);
+                        valuesWritten = v.length;
+                    } else {
+                        throw new TribbleException("");
+                    }
+
+                    // In order to produce output that bcftools can interpret, we always write one MISSING
+                    // value even if the input is entirely absent, which we would otherwise write as a vector of
+                    // all EOV values
+                    if (valuesWritten == 0) {
+                        encoder.encodeRawMissingValue(type);
+                    }
+                    encoder.encodePaddingValues(nValues - Math.max(valuesWritten, 1), BCF2Type.FLOAT);
                 }
             }
             vs.clear();
