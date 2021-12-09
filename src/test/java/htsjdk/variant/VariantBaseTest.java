@@ -146,7 +146,6 @@ public class VariantBaseTest extends HtsjdkTest {
     public static Tuple<VCFHeader, List<VariantContext>> readEntireVCFIntoMemory(final Path vcfPath) {
         ValidationUtils.nonNull(vcfPath);
         final VCFCodec codec = new VCFCodec();
-        codec.setVersionUpgradePolicy(VCFVersionUpgradePolicy.UPGRADE_OR_FALLBACK);
         try (final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(
                 vcfPath.toUri().toString(),
                 codec,

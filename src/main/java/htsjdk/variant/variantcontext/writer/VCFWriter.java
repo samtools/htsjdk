@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -70,6 +71,8 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     // is the header or body written to the output stream?
     private boolean outputHasBeenWritten;
+
+    private VCFVersionUpgradePolicy policy = Defaults.VCF_VERSION_TRANSITION_POLICY;
 
     /*
      * The VCF writer uses an internal Writer, based by the ByteArrayOutputStream lineBuffer,
@@ -118,6 +121,10 @@ class VCFWriter extends IndexingVariantContextWriter {
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.writeFullFormatField = writeFullFormatField;
+    }
+
+    public void setVersionUpgradePolicy(final VCFVersionUpgradePolicy policy) {
+        this.policy = policy;
     }
 
     // --------------------------------------------------------------------------------
@@ -239,12 +246,17 @@ class VCFWriter extends IndexingVariantContextWriter {
      * Add a record to the file
      */
     @Override
-    public void add(final VariantContext context) {
+    public void add(VariantContext context) {
         try {
             super.add(context);
             if (this.mHeader == null) {
                 throw new IllegalStateException("Unable to write the VCF: header is missing, " +
                                                    "try to call writeHeader or setHeader first.");
+            }
+            // If this context came from a version of VCF different from that of the header which we wrote,
+            // we need to make sure it is encoded in a way which is compatible with the version of the header.
+            if (context.getVersion() != this.mHeader.getVCFHeaderVersion()) {
+                context = context.makeCompatibleWithHeaderVersion(this.mHeader);
             }
             if (this.doNotWriteGenotypes) {
                 this.vcfEncoder.write(this.writer, new VariantContextBuilder(context).noGenotypes().make());
@@ -261,10 +273,11 @@ class VCFWriter extends IndexingVariantContextWriter {
     }
 
     @Override
-    public void setHeader(final VCFHeader header) {
+    public void setHeader(VCFHeader header) {
         if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
+        header = header.upgradeVersion(this.policy);
         this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
     }

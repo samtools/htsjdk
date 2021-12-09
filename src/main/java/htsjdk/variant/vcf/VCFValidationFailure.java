@@ -2,6 +2,9 @@ package htsjdk.variant.vcf;
 
 import htsjdk.utils.ValidationUtils;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
+
 /**
  * A class representing a VCF validation failure.
  * @param <T> a type representing the object that is being validated
@@ -58,6 +61,21 @@ class VCFValidationFailure<T> {
      */
     public VCFHeaderVersion getTargetVersion() {
         return targetVersion;
+    }
+
+    public static <T> String createVersionTransitionErrorMessage(
+        final Collection<VCFValidationFailure<T>> errors,
+        final VCFHeaderVersion originalVersion
+    ) {
+        return String.format(
+            "Version transition from VCF version %s to %s failed with validation error(s):\n%s%s",
+            originalVersion.getVersionString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString(),
+            errors.stream()
+                .limit(5)
+                .map(VCFValidationFailure::getSourceMessage)
+                .collect(Collectors.joining("\n")),
+            errors.size() > 5 ? "\n+ " + (errors.size() - 5) + " additional error(s)" : ""
+        );
     }
 
 }

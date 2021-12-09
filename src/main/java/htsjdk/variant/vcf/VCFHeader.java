@@ -32,6 +32,7 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContextComparator;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
 
 import java.io.Serializable;
 import java.util.*;
@@ -632,6 +633,36 @@ public class VCFHeader implements HtsHeader, Serializable {
             mMetaData.validateMetaDataLinesOrThrow(newVersion);
         } else {
             newHeaderLine.validateForVersionOrThrow(newVersion);
+        }
+    }
+
+    public VCFHeader upgradeVersion(final VCFVersionUpgradePolicy policy) {
+        switch (policy) {
+            case DO_NOT_UPGRADE:
+                return this;
+            case UPGRADE_OR_FALLBACK: {
+                final Collection<VCFValidationFailure<VCFHeaderLine>> errors =
+                    this.mMetaData.getValidationErrors(VCFHeader.DEFAULT_VCF_VERSION);
+                if (errors.isEmpty()) {
+                    final VCFHeader newHeader = new VCFHeader(this);
+                    // If validation fails, simply pass the exception through
+                    newHeader.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+                    return newHeader;
+                } else {
+                    logger.info("Header will be kept at original version: " + this.getVCFHeaderVersion()
+                        + VCFValidationFailure.createVersionTransitionErrorMessage(errors, this.getVCFHeaderVersion())
+                    );
+                    return this;
+                }
+            }
+            case UPGRADE_OR_FAIL: {
+                final VCFHeader newHeader = new VCFHeader(this);
+                // If validation fails, simply pass the exception through
+                newHeader.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+                return newHeader;
+            }
+            default:
+                throw new TribbleException("Unrecognized VCF version transition policy: " + policy);
         }
     }
 

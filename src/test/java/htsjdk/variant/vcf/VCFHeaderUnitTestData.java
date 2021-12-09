@@ -170,7 +170,6 @@ public class VCFHeaderUnitTestData {
 
     public static VCFHeader createHeaderFromString(final String headerStr) {
         final VCFCodec codec = new VCFCodec();
-        codec.setVersionUpgradePolicy(VCFVersionUpgradePolicy.DO_NOT_UPGRADE);
         final VCFHeader header = (VCFHeader) codec.readActualHeader(
                 new LineIteratorImpl(new SynchronousLineReader(new StringReader(headerStr))));
         Assert.assertEquals(header.getMetaDataInInputOrder().size(), VCF_4_HEADER_STRING_COUNT);

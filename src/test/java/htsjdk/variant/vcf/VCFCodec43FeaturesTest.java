@@ -194,7 +194,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
         writer.writeHeader(readHeader);
         for (final VariantContext vc : readVCF.b) {
-            writer.add(vc.fullyDecode(readHeader, false));
+            writer.add(vc);
         }
 
         writer.close();
@@ -213,10 +213,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
         Assert.assertEqualsNoOrder(readHeader.getContigLines().toArray(), writeHeader.getContigLines().toArray());
 
         for (int i = 0; i < writeVCF.b.size(); i++) {
-            VariantBaseTest.assertVariantContextsAreEqual(
-                writeVCF.b.get(i).fullyDecode(writeHeader, false),
-                readVCF.b.get(i).fullyDecode(readHeader, false)
-            );
+            VariantBaseTest.assertVariantContextsAreEqual(writeVCF.b.get(i), readVCF.b.get(i));
         }
     }
 

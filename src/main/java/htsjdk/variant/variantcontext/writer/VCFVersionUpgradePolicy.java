@@ -21,12 +21,6 @@ public enum VCFVersionUpgradePolicy {
     DO_NOT_UPGRADE,
 
     /**
-     * Write pre-4.3 files as 4.2, to which automatic upgrading should always be possible, and
-     * write 4.3+ files as 4.3.
-     */
-    ONLY_INFALLIBLE_UPGRADE,
-
-    /**
      * Inspect the headers of pre-4.3 files to determine if they can be automatically upgraded to 4.3,
      * and if automatic upgrade is possible write them as 4.3, or else write them as 4.2.
      */

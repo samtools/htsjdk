@@ -95,6 +95,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                      .setOutputFile(actualFile)
                      .setReferenceDictionary(createArtificialSequenceDictionary())
                      .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                     .setVersionUpgradePolicy(VCFVersionUpgradePolicy.DO_NOT_UPGRADE)
                      .build()
         ) {
             final VCFHeader originalHeader = originalFileReader.getFileHeader();
@@ -820,12 +821,12 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 .setOutputFile(myTempFile)
                 .setOutputFileType(VariantContextWriterBuilder.OutputType.VCF)
                 .setOptions(VariantContextWriterBuilder.NO_OPTIONS)
+                .setVersionUpgradePolicy(VCFVersionUpgradePolicy.DO_NOT_UPGRADE)
                 .build()
         ) {
             vcfWriter.writeHeader(header);
         }
         final VCFCodec codec = new VCFCodec();
-        codec.setVersionUpgradePolicy(VCFVersionUpgradePolicy.DO_NOT_UPGRADE);
         final VCFHeader vcfHeader = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(
                 new SynchronousLineReader(new FileReader(myTempFile.getAbsolutePath()))));
         return vcfHeader.getMetaDataInSortedOrder();

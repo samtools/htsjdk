@@ -128,9 +128,7 @@ public class VCFFileReader implements VCFReader {
         if (isBCF(path)) {
             return new BCF2Codec();
         } else {
-            final VCFCodec codec = new VCFCodec();
-            codec.setVersionUpgradePolicy(policy);
-            return codec;
+            return new VCFCodec();
         }
     }
 

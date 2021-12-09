@@ -25,11 +25,9 @@
 
 package htsjdk.variant.vcf;
 
-import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.QualityUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
@@ -38,17 +36,30 @@ import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
-import htsjdk.variant.utils.GeneralUtils;
-import htsjdk.variant.variantcontext.*;
-import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.GenotypeLikelihoods;
+import htsjdk.variant.variantcontext.LazyGenotypesContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
@@ -61,7 +72,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     // we have to store the list of strings that make up the header until they're needed
     protected VCFHeader header = null;
     protected VCFHeaderVersion version = null;
-    private VCFHeaderVersion contextsVersion = null;
 
     // a mapping of the allele
     protected final Map<String, List<Allele>> alleleMap = new HashMap<>(3);
@@ -86,7 +96,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     /**
      * If true, then we'll magically fix up VCF headers on the fly when we read them in
      */
-    protected VCFVersionUpgradePolicy policy = Defaults.VCF_VERSION_TRANSITION_POLICY;
+    protected boolean doOnTheFlyModifications = true;
 
     /**
      * If non-null, we will replace the sample name read from the VCF header with this sample name. This feature works
@@ -469,53 +479,17 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     public VCFHeader setVCFHeader(final VCFHeader newHeader) {
         ValidationUtils.nonNull(newHeader);
-        final VCFHeaderVersion originalVersion = newHeader.getVCFHeaderVersion();
-
-        switch(this.policy) {
-            case DO_NOT_UPGRADE:
-                this.header = newHeader;
-                break;
-            case ONLY_INFALLIBLE_UPGRADE:
-                // Upgrade pre-4.3 versions to 4.2, and keep 4.3 at 4.3
-                // calling this with a header that has any pre-v4.3 version will always result in a header
-                // with version vcfV4.2, no matter what the header version originally was, since the "repair"
-                // operation is essentially a transform of the header so that it conforms with header line rules
-                // as of 4.2
-                this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
-                break;
-            case UPGRADE_OR_FAIL:
-            case UPGRADE_OR_FALLBACK:
-                this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
-                final Collection<VCFValidationFailure<VCFHeaderLine>> errors = this.header.getValidationErrors(VCFHeader.DEFAULT_VCF_VERSION);
-                if (!errors.isEmpty()) {
-                    final String message = String.format(
-                        "Version transition from VCF version %s to %s failed with validation error(s):\n%s%s",
-                        originalVersion.getVersionString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString(),
-                        errors.stream()
-                            .limit(5)
-                            .map(VCFValidationFailure::getSourceMessage)
-                            .collect(Collectors.joining("\n")),
-                        errors.size() > 5 ? "\n+ " + (errors.size() - 5) + " additional error(s)" : ""
-                    );
-                    if (this.policy == VCFVersionUpgradePolicy.UPGRADE_OR_FAIL) {
-                        throw new TribbleException(message);
-                    } else {
-                        logger.info(message + ", header will be kept at original version: " + originalVersion.getVersionString());
-                    }
-                } else {
-                    // Only upgrade if no errors resulting from version upgrading would occur
-                    this.header.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
-                }
-                break;
-            default:
-                throw new TribbleException("Unrecognized VCF Version Upgrade Policy: " + this.policy);
+        if (this.doOnTheFlyModifications) {
+            // calling this with a header that has any pre-v4.3 version will always result in a header
+            // with version vcfV4.2, no matter what the header version originally was, since the "repair"
+            // operation is essentially a transform of the header so that it conforms with header line rules
+            // as of 4.2
+            this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
+        } else {
+            this.header = newHeader;
         }
 
-        // We check and possibly update the version of the header lines inside the codec here, but the VariantContexts
-        // themselves may be expensive to decode and update, so we mark them with their original version so that when
-        // they are decoded, the decoder handles version specific behavior (e.g. percent encoding) correctly
         this.version = this.header.getVCFHeaderVersion();
-        this.contextsVersion = originalVersion;
 		return this.header;
 	}
 
@@ -568,7 +542,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     private VariantContext parseVCFLine(final String[] parts, final boolean includeGenotypes) {
         final VariantContextBuilder builder = new VariantContextBuilder();
-        builder.version(contextsVersion);
+        builder.version(version);
         builder.source(getName());
 
         // increment the line count
@@ -1110,16 +1084,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * raw VCF records
      */
     public final void disableOnTheFlyModifications() {
-        setVersionUpgradePolicy(VCFVersionUpgradePolicy.DO_NOT_UPGRADE);
-    }
-
-    /**
-     * Forces all VCFCodecs to not perform any on the fly modifications to the VCF header
-     * of VCF records.  Useful primarily for raw comparisons such as when comparing
-     * raw VCF records
-     */
-    public final void setVersionUpgradePolicy(final VCFVersionUpgradePolicy policy) {
-        this.policy = policy;
+        doOnTheFlyModifications = false;
     }
 
     /**

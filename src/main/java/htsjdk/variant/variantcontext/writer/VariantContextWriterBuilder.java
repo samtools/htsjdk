@@ -131,6 +131,7 @@ public class VariantContextWriterBuilder {
     private int bufferSize = Defaults.BUFFER_SIZE;
     private boolean createMD5 = Defaults.CREATE_MD5;
     protected EnumSet<Options> options = DEFAULT_OPTIONS.clone();
+    private VCFVersionUpgradePolicy versionUpgradePolicy = Defaults.VCF_VERSION_TRANSITION_POLICY;
 
     /**
      * Default constructor.  Adds <code>USE_ASYNC_IO</code> to the Options if it is present in Defaults.
@@ -401,6 +402,10 @@ public class VariantContextWriterBuilder {
         return this.options.contains(option);
     }
 
+    public VariantContextWriterBuilder setVersionUpgradePolicy(final VCFVersionUpgradePolicy policy) {
+        this.versionUpgradePolicy = policy;
+        return this;
+    }
 
     /**
      * Validate and build the <code>VariantContextWriter</code>.
@@ -569,15 +574,16 @@ public class VariantContextWriterBuilder {
     }
 
     private VariantContextWriter createVCFWriter(final Path writerPath, final OutputStream writerStream) {
+        final VCFWriter writer;
         if (idxCreator == null) {
-            return new VCFWriter(writerPath, writerStream, refDict,
+            writer = new VCFWriter(writerPath, writerStream, refDict,
                 options.contains(Options.INDEX_ON_THE_FLY),
                 options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                 options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
                 options.contains(Options.WRITE_FULL_FORMAT_FIELD)
             );
         } else {
-            return new VCFWriter(
+            writer = new VCFWriter(
                 writerPath, writerStream, refDict, idxCreator,
                 options.contains(Options.INDEX_ON_THE_FLY),
                 options.contains(Options.DO_NOT_WRITE_GENOTYPES),
@@ -585,6 +591,8 @@ public class VariantContextWriterBuilder {
                 options.contains(Options.WRITE_FULL_FORMAT_FIELD)
             );
         }
+        writer.setVersionUpgradePolicy(this.versionUpgradePolicy);
+        return writer;
     }
 
     private VariantContextWriter createBCFWriter(final Path writerPath, final OutputStream writerStream) {

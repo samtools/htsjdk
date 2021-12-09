@@ -90,7 +90,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
 
     /**
      * Validates this header line against {@code vcfTargetVersion} and returns a {@link VCFValidationFailure}
-     * describing the reaon for the failure, if one exists. This method is used to report the reason for a
+     * describing the reason for the failure, if one exists. This method is used to report the reason for a
      * version upgrade failure.
      *
      * Subclasses can override this to provide line type-specific version validation. Overrides should
