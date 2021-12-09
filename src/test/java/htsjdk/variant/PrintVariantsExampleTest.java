@@ -27,26 +27,27 @@ package htsjdk.variant;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.samtools.util.Tuple;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.variant.example.PrintVariantsExample;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class PrintVariantsExampleTest extends HtsjdkTest {
     @Test
     public void testExampleWriteFile() throws IOException {
         final File tempFile = File.createTempFile("example", FileExtensions.VCF);
         tempFile.deleteOnExit();
-        final File f1 = new File("src/test/resources/htsjdk/variant/ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf");
+        File f1 = new File("src/test/resources/htsjdk/variant/ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf");
         final String[] args = {
-            f1.getAbsolutePath(),
-            tempFile.getAbsolutePath()
+                f1.getAbsolutePath(),
+                tempFile.getAbsolutePath()
         };
         Assert.assertEquals(tempFile.length(), 0);
         PrintVariantsExample.main(args);
@@ -55,19 +56,11 @@ public class PrintVariantsExampleTest extends HtsjdkTest {
         assertFilesEqualSkipHeaders(tempFile, f1);
     }
 
-    private static void assertFilesEqualSkipHeaders(final File tempFile, final File f1) {
-        final Tuple<VCFHeader, List<VariantContext>> vcf1 = VariantBaseTest.readEntireVCFIntoMemory(f1.toPath());
-        final Tuple<VCFHeader, List<VariantContext>> vcf2 = VariantBaseTest.readEntireVCFIntoMemory(tempFile.toPath());
-        final VCFHeader header = vcf1.a;
-
-        final List<VariantContext> vcs1 = vcf1.b;
-        final List<VariantContext> vcs2 = vcf2.b;
-        Assert.assertEquals(vcs1.size(), vcs2.size());
-        for (int i = 0; i < vcs1.size(); i++) {
-            VariantBaseTest.assertVariantContextsAreEqual(
-                vcs1.get(i).fullyDecode(header, false),
-                vcs2.get(i).fullyDecode(header, false)
-            );
-        }
+    private void assertFilesEqualSkipHeaders(File tempFile, File f1) throws FileNotFoundException {
+        final List<String> lines1 = IOUtil.slurpLines(f1);
+        final List<String> lines2 = IOUtil.slurpLines(tempFile);
+        final int firstNonComment1 = IntStream.range(0, lines1.size()).filter(i -> !lines1.get(i).startsWith("#")).findFirst().getAsInt();
+        final int firstNonComment2 = IntStream.range(0, lines2.size()).filter(i -> !lines2.get(i).startsWith("#")).findFirst().getAsInt();
+        Assert.assertEquals(lines1.subList(firstNonComment1, lines1.size()), lines2.subList(firstNonComment2,lines2.size()));
     }
 }

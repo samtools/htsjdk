@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.beta.plugin.HtsRecord;
+import htsjdk.samtools.util.QualityUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -267,7 +268,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     /* cached monomorphic value: null -> not yet computed, False, True */
     private Boolean monomorphic = null;
 
-    private final VCFHeaderVersion version;
+    private VCFHeaderVersion version;
 
     /*
      * Determine which genotype fields are in use in the genotypes in VC
@@ -822,11 +823,6 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     public String getID() {
         return ID;
     }
-
-    public VCFHeaderVersion getVersion() {
-        return version;
-    }
-
 
     // ---------------------------------------------------------------------------------------------------------
     //
@@ -1805,6 +1801,63 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 : new VCFInfoHeaderLine(id, VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, description);
         }
         return line;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    //
+    // Version awareness related methods
+    //
+    // ---------------------------------------------------------------------------------------------------------
+
+    public VCFHeaderVersion getVersion() {
+        return version;
+    }
+
+    public VariantContext makeCompatibleWithHeaderVersion(final VCFHeader header) {
+        final VCFHeaderVersion headerVersion = header.getVCFHeaderVersion();
+        if (this.version.equals(headerVersion)) {
+            return this;
+        } else {
+            // This will ensure that the VariantContext is decoded in a percent-encoding aware way
+            final VariantContext newVC = this.fullyDecode(header, true);
+            newVC.version = headerVersion;
+
+            final Object oldGP = newVC.getAttribute(VCFConstants.GENOTYPE_POSTERIORS_KEY);
+            // We need to special-case GP because there is a discrepancy in the scale used to record
+            // its values between pre-4.3 and 4.3+ VCF. Pre-4.3 GP is phred scale encoded while
+            // 4.3+ GP is a linear probability, bringing it in line with other standard keys that
+            // use the P suffix (c.f. VCF 4.3 spec section 7.2).
+            if (headerVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) && oldGP != null) {
+                if (oldGP instanceof List
+                    && (!((List<?>) oldGP).isEmpty() && ((List<?>) oldGP).get(0) instanceof Double)
+                ) {
+                    newVC.commonInfo.putAttribute(
+                        VCFConstants.GENOTYPE_POSTERIORS_KEY,
+                        makeGPValueLinear((List<Double>) oldGP),
+                        true
+                    );
+                }
+            }
+            return newVC;
+        }
+    }
+
+    private static List<Double> makeGPValueLinear(final List<Double> gpValues) {
+        // Some tools in the wild apparently already use linear scaled GP, so we have to
+        // be careful about converting inputs. We check whether GP values are already linear
+        // scaled by seeing if the values' sum is approximately equal to 1, like we
+        // would expect if the values were linear scale probabilities.
+        // c.f. https://sourceforge.net/p/vcftools/mailman/vcftools-spec/thread/CEBCD558.FA29%25browning%40u.washington.edu/
+        double sum = 0;
+        for (final double d : gpValues) {
+            sum += d;
+        }
+
+        final boolean wasLinearScale = GeneralUtils.compareDoubles(sum, 1, VCFConstants.VCF_ENCODING_EPSILON) == 0;
+        if (!wasLinearScale) {
+            gpValues.replaceAll(GP -> QualityUtil.getErrorProbabilityFromPhredScore((int) Math.round(GP)));
+        }
+        return gpValues;
     }
 
     // ---------------------------------------------------------------------------------------------------------

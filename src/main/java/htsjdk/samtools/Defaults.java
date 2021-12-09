@@ -117,7 +117,8 @@ public class Defaults {
     public static final boolean STRICT_VCF_VERSION_VALIDATION;
 
     /**
-     * How to treat files from VCF versions older than the current version. Default = UPGRADE_OR_FALLBACK
+     * How to treat files from VCF versions older than the current version.
+     * Default = {@link VCFVersionUpgradePolicy#UPGRADE_OR_FALLBACK}
      */
     public static final VCFVersionUpgradePolicy VCF_VERSION_TRANSITION_POLICY;
 
@@ -147,7 +148,7 @@ public class Defaults {
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
         STRICT_VCF_VERSION_VALIDATION = getBooleanProperty("strict_version_validation", true);
         VCF_VERSION_TRANSITION_POLICY = VCFVersionUpgradePolicy.valueOf(getStringProperty(
-            "vcf_version_transition_policy",
+            "vcf_version_upgrade_policy",
             VCFVersionUpgradePolicy.UPGRADE_OR_FALLBACK.name()
         ));
     }
@@ -173,7 +174,7 @@ public class Defaults {
         result.put("CUSTOM_READER_FACTORY", CUSTOM_READER_FACTORY);
         result.put("SAM_FLAG_FIELD_FORMAT", SAM_FLAG_FIELD_FORMAT);
         result.put("DISABLE_SNAPPY_COMPRESSOR", DISABLE_SNAPPY_COMPRESSOR);
-        result.put("VCF_VERSION_TRANSITION_POLICY", VCF_VERSION_TRANSITION_POLICY);
+        result.put("VCF_VERSION_UPGRADE_POLICY", VCF_VERSION_TRANSITION_POLICY);
         return Collections.unmodifiableSortedMap(result);
     }
 

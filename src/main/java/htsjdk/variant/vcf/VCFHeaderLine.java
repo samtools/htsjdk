@@ -53,7 +53,10 @@ public class VCFHeaderLine implements Comparable, Serializable {
     public VCFHeaderLine(String key, String value) {
         mKey = key;
         mValue = value;
-        validate();
+        final Optional<String> validationFailure = validateKeyOrID(mKey);
+        if (validationFailure.isPresent()) {
+            throw new TribbleException(validationFailure.get());
+        }
     }
 
     /**
@@ -84,16 +87,6 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @return the line's ID, or null if isIDHeaderLine() is false
      */
     public String getID() { return null; }
-
-    /**
-     * Validate the state of this header line. Require the key be valid as an "id".
-     */
-    private void validate() {
-        final Optional<String> validationFailure = validateKeyOrID(mKey);
-        if (validationFailure.isPresent()) {
-            throw new TribbleException(validationFailure.get());
-        }
-    }
 
     /**
      * Validates this header line against {@code vcfTargetVersion}.
