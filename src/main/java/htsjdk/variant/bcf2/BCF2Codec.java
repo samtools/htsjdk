@@ -69,7 +69,7 @@ import java.util.zip.GZIPInputStream;
 public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     private static final Log log = Log.getInstance(BCF2Codec.class);
 
-    public static String IDXField = "IDX"; // BCF2.2 IDX field name
+    public static final String IDXField = "IDX"; // BCF2.2 IDX field name
 
     protected final static int ALLOWED_MAJOR_VERSION = 2;
     protected final static int ALLOWED_MINOR_VERSION = 2;
