@@ -244,8 +244,13 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
         for (final BCF2TypedValue tv : toEncode) {
             for (final int length : Arrays.asList(2, 5, 10, 15, 20, 25)) {
                 final BCF2Encoder encoder = BCF2Encoder.getEncoder(version);
-                final List<Object> expected = Collections.nCopies(length, tv.value);
-                encoder.encodeTyped(expected, tv.type);
+                final List<?> expected = Collections.nCopies(length, tv.value);
+                if (tv.type == BCF2Type.CHAR && !expected.isEmpty()) {
+                    encoder.encodeTypedString(encoder.compactStrings((List<String>) expected));
+                } else {
+                    encoder.encodeType(expected.size(), tv.type);
+                    encoder.encodeRawValues(expected, tv.type);
+                }
 
                 final BCF2Decoder decoder = BCF2Decoder.getDecoder(version, encoder.getRecordBytes());
                 final Object decoded = decoder.decodeTypedValue();

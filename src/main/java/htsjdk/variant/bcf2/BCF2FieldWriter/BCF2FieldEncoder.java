@@ -253,7 +253,7 @@ abstract class BCF2FieldEncoder {
                         encoder.encodeRawVecInt(v, type);
                         valuesWritten = v.length;
                     } else {
-                        throw new TribbleException("");
+                        throw BCF2FieldEncoder.incompatibleType(o, type);
                     }
                     // In order to produce output that bcftools can interpret, we always write one MISSING
                     // value even if the input is entirely absent, which we would otherwise write as a vector of
@@ -319,7 +319,7 @@ abstract class BCF2FieldEncoder {
                         encoder.encodeRawVecFloat(v);
                         valuesWritten = v.length;
                     } else {
-                        throw new TribbleException("");
+                        throw BCF2FieldEncoder.incompatibleType(o, type);
                     }
 
                     // In order to produce output that bcftools can interpret, we always write one MISSING

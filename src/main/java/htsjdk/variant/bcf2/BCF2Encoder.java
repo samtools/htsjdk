@@ -153,16 +153,6 @@ public abstract class BCF2Encoder {
         encodeRawVecInt(vs, paddedSize, type);
     }
 
-    // TODO only used in testing, should remove and update tests
-    public final void encodeTyped(final List<?> v, final BCF2Type type) throws IOException {
-        if (type == BCF2Type.CHAR && !v.isEmpty()) {
-            encodeTypedString(compactStrings((List<String>) v));
-        } else {
-            encodeType(v.size(), type);
-            encodeRawValues(v, type);
-        }
-    }
-
 
     // --------------------------------------------------------------------------------
     //
