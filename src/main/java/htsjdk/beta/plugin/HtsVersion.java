@@ -8,8 +8,10 @@ import htsjdk.utils.ValidationUtils;
  * versions.
  */
 public class HtsVersion implements Comparable<HtsVersion> {
+    /** Sentinel constant to match any version */
+    public static int ANY_VERSION = -1;
     /** Sentinel constant used to indicate the newest version available */
-    public static final HtsVersion NEWEST_VERSION = new HtsVersion(-1, -1, -1);
+    public static final HtsVersion NEWEST_VERSION = new HtsVersion(ANY_VERSION, ANY_VERSION, ANY_VERSION);
 
     private static final String FORMAT_STRING = "%d.%d.%d";
 

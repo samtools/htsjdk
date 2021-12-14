@@ -55,13 +55,12 @@ public class HtsVCFCodecTest extends HtsjdkTest {
                 { new HtsPath(VARIANTS_TEST_DIR + "variant/dbsnp_135.b37.1000.vcf"), VCFCodecV4_1.VCF_V41_VERSION },
                 { new HtsPath(VARIANTS_TEST_DIR + "variant/vcf42HeaderLines.vcf"), VCFCodecV4_2.VCF_V42_VERSION },
                 { new HtsPath(VARIANTS_TEST_DIR + "variant/NA12891.vcf.gz"), VCFCodecV4_2.VCF_V42_VERSION },
-                // v4.3 is left out since these tests write to the newest writeable VCF version (4.2), but we can't
-                // write a header from a v4.3 source since it will (correctly) be rejected by the v4.2 writer
+                { new HtsPath(VARIANTS_TEST_DIR + "variant/vcf43/all43FeaturesCompressed.vcf.gz"), VCFCodecV4_3.VCF_V43_VERSION }
         };
     }
 
     @Test(dataProvider = "vcfReadWriteTests")
-    public void testRoundTripVCFThroughPath(final IOPath inputPath, final HtsVersion expectedCodecVersion) {
+    public void testRoundTripVCFThroughPath(final IOPath inputPath, final HtsVersion expectedDecoderVersion) {
         // some test files require "AllowMissingFields" options for writing
         final VariantsEncoderOptions variantsEncoderOptions = new VariantsEncoderOptions().setAllowFieldsMissingFromHeader(true);
         final IOPath outputPath = IOUtils.createTempPath("roundTripVCFThroughPath", ".vcf");
@@ -75,7 +74,7 @@ public class HtsVCFCodecTest extends HtsjdkTest {
             Assert.assertNotNull(variantsEncoder);
             Assert.assertTrue(variantsEncoder.getDisplayName().contains(outputPath.toString()));
 
-            readWriteVCF(variantsDecoder, variantsEncoder, expectedCodecVersion);
+            readWriteVCF(variantsDecoder, variantsEncoder, expectedDecoderVersion);
         }
     }
 
@@ -117,6 +116,7 @@ public class HtsVCFCodecTest extends HtsjdkTest {
     public void testEnsureGZIPOutOnGZSuffix(final String suffix) throws IOException {
         final IOPath inputPath = new HtsPath(VARIANTS_TEST_DIR + "variant/vcf42HeaderLines.vcf");
         final IOPath outputPath = IOUtils.createTempPath("ensureGZIP", suffix);
+        // the test input is v4.2, so the expected decoder is VCF_V42_VERSION
         readWriteVCFToPath(inputPath, outputPath, VCFCodecV4_2.VCF_V42_VERSION );
 
         // isGZIPInputStream requires mark support so use a BufferedInputStream
@@ -224,7 +224,7 @@ public class HtsVCFCodecTest extends HtsjdkTest {
         }
     }
 
-    private void readWriteVCFToPath(final IOPath inputPath, final IOPath outputPath, final HtsVersion expectedCodecVersion) {
+    private void readWriteVCFToPath(final IOPath inputPath, final IOPath outputPath, final HtsVersion expectedDecoderVersion) {
         // some test files require "AllowMissingFields" options for writing
         final VariantsEncoderOptions variantsEncoderOptions = new VariantsEncoderOptions().setAllowFieldsMissingFromHeader(true);
         try (final VariantsDecoder variantsDecoder = HtsDefaultRegistry.getVariantsResolver().getVariantsDecoder(inputPath);
@@ -234,12 +234,12 @@ public class HtsVCFCodecTest extends HtsjdkTest {
 
             Assert.assertNotNull(variantsDecoder);
             Assert.assertEquals(variantsDecoder.getFileFormat(), VariantsFormats.VCF);
-            Assert.assertEquals(variantsDecoder.getVersion(), expectedCodecVersion);
+            Assert.assertEquals(variantsDecoder.getVersion(), expectedDecoderVersion);
             Assert.assertTrue(variantsDecoder.getDisplayName().contains(inputPath.toString()));
 
             Assert.assertNotNull(variantsEncoder);
             Assert.assertEquals(variantsEncoder.getFileFormat(), VariantsFormats.VCF);
-            Assert.assertEquals(variantsEncoder.getVersion(), VCFCodecV4_2.VCF_V42_VERSION);
+            Assert.assertEquals(variantsEncoder.getVersion(), VCFCodecV4_3.VCF_V43_VERSION);
             Assert.assertTrue(variantsEncoder.getDisplayName().contains(outputPath.toString()));
 
             final VCFHeader vcfHeader = variantsDecoder.getHeader();
@@ -255,12 +255,12 @@ public class HtsVCFCodecTest extends HtsjdkTest {
     private void readWriteVCF(
         final VariantsDecoder variantsDecoder,
         final VariantsEncoder variantsEncoder,
-        final HtsVersion expectedCodecVersion) {
+        final HtsVersion expectedDecoderVersion) {
         Assert.assertEquals(variantsDecoder.getFileFormat(), VariantsFormats.VCF);
-        Assert.assertEquals(variantsDecoder.getVersion(), expectedCodecVersion);
+        Assert.assertEquals(variantsDecoder.getVersion(), expectedDecoderVersion);
 
         Assert.assertEquals(variantsEncoder.getFileFormat(), VariantsFormats.VCF);
-        Assert.assertEquals(variantsEncoder.getVersion(), VCFCodecV4_2.VCF_V42_VERSION);
+        Assert.assertEquals(variantsEncoder.getVersion(), VCFCodecV4_3.VCF_V43_VERSION);
 
         final VCFHeader vcfHeader = variantsDecoder.getHeader();
         Assert.assertNotNull(vcfHeader);
