@@ -6,11 +6,13 @@ import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsEncoder;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.io.IOPath;
 import htsjdk.annotations.InternalAPI;
+import htsjdk.samtools.util.Log;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -28,6 +30,7 @@ import java.util.Optional;
  */
 @InternalAPI
 public abstract class VCFEncoder implements VariantsEncoder {
+    private final static Log LOG = Log.getInstance(VCFEncoder.class);
     private final Bundle outputBundle;
     private final VariantsEncoderOptions variantsEncoderOptions;
     private final String displayName;
@@ -63,6 +66,15 @@ public abstract class VCFEncoder implements VariantsEncoder {
     @Override
     public void setHeader(final VCFHeader vcfHeader) {
         ValidationUtils.nonNull(vcfHeader, "vcfHeader");
+
+        final HtsVersion htsVersion = getVersion();
+        final HtsVersion headerHtsVersion = vcfHeader.getVCFHeaderVersion().toHtsVersion();
+        if (!(headerHtsVersion.getMajorVersion() == htsVersion.getMajorVersion()) ||
+                !(headerHtsVersion.getMinorVersion() == htsVersion.getMinorVersion())) {
+            LOG.warn(String.format("Using a version %s VCF header on a version %s encoder (this can happen when an in-place upgrade fails).",
+                    vcfHeader.getVCFHeaderVersion(),
+                    getVersion()));
+        }
 
         vcfWriter = getVCFWriter(getOutputBundle(), getVariantsEncoderOptions());
         vcfWriter.writeHeader(vcfHeader);

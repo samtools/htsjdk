@@ -1,5 +1,6 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -40,4 +41,16 @@ public class VCFHeaderVersionTest extends VariantBaseTest {
         Assert.assertNotEquals(targetVersion.isAtLeastAsRecentAs(sourceVersion), expectedIsAtLeastAsRecentAs);
     }
 
+    @Test
+    public void testToHtsVersion() {
+        for (final VCFHeaderVersion vcfHeaderVersion: VCFHeaderVersion.values()) {
+            final HtsVersion htsVersion = vcfHeaderVersion.toHtsVersion();
+            Assert.assertEquals(
+                    String.format("%s%s.%s",
+                            vcfHeaderVersion.getVersionPrefixString(),
+                            htsVersion.getMajorVersion(),
+                            htsVersion.getMinorVersion()),
+                    vcfHeaderVersion.getVersionString());
+        }
+    }
 }

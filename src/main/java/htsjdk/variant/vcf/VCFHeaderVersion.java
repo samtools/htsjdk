@@ -25,6 +25,7 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.tribble.TribbleException;
 import htsjdk.utils.ValidationUtils;
 
@@ -33,24 +34,27 @@ import htsjdk.utils.ValidationUtils;
  */
 public enum VCFHeaderVersion {
     // Keep this list in increasing (ordinal) order, since isAtLeastAsRecentAs depends on it
-    VCF3_2("VCRv3.2", "format"),
-    VCF3_3("VCFv3.3", "fileformat"),
-    VCF4_0("VCFv4.0", "fileformat"),
-    VCF4_1("VCFv4.1", "fileformat"),
-    VCF4_2("VCFv4.2", "fileformat"),
-    VCF4_3("VCFv4.3", "fileformat");
+    VCF3_2("VCRv", "3.2", "format"),
+    VCF3_3("VCFv", "3.3", "fileformat"),
+    VCF4_0("VCFv", "4.0", "fileformat"),
+    VCF4_1("VCFv", "4.1", "fileformat"),
+    VCF4_2("VCFv", "4.2", "fileformat"),
+    VCF4_3("VCFv", "4.3", "fileformat");
 
+    private final String versionPrefixString;
     private final String versionString;
     private final String formatString;
 
     /**
      * create the enum, privately, using:
+     * @param pString the version prefix string (i.e., "VCFv")
      * @param vString the version string
      * @param fString the format string
      */
-     VCFHeaderVersion(String vString, String fString) {
-        this.versionString = vString;
-        this.formatString = fString;
+     VCFHeaderVersion(final String pString, final String vString, final String fString) {
+         this.versionPrefixString = pString;
+         this.versionString = vString;
+         this.formatString = fString;
     }
 
     /**
@@ -61,8 +65,8 @@ public enum VCFHeaderVersion {
     public static VCFHeaderVersion toHeaderVersion(String version) {
         version = clean(version);
         for (VCFHeaderVersion hv : VCFHeaderVersion.values())
-            if (hv.versionString.equals(version))
-                    return hv;
+            if (hv.getVersionString().equals(version))
+                return hv;
         return null;
     }
 
@@ -117,6 +121,15 @@ public enum VCFHeaderVersion {
     }
 
     /**
+     * Convert the two part VCF header version to a corresponding three part {@link HtsVersion}.
+     * @return and {@link HtsVersion} for this {@link VCFHeaderVersion}
+     */
+    public HtsVersion toHtsVersion() {
+        final String[] versionParts = versionString.split("\\.");
+        return new HtsVersion(Integer.parseInt(versionParts[0]), Integer.parseInt(versionParts[1]), HtsVersion.ANY_VERSION);
+    }
+
+    /**
      * Utility function to clean up a VCF header string
      * 
      * @param s string
@@ -141,7 +154,7 @@ public enum VCFHeaderVersion {
      * For now, the only incompatibility is between V4.3 and any other version. All other version combinations
      * are compatible.
      * @param v1 first version to compare
-     * @param v2 scond version to compare
+     * @param v2 second version to compare
      * @return true if the versions are compatible
      */
     //TODO: this method can be removed once this is rebased on the vcf4.3 writing branch
@@ -150,8 +163,12 @@ public enum VCFHeaderVersion {
                 (!v1.isAtLeastAsRecentAs(VCF4_3) && !v2.isAtLeastAsRecentAs(VCF4_3));
     }
 
+    public String getVersionPrefixString() {
+        return versionPrefixString;
+    }
+
     public String getVersionString() {
-        return versionString;
+        return versionPrefixString + versionString;
     }
 
     public String getFormatString() {
