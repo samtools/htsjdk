@@ -25,7 +25,6 @@
 
 package htsjdk.variant.bcf2;
 
-import htsjdk.samtools.BAMIndexer;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.BinaryFeatureCodec;
@@ -36,16 +35,12 @@ import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.readers.SynchronousLineReader;
-import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.variantcontext.VariantContextUtils;
 import htsjdk.variant.vcf.VCFCodec;
-import htsjdk.variant.vcf.VCFCompoundHeaderLine;
-import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
@@ -54,10 +49,8 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,8 +134,8 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             recordNo++;
             final VariantContextBuilder builder = new VariantContextBuilder();
 
-            final int sitesBlockSize = decoder.readBlockSize(inputStream);
-            final int genotypeBlockSize = decoder.readBlockSize(inputStream);
+            final int sitesBlockSize = BCF2Decoder.readBlockSize(inputStream);
+            final int genotypeBlockSize = BCF2Decoder.readBlockSize(inputStream);
 
             decoder.readNextBlock(sitesBlockSize, inputStream);
             decodeSiteLoc(builder);

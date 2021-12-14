@@ -179,7 +179,6 @@ class BCF2FieldWriter {
     // TODO in the genotype writers, a missing genotype (one where variantContext.getGenotype(sampleName) == null)
     //  is treated like one where all its attributes/inline fields are missing, this matches the behavior
     //  of the old writer, which previously created a new empty Genotype object for each missing genotypes, is this right?
-    //  For example, should the FT string of a missing genotype be PASS or a padded empty string
 
     /**
      * Class that writes one field specified by a {@link VCFFormatHeaderLine}

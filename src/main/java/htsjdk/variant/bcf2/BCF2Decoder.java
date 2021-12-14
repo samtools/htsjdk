@@ -375,7 +375,7 @@ public abstract class BCF2Decoder {
         return decodeIntArray(size, type, null);
     }
 
-    private double rawFloatToFloat(final int rawFloat) {
+    private static double rawFloatToFloat(final int rawFloat) {
         return Float.intBitsToFloat(rawFloat);
     }
 
@@ -391,7 +391,7 @@ public abstract class BCF2Decoder {
      * @param inputStream
      * @return
      */
-    public final int readBlockSize(final InputStream inputStream) throws IOException {
+    public static int readBlockSize(final InputStream inputStream) throws IOException {
         return BCF2Type.INT32.read(inputStream);
     }
 
@@ -410,21 +410,19 @@ public abstract class BCF2Decoder {
         final byte[] record = new byte[blockSizeInBytes];
         try {
             int bytesRead = 0;
-            final int nReadAttempts = 0; // keep track of how many times we've read
+            int nReadAttempts = 0; // keep track of how many times we've read
 
             // because we might not read enough bytes from the file in a single go, do it in a loop until we get EOF
             while (bytesRead < blockSizeInBytes) {
                 final int read1 = inputStream.read(record, bytesRead, blockSizeInBytes - bytesRead);
-                if (read1 == -1)
+                nReadAttempts++;
+                if (read1 == -1) {
                     validateReadBytes(bytesRead, nReadAttempts, blockSizeInBytes);
+                    break;
+                }
                 else
                     bytesRead += read1;
             }
-
-            if (GeneralUtils.DEBUG_MODE_ENABLED && nReadAttempts > 1) { // TODO -- remove me
-                System.err.println("Required multiple read attempts to actually get the entire BCF2 block, unexpected behavior");
-            }
-
             validateReadBytes(bytesRead, nReadAttempts, blockSizeInBytes);
         } catch (final IOException e) {
             throw new TribbleException("I/O error while reading BCF2 file", e);
@@ -445,7 +443,7 @@ public abstract class BCF2Decoder {
 
         if (actuallyRead < expected) {
             throw new TribbleException(
-                String.format("Failed to read next complete record: expected %d bytes but read only %d after %d iterations",
+                String.format("Failed to read next complete record: expected %d bytes but read only %d after %d read attempts",
                     expected, actuallyRead, nReadAttempts));
         }
     }

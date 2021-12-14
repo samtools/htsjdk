@@ -250,7 +250,7 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
         final VariantContext vc,
         final byte[] expectedBytes
     ) throws IOException {
-        // Skip starting so we don't get key in output
+        // Skip writing key so that we don't get key in output
         writer.encode(vc);
         Assert.assertEquals(expectedBytes, ENCODER.getRecordBytes());
     }

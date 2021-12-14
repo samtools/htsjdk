@@ -27,8 +27,8 @@ package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.bcf2.BCF2Dictionary;
@@ -95,6 +95,8 @@ import java.util.Map;
  * @since 06/12
  */
 class BCF2Writer extends IndexingVariantContextWriter {
+    private static final Log log = Log.getInstance(BCF2Writer.class);
+
     public static final int MAJOR_VERSION = 2;
     public static final int MINOR_VERSION = 2;
 
@@ -251,15 +253,13 @@ class BCF2Writer extends IndexingVariantContextWriter {
         // TODO should follow up on hts-specs and clarify the relationship between ##dictionary and IDX fields
         // Error on ##dictionary lines, we don't know what to do with them
         if (this.header.getMetaDataInInputOrder().stream().anyMatch(line -> line.getKey().equals("dictionary"))) {
-            throw new TribbleException("Use of the ##dictionary line is not supported");
+            log.warn("Use of the ##dictionary line is not supported");
         }
 
         // create the config offsets map
         if (this.header.getContigLines().isEmpty()) {
             if (ALLOW_MISSING_CONTIG_LINES) {
-                if (GeneralUtils.DEBUG_MODE_ENABLED) {
-                    System.err.println("No contig dictionary found in header, falling back to reference sequence dictionary");
-                }
+                log.debug("No contig dictionary found in header, falling back to reference sequence dictionary");
                 // The reference sequence dictionary should never contain IDX fields
                 createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), null));
             } else {
