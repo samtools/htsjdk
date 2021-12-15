@@ -1813,6 +1813,14 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return version;
     }
 
+    /**
+     * Ensure that this VariantContext is compatible with the VCF version of the given header. Discrepancies can occur
+     * in the encoding of the GP key or percent encoding of strings between versions. Returns a new VariantContext
+     * if the version of this VariantContext differs from the version of the header
+     * @param header the header to ensure compatibility with
+     * @return the current header if the version of this VariantContext matches the version of the header, otherwise
+     * a new, fully decoded VariantContext, whose attributes are compatible with the header's version
+     */
     public VariantContext makeCompatibleWithHeaderVersion(final VCFHeader header) {
         final VCFHeaderVersion headerVersion = header.getVCFHeaderVersion();
         if (this.version.equals(headerVersion)) {

@@ -402,6 +402,11 @@ public class VariantContextWriterBuilder {
         return this.options.contains(option);
     }
 
+    /**
+     * Set the policy writers created by this builder will use. Only has an effect for {@link VCFWriter}.
+     * @param policy the policy to use
+     * @return this VariantContextWriterBuilder
+     */
     public VariantContextWriterBuilder setVersionUpgradePolicy(final VCFVersionUpgradePolicy policy) {
         this.versionUpgradePolicy = policy;
         return this;

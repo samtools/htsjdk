@@ -636,6 +636,13 @@ public class VCFHeader implements HtsHeader, Serializable {
         }
     }
 
+    /**
+     * Attempt to upgrade this header based on the given {@link VCFVersionUpgradePolicy}. If no version upgrade
+     * is performed based on the given policy (e.g. the header is already at the latest version, or the policy
+     * DO_NOT_UPGRADE is requested), then the existing header is returned, otherwise a newly created header is returned.
+     * @param policy the {@link VCFVersionUpgradePolicy} to use to upgrade this header
+     * @return the current header if no upgrade is performed, otherwise a new header
+     */
     public VCFHeader upgradeVersion(final VCFVersionUpgradePolicy policy) {
         switch (policy) {
             case DO_NOT_UPGRADE:
