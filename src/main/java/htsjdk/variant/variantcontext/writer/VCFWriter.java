@@ -123,6 +123,12 @@ class VCFWriter extends IndexingVariantContextWriter {
         this.writeFullFormatField = writeFullFormatField;
     }
 
+    /**
+     * See {@link VCFVersionUpgradePolicy}. Controls how the writer will handle headers and variant contexts
+     * from versions of VCF before the current version. The writer will call {@link VCFHeader#upgradeVersion} headers
+     * passed in by {@link VCFWriter#writeHeader} and {@link VCFWriter#setHeader} before writing the header out.
+     * @param policy the policy to use
+     */
     public void setVersionUpgradePolicy(final VCFVersionUpgradePolicy policy) {
         this.policy = policy;
     }

@@ -63,6 +63,13 @@ class VCFValidationFailure<T> {
         return targetVersion;
     }
 
+    /**
+     * Create a formatted error message for a collection of version transition errors.
+     * @param errors the errors to format
+     * @param originalVersion the original version of the VCF object before the attempted transition
+     * @param <T> the type of the {@link VCFValidationFailure}
+     * @return formatted string
+     */
     public static <T> String createVersionTransitionErrorMessage(
         final Collection<VCFValidationFailure<T>> errors,
         final VCFHeaderVersion originalVersion
