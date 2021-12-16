@@ -263,7 +263,13 @@ public class CRAM30ComplianceTest extends HtsjdkTest {
 //            Assert.assertEquals(newCramFileHeader, originalSamFileHeader); // !!headers don't match
             Assert.assertEquals(newCramRecords.size(), originalCramRecords.size());
             Assert.assertEquals(newCramRecords.size(), originalSamRecords.size());
-//            Assert.assertEquals(newCramRecords, originalSamRecords); // !!1003_qual.cram, 0706_tag.cram failed here
+//            Assert.assertEquals(newCramRecords.get(1).getAttributes().get(0), originalSamRecords.get(1).getAttributes().get(0));
+//            Assert.assertEquals(newCramRecords.get(1).getAttributes().get(0).tag, originalSamRecords.get(1).getAttributes().get(0).tag);
+//            Assert.assertEquals(newCramRecords.get(1).getAttributes().get(0).value, originalSamRecords.get(1).getAttributes().get(0).value);
+
+
+            Assert.assertEquals(newCramRecords.get(1).equals(originalSamRecords.get(1)),1);
+            Assert.assertEquals(newCramRecords, originalSamRecords); // !!1003_qual.cram (mMateAlignmentStart), 0706_tag.cram (mAttributes ~) failed here
 //            Assert.assertEquals(newCramRecords, originalCramRecords);// !!all the excluded tests fail here except
             // !!1003_qual.cram, 0706_tag.cram
             // TODO: investigate the differences
