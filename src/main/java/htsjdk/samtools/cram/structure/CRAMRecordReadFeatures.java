@@ -437,29 +437,34 @@ public class CRAMRecordReadFeatures {
                     final InsertBase insert = (InsertBase) variation;
                     bases[posInRead++ - 1] = insert.getBase();
                     break;
-                case Bases.operator:
-                    final Bases readBases = (Bases) variation;
-                    for (byte b : readBases.getBases()) {
-                        bases[posInRead++ - 1] = b;
-                    }
-                    break;
                 case RefSkip.operator:
                     posInSeq += ((RefSkip) variation).getLength();
                     break;
             }
         }
 
-        for (; posInRead <= readLength
-                && alignmentStart + posInSeq - zeroBasedReferenceOffset < referenceBases.length; posInRead++, posInSeq++) {
-            bases[posInRead - 1] = referenceBases[alignmentStart + posInSeq - zeroBasedReferenceOffset];
+        if (referenceBases != null) {
+            for (; posInRead <= readLength
+                    && alignmentStart + posInSeq - zeroBasedReferenceOffset < referenceBases.length; posInRead++, posInSeq++) {
+                bases[posInRead - 1] = referenceBases[alignmentStart + posInSeq - zeroBasedReferenceOffset];
+            }
         }
 
-        // ReadBase overwrites bases:
+        // ReadBase and Bases feature codes overwrite bases:
         for (final ReadFeature variation : variations) {
             switch (variation.getOperator()) {
                 case ReadBase.operator:
                     final ReadBase readBase = (ReadBase) variation;
                     bases[variation.getPosition() - 1] = readBase.getBase();
+                    break;
+                case Bases.operator:
+                    final Bases basesOp = (Bases) variation;
+                    System.arraycopy(
+                            basesOp.getBases(),
+                            0,
+                            bases,
+                            variation.getPosition() - 1,
+                            basesOp.getBases().length);
                     break;
                 default:
                     break;
