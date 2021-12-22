@@ -8,6 +8,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -109,6 +110,8 @@ abstract class BCF2FieldEncoder {
 
     static class CharFieldEncoder extends BCF2FieldEncoder {
 
+        // TODO see https://github.com/samtools/hts-specs/issues/618
+        // private static final byte[] MISSING = new byte[] {(byte) BCF2Type.CHAR.getMissingBytes()};
         private static final byte[] EMPTY = new byte[0];
 
         private final List<byte[]> vs = new ArrayList<>();
@@ -127,6 +130,20 @@ abstract class BCF2FieldEncoder {
                 final byte[] b = ((String) o).getBytes(StandardCharsets.UTF_8);
                 nValues = Math.max(nValues, b.length);
                 vs.add(b);
+            } else if (o instanceof List) {
+                final List<String> strings = (List<String>) o;
+                nValues = Math.max(nValues, strings.size());
+                final ByteBuffer buff = ByteBuffer.allocate(strings.size());
+                for (final String s : strings) {
+                    if (s == null) {
+                        buff.put((byte) type.getMissingBytes());
+                    } else if (s.length() > 1) {
+                        throw new TribbleException("Value of VCF type Character is a string with more than 1 character: " + s);
+                    } else {
+                        buff.put(s.getBytes(StandardCharsets.UTF_8)[0]);
+                    }
+                }
+                vs.add(buff.array());
             } else {
                 throw BCF2FieldEncoder.incompatibleType(o, type);
             }
@@ -337,7 +354,7 @@ abstract class BCF2FieldEncoder {
     }
 
     static TribbleException incompatibleType(final Object o, final BCF2Type type) {
-        final String error = "Could not write object: %s whose type is incompatible with declared header of type: %s";
-        return new TribbleException(String.format(error, o, type));
+        final String error = "Could not write object: %s whose type %s is incompatible with declared header of type: %s";
+        return new TribbleException(String.format(error, o, o.getClass().getSimpleName(), type));
     }
 }

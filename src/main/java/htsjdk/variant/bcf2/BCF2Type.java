@@ -80,7 +80,6 @@ public enum BCF2Type {
 
         @Override
         public void write(final int value, final OutputStream out) throws IOException {
-            // TODO -- optimization -- should we put this in a local buffer?
             out.write(value);
             out.write(value >> 8);
         }
@@ -117,10 +116,9 @@ public enum BCF2Type {
         }
     },
 
-    // CHAR isn't given a MISSING or EOV value in the spec, but for the purposes of
-    // padding strings (i.e. variable length vectors of chars), it is treated as if
-    // '\0' or NULL is both the MISSING and EOV value of CHAR
-    CHAR(7, 1, 0x00000000) {
+    // TODO uncertain as to the correct MISSING and EOV representations of Character/String
+    //  see https://github.com/samtools/hts-specs/issues/618
+    CHAR(7, 1, 0x07, 0x00, 0, 0) {
         @Override
         public int read(final InputStream in) throws IOException {
             return INT8.read(in);

@@ -353,7 +353,9 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             {"structuralvariants.vcf"},
             {"ex2.vcf"},
             {"test.vcf.bgz"},
-            {"vcf43/all43Features.utf8.vcf"}
+            {"vcf43/all43Features.utf8.vcf"},
+            // This test fails because the BCF decoder cannot distinguish between a vector of Characters and a String
+//            {"missingStringAndCharacterTest.vcf"},
         };
     }
 
@@ -410,6 +412,10 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             {"structuralvariants.vcf"},
             {"ex2.vcf"},
             {"test.vcf.bgz"},
+            // TODO bcftools does not convert '.' into the MISSING value for Character (0x07),
+            //  but writes it out as literal '.' which causes this test to fail when we compare '.' against null,
+            //  see https://github.com/samtools/hts-specs/issues/618
+//            {"missingStringAndCharacterTest.vcf"},
             // bcftools does not to decoding of percent encoded VCFs, so its BCF output contains the literal characters
 //            {"vcf43/all43Features.utf8.vcf"}
         };

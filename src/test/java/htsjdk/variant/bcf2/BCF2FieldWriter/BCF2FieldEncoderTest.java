@@ -80,6 +80,7 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
         }
 
         // Char encoding
+        // TODO see https://github.com/samtools/hts-specs/issues/618
         {
             final List<Object> stringsToEncode = Arrays.asList("str", null, "\0a\0");
             final int maxByteWidth = stringsToEncode
@@ -100,6 +101,7 @@ public class BCF2FieldEncoderTest extends VariantBaseTest {
         }
 
         // String encoding
+        // TODO see https://github.com/samtools/hts-specs/issues/618
         {
             final List<Object> stringsToEncode = Arrays.asList("st", null, Arrays.asList("a", "b"), new String[]{"a", "b"});
             final byte[] bytes = new byte[]{

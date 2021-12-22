@@ -257,6 +257,14 @@ public class BCF2GenotypeFieldDecoders {
             for (final GenotypeBuilder gb : gbs) {
                 final Object value = decoder.decodeTypedValue(typeDescriptor, numElements);
                 if (value == null) continue;
+                // TODO see https://github.com/samtools/hts-specs/issues/618
+                //  Although it seems like a very rare corner case, this decoder cannot distinguish between
+                //  a vector of Character and a String, which are different VCF types but identical in BCF,
+                //  which should be decoded differently as Java objects
+                //  as List<String> chars = Arrays.asList("a", "b", "c") vs String str = new String("abc")
+                //  We would need the associated header line for each key to inspect its VCF type like we do in the
+                //  BCF writer. This would require a rewrite of this class, which would be desirable either way
+                //  so we can do stricter validation of the number and type of attributes being deserialized
                 if (value instanceof List && ((List) value).size() == 1) {
                     // TODO not sure what this refers to, htsjdk itself doesn't make any assumptions about
                     //  the concrete type of the data contained in the attributes map.
