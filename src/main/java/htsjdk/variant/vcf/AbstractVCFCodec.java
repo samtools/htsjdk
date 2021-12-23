@@ -542,7 +542,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     private VariantContext parseVCFLine(final String[] parts, final boolean includeGenotypes) {
         final VariantContextBuilder builder = new VariantContextBuilder();
-        builder.version(version);
+        builder.setVersion(version);
         builder.source(getName());
 
         // increment the line count

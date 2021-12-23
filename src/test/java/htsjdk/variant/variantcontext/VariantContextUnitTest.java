@@ -1204,9 +1204,9 @@ public class VariantContextUnitTest extends VariantBaseTest {
             }
         }
         // most of the fields are not important to the tests, we just need alleles and gc set properly
-        return new VariantContext("genotypes", VCFConstants.EMPTY_ID_FIELD, snpLoc, snpLocStart, snpLocStop, alleles,
+        return new VariantContext(VCFHeader.DEFAULT_VCF_VERSION, "genotypes", VCFConstants.EMPTY_ID_FIELD, snpLoc, snpLocStart, snpLocStop, alleles,
                 gc, VariantContext.NO_LOG10_PERROR, filters, attributes,
-                fullyDecoded, VCFHeader.DEFAULT_VCF_VERSION, toValidate);
+                fullyDecoded, toValidate);
     }
 
     // validateReferenceBases: PASS conditions
@@ -1300,9 +1300,9 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final Map<String, Object> attributes = null;
         final boolean fullyDecoded = false;
 
-        return new VariantContext("genotypes", rsId, snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, T),
+        return new VariantContext(VCFHeader.DEFAULT_VCF_VERSION, "genotypes", rsId, snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, T),
                 GenotypesContext.NO_GENOTYPES, VariantContext.NO_LOG10_PERROR, filters, attributes,
-                fullyDecoded, VCFHeader.DEFAULT_VCF_VERSION, toValidate);
+                fullyDecoded, toValidate);
     }
     private Set<String> makeRsIDsSet(final String... rsIds) {
         return new HashSet<>(Arrays.asList(rsIds));

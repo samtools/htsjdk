@@ -1,7 +1,8 @@
 package htsjdk.variant.variantcontext.writer;
 
 /**
- * The policy {@link VCFWriter} will use to determine the version of VCF to write from a given VCF file.
+ * The policy {@link VCFWriter} will use to determine the version of VCF to write from a given VCF file. This has no
+ * effect on the header written by {@link BCF2Writer}.
  * <p>
  * htsjdk's behavior to this point has been to stamp the most recent version of VCF onto all VCF files
  * written by VCFWriter regardless of the input VCF's original version. This had been possible as new versions

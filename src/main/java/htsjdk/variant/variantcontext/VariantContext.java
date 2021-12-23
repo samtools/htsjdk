@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.beta.plugin.HtsRecord;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.QualityUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
@@ -228,6 +229,8 @@ import java.util.stream.Collectors;
 public class VariantContext implements HtsRecord, Feature, Serializable {
     public static final long serialVersionUID = 1L;
 
+    private static final Log log = Log.getInstance(VariantContext.class);
+
     private static final boolean WARN_ABOUT_BAD_END = true;
     private static final int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
     private boolean fullyDecoded = false;
@@ -402,13 +405,13 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
             for (final String filter : filters) {
                 if ( filter == null) {
-                    throw new TribbleException("'null' is not a valid filter string.");
+                    throw new TribbleException("'null' is not a valid filter string in VariantContext: " + variantContext);
                 }
                 if (!VALID_FILTER.matcher(filter).matches()) {
-                    throw new TribbleException("Filter '" + filter +
-                            "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
+                    throw new TribbleException("Filter '" + filter + "' in VariantContext: " + variantContext +
+                            " contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
                 } else if (filter.equals("0")) {
-                    throw new TribbleException("Filter cannot use reserved string '0'");
+                    throw new TribbleException("Filter cannot use reserved string '0' in VariantContext: " + variantContext);
                 }
             }
         }
@@ -428,12 +431,11 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @param other the VariantContext to copy
      */
     protected VariantContext(final VariantContext other) {
-        this(other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
+        this(other.version, other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
                 other.getAlleles(), other.getGenotypes(), other.getLog10PError(),
                 other.getFiltersMaybeNull(),
                 other.getAttributes(),
                 other.fullyDecoded,
-                other.version,
                 NO_VALIDATION);
     }
 
@@ -451,7 +453,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @param attributes      attributes
      * @param validationToPerform     set of validation steps to take
      */
-    protected VariantContext(final String source,
+    protected VariantContext(final VCFHeaderVersion version,
+                             final String source,
                              final String ID,
                              final String contig,
                              final long start,
@@ -462,7 +465,6 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                              final Set<String> filters,
                              final Map<String, Object> attributes,
                              final boolean fullyDecoded,
-                             final VCFHeaderVersion version,
                              final EnumSet<Validation> validationToPerform ) {
         if ( contig == null || contig.isEmpty() ) { throw new IllegalArgumentException("Contig cannot be null or the empty string"); }
         this.contig = contig;
@@ -1637,7 +1639,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 decodeGenotypes(builder, header, lenientDecoding);
             } catch (final NumberFormatException | TribbleException e) {
                 // Wrap and rethrow exception with more precise information about VC
-                throw new TribbleException("Failed to fully decode VariantContext " + getContig() + ":" + getStart() + " with cause: " + e.getMessage());
+                throw new TribbleException("Failed to fully decode VariantContext " + getContig() + ":" + getStart(), e);
             }
             return builder.fullyDecoded(true).make();
         }
@@ -1823,34 +1825,37 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      */
     public VariantContext makeCompatibleWithHeaderVersion(final VCFHeader header) {
         final VCFHeaderVersion headerVersion = header.getVCFHeaderVersion();
-        if (this.version.equals(headerVersion)) {
-            return this;
-        } else {
-            // This will ensure that the VariantContext is decoded in a percent-encoding aware way
-            final VariantContext newVC = this.fullyDecode(header, true);
-            newVC.version = headerVersion;
+        // This will ensure that the VariantContext is decoded in a percent-encoding aware way
+        // and set the version of the decoded VariantContext to the version of the header
+        final VariantContext newVC = this.fullyDecode(header, true);
+        newVC.version = headerVersion;
 
-            final Object oldGP = newVC.getAttribute(VCFConstants.GENOTYPE_POSTERIORS_KEY);
-            // We need to special-case GP because there is a discrepancy in the scale used to record
-            // its values between pre-4.3 and 4.3+ VCF. Pre-4.3 GP is phred scale encoded while
-            // 4.3+ GP is a linear probability, bringing it in line with other standard keys that
-            // use the P suffix (c.f. VCF 4.3 spec section 7.2).
-            if (headerVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) && oldGP != null) {
-                if (oldGP instanceof List
-                    && (!((List<?>) oldGP).isEmpty() && ((List<?>) oldGP).get(0) instanceof Double)
-                ) {
+        final Object oldGP = newVC.getAttribute(VCFConstants.GENOTYPE_POSTERIORS_KEY);
+        // We need to special-case GP because there is a discrepancy in the scale used to record
+        // its values between pre-4.3 and 4.3+ VCF. Pre-4.3 GP is phred scale encoded while
+        // 4.3+ GP is a linear probability, bringing it in line with other standard keys that
+        // use the P suffix (c.f. VCF 4.3 spec section 7.2).
+        if (headerVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+            && !this.version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+            && oldGP != null
+        ) {
+            try {
+                final List<Double> gpList = (List<Double>) oldGP;
+                if (!gpList.isEmpty()) {
                     newVC.commonInfo.putAttribute(
                         VCFConstants.GENOTYPE_POSTERIORS_KEY,
-                        makeGPValueLinear((List<Double>) oldGP),
+                        phredScaleToLinearScale(gpList),
                         true
                     );
                 }
+            } catch (final ClassCastException e) {
+                throw new TribbleException("GP key was not of expected type List<Double>", e);
             }
-            return newVC;
         }
+        return newVC;
     }
 
-    private static List<Double> makeGPValueLinear(final List<Double> gpValues) {
+    private static List<Double> phredScaleToLinearScale(final List<Double> gpValues) {
         // Some tools in the wild apparently already use linear scaled GP, so we have to
         // be careful about converting inputs. We check whether GP values are already linear
         // scaled by seeing if the values' sum is approximately equal to 1, like we
@@ -1862,7 +1867,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         }
 
         final boolean wasLinearScale = GeneralUtils.compareDoubles(sum, 1, VCFConstants.VCF_ENCODING_EPSILON) == 0;
-        if (!wasLinearScale) {
+        if (wasLinearScale) {
+            log.warn("VariantContext from pre-4.3 source has linear scale encoded GP key, GP is only linear scaled starting from VCF version 4.3");
+        } else {
             gpValues.replaceAll(GP -> QualityUtil.getErrorProbabilityFromPhredScore((int) Math.round(GP)));
         }
         return gpValues;
