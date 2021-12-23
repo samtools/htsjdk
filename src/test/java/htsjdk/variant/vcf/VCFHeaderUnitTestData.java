@@ -3,6 +3,7 @@ package htsjdk.variant.vcf;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.SynchronousLineReader;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
 import org.testng.Assert;
 
 import java.io.StringReader;

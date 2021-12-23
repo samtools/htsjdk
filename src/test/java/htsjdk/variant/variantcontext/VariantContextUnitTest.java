@@ -41,6 +41,12 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
 
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import htsjdk.variant.vcf.VCFStandardHeaderLines;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -1198,7 +1204,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
             }
         }
         // most of the fields are not important to the tests, we just need alleles and gc set properly
-        return new VariantContext("genotypes", VCFConstants.EMPTY_ID_FIELD, snpLoc, snpLocStart, snpLocStop, alleles,
+        return new VariantContext(VCFHeader.DEFAULT_VCF_VERSION, "genotypes", VCFConstants.EMPTY_ID_FIELD, snpLoc, snpLocStart, snpLocStop, alleles,
                 gc, VariantContext.NO_LOG10_PERROR, filters, attributes,
                 fullyDecoded, toValidate);
     }
@@ -1294,7 +1300,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final Map<String, Object> attributes = null;
         final boolean fullyDecoded = false;
 
-        return new VariantContext("genotypes", rsId, snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, T),
+        return new VariantContext(VCFHeader.DEFAULT_VCF_VERSION, "genotypes", rsId, snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, T),
                 GenotypesContext.NO_GENOTYPES, VariantContext.NO_LOG10_PERROR, filters, attributes,
                 fullyDecoded, toValidate);
     }
@@ -1798,5 +1804,36 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(context.getAttributeAsStringList("NotNumeric", "empty"), Arrays.asList("A", "B"));
         // test the case of a missing key
         Assert.assertTrue(context.getAttributeAsStringList("MissingList", "empty").isEmpty());
+    }
+
+    @Test
+    public void testFullyDecode() {
+        final LinkedHashSet<VCFHeaderLine> headerLines = new LinkedHashSet<>();
+        headerLines.add(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+        headerLines.add(VCFStandardHeaderLines.getInfoLine(VCFConstants.DEPTH_KEY));
+        headerLines.add(new VCFInfoHeaderLine("twoInts", 2, VCFHeaderLineType.Integer, "test int list key"));
+        headerLines.add(new VCFInfoHeaderLine("flag", 0, VCFHeaderLineType.Flag, "test flag key"));
+        headerLines.add(new VCFFormatHeaderLine("twoInts", 2, VCFHeaderLineType.Integer, "test int list key"));
+        final VCFHeader header = new VCFHeader(headerLines);
+
+        final VariantContext original = new VariantContextBuilder()
+            .chr("chr1")
+            .alleles("A", "C")
+            .attribute(VCFConstants.DEPTH_KEY, "10")
+            .attribute("twoInts", "1,2")
+            .attribute("flag", "true")
+            .genotypes(
+                new GenotypeBuilder("test")
+                    .alleles(Collections.singletonList(Allele.REF_A))
+                    .attribute("twoInts", "3,4")
+                    .make()
+            )
+            .fullyDecoded(false)
+            .make();
+        final VariantContext decoded = original.fullyDecode(header, false);
+
+        Assert.assertEquals(decoded.getAttribute("twoInts"), Arrays.asList(1, 2));
+        Assert.assertEquals(decoded.getAttribute("flag"), Boolean.TRUE);
+        Assert.assertEquals(decoded.getGenotype(0).getExtendedAttribute("twoInts"), Arrays.asList(3, 4));
     }
 }

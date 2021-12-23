@@ -32,6 +32,7 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContextComparator;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
 
 import java.io.Serializable;
 import java.util.*;
@@ -58,7 +59,7 @@ import java.util.stream.Collectors;
 public class VCFHeader implements HtsHeader, Serializable {
     public static final long serialVersionUID = 1L;
     protected static final Log logger = Log.getInstance(VCFHeader.class);
-    public static final VCFHeaderVersion DEFAULT_VCF_VERSION = VCFHeaderVersion.VCF4_2;
+    public static final VCFHeaderVersion DEFAULT_VCF_VERSION = VCFHeaderVersion.VCF4_3;
 
     // the mandatory header fields
     public enum HEADER_FIELDS {
@@ -604,6 +605,10 @@ public class VCFHeader implements HtsHeader, Serializable {
         return metaDataVersion;
     }
 
+    public Collection<VCFValidationFailure<VCFHeaderLine>> getValidationErrors(final VCFHeaderVersion targetVersion) {
+        return mMetaData.getValidationErrors(targetVersion);
+    }
+
     private void validateVersionTransition(
             final VCFHeaderLine newHeaderLine,
             final VCFHeaderVersion currentVersion,
@@ -628,6 +633,43 @@ public class VCFHeader implements HtsHeader, Serializable {
             mMetaData.validateMetaDataLines(newVersion);
         } else {
             newHeaderLine.validateForVersion(newVersion);
+        }
+    }
+
+    /**
+     * Attempt to upgrade this header based on the given {@link VCFVersionUpgradePolicy}. If no version upgrade
+     * is performed based on the given policy (e.g. the header is already at the latest version, or the policy
+     * DO_NOT_UPGRADE is requested), then the existing header is returned, otherwise a newly created header is returned.
+     * @param policy the {@link VCFVersionUpgradePolicy} to use to upgrade this header
+     * @return the current header if no upgrade is performed, otherwise a new header
+     */
+    public VCFHeader upgradeVersion(final VCFVersionUpgradePolicy policy) {
+        switch (policy) {
+            case DO_NOT_UPGRADE:
+                return this;
+            case UPGRADE_OR_FALLBACK: {
+                final Collection<VCFValidationFailure<VCFHeaderLine>> errors =
+                    this.mMetaData.getValidationErrors(VCFHeader.DEFAULT_VCF_VERSION);
+                if (errors.isEmpty()) {
+                    final VCFHeader newHeader = new VCFHeader(this);
+                    // If validation fails, simply pass the exception through
+                    newHeader.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+                    return newHeader;
+                } else {
+                    logger.info("Header will be kept at original version: " + this.getVCFHeaderVersion()
+                        + VCFValidationFailure.createVersionTransitionErrorMessage(errors, this.getVCFHeaderVersion())
+                    );
+                    return this;
+                }
+            }
+            case UPGRADE_OR_FAIL: {
+                final VCFHeader newHeader = new VCFHeader(this);
+                // If validation fails, simply pass the exception through
+                newHeader.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
+                return newHeader;
+            }
+            default:
+                throw new TribbleException("Unrecognized VCF version transition policy: " + policy);
         }
     }
 

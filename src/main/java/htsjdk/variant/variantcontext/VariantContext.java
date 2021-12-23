@@ -1,6 +1,6 @@
 /*
 * Copyright (c) 2012 The Broad Institute
-* 
+*
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
 * files (the "Software"), to deal in the Software without
@@ -9,10 +9,10 @@
 * copies of the Software, and to permit persons to whom the
 * Software is furnished to do so, subject to the following
 * conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be
 * included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -26,6 +26,8 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.beta.plugin.HtsRecord;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.QualityUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -38,16 +40,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * 
+ *
  * <h3> High-level overview </h3>
  *
  * The VariantContext object is a single general class system for representing genetic variation data composed of:
@@ -89,7 +92,7 @@ import java.util.stream.Collectors;
  *<p>
  * A [ref] / T at 10
  *</p>
- *<pre> 
+ *<pre>
  * GenomeLoc snpLoc = GenomeLocParser.createGenomeLoc("chr1", 10, 10);
  *</pre>
  *<p>
@@ -208,7 +211,7 @@ import java.util.stream.Collectors;
  *
  * <!-- comment by jdenvir: not sure what this tag is supposed to do:-->
  * <!-- <s3> -->
- *     <h3>Fully decoding.</h3>  
+ *     <h3>Fully decoding.</h3>
  *     Currently <code>VariantContext</code>s support some fields, particularly those
  *     stored as generic attributes, to be of any type.  For example, a field AB might
  *     be naturally a floating point number, 0.51, but when it's read into a VC its
@@ -225,6 +228,8 @@ import java.util.stream.Collectors;
  */
 public class VariantContext implements HtsRecord, Feature, Serializable {
     public static final long serialVersionUID = 1L;
+
+    private static final Log log = Log.getInstance(VariantContext.class);
 
     private static final boolean WARN_ABOUT_BAD_END = true;
     private static final int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
@@ -265,6 +270,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     /* cached monomorphic value: null -> not yet computed, False, True */
     private Boolean monomorphic = null;
+
+    private VCFHeaderVersion version;
 
     /*
      * Determine which genotype fields are in use in the genotypes in VC
@@ -321,7 +328,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    //no controls and white-spaces characters, no semicolon.
+    // No controls and white-spaces characters, no semicolon, filter string cannot be empty
     public static final Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
 
     public enum Validation {
@@ -396,13 +403,15 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 return;
             }
 
-            for (String filter : filters) {
+            for (final String filter : filters) {
                 if ( filter == null) {
-                    throw new IllegalStateException("'null' is not a valid filter string.");
+                    throw new TribbleException("'null' is not a valid filter string in VariantContext: " + variantContext);
                 }
                 if (!VALID_FILTER.matcher(filter).matches()) {
-                    throw new IllegalStateException("Filter '" + filter +
-                            "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
+                    throw new TribbleException("Filter '" + filter + "' in VariantContext: " + variantContext +
+                            " contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
+                } else if (filter.equals("0")) {
+                    throw new TribbleException("Filter cannot use reserved string '0' in VariantContext: " + variantContext);
                 }
             }
         }
@@ -421,12 +430,13 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      *
      * @param other the VariantContext to copy
      */
-    protected VariantContext(VariantContext other) {
-        this(other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
+    protected VariantContext(final VariantContext other) {
+        this(other.version, other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
                 other.getAlleles(), other.getGenotypes(), other.getLog10PError(),
                 other.getFiltersMaybeNull(),
                 other.getAttributes(),
-                other.fullyDecoded, NO_VALIDATION);
+                other.fullyDecoded,
+                NO_VALIDATION);
     }
 
     /**
@@ -443,7 +453,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @param attributes      attributes
      * @param validationToPerform     set of validation steps to take
      */
-    protected VariantContext(final String source,
+    protected VariantContext(final VCFHeaderVersion version,
+                             final String source,
                              final String ID,
                              final String contig,
                              final long start,
@@ -455,7 +466,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                              final Map<String, Object> attributes,
                              final boolean fullyDecoded,
                              final EnumSet<Validation> validationToPerform ) {
-        if ( contig == null ) { throw new IllegalArgumentException("Contig cannot be null"); }
+        if ( contig == null || contig.isEmpty() ) { throw new IllegalArgumentException("Contig cannot be null or the empty string"); }
         this.contig = contig;
         this.start = start;
         this.stop = stop;
@@ -488,6 +499,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         }
 
         this.fullyDecoded = fullyDecoded;
+        this.version = version;
 
         if ( ! validationToPerform.isEmpty() ) {
             validate(validationToPerform);
@@ -617,7 +629,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * <li><strong>Mixed</strong></li>
      * <li>Mix of other classes</li>
      * </ul>
-     * 
+     *
      * Also supports NO_VARIATION type, used to indicate that the site isn't polymorphic in the population
      *
      *
@@ -813,7 +825,6 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     public String getID() {
         return ID;
     }
-
 
     // ---------------------------------------------------------------------------------------------------------
     //
@@ -1623,10 +1634,14 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         else {
             // TODO -- warning this is potentially very expensive as it creates copies over and over
             final VariantContextBuilder builder = new VariantContextBuilder(this);
-            fullyDecodeInfo(builder, header, lenientDecoding);
-            fullyDecodeGenotypes(builder, header);
-            builder.fullyDecoded(true);
-            return builder.make();
+            try {
+                decodeInfo(builder, header, lenientDecoding);
+                decodeGenotypes(builder, header, lenientDecoding);
+            } catch (final NumberFormatException | TribbleException e) {
+                // Wrap and rethrow exception with more precise information about VC
+                throw new TribbleException("Failed to fully decode VariantContext " + getContig() + ":" + getStart(), e);
+            }
+            return builder.fullyDecoded(true).make();
         }
     }
 
@@ -1638,106 +1653,226 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return fullyDecoded;
     }
 
-    private final void fullyDecodeInfo(final VariantContextBuilder builder, final VCFHeader header, final boolean lenientDecoding) {
-        builder.attributes(fullyDecodeAttributes(getAttributes(), header, lenientDecoding));
+    private void decodeInfo(
+        final VariantContextBuilder builder,
+        final VCFHeader header,
+        final boolean lenientDecoding
+    ) {
+        decodeAttributes(builder::attribute, id -> getInfoLine(id, header, lenientDecoding), this.getAttributes(), lenientDecoding);
     }
 
-    private final Map<String, Object> fullyDecodeAttributes(final Map<String, Object> attributes,
-                                                            final VCFHeader header,
-                                                            final boolean lenientDecoding) {
-        final Map<String, Object> newAttributes = new HashMap<>(10);
+    private void decodeGenotypes(
+        final VariantContextBuilder builder,
+        final VCFHeader header,
+        final boolean lenientDecoding
+    ) {
+        final GenotypesContext gc = this.getGenotypes();
+        final GenotypesContext newGc = new GenotypesContext(gc.size());
+        for (final Genotype g : this.getGenotypes()) {
+            final GenotypeBuilder gb = new GenotypeBuilder(g);
+            decodeAttributes(gb::attribute, id -> getFormatLine(id, header, lenientDecoding), g.getExtendedAttributes(), lenientDecoding);
+            newGc.add(gb.make());
+        }
+        builder.genotypesNoValidation(newGc);
+    }
 
-        for ( final Map.Entry<String, Object> attr : attributes.entrySet() ) {
-            final String field = attr.getKey();
+    private void decodeAttributes(
+        final BiConsumer<String, Object> put,
+        final Function<String, VCFCompoundHeaderLine> metadataGetter,
+        final Map<String, Object> attributes,
+        final boolean lenientDecoding
+    ) {
+        attributes.forEach((id, value) -> {
+            final VCFCompoundHeaderLine line = metadataGetter.apply(id);
+            final Object decoded = decodeValue(value, line);
 
-            if ( field.equals(VCFConstants.GENOTYPE_FILTER_KEY) )
-                continue; // gross, FT is part of the extended attributes
-
-            final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
-            final Object decoded = decodeValue(field, attr.getValue(), format);
-
-            if ( decoded != null &&
-                    ! lenientDecoding
-                    && format.getCountType() != VCFHeaderLineCount.UNBOUNDED
-                    && format.getType() != VCFHeaderLineType.Flag ) { // we expect exactly the right number of elements
-                final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
-                final int expSize = format.getCount(this);
-                if ( obsSize != expSize ) {
-                    throw new TribbleException.InvalidHeader("Discordant field size detected for field " +
-                            field + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values " +
-                            "but the header says this should have " + expSize + " values based on header record " +
-                            format);
+            if (decoded != null && !lenientDecoding
+                && line.getCountType() != VCFHeaderLineCount.UNBOUNDED
+                && line.getType() != VCFHeaderLineType.Flag
+            ) {
+                // We expect exactly the right number of elements
+                final int actualSize = decoded instanceof List ? ((List<?>) decoded).size() : 1;
+                final int expectedSize = line.getCount(this);
+                if (actualSize != expectedSize) {
+                    throw new TribbleException(String.format(
+                        "While decoding field: %s, number of values decoded: %d did not match expected number based on header count: %d",
+                        id, actualSize, expectedSize
+                    ));
                 }
             }
-            newAttributes.put(field, decoded);
-        }
-
-        return newAttributes;
+            put.accept(id, decoded);
+        });
     }
 
-    private final Object decodeValue(final String field, final Object value, final VCFCompoundHeaderLine format) {
-        if ( value instanceof String ) {
-            if ( field.equals(VCFConstants.GENOTYPE_PL_KEY) )
-                return GenotypeLikelihoods.fromPLField((String)value);
-
-            final String string = (String)value;
-            if ( string.indexOf(',') != -1 ) {
+    private Object decodeValue(
+        final Object value,
+        final VCFCompoundHeaderLine line
+    ) {
+        final boolean percentDecode = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
+        final VCFHeaderLineType type = line.getType();
+        if (value instanceof String) {
+            final String string = (String) value;
+            if (string.indexOf(',') != -1) {
                 final String[] splits = string.split(",");
                 final List<Object> values = new ArrayList<>(splits.length);
-                for ( int i = 0; i < splits.length; i++ )
-                    values.add(decodeOne(field, splits[i], format));
+                for (final String split : splits) {
+                    values.add(decodeOne(split, type, percentDecode));
+                }
                 return values;
             } else {
-                return decodeOne(field, string, format);
+                return decodeOne(string, type, percentDecode);
             }
-        } else if ( value instanceof List && (((List) value).get(0)) instanceof String ) {
-            final List<String> asList = (List<String>)value;
+        } else if (value instanceof List && (((List<?>) value).get(0)) instanceof String) {
+            final List<String> asList = (List<String>) value;
             final List<Object> values = new ArrayList<>(asList.size());
-            for ( final String s : asList )
-                values.add(decodeOne(field, s, format));
+            for (final String s : asList) {
+                values.add(decodeOne(s, type, percentDecode));
+            }
             return values;
         } else {
             return value;
         }
-
-        // allowMissingValuesComparedToHeader
     }
 
-    private final Object decodeOne(final String field, final String string, final VCFCompoundHeaderLine format) {
-        try {
-            if ( string.equals(VCFConstants.MISSING_VALUE_v4) )
-                return null;
-            else {
-                switch ( format.getType() ) {
-                    case Character: return string;
-                    case Flag:
-                        final boolean b = Boolean.valueOf(string) || string.equals("1");
-                        if ( b == false )
-                            throw new TribbleException("VariantContext FLAG fields " + field + " cannot contain false values"
-                                    + " as seen at " + getContig() + ":" + getStart());
-                        return b;
-                    case String:    return string;
-                    case Integer:   return Integer.valueOf(string);
-                    case Float:     return VCFUtils.parseVcfDouble(string);
-                    default: throw new TribbleException("Unexpected type for field" + field);
-                }
+    private static Object decodeOne(
+        final String string,
+        final VCFHeaderLineType type,
+        final boolean percentDecode
+    ) {
+        if (string.equals(VCFConstants.MISSING_VALUE_v4))
+            return null;
+        else {
+            switch (type) {
+                case Character: return string;
+                case Flag:
+                    final boolean b = Boolean.parseBoolean(string) || string.equals("1");
+                    if (!b)
+                        throw new TribbleException("VariantContext FLAG fields cannot contain false values");
+                    return true;
+                case String: return percentDecode ? VCFPercentEncodedTextTransformer.percentDecode(string) : string;
+                case Integer: return Integer.valueOf(string);
+                case Float: return VCFUtils.parseVcfDouble(string);
+                default: throw new TribbleException("Unexpected VCF type " + type);
             }
-        } catch (NumberFormatException e) {
-            throw new TribbleException("Could not decode field " + field + " with value " + string + " of declared type " + format.getType());
         }
     }
 
-    private final void fullyDecodeGenotypes(final VariantContextBuilder builder, final VCFHeader header) {
-        final GenotypesContext gc = new GenotypesContext();
-        for ( final Genotype g : getGenotypes() ) {
-            gc.add(fullyDecodeGenotypes(g, header));
-        }
-        builder.genotypesNoValidation(gc);
+    private static VCFCompoundHeaderLine getInfoLine(
+        final String id,
+        final VCFHeader header,
+        final boolean lenientDecoding
+    ) {
+        return getMetadataLine(id, header, lenientDecoding, false);
     }
 
-    private final Genotype fullyDecodeGenotypes(final Genotype g, final VCFHeader header) {
-        final Map<String, Object> map = fullyDecodeAttributes(g.getExtendedAttributes(), header, true);
-        return new GenotypeBuilder(g).attributes(map).make();
+    private static VCFCompoundHeaderLine getFormatLine(
+        final String id,
+        final VCFHeader header,
+        final boolean lenientDecoding
+    ) {
+        return getMetadataLine(id, header, lenientDecoding, true);
+    }
+
+    private static VCFCompoundHeaderLine getMetadataLine(
+        final String id,
+        final VCFHeader header,
+        final boolean lenientDecoding,
+        final boolean isFormat
+    ) {
+        // Try getting line from header
+        VCFCompoundHeaderLine line = isFormat ? header.getFormatHeaderLine(id) : header.getInfoHeaderLine(id);
+        if (line == null && !lenientDecoding) {
+            throw new TribbleException(String.format(
+                "No %s header line was found matching ID: %s",
+                isFormat ? "FORMAT" : "INFO", id
+            ));
+        }
+        if (line == null) {
+            // Try to find a matching standard header line
+            line = isFormat
+                ? VCFStandardHeaderLines.getFormatLine(id, false)
+                : VCFStandardHeaderLines.getInfoLine(id, false);
+        }
+        if (line == null) {
+            final String description = "Auto-generated unbounded string "
+                + (isFormat ? "FORMAT" : "INFO")
+                + " header line for " + id;
+            // Decode values as strings, and allow an unbounded number of values
+            line = isFormat
+                ? new VCFFormatHeaderLine(id, VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, description)
+                : new VCFInfoHeaderLine(id, VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, description);
+        }
+        return line;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    //
+    // Version awareness related methods
+    //
+    // ---------------------------------------------------------------------------------------------------------
+
+    public VCFHeaderVersion getVersion() {
+        return version;
+    }
+
+    /**
+     * Ensure that this VariantContext is compatible with the VCF version of the given header. Discrepancies can occur
+     * in the encoding of the GP key or percent encoding of strings between versions. Returns a new VariantContext
+     * if the version of this VariantContext differs from the version of the header
+     * @param header the header to ensure compatibility with
+     * @return the current header if the version of this VariantContext matches the version of the header, otherwise
+     * a new, fully decoded VariantContext, whose attributes are compatible with the header's version
+     */
+    public VariantContext makeCompatibleWithHeaderVersion(final VCFHeader header) {
+        final VCFHeaderVersion headerVersion = header.getVCFHeaderVersion();
+        // This will ensure that the VariantContext is decoded in a percent-encoding aware way
+        // and set the version of the decoded VariantContext to the version of the header
+        final VariantContext newVC = this.fullyDecode(header, true);
+        newVC.version = headerVersion;
+
+        final Object oldGP = newVC.getAttribute(VCFConstants.GENOTYPE_POSTERIORS_KEY);
+        // We need to special-case GP because there is a discrepancy in the scale used to record
+        // its values between pre-4.3 and 4.3+ VCF. Pre-4.3 GP is phred scale encoded while
+        // 4.3+ GP is a linear probability, bringing it in line with other standard keys that
+        // use the P suffix (c.f. VCF 4.3 spec section 7.2).
+        if (headerVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+            && !this.version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+            && oldGP != null
+        ) {
+            try {
+                final List<Double> gpList = (List<Double>) oldGP;
+                if (!gpList.isEmpty()) {
+                    newVC.commonInfo.putAttribute(
+                        VCFConstants.GENOTYPE_POSTERIORS_KEY,
+                        phredScaleToLinearScale(gpList),
+                        true
+                    );
+                }
+            } catch (final ClassCastException e) {
+                throw new TribbleException("GP key was not of expected type List<Double>", e);
+            }
+        }
+        return newVC;
+    }
+
+    private static List<Double> phredScaleToLinearScale(final List<Double> gpValues) {
+        // Some tools in the wild apparently already use linear scaled GP, so we have to
+        // be careful about converting inputs. We check whether GP values are already linear
+        // scaled by seeing if the values' sum is approximately equal to 1, like we
+        // would expect if the values were linear scale probabilities.
+        // c.f. https://sourceforge.net/p/vcftools/mailman/vcftools-spec/thread/CEBCD558.FA29%25browning%40u.washington.edu/
+        double sum = 0;
+        for (final double d : gpValues) {
+            sum += d;
+        }
+
+        final boolean wasLinearScale = GeneralUtils.compareDoubles(sum, 1, VCFConstants.VCF_ENCODING_EPSILON) == 0;
+        if (wasLinearScale) {
+            log.warn("VariantContext from pre-4.3 source has linear scale encoded GP key, GP is only linear scaled starting from VCF version 4.3");
+        } else {
+            gpValues.replaceAll(GP -> QualityUtil.getErrorProbabilityFromPhredScore((int) Math.round(GP)));
+        }
+        return gpValues;
     }
 
     // ---------------------------------------------------------------------------------------------------------
@@ -1862,9 +1997,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
     }
 
-    /** 
-     * Search for the INFO=SVTYPE and return the type of Structural Variant 
-     * @return the StructuralVariantType of null if there is no property SVTYPE 
+    /**
+     * Search for the INFO=SVTYPE and return the type of Structural Variant
+     * @return the StructuralVariantType of null if there is no property SVTYPE
      * */
     public StructuralVariantType getStructuralVariantType() {
         final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);

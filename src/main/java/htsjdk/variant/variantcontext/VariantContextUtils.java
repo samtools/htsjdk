@@ -60,7 +60,7 @@ public class VariantContextUtils {
         return jexl;
     });
     private final static boolean ASSUME_MISSING_FIELDS_ARE_STRINGS = false;
-    
+
     /**
      * Computes the alternate allele frequency at the provided {@link VariantContext} by dividing its "AN" by its "AC".
      * @param vc The variant whose alternate allele frequency is computed
@@ -81,7 +81,7 @@ public class VariantContextUtils {
             throw new AssertionError(String.format("Expected a minor allele frequency in the range [0, 1], but got %s. vc=%s", aaf, vc));
         return aaf;
     }
-    
+
     /**
      * Update the attributes of the attributes map given the VariantContext to reflect the
      * proper chromosome-based VCF tags
@@ -180,6 +180,11 @@ public class VariantContextUtils {
         builder.attributes(calculateChromosomeCounts(vc, new HashMap<>(vc.getAttributes()), removeStaleValues, founderIds));
     }
 
+    /**
+     *  @deprecated starting after version 2.24.1
+     *  Use {@link VCFHeader#getInfoHeaderLine(String)} or {@link VCFHeader#getFormatHeaderLine(String)} instead
+     */
+    @Deprecated
     public final static VCFCompoundHeaderLine getMetaDataForField(final VCFHeader header, final String field) {
         VCFCompoundHeaderLine metaData = header.getFormatHeaderLine(field);
         if ( metaData == null ) metaData = header.getInfoHeaderLine(field);

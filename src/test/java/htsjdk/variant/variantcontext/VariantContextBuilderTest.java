@@ -1,5 +1,6 @@
 package htsjdk.variant.variantcontext;
 
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -258,7 +259,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         };
     }
 
-    @Test(dataProvider = "illegalFilterStrings", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "illegalFilterStrings", expectedExceptions = TribbleException.class)
     public void testFilterCannotUseBadFilters(final String filter) {
         final Set<String> filters = new HashSet<>();
         filters.add(filter);
@@ -322,7 +323,7 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         builder.filter("mayIPlease?");
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = TribbleException.class)
     public void testCantCreateNullFilter(){
         final VariantContextBuilder builder = new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C, G)).filter("TEST");
         builder.filters((String)null);

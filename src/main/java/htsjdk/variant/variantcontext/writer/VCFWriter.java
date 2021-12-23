@@ -25,13 +25,12 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.IndexCreator;
-import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFConstants;
@@ -39,7 +38,6 @@ import htsjdk.variant.vcf.VCFEncoder;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -57,8 +55,6 @@ import java.util.stream.Collectors;
 class VCFWriter extends IndexingVariantContextWriter {
     protected final static Log logger = Log.getInstance(VCFWriter.class);
 
-    private static final String DEFAULT_VERSION_LINE = VCFHeader.DEFAULT_VCF_VERSION.toHeaderVersionLine();
-
 	// Initialized when the header is written to the output stream
 	private VCFEncoder vcfEncoder = null;
 
@@ -75,6 +71,8 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     // is the header or body written to the output stream?
     private boolean outputHasBeenWritten;
+
+    private VCFVersionUpgradePolicy policy = Defaults.VCF_VERSION_TRANSITION_POLICY;
 
     /*
      * The VCF writer uses an internal Writer, based by the ByteArrayOutputStream lineBuffer,
@@ -125,6 +123,18 @@ class VCFWriter extends IndexingVariantContextWriter {
         this.writeFullFormatField = writeFullFormatField;
     }
 
+    /**
+     * See {@link VCFVersionUpgradePolicy}. Controls how the writer will handle headers and variant contexts
+     * from versions of VCF before the current version. The writer will call {@link VCFHeader#upgradeVersion} on headers
+     * passed in by {@link VCFWriter#writeHeader} and {@link VCFWriter#setHeader} before writing the header out.
+     * This has no effect on the header written out by {@link BCF2Writer}, which writes its VCF header using the static
+     * method {@link VCFWriter#writeHeader(VCFHeader, Writer, String)}, which writes the header verbatim.
+     * @param policy the policy to use
+     */
+    public void setVersionUpgradePolicy(final VCFVersionUpgradePolicy policy) {
+        this.policy = policy;
+    }
+
     // --------------------------------------------------------------------------------
     //
     // VCFWriter interface functions
@@ -155,12 +165,11 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(final VCFHeader header) {
-
-        // note we need to update the mHeader object after this call because they header
+        // note we need to update the mHeader object after this call because the header
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
         setHeader(header);
         try {
-            writeHeader(this.mHeader, writer, getVersionLine(), getStreamName());
+            writeHeader(this.mHeader, writer, getStreamName());
             writeAndResetBuffer();
             outputHasBeenWritten = true;
         } catch ( IOException e ) {
@@ -168,24 +177,26 @@ class VCFWriter extends IndexingVariantContextWriter {
         }
     }
 
-    public static String getVersionLine() {
-        return DEFAULT_VERSION_LINE;
-    }
-
-    public static VCFHeader writeHeader(VCFHeader header,
+    @Deprecated // starting after version 2.24.1
+    public static VCFHeader writeHeader(final VCFHeader header,
                                         final Writer writer,
                                         final String versionLine,
                                         final String streamNameForError) {
+        // Determine requested version from versionLine
+        final VCFHeaderVersion requestedVersion = VCFHeaderVersion.fromHeaderVersionLine(versionLine);
+        final VCFHeaderLine requestedVersionLine = VCFHeader.makeHeaderVersionLine(requestedVersion);
+        // Set version inside header and validate lines
+        header.addMetaDataLine(requestedVersionLine);
+        return writeHeader(header, writer, streamNameForError);
+    }
 
+    public static VCFHeader writeHeader(final VCFHeader header,
+                                        final Writer writer,
+                                        final String streamNameForError) {
         try {
-            rejectVCFV43Headers(header);
-
-            // Validate that the file version we're writing is version-compatible this header's version.
-            validateHeaderVersion(header, versionLine);
-
             // The file format field needs to be written first; below any file format lines
             // embedded in the header will be removed
-            writer.write(versionLine + "\n");
+            writer.write(header.getVCFHeaderVersion().toHeaderVersionLine() + "\n");
 
             for (final VCFHeaderLine line : header.getMetaDataInSortedOrder() ) {
                 // Remove the fileformat header lines
@@ -201,8 +212,8 @@ class VCFWriter extends IndexingVariantContextWriter {
             // write out the column line
             writer.write(VCFHeader.HEADER_INDICATOR);
             writer.write(header.getHeaderFields().stream()
-                    .map(f -> f.name())
-                    .collect(Collectors.joining(VCFConstants.FIELD_SEPARATOR)).toString());
+                .map(Enum::name)
+                .collect(Collectors.joining(VCFConstants.FIELD_SEPARATOR)));
 
             if ( header.hasGenotypingData() ) {
                 writer.write(VCFConstants.FIELD_SEPARATOR);
@@ -245,15 +256,20 @@ class VCFWriter extends IndexingVariantContextWriter {
     @Override
     public void add(final VariantContext context) {
         try {
-            super.add(context);
+            // If this context came from a version of VCF different from that of the header which we wrote,
+            // we need to make sure it is encoded in a way which is compatible with the version of the header.
+            final VariantContext versionCompatibleContext = this.mHeader == null || context.getVersion() == this.mHeader.getVCFHeaderVersion()
+                ? context
+                : context.makeCompatibleWithHeaderVersion(this.mHeader);
+            super.add(versionCompatibleContext);
             if (this.mHeader == null) {
                 throw new IllegalStateException("Unable to write the VCF: header is missing, " +
                                                    "try to call writeHeader or setHeader first.");
             }
             if (this.doNotWriteGenotypes) {
-                this.vcfEncoder.write(this.writer, new VariantContextBuilder(context).noGenotypes().make());
+                this.vcfEncoder.write(this.writer, new VariantContextBuilder(versionCompatibleContext).noGenotypes().make());
             } else {
-                this.vcfEncoder.write(this.writer, context);
+                this.vcfEncoder.write(this.writer, versionCompatibleContext);
             }
             write("\n");
 
@@ -266,42 +282,11 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void setHeader(final VCFHeader header) {
-        rejectVCFV43Headers(header);
-
         if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
-        this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
+        final VCFHeader upgradedHeader = header.upgradeVersion(this.policy);
+        this.mHeader = doNotWriteGenotypes ? new VCFHeader(upgradedHeader.getMetaDataInSortedOrder()) : upgradedHeader;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
     }
-
-    // writing vcf v4.3 is not implemented
-    private static void rejectVCFV43Headers(final VCFHeader targetHeader) {
-        if (targetHeader.getVCFHeaderVersion() != null && targetHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            throw new IllegalArgumentException(String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
-        }
-    }
-
-    // Given a header and a requested target output version, see if the header's version is compatible with the
-    // requested version (where compatible means its ok to just declare that the header has the requested
-    // version).
-    private static void validateHeaderVersion(final VCFHeader header, final String requestedVersionLine) {
-        ValidationUtils.nonNull(header);
-        ValidationUtils.nonNull(requestedVersionLine);
-
-        final VCFHeaderVersion vcfCurrentVersion = header.getVCFHeaderVersion();
-        final VCFHeaderVersion vcfRequestedVersion = VCFHeaderVersion.fromHeaderVersionLine(requestedVersionLine);
-        if (!vcfCurrentVersion.equals(vcfRequestedVersion)) {
-            if (!VCFHeaderVersion.versionsAreCompatible(VCFHeaderVersion.fromHeaderVersionLine(requestedVersionLine), vcfCurrentVersion)) {
-                final String message = String.format("Attempting to write a %s VCF header to a %s VCFWriter",
-                        vcfRequestedVersion,
-                        vcfCurrentVersion.getVersionString());
-                if (VCFUtils.isStrictVCFVersionValidation()) {
-                    throw new TribbleException(message);
-                }
-                logger.warn(message);
-            }
-        }
-    }
-
 }

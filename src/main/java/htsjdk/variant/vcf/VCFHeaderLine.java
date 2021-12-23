@@ -53,7 +53,10 @@ public class VCFHeaderLine implements Comparable, Serializable {
     public VCFHeaderLine(String key, String value) {
         mKey = key;
         mValue = value;
-        validate();
+        final Optional<String> validationFailure = validateKeyOrID(mKey);
+        if (validationFailure.isPresent()) {
+            throw new TribbleException(validationFailure.get());
+        }
     }
 
     /**
@@ -138,19 +141,15 @@ public class VCFHeaderLine implements Comparable, Serializable {
     /**
      * Validate a string that is to be used as a unique id or key field.
      */
-    protected static void validateKeyOrID(final String keyString, final String sourceName) {
-        ValidationUtils.nonNull(sourceName);
+    protected Optional<String> validateKeyOrID(final String keyString) {
         if (keyString == null) {
-            throw new TribbleException(
-                    String.format("VCFHeaderLine: %s cannot be null or empty", sourceName));
-        }
-        if ( keyString.contains("<") || keyString.contains(">") ) {
-            throw new TribbleException(
-                    String.format("VCFHeaderLine: %s cannot contain angle brackets", sourceName));
-        }
-        if ( keyString.contains("=") ) {
-            throw new TribbleException(
-                    String.format("VCFHeaderLine: %s cannot contain an equals sign", sourceName));
+            return Optional.of("VCFHeaderLine: key cannot be null or empty");
+        } else if ( keyString.contains("<") || keyString.contains(">") ) {
+            return Optional.of(String.format("VCFHeaderLine: key %s contains illegal character: angle brackets", keyString));
+        } else if ( keyString.contains("=") ) {
+            return Optional.of(String.format("VCFHeaderLine: key %s contains illegal character: equals sign", keyString));
+        } else {
+            return Optional.empty();
         }
     }
 
@@ -207,7 +206,8 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @param line    the line
      * @return true if the line is a VCF meta data line, or false if it is not
      */
-    public static boolean isHeaderLine(String line) {
+    @Deprecated // starting after version 2.24.1
+    static boolean isHeaderLine(String line) {
         return line != null && !line.isEmpty() && VCFHeader.HEADER_INDICATOR.equals(line.substring(0,1));
     }
 
@@ -230,20 +230,13 @@ public class VCFHeaderLine implements Comparable, Serializable {
             builder.append(entry.getKey());
             builder.append('=');
             builder.append(entry.getValue().toString().contains(",") ||
-                           entry.getValue().toString().contains(" ") ||
-                           entry.getKey().equals("Description") ||
-                           entry.getKey().equals("Source") || // As per VCFv4.2, Source and Version should be surrounded by double quotes
-                           entry.getKey().equals("Version") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
+                entry.getValue().toString().contains(" ") ||
+                entry.getKey().equals("Description") ||
+                entry.getKey().equals("Source") || // As per VCFv4.2, Source and Version should be surrounded by double quotes
+                entry.getKey().equals("Version") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
         }
         builder.append('>');
         return builder.toString();
-    }
-
-    /**
-     * Validate the state of this header line. Require the key be valid as an "id".
-     */
-    private void validate() {
-        validateKeyOrID(mKey, "key");
     }
 
     private static String escapeQuotes(final String value) {

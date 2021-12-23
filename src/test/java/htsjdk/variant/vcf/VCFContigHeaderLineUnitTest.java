@@ -49,8 +49,7 @@ public class VCFContigHeaderLineUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "invalidIDs", expectedExceptions = TribbleException.VersionValidationFailure.class)
     public void testInvalidIDs(final String lineString) {
-        // TODO change to VCFHeader.DEFAULT_VCF_VERSION
-        new VCFContigHeaderLine(lineString, VCFHeaderVersion.VCF4_3, 1);
+        new VCFContigHeaderLine(lineString, VCFHeader.DEFAULT_VCF_VERSION, 1);
     }
 
     @Test(expectedExceptions=TribbleException.class)
