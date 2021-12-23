@@ -165,6 +165,11 @@ public class VariantContextBuilder {
         return attributes;
     }
 
+    /**
+     * Getter for VCF version of variant
+     *
+     * @return the current variant VCF version
+     */
     public VCFHeaderVersion getVersion() {
         return version;
     }
@@ -230,7 +235,7 @@ public class VariantContextBuilder {
      * @param version the version of VCF to which the VariantContext produced by this builder conforms
      * @return this builder
      */
-    public VariantContextBuilder version(final VCFHeaderVersion version) {
+    public VariantContextBuilder setVersion(final VCFHeaderVersion version) {
         this.version = version;
         return this;
     }
@@ -665,8 +670,8 @@ public class VariantContextBuilder {
             filtersCanBeModified = false;
         }
 
-        return new VariantContext(source, ID, contig, start, stop, alleles,
+        return new VariantContext(version, source, ID, contig, start, stop, alleles,
                 genotypes, log10PError, filters, attributes,
-                fullyDecoded, version, toValidate);
+                fullyDecoded, toValidate);
     }
 }

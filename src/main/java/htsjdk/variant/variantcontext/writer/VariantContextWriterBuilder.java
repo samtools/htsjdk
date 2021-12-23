@@ -404,6 +404,7 @@ public class VariantContextWriterBuilder {
 
     /**
      * Set the policy writers created by this builder will use. Only has an effect for {@link VCFWriter}.
+     * {@link BCF2Writer} will write its VCF header verbatim, without performing VCF version upgrading on it.
      * @param policy the policy to use
      * @return this VariantContextWriterBuilder
      */
@@ -601,6 +602,7 @@ public class VariantContextWriterBuilder {
     }
 
     private VariantContextWriter createBCFWriter(final Path writerPath, final OutputStream writerStream) {
+        // VCFVersionUpgradePolicy does not apply to BCF writers, so it is not passed through here
         if (idxCreator == null) {
             return new BCF2Writer(writerPath, writerStream, refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
