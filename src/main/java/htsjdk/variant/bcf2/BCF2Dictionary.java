@@ -6,7 +6,6 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFSimpleHeaderLine;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +31,7 @@ import java.util.stream.Collectors;
  * n-to-1 IDX-to-string mapping might result from tools that do not deduplicate IDXs, so
  * we accept them.
  */
-public abstract class BCF2Dictionary extends AbstractMap<Integer, String> {
+public abstract class BCF2Dictionary {
 
     /**
      * Create and return a BCF string dictionary
@@ -183,6 +182,23 @@ public abstract class BCF2Dictionary extends AbstractMap<Integer, String> {
     public abstract String get(final int i);
 
     /**
+     * Performs the given action for each entry in the dictionary.
+     * @param action the action to be performed
+     */
+    public abstract void forEach(final BiConsumer<? super Integer, ? super String> action);
+
+    /**
+     * @return the number of elements in the dictionary
+     */
+    public abstract int size();
+
+    /**
+     * @param i the BCF index to search for
+     * @return true if there is a string or contig mapped to the given index
+     */
+    public abstract boolean containsIndex(final int i);
+
+    /**
      * BCF 2.2 dense sequence dictionary. Strings are assigned an index corresponding to its position in a 0-indexed
      * array. This dictionary is used if no IDX fields are present in the header, or they are present, but they
      * represent a set of indices that are of the form 0, 1, ..., n, that is, the set has no gaps and is numbered
@@ -197,34 +213,8 @@ public abstract class BCF2Dictionary extends AbstractMap<Integer, String> {
         }
 
         @Override
-        public Set<Entry<Integer, String>> entrySet() {
-            final Set<Entry<Integer, String>> set = new HashSet<>(dictionary.size());
-            int i = 0;
-            for (final String s : dictionary) {
-                set.add(new AbstractMap.SimpleEntry<>(i, s));
-                i++;
-            }
-            return set;
-        }
-
-        @Override
         public String get(final int i) {
             return i < 0 || i >= dictionary.size() ? null : dictionary.get(i);
-        }
-
-        @Override
-        public String get(final Object key) {
-            return dictionary.get((Integer) key);
-        }
-
-        @Override
-        public int size() {
-            return dictionary.size();
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return dictionary.isEmpty();
         }
 
         @Override
@@ -234,6 +224,16 @@ public abstract class BCF2Dictionary extends AbstractMap<Integer, String> {
                 action.accept(i, s);
                 i++;
             }
+        }
+
+        @Override
+        public int size() {
+            return this.dictionary.size();
+        }
+
+        @Override
+        public boolean containsIndex(final int i) {
+            return i < this.dictionary.size();
         }
     }
 
@@ -252,33 +252,23 @@ public abstract class BCF2Dictionary extends AbstractMap<Integer, String> {
         }
 
         @Override
-        public Set<Entry<Integer, String>> entrySet() {
-            return dictionary.entrySet();
-        }
-
-        @Override
         public String get(final int i) {
             return dictionary.get(i);
         }
 
         @Override
-        public String get(final Object key) {
-            return dictionary.get(key);
+        public void forEach(final BiConsumer<? super Integer, ? super String> action) {
+            this.dictionary.forEach(action);
         }
 
         @Override
         public int size() {
-            return dictionary.size();
+            return this.dictionary.size();
         }
 
         @Override
-        public boolean isEmpty() {
-            return dictionary.isEmpty();
-        }
-
-        @Override
-        public void forEach(final BiConsumer<? super Integer, ? super String> action) {
-            dictionary.forEach(action);
+        public boolean containsIndex(final int i) {
+            return this.dictionary.containsKey(i);
         }
     }
 }

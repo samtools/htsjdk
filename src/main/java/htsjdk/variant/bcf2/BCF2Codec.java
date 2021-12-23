@@ -512,13 +512,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     }
 
     private BCF2Dictionary makeStringDictionary(final BCFVersion bcfVersion) {
-        final BCF2Dictionary dict = BCF2Dictionary.makeBCF2StringDictionary(header, bcfVersion);
-
-        // if we got here we never found a dictionary, or there are no elements in the dictionary
-        if (dict.isEmpty())
-            error("Dictionary header element was absent or empty");
-
-        return dict;
+        return BCF2Dictionary.makeBCF2StringDictionary(header, bcfVersion);
     }
 
     /**
