@@ -28,4 +28,12 @@ public interface VCFTextTransformer {
      */
     List<String> decodeText(final List<String> rawParts);
 
+    /**
+     * Encode a single string.
+     *
+     * @param rawPart the raw string to be encoded
+     * @return the encoded string
+     * @throws TribbleException if the the encoding is unencodable
+     */
+    String encodeText(final String rawPart);
 }

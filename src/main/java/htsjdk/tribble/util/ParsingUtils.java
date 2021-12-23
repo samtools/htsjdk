@@ -101,8 +101,8 @@ public class ParsingUtils {
         if (URL_SCHEMES.stream().anyMatch(uri::startsWith)) {
             inputStream = getURLHelper(new URL(uri)).openInputStream();
         } else if (!IOUtil.hasScheme(uri)) {
-            File file = new File(uri);
-            inputStream = Files.newInputStream(file.toPath());
+            final File file = new File(uri);
+            inputStream = new SeekablePathStream(file.toPath(), wrapper);
         } else {
             inputStream = new SeekablePathStream(IOUtil.getPath(uri), wrapper);
         }

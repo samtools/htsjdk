@@ -103,8 +103,6 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
         return new Object[][]{
                 // to parse, expected, recommended, error message
                 {"<Description=\"Y\",ID=X>", idDesc, none, "Unexpected tag or tag order for tag \"Description\""},
-                {"<ID=X,Desc=\"Y\">", idDesc, none, "Unexpected tag or tag order for tag \"Desc\""},
-                {"<>", idDesc, none, "Unexpected tag or tag order for tag \"\""},
 
                 {"<Source=\"source\",ID=X,Description=\"Y\">", idDesc, sourceVersion,
                         "Unexpected tag or tag order for tag \"Source\""},

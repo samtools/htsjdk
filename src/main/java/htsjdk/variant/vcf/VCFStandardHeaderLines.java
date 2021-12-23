@@ -170,6 +170,10 @@ public class VCFStandardHeaderLines {
         registerStandard(new VCFFormatHeaderLine(VCFConstants.DEPTH_KEY,              1,                     VCFHeaderLineType.Integer, "Approximate read depth (reads with MQ=255 or with bad mates are filtered)"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY,        VCFHeaderLineCount.G,         VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFHeaderLineCount.R,         VCFHeaderLineType.Integer, "Allelic depths for the ref and alt alleles in the order listed"));
+        // This line's count changed from UNBOUNDED in VCF 4.2 to 1 in VCF 4.3, but we keep it at UNBOUNDED
+        // because VCFStandardHeaderLines is now mainly a facility for upgrading headers from pre-4.2 versions
+        // to conform to the 4.2 spec.
+        // Version upgrading for other versions is more difficult, so we do not rely on VCFStandardHeaderLines
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_FILTER_KEY,    VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String,  "Genotype-level filter"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_SET_KEY,          1,                            VCFHeaderLineType.Integer, "Phasing set (typically the position of the first variant in the set)"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_QUALITY_KEY,      1,                            VCFHeaderLineType.Float,   "Read-backed phasing quality"));
@@ -207,13 +211,43 @@ public class VCFStandardHeaderLines {
                                            + (badCount ? " -- counts disagree; header has " + line.getCount() + " but standard is " + standard.getCount() : "")
                                            + (badDesc ? " -- descriptions disagree; header has '" + line.getDescription() + "' but standard is '" + standard.getDescription() + "'": ""));
                     }
-                    return standard;
+                    // Create a new set so we can modify it without mutating the standard line
+                    final Set<String> additionalFields = new HashSet<>(line.getGenericFields().keySet());
+                    additionalFields.removeAll(standard.getGenericFields().keySet());
+
+                    if (additionalFields.isEmpty()) {
+                        return standard;
+                    } else {
+                        // We need to handle the case where a line has nonstandard attributes, but also additional
+                        // attributes of its own that would be lost if we simply returned the standard line
+                        return mergeStandardLine(standard, line, additionalFields);
+                    }
                 } else {
                     return line;
                 }
             } else {
                 return line;
             }
+        }
+
+        private T mergeStandardLine(final T standard, final T line, final Set<String> additionalFields) {
+            // Create a new line identical to the standard line
+            final VCFCompoundHeaderLine mergedLine;
+            if (standard instanceof VCFFormatHeaderLine) {
+                mergedLine = standard.isFixedCount()
+                    ? new VCFFormatHeaderLine(standard.getID(), standard.getCount(), standard.getType(), standard.getDescription())
+                    : new VCFFormatHeaderLine(standard.getID(), standard.getCountType(), standard.getType(), standard.getDescription());
+            } else {
+                mergedLine = standard.isFixedCount()
+                    ? new VCFInfoHeaderLine(standard.getID(), standard.getCount(), standard.getType(), standard.getDescription())
+                    : new VCFInfoHeaderLine(standard.getID(), standard.getCountType(), standard.getType(), standard.getDescription());
+            }
+
+            final Map<String, String> originalGenericFields = line.getGenericFields();
+            for (final String field : additionalFields) {
+                mergedLine.updateGenericField(field, originalGenericFields.get(field));
+            }
+            return (T) mergedLine;
         }
 
         public Set<String> addToHeader(final Set<VCFHeaderLine> headerLines, final Collection<String> IDs, final boolean throwErrorForMissing) {

@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Simple holder for BCF version information
@@ -43,6 +46,12 @@ public final class BCFVersion {
      * and m is the minor version, currently 1
      */
     public static final byte[] MAGIC_HEADER_START = "BCF".getBytes();
+
+    public static final BCFVersion BCF2_1Version = new BCFVersion(2, 1);
+    public static final BCFVersion BCF2_2Version = new BCFVersion(2, 2);
+
+    public static final Set<BCFVersion> SUPPORTED_VERSIONS = new HashSet<>(Collections.singletonList(BCF2_2Version));
+
 
     final int majorVersion;
     final int minorVersion;

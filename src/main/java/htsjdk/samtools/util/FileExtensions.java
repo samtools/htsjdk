@@ -65,6 +65,9 @@ public final class FileExtensions {
     public static final String VCF = ".vcf";
     public static final String VCF_INDEX = TRIBBLE_INDEX;
     public static final String BCF = ".bcf";
+    // Note that .bcf on its own may be gzip compressed and usually is,
+    // but files with the extension .bcf.gz to seem to exist in the wild and should be supported
+    public static final String COMPRESSED_BCF = ".bcf.gz";
     public static final String COMPRESSED_VCF = ".vcf.gz";
     public static final String COMPRESSED_VCF_INDEX = ".tbi";
     public static final List<String> VCF_LIST = Collections.unmodifiableList(Arrays.asList(VCF, COMPRESSED_VCF, BCF));

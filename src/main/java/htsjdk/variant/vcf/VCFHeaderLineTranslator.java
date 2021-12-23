@@ -159,14 +159,21 @@ class VCF4Parser implements VCFLineParser {
             throw new TribbleException.InvalidHeader("Unclosed quote in header line value " + valueLine);
         }
 
+
         // Validate the order of all discovered tags against requiredTagOrder. All tags are treated as
         // "optional". Succeeding does not mean that all expected tags in the list were seen. Also, all
         // structured header lines can have "extra" tags, with no order specified, so additional tags
         // are tolerated.
         if ( expectedTagOrder != null ) {
+            // If there are N expected tags present in the parsed header, the first N tags must exactly
+            // match the order of the expected tags list, the remaining tags are considered optional
+            int numExpectedTagsPresent = 0;
+            for (final String expectedTag : expectedTagOrder) {
+                if (ret.containsKey(expectedTag)) numExpectedTagsPresent++;
+            }
             index = 0;
-            for (String str : ret.keySet()) {
-                if (index >= expectedTagOrder.size()) {
+            for (final String str : ret.keySet()) {
+                if (index == numExpectedTagsPresent) {
                     break; // done - end of requiredTagOrder list
                 } else if (!expectedTagOrder.get(index).equals(str)) {
                     throw new TribbleException.InvalidHeader(

@@ -93,12 +93,8 @@ public class VCFFormatHeaderLine extends VCFCompoundHeaderLine {
 
     private void validate() {
         if (this.getType() == VCFHeaderLineType.Flag) {
-            throw new TribbleException(String.format("Flag is an unsupported type for format fields: ", this.toStringEncoding()));
+            throw new TribbleException("Flag is an unsupported type for format fields: " + this.toStringEncoding());
         }
     }
 
-    @Override
-    public boolean shouldBeAddedToDictionary() {
-        return true;
-    }
 }

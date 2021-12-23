@@ -1277,7 +1277,8 @@ public class IOUtil {
      */
     public static boolean isGZIPInputStream(final InputStream stream) {
         if (!stream.markSupported()) {
-            throw new IllegalArgumentException("isGZIPInputStream() : Cannot test a stream that doesn't support marking.");
+            // BufferedInputStream supports mark
+            return isGZIPInputStream(new BufferedInputStream(stream));
         }
         stream.mark(GZIP_HEADER_READ_LENGTH);
 

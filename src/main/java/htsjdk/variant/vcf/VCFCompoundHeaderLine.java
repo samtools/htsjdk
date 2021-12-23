@@ -180,16 +180,16 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
         // However, the key values correspond to INFO/FORMAT header lines defining the attribute and its type,
         // so we do the validation here
         if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            if (!validHeaderID(getID())) {
-                final VCFValidationFailure<VCFHeaderLine> validationFailure = new VCFValidationFailure<>(
-                        vcfTargetVersion,
-                        this,
-                        String.format("ID tag \"%s\" does not conform to tag restrictions", getID()));
+            final Optional<VCFValidationFailure<VCFHeaderLine>> validationFailure = validateKeyOrID(getID())
+                .map(e -> new VCFValidationFailure<>(vcfTargetVersion, this, e));
+            if (validationFailure.isPresent()) {
+                // TODO thinking that these getValidationFailure should be a pure function and its caller
+                //  decides whether to pass the error up or just log if not using strict validation
                 if (VCFUtils.isStrictVCFVersionValidation()) {
-                    return Optional.of(validationFailure);
+                    return validationFailure;
                 } else {
                     // warn for older versions - this line can't be used as a v4.3 line
-                    logger.warn(validationFailure.getFailureMessage());
+                    logger.warn(validationFailure.get().getFailureMessage());
                 }
             }
         }
@@ -201,9 +201,11 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
      * @param id the candidate ID
      * @return true if ID conforms to header line id requirements, otherwise false
      */
-    //TODO: the existing VCFHeaderLine.validateKeyOrID method should be refactored so it can be used instead of this
-    protected boolean validHeaderID(final String id) {
-        return VALID_HEADER_ID_PATTERN.matcher(id).matches();
+    @Override
+    protected Optional<String> validateKeyOrID(final String id) {
+        return VALID_HEADER_ID_PATTERN.matcher(id).matches()
+            ? Optional.empty()
+            : Optional.of(String.format("Key: %s does not match header line key regex: %s", id, VALID_HEADER_ID_PATTERN));
     }
 
     /**

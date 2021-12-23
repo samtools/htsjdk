@@ -100,11 +100,6 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
         new VCFHeaderLine(testKey, "");
     }
 
-    @Test(dataProvider = "invalidHeaderLineKeys", expectedExceptions=TribbleException.class)
-    public void testValidateAsIdInvalid(final String testKey) {
-        VCFHeaderLine.validateKeyOrID(testKey, "test");
-    }
-
     @DataProvider(name = "vcfVersions")
     public Object[][] vcfVersions() {
         return new Object[][]{
@@ -119,8 +114,7 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "vcfVersions")
     public void testValidateForVersion(final VCFHeaderVersion vcfVersion) {
-        VCFHeaderLine headerLine = new VCFHeaderLine(vcfVersion.getFormatString(), vcfVersion.getVersionString());
-        headerLine.validateForVersion(vcfVersion);
+        VCFHeader.makeHeaderVersionLine(vcfVersion).validateForVersion(vcfVersion);
     }
 
     @DataProvider(name = "incompatibleVersions")
@@ -138,8 +132,7 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
 
     @Test(dataProvider="incompatibleVersions", expectedExceptions= TribbleException.VersionValidationFailure.class)
     public void testValidateForVersionFails(final VCFHeaderVersion vcfVersion, final VCFHeaderVersion incompatibleVersion) {
-        VCFHeaderLine headerLine = new VCFHeaderLine(vcfVersion.getFormatString(), vcfVersion.getVersionString());
-        headerLine.validateForVersion(incompatibleVersion);
+        VCFHeader.makeHeaderVersionLine(vcfVersion).validateForVersion(incompatibleVersion);
     }
 
     @Test(expectedExceptions = { TribbleException.InvalidHeader.class }, expectedExceptionsMessageRegExp = ".*For fixed count, the count number must be 1 or higher.")

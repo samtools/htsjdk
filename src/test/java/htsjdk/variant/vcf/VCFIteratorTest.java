@@ -50,18 +50,10 @@ public class VCFIteratorTest extends VariantBaseTest {
 
     @DataProvider(name = "VariantFiles")
     public Object[][] getVariantFiles() {
-        return new Object[][] { 
+        return new Object[][] {
                 new Object[] { "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf", 25 },
                 new Object[] { "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz", 25 },
                 new Object[] { "src/test/resources/htsjdk/variant/serialization_test.bcf", 12 }
-        };
-    }
-
-    @DataProvider(name = "VcfFiles")
-    public Object[][] getVcfFiles() {
-        return new Object[][] {
-                new Object[] { "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf", 25 },
-                new Object[] { "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz", 25 }
         };
     }
 
@@ -91,32 +83,34 @@ public class VCFIteratorTest extends VariantBaseTest {
     private void testUsingZippedInput(final String filepath, final int nVariants,
             final Function<File,OutputStream> outputStreamProvider) throws IOException {
     	File tmp =  new File(filepath);
+        // TODO I don't understand what problem the comment below is referencing
+        //  Does it mean the code paths for handling zipped/unzipped BCFs should be unified
+        //  under VCFFileReader once VCFFileReader supports zipped BCF?
+
         /* TODO fix this when VCFFileReader will support BCF see 
          * https://github.com/samtools/htsjdk/pull/837#discussion_r139490218
          * https://github.com/samtools/htsjdk/issues/946
          */
-        if( tmp.getName().endsWith(FileExtensions.VCF)) {
+        if(!(tmp.getName().endsWith(FileExtensions.COMPRESSED_VCF) || tmp.getName().endsWith(FileExtensions.BCF))) {
             tmp = File.createTempFile("tmp",FileExtensions.COMPRESSED_VCF);
             tmp.deleteOnExit();
             try(    FileInputStream in = new FileInputStream(filepath);
                     OutputStream out =  outputStreamProvider.apply(tmp); ) {
                     IOUtil.copyStream(in, out);
                     out.flush();
-               } catch(final IOException err) {
-                   throw err;
-               }
             }
+        }
         try (final VCFIterator r = new VCFIteratorBuilder().open(tmp) ) {
             assertExpectedNumberOfVariants(r, nVariants);
         }
     }
 
-    @Test(dataProvider = "VcfFiles")
+    @Test(dataProvider = "VariantFiles")
     public void testUsingBGZippedInput(final String filepath, final int nVariants) throws IOException {
         testUsingZippedInput(filepath, nVariants, (F)-> new BlockCompressedOutputStream(F));
     }
 
-    @Test(dataProvider = "VcfFiles")
+    @Test(dataProvider = "VariantFiles")
     public void testUsingGZippedInput(final String filepath, final int nVariants) throws IOException {
         testUsingZippedInput(filepath, nVariants, (F)-> {
             try {

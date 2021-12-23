@@ -481,7 +481,8 @@ public class VariantContextWriterBuilder {
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
                     throw new IllegalArgumentException("A reference dictionary is required for creating Tribble indices on the fly");
 
-                writer = createBCFWriter(outPath, outStreamFromFile);
+                // BCFs are always bgzipped, but the compression level can be set to 0 to only apply trivial compression
+                writer = createBCFWriter(outPath, new BlockCompressedOutputStream(outStreamFromFile, outPath));
                 break;
             case VCF_STREAM:
                 writer = createVCFWriter(null, outStreamFromFile);
@@ -492,7 +493,7 @@ public class VariantContextWriterBuilder {
                     options.remove(Options.INDEX_ON_THE_FLY);
                 }
 
-                writer = createBCFWriter(null, outStream);
+                writer = createBCFWriter(null, new BlockCompressedOutputStream(outStreamFromFile, outPath));
                 break;
         }
 
@@ -571,17 +572,19 @@ public class VariantContextWriterBuilder {
     private VariantContextWriter createVCFWriter(final Path writerPath, final OutputStream writerStream) {
         if (idxCreator == null) {
             return new VCFWriter(writerPath, writerStream, refDict,
-                    options.contains(Options.INDEX_ON_THE_FLY),
-                    options.contains(Options.DO_NOT_WRITE_GENOTYPES),
-                    options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
-                    options.contains(Options.WRITE_FULL_FORMAT_FIELD));
-        }
-        else {
-            return new VCFWriter(writerPath, writerStream, refDict, idxCreator,
-                    options.contains(Options.INDEX_ON_THE_FLY),
-                    options.contains(Options.DO_NOT_WRITE_GENOTYPES),
-                    options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
-                    options.contains(Options.WRITE_FULL_FORMAT_FIELD));
+                options.contains(Options.INDEX_ON_THE_FLY),
+                options.contains(Options.DO_NOT_WRITE_GENOTYPES),
+                options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
+                options.contains(Options.WRITE_FULL_FORMAT_FIELD)
+            );
+        } else {
+            return new VCFWriter(
+                writerPath, writerStream, refDict, idxCreator,
+                options.contains(Options.INDEX_ON_THE_FLY),
+                options.contains(Options.DO_NOT_WRITE_GENOTYPES),
+                options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
+                options.contains(Options.WRITE_FULL_FORMAT_FIELD)
+            );
         }
     }
 

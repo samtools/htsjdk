@@ -11,6 +11,7 @@ jobs:
   test:
     env:
       HTSJDK_SAMTOOLS_BIN: /usr/bin/samtools
+      HTSJDK_BCFTOOLS_BIN: /usr/bin/bcftools
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -36,6 +37,8 @@ jobs:
         run: ./gradlew compileJava
       - name: Install Samtools
         run: scripts/install-samtools.sh
+      - name: Install Bcftools
+        run: scripts/install-bcftools.sh
       - name: Start the htsget server
         run: scripts/htsget-scripts/start-htsget-test-server.sh
       - name: Run tests

@@ -87,11 +87,6 @@ public class VCFFilterHeaderLine extends VCFSimpleHeaderLine {
         }
     }
 
-    @Override
-    public boolean shouldBeAddedToDictionary() {
-        return true;
-    }
-
     /**
      * get the "Description" field
      * @return the "Description" field

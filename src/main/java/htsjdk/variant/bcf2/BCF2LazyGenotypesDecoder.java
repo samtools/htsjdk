@@ -65,7 +65,8 @@ public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser
         try {
 
             // load our byte[] data into the decoder
-            final BCF2Decoder decoder = new BCF2Decoder(((BCF2Codec.LazyData)data).bytes);
+            final BCF2Decoder decoder = BCF2Decoder.getDecoder(codec.getBCFVersion());
+            decoder.setRecordBytes(((BCF2Codec.LazyData)data).bytes);
 
             for ( int i = 0; i < nSamples; i++ )
                 builders[i].reset(true);

@@ -91,8 +91,7 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "invalidIDs", expectedExceptions = TribbleException.VersionValidationFailure.class)
     public void testGetValidationError(final String lineString) {
-        // TODO change to VCFHeader.DEFAULT_VCF_VERSION
-        new VCFInfoHeaderLine(lineString, VCFHeaderVersion.VCF4_3);
+        new VCFInfoHeaderLine(lineString, VCFHeader.DEFAULT_VCF_VERSION);
     }
 
     @DataProvider (name = "headerLineTypes")
@@ -141,6 +140,49 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
         final VCFInfoHeaderLine infoLine = new VCFInfoHeaderLine("<ID=FOO,Number=-1,Type=Flag,Description=\"foo\">",
                 VCFHeader.DEFAULT_VCF_VERSION);
         Assert.assertEquals(infoLine.getCount(), 0);
+    }
+
+    @DataProvider(name = "validHeaderIDs")
+    public Object[][] validHeaderIDs() {
+        return new Object[][] {
+            // 1000 Genomes ID key requires special handling
+            {new VCFInfoHeaderLine("<ID=1000G,Number=A,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION)},
+            // Test all characters allowed after first character
+            {new VCFInfoHeaderLine("<ID=A_,Number=A,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION)},
+            {new VCFInfoHeaderLine("<ID=A.,Number=A,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION)},
+            {new VCFInfoHeaderLine("<ID=A0,Number=A,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION)},
+            // ID can start with underscore _
+            {new VCFInfoHeaderLine("<ID=_A,Number=A,Type=Integer,Description=\"foo\">", VCFHeader.DEFAULT_VCF_VERSION)},
+        };
+    }
+
+    @Test(dataProvider = "validHeaderIDs")
+    public void testValidHeaderIDs(final VCFCompoundHeaderLine line) {
+        line.validateForVersion(VCFHeader.DEFAULT_VCF_VERSION);
+    }
+
+    @DataProvider(name = "invalidHeaderIDs")
+    public Object[][] invalidHeaderIDs() {
+        return new Object[][] {
+            // 1000G key is only allowed for INFO lines, not FORMAT
+            {new VCFFormatHeaderLine("<ID=1000G,Number=A,Type=Integer,Description=\"foo\">", VCFHeaderVersion.VCF4_2)},
+            // Key with 1000G key as prefix should be rejected
+            {new VCFInfoHeaderLine("<ID=1000GA,Number=A,Type=Integer,Description=\"foo\">", VCFHeaderVersion.VCF4_2)},
+            // Key cannot start with number
+            {new VCFInfoHeaderLine("<ID=1A,Number=A,Type=Integer,Description=\"foo\">", VCFHeaderVersion.VCF4_2)},
+            // Key containing invalid character -
+            {new VCFInfoHeaderLine("<ID=A-,Number=A,Type=Integer,Description=\"foo\">", VCFHeaderVersion.VCF4_2)},
+        };
+    }
+
+    @Test(dataProvider = "invalidHeaderIDs")
+    public void testPre43LenientHandling(final VCFCompoundHeaderLine line) {
+        line.validateForVersion(VCFHeaderVersion.VCF4_2);
+    }
+
+    @Test(dataProvider = "invalidHeaderIDs", expectedExceptions = TribbleException.class)
+    public void testInvalidHeaderIDs(final VCFCompoundHeaderLine line) {
+        line.validateForVersion(VCFHeader.DEFAULT_VCF_VERSION);
     }
 
     @DataProvider (name = "equalsData")

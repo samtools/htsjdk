@@ -27,20 +27,21 @@ package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.bcf2.BCF2Dictionary;
+import htsjdk.variant.bcf2.BCF2Encoder;
 import htsjdk.variant.bcf2.BCF2Type;
 import htsjdk.variant.bcf2.BCF2Utils;
 import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
-import htsjdk.variant.variantcontext.Genotype;
-import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.bcf2.BCF2FieldWriter.BCF2FieldWriterManager;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFUtils;
@@ -51,19 +52,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * VariantContextWriter that emits BCF2 binary encoding
- *
+ * <p>
  * Overall structure of this writer is complex for efficiency reasons
- *
+ * <p>
  * -- The BCF2Writer manages the low-level BCF2 encoder, the mappings
  * from contigs and strings to offsets, the VCF header, and holds the
  * lower-level encoders that map from VC and Genotype fields to their
@@ -71,29 +69,23 @@ import java.util.Map;
  * like POS, contig, the size of info and genotype data, QUAL, etc.  It
  * has loops over the INFO and GENOTYPES to encode each individual datum
  * with the generic field encoders, but the actual encoding work is
- * done with by the FieldWriters classes themselves
- *
+ * done with by the FieldWriters classes themselves.  The piece of code
+ * that determines which FieldWriters to associate with each SITE and
+ * GENOTYPE field is the BCF2FieldWriterManager.
+ * <p>
  * -- BCF2FieldWriter are specialized classes for writing out SITE and
  * genotype information for specific SITE/GENOTYPE fields (like AC for
  * sites and GQ for genotypes).  These are objects in themselves because
- * the manage all of the complexity of relating the types in the VCF header
+ * they manage all of the complexity of relating the types in the VCF header
  * with the proper encoding in BCF as well as the type representing this
  * in java.  Relating all three of these pieces of information together
- * is the main complexity challenge in the encoder.  The piece of code
- * that determines which FieldWriters to associate with each SITE and
- * GENOTYPE field is the BCF2FieldWriterManager.  These FieldWriters
- * are specialized for specific combinations of encoders (see below)
- * and contexts (genotypes) for efficiency, so they smartly manage
- * the writing of PLs (encoded as int[]) directly into the lowest
- * level BCFEncoder.
- *
- * -- At the third level is the BCF2FieldEncoder, relatively simple
- * pieces of code that handle the task of determining the right
- * BCF2 type for specific field values, as well as reporting back
- * information such as the number of elements used to encode it
- * (simple for atomic values like Integer but complex for PLs
- * or lists of strings)
- *
+ * is the main complexity challenge in the encoder.  These classes are
+ * responsible for extracting the necessary data from the VariantContext
+ * or Genotype, determining its BCF type and size, and writing it out.
+ * These FieldWriters are specialized for specific combinations of VCF type
+ * and contexts for efficiency, so they smartly manage the writing of PLs
+ * (encoded as int[]) directly into the lowest level BCFEncoder.
+ * <p>
  * -- At the lowest level is the BCF2Encoder itself.  This provides
  * just the limited encoding methods specified by the BCF2 specification.  This encoder
  * doesn't do anything but make it possible to conveniently write out valid low-level
@@ -103,20 +95,25 @@ import java.util.Map;
  * @since 06/12
  */
 class BCF2Writer extends IndexingVariantContextWriter {
+    private static final Log log = Log.getInstance(BCF2Writer.class);
+
     public static final int MAJOR_VERSION = 2;
-    public static final int MINOR_VERSION = 1;
+    public static final int MINOR_VERSION = 2;
+
+    public static final BCFVersion VERSION = new BCFVersion(MAJOR_VERSION, MINOR_VERSION);
 
     final private static boolean ALLOW_MISSING_CONTIG_LINES = false;
 
     private final OutputStream outputStream;      // Note: do not flush until completely done writing, to avoid issues with eventual BGZF support
     private VCFHeader header;
-    private final Map<String, Integer> contigDictionary = new HashMap<String, Integer>();
-    private final Map<String, Integer> stringDictionaryMap = new LinkedHashMap<String, Integer>();
+    private final Map<String, Integer> contigDictionary = new HashMap<>();
+    private final Map<String, Integer> stringDictionaryMap = new HashMap<>();
     private final boolean doNotWriteGenotypes;
-    private String[] sampleNames = null;
+    private final Map<VariantContext, List<String>> genotypeKeys = new HashMap<>();
 
-    private final BCF2Encoder encoder = new BCF2Encoder(); // initialized after the header arrives
-    final BCF2FieldWriterManager fieldManager = new BCF2FieldWriterManager();
+    private BCF2Encoder encoder; // initialized after the header arrives
+    private BCFVersion version;
+    private BCF2FieldWriterManager fieldWriterManager;
 
     /**
      * cached results for whether we can write out raw genotypes data.
@@ -134,15 +131,15 @@ class BCF2Writer extends IndexingVariantContextWriter {
     }
 
     public BCF2Writer(final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
-        final boolean enableOnTheFlyIndexing, final boolean doNotWriteGenotypes) {
+                      final boolean enableOnTheFlyIndexing, final boolean doNotWriteGenotypes) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
         this.outputStream = getOutputStream();
         this.doNotWriteGenotypes = doNotWriteGenotypes;
     }
 
     public BCF2Writer(final File location, final OutputStream output, final SAMSequenceDictionary refDict,
-        final IndexCreator indexCreator,
-        final boolean enableOnTheFlyIndexing, final boolean doNotWriteGenotypes) {
+                      final IndexCreator indexCreator,
+                      final boolean enableOnTheFlyIndexing, final boolean doNotWriteGenotypes) {
         this(IOUtil.toPath(location), output, refDict, indexCreator, enableOnTheFlyIndexing,
             doNotWriteGenotypes);
     }
@@ -162,45 +159,70 @@ class BCF2Writer extends IndexingVariantContextWriter {
     // --------------------------------------------------------------------------------
 
     @Override
-    public void writeHeader(VCFHeader header) {
+    public void writeHeader(final VCFHeader header) {
         setHeader(header);
 
         try {
             // write out the header into a byte stream, get its length, and write everything to the file
             final ByteArrayOutputStream capture = new ByteArrayOutputStream();
             final OutputStreamWriter writer = new OutputStreamWriter(capture);
-            this.header = VCFWriter.writeHeader(this.header, writer, VCFWriter.getVersionLine(), "BCF2 stream");
+            VCFWriter.writeHeader(this.header, writer, "BCF2 stream");
             writer.append('\0'); // the header is null terminated by a byte
             writer.close();
 
             final byte[] headerBytes = capture.toByteArray();
-            new BCFVersion(MAJOR_VERSION, MINOR_VERSION).write(outputStream);
+            BCF2Writer.VERSION.write(outputStream);
             BCF2Type.INT32.write(headerBytes.length, outputStream);
             outputStream.write(headerBytes);
             outputHasBeenWritten = true;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeIOException("BCF2 stream: Got IOException while trying to write BCF2 header", e);
         }
     }
 
     @Override
-    public void add( VariantContext vc ) {
-        if ( doNotWriteGenotypes )
+    public void add(VariantContext vc) {
+        if (doNotWriteGenotypes)
             vc = new VariantContextBuilder(vc).noGenotypes().make();
         vc = vc.fullyDecode(header, false);
 
         super.add(vc); // allow on the fly indexing
 
         try {
-            final byte[] infoBlock = buildSitesData(vc);
-            final byte[] genotypesBlock = buildSamplesData(vc);
+            // Sites data
+            buildSitesData(vc);
+            final int sitesLength = encoder.getSize();
 
-            // write the two blocks to disk
-            writeBlock(infoBlock, genotypesBlock);
+            // Genotypes data
+            final int genotypesLength;
+            final BCF2Codec.LazyData lazyData = getLazyData(vc);  // has critical side effects
+            final boolean lazyDataUsable = lazyData != null && lazyData.version.equals(this.version);
+            if (lazyDataUsable) {
+                // We never decoded any data from this BCF file, and its contents were already encoded in the same BCF
+                // version as we are currently writing, so we don't need to re-encode the samples data.
+                // Note that the version check is necessary so that we do not write contents encoded using an old
+                // version of BCF as if it were a newer version, as this can cause problems with e.g. MISSING values
+                genotypesLength = lazyData.bytes.length;
+            } else {
+                // we have to do work to convert the VC into a BCF2 byte stream
+                buildSamplesData(vc);
+                genotypesLength = encoder.getSize() - sitesLength;
+            }
+
+            // Write lengths
+            BCF2Type.INT32.write(sitesLength, outputStream);
+            BCF2Type.INT32.write(genotypesLength, outputStream);
+
+            // Write the encoder's buffer into the output stream
+            // If there was no lazy data, this also contains the genotypes data
+            encoder.write(outputStream);
+            if (lazyDataUsable) {
+                // The encoder only contained sites data, so we need to write the lazy data
+                outputStream.write(lazyData.bytes);
+            }
             outputHasBeenWritten = true;
-        }
-        catch ( IOException e ) {
-            throw new RuntimeIOException("Error writing record to BCF2 file: " + vc.toString(), e);
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Error writing record to BCF2 file: " + vc, e);
         }
     }
 
@@ -208,8 +230,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
     public void close() {
         try {
             outputStream.flush();
-        }
-        catch ( IOException e ) {
+        } catch (final IOException e) {
             throw new RuntimeIOException("Failed to flush BCF2 file");
         }
         super.close();
@@ -220,39 +241,59 @@ class BCF2Writer extends IndexingVariantContextWriter {
         if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
+
+        version = getBCFVersionFromHeader(header);
+        encoder = BCF2Encoder.getEncoder(version);
+
         // make sure the header is sorted correctly
-        this.header = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : new VCFHeader(
-                header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
+        this.header = doNotWriteGenotypes
+            ? new VCFHeader(header.getMetaDataInSortedOrder())
+            : new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
+
+        // TODO should follow up on hts-specs and clarify the relationship between ##dictionary and IDX fields
+        // Error on ##dictionary lines, we don't know what to do with them
+        if (this.header.getMetaDataInInputOrder().stream().anyMatch(line -> line.getKey().equals("dictionary"))) {
+            log.warn("Use of the ##dictionary line is not supported");
+        }
+
         // create the config offsets map
-        if ( this.header.getContigLines().isEmpty() ) {
-            if ( ALLOW_MISSING_CONTIG_LINES ) {
-                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
-                    System.err.println("No contig dictionary found in header, falling back to reference sequence dictionary");
-                }
+        if (this.header.getContigLines().isEmpty()) {
+            if (ALLOW_MISSING_CONTIG_LINES) {
+                log.debug("No contig dictionary found in header, falling back to reference sequence dictionary");
+                // The reference sequence dictionary should never contain IDX fields
                 createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), null));
             } else {
                 throw new IllegalStateException("Cannot write BCF2 file with missing contig lines");
             }
         } else {
-            createContigDictionary(this.header.getContigLines());
-        }
-        // set up the map from dictionary string values -> offset
-        final ArrayList<String> dict = BCF2Utils.makeDictionary(this.header);
-        for ( int i = 0; i < dict.size(); i++ ) {
-            stringDictionaryMap.put(dict.get(i), i);
+            final BCF2Dictionary dict = BCF2Dictionary.makeBCF2ContigDictionary(header, BCF2Writer.VERSION);
+            dict.forEach((offset, string) -> contigDictionary.put(string, offset));
         }
 
-        sampleNames = this.header.getGenotypeSamples().toArray(new String[this.header.getNGenotypeSamples()]);
-        // setup the field encodings
-        fieldManager.setup(this.header, encoder, stringDictionaryMap);
+        // Create offset -> string map then turn inside-out
+        final BCF2Dictionary dict = BCF2Dictionary.makeBCF2StringDictionary(this.header, BCF2Writer.VERSION);
+        dict.forEach((offset, string) -> stringDictionaryMap.put(string, offset));
 
+        // Set up the field encodings
+        fieldWriterManager = new BCF2FieldWriterManager(header, stringDictionaryMap, encoder);
+    }
+
+    /**
+     * Determine the appropriate BCF version to use to encode a VCF with based on the version of its VCF header
+     * Note: currently htsjdk only supports one version of BCF (2.2), but this method is here for if/when
+     * new BCF versions are added.
+     * @param header
+     * @return
+     */
+    private static BCFVersion getBCFVersionFromHeader(final VCFHeader header) {
+        return BCF2Codec.ALLOWED_BCF_VERSION;
     }
 
     // --------------------------------------------------------------------------------
     //
     // implicit block
     //
-    // The first four records of BCF are inline untype encoded data of:
+    // The first four records of BCF are inline untyped encoded data of:
     //
     // 4 byte integer chrom offset
     // 4 byte integer start
@@ -260,23 +301,23 @@ class BCF2Writer extends IndexingVariantContextWriter {
     // 4 byte float qual
     //
     // --------------------------------------------------------------------------------
-    private byte[] buildSitesData( VariantContext vc ) throws IOException {
+    private void buildSitesData(final VariantContext vc) throws IOException {
         final int contigIndex = contigDictionary.get(vc.getContig());
-        if ( contigIndex == -1 )
+        if (contigIndex == -1)
             throw new IllegalStateException(String.format("Contig %s not found in sequence dictionary from reference", vc.getContig()));
 
-        // note use of encodeRawValue to not insert the typing byte
-        encoder.encodeRawValue(contigIndex, BCF2Type.INT32);
+        // note use of encodeRawInt to not insert the typing byte
+        encoder.encodeRawInt(contigIndex, BCF2Type.INT32);
 
         // pos.  GATK is 1 based, BCF2 is 0 based
-        encoder.encodeRawValue(vc.getStart() - 1, BCF2Type.INT32);
+        encoder.encodeRawInt(vc.getStart() - 1, BCF2Type.INT32);
 
         // ref length.  GATK is closed, but BCF2 is open so the ref length is GATK end - GATK start + 1
         // for example, a SNP is in GATK at 1:10-10, which has ref length 10 - 10 + 1 = 1
-        encoder.encodeRawValue(vc.getEnd() - vc.getStart() + 1, BCF2Type.INT32);
+        encoder.encodeRawInt(vc.getEnd() - vc.getStart() + 1, BCF2Type.INT32);
 
         // qual
-        if ( vc.hasLog10PError() )
+        if (vc.hasLog10PError())
             encoder.encodeRawFloat((float) vc.getPhredScaledQual());
         else
             encoder.encodeRawMissingValue(BCF2Type.FLOAT);
@@ -294,14 +335,12 @@ class BCF2Writer extends IndexingVariantContextWriter {
         buildAlleles(vc);
         buildFilter(vc);
         buildInfo(vc);
-
-        return encoder.getRecordBytes();
     }
 
 
     /**
      * Can we safely write on the raw (undecoded) genotypes of an input VC?
-     *
+     * <p>
      * The cache depends on the undecoded lazy data header == lastVCFHeaderOfUnparsedGenotypes, in
      * which case we return the previous result.  If it's not cached, we use the BCF2Util to
      * compare the VC header with our header (expensive) and cache it.
@@ -310,9 +349,9 @@ class BCF2Writer extends IndexingVariantContextWriter {
      * @return
      */
     private boolean canSafelyWriteRawGenotypesBytes(final BCF2Codec.LazyData lazyData) {
-        if ( lazyData.header != lastVCFHeaderOfUnparsedGenotypes ) {
+        if (lazyData.header != lastVCFHeaderOfUnparsedGenotypes) {
             // result is already cached
-            canPassOnUnparsedGenotypeDataForLastVCFHeader = BCF2Utils.headerLinesAreOrderedConsistently(this.header,lazyData.header);
+            canPassOnUnparsedGenotypeDataForLastVCFHeader = BCF2Utils.headerLinesAreOrderedConsistently(this.header, lazyData.header);
             lastVCFHeaderOfUnparsedGenotypes = lazyData.header;
         }
 
@@ -320,12 +359,12 @@ class BCF2Writer extends IndexingVariantContextWriter {
     }
 
     private BCF2Codec.LazyData getLazyData(final VariantContext vc) {
-        if ( vc.getGenotypes().isLazyWithData() ) {
-            final LazyGenotypesContext lgc = (LazyGenotypesContext)vc.getGenotypes();
+        if (vc.getGenotypes().isLazyWithData()) {
+            final LazyGenotypesContext lgc = (LazyGenotypesContext) vc.getGenotypes();
 
-            if ( lgc.getUnparsedGenotypeData() instanceof BCF2Codec.LazyData &&
-                    canSafelyWriteRawGenotypesBytes((BCF2Codec.LazyData) lgc.getUnparsedGenotypeData())) {
-                return (BCF2Codec.LazyData)lgc.getUnparsedGenotypeData();
+            if (lgc.getUnparsedGenotypeData() instanceof BCF2Codec.LazyData &&
+                canSafelyWriteRawGenotypesBytes((BCF2Codec.LazyData) lgc.getUnparsedGenotypeData())) {
+                return (BCF2Codec.LazyData) lgc.getUnparsedGenotypeData();
             } else {
                 lgc.decode(); // WARNING -- required to avoid keeping around bad lazy data for too long
             }
@@ -336,7 +375,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     /**
      * Try to get the nGenotypeFields as efficiently as possible.
-     *
+     * <p>
      * If this is a lazy BCF2 object just grab the field count from there,
      * otherwise do the whole counting by types test in the actual data
      *
@@ -345,80 +384,46 @@ class BCF2Writer extends IndexingVariantContextWriter {
      */
     private int getNGenotypeFormatFields(final VariantContext vc) {
         final BCF2Codec.LazyData lazyData = getLazyData(vc);
-        return lazyData != null ? lazyData.nGenotypeFields : vc.calcVCFGenotypeKeys(header).size();
+        if (lazyData == null) {
+            // Calculate genotype keys of a VariantContext and cache result
+            // This computation can be expensive as it needs to inspect every genotype in the VC,
+            // so we cache the result as it will be needed again when writing the genotype information
+            return genotypeKeys.computeIfAbsent(vc, v -> v.calcVCFGenotypeKeys(header)).size();
+        } else {
+            return lazyData.nGenotypeFields;
+        }
     }
 
-    private void buildID( VariantContext vc ) throws IOException {
+    private void buildID(final VariantContext vc) throws IOException {
         encoder.encodeTypedString(vc.getID());
     }
 
-    private void buildAlleles( VariantContext vc ) throws IOException {
-        for ( Allele allele : vc.getAlleles() ) {
+    private void buildAlleles(final VariantContext vc) throws IOException {
+        for (final Allele allele : vc.getAlleles()) {
             final byte[] s = allele.getDisplayBases();
-            if ( s == null )
+            if (s == null)
                 throw new IllegalStateException("BUG: BCF2Writer encountered null padded allele" + allele);
             encoder.encodeTypedString(s);
         }
     }
 
-    private void buildFilter( VariantContext vc ) throws IOException {
-        if ( vc.isFiltered() ) {
+    private void buildFilter(final VariantContext vc) throws IOException {
+        if (vc.isFiltered()) {
             encodeStringsByRef(vc.getFilters());
-        } else if ( vc.filtersWereApplied() ) {
-            encodeStringsByRef(Collections.singleton(VCFConstants.PASSES_FILTERS_v4));
+        } else if (vc.filtersWereApplied()) {
+            // PASS is always implicitly encoded as 0
+            encoder.encodeTypedInt(0, BCF2Type.INT8);
         } else {
             encoder.encodeTypedMissing(BCF2Type.INT8);
         }
     }
 
-    private void buildInfo( VariantContext vc ) throws IOException {
-        for ( Map.Entry<String, Object> infoFieldEntry : vc.getAttributes().entrySet() ) {
-            final String field = infoFieldEntry.getKey();
-            final BCF2FieldWriter.SiteWriter writer = fieldManager.getSiteFieldWriter(field);
-            if ( writer == null ) errorUnexpectedFieldToWrite(vc, field, "INFO");
-            writer.start(encoder, vc);
-            writer.site(encoder, vc);
-            writer.done(encoder, vc);
-        }
+    private void buildInfo(final VariantContext vc) throws IOException {
+        fieldWriterManager.writeInfo(vc);
     }
 
-    private byte[] buildSamplesData(final VariantContext vc) throws IOException {
-        final BCF2Codec.LazyData lazyData = getLazyData(vc);  // has critical side effects
-        if ( lazyData != null ) {
-            // we never decoded any data from this BCF file, so just pass it back
-            return lazyData.bytes;
-        }
-
-        // we have to do work to convert the VC into a BCF2 byte stream
-        final List<String> genotypeFields = vc.calcVCFGenotypeKeys(header);
-        for ( final String field : genotypeFields ) {
-            final BCF2FieldWriter.GenotypesWriter writer = fieldManager.getGenotypeFieldWriter(field);
-            if ( writer == null ) errorUnexpectedFieldToWrite(vc, field, "FORMAT");
-
-            assert writer != null;
-
-            writer.start(encoder, vc);
-            for ( final String name : sampleNames ) {
-                Genotype g = vc.getGenotype(name);
-                if ( g == null ) g = GenotypeBuilder.createMissing(name, writer.nValuesPerGenotype);
-                writer.addGenotype(encoder, vc, g);
-            }
-            writer.done(encoder, vc);
-        }
-        return encoder.getRecordBytes();
-    }
-
-    /**
-     * Throws a meaningful error message when a field (INFO or FORMAT) is found when writing out a file
-     * but there's no header line for it.
-     *
-     * @param vc
-     * @param field
-     * @param fieldType
-     */
-    private void errorUnexpectedFieldToWrite(final VariantContext vc, final String field, final String fieldType) {
-        throw new IllegalStateException("Found field " + field + " in the " + fieldType + " fields of VariantContext at " +
-                vc.getContig() + ":" + vc.getStart() + " from " + vc.getSource() + " but this hasn't been defined in the VCFHeader");
+    private void buildSamplesData(final VariantContext vc) throws IOException {
+        fieldWriterManager.writeFormat(vc, genotypeKeys.computeIfAbsent(vc, v -> v.calcVCFGenotypeKeys(header)));
     }
 
     // --------------------------------------------------------------------------------
@@ -427,34 +432,20 @@ class BCF2Writer extends IndexingVariantContextWriter {
     //
     // --------------------------------------------------------------------------------
 
-    /**
-     * Write the data in the encoder to the outputstream as a length encoded
-     * block of data.  After this call the encoder stream will be ready to
-     * start a new data block
-     *
-     * @throws IOException
-     */
-    private void writeBlock(final byte[] infoBlock, final byte[] genotypesBlock) throws IOException {
-        BCF2Type.INT32.write(infoBlock.length, outputStream);
-        BCF2Type.INT32.write(genotypesBlock.length, outputStream);
-        outputStream.write(infoBlock);
-        outputStream.write(genotypesBlock);
-    }
+    private void encodeStringsByRef(final Collection<String> strings) throws IOException {
+        final int[] offsets = new int[strings.size()];
+        int i = 0;
 
-    private BCF2Type encodeStringsByRef(final Collection<String> strings) throws IOException {
-        final List<Integer> offsets = new ArrayList<Integer>(strings.size());
-
-        // iterate over strings until we find one that needs 16 bits, and break
-        for ( final String string : strings ) {
+        // Map strings to their position in string dictionary
+        for (final String string : strings) {
             final Integer got = stringDictionaryMap.get(string);
-            if ( got == null ) throw new IllegalStateException("Format error: could not find string " + string + " in header as required by BCF");
-            final int offset = got;
-            offsets.add(offset);
+            if (got == null)
+                throw new IllegalStateException("Format error: could not find string " + string + " in header as required by BCF");
+            offsets[i] = got;
+            i++;
         }
 
-        final BCF2Type type = BCF2Utils.determineIntegerType(offsets);
-        encoder.encodeTyped(offsets, type);
-        return type;
+        encoder.encodeTypedVecInt(offsets);
     }
 
     /**
@@ -464,7 +455,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
      */
     private void createContigDictionary(final Collection<VCFContigHeaderLine> contigLines) {
         int offset = 0;
-        for ( VCFContigHeaderLine contig : contigLines )
+        for (final VCFContigHeaderLine contig : contigLines)
             contigDictionary.put(contig.getID(), offset++);
     }
 }
