@@ -28,6 +28,7 @@ import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.Utils;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.util.SequenceUtil;
@@ -440,6 +441,16 @@ public class CRAMRecordReadFeatures {
                 case RefSkip.operator:
                     posInSeq += ((RefSkip) variation).getLength();
                     break;
+                case Bases.operator:
+                case ReadBase.operator:
+                    break; // defer until after the reference bases are retrieved
+                case Scores.operator:
+                case BaseQualityScore.operator:
+                    break; // handled by resolveQualityScores
+                case Padding.operator:
+                case HardClip.operator:
+                    break; // handled by getCigarForReadFeatures
+                default: throw new CRAMException(String.format("Unrecognized read feature code: %c", variation.getOperator()));
             }
         }
 
