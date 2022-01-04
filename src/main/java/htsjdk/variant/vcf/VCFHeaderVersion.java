@@ -149,20 +149,6 @@ public enum VCFHeaderVersion {
         return this.ordinal() >= target.ordinal();
     }
 
-    /**
-     * Determine if two header versions are compatible (header lines from these versions are interchangeable).
-     * For now, the only incompatibility is between V4.3 and any other version. All other version combinations
-     * are compatible.
-     * @param v1 first version to compare
-     * @param v2 second version to compare
-     * @return true if the versions are compatible
-     */
-    //TODO: this method can be removed once this is rebased on the vcf4.3 writing branch
-    public static boolean versionsAreCompatible(final VCFHeaderVersion v1, final VCFHeaderVersion v2) {
-        return v1.equals(v2) ||
-                (!v1.isAtLeastAsRecentAs(VCF4_3) && !v2.isAtLeastAsRecentAs(VCF4_3));
-    }
-
     public String getVersionPrefixString() {
         return versionPrefixString;
     }
