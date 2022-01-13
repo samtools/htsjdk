@@ -10,7 +10,6 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.RuntimeEOFException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -23,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CRAM30ComplianceTest extends HtsjdkTest {
     // NOTE: to run these tests you need to clone https://github.com/samtools/hts-specs and initialize
@@ -42,12 +42,12 @@ public class CRAM30ComplianceTest extends HtsjdkTest {
             // In the CompressionHeaderEncodingMap, DataSeries = FC_FeatureCode, value_type = BYTE, encodingDescriptor = BETA: (FFFFFFFB0E050000000000000000000000000000).
             // Corresponding htsjdk.samtools.cram.encoding.EncodingFactory entry is not present- there is no case: Byte -> BETA
 
-            add("0706_tag.cram"); // sam cram mismatch - Attributes
             add("1001_name.cram"); // sam cram mismatch - ReadNames
             add("1003_qual.cram"); // sam cram mismatch - MateAlignmentStart
             add("1005_qual.cram"); // sam cram mismatch - BaseQualities
 
             // header mismatch - the roundtripped output file header has SO=unsorted when SO is not present in the original file
+            add("0706_tag.cram");
             add("1100_HUFFMAN.cram");
             add("1200_overflow.cram");
             add("0001_empty_eof.cram");
@@ -121,7 +121,8 @@ public class CRAM30ComplianceTest extends HtsjdkTest {
                 .toArray();
     }
 
-    @Test(dataProvider = "30Passed", description = "Roundtrip the CRAM file. Read the output CRAM file and compare it with the corresponding SAM file. " +
+    @Test(dataProvider = "30Passed", description = "Roundtrip the CRAM file. " +
+            "Read the output CRAM file and compare it with the corresponding SAM file. " +
             "Compare the original CRAM file with the original SAM file." +
             "Check if their headers and records match.")
     public void testCompareRoundtrippedCRAMwithSAMPassed(final File cramFile) throws IOException {
@@ -150,32 +151,37 @@ public class CRAM30ComplianceTest extends HtsjdkTest {
              final SamReader originalCramReader = SamReaderFactory.make()
                      .validationStringency(ValidationStringency.SILENT)
                      .referenceSequence(referenceFile).open(cramFile);) {
-
             // Assert the headers in original CRAM file and round tripped CRAM file are the same
             Assert.assertEquals(originalCramReader.getFileHeader(), roundtrippedCramReader.getFileHeader() );
             // Assert the headers in original CRAM file and the original SAM file are the same
             Assert.assertEquals(originalCramReader.getFileHeader(),originalSamReader.getFileHeader());
-
             final SAMRecordIterator roundtrippedCramIterator = roundtrippedCramReader.iterator();
             final SAMRecordIterator originalSamIterator = originalSamReader.iterator();
             final SAMRecordIterator originalCramIterator = originalCramReader.iterator();
-
-            final List<SAMRecord> roundtrippedSamRecords = new ArrayList<>();
-            final List<SAMRecord> originalSamRecords = new ArrayList<>();
-            final List<SAMRecord> originalCramRecords = new ArrayList<>();
-
             while (roundtrippedCramIterator.hasNext() && originalSamIterator.hasNext() && originalCramIterator.hasNext()) {
-                roundtrippedSamRecords.add(roundtrippedCramIterator.next());
-                originalSamRecords.add(originalSamIterator.next());
-                originalCramRecords.add(originalCramIterator.next());
-            }
+                SAMRecord roundtrippedCramRecord = roundtrippedCramIterator.next();
+                SAMRecord originalSamRecord = originalSamIterator.next();
+                SAMRecord originalCramRecord = originalCramIterator.next();
+                // assert that the same tags are present in both original cram and rountripped cram records
+                Assert.assertEquals(
+                        originalCramRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()),
+                        roundtrippedCramRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()));
+                // assert that the value for each tag is the same in both original cram and rountripped cram records
+                originalCramRecord.getAttributes().forEach(tv -> {
+                    Assert.assertEquals(tv.value, roundtrippedCramRecord.getAttribute(tv.tag));
+                });
 
-            Assert.assertEquals(originalCramRecords.size(), roundtrippedSamRecords.size());
-            Assert.assertEquals(originalCramRecords.size(), originalSamRecords.size());
+                // assert that the same tags are present in both original cram and original sam records
+                Assert.assertEquals(
+                        originalCramRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()),
+                        originalSamRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()));
+                // assert that the value for each tag is the same in both original cram and original sam records
+                originalCramRecord.getAttributes().forEach(tv -> {
+                    Assert.assertEquals(tv.value, originalSamRecord.getAttribute(tv.tag));
+                });
+            }
             Assert.assertEquals(originalCramIterator.hasNext(), roundtrippedCramIterator.hasNext());
             Assert.assertEquals(originalCramIterator.hasNext(), originalSamIterator.hasNext());
-            Assert.assertEquals(originalCramRecords, roundtrippedSamRecords);
-            Assert.assertEquals(originalCramRecords, originalSamRecords);
         }
     }
 
