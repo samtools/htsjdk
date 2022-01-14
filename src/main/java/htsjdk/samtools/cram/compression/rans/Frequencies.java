@@ -99,7 +99,7 @@ final class Frequencies {
 
         // Compute statistics
         final int[] F = new int[RANS.NUMBER_OF_SYMBOLS];
-        int T = 0;
+        int T = 0; //// T is the total number of symbols in the input
         for (int i = 0; i < inSize; i++) {
             F[0xFF & inBuffer.get()]++;
             T++;
@@ -107,8 +107,10 @@ final class Frequencies {
         final long tr = ((long) Constants.TOTFREQ << 31) / T + (1 << 30) / T;
 
         // Normalise so T[i] == TOTFREQ
+        // m is the maximum frequency value
+        // M is the symbol that has the maximum frequency
         int m = 0;
-        int M = 0;  // frequency denominator ?
+        int M = 0;
         for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
             if (m < F[j]) {
                 m = F[j];
@@ -121,13 +123,18 @@ final class Frequencies {
             if (F[j] == 0) {
                 continue;
             }
+            // using tr to normalize symbol frequencies such that their total = (1<<12) = 4096
             if ((F[j] = (int) ((F[j] * tr) >> 31)) == 0) {
+                // make sure that a non-zero symbol frequency is not incorrectly set to 0.
+                // Change it to 1 if the calculated value is 0.
                 F[j] = 1;
             }
             fsum += F[j];
         }
 
         fsum++;
+        // adjust the frequency of the symbol with maximum frequency to make sure that
+        // the sum of frequencies of all the symbols = 4096
         if (fsum < Constants.TOTFREQ) {
             F[M] += Constants.TOTFREQ - fsum;
         } else {
@@ -191,11 +198,15 @@ final class Frequencies {
     static RANSEncodingSymbol[] buildSymsOrder0(final int[] F, final RANSEncodingSymbol[] syms) {
         final int[] C = new int[RANS.NUMBER_OF_SYMBOLS];
 
+        // T = running sum of frequencies including the current symbol
+        // F[j] = frequency of symbol "j"
+        // C[j] = cumulative frequency of all the symbols preceding "j" (and excluding the frequency of symbol "j")
         int T = 0;
         for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
             C[j] = T;
             T += F[j];
             if (F[j] != 0) {
+                //For each symbol, set start = cumulative frequency and freq = frequency
                 syms[j].set(C[j], F[j], Constants.TF_SHIFT);
             }
         }
@@ -212,7 +223,14 @@ final class Frequencies {
                 if (rle != 0) {
                     rle--;
                 } else {
+                    // write the symbol if it is the first symbol or if rle = 0.
+                    // if rle != 0, then skip writing the symbol.
                     cp.put((byte) j);
+                    // We've encoded two symbol frequencies in a row.
+                    // How many more are there?  Store that count so
+                    // we can avoid writing consecutive symbols.
+                    // Note: maximum possible rle = 254
+                    // rle requires atmost 1 byte
                     if (rle == 0 && j != 0 && F[j - 1] != 0) {
                         for (rle = j + 1; rle < 256 && F[rle] != 0; rle++)
                             ;
@@ -225,12 +243,14 @@ final class Frequencies {
                 if (F[j] < 128) {
                     cp.put((byte) (F[j]));
                 } else {
+                    // if F[j] >127, it is written in 2 bytes
                     cp.put((byte) (128 | (F[j] >> 8)));
                     cp.put((byte) (F[j] & 0xff));
                 }
             }
         }
 
+        // write 0 indicating the end of frequency table
         cp.put((byte) 0);
         return cp.position() - start;
     }
