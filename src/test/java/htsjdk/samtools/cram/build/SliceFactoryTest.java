@@ -4,7 +4,6 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.compression.rans.RANS;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.CRAMStructureTestHelper;
