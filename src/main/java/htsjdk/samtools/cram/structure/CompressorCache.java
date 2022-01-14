@@ -24,8 +24,11 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.compression.*;
-import htsjdk.samtools.cram.compression.rans.RANS;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.RANSExternalCompressor;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.ValidationUtils;
@@ -40,7 +43,8 @@ import java.util.HashMap;
 public class CompressorCache {
     private final String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compressor";
     private final HashMap<Tuple<BlockCompressionMethod, Integer>, ExternalCompressor> compressorCache = new HashMap<>();
-    private RANS sharedRANS;
+    private RANS4x8Encode sharedRANSEncode;
+    private RANS4x8Decode sharedRANSDecode;
 
     /**
      * Return a compressor if its in our cache, otherwise spin one up and cache it and return it.
@@ -67,22 +71,26 @@ public class CompressorCache {
                 // for efficiency, we want to share the same underlying RANS object with both order-0 and
                 // order-1 ExternalCompressors
                 final int ransArg = compressorSpecificArg == ExternalCompressor.NO_COMPRESSION_ARG ?
-                                RANS.ORDER.ZERO.ordinal() :
+                                RANS4x8Params.ORDER.ZERO.ordinal() :
                                 compressorSpecificArg;
                 final Tuple<BlockCompressionMethod, Integer> compressorTuple = new Tuple<>(
                         BlockCompressionMethod.RANS,
                         ransArg);
                 if (!compressorCache.containsKey(compressorTuple)) {
-                    if (sharedRANS == null) {
-                        sharedRANS = new RANS();
+                    if (sharedRANSEncode == null) {
+                        sharedRANSEncode = new RANS4x8Encode();
+                    }
+                    if (sharedRANSDecode == null) {
+                        sharedRANSDecode = new RANS4x8Decode();
                     }
                     compressorCache.put(
                             new Tuple(BlockCompressionMethod.RANS, ransArg),
-                            new RANSExternalCompressor(ransArg, sharedRANS)
+                            new RANSExternalCompressor(ransArg, sharedRANSEncode, sharedRANSDecode)
                     );
                 }
                 return getCachedCompressorForMethod(compressorTuple.a, compressorTuple.b);
-
+            case RANGE:
+                return getCachedCompressorForMethod(compressionMethod, compressorSpecificArg);
             default:
                 throw new IllegalArgumentException(String.format("Unknown compression method %s", compressionMethod));
         }
