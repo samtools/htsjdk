@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class CRAM30ComplianceTest extends HtsjdkTest {
     // NOTE: to run these tests you need to clone https://github.com/samtools/hts-specs and initialize
@@ -32,19 +31,58 @@ public class CRAM30ComplianceTest extends HtsjdkTest {
     @DataProvider(name = "30Passed")
     private Object[] getCRAM30Passed() {
         final Set<String> excludeList = new HashSet<String>() {{
-            add("0200_cmpr_hdr.cram"); // read failed
+            // This fails, but the failure is legitimate. The cram file is missing the special end-of-file container
+            // required by the spec, so its not spec-conforming since. htsjdk throws an exception indicating premature
+            // end of file, which is a valid exception given this file.
+            //
             // hasnext() = false,
             // does not have EOF container, slices = 0,
             // lastSliceIndex = -1, fails as it tries to retrieve slice[-1]
+            add("0200_cmpr_hdr.cram"); // read failed
 
-            add("1101_BETA.cram"); // read failed
+            // This test file use a Beta encoding for byte values (BETA<byte>). Section 13.5 of the spec says that
+            // Beta is for integer only, which seems to match the table at the beginning of Section 13. (Note however
+            // that this is the second report we've had of a file that uses that encoding.) But it looks like
+            // BETA<byte> is not spec compliant.
+            //
+            // Note that this test file seems to be a variant of 1100_HUFFMAN.cram and 1100_CORE.cram (the latter
+            // is referenced in the compliance notes on the hts-specs site, but I don't see the file in the repository).
+            //
             // Encoding not found: value type=BYTE, encoding id=BETA
             // In the CompressionHeaderEncodingMap, DataSeries = FC_FeatureCode, value_type = BYTE, encodingDescriptor = BETA: (FFFFFFFB0E050000000000000000000000000000).
             // Corresponding htsjdk.samtools.cram.encoding.EncodingFactory entry is not present- there is no case: Byte -> BETA
+            //
+            add("1101_BETA.cram"); // read failed
 
+            // This one is the same as a known issue which we should fix: https://github.com/samtools/htsjdk/issues/499
             add("0706_tag.cram"); // sam cram mismatch - Attributes
+
+            // This fails when comparing the round-tripped cram to the original sam, but this failure is expected.
+            // The preservation map in the compression header in the test file has the RN (preserve read names) map
+            // entry set to false. So the read names are not preserved in the CRAM file. Since the CRAM spec doesn't
+            // prescribe how to re-generate the names, there is no canonical form for a generated name and different
+            // implementations use different naming schemes. The SAM file here has read names that don't match the
+            // (simple, ordinal) naming scheme used by htsjdk.
+            //
+            //TODO: We should write a special validator for this file that ignores the read name when comparing to
+            // the SAM, so we can get past that error and validate the rest of the records. Also, we should validate
+            // that when two reads that have the same name in the sam, the corresponding reads produced by decoding
+            // the CRAM also have the same name, even if the name differ from the ACTUAL name in the sam (i.e.,
+            // mate-pairs name's should match).
             add("1001_name.cram"); // sam cram mismatch - ReadNames
+
+            // This looks like a real mate resolution issue. Needs more investigation.
+            //
+            // Note: the specs site compliance documentation for this test file says:
+            // Quality absent, mapped with diff (1003_qual.cram) Using feature code "B" (base + qual). Has partial
+            // quality, so should decode with a default qual for the missing values and #, X, C etc for the supplied quals
             add("1003_qual.cram"); // sam cram mismatch - MateAlignmentStart
+
+            // This also looks like a real issue that needs more investigation. Note: the specs site compliance
+            // documentation for this test file says:
+            //
+            // Quality absent, mapped with diff (1005_qual.cram) As 1004_qual.cram but using 'q' instead of a series
+            // of 'Q' features. [ complex to generate! see CRAM.q.gen.patch ]
             add("1005_qual.cram"); // sam cram mismatch - BaseQualities
         }};
         return Arrays.stream(getFilesInDir(HTS_SPECS_REPO_LOCATION, "test/cram/3.0/passed/"))
@@ -80,7 +118,8 @@ public class CRAM30ComplianceTest extends HtsjdkTest {
                 .makeWriter(reader.getFileHeader(), true,tempOutCRAM, referenceFile)) {
             final SAMRecordIterator inputIterator = reader.iterator();
             while (inputIterator.hasNext()) {
-                writer.addAlignment(inputIterator.next());
+                final SAMRecord samRecord = inputIterator.next();
+                writer.addAlignment(samRecord);
             }
         }
         final String samFileName = cramFile.getName().replace(".cram",".sam");
@@ -102,9 +141,9 @@ public class CRAM30ComplianceTest extends HtsjdkTest {
             final SAMRecordIterator originalSamIterator = originalSamReader.iterator();
             final SAMRecordIterator originalCramIterator = originalCramReader.iterator();
             while (roundtrippedCramIterator.hasNext() && originalSamIterator.hasNext() && originalCramIterator.hasNext()) {
-                SAMRecord roundtrippedCramRecord = roundtrippedCramIterator.next();
-                SAMRecord originalSamRecord = originalSamIterator.next();
-                SAMRecord originalCramRecord = originalCramIterator.next();
+                final SAMRecord roundtrippedCramRecord = roundtrippedCramIterator.next();
+                final SAMRecord originalSamRecord = originalSamIterator.next();
+                final SAMRecord originalCramRecord = originalCramIterator.next();
                 Assert.assertEquals(originalCramRecord.equals(roundtrippedCramRecord),true);
                 Assert.assertEquals(originalCramRecord.equals(originalSamRecord),true);
             }
