@@ -54,7 +54,13 @@ public class CRAMRecordReadFeaturesTest extends HtsjdkTest {
                 // test CRAM file (provided as part of https://github.com/samtools/htsjdk/issues/1379) does not
                 // use reference-based compression (requires no reference) and uses Bases ('b') and SoftClip ('S')
                 // feature codes; with the sam file created from the cram via samtools
-                {testDir + "referenceNotRequired.cram", testDir + "referenceNotRequired.sam", null}
+                {testDir + "referenceNotRequired.cram", testDir + "referenceNotRequired.sam", null},
+
+                // test CRAM file taken from the CRAM test files in hts-specs, has Scores ('q') read feature
+                // Note: the specs site compliance documentation for this test file says:
+                // Quality absent, mapped with diff (1005_qual.cram) As 1004_qual.cram but using 'q' instead of a series
+                // of 'Q' features. [ complex to generate! see CRAM.q.gen.patch ]
+                {testDir + "1005_qual.cram", testDir + "1005_qual.sam", testDir + "ce.fa" }
         };
     }
 
