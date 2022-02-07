@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.compression.rans;
+package htsjdk.samtools.cram.compression.rans40;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
@@ -10,10 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.function.BiFunction;
 
-/**
- * Created by vadim on 22/04/2015.
- */
-public class RansTest extends HtsjdkTest {
+public class RANS4x8Test extends HtsjdkTest {
     private Random random = new Random(TestUtil.RANDOM_SEED);
 
     // Since some of our test cases use very large byte arrays, so enclose them in a wrapper class since
@@ -31,7 +28,6 @@ public class RansTest extends HtsjdkTest {
     @DataProvider(name="ransData")
     public Object[][] getRansTestData() {
         return new Object[][] {
-                { new TestCaseWrapper(new byte[] {5, 2, 1, 1, 2}) },
                 { new TestCaseWrapper(new byte[]{}) },
                 { new TestCaseWrapper(new byte[] {0}) },
                 { new TestCaseWrapper(new byte[] {0, 1}) },
@@ -95,8 +91,8 @@ public class RansTest extends HtsjdkTest {
     public void testBuffersMeetBoundaryExpectations() {
         final int size = 1001;
         final ByteBuffer raw = ByteBuffer.wrap(randomBytesFromGeometricDistribution(size, 0.01));
-        final RANS rans = new RANS();
-        for (RANS.ORDER order : RANS.ORDER.values()) {
+        final RANS4x8 rans = new RANS4x8();
+        for (RANS4x8.ORDER order : RANS4x8.ORDER.values()) {
             final ByteBuffer compressed = rans.compress(raw, order);
             Assert.assertFalse(raw.hasRemaining());
             Assert.assertEquals(raw.limit(), size);
@@ -120,7 +116,7 @@ public class RansTest extends HtsjdkTest {
     @Test
     public void testRansHeader() {
         final byte[] data = randomBytesFromGeometricDistribution(1000, 0.01);
-        final ByteBuffer compressed = new RANS().compress(ByteBuffer.wrap(data), RANS.ORDER.ZERO);
+        final ByteBuffer compressed = new RANS4x8().compress(ByteBuffer.wrap(data), RANS4x8.ORDER.ZERO);
         Assert.assertEquals(compressed.get(), (byte) 0);
         Assert.assertEquals(compressed.getInt(), compressed.limit() - 9);
         Assert.assertEquals(compressed.getInt(), data.length);
@@ -135,20 +131,20 @@ public class RansTest extends HtsjdkTest {
     }
 
     private static void roundTripForEachOrder(final ByteBuffer data) {
-        for (RANS.ORDER order : RANS.ORDER.values()) {
+        for (RANS4x8.ORDER order : RANS4x8.ORDER.values()) {
             roundTripForOrder(data, order);
             data.rewind();
         }
     }
 
     private static void roundTripForEachOrder(final byte[] data) {
-        for (RANS.ORDER order : RANS.ORDER.values()) {
+        for (RANS4x8.ORDER order : RANS4x8.ORDER.values()) {
             roundTripForOrder(data, order);
         }
     }
 
-    private static void roundTripForOrder(final ByteBuffer data, final RANS.ORDER order) {
-        final RANS rans = new RANS();
+    private static void roundTripForOrder(final ByteBuffer data, final RANS4x8.ORDER order) {
+        final RANS4x8 rans = new RANS4x8();
         final ByteBuffer compressed = rans.compress(data, order);
         final ByteBuffer uncompressed = rans.uncompress(compressed);
         data.rewind();
@@ -161,7 +157,7 @@ public class RansTest extends HtsjdkTest {
         Assert.assertFalse(uncompressed.hasRemaining());
     }
 
-    private static void roundTripForOrder(final byte[] data, final RANS.ORDER order) {
+    private static void roundTripForOrder(final byte[] data, final RANS4x8.ORDER order) {
         roundTripForOrder(ByteBuffer.wrap(data), order);
     }
 

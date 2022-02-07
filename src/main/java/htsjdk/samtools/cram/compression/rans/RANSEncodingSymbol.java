@@ -39,6 +39,12 @@ public class RANSEncodingSymbol {
         xMax = rcpFreq = bias = cmplFreq = rcpFreq = 0;
     }
 
+    /**
+     *
+     * @param start cummulative frequency for this symbol
+     * @param freq
+     * @param scaleBits
+     */
     public void set(final int start, final int freq, final int scaleBits) {
         // RansAssert(scale_bits <= 16); RansAssert(start <= (1u <<
         // scale_bits)); RansAssert(freq <= (1u << scale_bits) - start);

@@ -72,7 +72,10 @@ public enum EncodingID {
     /**
      * http://en.wikipedia.org/wiki/Elias_gamma_coding
      */
-    GAMMA(9);
+    GAMMA(9),
+
+    // CRAM 3.1 tokenized read names
+    TOKENIZED_READ_NAME(10);
 
     private final int id;
 

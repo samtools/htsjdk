@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 // T = total of true counts
 // F = scaled integer frequencies
+// C = cummulative distribution function
 // M = sum(fs)
 
 class Frequencies {
@@ -99,16 +100,22 @@ class Frequencies {
 
         // Compute statistics
         final int[] F = new int[RANS.NUMBER_OF_SYMBOLS];
-        int T = 0;
+        int T = 0; // number of observations
         for (int i = 0; i < inSize; i++) {
             F[0xFF & inBuffer.get()]++;
             T++;
         }
+
+        System.out.println("Before:");
+        Arrays.stream(F).forEach(i -> System.out.print(" " + i));
+        System.out.println();
+
+        // 4095 << 31 / T + (1 << 30) / T;
         final long tr = ((long) Constants.TOTFREQ << 31) / T + (1 << 30) / T;
 
-        // Normalise so T[i] == TOTFREQ
-        int m = 0;
-        int M = 0;  // frequency denominator ?
+        // Normalise so sum(F[i]) == TOTFREQ
+        int m = 0;  // m == largest frequency seen
+        int M = 0;  // M is the index of the symbol with the (largest) frequency
         for (int j = 0; j < RANS.NUMBER_OF_SYMBOLS; j++) {
             if (m < F[j]) {
                 m = F[j];
@@ -121,6 +128,7 @@ class Frequencies {
             if (F[j] == 0) {
                 continue;
             }
+
             if ((F[j] = (int) ((F[j] * tr) >> 31)) == 0) {
                 F[j] = 1;
             }
@@ -128,11 +136,16 @@ class Frequencies {
         }
 
         fsum++;
+        // rescale the largest frequency to make the total == TOTFREQ
         if (fsum < Constants.TOTFREQ) {
             F[M] += Constants.TOTFREQ - fsum;
         } else {
             F[M] -= fsum - Constants.TOTFREQ;
         }
+
+        System.out.println("After:");
+        Arrays.stream(F).forEach(i -> System.out.print(" " + i));
+        System.out.println();
 
         assert (F[M] > 0);
         return F;
