@@ -83,11 +83,17 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 		// Will throw NullPointerException -- happily -- if either of the chromosomes/contigs aren't
 		// present. This error checking should already have been done in the constructor but it's left
 		// in as defence anyway.
-		final int contigCompare =
-				this.contigIndexLookup.get(firstVariantContext.getContig()) - this.contigIndexLookup.get(secondVariantContext.getContig());
-		return contigCompare != 0
-				? contigCompare
-				: firstVariantContext.getStart() - secondVariantContext.getStart();
+		int contigCompare = this.contigIndexLookup.get(firstVariantContext.getContig()).compareTo(this.contigIndexLookup.get(secondVariantContext.getContig()));
+		contigCompare = contigCompare == 0 ? firstVariantContext.getStart() - secondVariantContext.getStart() : contigCompare;
+		if (contigCompare == 0) {
+			// Compare variants that have the same genomic span (chr:start-end) lexicographically by all alleles (ref and alts).
+			for (int i = 0; i < firstVariantContext.getAlleles().size(); i++) {
+				if (i > secondVariantContext.getAlleles().size()) { return 1; }
+				contigCompare = firstVariantContext.getAlleles().get(i).compareTo(secondVariantContext.getAlleles().get(i));
+				if (contigCompare != 0) return contigCompare;
+			}
+		}
+		return contigCompare;
 	}
 
 	/**
