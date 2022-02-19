@@ -3,6 +3,7 @@ htsjdk.iws
 atlassian-ide-plugin.xml
 /htsjdk.version.properties
 /test-output/
+.DS_Store
 
 #intellij
 .idea/
