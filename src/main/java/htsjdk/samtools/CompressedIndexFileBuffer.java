@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -23,6 +24,11 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
         } catch (IOException ioe) {
             throw(new RuntimeIOException("Construction error of CSI compressed stream: " + ioe));
         }
+    }
+
+    CompressedIndexFileBuffer(SeekableStream seekableStream) {
+        mCompressedStream = new BlockCompressedInputStream(seekableStream);
+        binaryCodec = new BinaryCodec(mCompressedStream);
     }
 
     @Override

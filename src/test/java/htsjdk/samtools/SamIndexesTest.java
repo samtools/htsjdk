@@ -5,8 +5,10 @@ import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -187,5 +189,22 @@ public class SamIndexesTest extends HtsjdkTest {
         Assert.assertEquals(coordinateArray.length, 2);
         Assert.assertEquals(coordinateArray[0] >> 16, entry.getContainerStartByteOffset());
         Assert.assertEquals(coordinateArray[1] & 0xFFFF, 1);
+    }
+
+    @DataProvider(name = "getSAMIndexTypeFromStreamTests")
+    public Object[][] getSAMIndexTypeFromStreamTests() {
+        return new Object[][]{
+                { new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), SamIndexes.BAI },
+                { new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), SamIndexes.CSI },
+                { new File("src/test/resources/htsjdk/samtools/cram/cramQueryWithCRAI.cram.crai"), SamIndexes.CRAI},
+        };
+    }
+
+    @Test(dataProvider = "getSAMIndexTypeFromStreamTests")
+    public void testGetSAMIndexTypeFromStream(final File indexFile, final SamIndexes expectedIndexType) throws IOException {
+        try (final SeekableStream seekableStream = SeekableStreamFactory.getInstance().getStreamFor(indexFile.getPath())) {
+            Assert.assertEquals(SamIndexes.getSAMIndexTypeFromStream(seekableStream),expectedIndexType);
+            Assert.assertEquals(seekableStream.position(), 0);
+        }
     }
 }
