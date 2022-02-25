@@ -61,14 +61,15 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
 
     // Map used to retain the attribute/value pairs, in original order. The first entry in the map must be
     // an ID field. The entire map must be immutable to prevent hash values from changing, since these are
-    // often stored in Sets. Its not ACTUALLY immutable in orderto allow for special cases where subclasses
-    // have to be able to "repair" header lines (via a call to updateGenericField) during constructor validation.
+    // often stored in Sets. Note that this value is not ACTUALLY immutable, in order to allow for special
+    // cases where subclasses need to be able to "repair" header lines (via a call to updateGenericField)
+    // during constructor validation.
     //
     // Otherwise the values here should never change during the lifetime of the header line.
     private final Map<String, String> genericFields = new LinkedHashMap();
 
     /**
-     * Constructor that accepts a key and string that represetns the rest of the line (after the ##KEY=").
+     * Constructor that accepts a key and string that represents the rest of the line (after the ##KEY=").
      * @param key the key to use for this line
      * @param line the value part of the line
      * @param version the target version to validate the line against
@@ -236,15 +237,15 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
             attributeName.equals(VCFCompoundHeaderLine.TYPE_ATTRIBUTE));
     }
 
-    private void validate() {
-        if ( genericFields.isEmpty() || !genericFields.keySet().stream().findFirst().get().equals(ID_ATTRIBUTE)) {
-            throw new TribbleException(
-                    String.format("The required ID tag is missing or not the first attribute: key=%s", super.getKey()));
-        }
-        final Optional<String> validationFailure = validateKeyOrID(getGenericFieldValue(ID_ATTRIBUTE));
-        if (validationFailure.isPresent()) {
-            throw new TribbleException.VersionValidationFailure(validationFailure.get());
-        }
+    /**
+     * Validate a string as an ID field.
+     *
+     * Note: this returns an Optional String rather than a {@link VCFValidationFailure}, because it needs to work
+     * in contexts where no VCF header version is supplied (specifically, in constructors that do not require
+     * a version)
+     */
+    protected Optional<String> validateID(final String id) {
+        return validateAttributeName(id, "structured header line ID");
     }
 
     // Perform all text transformations required to encode an attribute value

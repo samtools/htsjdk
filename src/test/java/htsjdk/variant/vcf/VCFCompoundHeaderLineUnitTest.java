@@ -89,7 +89,7 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
         };
     }
 
-    @Test(dataProvider = "invalidIDs", expectedExceptions = TribbleException.VersionValidationFailure.class)
+    @Test(dataProvider = "invalidIDs", expectedExceptions = TribbleException.class)
     public void testGetValidationError(final String lineString) {
         new VCFInfoHeaderLine(lineString, VCFHeader.DEFAULT_VCF_VERSION);
     }

@@ -124,7 +124,10 @@ public class VCFHeaderMerger {
             final HeaderMergeConflictWarnings conflictWarner) {
 
         if (conflictWarner.emitWarnings) {
-            mergedMetaData.getValidationErrors(newestVersion)
+            //TODO: any header contains a line that fails version validation, then the merge should fail...just like
+            // a version upgrade would fail for that same header. We can't honor the fallback policy i.e., fallback to
+            // the old version) here because that would require knowing how to back-version the OTHER headers being merged
+            mergedMetaData.getVersionValidationFailures(newestVersion)
                     .forEach(validationError -> conflictWarner.warn(validationError.getFailureMessage()));
         }
 

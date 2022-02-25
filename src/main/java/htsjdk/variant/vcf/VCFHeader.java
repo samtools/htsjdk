@@ -605,8 +605,14 @@ public class VCFHeader implements HtsHeader, Serializable {
         return metaDataVersion;
     }
 
-    public Collection<VCFValidationFailure<VCFHeaderLine>> getValidationErrors(final VCFHeaderVersion targetVersion) {
-        return mMetaData.getValidationErrors(targetVersion);
+    /**
+     * Return any validation failures that would result from upgrading this header to {@code targetVersion}
+     *
+     * @param targetVersion target version to use for validation
+     * @return collection of {@link VCFValidationFailure} objects
+     */
+     public Collection<VCFValidationFailure<VCFHeaderLine>> getVersionValidationFailures(final VCFHeaderVersion targetVersion) {
+        return mMetaData.getVersionValidationFailures(targetVersion);
     }
 
     private void validateVersionTransition(
@@ -649,7 +655,7 @@ public class VCFHeader implements HtsHeader, Serializable {
                 return this;
             case UPGRADE_OR_FALLBACK: {
                 final Collection<VCFValidationFailure<VCFHeaderLine>> errors =
-                    this.mMetaData.getValidationErrors(VCFHeader.DEFAULT_VCF_VERSION);
+                    mMetaData.getVersionValidationFailures(VCFHeader.DEFAULT_VCF_VERSION);
                 if (errors.isEmpty()) {
                     final VCFHeader newHeader = new VCFHeader(this);
                     // If validation fails, simply pass the exception through

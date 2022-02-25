@@ -183,7 +183,6 @@ final public class VCFMetaDataLines implements Serializable {
 
     /**
      * Validate all metadata lines, excluding the file format line against a target version.
-     * Throws {@link TribbleException.VersionValidationFailure} if any line is incompatible with the given version.
      * @param targetVersion the target version to validate against
      * @throws {@link TribbleException.VersionValidationFailure} if any existing line fails to validate against
      * {@code targetVersion}
@@ -206,7 +205,7 @@ final public class VCFMetaDataLines implements Serializable {
      * @return an Collection<VCFValidationFailure> describing the lines that failed to validate
      * incompatible with targetVersion. The collections is empty if validation succeeded for all lines.
      */
-    public Collection<VCFValidationFailure> getValidationErrors(final VCFHeaderVersion targetVersion) {
+    public Collection<VCFValidationFailure<VCFHeaderLine>> getVersionValidationFailures(final VCFHeaderVersion targetVersion) {
         return mMetaData.values().stream()
                 .filter(line -> !VCFHeaderVersion.isFormatString(line.getKey()))
                 .map(l -> l.validateForVersion(targetVersion))

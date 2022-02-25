@@ -104,10 +104,10 @@ public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
     }
 
     @Override
-    protected Optional<String> validateKeyOrID(final String id) {
+    protected Optional<String> validateID(final String id) {
         return id.equals(VCFConstants.THOUSAND_GENOMES_KEY)
             ? Optional.empty()
-            : super.validateKeyOrID(id);
+            : super.validateID(id);
     }
 
     @Override
