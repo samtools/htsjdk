@@ -57,7 +57,7 @@ public class VCFFormatHeaderLine extends VCFCompoundHeaderLine {
               VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrder),
               version);
         validate();
-        validateForVersion(version);
+        validateForVersionOrThrow(version);
     }
 
     /**

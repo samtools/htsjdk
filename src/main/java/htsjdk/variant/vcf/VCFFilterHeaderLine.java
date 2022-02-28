@@ -78,7 +78,7 @@ public class VCFFilterHeaderLine extends VCFSimpleHeaderLine {
     public VCFFilterHeaderLine(final String line, final VCFHeaderVersion version) {
         super(VCFConstants.FILTER_HEADER_KEY, VCFHeaderLineTranslator.parseLine(version, line, requiredTagOrder));
         validate();
-        validateForVersion(version);
+        validateForVersionOrThrow(version);
     }
 
     private void validate() {

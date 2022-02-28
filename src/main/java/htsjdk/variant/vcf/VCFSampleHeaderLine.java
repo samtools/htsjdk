@@ -15,7 +15,7 @@ public class VCFSampleHeaderLine extends VCFSimpleHeaderLine {
         // other tags. So let validateForVersion detect any version incompatibility, ie., if this is ever
         // called with a V3 version.
         super(VCFConstants.SAMPLE_HEADER_KEY, new VCF4Parser().parseLine(line, expectedTagOrder));
-        validateForVersion(version);
+        validateForVersionOrThrow(version);
     }
 
     public VCFSampleHeaderLine(final Map<String, String> mapping) {
@@ -23,7 +23,7 @@ public class VCFSampleHeaderLine extends VCFSimpleHeaderLine {
     }
 
     @Override
-    public Optional<VCFValidationFailure<VCFHeaderLine>> getValidationFailure(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<VCFValidationFailure<VCFHeaderLine>> validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
             final String message = String.format("%s header lines are not allowed in VCF version %s headers",
                 getKey(),
@@ -36,7 +36,7 @@ public class VCFSampleHeaderLine extends VCFSimpleHeaderLine {
             }
         }
 
-        return super.getValidationFailure(vcfTargetVersion);
+        return super.validateForVersion(vcfTargetVersion);
     }
 
 }

@@ -70,7 +70,7 @@ public class VCFInfoHeaderLineUnitTest extends HtsjdkTest {
         );
 
         // TODO change to VCFHeader.DEFAULT_VCF_VERSION
-        Assert.assertFalse(line.getValidationFailure(VCFHeaderVersion.VCF4_3).isPresent());
+        Assert.assertFalse(line.validateForVersion(VCFHeaderVersion.VCF4_3).isPresent());
     }
 
     @Test(dataProvider = "mergeIncompatibleInfoLines", expectedExceptions= TribbleException.class)

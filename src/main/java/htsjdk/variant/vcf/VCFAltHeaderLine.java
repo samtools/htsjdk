@@ -22,7 +22,7 @@ public class VCFAltHeaderLine extends VCFSimpleHeaderLine {
         // Honor the requested version to choose the parser, and let validateForVersion figure out
         // whether that version is valid for this line (for example, if this is called with a pre-4.0 version)
         super(VCFConstants.ALT_HEADER_KEY, VCFHeaderLineTranslator.parseLine(version, line, expectedTags));
-        validateForVersion(version);
+        validateForVersionOrThrow(version);
     }
 
     public VCFAltHeaderLine(final String id, final String description) {
@@ -35,7 +35,7 @@ public class VCFAltHeaderLine extends VCFSimpleHeaderLine {
     }
 
     @Override
-    public Optional<VCFValidationFailure<VCFHeaderLine>> getValidationFailure(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<VCFValidationFailure<VCFHeaderLine>> validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         //TODO: Should we validate/constrain these to match the 4.3 spec constraints ?
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
             final VCFValidationFailure<VCFHeaderLine> validationFailure = new VCFValidationFailure<>(
@@ -49,6 +49,6 @@ public class VCFAltHeaderLine extends VCFSimpleHeaderLine {
             }
         }
 
-        return super.getValidationFailure(vcfTargetVersion);
+        return super.validateForVersion(vcfTargetVersion);
     }
 }

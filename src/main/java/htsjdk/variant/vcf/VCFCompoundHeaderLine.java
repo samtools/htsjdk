@@ -126,7 +126,7 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
         final String countString = getGenericFieldValue(NUMBER_ATTRIBUTE);
         this.countType = decodeCountType(countString, vcfVersion);
         this.count = decodeCount(countString, this.countType);
-        validateForVersion(vcfVersion);
+        validateForVersionOrThrow(vcfVersion);
     }
 
     /**
@@ -174,7 +174,7 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
     }
 
     @Override
-    public Optional<VCFValidationFailure<VCFHeaderLine>> getValidationFailure(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<VCFValidationFailure<VCFHeaderLine>> validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         // The VCF 4.3 spec does not phrase this restriction as one on the form of the ID value of
         // INFO/FORMAT lines but instead on the INFO/FORMAT fixed field key values (c.f. section 1.6.1).
         // However, the key values correspond to INFO/FORMAT header lines defining the attribute and its type,
@@ -194,7 +194,7 @@ public abstract class VCFCompoundHeaderLine extends VCFSimpleHeaderLine {
             }
         }
 
-        return super.getValidationFailure(vcfTargetVersion);
+        return super.validateForVersion(vcfTargetVersion);
     }
 
     /**

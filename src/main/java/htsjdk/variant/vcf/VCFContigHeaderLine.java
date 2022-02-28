@@ -97,7 +97,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
         if (contigIndex < 0) {
             throw new TribbleException(String.format("The contig index (%d) is less than zero.", contigIndex));
         }
-        validateForVersion(version);
+        validateForVersionOrThrow(version);
     }
 
     public VCFContigHeaderLine(final Map<String, String> mapping, final int contigIndex) {
@@ -186,7 +186,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
 	}
 
     @Override
-    public Optional<VCFValidationFailure<VCFHeaderLine>> getValidationFailure(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<VCFValidationFailure<VCFHeaderLine>> validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
              if (!VALID_CONTIG_ID_PATTERN.matcher(getID()).matches()) {
                 return Optional.of(new VCFValidationFailure<>(
@@ -196,7 +196,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
             }
         }
 
-        return super.getValidationFailure(vcfTargetVersion);
+        return super.validateForVersion(vcfTargetVersion);
     }
 
     public Integer getContigIndex() {

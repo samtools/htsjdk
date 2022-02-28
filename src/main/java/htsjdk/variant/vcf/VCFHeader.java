@@ -161,7 +161,7 @@ public class VCFHeader implements HtsHeader, Serializable {
         // and the header version will be established using the last version line encountered
         mMetaData.addMetaDataLines(metaData);
         final VCFHeaderVersion vcfHeaderVersion = initializeHeaderVersion();
-        mMetaData.validateMetaDataLines(vcfHeaderVersion);
+        mMetaData.validateMetaDataLinesOrThrow(vcfHeaderVersion);
 
         checkForDeprecatedGenotypeLikelihoodsKey();
         if ( genotypeSampleNames.size() != new HashSet<>(genotypeSampleNames).size() )
@@ -625,9 +625,9 @@ public class VCFHeader implements HtsHeader, Serializable {
 
             // the version moved forward, so validate ALL of the existing lines in the list to ensure
             // that the transition is valid
-            mMetaData.validateMetaDataLines(newVersion);
+            mMetaData.validateMetaDataLinesOrThrow(newVersion);
         } else {
-            newHeaderLine.validateForVersion(newVersion);
+            newHeaderLine.validateForVersionOrThrow(newVersion);
         }
     }
 

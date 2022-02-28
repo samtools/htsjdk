@@ -21,7 +21,7 @@ public class VCFPedigreeHeaderLine extends VCFSimpleHeaderLine {
         // other tags. So let validateForVersion detect any version incompatibility, ie., if this is ever
         // called with a V3 version.
         super(VCFConstants.PEDIGREE_HEADER_KEY, new VCF4Parser().parseLine(line, expectedTagOrder));
-        validateForVersion(version);
+        validateForVersionOrThrow(version);
     }
 
     public VCFPedigreeHeaderLine(final Map<String, String> mapping) {
@@ -29,7 +29,7 @@ public class VCFPedigreeHeaderLine extends VCFSimpleHeaderLine {
     }
 
     @Override
-    public Optional<VCFValidationFailure<VCFHeaderLine>> getValidationFailure(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<VCFValidationFailure<VCFHeaderLine>> validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             // previous to VCFv4.3, the PEDIGREE line did not have an ID. Such lines are not modeled by this
             // class (since it is derived from VCFSimpleHeaderLine). Therefore instances of this class always
@@ -45,7 +45,7 @@ public class VCFPedigreeHeaderLine extends VCFSimpleHeaderLine {
             }
         }
 
-        return super.getValidationFailure(vcfTargetVersion);
+        return super.validateForVersion(vcfTargetVersion);
     }
 
 }

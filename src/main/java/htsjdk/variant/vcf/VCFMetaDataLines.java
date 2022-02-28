@@ -171,10 +171,10 @@ final public class VCFMetaDataLines implements Serializable {
      */
     //TODO: we need to tell users how to resolve the case where this fails due to version validation
     //i.e, use a custom upgrade tool
-    public void validateMetaDataLines(final VCFHeaderVersion targetVersion) {
+    public void validateMetaDataLinesOrThrow(final VCFHeaderVersion targetVersion) {
         mMetaData.values().forEach(headerLine -> {
             if (!VCFHeaderVersion.isFormatString(headerLine.getKey())) {
-                headerLine.validateForVersion(targetVersion);
+                headerLine.validateForVersionOrThrow(targetVersion);
             }
         });
     }
@@ -190,7 +190,7 @@ final public class VCFMetaDataLines implements Serializable {
     public Collection<VCFValidationFailure> getValidationErrors(final VCFHeaderVersion targetVersion) {
         return mMetaData.values().stream()
                 .filter(line -> !VCFHeaderVersion.isFormatString(line.getKey()))
-                .map(l -> l.getValidationFailure(targetVersion))
+                .map(l -> l.validateForVersion(targetVersion))
                 .filter(o -> o.isPresent())
                 .map(o -> o.get())
                 .collect(Collectors.toList());

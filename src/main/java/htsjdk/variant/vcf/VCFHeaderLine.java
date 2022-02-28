@@ -50,10 +50,13 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @param key     the key for this header line
      * @param value   the value for this header line
      */
-    public VCFHeaderLine(String key, String value) {
+    public VCFHeaderLine(final String key, final String value) {
+        final Optional<String> validationFailure = validateAttributeName(key, "header line key");
+        if (validationFailure.isPresent()) {
+            throw new TribbleException(validationFailure.get());
+        }
         mKey = key;
         mValue = value;
-        validate();
     }
 
     /**
@@ -86,15 +89,20 @@ public class VCFHeaderLine implements Comparable, Serializable {
     public String getID() { return null; }
 
     /**
-     * Validates this header line against {@code vcfTargetVersion}.
-     * Subclasses can override this to provide line type-specific version validation, and the
-     * overrides should also call super.getValidationFailure to allow each class in the class hierarchy
-     * to do class-level validation.
+     * Validates this header line against {@code vcfTargetVersion} and returns a {@link VCFValidationFailure}
+     * describing the reaon for the failure, if one exists. This method is used to report the reason for a
+     * version upgrade failure.
      *
+     * Subclasses can override this to provide line type-specific version validation. Overrides should
+     * call super.validateForVersion to allow each class in the  hierarchy to do class-level validation.
+     *
+     * @param vcfTargetVersion
      * @return Optional containing a {@link VCFValidationFailure} describing validation failure if this
      * line fails validation, otherwise Optional.empty().
      */
-    public Optional<VCFValidationFailure<VCFHeaderLine>> getValidationFailure(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<VCFValidationFailure<VCFHeaderLine>> validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+        ValidationUtils.nonNull(vcfTargetVersion);
+
         // If this header line is itself a fileformat/version line,
         // make sure it doesn't clash with the requested vcfTargetVersion.
         if (VCFHeaderVersion.isFormatString(getKey())) {
@@ -124,33 +132,42 @@ public class VCFHeaderLine implements Comparable, Serializable {
     }
 
     /**
-     * Validate that the header line conforms to {@code vcfTargetVersion.
-     * @param vcfTargetVersion
+     * Validate that the header line conforms to {@code vcfTargetVersion. throws if the line fails to
+     * validate for the target version.
+     *
+     * @param vcfTargetVersion the version agint which to validate the line
      * @throws {@link TribbleException.VersionValidationFailure} if this header line fails to conform
      */
-    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
-        final Optional<VCFValidationFailure<VCFHeaderLine>> error = getValidationFailure(vcfTargetVersion);
-        if (error.isPresent()) {
-            throw new TribbleException.VersionValidationFailure(error.get().getSourceMessage());
+    public void validateForVersionOrThrow(final VCFHeaderVersion vcfTargetVersion) {
+        ValidationUtils.nonNull(vcfTargetVersion);
+        final Optional<VCFValidationFailure<VCFHeaderLine>> versionValidationFailure = validateForVersion(vcfTargetVersion);
+        if (versionValidationFailure.isPresent()) {
+            throw new TribbleException.VersionValidationFailure(versionValidationFailure.get().getSourceMessage());
         }
     }
 
     /**
-     * Validate a string that is to be used as a unique id or key field.
+     * Validate a string that is to be used as a unique id or key field, and return an Optional String describing
+     * the validation failure.
+     *
+     * @param targetString the string to validate
+     * @param targetContext the context for which the {@code targetString} is used. Used when reporting validation
+     *                      failures. May not be null.
+     * @return an Optional String containing an error message
      */
-    protected static void validateKeyOrID(final String keyString, final String sourceName) {
-        ValidationUtils.nonNull(sourceName);
-        if (keyString == null) {
-            throw new TribbleException(
-                    String.format("VCFHeaderLine: %s cannot be null or empty", sourceName));
-        }
-        if ( keyString.contains("<") || keyString.contains(">") ) {
-            throw new TribbleException(
-                    String.format("VCFHeaderLine: %s cannot contain angle brackets", sourceName));
-        }
-        if ( keyString.contains("=") ) {
-            throw new TribbleException(
-                    String.format("VCFHeaderLine: %s cannot contain an equals sign", sourceName));
+    protected static Optional<String> validateAttributeName(final String targetString, final String targetContext) {
+        ValidationUtils.nonNull(targetContext);
+
+        if (targetString == null) {
+            return Optional.of(String.format("VCFHeaderLine: %s is null", targetContext));
+        } else if (targetString.length() < 1) {
+            return Optional.of(String.format("VCFHeaderLine: %s has zero length", targetContext));
+        } else if ( targetString.contains("<") || targetString.contains(">") ) {
+            return Optional.of(String.format("VCFHeaderLine: angle brackets not allowed in \"%s\" value", targetContext));
+        } else if ( targetString.contains("=") ) {
+            return Optional.of(String.format("VCFHeaderLine: equals sign not allowed in %s value \"%s\"", targetContext, targetString));
+        } else {
+            return Optional.empty();
         }
     }
 
@@ -237,13 +254,6 @@ public class VCFHeaderLine implements Comparable, Serializable {
         }
         builder.append('>');
         return builder.toString();
-    }
-
-    /**
-     * Validate the state of this header line. Require the key be valid as an "id".
-     */
-    private void validate() {
-        validateKeyOrID(mKey, "key");
     }
 
     private static String escapeQuotes(final String value) {

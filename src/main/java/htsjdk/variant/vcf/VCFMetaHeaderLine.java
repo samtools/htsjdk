@@ -15,7 +15,7 @@ public class VCFMetaHeaderLine extends VCFSimpleHeaderLine {
         // other tags. So let validateForVersion detect any version incompatibility, ie., if this is ever
         // called with a V3 version.
         super(VCFConstants.META_HEADER_KEY, new VCF4Parser().parseLine(line, expectedTagOrder));
-        validateForVersion(version);
+        validateForVersionOrThrow(version);
     }
 
     public VCFMetaHeaderLine(final Map<String, String> mapping) {
@@ -23,7 +23,7 @@ public class VCFMetaHeaderLine extends VCFSimpleHeaderLine {
     }
 
     @Override
-    public Optional<VCFValidationFailure<VCFHeaderLine>> getValidationFailure(final VCFHeaderVersion vcfTargetVersion) {
+    public Optional<VCFValidationFailure<VCFHeaderLine>> validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
         if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             return Optional.of(
                     new VCFValidationFailure<>(
@@ -35,7 +35,7 @@ public class VCFMetaHeaderLine extends VCFSimpleHeaderLine {
                 )));
         }
 
-        return super.getValidationFailure(vcfTargetVersion);
+        return super.validateForVersion(vcfTargetVersion);
     }
 
 }

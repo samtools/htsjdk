@@ -29,11 +29,7 @@ import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.utils.ValidationUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -75,8 +71,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
      */
     public VCFSimpleHeaderLine(final String key, final String line, final VCFHeaderVersion version) {
         this(key, VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrder));
-        validate();
-        validateForVersion(version);
+        validateForVersionOrThrow(version);
     }
 
     /**
@@ -87,10 +82,10 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
      * @param description string that will be added as a "Description" tag to this line
      */
     public VCFSimpleHeaderLine(final String key, final String id, final String description) {
-        super(key, "");
-        genericFields.put(ID_ATTRIBUTE, id);
-        genericFields.put(DESCRIPTION_ATTRIBUTE, description);
-        validate();
+        this(key, new LinkedHashMap<String, String>() {{
+            put(ID_ATTRIBUTE, id);
+            put(DESCRIPTION_ATTRIBUTE, description);
+        }});
     }
 
     /**
@@ -105,9 +100,18 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
      */
     public VCFSimpleHeaderLine(final String key, final Map<String, String> attributeMapping) {
         super(key, "");
+
         ValidationUtils.nonNull(attributeMapping, "An attribute map is required for structured header lines");
         genericFields.putAll(attributeMapping);
-        validate();
+
+        if ( genericFields.isEmpty() || !genericFields.keySet().stream().findFirst().get().equals(ID_ATTRIBUTE)) {
+            throw new TribbleException(
+                    String.format("The required ID tag is missing or not the first attribute: key=%s", super.getKey()));
+        }
+        final Optional<String> validationFailure = validateAttributeName(getGenericFieldValue(ID_ATTRIBUTE), "ID");
+        if (validationFailure.isPresent()) {
+            throw new TribbleException(validationFailure.get());
+        }
     }
 
     /**
@@ -199,14 +203,6 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
         return attributeName.equals(DESCRIPTION_ATTRIBUTE) ||
                 attributeName.equals(SOURCE_ATTRIBUTE) ||
                 attributeName.equals(VERSION_ATTRIBUTE);
-    }
-
-    private void validate() {
-        if ( genericFields.isEmpty() || !genericFields.keySet().stream().findFirst().get().equals(ID_ATTRIBUTE)) {
-            throw new TribbleException(
-                    String.format("The required ID tag is missing or not the first attribute: key=%s", super.getKey()));
-        }
-        validateKeyOrID(getGenericFieldValue(ID_ATTRIBUTE), "ID");
     }
 
     // Add quotes around any attribute value that contains a space or comma, or is supposed to be quoted by
