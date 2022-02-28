@@ -48,11 +48,6 @@ import java.util.regex.Pattern;
 public class VCFUtils {
 
     private static final Pattern INF_OR_NAN_PATTERN = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
-    private static final boolean DEFAULT_VCF_STRICT_VERSION_VALIDATION = true;
-
-    // a global mutable static - is there an alternative ?
-    // there isn't any other reasonable place to keep this state
-    private static boolean vcfStrictVersionValidation = true;
 
     /**
      * Determine if strict VCF version validation is enabled. Defaults to true. Strict version validation
