@@ -9,7 +9,7 @@ import htsjdk.utils.ValidationUtils;
  */
 public class HtsVersion implements Comparable<HtsVersion> {
     /** Sentinel constant to match any version */
-    public static int ANY_VERSION = -1;
+    public static final int ANY_VERSION = -1;
     /** Sentinel constant used to indicate the newest version available */
     public static final HtsVersion NEWEST_VERSION = new HtsVersion(ANY_VERSION, ANY_VERSION, ANY_VERSION);
 
