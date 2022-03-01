@@ -32,10 +32,10 @@ final class D04 {
             rans2 = syms[0xFF & c2].advanceSymbolStep(rans2, Constants.TF_SHIFT);
             rans3 = syms[0xFF & c3].advanceSymbolStep(rans3,  Constants.TF_SHIFT);
 
-            rans0 = Utils.RANSDecodeRenormalize(rans0, inBuffer);
-            rans1 = Utils.RANSDecodeRenormalize(rans1, inBuffer);
-            rans2 = Utils.RANSDecodeRenormalize(rans2, inBuffer);
-            rans3 = Utils.RANSDecodeRenormalize(rans3, inBuffer);
+            rans0 = Utils.RANSDecodeRenormalize4x8(rans0, inBuffer);
+            rans1 = Utils.RANSDecodeRenormalize4x8(rans1, inBuffer);
+            rans2 = Utils.RANSDecodeRenormalize4x8(rans2, inBuffer);
+            rans3 = Utils.RANSDecodeRenormalize4x8(rans3, inBuffer);
         }
 
         outBuffer.position(out_end);

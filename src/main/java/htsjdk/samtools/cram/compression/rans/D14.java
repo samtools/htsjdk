@@ -42,10 +42,10 @@ final class D14 {
             rans2 = syms[l2][c2].advanceSymbolStep(rans2, Constants.TF_SHIFT);
             rans7 = syms[l7][c7].advanceSymbolStep(rans7,  Constants.TF_SHIFT);
 
-            rans0 = Utils.RANSDecodeRenormalize(rans0, inBuffer);
-            rans1 = Utils.RANSDecodeRenormalize(rans1, inBuffer);
-            rans2 = Utils.RANSDecodeRenormalize(rans2, inBuffer);
-            rans7 = Utils.RANSDecodeRenormalize(rans7, inBuffer);
+            rans0 = Utils.RANSDecodeRenormalize4x8(rans0, inBuffer);
+            rans1 = Utils.RANSDecodeRenormalize4x8(rans1, inBuffer);
+            rans2 = Utils.RANSDecodeRenormalize4x8(rans2, inBuffer);
+            rans7 = Utils.RANSDecodeRenormalize4x8(rans7, inBuffer);
 
             l0 = c0;
             l1 = c1;
