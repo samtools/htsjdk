@@ -47,15 +47,15 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         outBuffer.position(PREFIX_BYTE_LENGTH); // start of frequency table
 
         // get the normalised frequencies of the alphabets
-        final int[] F = Frequencies4x8.calcFrequenciesOrder0(inBuffer);
+        final int[] F = calcFrequenciesOrder0(inBuffer);
 
         // using the normalised frequencies, set the RANSEncodingSymbols
-        Frequencies4x8.buildSymsOrder0(F, getEncodingSymbols()[0]);
+        buildSymsOrder0(F, getEncodingSymbols()[0]);
 
         final ByteBuffer cp = outBuffer.slice();
 
         // write Frequency table
-        final int frequencyTableSize = Frequencies4x8.writeFrequenciesOrder0(cp, F);
+        final int frequencyTableSize = writeFrequenciesOrder0(cp, F);
 
         inBuffer.rewind();
         final int compressedBlobSize = E04.compress(inBuffer, getEncodingSymbols()[0], cp);
@@ -73,13 +73,13 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         outBuffer.position(PREFIX_BYTE_LENGTH);
 
         // get normalized frequencies
-        final int[][] F = Frequencies4x8.calcFrequenciesOrder1(inBuffer);
+        final int[][] F = calcFrequenciesOrder1(inBuffer);
 
         // using the normalised frequencies, set the RANSEncodingSymbols
-        Frequencies4x8.buildSymsOrder1(F, getEncodingSymbols());
+        buildSymsOrder1(F, getEncodingSymbols());
 
         final ByteBuffer cp = outBuffer.slice();
-        final int frequencyTableSize = Frequencies4x8.writeFrequenciesOrder1(cp, F);
+        final int frequencyTableSize = writeFrequenciesOrder1(cp, F);
 
         inBuffer.rewind();
         final int compressedBlobSize = E14.compress(inBuffer, getEncodingSymbols(), cp);
@@ -107,6 +107,250 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         // move past the compressed size and write the uncompressed size
         outBuffer.putInt(ORDER_BYTE_LENGTH + COMPRESSED_BYTE_LENGTH, inSize);
         outBuffer.rewind();
+    }
+
+    private static int[] calcFrequenciesOrder0(final ByteBuffer inBuffer) {
+        final int inSize = inBuffer.remaining();
+
+        // Compute statistics
+        // T = total of true counts
+        // F = scaled integer frequencies
+        // M = sum(fs)
+        final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
+        int T = 0; //// T is the total number of symbols in the input
+        for (int i = 0; i < inSize; i++) {
+            F[0xFF & inBuffer.get()]++;
+            T++;
+        }
+        final long tr = ((long) Constants.TOTFREQ << 31) / T + (1 << 30) / T;
+
+        // Normalise so T[i] == TOTFREQ
+        // m is the maximum frequency value
+        // M is the symbol that has the maximum frequency
+        int m = 0;
+        int M = 0;
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            if (m < F[j]) {
+                m = F[j];
+                M = j;
+            }
+        }
+
+        int fsum = 0;
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            if (F[j] == 0) {
+                continue;
+            }
+            // using tr to normalize symbol frequencies such that their total = (1<<12) = 4096
+            if ((F[j] = (int) ((F[j] * tr) >> 31)) == 0) {
+                // make sure that a non-zero symbol frequency is not incorrectly set to 0.
+                // Change it to 1 if the calculated value is 0.
+                F[j] = 1;
+            }
+            fsum += F[j];
+        }
+
+        fsum++;
+        // adjust the frequency of the symbol with maximum frequency to make sure that
+        // the sum of frequencies of all the symbols = 4096
+        if (fsum < Constants.TOTFREQ) {
+            F[M] += Constants.TOTFREQ - fsum;
+        } else {
+            F[M] -= fsum - Constants.TOTFREQ;
+        }
+        assert (F[M] > 0);
+        return F;
+    }
+
+    private static int[][] calcFrequenciesOrder1(final ByteBuffer in) {
+        final int in_size = in.remaining();
+
+        final int[][] F = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
+        final int[] T = new int[Constants.NUMBER_OF_SYMBOLS];
+        int c;
+
+        int last_i = 0;
+        for (int i = 0; i < in_size; i++) {
+            F[last_i][c = (0xFF & in.get())]++;
+            T[last_i]++;
+            last_i = c;
+        }
+        F[0][0xFF & in.get((in_size >> 2))]++;
+        F[0][0xFF & in.get(2 * (in_size >> 2))]++;
+        F[0][0xFF & in.get(3 * (in_size >> 2))]++;
+        T[0] += 3;
+
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            if (T[i] == 0) {
+                continue;
+            }
+
+            final double p = ((double) Constants.TOTFREQ) / T[i];
+            int t2 = 0, m = 0, M = 0;
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                if (F[i][j] == 0)
+                    continue;
+
+                if (m < F[i][j]) {
+                    m = F[i][j];
+                    M = j;
+                }
+
+                if ((F[i][j] *= p) == 0)
+                    F[i][j] = 1;
+                t2 += F[i][j];
+            }
+
+            t2++;
+            if (t2 < Constants.TOTFREQ) {
+                F[i][M] += Constants.TOTFREQ - t2;
+            } else {
+                F[i][M] -= t2 - Constants.TOTFREQ;
+            }
+        }
+
+        return F;
+    }
+
+    private static RANSEncodingSymbol[] buildSymsOrder0(final int[] F, final RANSEncodingSymbol[] syms) {
+        final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
+
+        // T = running sum of frequencies including the current symbol
+        // F[j] = frequency of symbol "j"
+        // C[j] = cumulative frequency of all the symbols preceding "j" (and excluding the frequency of symbol "j")
+        int T = 0;
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            C[j] = T;
+            T += F[j];
+            if (F[j] != 0) {
+                //For each symbol, set start = cumulative frequency and freq = frequency
+                syms[j].set(C[j], F[j], Constants.TF_SHIFT);
+            }
+        }
+        return syms;
+    }
+
+    private static RANSEncodingSymbol[][] buildSymsOrder1(final int[][] F, final RANSEncodingSymbol[][] syms) {
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            final int[] F_i_ = F[i];
+            int x = 0;
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                if (F_i_[j] != 0) {
+                    syms[i][j].set(x, F_i_[j], Constants.TF_SHIFT);
+                    x += F_i_[j];
+                }
+            }
+        }
+
+        return syms;
+    }
+
+    private static int writeFrequenciesOrder0(final ByteBuffer cp, final int[] F) {
+        final int start = cp.position();
+
+        int rle = 0;
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            if (F[j] != 0) {
+                // j
+                if (rle != 0) {
+                    rle--;
+                } else {
+                    // write the symbol if it is the first symbol or if rle = 0.
+                    // if rle != 0, then skip writing the symbol.
+                    cp.put((byte) j);
+                    // We've encoded two symbol frequencies in a row.
+                    // How many more are there?  Store that count so
+                    // we can avoid writing consecutive symbols.
+                    // Note: maximum possible rle = 254
+                    // rle requires atmost 1 byte
+                    if (rle == 0 && j != 0 && F[j - 1] != 0) {
+                        for (rle = j + 1; rle < 256 && F[rle] != 0; rle++)
+                            ;
+                        rle -= j + 1;
+                        cp.put((byte) rle);
+                    }
+                }
+
+                // F[j]
+                if (F[j] < 128) {
+                    cp.put((byte) (F[j]));
+                } else {
+                    // if F[j] >127, it is written in 2 bytes
+                    cp.put((byte) (128 | (F[j] >> 8)));
+                    cp.put((byte) (F[j] & 0xff));
+                }
+            }
+        }
+
+        // write 0 indicating the end of frequency table
+        cp.put((byte) 0);
+        return cp.position() - start;
+    }
+
+    private static int writeFrequenciesOrder1(final ByteBuffer cp, final int[][] F) {
+        final int start = cp.position();
+        final int[] T = new int[Constants.NUMBER_OF_SYMBOLS];
+
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                T[i] += F[i][j];
+            }
+        }
+
+        int rle_i = 0;
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            if (T[i] == 0) {
+                continue;
+            }
+
+            // Store frequency table
+            // i
+            if (rle_i != 0) {
+                rle_i--;
+            } else {
+                cp.put((byte) i);
+                // FIXME: could use order-0 statistics to observe which alphabet
+                // symbols are present and base RLE on that ordering instead.
+                if (i != 0 && T[i - 1] != 0) {
+                    for (rle_i = i + 1; rle_i < 256 && T[rle_i] != 0; rle_i++)
+                        ;
+                    rle_i -= i + 1;
+                    cp.put((byte) rle_i);
+                }
+            }
+
+            final int[] F_i_ = F[i];
+            int rle_j = 0;
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                if (F_i_[j] != 0) {
+
+                    // j
+                    if (rle_j != 0) {
+                        rle_j--;
+                    } else {
+                        cp.put((byte) j);
+                        if (rle_j == 0 && j != 0 && F_i_[j - 1] != 0) {
+                            for (rle_j = j + 1; rle_j < 256 && F_i_[rle_j] != 0; rle_j++)
+                                ;
+                            rle_j -= j + 1;
+                            cp.put((byte) rle_j);
+                        }
+                    }
+
+                    // F_i_[j]
+                    if (F_i_[j] < 128) {
+                        cp.put((byte) F_i_[j]);
+                    } else {
+                        cp.put((byte) (128 | (F_i_[j] >> 8)));
+                        cp.put((byte) (F_i_[j] & 0xff));
+                    }
+                }
+            }
+            cp.put((byte) 0);
+        }
+        cp.put((byte) 0);
+
+        return cp.position() - start;
     }
 
 }
