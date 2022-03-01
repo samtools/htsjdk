@@ -107,7 +107,7 @@ public class VCFHeaderMergerUnitTest extends VariantBaseTest {
         doHeaderMergeForVersions(headerVersions);
     }
 
-    @Test(expectedExceptions = TribbleException.class)
+    @Test(expectedExceptions = TribbleException.VersionValidationFailure.class)
     public void testMergeWithValidationFailure() {
         // test mixing header versions where the old version header has a line that fails validation
         // using the resulting (newer) version

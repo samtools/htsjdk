@@ -662,8 +662,12 @@ public class VCFHeader implements HtsHeader, Serializable {
                     newHeader.addMetaDataLine(VCFHeader.makeHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
                     return newHeader;
                 } else {
-                    logger.info("Header will be kept at original version: " + this.getVCFHeaderVersion()
-                        + VCFValidationFailure.createVersionTransitionErrorMessage(errors, this.getVCFHeaderVersion())
+                    logger.info("Header will be kept at original version: ",
+                            this.getVCFHeaderVersion(),
+                            VCFValidationFailure.createVersionTransitionErrorMessage(
+                                    errors,
+                                    "Upgrading to: " + this.getVCFHeaderVersion().getVersionString(),
+                                    VCFHeader.DEFAULT_VCF_VERSION)
                     );
                     return this;
                 }

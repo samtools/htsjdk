@@ -66,22 +66,27 @@ class VCFValidationFailure<T> {
     /**
      * Create a formatted error message for a collection of version transition errors.
      * @param errors the errors to format
-     * @param originalVersion the original version of the VCF object before the attempted transition
+     * @param contextMessage a String describing the context in which the upgrade failed (for error reporting)
+     * @param targetVersion the target version for which errors are reported
      * @param <T> the type of the {@link VCFValidationFailure}
      * @return formatted string
      */
     public static <T> String createVersionTransitionErrorMessage(
         final Collection<VCFValidationFailure<T>> errors,
-        final VCFHeaderVersion originalVersion
+        final String contextMessage,
+        final VCFHeaderVersion targetVersion
     ) {
         return String.format(
-            "Version transition from VCF version %s to %s failed with validation error(s):\n%s%s",
-            originalVersion.getVersionString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString(),
-            errors.stream()
-                .limit(5)
-                .map(VCFValidationFailure::getSourceMessage)
-                .collect(Collectors.joining("\n")),
-            errors.size() > 5 ? "\n+ " + (errors.size() - 5) + " additional error(s)" : ""
+            "Version transition for \"%s\" with target VCF header version \"%s\" failed with validation error(s):\n%s%s\n",
+                contextMessage,
+                targetVersion.getVersionString(),
+                errors.stream()
+                    .limit(5)
+                    .map(VCFValidationFailure::getSourceMessage)
+                    .collect(Collectors.joining("\n")),
+                errors.size() > 5 ?
+                        "\n+ " + (errors.size() - 5) + " additional error(s)" :
+                        ""
         );
     }
 

@@ -123,12 +123,22 @@ public class VCFHeaderMerger {
             final SAMSequenceDictionary commonSequenceDictionary,
             final HeaderMergeConflictWarnings conflictWarner) {
 
-        if (conflictWarner.emitWarnings) {
-            //TODO: any header contains a line that fails version validation, then the merge should fail...just like
-            // a version upgrade would fail for that same header. We can't honor the fallback policy i.e., fallback to
-            // the old version) here because that would require knowing how to back-version the OTHER headers being merged
-            mergedMetaData.getVersionValidationFailures(newestVersion)
-                    .forEach(validationError -> conflictWarner.warn(validationError.getFailureMessage()));
+        final Collection<VCFValidationFailure<VCFHeaderLine>> vcfValidationFailures =
+                mergedMetaData.getVersionValidationFailures(newestVersion);
+        if (!vcfValidationFailures.isEmpty()) {
+            // if any header contains a line that fails version validation against the target version (the newest
+            // version amongst all headers in the merge group), the merge should fail just like a version upgrade
+            // would fail for that same header. We can't honor the fallback policy here, i.e., fallback to an older
+            // version, because that would require knowing how to back-version the headers in the merge group that
+            // already have the target version.
+            final String userMessage = VCFValidationFailure.createVersionTransitionErrorMessage(
+                    vcfValidationFailures,
+                    "merging multiple headers",
+                    newestVersion);
+            if (conflictWarner.emitWarnings) {
+                conflictWarner.warn(userMessage);
+            }
+            throw new TribbleException.VersionValidationFailure(userMessage);
         }
 
         final Set<VCFHeaderLine> mergedLines = VCFHeader.makeHeaderVersionLineSet(newestVersion);
