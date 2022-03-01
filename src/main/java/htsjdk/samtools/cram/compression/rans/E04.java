@@ -10,10 +10,10 @@ final class E04 {
         int rans0, rans1, rans2, rans3;
         final ByteBuffer ptr = cp.slice();
 
-        rans0 = Constants.RANS_BYTE_L;
-        rans1 = Constants.RANS_BYTE_L;
-        rans2 = Constants.RANS_BYTE_L;
-        rans3 = Constants.RANS_BYTE_L;
+        rans0 = Constants.RANS_BYTE_L_4x8;
+        rans1 = Constants.RANS_BYTE_L_4x8;
+        rans2 = Constants.RANS_BYTE_L_4x8;
+        rans3 = Constants.RANS_BYTE_L_4x8;
 
         int i;
         switch (i = (in_size & 3)) {

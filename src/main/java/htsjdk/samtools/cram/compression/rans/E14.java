@@ -9,10 +9,10 @@ final class E14 {
         final int in_size = inBuffer.remaining();
         final int compressedBlobSize;
         int rans0, rans1, rans2, rans3;
-        rans0 = Constants.RANS_BYTE_L;
-        rans1 = Constants.RANS_BYTE_L;
-        rans2 = Constants.RANS_BYTE_L;
-        rans3 = Constants.RANS_BYTE_L;
+        rans0 = Constants.RANS_BYTE_L_4x8;
+        rans1 = Constants.RANS_BYTE_L_4x8;
+        rans2 = Constants.RANS_BYTE_L_4x8;
+        rans3 = Constants.RANS_BYTE_L_4x8;
 
 		/*
          * Slicing is needed for buffer reversing later.

@@ -27,7 +27,7 @@ package htsjdk.samtools.cram.compression.rans;
 final class ArithmeticDecoder {
     final FC[] fc = new FC[256];
 
-    // reverse lookup table ?
+    // reverse lookup table
     byte[] R = new byte[Constants.TOTFREQ];
 
     public ArithmeticDecoder() {

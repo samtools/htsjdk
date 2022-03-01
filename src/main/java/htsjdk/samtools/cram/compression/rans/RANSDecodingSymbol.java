@@ -60,11 +60,28 @@ final class RANSDecodingSymbol {
         r = freq * (r >> scaleBits) + (r & mask) - start;
 
         // re-normalize
-        if (r < Constants.RANS_BYTE_L) {
+        if (r < Constants.RANS_BYTE_L_4x8) {
             do {
                 final int b = 0xFF & byteBuffer.get();
                 r = (r << 8) | b;
-            } while (r < Constants.RANS_BYTE_L);
+            } while (r < Constants.RANS_BYTE_L_4x8);
+        }
+
+        return r;
+    }
+
+    public int advanceSymbolNx16(final int rIn, final ByteBuffer byteBuffer, final int scaleBits) {
+        final int mask = (1 << scaleBits) - 1;
+
+        // s, x = D(x)
+        int r = rIn;
+        r = freq * (r >> scaleBits) + (r & mask) - start;
+
+        // re-normalize
+        if (r < (Constants.RANS_BYTE_L_Nx16)){
+            int i = 0xFF & byteBuffer.get();
+            i |= (0xFF & byteBuffer.get())<<8;
+            r = (r << 16) + i;
         }
 
         return r;
