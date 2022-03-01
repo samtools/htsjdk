@@ -57,7 +57,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params>{
 
     private ByteBuffer compressOrder0WayN(final ByteBuffer inBuffer, final int Nway, final ByteBuffer outBuffer) {
         final int inSize = inBuffer.remaining();
-        final int[] F = FrequenciesNx16.buildFrequenciesOrder0(inBuffer);
+        final int[] F = buildFrequenciesOrder0(inBuffer);
         final ByteBuffer cp = outBuffer.slice();
         int bitSize = (int) Math.ceil(Math.log(inSize) / Math.log(2));
         if (bitSize == 0) {
@@ -71,21 +71,107 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params>{
         final int prefix_size = outBuffer.position();
 
         // Normalize Frequencies such that sum of Frequencies = 1 << bitsize
-        FrequenciesNx16.normaliseFrequenciesOrder0(F, bitSize);
+        FrequencyUtils.normaliseFrequenciesOrder0(F, bitSize);
 
         // Write the Frequency table. Keep track of the size for later
-        final int frequencyTableSize = FrequenciesNx16.writeFrequenciesOrder0(cp, F);
+        final int frequencyTableSize = writeFrequenciesOrder0(cp, F);
 
         // Normalize Frequencies such that sum of Frequencies = 1 << 12
-        FrequenciesNx16.normaliseFrequenciesOrder0(F, 12);
+        FrequencyUtils.normaliseFrequenciesOrder0(F, 12);
 
         // update the RANS Encoding Symbols
-        FrequenciesNx16.buildSymsOrder0(F, getEncodingSymbols()[0]);
+        buildSymsOrder0(F, getEncodingSymbols()[0]);
         inBuffer.rewind();
         final int compressedBlobSize = E0N.compress(inBuffer, getEncodingSymbols()[0], cp, Nway);
         outBuffer.rewind(); // set position to 0
         outBuffer.limit(prefix_size + frequencyTableSize + compressedBlobSize);
         return outBuffer;
+    }
+
+    private static int[] buildFrequenciesOrder0(final ByteBuffer inBuffer) {
+        // Returns an array of raw symbol frequencies
+        final int inSize = inBuffer.remaining();
+        final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
+        for (int i = 0; i < inSize; i++) {
+            F[0xFF & inBuffer.get()]++;
+        }
+        return F;
+    }
+
+    private static int writeFrequenciesOrder0(final ByteBuffer cp, final int[] F) {
+        // Order 0 frequencies store the complete alphabet of observed
+        // symbols using run length encoding, followed by a table of frequencies
+        // for each symbol in the alphabet.
+        final int start = cp.position();
+
+        // write the alphabet first and then their frequencies
+        writeAlphabet(cp,F);
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            if (F[j] != 0) {
+                if (F[j] < 128) {
+                    cp.put((byte) (F[j] & 0x7f));
+                } else {
+
+                    // if F[j] >127, it is written in 2 bytes
+                    // right shift by 7 and get the most Significant Bits.
+                    // Set the Most Significant Bit of the first byte to 1 indicating that the frequency comprises of 2 bytes
+                    cp.put((byte) (128 | (F[j] >> 7)));
+                    cp.put((byte) (F[j] & 0x7f)); //Least Significant 7 Bits
+                }
+            }
+        }
+        return cp.position() - start;
+    }
+
+    private static void writeAlphabet(final ByteBuffer cp, final int[] F) {
+        // Uses Run Length Encoding to write all the symbols whose frequency!=0
+        int rle = 0;
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            if (F[j] != 0) {
+                if (rle != 0) {
+                    rle--;
+                } else {
+
+                    // write the symbol if it is the first symbol or if rle = 0.
+                    // if rle != 0, then skip writing the symbol.
+                    cp.put((byte) j);
+
+                    // We've encoded two symbol frequencies in a row.
+                    // How many more are there?  Store that count so
+                    // we can avoid writing consecutive symbols.
+                    // Note: maximum possible rle = 254
+                    // rle requires atmost 1 byte
+                    if (rle == 0 && j != 0 && F[j - 1] != 0) {
+                        for (rle = j + 1; rle < Constants.NUMBER_OF_SYMBOLS && F[rle] != 0; rle++);
+                        rle -= j + 1;
+                        cp.put((byte) rle);
+                    }
+                }
+            }
+        }
+
+        // write 0 indicating the end of alphabet
+        cp.put((byte) 0);
+    }
+
+    private static RANSEncodingSymbol[] buildSymsOrder0(final int[] F, final RANSEncodingSymbol[] syms) {
+        // updates the RANSEncodingSymbol array for all the symbols
+        final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
+
+        // T = running sum of frequencies including the current symbol
+        // F[j] = frequency of symbol "j"
+        // C[j] = cumulative frequency of all the symbols preceding "j" (excluding the frequency of symbol "j")
+        int T = 0;
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            C[j] = T;
+            T += F[j];
+            if (F[j] != 0) {
+
+                //For each symbol, set start = cumulative frequency and freq = frequency
+                syms[j].set(C[j], F[j], Constants.TF_SHIFT);
+            }
+        }
+        return syms;
     }
 
 }
