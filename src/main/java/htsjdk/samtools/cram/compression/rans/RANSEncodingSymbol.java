@@ -40,10 +40,10 @@ final class RANSEncodingSymbol {
     }
 
     public void set(final int start, final int freq, final int scaleBits) {
-        // RansAssert(scale_bits <= 16); RansAssert(start <= (1u <<
-        // scale_bits)); RansAssert(freq <= (1u << scale_bits) - start);
 
-        xMax = ((Constants.RANS_BYTE_L >> scaleBits) << 8) * freq;
+        // Rans4x8: xMax = ((Constants.RANS_BYTE_L_4x8 >> scaleBits) << 8) * freq = (1<< 31-scaleBits) * freq
+        // RansNx16: xMax = ((Constants.RANS_BYTE_L_Nx16 >> scaleBits) << 16) * freq = (1<< 31-scaleBits) * freq
+        xMax = (1<< (31-scaleBits)) * freq;
         cmplFreq = (1 << scaleBits) - freq;
         if (freq < 2) {
             rcpFreq = (int) ~0L;
@@ -56,7 +56,6 @@ final class RANSEncodingSymbol {
             while (freq > (1L << shift)) {
                 shift++;
             }
-
             rcpFreq = (int) (((1L << (shift + 31)) + freq - 1) / freq);
             rcpShift = shift - 1;
 
@@ -64,7 +63,6 @@ final class RANSEncodingSymbol {
             // have bias=start.
             bias = start;
         }
-
         rcpShift += 32; // Avoid the extra >>32 in RansEncPutSymbol
     }
 
@@ -79,6 +77,34 @@ final class RANSEncodingSymbol {
             if (x >= xMax) {
                 byteBuffer.put((byte) (x & 0xFF));
                 x >>= 8;
+            }
+        }
+
+        // x = C(s,x)
+        // NOTE: written this way so we get a 32-bit "multiply high" when
+        // available. If you're on a 64-bit platform with cheap multiplies
+        // (e.g. x64), just bake the +32 into rcp_shift.
+        // int q = (int) (((uint64_t)x * sym.rcp_freq) >> 32) >> sym.rcp_shift;
+
+        // The extra >>32 has already been added to RansEncSymbolInit
+        final long q = ((x * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
+        r = (int) (x + bias + q * cmplFreq);
+        return r;
+    }
+
+    public int putSymbolNx16(int r, final ByteBuffer byteBuffer) {
+        ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
+
+        // re-normalize
+        int x = r;
+        if (x >= xMax) {
+            byteBuffer.put((byte) ((x>>8) & 0xFF)); // extra line - 1 more byte
+            byteBuffer.put((byte) (x & 0xFF));
+            x >>=16;
+            if (x >= xMax) {
+                byteBuffer.put((byte) ((x>>8) & 0xFF)); // extra line - 1 more byte
+                byteBuffer.put((byte) (x & 0xFF));
+                x >>=16;
             }
         }
 
