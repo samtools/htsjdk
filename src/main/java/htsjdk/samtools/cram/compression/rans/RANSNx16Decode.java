@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.compression.rans;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 public class RANSNx16Decode extends RANSDecode<RANSNx16Params>{
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
@@ -60,10 +61,69 @@ public class RANSNx16Decode extends RANSDecode<RANSNx16Params>{
 
     private ByteBuffer uncompressOrder0WayN(final ByteBuffer inBuffer, final ByteBuffer outBuffer,final int n_out,final int Nway) {
         // read the frequency table, get the normalised frequencies and use it to set the RANSDecodingSymbols
-        FrequenciesNx16.readStatsOrder0(inBuffer, getD()[0], getDecodingSymbols()[0]);
+        readStatsOrder0(inBuffer, getD()[0], getDecodingSymbols()[0]);
         // uncompress using Nway rans states
         D0N.uncompress(inBuffer, getD()[0], getDecodingSymbols()[0], outBuffer,n_out,Nway);
         return outBuffer;
+    }
+
+    private static void readStatsOrder0(
+            final ByteBuffer cp,
+            ArithmeticDecoder decoder,
+            RANSDecodingSymbol[] decodingSymbols) {
+        // Use the Frequency table to set the values of F, C and R
+        final int[] A = readAlphabet(cp);
+        int x = 0;
+        final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
+
+        // read F, normalise F then calculate C and R
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            if (A[j] > 0) {
+                if ((F[j] = (cp.get() & 0xFF)) >= 128){
+                    F[j] &= ~128;
+                    F[j] = (( F[j] &0x7f) << 7) | (cp.get() & 0x7F);
+                }
+            }
+        }
+        FrequencyUtils.normaliseFrequenciesOrder0(F,12);
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            if(A[j]>0){
+
+                // decoder.fc[j].F -> Frequency
+                // decoder.fc[j].C -> Cumulative Frequency preceding the current symbol
+                decoder.fc[j].F = F[j];
+                decoder.fc[j].C = x;
+                decodingSymbols[j].set(decoder.fc[j].C, decoder.fc[j].F);
+
+                // R -> Reverse Lookup table
+                Arrays.fill(decoder.R, x, x + decoder.fc[j].F, (byte) j);
+                x += decoder.fc[j].F;
+            }
+        }
+    }
+
+    private static int[] readAlphabet(final ByteBuffer cp){
+        // gets the list of alphabets whose frequency!=0
+        final int[] A = new int[Constants.NUMBER_OF_SYMBOLS];
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            A[i]=0;
+        }
+        int rle = 0;
+        int sym = cp.get() & 0xFF;
+        int last_sym = sym;
+        do {
+            A[sym] = 1;
+            if (rle!=0) {
+                rle--;
+                sym++;
+            } else {
+                sym = cp.get() & 0xFF;
+                if (sym == last_sym+1)
+                    rle = cp.get() & 0xFF;
+            }
+            last_sym = sym;
+        } while (sym != 0);
+        return A;
     }
 
 }
