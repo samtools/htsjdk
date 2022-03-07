@@ -24,10 +24,10 @@
  */
 package htsjdk.samtools.cram.compression;
 
-import htsjdk.samtools.cram.compression.rans.RANS4x8Decode;
-import htsjdk.samtools.cram.compression.rans.RANS4x8Encode;
-import htsjdk.samtools.cram.compression.rans.RANS4x8Params;
 import htsjdk.samtools.cram.compression.rans.RANSParams;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.nio.ByteBuffer;

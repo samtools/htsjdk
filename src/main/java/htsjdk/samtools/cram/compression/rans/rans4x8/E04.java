@@ -1,4 +1,8 @@
-package htsjdk.samtools.cram.compression.rans;
+package htsjdk.samtools.cram.compression.rans.rans4x8;
+
+import htsjdk.samtools.cram.compression.rans.Constants;
+import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
+import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
 

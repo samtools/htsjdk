@@ -1,6 +1,8 @@
-package htsjdk.samtools.cram.compression.rans;
+package htsjdk.samtools.cram.compression.rans.ransnx16;
 
-public class RANSNx16Params implements RANSParams{
+import htsjdk.samtools.cram.compression.rans.RANSParams;
+
+public class RANSNx16Params implements RANSParams {
 
     // format is the first byte of the compressed data stream,
     // which consists of all the bit-flags detailing the type of transformations
@@ -27,12 +29,17 @@ public class RANSNx16Params implements RANSParams{
     }
 
     @Override
+    public String toString() {
+        return "RANSNx16Params{" + "formatFlags=" + formatFlags + "}";
+    }
+
+    @Override
     public ORDER getOrder() {
         // Rans Order ZERO or ONE encoding
         return ORDER.fromInt(formatFlags & ORDER_FLAG_MASK); //convert into order type
     }
 
-    protected int getFormatFlags(){
+    public int getFormatFlags(){
         // Least significant 7 bits of the format
         return formatFlags & FORMAT_FLAG_MASK;
     }
@@ -41,32 +48,32 @@ public class RANSNx16Params implements RANSParams{
         this.formatFlags = formatFlags;
     }
 
-    protected boolean getX32(){
+    public boolean getX32(){
         // Interleave N = 32 rANS states (else N = 4)
         return ((formatFlags & X32_FLAG_MASK)!=0);
     }
 
-    protected boolean getStripe(){
+    public boolean getStripe(){
         // multiway interleaving of byte streams
         return ((formatFlags & STRIPE_FLAG_MASK)!=0);
     }
 
-    protected boolean getNosz(){
+    public boolean getNosz(){
         // original size is not recorded (for use by Stripe)
         return ((formatFlags & NOSZ_FLAG_MASK)!=0);
     }
 
-    protected boolean getCAT(){
+    public boolean getCAT(){
         // Data is uncompressed
         return ((formatFlags & CAT_FLAG_MASK)!=0);
     }
 
-    protected boolean getRLE(){
+    public boolean getRLE(){
         // Run length encoding, with runs and literals encoded separately
         return ((formatFlags & RLE_FLAG_MASK)!=0);
     }
 
-    protected boolean getPack(){
+    public boolean getPack(){
         // Pack 2, 4, 8 or infinite symbols per byte
         return ((formatFlags & PACK_FLAG_MASK)!=0);
     }

@@ -7,15 +7,15 @@ public abstract class RANSDecode<T extends RANSParams> {
     private RANSDecodingSymbol[][] decodingSymbols;
 
     // GETTERS
-    public ArithmeticDecoder[] getD() {
+    protected ArithmeticDecoder[] getD() {
         return D;
     }
 
-    public RANSDecodingSymbol[][] getDecodingSymbols() {
+    protected RANSDecodingSymbol[][] getDecodingSymbols() {
         return decodingSymbols;
     }
 
-    abstract ByteBuffer uncompress(final ByteBuffer inBuffer, final T params);
+    public abstract ByteBuffer uncompress(final ByteBuffer inBuffer, final T params);
 
     // Lazy initialization of working memory for the decoder
     protected void initializeRANSDecoder() {

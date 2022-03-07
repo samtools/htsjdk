@@ -26,7 +26,9 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.RANSExternalCompressor;
-import htsjdk.samtools.cram.compression.rans.*;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.ValidationUtils;

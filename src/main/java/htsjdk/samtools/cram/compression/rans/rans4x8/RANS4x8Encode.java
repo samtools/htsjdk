@@ -1,103 +1,125 @@
-package htsjdk.samtools.cram.compression.rans;
+package htsjdk.samtools.cram.compression.rans.rans4x8;
 
+import htsjdk.samtools.cram.compression.rans.Constants;
+import htsjdk.samtools.cram.compression.rans.RANSEncode;
+import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
+import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.nio.ByteOrder;
 
-// T = total of true counts
-// F = scaled integer frequencies
-// M = sum(fs)
+public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
+    private static final int ORDER_BYTE_LENGTH = 1;
+    private static final int COMPRESSED_BYTE_LENGTH = 4;
+    private static final int RAW_BYTE_LENGTH = 4;
+    private static final int PREFIX_BYTE_LENGTH = ORDER_BYTE_LENGTH + COMPRESSED_BYTE_LENGTH + RAW_BYTE_LENGTH;
 
-final class Frequencies4x8 {
+    // streams smaller than this value don't have sufficient symbol context for ORDER-1 encoding,
+    // so always use ORDER-0
+    private static final int MINIMUM__ORDER_1_SIZE = 4;
+    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
-    static void readStatsOrder0(final ByteBuffer cp, final ArithmeticDecoder decoder, final RANSDecodingSymbol[] decodingSymbols) {
-        // Pre-compute reverse lookup of frequency.
-        int rle = 0;
-        int x = 0;
-        int j = cp.get() & 0xFF;
-        do {
-            if ((decoder.fc[j].F = (cp.get() & 0xFF)) >= 128) {
-                decoder.fc[j].F &= ~128;
-                decoder.fc[j].F = ((decoder.fc[j].F & 127) << 8) | (cp.get() & 0xFF);
-            }
-            decoder.fc[j].C = x;
 
-            decodingSymbols[j].set(decoder.fc[j].C, decoder.fc[j].F);
+    public ByteBuffer compress(final ByteBuffer inBuffer, final RANS4x8Params params) {
+        final RANSParams.ORDER order= params.getOrder();
+        if (inBuffer.remaining() == 0) {
+            return EMPTY_BUFFER;
+        }
+        initializeRANSEncoder();
+        if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE) {
+            // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
+            return compressOrder0Way4(inBuffer);
+        }
+        switch (order) {
+            case ZERO:
+                return compressOrder0Way4(inBuffer);
 
-			/* Build reverse lookup table */
-            Arrays.fill(decoder.R, x, x + decoder.fc[j].F, (byte) j);
+            case ONE:
+                return compressOrder1Way4(inBuffer);
 
-            x += decoder.fc[j].F;
-
-            if (rle == 0 && j + 1 == (0xFF & cp.get(cp.position()))) {
-                j = cp.get() & 0xFF;
-                rle = cp.get() & 0xFF;
-            } else if (rle != 0) {
-                rle--;
-                j++;
-            } else {
-                j = cp.get() & 0xFF;
-            }
-        } while (j != 0);
-
-        assert (x < Constants.TOTFREQ);
+            default:
+                throw new RuntimeException("Unknown rANS order: " + params.getOrder());
+        }
     }
 
-    static void readStatsOrder1(final ByteBuffer cp, final ArithmeticDecoder[] D, final RANSDecodingSymbol[][] decodingSymbols) {
-        int rle_i = 0;
-        int i = 0xFF & cp.get();
-        do {
-            int rle_j = 0;
-            int x = 0;
-            int j = 0xFF & cp.get();
-            do {
-                if ((D[i].fc[j].F = (0xFF & cp.get())) >= 128) {
-                    D[i].fc[j].F &= ~128;
-                    D[i].fc[j].F = ((D[i].fc[j].F & 127) << 8) | (0xFF & cp.get());
-                }
-                D[i].fc[j].C = x;
+    private ByteBuffer compressOrder0Way4(final ByteBuffer inBuffer) {
+        final int inSize = inBuffer.remaining();
+        final ByteBuffer outBuffer = allocateOutputBuffer(inSize);
 
-                if (D[i].fc[j].F == 0) {
-                    D[i].fc[j].F = Constants.TOTFREQ;
-                }
+        // move the output buffer ahead to the start of the frequency table (we'll come back and
+        // write the output stream prefix at the end of this method)
+        outBuffer.position(PREFIX_BYTE_LENGTH); // start of frequency table
 
-                decodingSymbols[i][j].set(
-                        D[i].fc[j].C,
-                        D[i].fc[j].F
-                );
+        // get the normalised frequencies of the alphabets
+        final int[] F = calcFrequenciesOrder0(inBuffer);
 
-				/* Build reverse lookup table */
-                Arrays.fill(D[i].R, x, x + D[i].fc[j].F, (byte) j);
+        // using the normalised frequencies, set the RANSEncodingSymbols
+        buildSymsOrder0(F);
 
-                x += D[i].fc[j].F;
-                assert (x <= Constants.TOTFREQ);
+        final ByteBuffer cp = outBuffer.slice();
 
-                if (rle_j == 0 && j + 1 == (0xFF & cp.get(cp.position()))) {
-                    j = (0xFF & cp.get());
-                    rle_j = (0xFF & cp.get());
-                } else if (rle_j != 0) {
-                    rle_j--;
-                    j++;
-                } else {
-                    j = (0xFF & cp.get());
-                }
-            } while (j != 0);
+        // write Frequency table
+        final int frequencyTableSize = writeFrequenciesOrder0(cp, F);
 
-            if (rle_i == 0 && i + 1 == (0xFF & cp.get(cp.position()))) {
-                i = (0xFF & cp.get());
-                rle_i = (0xFF & cp.get());
-            } else if (rle_i != 0) {
-                rle_i--;
-                i++;
-            } else {
-                i = (0xFF & cp.get());
-            }
-        } while (i != 0);
+        inBuffer.rewind();
+        final int compressedBlobSize = E04.compress(inBuffer, getEncodingSymbols()[0], cp);
+
+        // write the prefix at the beginning of the output buffer
+        writeCompressionPrefix(RANSParams.ORDER.ZERO, outBuffer, inSize, frequencyTableSize, compressedBlobSize);
+        return outBuffer;
     }
 
-    static int[] calcFrequenciesOrder0(final ByteBuffer inBuffer) {
+    private ByteBuffer compressOrder1Way4(final ByteBuffer inBuffer) {
+        final int inSize = inBuffer.remaining();
+        final ByteBuffer outBuffer = allocateOutputBuffer(inSize);
+
+        // move to start of frequency
+        outBuffer.position(PREFIX_BYTE_LENGTH);
+
+        // get normalized frequencies
+        final int[][] F = calcFrequenciesOrder1(inBuffer);
+
+        // using the normalised frequencies, set the RANSEncodingSymbols
+        buildSymsOrder1(F);
+
+        final ByteBuffer cp = outBuffer.slice();
+        final int frequencyTableSize = writeFrequenciesOrder1(cp, F);
+
+        inBuffer.rewind();
+        final int compressedBlobSize = E14.compress(inBuffer, getEncodingSymbols(), cp);
+
+        // write the prefix at the beginning of the output buffer
+        writeCompressionPrefix(RANSParams.ORDER.ONE, outBuffer, inSize, frequencyTableSize, compressedBlobSize);
+        return outBuffer;
+    }
+
+    private static void writeCompressionPrefix(
+            final RANSParams.ORDER order,
+            final ByteBuffer outBuffer,
+            final int inSize,
+            final int frequencyTableSize,
+            final int compressedBlobSize) {
+        ValidationUtils.validateArg(order == RANSParams.ORDER.ONE || order == RANSParams.ORDER.ZERO,"unrecognized RANS order");
+        outBuffer.limit(PREFIX_BYTE_LENGTH + frequencyTableSize + compressedBlobSize);
+
+        // go back to the beginning of the stream and write the prefix values
+        // write the (ORDER as a single byte at offset 0)
+        outBuffer.put(0, (byte) (order == RANSParams.ORDER.ZERO ? 0 : 1));
+        outBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        // move past the ORDER and write the compressed size
+        outBuffer.putInt(ORDER_BYTE_LENGTH, frequencyTableSize + compressedBlobSize);
+        // move past the compressed size and write the uncompressed size
+        outBuffer.putInt(ORDER_BYTE_LENGTH + COMPRESSED_BYTE_LENGTH, inSize);
+        outBuffer.rewind();
+    }
+
+    private static int[] calcFrequenciesOrder0(final ByteBuffer inBuffer) {
         final int inSize = inBuffer.remaining();
 
         // Compute statistics
+        // T = total of true counts
+        // F = scaled integer frequencies
+        // M = sum(fs)
         final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
         int T = 0; //// T is the total number of symbols in the input
         for (int i = 0; i < inSize; i++) {
@@ -140,12 +162,11 @@ final class Frequencies4x8 {
         } else {
             F[M] -= fsum - Constants.TOTFREQ;
         }
-
         assert (F[M] > 0);
         return F;
     }
 
-    static int[][] calcFrequenciesOrder1(final ByteBuffer in) {
+    private static int[][] calcFrequenciesOrder1(final ByteBuffer in) {
         final int in_size = in.remaining();
 
         final int[][] F = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
@@ -195,7 +216,8 @@ final class Frequencies4x8 {
         return F;
     }
 
-    static RANSEncodingSymbol[] buildSymsOrder0(final int[] F, final RANSEncodingSymbol[] syms) {
+    private RANSEncodingSymbol[] buildSymsOrder0(final int[] F) {
+        final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
         final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
 
         // T = running sum of frequencies including the current symbol
@@ -213,7 +235,23 @@ final class Frequencies4x8 {
         return syms;
     }
 
-    static int writeFrequenciesOrder0(final ByteBuffer cp, final int[] F) {
+    private RANSEncodingSymbol[][] buildSymsOrder1(final int[][] F) {
+        final RANSEncodingSymbol[][] syms = getEncodingSymbols();
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            final int[] F_i_ = F[i];
+            int x = 0;
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                if (F_i_[j] != 0) {
+                    syms[i][j].set(x, F_i_[j], Constants.TF_SHIFT);
+                    x += F_i_[j];
+                }
+            }
+        }
+
+        return syms;
+    }
+
+    private static int writeFrequenciesOrder0(final ByteBuffer cp, final int[] F) {
         final int start = cp.position();
 
         int rle = 0;
@@ -255,22 +293,7 @@ final class Frequencies4x8 {
         return cp.position() - start;
     }
 
-    static RANSEncodingSymbol[][] buildSymsOrder1(final int[][] F, final RANSEncodingSymbol[][] syms) {
-        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            final int[] F_i_ = F[i];
-            int x = 0;
-            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-                if (F_i_[j] != 0) {
-                    syms[i][j].set(x, F_i_[j], Constants.TF_SHIFT);
-                    x += F_i_[j];
-                }
-            }
-        }
-
-        return syms;
-    }
-
-    static int writeFrequenciesOrder1(final ByteBuffer cp, final int[][] F) {
+    private static int writeFrequenciesOrder1(final ByteBuffer cp, final int[][] F) {
         final int start = cp.position();
         final int[] T = new int[Constants.NUMBER_OF_SYMBOLS];
 

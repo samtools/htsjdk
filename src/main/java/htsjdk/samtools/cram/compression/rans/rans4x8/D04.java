@@ -1,8 +1,16 @@
-package htsjdk.samtools.cram.compression.rans;
+package htsjdk.samtools.cram.compression.rans.rans4x8;
+
+import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
+import htsjdk.samtools.cram.compression.rans.Constants;
+import htsjdk.samtools.cram.compression.rans.RANSDecodingSymbol;
+import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
 
 final class D04 {
+    // TODO: move this method to RANS4x8Decode. Have the common code between D04 and D0N in utils class.
+    //  same applies for other compress and uncompress methods.
+
     static void uncompress(
             final ByteBuffer inBuffer,
             final ArithmeticDecoder D,
