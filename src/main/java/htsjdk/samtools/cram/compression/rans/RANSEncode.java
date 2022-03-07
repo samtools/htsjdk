@@ -7,11 +7,11 @@ public abstract class RANSEncode<T extends RANSParams> {
     private RANSEncodingSymbol[][] encodingSymbols;
 
     // Getter
-    public RANSEncodingSymbol[][] getEncodingSymbols() {
+    protected RANSEncodingSymbol[][] getEncodingSymbols() {
         return encodingSymbols;
     }
 
-    abstract ByteBuffer compress(final ByteBuffer inBuffer, final T params);
+    public abstract ByteBuffer compress(final ByteBuffer inBuffer, final T params);
 
     // Lazy initialization of working memory for the encoder
     protected void initializeRANSEncoder() {

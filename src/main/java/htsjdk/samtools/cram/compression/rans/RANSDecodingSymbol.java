@@ -26,7 +26,7 @@ package htsjdk.samtools.cram.compression.rans;
 
 import java.nio.ByteBuffer;
 
-final class RANSDecodingSymbol {
+final public class RANSDecodingSymbol {
     int start;  // Start of range.
     int freq;   // Symbol frequency.
 

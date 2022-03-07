@@ -28,7 +28,7 @@ import htsjdk.utils.ValidationUtils;
 
 import java.nio.ByteBuffer;
 
-final class RANSEncodingSymbol {
+public final class RANSEncodingSymbol {
     private int xMax;       // (Exclusive) upper bound of pre-normalization interval
     private int rcpFreq;    // Fixed-point reciprocal frequency
     private int bias;       // Bias

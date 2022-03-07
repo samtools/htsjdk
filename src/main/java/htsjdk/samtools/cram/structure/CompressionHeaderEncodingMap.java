@@ -26,7 +26,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
-import htsjdk.samtools.cram.compression.rans.RANS4x8Params;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
 import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;

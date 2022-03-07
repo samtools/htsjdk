@@ -1,8 +1,14 @@
-package htsjdk.samtools.cram.compression.rans;
+package htsjdk.samtools.cram.compression.rans.ransnx16;
+
+import htsjdk.samtools.cram.compression.rans.Constants;
+import htsjdk.samtools.cram.compression.rans.RANSEncode;
+import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
+import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
 
-public class RANSNx16Encode extends RANSEncode<RANSNx16Params>{
+public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private static final int MINIMUM__ORDER_1_SIZE = 4;
 
@@ -71,16 +77,16 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params>{
         final int prefix_size = outBuffer.position();
 
         // Normalize Frequencies such that sum of Frequencies = 1 << bitsize
-        FrequencyUtils.normaliseFrequenciesOrder0(F, bitSize);
+        Utils.normaliseFrequenciesOrder0(F, bitSize);
 
         // Write the Frequency table. Keep track of the size for later
         final int frequencyTableSize = writeFrequenciesOrder0(cp, F);
 
         // Normalize Frequencies such that sum of Frequencies = 1 << 12
-        FrequencyUtils.normaliseFrequenciesOrder0(F, 12);
+        Utils.normaliseFrequenciesOrder0(F, 12);
 
         // update the RANS Encoding Symbols
-        buildSymsOrder0(F, getEncodingSymbols()[0]);
+        buildSymsOrder0(F);
         inBuffer.rewind();
         final int compressedBlobSize = E0N.compress(inBuffer, getEncodingSymbols()[0], cp, Nway);
         outBuffer.rewind(); // set position to 0
@@ -154,7 +160,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params>{
         cp.put((byte) 0);
     }
 
-    private static RANSEncodingSymbol[] buildSymsOrder0(final int[] F, final RANSEncodingSymbol[] syms) {
+    private RANSEncodingSymbol[] buildSymsOrder0(final int[] F) {
+        final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
         // updates the RANSEncodingSymbol array for all the symbols
         final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
 
