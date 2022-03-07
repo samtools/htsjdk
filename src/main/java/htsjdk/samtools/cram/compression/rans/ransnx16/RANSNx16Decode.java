@@ -1,4 +1,11 @@
-package htsjdk.samtools.cram.compression.rans;
+package htsjdk.samtools.cram.compression.rans.ransnx16;
+
+import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
+import htsjdk.samtools.cram.compression.rans.Constants;
+import htsjdk.samtools.cram.compression.rans.RANSDecode;
+import htsjdk.samtools.cram.compression.rans.RANSDecodingSymbol;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
+import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -61,16 +68,16 @@ public class RANSNx16Decode extends RANSDecode<RANSNx16Params>{
 
     private ByteBuffer uncompressOrder0WayN(final ByteBuffer inBuffer, final ByteBuffer outBuffer,final int n_out,final int Nway) {
         // read the frequency table, get the normalised frequencies and use it to set the RANSDecodingSymbols
-        readStatsOrder0(inBuffer, getD()[0], getDecodingSymbols()[0]);
+        readStatsOrder0(inBuffer);
         // uncompress using Nway rans states
         D0N.uncompress(inBuffer, getD()[0], getDecodingSymbols()[0], outBuffer,n_out,Nway);
         return outBuffer;
     }
 
-    private static void readStatsOrder0(
-            final ByteBuffer cp,
-            ArithmeticDecoder decoder,
-            RANSDecodingSymbol[] decodingSymbols) {
+    private void readStatsOrder0(
+            final ByteBuffer cp) {
+        final ArithmeticDecoder decoder = getD()[0];
+        final RANSDecodingSymbol[] decodingSymbols = getDecodingSymbols()[0];
         // Use the Frequency table to set the values of F, C and R
         final int[] A = readAlphabet(cp);
         int x = 0;
@@ -85,7 +92,7 @@ public class RANSNx16Decode extends RANSDecode<RANSNx16Params>{
                 }
             }
         }
-        FrequencyUtils.normaliseFrequenciesOrder0(F,12);
+        Utils.normaliseFrequenciesOrder0(F,12);
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if(A[j]>0){
 

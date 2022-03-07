@@ -1,4 +1,10 @@
-package htsjdk.samtools.cram.compression.rans;
+package htsjdk.samtools.cram.compression.rans.rans4x8;
+
+import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
+import htsjdk.samtools.cram.compression.rans.Constants;
+import htsjdk.samtools.cram.compression.rans.RANSDecode;
+import htsjdk.samtools.cram.compression.rans.RANSDecodingSymbol;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -44,21 +50,22 @@ public class RANS4x8Decode extends RANSDecode<RANS4x8Params> {
 
     private ByteBuffer uncompressOrder0Way4(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
         // read the frequency table. using the frequency table, set the values of RANSDecodingSymbols
-        readStatsOrder0(inBuffer, getD()[0], getDecodingSymbols()[0]);
+        readStatsOrder0(inBuffer);
         D04.uncompress(inBuffer, getD()[0], getDecodingSymbols()[0], outBuffer);
-
         return outBuffer;
     }
 
     private ByteBuffer uncompressOrder1Way4(final ByteBuffer in, final ByteBuffer outBuffer) {
         // read the frequency table. using the frequency table, set the values of RANSDecodingSymbols
-        readStatsOrder1(in, getD(), getDecodingSymbols());
+        readStatsOrder1(in);
         D14.uncompress(in, outBuffer, getD(), getDecodingSymbols());
         return outBuffer;
     }
 
-    private void readStatsOrder0(final ByteBuffer cp, final ArithmeticDecoder decoder, final RANSDecodingSymbol[] decodingSymbols) {
+    private void readStatsOrder0(final ByteBuffer cp) {
         // Pre-compute reverse lookup of frequency.
+        final ArithmeticDecoder decoder = getD()[0];
+        final RANSDecodingSymbol[] decodingSymbols = getDecodingSymbols()[0];
         int rle = 0;
         int x = 0;
         int j = cp.get() & 0xFF;
@@ -90,7 +97,9 @@ public class RANS4x8Decode extends RANSDecode<RANS4x8Params> {
         assert (x < Constants.TOTFREQ);
     }
 
-    private void readStatsOrder1(final ByteBuffer cp, final ArithmeticDecoder[] D, final RANSDecodingSymbol[][] decodingSymbols) {
+    private void readStatsOrder1(final ByteBuffer cp) {
+        final ArithmeticDecoder[] D = getD();
+        final RANSDecodingSymbol[][] decodingSymbols = getDecodingSymbols();
         int rle_i = 0;
         int i = 0xFF & cp.get();
         do {

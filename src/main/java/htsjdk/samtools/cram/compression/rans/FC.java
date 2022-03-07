@@ -24,8 +24,9 @@
  */
 package htsjdk.samtools.cram.compression.rans;
 
-final class FC {
-    int F, C;
+public final class FC {
+    public int F;
+    public int C;
 
     public void reset() {
         F = C = 0;
