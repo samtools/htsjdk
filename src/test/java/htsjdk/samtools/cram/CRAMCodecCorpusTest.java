@@ -184,18 +184,27 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
                         CRAMCodecCorpus.getHTSCodecsTestDataLocation().resolve("dat"),
                         path -> path.getFileName().startsWith("q4") ||
                                 path.getFileName().startsWith("q8") ||
-                                path.getFileName().startsWith("qvar"))
-                // q40+dir is excluded because the uncompressed size in the compressed file prefix does not match
-                // the original file size.
+                                path.getFileName().startsWith("qvar") ||
+                                path.getFileName().startsWith("q40+dir"))
                 .forEach(path -> paths.add(path));
         return paths;
     }
 
     // the input files have embedded newlines that the test remove before round-tripping...
     final byte[] filterEmbeddedNewlines(final byte[] rawBytes) throws IOException {
+        // 1. filters new lines if any.
+        // 2. "q40+dir" file has an extra column delimited by tab. This column provides READ1 vs READ2 flag.
+        //     This file is also new-line separated. The extra column, '\t' and '\n' are filtered.
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            int skip = 0;
             for (final byte b : rawBytes) {
-                if (b != '\n') {
+                if (b == '\t'){
+                    skip = 1;
+                }
+                if (b == '\n') {
+                    skip = 0;
+                }
+                if (skip == 0 && b !='\n') {
                     baos.write(b);
                 }
             }
