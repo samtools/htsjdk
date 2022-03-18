@@ -7,6 +7,7 @@ import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
@@ -54,8 +55,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         switch (order) {
             case ZERO:
                 return compressOrder0WayN(inBuffer, Nway, outBuffer);
-//            case ONE:
-//                return compressOrder1WayN(inBuffer, Nway, outBuffer);
+            case ONE:
+                return compressOrder1WayN(inBuffer, Nway, outBuffer);
             default:
                 throw new RuntimeException("Unknown rANS order: " + order);
         }
@@ -66,11 +67,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final int[] F = buildFrequenciesOrder0(inBuffer);
         final ByteBuffer cp = outBuffer.slice();
         int bitSize = (int) Math.ceil(Math.log(inSize) / Math.log(2));
-        if (bitSize == 0) {
-            // TODO: check this!
-            // If there is just one symbol, bitsize = log (1)/log(2) = 0.
-            bitSize = 1;
-        }
+
         if (bitSize > 12) {
             bitSize = 12;
         }
@@ -94,6 +91,69 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         return outBuffer;
     }
 
+    private ByteBuffer compressOrder1WayN(final ByteBuffer inBuffer, final int Nway, final ByteBuffer outBuffer) {
+        //TODO: does not work as expected. Need to fix
+        final ByteBuffer cp = outBuffer.slice();
+        final int[][] F = buildFrequenciesOrder1(inBuffer, Nway);
+        final int shift = 12;
+
+        // normalise frequencies with a variable shift calculated
+        // using the minimum bit size that is needed to represent a frequency context array
+        Utils.normaliseFrequenciesOrder1(F, shift, false);
+        final int prefix_size = outBuffer.position();
+
+        // TODO: How is the buffer size calculated? js: 257*257*3+9
+        ByteBuffer frequencyTable = allocateOutputBuffer(1);
+        ByteBuffer compressedFrequencyTable = allocateOutputBuffer(1);
+
+        // uncompressed frequency table
+        final int uncompressedFrequencyTableSize = writeFrequenciesOrder1(frequencyTable,F);
+        frequencyTable.limit(uncompressedFrequencyTableSize);
+        frequencyTable.rewind();
+
+        // compressed frequency table using RANS Nx16 Order 0
+        compressedFrequencyTable = compressOrder0WayN(frequencyTable,4,compressedFrequencyTable);
+        frequencyTable.rewind();
+        int compressedFrequencyTableSize = compressedFrequencyTable.limit();
+
+        if (compressedFrequencyTableSize  < uncompressedFrequencyTableSize) {
+
+            // first byte
+            cp.put((byte) (1 | shift << 4 ));
+            Utils.writeUint7(uncompressedFrequencyTableSize,cp);
+            Utils.writeUint7(compressedFrequencyTableSize,cp);
+
+            // write bytes from compressedFrequencyTable to cp
+            int i=0;
+            while (i<compressedFrequencyTableSize){
+                cp.put(compressedFrequencyTable.get());
+                i++;
+            }
+        } else {
+
+            // first byte
+            cp.put((byte) (0 | shift << 4 ));
+            int i=0;
+            while (i<uncompressedFrequencyTableSize){
+                cp.put(frequencyTable.get());
+                i++;
+            }
+        }
+        int frequencyTableSize = cp.position();
+
+        // normalise frequencies with a constant shift
+        Utils.normaliseFrequenciesOrder1(F, shift, true);
+
+        // set encoding symbols
+        buildSymsOrder1(F);
+        inBuffer.rewind();
+        final int compressedBlobSize = E1N.compress(inBuffer, getEncodingSymbols(), cp);
+        outBuffer.rewind();
+        outBuffer.limit(prefix_size + frequencyTableSize + compressedBlobSize);
+        outBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        return outBuffer;
+    }
+
     private static int[] buildFrequenciesOrder0(final ByteBuffer inBuffer) {
         // Returns an array of raw symbol frequencies
         final int inSize = inBuffer.remaining();
@@ -102,6 +162,34 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             F[0xFF & inBuffer.get()]++;
         }
         return F;
+    }
+
+    private static int[][] buildFrequenciesOrder1(final ByteBuffer inBuffer, final int Nway) {
+        // Returns an array of raw symbol frequencies
+        final int inSize = inBuffer.remaining();
+
+        // context is stored in frequency[Constants.NUMBER_OF_SYMBOLS] array
+        final int[][] frequency = new int[Constants.NUMBER_OF_SYMBOLS+1][Constants.NUMBER_OF_SYMBOLS];
+
+        // ‘\0’ is the initial context
+        int contextSymbol = 0;
+        int srcSymbol;
+        for (int i = 0; i < inSize; i++) {
+
+            // update the context array
+            frequency[Constants.NUMBER_OF_SYMBOLS][contextSymbol]++;
+            srcSymbol = 0xFF & inBuffer.get(i);
+            frequency[contextSymbol][srcSymbol ]++;
+            contextSymbol = srcSymbol;
+        }
+        frequency[Constants.NUMBER_OF_SYMBOLS][contextSymbol]++;
+
+        // set ‘\0’ as context for the first byte in the N interleaved streams
+        for (int n = 0; n < Nway; n++){
+            frequency[0][inBuffer.get((n*((int)Math.floor(inSize/Nway))))]++;
+        }
+        frequency[Constants.NUMBER_OF_SYMBOLS][0] += Nway-1;
+        return frequency;
     }
 
     private static int writeFrequenciesOrder0(final ByteBuffer cp, final int[] F) {
@@ -123,6 +211,49 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                     // Set the Most Significant Bit of the first byte to 1 indicating that the frequency comprises of 2 bytes
                     cp.put((byte) (128 | (F[j] >> 7)));
                     cp.put((byte) (F[j] & 0x7f)); //Least Significant 7 Bits
+                }
+            }
+        }
+        return cp.position() - start;
+    }
+
+    private static int writeFrequenciesOrder1(final ByteBuffer cp, final int[][] F) {
+        final int start = cp.position();
+
+        // writeAlphabet uses rle to write all the symbols whose frequency!=0
+        writeAlphabet(cp,F[Constants.NUMBER_OF_SYMBOLS]);
+
+        for (int i=0; i<Constants.NUMBER_OF_SYMBOLS; i++){
+            if (F[Constants.NUMBER_OF_SYMBOLS][i]==0){
+                continue;
+            }
+
+            // for each symbol with non zero frequency, order 0 frequency table (?)
+            // many frequencies will be zero where a symbol is present in one context but not in others,
+            // all zero frequencies are followed by a run length to omit adjacent zeros.
+            int run = 0;
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                if (F[Constants.NUMBER_OF_SYMBOLS][j] == 0) {
+                    continue;
+                }
+                if (run > 0) {
+                    run--;
+                } else {
+                    Utils.writeUint7(F[i][j],cp);
+                    if (F[i][j] == 0) {
+                        // Count how many more zero-freqs we have
+                        for (int k = j+1; k < Constants.NUMBER_OF_SYMBOLS; k++) {
+                            if (F[Constants.NUMBER_OF_SYMBOLS][k] == 0) {
+                                continue;
+                            }
+                            if (F[i][k] == 0) {
+                                run++;
+                            } else {
+                                break;
+                            }
+                        }
+                        cp.put((byte) run);
+                    }
                 }
             }
         }
@@ -160,25 +291,37 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         cp.put((byte) 0);
     }
 
-    private RANSEncodingSymbol[] buildSymsOrder0(final int[] F) {
+    private void buildSymsOrder0(final int[] F) {
         final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
         // updates the RANSEncodingSymbol array for all the symbols
         final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
 
         // T = running sum of frequencies including the current symbol
         // F[j] = frequency of symbol "j"
-        // C[j] = cumulative frequency of all the symbols preceding "j" (excluding the frequency of symbol "j")
-        int T = 0;
+        // cumulativeFreq = cumulative frequency of all the symbols preceding "j" (excluding the frequency of symbol "j")
+        int cumulativeFreq = 0;
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-            C[j] = T;
-            T += F[j];
             if (F[j] != 0) {
 
                 //For each symbol, set start = cumulative frequency and freq = frequency
-                syms[j].set(C[j], F[j], Constants.TF_SHIFT);
+                syms[j].set(cumulativeFreq, F[j], Constants.TOTAL_FREQ_SHIFT);
+                cumulativeFreq += F[j];
             }
         }
-        return syms;
+    }
+
+    private void buildSymsOrder1(final int[][] F) {
+        final RANSEncodingSymbol[][] encodingSymbols = getEncodingSymbols();
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            final int[] F_i_ = F[i];
+            int cumulativeFreq = 0;
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                if (F_i_[j] != 0) {
+                    encodingSymbols[i][j].set(cumulativeFreq, F_i_[j], Constants.TOTAL_FREQ_SHIFT);
+                    cumulativeFreq += F_i_[j];
+                }
+            }
+        }
     }
 
 }

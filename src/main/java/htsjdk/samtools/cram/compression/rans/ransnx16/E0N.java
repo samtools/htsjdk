@@ -21,7 +21,7 @@ public class E0N {
         for (r=0; r<Nway; r++){
 
             // initialize rans states
-            rans[r] = Constants.RANS_BYTE_L_Nx16;
+            rans[r] = Constants.RANS_Nx16_LOWER_BOUND;
         }
 
         // number of remaining elements = in_size % N

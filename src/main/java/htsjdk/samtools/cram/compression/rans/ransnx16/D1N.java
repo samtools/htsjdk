@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.compression.rans.rans4x8;
+package htsjdk.samtools.cram.compression.rans.ransnx16;
 
 import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
 import htsjdk.samtools.cram.compression.rans.Constants;
@@ -8,12 +8,16 @@ import htsjdk.samtools.cram.compression.rans.Utils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-final class D14 {
+public class D1N {
     static void uncompress(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final ArithmeticDecoder[] D,
-            final RANSDecodingSymbol[][] syms) {
+            final RANSDecodingSymbol[][] syms,
+            final int Nway) {
+
+        // uncompress for Nway = 4. then extend Nway to be variable - 4 or 32
+        // TODO: Fails - unexpected symbol in the third iteration of the for loop.
         final int out_sz = outBuffer.remaining();
         int rans0, rans1, rans2, rans7;
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -47,10 +51,10 @@ final class D14 {
             rans2 = syms[l2][c2].advanceSymbolStep(rans2, Constants.TOTAL_FREQ_SHIFT);
             rans7 = syms[l7][c7].advanceSymbolStep(rans7,  Constants.TOTAL_FREQ_SHIFT);
 
-            rans0 = Utils.RANSDecodeRenormalize4x8(rans0, inBuffer);
-            rans1 = Utils.RANSDecodeRenormalize4x8(rans1, inBuffer);
-            rans2 = Utils.RANSDecodeRenormalize4x8(rans2, inBuffer);
-            rans7 = Utils.RANSDecodeRenormalize4x8(rans7, inBuffer);
+            rans0 = Utils.RANSDecodeRenormalizeNx16(rans0, inBuffer);
+            rans1 = Utils.RANSDecodeRenormalizeNx16(rans1, inBuffer);
+            rans2 = Utils.RANSDecodeRenormalizeNx16(rans2, inBuffer);
+            rans7 = Utils.RANSDecodeRenormalizeNx16(rans7, inBuffer);
 
             l0 = c0;
             l1 = c1;
@@ -61,9 +65,11 @@ final class D14 {
         // Remainder
         for (; i7 < out_sz; i7++) {
             final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
+            // should this be write uint7?
             outBuffer.put(i7, (byte) c7);
-            rans7 = syms[l7][c7].advanceSymbol4x8(rans7, inBuffer, Constants.TOTAL_FREQ_SHIFT);
+            rans7 = syms[l7][c7].advanceSymbolNx16(rans7, inBuffer, Constants.TOTAL_FREQ_SHIFT);
             l7 = c7;
         }
     }
+
 }
