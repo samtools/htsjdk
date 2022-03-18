@@ -49,7 +49,7 @@ public class E1N {
         l3 = 0xFF & inBuffer.get(in_size - 1);
         for (i3 = in_size - 2; i3 > 4 * isz4 - 2 && i3 >= 0; i3--) {
             final int c3 = 0xFF & inBuffer.get(i3);
-            rans3 = syms[c3][l3].putSymbol(rans3, ptr);
+            rans3 = syms[c3][l3].putSymbolNx16(rans3, ptr);
             l3 = c3;
         }
 
@@ -59,10 +59,10 @@ public class E1N {
             final int c2 = 0xFF & inBuffer.get(i2);
             final int c3 = 0xFF & inBuffer.get(i3);
 
-            rans3 = syms[c3][l3].putSymbol(rans3, ptr);
-            rans2 = syms[c2][l2].putSymbol(rans2, ptr);
-            rans1 = syms[c1][l1].putSymbol(rans1, ptr);
-            rans0 = syms[c0][l0].putSymbol(rans0, ptr);
+            rans3 = syms[c3][l3].putSymbolNx16(rans3, ptr);
+            rans2 = syms[c2][l2].putSymbolNx16(rans2, ptr);
+            rans1 = syms[c1][l1].putSymbolNx16(rans1, ptr);
+            rans0 = syms[c0][l0].putSymbolNx16(rans0, ptr);
 
             l0 = c0;
             l1 = c1;
@@ -70,10 +70,10 @@ public class E1N {
             l3 = c3;
         }
 
-        rans3 = syms[0][l3].putSymbol(rans3, ptr);
-        rans2 = syms[0][l2].putSymbol(rans2, ptr);
-        rans1 = syms[0][l1].putSymbol(rans1, ptr);
-        rans0 = syms[0][l0].putSymbol(rans0, ptr);
+        rans3 = syms[0][l3].putSymbolNx16(rans3, ptr);
+        rans2 = syms[0][l2].putSymbolNx16(rans2, ptr);
+        rans1 = syms[0][l1].putSymbolNx16(rans1, ptr);
+        rans0 = syms[0][l0].putSymbolNx16(rans0, ptr);
 
         ptr.order(ByteOrder.BIG_ENDIAN);
         ptr.putInt(rans3);

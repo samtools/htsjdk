@@ -65,7 +65,6 @@ public class D1N {
         // Remainder
         for (; i7 < out_sz; i7++) {
             final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
-            // should this be write uint7?
             outBuffer.put(i7, (byte) c7);
             rans7 = syms[l7][c7].advanceSymbolNx16(rans7, inBuffer, Constants.TOTAL_FREQ_SHIFT);
             l7 = c7;
