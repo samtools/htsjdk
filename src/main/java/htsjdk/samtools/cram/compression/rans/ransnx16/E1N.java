@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.compression.rans.rans4x8;
+package htsjdk.samtools.cram.compression.rans.ransnx16;
 
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
@@ -7,20 +7,22 @@ import htsjdk.samtools.cram.compression.rans.Utils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-final class E14 {
+public class E1N {
 
+    // uncompress for Nway = 4. then extend Nway to be variable - 4 or 32
+    // TODO: debug.
     static int compress(final ByteBuffer inBuffer, final RANSEncodingSymbol[][] syms, final ByteBuffer outBuffer) {
         final int in_size = inBuffer.remaining();
         final int compressedBlobSize;
         int rans0, rans1, rans2, rans3;
-        rans0 = Constants.RANS_4x8_LOWER_BOUND;
-        rans1 = Constants.RANS_4x8_LOWER_BOUND;
-        rans2 = Constants.RANS_4x8_LOWER_BOUND;
-        rans3 = Constants.RANS_4x8_LOWER_BOUND;
+        rans0 = Constants.RANS_Nx16_LOWER_BOUND;
+        rans1 = Constants.RANS_Nx16_LOWER_BOUND;
+        rans2 = Constants.RANS_Nx16_LOWER_BOUND;
+        rans3 = Constants.RANS_Nx16_LOWER_BOUND;
 
-		/*
+        /*
          * Slicing is needed for buffer reversing later.
-		 */
+         */
         final ByteBuffer ptr = outBuffer.slice();
 
         final int isz4 = in_size >> 2;
@@ -83,8 +85,8 @@ final class E14 {
         Utils.reverse(ptr);
         /*
          * Depletion of the in buffer cannot be confirmed because of the get(int
-		 * position) method use during encoding, hence enforcing:
-		 */
+         * position) method use during encoding, hence enforcing:
+         */
         inBuffer.position(inBuffer.limit());
         return compressedBlobSize;
     }
