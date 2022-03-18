@@ -27,9 +27,9 @@ public class RansTest extends HtsjdkTest {
 
     // Since some of our test cases use very large byte arrays, so enclose them in a wrapper class since
     // otherwise IntelliJ serializes them to strings for display in the test output, which is *super*-slow.
-    private static class TestCaseWrapper {
+    private static class TestDataEnvelope {
         public final byte[] testArray;
-        public TestCaseWrapper(final byte[] testdata) {
+        public TestDataEnvelope(final byte[] testdata) {
             this.testArray = testdata;
         }
         public String toString() {
@@ -39,29 +39,30 @@ public class RansTest extends HtsjdkTest {
 
     public Object[][] getRansTestData() {
         return new Object[][] {
-                { new TestCaseWrapper(new byte[]{}) },
-                { new TestCaseWrapper(new byte[] {0}) },
-                { new TestCaseWrapper(new byte[] {0, 1}) },
-                { new TestCaseWrapper(new byte[] {0, 1, 2}) },
-                { new TestCaseWrapper(new byte[] {0, 1, 2, 3}) },
-                { new TestCaseWrapper(new byte[1000]) },
-                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> (byte) 1)) },
-                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)) },
-                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)) },
-                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())) },
-                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)) },
-                { new TestCaseWrapper(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)) },
-                { new TestCaseWrapper(randomBytesFromGeometricDistribution(1000, 0.1)) },
-                { new TestCaseWrapper(randomBytesFromGeometricDistribution(1000, 0.01)) },
-                { new TestCaseWrapper(randomBytesFromGeometricDistribution(10 * 1000 * 1000 + 1, 0.01)) },
+                { new TestDataEnvelope(new byte[]{}) },
+                { new TestDataEnvelope(new byte[] {0}) },
+                { new TestDataEnvelope(new byte[] {0, 1}) },
+                { new TestDataEnvelope(new byte[] {0, 1, 2}) },
+                { new TestDataEnvelope(new byte[] {0, 1, 2, 3}) },
+                { new TestDataEnvelope(new byte[1000]) },
+                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) 1)) },
+                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)) },
+                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)) },
+                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())) },
+                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)) },
+                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)) },
+                { new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.1)) },
+                { new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)) },
+                { new TestDataEnvelope(randomBytesFromGeometricDistribution(10 * 1000 * 1000 + 1, 0.01)) },
         };
     }
 
     public Object[][] getRansTestDataTinySmallLarge() {
         return new Object[][]{
-                { new TestCaseWrapper(randomBytesFromGeometricDistribution(100, 0.1)), 1, 100 }, // Tiny
-                { new TestCaseWrapper(randomBytesFromGeometricDistribution(1000, 0.01)), 4, 1000 }, // Small
-                { new TestCaseWrapper(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01)), 100 * 1000 + 3 - 4, 100 * 1000 + 3 } // Large
+                // params: test data, lower limit, upper limit
+                { new TestDataEnvelope(randomBytesFromGeometricDistribution(100, 0.1)), 1, 100 }, // Tiny
+                { new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)), 4, 1000 }, // Small
+                { new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01)), 100 * 1000 + 3 - 4, 100 * 1000 + 3 } // Large
         };
     }
 
@@ -94,28 +95,30 @@ public class RansTest extends HtsjdkTest {
     @DataProvider(name="allRansAndData")
     public Object[][] getAllRansAndData() {
         // this data provider provides all the testdata for all of RANS codecs
-        return TestNGUtils.cartesianProduct(getRansTestData(), getAllRansCodecs());
+        // params: RANSEncode, RANSDecode, RANSParams, data
+        return TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansTestData());
     }
 
     @DataProvider(name="allRansAndDataForTinySmallLarge")
     public Object[][] getAllRansAndDataForTinySmallLarge() {
         // this data provider provides Tiny, Small and Large testdata for all of RANS codecs
-        return TestNGUtils.cartesianProduct(getRansTestDataTinySmallLarge(), getAllRansCodecs());
+        // params: RANSEncode, RANSDecode, RANSParams, data, lower limit, upper limit
+        return TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansTestDataTinySmallLarge());
     }
 
     @Test(dataProvider = "allRansAndDataForTinySmallLarge")
     public void testSizeRangeTinySmallLarge(
-            final TestCaseWrapper tc,
-            final Integer lowerLimit,
-            final Integer upperLimit,
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
-            final RANSParams params){
-        final ByteBuffer in = ByteBuffer.wrap(tc.testArray);
+            final RANSParams params,
+            final TestDataEnvelope td,
+            final Integer lowerLimit,
+            final Integer upperLimit){
+        final ByteBuffer in = ByteBuffer.wrap(td.testArray);
         for (int size = lowerLimit; size < upperLimit; size++) {
             in.position(0);
             in.limit(size);
-            ransRoundTrip(in, ransEncode, ransDecode, params);
+            ransRoundTrip(ransEncode, ransDecode, params, in);
         }
     }
 
@@ -182,18 +185,18 @@ public class RansTest extends HtsjdkTest {
 
     @Test(dataProvider="allRansAndData")
     public void testRANS(
-            final TestCaseWrapper tc,
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
-            final RANSParams params) {
-        ransRoundTrip(ByteBuffer.wrap(tc.testArray), ransEncode, ransDecode, params);
+            final RANSParams params,
+            final TestDataEnvelope td) {
+        ransRoundTrip(ransEncode, ransDecode, params, ByteBuffer.wrap(td.testArray));
     }
 
     private static void ransRoundTrip(
-            final ByteBuffer data,
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
-            final RANSParams params) {
+            final RANSParams params,
+            final ByteBuffer data) {
         final ByteBuffer compressed = ransEncode.compress(data, params);
         final ByteBuffer uncompressed = ransDecode.uncompress(compressed, params);
         data.rewind();

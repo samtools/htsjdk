@@ -25,20 +25,20 @@ final class D04 {
         final int out_sz = outBuffer.remaining();
         final int out_end = (out_sz & ~3);
         for (int i = 0; i < out_end; i += 4) {
-            final byte c0 = D.R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
-            final byte c1 = D.R[Utils.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
-            final byte c2 = D.R[Utils.RANSDecodeGet(rans2, Constants.TF_SHIFT)];
-            final byte c3 = D.R[Utils.RANSDecodeGet(rans3, Constants.TF_SHIFT)];
+            final byte c0 = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
+            final byte c1 = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, Constants.TOTAL_FREQ_SHIFT)];
+            final byte c2 = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans2, Constants.TOTAL_FREQ_SHIFT)];
+            final byte c3 = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans3, Constants.TOTAL_FREQ_SHIFT)];
 
             outBuffer.put(i, c0);
             outBuffer.put(i + 1, c1);
             outBuffer.put(i + 2, c2);
             outBuffer.put(i + 3, c3);
 
-            rans0 = syms[0xFF & c0].advanceSymbolStep(rans0, Constants.TF_SHIFT);
-            rans1 = syms[0xFF & c1].advanceSymbolStep(rans1, Constants.TF_SHIFT);
-            rans2 = syms[0xFF & c2].advanceSymbolStep(rans2, Constants.TF_SHIFT);
-            rans3 = syms[0xFF & c3].advanceSymbolStep(rans3,  Constants.TF_SHIFT);
+            rans0 = syms[0xFF & c0].advanceSymbolStep(rans0, Constants.TOTAL_FREQ_SHIFT);
+            rans1 = syms[0xFF & c1].advanceSymbolStep(rans1, Constants.TOTAL_FREQ_SHIFT);
+            rans2 = syms[0xFF & c2].advanceSymbolStep(rans2, Constants.TOTAL_FREQ_SHIFT);
+            rans3 = syms[0xFF & c3].advanceSymbolStep(rans3,  Constants.TOTAL_FREQ_SHIFT);
 
             rans0 = Utils.RANSDecodeRenormalize4x8(rans0, inBuffer);
             rans1 = Utils.RANSDecodeRenormalize4x8(rans1, inBuffer);
@@ -53,32 +53,32 @@ final class D04 {
                 break;
 
             case 1:
-                c = D.R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
-                syms[0xFF & c].advanceSymbol(rans0, inBuffer, Constants.TF_SHIFT);
+                c = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
+                syms[0xFF & c].advanceSymbol4x8(rans0, inBuffer, Constants.TOTAL_FREQ_SHIFT);
                 outBuffer.put(c);
                 break;
 
             case 2:
-                c = D.R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
-                syms[0xFF & c].advanceSymbol(rans0, inBuffer, Constants.TF_SHIFT);
+                c = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
+                syms[0xFF & c].advanceSymbol4x8(rans0, inBuffer, Constants.TOTAL_FREQ_SHIFT);
                 outBuffer.put(c);
 
-                c = D.R[Utils.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
-                syms[0xFF & c].advanceSymbol(rans1, inBuffer, Constants.TF_SHIFT);
+                c = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, Constants.TOTAL_FREQ_SHIFT)];
+                syms[0xFF & c].advanceSymbol4x8(rans1, inBuffer, Constants.TOTAL_FREQ_SHIFT);
                 outBuffer.put(c);
                 break;
 
             case 3:
-                c = D.R[Utils.RANSDecodeGet(rans0, Constants.TF_SHIFT)];
-                syms[0xFF & c].advanceSymbol(rans0, inBuffer,  Constants.TF_SHIFT);
+                c = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
+                syms[0xFF & c].advanceSymbol4x8(rans0, inBuffer,  Constants.TOTAL_FREQ_SHIFT);
                 outBuffer.put(c);
 
-                c = D.R[Utils.RANSDecodeGet(rans1, Constants.TF_SHIFT)];
-                syms[0xFF & c].advanceSymbol(rans1, inBuffer, Constants.TF_SHIFT);
+                c = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, Constants.TOTAL_FREQ_SHIFT)];
+                syms[0xFF & c].advanceSymbol4x8(rans1, inBuffer, Constants.TOTAL_FREQ_SHIFT);
                 outBuffer.put(c);
 
-                c = D.R[Utils.RANSDecodeGet(rans2, Constants.TF_SHIFT)];
-                syms[0xFF & c].advanceSymbol(rans2, inBuffer, Constants.TF_SHIFT);
+                c = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans2, Constants.TOTAL_FREQ_SHIFT)];
+                syms[0xFF & c].advanceSymbol4x8(rans2, inBuffer, Constants.TOTAL_FREQ_SHIFT);
                 outBuffer.put(c);
                 break;
         }

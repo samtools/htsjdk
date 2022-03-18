@@ -33,9 +33,9 @@ public class D0N {
             for (r=0; r<Nway; r++){
 
                 // Nway parallel decoding rans states
-                c[r] = D.R[Utils.RANSDecodeGet(rans[r], Constants.TF_SHIFT)];
+                c[r] = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
                 outBuffer.put(i+r, c[r]);
-                rans[r] = syms[0xFF & c[r]].advanceSymbolStep(rans[r], Constants.TF_SHIFT);
+                rans[r] = syms[0xFF & c[r]].advanceSymbolStep(rans[r], Constants.TOTAL_FREQ_SHIFT);
                 rans[r] = Utils.RANSDecodeRenormalizeNx16(rans[r], inBuffer);
             }
         }
@@ -44,8 +44,8 @@ public class D0N {
 
         // decode the remaining bytes
         while (remSize>0){
-            byte symbol = D.R[Utils.RANSDecodeGet(rans[rev_idx], Constants.TF_SHIFT)];
-            syms[0xFF & symbol].advanceSymbolNx16(rans[rev_idx], inBuffer, Constants.TF_SHIFT);
+            byte symbol = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[rev_idx], Constants.TOTAL_FREQ_SHIFT)];
+            syms[0xFF & symbol].advanceSymbolNx16(rans[rev_idx], inBuffer, Constants.TOTAL_FREQ_SHIFT);
             outBuffer.put(symbol);
             remSize --;
             rev_idx ++;

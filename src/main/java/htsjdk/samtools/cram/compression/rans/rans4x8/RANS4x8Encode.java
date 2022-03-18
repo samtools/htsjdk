@@ -8,6 +8,8 @@ import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static htsjdk.samtools.cram.compression.rans.Constants.NUMBER_OF_SYMBOLS;
+
 public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
     private static final int ORDER_BYTE_LENGTH = 1;
     private static final int COMPRESSED_BYTE_LENGTH = 4;
@@ -114,6 +116,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
     }
 
     private static int[] calcFrequenciesOrder0(final ByteBuffer inBuffer) {
+        // TODO: remove duplicate code -use Utils.normalise here
         final int inSize = inBuffer.remaining();
 
         // Compute statistics
@@ -126,7 +129,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             F[0xFF & inBuffer.get()]++;
             T++;
         }
-        final long tr = ((long) Constants.TOTFREQ << 31) / T + (1 << 30) / T;
+        final long tr = ((long) Constants.TOTAL_FREQ << 31) / T + (1 << 30) / T;
 
         // Normalise so T[i] == TOTFREQ
         // m is the maximum frequency value
@@ -157,10 +160,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         fsum++;
         // adjust the frequency of the symbol with maximum frequency to make sure that
         // the sum of frequencies of all the symbols = 4096
-        if (fsum < Constants.TOTFREQ) {
-            F[M] += Constants.TOTFREQ - fsum;
+        if (fsum < Constants.TOTAL_FREQ) {
+            F[M] += Constants.TOTAL_FREQ - fsum;
         } else {
-            F[M] -= fsum - Constants.TOTFREQ;
+            F[M] -= fsum - Constants.TOTAL_FREQ;
         }
         assert (F[M] > 0);
         return F;
@@ -189,7 +192,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                 continue;
             }
 
-            final double p = ((double) Constants.TOTFREQ) / T[i];
+            final double p = ((double) Constants.TOTAL_FREQ) / T[i];
             int t2 = 0, m = 0, M = 0;
             for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
                 if (F[i][j] == 0)
@@ -206,49 +209,45 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             }
 
             t2++;
-            if (t2 < Constants.TOTFREQ) {
-                F[i][M] += Constants.TOTFREQ - t2;
+            if (t2 < Constants.TOTAL_FREQ) {
+                F[i][M] += Constants.TOTAL_FREQ - t2;
             } else {
-                F[i][M] -= t2 - Constants.TOTFREQ;
+                F[i][M] -= t2 - Constants.TOTAL_FREQ;
             }
         }
 
         return F;
     }
 
-    private RANSEncodingSymbol[] buildSymsOrder0(final int[] F) {
-        final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
+    private void buildSymsOrder0(final int[] F) {
+        final RANSEncodingSymbol[] encodingSymbols = getEncodingSymbols()[0];
         final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
 
         // T = running sum of frequencies including the current symbol
         // F[j] = frequency of symbol "j"
         // C[j] = cumulative frequency of all the symbols preceding "j" (and excluding the frequency of symbol "j")
-        int T = 0;
+        int cumulativeFreq = 0;
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-            C[j] = T;
-            T += F[j];
             if (F[j] != 0) {
                 //For each symbol, set start = cumulative frequency and freq = frequency
-                syms[j].set(C[j], F[j], Constants.TF_SHIFT);
+                encodingSymbols[j].set(cumulativeFreq, F[j], Constants.TOTAL_FREQ_SHIFT);
+                cumulativeFreq += F[j];
             }
         }
-        return syms;
     }
 
-    private RANSEncodingSymbol[][] buildSymsOrder1(final int[][] F) {
-        final RANSEncodingSymbol[][] syms = getEncodingSymbols();
+    private void buildSymsOrder1(final int[][] F) {
+        final RANSEncodingSymbol[][] encodingSymbols = getEncodingSymbols();
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
             final int[] F_i_ = F[i];
-            int x = 0;
-            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-                if (F_i_[j] != 0) {
-                    syms[i][j].set(x, F_i_[j], Constants.TF_SHIFT);
-                    x += F_i_[j];
+            int cumulativeFreq = 0;
+            for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
+                if (F_i_[symbol] != 0) {
+                    encodingSymbols[i][symbol].set(cumulativeFreq, F_i_[symbol], Constants.TOTAL_FREQ_SHIFT);
+                    cumulativeFreq += F_i_[symbol];
                 }
             }
         }
-
-        return syms;
     }
 
     private static int writeFrequenciesOrder0(final ByteBuffer cp, final int[] F) {
@@ -270,7 +269,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                     // Note: maximum possible rle = 254
                     // rle requires atmost 1 byte
                     if (rle == 0 && j != 0 && F[j - 1] != 0) {
-                        for (rle = j + 1; rle < 256 && F[rle] != 0; rle++)
+                        for (rle = j + 1; rle < NUMBER_OF_SYMBOLS && F[rle] != 0; rle++)
                             ;
                         rle -= j + 1;
                         cp.put((byte) rle);
@@ -318,7 +317,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                 // FIXME: could use order-0 statistics to observe which alphabet
                 // symbols are present and base RLE on that ordering instead.
                 if (i != 0 && T[i - 1] != 0) {
-                    for (rle_i = i + 1; rle_i < 256 && T[rle_i] != 0; rle_i++)
+                    for (rle_i = i + 1; rle_i < NUMBER_OF_SYMBOLS && T[rle_i] != 0; rle_i++)
                         ;
                     rle_i -= i + 1;
                     cp.put((byte) rle_i);
@@ -336,7 +335,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                     } else {
                         cp.put((byte) j);
                         if (rle_j == 0 && j != 0 && F_i_[j - 1] != 0) {
-                            for (rle_j = j + 1; rle_j < 256 && F_i_[rle_j] != 0; rle_j++)
+                            for (rle_j = j + 1; rle_j < NUMBER_OF_SYMBOLS && F_i_[rle_j] != 0; rle_j++)
                                 ;
                             rle_j -= j + 1;
                             cp.put((byte) rle_j);

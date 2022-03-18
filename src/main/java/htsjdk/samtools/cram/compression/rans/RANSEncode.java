@@ -46,4 +46,6 @@ public abstract class RANSEncode<T extends RANSParams> {
         return outputBuffer;
     }
 
+    //TODO: add buildSymbols0 and buildSymbols1
+
 }

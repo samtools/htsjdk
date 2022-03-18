@@ -52,7 +52,7 @@ final public class RANSDecodingSymbol {
     // Advances in the bit stream by "popping" a single symbol with range start
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits".
-    public int advanceSymbol(final int rIn, final ByteBuffer byteBuffer, final int scaleBits) {
+    public int advanceSymbol4x8(final int rIn, final ByteBuffer byteBuffer, final int scaleBits) {
         final int mask = (1 << scaleBits) - 1;
 
         // s, x = D(x)
@@ -60,11 +60,11 @@ final public class RANSDecodingSymbol {
         r = freq * (r >> scaleBits) + (r & mask) - start;
 
         // re-normalize
-        if (r < Constants.RANS_BYTE_L_4x8) {
+        if (r < Constants.RANS_4x8_LOWER_BOUND) {
             do {
                 final int b = 0xFF & byteBuffer.get();
                 r = (r << 8) | b;
-            } while (r < Constants.RANS_BYTE_L_4x8);
+            } while (r < Constants.RANS_4x8_LOWER_BOUND);
         }
 
         return r;
@@ -78,7 +78,7 @@ final public class RANSDecodingSymbol {
         r = freq * (r >> scaleBits) + (r & mask) - start;
 
         // re-normalize
-        if (r < (Constants.RANS_BYTE_L_Nx16)){
+        if (r < (Constants.RANS_Nx16_LOWER_BOUND)){
             int i = 0xFF & byteBuffer.get();
             i |= (0xFF & byteBuffer.get())<<8;
             r = (r << 16) + i;
