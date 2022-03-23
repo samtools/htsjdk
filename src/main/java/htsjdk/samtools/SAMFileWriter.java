@@ -43,6 +43,11 @@ public interface SAMFileWriter extends Closeable {
 	 */
 	void setProgressLogger(final ProgressLoggerInterface progress);
 
+	/** If true writers that are writing pre-sorted records should check the order during writing. */
+	default void setSortOrderChecking(final boolean check) {
+		// no-op
+	}
+
     /**
      * Must be called to flush or file will likely be defective. 
      */
