@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CollectionUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -8,7 +9,7 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class SAMFileWriterTest {
+public class SAMFileWriterTest extends HtsjdkTest {
     @Test public void testWritingPresortedData() throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.queryname);
         builder.addFrag("q1", 0, 1000, false);
