@@ -28,7 +28,7 @@ import htsjdk.samtools.util.SortingCollection;
 
 import java.io.File;
 import java.io.StringWriter;
-import java.util.function.Supplier;
+import static htsjdk.samtools.SAMFileHeader.SortOrder;
 
 /**
  * Base class for implementing SAM writer with any underlying format.
@@ -92,6 +92,22 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
         }
         this.sortOrder = sortOrder;
         this.presorted = presorted;
+        setSortOrderChecking(this.sortOrderChecker != null);
+    }
+
+    @Override
+    public void setSortOrderChecking(boolean check) {
+        final boolean doCheck = check &&
+                this.presorted &&
+                this.sortOrder != SAMFileHeader.SortOrder.unsorted &&
+                this.sortOrder != SortOrder.unknown;
+
+        if (doCheck) {
+            this.sortOrderChecker = new SAMSortOrderChecker(this.sortOrder);
+        }
+        else {
+            this.sortOrderChecker = null;
+        }
     }
 
     /**
@@ -141,19 +157,18 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
             throw new IllegalArgumentException("A non-null SAMFileHeader is required for a writer");
         }
         this.header = header;
-        if (sortOrder == null) {
-             sortOrder = SAMFileHeader.SortOrder.unsorted;
+        if (this.sortOrder == null) {
+             this.sortOrder = SAMFileHeader.SortOrder.unsorted;
         }
-        header.setSortOrder(sortOrder);
+        header.setSortOrder(this.sortOrder);
 
         writeHeader(header);
 
-        if (presorted) {
-            if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
-                presorted = false;
-            } else {
-                sortOrderChecker = new SAMSortOrderChecker(sortOrder);
+        if (this.presorted) {
+            if (this.sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
+                this.presorted = false;
             }
+            setSortOrderChecking(true);
         } else if (!sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
             alignmentSorter = SortingCollection.newInstance(SAMRecord.class,
                     new BAMRecordCodec(header), sortOrder.getComparatorInstance(), maxRecordsInRam, tmpDir);
@@ -189,8 +204,8 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     }
 
     private void assertPresorted(final SAMRecord alignment) {
-        final SAMRecord prev = sortOrderChecker.getPreviousRecord();
-        if (!sortOrderChecker.isSorted(alignment)) {
+        if (this.sortOrderChecker != null && !sortOrderChecker.isSorted(alignment)) {
+            final SAMRecord prev = sortOrderChecker.getPreviousRecord();
             throw new IllegalArgumentException("Alignments added out of order in SAMFileWriterImpl.addAlignment for " +
                     getFilename() + ". Sort order is " + this.sortOrder + ". Offending records are at ["
                     + sortOrderChecker.getSortKey(prev) + "] and ["

@@ -44,6 +44,11 @@ class AsyncSAMFileWriter extends AbstractAsyncWriter<SAMRecord> implements SAMFi
 		this.underlyingWriter.setProgressLogger(progress);
 	}
 
+    @Override
+    public void setSortOrderChecking(boolean check) {
+        this.underlyingWriter.setSortOrderChecking(check);
+    }
+
     /**
      * Adds an alignment to the queue to be written.  Will re-throw any exception that was received when
      * writing prior record(s) to the underlying SAMFileWriter.
