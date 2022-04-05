@@ -73,7 +73,6 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
         final SubstitutionMatrix substitutionMatrix = getSubstitutionMatrixForFrequencies(refBase, nA, nC, nG, nT, nN);
         Assert.assertEquals(substitutionMatrix.getEncodedMatrix(), expectedMatrixBytes);
 
-        System.out.println(substitutionMatrix);
         // create a "roundTrip" matrix using the expected bytes as input, and cross-validate that the codes match
         final SubstitutionMatrix roundTrippedMatrix = new SubstitutionMatrix(expectedMatrixBytes);
         for (final SubstitutionBase referenceBase : SubstitutionBase.values()) {
