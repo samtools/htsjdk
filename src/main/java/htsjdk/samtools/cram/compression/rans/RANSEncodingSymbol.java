@@ -24,8 +24,6 @@
  */
 package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.utils.ValidationUtils;
-
 import java.nio.ByteBuffer;
 
 final class RANSEncodingSymbol {
@@ -69,8 +67,6 @@ final class RANSEncodingSymbol {
     }
 
     public int putSymbol(int r, final ByteBuffer byteBuffer) {
-        ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
-
         // re-normalize
         int x = r;
         if (x >= xMax) {
