@@ -28,6 +28,7 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +37,7 @@ import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -57,6 +59,12 @@ public class ReferenceSource implements CRAMReferenceSource {
     private int downloadTriesBeforeFailing = 2;
 
     private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<>();
+
+    // Optimize for locality of reference by maintaining the backing reference bases for the most recent request.
+    // Failure to do this will result in the bases being aggressively GC'd when the only other reference to them
+    // is the weak reference hash map above, resulting in much thrashing.
+    private byte[] backingReferenceBases;
+    private int backingContigIndex;
 
     public ReferenceSource(final File file) {
         this(IOUtil.toPath(file));
@@ -177,6 +185,46 @@ public class ReferenceSource implements CRAMReferenceSource {
 
         // sequence not found, give up:
         return null;
+    }
+
+    @Override
+    public byte[] getReferenceBasesByRegion(
+            final SAMSequenceRecord sequenceRecord,
+            final int zeroBasedOffset,
+            final int requestedRegionLength) {
+        ValidationUtils.validateArg(zeroBasedOffset >= 0, "start must be >= 0");
+
+        // this implementation maintains the entire reference sequence, and hands out whatever region
+        // of it is requested
+        final byte[] currentBackingBases = getMatchingBackingBases(sequenceRecord);
+        final byte[] bases =
+                currentBackingBases == null ?
+                    getReferenceBases(sequenceRecord, false) :
+                    currentBackingBases;
+
+        if (bases != null) {
+            // cache the backing bases to prevent thrashing due to aggressive GC
+            backingReferenceBases = bases;
+            backingContigIndex = sequenceRecord.getSequenceIndex();
+
+            if ((zeroBasedOffset + requestedRegionLength) > bases.length) {
+                log.warn("Can't supply reference bytes for start: " + zeroBasedOffset + " length: " +
+                        requestedRegionLength + " from sequence: " + sequenceRecord.getSequenceName() +
+                                " of length " + bases.length + " bytes");
+                final byte[] basesSlice = Arrays.copyOfRange(bases, zeroBasedOffset, bases.length);
+                return basesSlice;
+            } else {
+                final byte[] basesSlice = Arrays.copyOfRange(bases, zeroBasedOffset, zeroBasedOffset + requestedRegionLength);
+                return basesSlice;
+            }
+        }
+        return bases;
+    }
+
+    private byte[] getMatchingBackingBases(final SAMSequenceRecord sequenceRecord) {
+         return backingReferenceBases != null && backingContigIndex == sequenceRecord.getSequenceIndex() ?
+                 backingReferenceBases :
+                 null;
     }
 
     private byte[] findBasesByName(final String name, final boolean tryVariants) {

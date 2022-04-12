@@ -442,16 +442,15 @@ public class Slice {
      */
     public void normalizeCRAMRecords(final List<CRAMCompressionRecord> cramCompressionRecords,
                                      final CRAMReferenceRegion cramReferenceRegion) {
-        byte[] referenceBases = null;
         boolean hasEmbeddedReference = false;
         if (compressionHeader.isReferenceRequired()) {
-            // validate reference MD5 now that we have access to the reference bases
+            // get the reference bases required for the entire slice and validate the reference MD5
             if (getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
-                referenceBases = cramReferenceRegion.getReferenceBases(
-                        getAlignmentContext().getReferenceContext().getReferenceSequenceID()
-                );
-
-                validateReferenceBases(referenceBases);
+                cramReferenceRegion.getReferenceBasesByRegion(
+                        alignmentContext.getReferenceContext().getReferenceSequenceID(),
+                        alignmentContext.getAlignmentStart() - 1, // 1 based to 0-based
+                        alignmentContext.getAlignmentSpan());
+                validateReferenceBases(cramReferenceRegion);
             }
         } else {
             // RR = false might mean that no reference compression was used, or that an embedded reference
@@ -459,9 +458,10 @@ public class Slice {
             final Block embeddedReferenceBlock = getEmbeddedReferenceBlock();
             if (embeddedReferenceBlock != null) {
                 hasEmbeddedReference = true;
-                cramReferenceRegion.setEmbeddedReference(
+                cramReferenceRegion.setEmbeddedReferenceBases(
                         embeddedReferenceBlock.getUncompressedContent(new CompressorCache()),
-                        getAlignmentContext().getReferenceContext().getReferenceSequenceID());
+                        getAlignmentContext().getReferenceContext().getReferenceSequenceID(),
+                        alignmentContext.getAlignmentStart() - 1);
             }
         }
 
@@ -493,18 +493,22 @@ public class Slice {
 
         // resolve bases:
         for (final CRAMCompressionRecord record : cramCompressionRecords) {
-            if (!record.isSegmentUnmapped()) {
-                if (compressionHeader.isReferenceRequired()) {
-                    // we need to re-resolve the reference bases for each record we visit, since this might be a
-                    // multi-reference slice, in which case all the reads are not necessarily mapped to the same
-                    // reference contig
-                    referenceBases = cramReferenceRegion.getReferenceBases(record.getReferenceIndex());
-                } else if (hasEmbeddedReference) {
-                    referenceBases = cramReferenceRegion.getCurrentReferenceBases();
+            if (!record.isSegmentUnmapped()) { // read bases for unmapped are restored directly from the input stream
+                if (compressionHeader.isReferenceRequired() &&
+                        getAlignmentContext().getReferenceContext().isMultiRef() &&
+                        !record.isUnknownBases() &&
+                        !hasEmbeddedReference) {
+                    // the pathological case where we need to re-resolve the reference bases for each record we
+                    // visit because this is a multi-reference slice and all the reads are not necessarily mapped
+                    // to the same reference contig
+                    //ignore the return since we only care about the side effect
+                    cramReferenceRegion.getReferenceBasesByRegion(
+                            record.getReferenceIndex(),
+                            record.getAlignmentStart() - 1,  // 1 based to 0-based
+                            record.getAlignmentEnd() - record.getAlignmentStart() + 1);
                 }
                 record.restoreReadBases(
-                        referenceBases,
-                        getReferenceOffset(hasEmbeddedReference),
+                        cramReferenceRegion,
                         getCompressionHeader().getSubstitutionMatrix());
             }
         }
@@ -517,13 +521,6 @@ public class Slice {
             record.setIsNormalized();
         }
      }
-
-    private int getReferenceOffset(final boolean hasEmbeddedReference) {
-        final ReferenceContext sliceReferenceContext = getAlignmentContext().getReferenceContext();
-        return sliceReferenceContext.isMappedSingleRef() && hasEmbeddedReference ?
-            getAlignmentContext().getAlignmentStart() - 1 :
-            0;
-    }
 
     private int caclulateNumberOfBlocks() {
         // Each Slice has 1 core data block, plus zero or more external data blocks.
@@ -653,7 +650,8 @@ public class Slice {
         }
     }
 
-    private void validateAlignmentSpanForReference(final byte[] referenceBases) {
+    private void validateAlignmentSpanForReference(final CRAMReferenceRegion cramReferenceRegion) {
+        final byte[] referenceBases = cramReferenceRegion.getCurrentReferenceBases();
         if (alignmentContext.getReferenceContext().isUnmappedUnplaced()) {
             return;
         }
@@ -667,16 +665,11 @@ public class Slice {
         //TODO: CRAMComplianceTest/c1#bounds triggers this (the reads are mapped beyond reference length),
         // and CRAMEdgeCasesTest.testNullsAndBeyondRef seems to deliberately test that reads that extend
         // beyond the reference length should be ok ?
-        if (alignmentContext.getAlignmentStart() > referenceBases.length) {
+        if (((alignmentContext.getAlignmentStart()-1)  < cramReferenceRegion.getRegionOffset()) ||
+                (alignmentContext.getAlignmentSpan() > cramReferenceRegion.getRegionLength())) {
             log.warn(String.format(
-                    "Slice mapped outside of reference: seqID=%s, start=%d, record counter=%d.",
-                    alignmentContext.getReferenceContext(),
-                    alignmentContext.getAlignmentStart(),
-                    globalRecordCounter));
-        }
-
-        if (alignmentContext.getAlignmentStart() - 1 + alignmentContext.getAlignmentSpan() > referenceBases.length) {
-            log.warn(String.format("Slice mapped outside of reference: seqID=%s, start=%d, span=%d, counter=%d.",
+                    "Slice mapped outside of reference bases length %d: slice reference context=%s, start=%d, span=%d, counter=%d.",
+                    cramReferenceRegion.getFullContigLength(),
                     alignmentContext.getReferenceContext(),
                     alignmentContext.getAlignmentStart(),
                     alignmentContext.getAlignmentSpan(),
@@ -685,12 +678,11 @@ public class Slice {
     }
 
     //VisibleForTesting
-    void validateReferenceBases(final byte[] referenceBases) {
+    void validateReferenceBases(final CRAMReferenceRegion cramReferenceRegion) {
         if (alignmentContext.getReferenceContext().isMappedSingleRef() && compressionHeader.isReferenceRequired()) {
-            validateAlignmentSpanForReference(referenceBases);
+            validateAlignmentSpanForReference(cramReferenceRegion);
             if (!referenceMD5IsValid(
-                    referenceBases,
-                    alignmentContext.getAlignmentStart(),
+                    cramReferenceRegion,
                     alignmentContext.getAlignmentSpan(),
                     referenceMD5)) {
                 throw new CRAMException(
@@ -703,12 +695,14 @@ public class Slice {
     }
 
     private static boolean referenceMD5IsValid(
-            final byte[] referenceBases,
-            final int alignmentStart,
+            final CRAMReferenceRegion cramReferenceRegion,
             final int alignmentSpan,
             final byte[] expectedMD5) {
-        final int span = Math.min(alignmentSpan, referenceBases.length - alignmentStart + 1);
-        final byte md5[] = SequenceUtil.calculateMD5(referenceBases, alignmentStart - 1, span);
+        final byte[] referenceBases = cramReferenceRegion.getCurrentReferenceBases();
+        final int span = Math.min(alignmentSpan, referenceBases.length);
+        // use offset 0 here, based on the assumption that we're always using a CRAMReferenceRegion that
+        // has bases that start exactly at the start of the span of the slice alignment context
+        final byte md5[] = SequenceUtil.calculateMD5(referenceBases, 0, span);
         return Arrays.equals(md5, expectedMD5);
     }
 
@@ -729,17 +723,18 @@ public class Slice {
     }
 
     // *calculate* the MD5 for this reference
-    public void setReferenceMD5(final byte[] ref) {
-        validateAlignmentSpanForReference(ref);
+    public void setReferenceMD5(final CRAMReferenceRegion cramReferenceRegion) {
+        validateAlignmentSpanForReference(cramReferenceRegion);
 
+        final byte[] referenceBases = cramReferenceRegion.getCurrentReferenceBases();
+        //TODO: how can an alignment context have a start "< 1" ?
         if (! alignmentContext.getReferenceContext().isMappedSingleRef() && alignmentContext.getAlignmentStart() < 1) {
             referenceMD5 = new byte[MD5_BYTE_SIZE];
         } else {
-            final int span = Math.min(alignmentContext.getAlignmentSpan(), ref.length - alignmentContext.getAlignmentStart() + 1);
-            if (alignmentContext.getAlignmentStart() + span > ref.length + 1) {
-                throw new CRAMException("Invalid alignment boundaries.");
-            }
-            referenceMD5 = SequenceUtil.calculateMD5(ref, alignmentContext.getAlignmentStart() - 1, span);
+            final int span = Math.min(alignmentContext.getAlignmentSpan(), referenceBases.length);
+            // use offset 0, which is correct given the assumption that we are ALWAYS using
+            // a region that has bases that reflect the span of the alignment context
+            referenceMD5 = SequenceUtil.calculateMD5(referenceBases, 0, span);
         }
     }
 

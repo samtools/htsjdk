@@ -3,10 +3,13 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.CRAMFileReader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.build.ContainerFactory;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.block.Block;
@@ -37,9 +40,28 @@ public class SliceTests extends HtsjdkTest {
         final Slice slice = container.getSlices().get(0);
         Assert.assertEquals(slice.getAlignmentContext().getReferenceContext(), ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
 
-        slice.validateReferenceBases(null);
-        slice.validateReferenceBases(new byte[0]);
-        slice.validateReferenceBases(new byte[1024]);
+        // ensure these do not throw
+        slice.validateReferenceBases(
+                new CRAMReferenceRegion(createTestReferenceSource(null), CRAMStructureTestHelper.SAM_FILE_HEADER));
+        slice.validateReferenceBases(
+                new CRAMReferenceRegion(createTestReferenceSource(new byte[0]), CRAMStructureTestHelper.SAM_FILE_HEADER));
+        slice.validateReferenceBases(
+                new CRAMReferenceRegion(createTestReferenceSource(new byte[1024]), CRAMStructureTestHelper.SAM_FILE_HEADER));
+    }
+
+    private CRAMReferenceSource createTestReferenceSource(final byte[] bases) {
+        return new CRAMReferenceSource() {
+            @Override
+            public byte[] getReferenceBases(SAMSequenceRecord sequenceRecord, boolean tryNameVariants) {
+                return bases;
+            }
+
+            @Override
+            public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord, int zeroBasedOffset,
+                                                    int requestedRegionLength) {
+                return bases;
+            }
+        };
     }
 
     @Test

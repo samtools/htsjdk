@@ -136,7 +136,13 @@ public final class SliceFactory {
                     containerByteOffset,
                     sliceStagingEntry.getGlobalRecordCounter()
             );
-            slice.setReferenceMD5(cramReferenceRegion.getCurrentReferenceBases());
+            if (slice.getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
+                cramReferenceRegion.getReferenceBasesByRegion(
+                        slice.getAlignmentContext().getReferenceContext().getReferenceContextID(),
+                        slice.getAlignmentContext().getAlignmentStart() - 1, // 1-based alignment context to 0-based reference offset
+                        slice.getAlignmentContext().getAlignmentSpan());
+                slice.setReferenceMD5(cramReferenceRegion);
+             }
             slices.add(slice);
         }
         cramRecordSliceEntries.clear();
@@ -154,7 +160,9 @@ public final class SliceFactory {
                     CramVersions.DEFAULT_CRAM_VERSION,
                     encodingStrategy,
                     samRecord,
-                    cramReferenceRegion.getReferenceBases(referenceIndex),
+                    referenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX ?
+                            null :
+                            cramReferenceRegion.getReferenceBases(referenceIndex),
                     recordIndex++,
                     readGroupNameToID);
             cramCompressionRecords.add(cramCompressionRecord);

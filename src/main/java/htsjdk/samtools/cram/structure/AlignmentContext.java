@@ -71,7 +71,7 @@ public class AlignmentContext {
     private final int alignmentSpan;
 
     /**
-     * Create an AlignmentContext from a refernce context, start, and span.
+     * Create an AlignmentContext from a reference context, start, and span.
      *
      * Unfortunately, this can't enforce that the values are valid alignment values, or even warn about such
      * values here, because there are too many cases where the spec doesn't or didn't originally prescribe

@@ -81,7 +81,7 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      * see {@link #getReferenceContextID()}.
      *
      * @throws CRAMException if this is not a single-ref reference context
-     * @return the sequence ID for this refernce context
+     * @return the sequence ID for this reference context
      */
     public int getReferenceSequenceID() {
         if (type != ReferenceContextType.SINGLE_REFERENCE_TYPE) {
