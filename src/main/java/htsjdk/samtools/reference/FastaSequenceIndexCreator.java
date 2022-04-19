@@ -76,7 +76,11 @@ public final class FastaSequenceIndexCreator {
      * @return the input stream which is either a GZIP input stream or a position buffered stream.
      */
     private static InputStream optionallyWrapAsPositional(final InputStream input) {
-        if (input instanceof GZIPInputStream) { return input; } else { return new PositionalBufferedStream(input); }
+        if (input instanceof GZIPInputStream) {
+            return input;
+        } else {
+            return new PositionalBufferedStream(input);
+        }
     }
 
     /**
