@@ -47,7 +47,8 @@ public class RANSNx16Decode extends RANSDecode {
         // If CAT is set then, the input is uncompressed
         if (cat){
             byte[] data = new byte[n_out];
-            outBuffer = inBuffer.get( data,0, n_out);
+            inBuffer.get( data,0, n_out);
+            return ByteBuffer.wrap(data);
         }
         else {
             switch (order){
