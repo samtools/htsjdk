@@ -4,6 +4,15 @@ import htsjdk.samtools.cram.compression.rans.RANSParams;
 
 public class RANSNx16Params implements RANSParams {
 
+    // RANS Nx16 Bit Flags
+    public static final int ORDER_FLAG_MASK = 0x01;
+    public static final int X32_FLAG_MASK = 0x04;
+    public static final int STRIPE_FLAG_MASK = 0x08;
+    public static final int NOSZ_FLAG_MASK = 0x10;
+    public static final int CAT_FLAG_MASK = 0x20;
+    public static final int RLE_FLAG_MASK = 0x40;
+    public static final int PACK_FLAG_MASK = 0x80;
+
     // format is the first byte of the compressed data stream,
     // which consists of all the bit-flags detailing the type of transformations
     // and entropy encoders to be combined
@@ -11,15 +20,6 @@ public class RANSNx16Params implements RANSParams {
 
     // To get the least significant 7 bits of format byte
     private static final int FORMAT_FLAG_MASK = 0x7f;
-
-    // RANS Nx16 Bit Flags
-    private static final int ORDER_FLAG_MASK = 0x01;
-    private static final int X32_FLAG_MASK = 0x04;
-    private static final int STRIPE_FLAG_MASK = 0x08;
-    private static final int NOSZ_FLAG_MASK = 0x10;
-    private static final int CAT_FLAG_MASK = 0x20;
-    private static final int RLE_FLAG_MASK = 0x40;
-    private static final int PACK_FLAG_MASK = 0x80;
 
     // output length. Used as input param to RANS Nx16 uncompress method
     private final int nOut = 0;

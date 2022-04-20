@@ -11,11 +11,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-public class RANSNx16Decode extends RANSDecode<RANSNx16Params>{
+public class RANSNx16Decode extends RANSDecode {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private static final int FREQ_TABLE_OPTIONALLY_COMPRESSED_MASK = 0x01;
 
-    public ByteBuffer uncompress(final ByteBuffer inBuffer,  final RANSNx16Params params) {
+    public ByteBuffer uncompress(final ByteBuffer inBuffer) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
@@ -26,7 +26,7 @@ public class RANSNx16Decode extends RANSDecode<RANSNx16Params>{
 
         // the first byte of compressed stream gives the formatFlags
         final int formatFlags = inBuffer.get();
-        params.setFormatFlags(formatFlags);
+        final RANSNx16Params params = new RANSNx16Params(formatFlags);
         int n_out = params.getnOut();
         final RANSParams.ORDER order = params.getOrder(); // Order-0 or Order-1 entropy coding
         final boolean x32 = params.getX32(); // Interleave N = 32 rANS states (else N = 4)
