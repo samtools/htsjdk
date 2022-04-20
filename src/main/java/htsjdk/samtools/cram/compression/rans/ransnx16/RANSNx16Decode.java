@@ -27,7 +27,6 @@ public class RANSNx16Decode extends RANSDecode {
         // the first byte of compressed stream gives the formatFlags
         final int formatFlags = inBuffer.get();
         final RANSNx16Params params = new RANSNx16Params(formatFlags);
-        int n_out = params.getnOut();
         final RANSParams.ORDER order = params.getOrder(); // Order-0 or Order-1 entropy coding
         final boolean x32 = params.getX32(); // Interleave N = 32 rANS states (else N = 4)
         final boolean stripe = params.getStripe(); //multiway interleaving of byte streams
@@ -42,9 +41,7 @@ public class RANSNx16Decode extends RANSDecode {
         final int Nway = (x32) ? 32 : 4;
 
         // if nosz is set, then uncompressed size is not recorded.
-        if (!nosz) {
-            n_out = Utils.readUint7(inBuffer);
-        }
+        int n_out  = nosz ? 0 : Utils.readUint7(inBuffer);
         ByteBuffer outBuffer = ByteBuffer.allocate(n_out);
 
         // If CAT is set then, the input is uncompressed
