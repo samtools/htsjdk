@@ -27,13 +27,13 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             int insize = inBuffer.remaining();
             Utils.writeUint7(insize,outBuffer);
         }
-        initializeRANSEncoder();
         if (ransNx16Params.getCAT()) {
             // Data is uncompressed
             outBuffer.put(inBuffer);
             return outBuffer;
         }
 
+        initializeRANSEncoder();
         if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE) {
             // TODO: check if this still applies for Nx16 or if there is a different limit
             // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
