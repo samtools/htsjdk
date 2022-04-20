@@ -42,7 +42,6 @@ public class RANSNx16Decode extends RANSDecode {
 
         // if nosz is set, then uncompressed size is not recorded.
         int n_out  = nosz ? 0 : Utils.readUint7(inBuffer);
-        ByteBuffer outBuffer = ByteBuffer.allocate(n_out);
 
         // If CAT is set then, the input is uncompressed
         if (cat){
@@ -51,18 +50,19 @@ public class RANSNx16Decode extends RANSDecode {
             return ByteBuffer.wrap(data);
         }
         else {
+            final ByteBuffer outBuffer = ByteBuffer.allocate(n_out);
             switch (order){
                 case ZERO:
-                    outBuffer = uncompressOrder0WayN(inBuffer, outBuffer, n_out, Nway);
+                    uncompressOrder0WayN(inBuffer, outBuffer, n_out, Nway);
                     break;
                 case ONE:
-                    outBuffer = uncompressOrder1WayN(inBuffer, outBuffer, n_out, Nway);
+                    uncompressOrder1WayN(inBuffer, outBuffer, n_out, Nway);
                     break;
                 default:
                     throw new RuntimeException("Unknown rANS order: " + order);
             }
+            return outBuffer;
         }
-        return outBuffer;
     }
 
     private ByteBuffer uncompressOrder0WayN(
