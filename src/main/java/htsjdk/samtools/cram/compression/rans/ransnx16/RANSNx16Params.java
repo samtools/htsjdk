@@ -21,9 +21,6 @@ public class RANSNx16Params implements RANSParams {
     // To get the least significant 7 bits of format byte
     private static final int FORMAT_FLAG_MASK = 0x7f;
 
-    // output length. Used as input param to RANS Nx16 uncompress method
-    private final int nOut = 0;
-
     public RANSNx16Params(int formatFlags) {
         this.formatFlags = formatFlags;
     }
@@ -42,10 +39,6 @@ public class RANSNx16Params implements RANSParams {
     public int getFormatFlags(){
         // Least significant 7 bits of the format
         return formatFlags & FORMAT_FLAG_MASK;
-    }
-
-    public void setFormatFlags(int formatFlags) {
-        this.formatFlags = formatFlags;
     }
 
     public boolean getX32(){
@@ -76,12 +69,6 @@ public class RANSNx16Params implements RANSParams {
     public boolean getPack(){
         // Pack 2, 4, 8 or infinite symbols per byte
         return ((formatFlags & PACK_FLAG_MASK)!=0);
-    }
-
-    public int getnOut() {
-        // nOut is the length of uncompressed data
-        // used in uncompress method
-        return nOut;
     }
 
 }
