@@ -130,7 +130,7 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
                     params.toString(),
                     uncompressedBytes.remaining(),
                     compressedBytes.remaining()));
-            Assert.assertEquals(ransDecode.uncompress(compressedBytes, params), uncompressedBytes);
+            Assert.assertEquals(ransDecode.uncompress(compressedBytes), uncompressedBytes);
         }
     }
 
@@ -169,7 +169,7 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
             Assert.assertEquals(htsjdkCompressedBytes, preCompressedInputBytes);
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
-            final ByteBuffer htsjdkUncompressedBytes = ransDecode.uncompress(preCompressedInputBytes, params);
+            final ByteBuffer htsjdkUncompressedBytes = ransDecode.uncompress(preCompressedInputBytes);
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
             Assert.assertEquals(htsjdkUncompressedBytes, inputBytes);
