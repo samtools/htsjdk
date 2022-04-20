@@ -82,7 +82,7 @@ public class RansTest extends HtsjdkTest {
         final RANSNx16Decode ransNx16Decode = new RANSNx16Decode();
         // TODO: More formatFlags values i.e, combinations of bit flags will be added later
         return new Object[][]{
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0)} //RANSNx16 formatFlags(first byte) 0
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0)} ,//RANSNx16 formatFlags(first byte) 0
         };
     }
 
@@ -107,7 +107,7 @@ public class RansTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "allRansAndDataForTinySmallLarge")
-    public void testSizeRangeTinySmallLarge(
+    public void testRoundTripTinySmallLarge(
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
             final RANSParams params,
@@ -184,7 +184,7 @@ public class RansTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="allRansAndData")
-    public void testRANS(
+    public void testRoundTrip(
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
             final RANSParams params,
