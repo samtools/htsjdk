@@ -21,7 +21,6 @@ public class RANSNx16Decode extends RANSDecode {
 
         // For RANS decoding, the bytes are read in little endian from the input stream
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        initializeRANSDecoder();
 
         // the first byte of compressed stream gives the formatFlags
         final int formatFlags = inBuffer.get();
@@ -39,6 +38,7 @@ public class RANSNx16Decode extends RANSDecode {
             return ByteBuffer.wrap(data);
         }
         else {
+            initializeRANSDecoder();
             final ByteBuffer outBuffer = ByteBuffer.allocate(n_out);
             switch (ransNx16Params.getOrder()){
                 case ZERO:
