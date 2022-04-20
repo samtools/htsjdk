@@ -10,12 +10,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-public class RANS4x8Decode extends RANSDecode<RANS4x8Params> {
+public class RANS4x8Decode extends RANSDecode {
 
     private static final int RAW_BYTE_LENGTH = 4;
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
-    public ByteBuffer uncompress(final ByteBuffer inBuffer, final RANS4x8Params params) {
+    public ByteBuffer uncompress(final ByteBuffer inBuffer) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }

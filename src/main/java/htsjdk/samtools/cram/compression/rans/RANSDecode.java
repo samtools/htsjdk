@@ -2,7 +2,7 @@ package htsjdk.samtools.cram.compression.rans;
 
 import java.nio.ByteBuffer;
 
-public abstract class RANSDecode<T extends RANSParams> {
+public abstract class RANSDecode {
     private ArithmeticDecoder[] D;
     private RANSDecodingSymbol[][] decodingSymbols;
 
@@ -15,7 +15,7 @@ public abstract class RANSDecode<T extends RANSParams> {
         return decodingSymbols;
     }
 
-    public abstract ByteBuffer uncompress(final ByteBuffer inBuffer, final T params);
+    public abstract ByteBuffer uncompress(final ByteBuffer inBuffer);
 
     // Lazy initialization of working memory for the decoder
     protected void initializeRANSDecoder() {

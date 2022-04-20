@@ -198,7 +198,7 @@ public class RansTest extends HtsjdkTest {
             final RANSParams params,
             final ByteBuffer data) {
         final ByteBuffer compressed = ransEncode.compress(data, params);
-        final ByteBuffer uncompressed = ransDecode.uncompress(compressed, params);
+        final ByteBuffer uncompressed = ransDecode.uncompress(compressed);
         data.rewind();
         while (data.hasRemaining()) {
             if (!uncompressed.hasRemaining()) {
@@ -217,7 +217,7 @@ public class RansTest extends HtsjdkTest {
         // helper method for Boundary Expectations test
         final ByteBuffer raw = ByteBuffer.wrap(randomBytesFromGeometricDistribution(size, 0.01));
         final ByteBuffer compressed = ransEncode.compress(raw, params);
-        final ByteBuffer uncompressed = ransDecode.uncompress(compressed,params);
+        final ByteBuffer uncompressed = ransDecode.uncompress(compressed);
         Assert.assertFalse(compressed.hasRemaining());
         compressed.rewind();
         Assert.assertEquals(uncompressed.limit(), size);
