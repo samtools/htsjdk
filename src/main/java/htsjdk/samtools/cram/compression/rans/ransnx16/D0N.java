@@ -14,7 +14,8 @@ public class D0N {
             RANSDecodingSymbol[] syms,
             final ByteBuffer outBuffer,
             final int out_sz,
-            final int Nway) {
+            final RANSNx16Params ransNx16Params) {
+        final int Nway = ransNx16Params.getInterleaveSize();
 
         // Nway parallel rans states. Nway = 4 or 32
         final int[] rans = new int[Nway];

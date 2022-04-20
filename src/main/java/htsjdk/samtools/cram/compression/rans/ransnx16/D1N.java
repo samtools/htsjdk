@@ -14,7 +14,7 @@ public class D1N {
             final ByteBuffer outBuffer,
             final ArithmeticDecoder[] D,
             final RANSDecodingSymbol[][] syms,
-            final int Nway) {
+            final RANSNx16Params ransNx16Params) {
 
         // uncompress for Nway = 4. then extend Nway to be variable - 4 or 32
         // TODO: Fails - unexpected symbol in the third iteration of the for loop.

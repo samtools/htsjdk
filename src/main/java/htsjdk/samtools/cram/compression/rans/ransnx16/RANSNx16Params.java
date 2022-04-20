@@ -6,7 +6,7 @@ public class RANSNx16Params implements RANSParams {
 
     // RANS Nx16 Bit Flags
     public static final int ORDER_FLAG_MASK = 0x01;
-    public static final int X32_FLAG_MASK = 0x04;
+    public static final int N32_FLAG_MASK = 0x04;
     public static final int STRIPE_FLAG_MASK = 0x08;
     public static final int NOSZ_FLAG_MASK = 0x10;
     public static final int CAT_FLAG_MASK = 0x20;
@@ -41,9 +41,11 @@ public class RANSNx16Params implements RANSParams {
         return formatFlags & FORMAT_FLAG_MASK;
     }
 
-    public boolean getX32(){
+    public int getInterleaveSize(){
         // Interleave N = 32 rANS states (else N = 4)
-        return ((formatFlags & X32_FLAG_MASK)!=0);
+        //TODO: temporarily always return 4
+        //return ((formatFlags & N32_FLAG_MASK) == 0) ? 32 : 4;
+        return 4;
     }
 
     public boolean getStripe(){

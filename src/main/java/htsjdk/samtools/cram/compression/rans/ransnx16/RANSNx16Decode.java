@@ -4,7 +4,6 @@ import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
 import htsjdk.samtools.cram.compression.rans.RANSDecodingSymbol;
-import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
@@ -26,40 +25,30 @@ public class RANSNx16Decode extends RANSDecode {
 
         // the first byte of compressed stream gives the formatFlags
         final int formatFlags = inBuffer.get();
-        final RANSNx16Params params = new RANSNx16Params(formatFlags);
-        final RANSParams.ORDER order = params.getOrder(); // Order-0 or Order-1 entropy coding
-        final boolean x32 = params.getX32(); // Interleave N = 32 rANS states (else N = 4)
-        final boolean stripe = params.getStripe(); //multiway interleaving of byte streams
-        final boolean nosz = params.getNosz(); // original size is not recorded
-        final boolean cat = params.getCAT(); // Data is uncompressed
-        final boolean rle = params.getRLE(); // Run length encoding, with runs and literals encoded separately
-        final boolean pack = params.getPack(); // Pack 2, 4, 8 or infinite symbols per byte
+        final RANSNx16Params ransNx16Params = new RANSNx16Params(formatFlags);
 
         // TODO: add methods to handle various flags
 
-        // N-way interleaving. If the NWay flag is set, use 32 way interleaving, else use 4 way
-        final int Nway = (x32) ? 32 : 4;
-
         // if nosz is set, then uncompressed size is not recorded.
-        int n_out  = nosz ? 0 : Utils.readUint7(inBuffer);
+        int n_out = ransNx16Params.getNosz() ? 0 : Utils.readUint7(inBuffer);
 
         // If CAT is set then, the input is uncompressed
-        if (cat){
+        if (ransNx16Params.getCAT()){
             byte[] data = new byte[n_out];
             inBuffer.get( data,0, n_out);
             return ByteBuffer.wrap(data);
         }
         else {
             final ByteBuffer outBuffer = ByteBuffer.allocate(n_out);
-            switch (order){
+            switch (ransNx16Params.getOrder()){
                 case ZERO:
-                    uncompressOrder0WayN(inBuffer, outBuffer, n_out, Nway);
+                    uncompressOrder0WayN(inBuffer, outBuffer, n_out, ransNx16Params);
                     break;
                 case ONE:
-                    uncompressOrder1WayN(inBuffer, outBuffer, n_out, Nway);
+                    uncompressOrder1WayN(inBuffer, outBuffer, n_out, ransNx16Params);
                     break;
                 default:
-                    throw new RuntimeException("Unknown rANS order: " + order);
+                    throw new RuntimeException("Unknown rANS order: " + ransNx16Params.getOrder());
             }
             return outBuffer;
         }
@@ -69,13 +58,13 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final int n_out,
-            final int Nway) {
+            final RANSNx16Params ransNx16Params) {
 
         // read the frequency table, get the normalised frequencies and use it to set the RANSDecodingSymbols
         readFrequencyTableOrder0(inBuffer);
 
         // uncompress using Nway rans states
-        D0N.uncompress(inBuffer, getD()[0], getDecodingSymbols()[0], outBuffer,n_out,Nway);
+        D0N.uncompress(inBuffer, getD()[0], getDecodingSymbols()[0], outBuffer, n_out, ransNx16Params);
         return outBuffer;
     }
 
@@ -83,7 +72,7 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final int n_out,
-            final int Nway) {
+            final RANSNx16Params ransNx16Params) {
 
         // TODO: does not work as expected. Need to fix!
         // read the first byte and calculate the bit shift
@@ -105,13 +94,13 @@ public class RANSNx16Decode extends RANSDecode {
             freqTableSource = ByteBuffer.allocate(uncompressedLength);
             ByteBuffer compressedFrequencyTableBuffer = ByteBuffer.wrap(compressedFreqTable);
             compressedFrequencyTableBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            uncompressOrder0WayN(compressedFrequencyTableBuffer, freqTableSource, uncompressedLength,4);
+            uncompressOrder0WayN(compressedFrequencyTableBuffer, freqTableSource, uncompressedLength,ransNx16Params);
         }
         else {
             freqTableSource = inBuffer;
         }
         readFrequencyTableOrder1(freqTableSource, shift);
-        D1N.uncompress(inBuffer, outBuffer, getD(), getDecodingSymbols(), Nway);
+        D1N.uncompress(inBuffer, outBuffer, getD(), getDecodingSymbols(), ransNx16Params);
         return outBuffer;
     }
 
