@@ -11,7 +11,9 @@ public class E0N {
             final ByteBuffer inBuffer,
             final RANSEncodingSymbol[] syms,
             final ByteBuffer cp,
-            final int Nway) {
+            final RANSNx16Params ransNx16Params) {
+        final int Nway = ransNx16Params.getInterleaveSize();
+
         final int cdata_size;
         final int in_size = inBuffer.remaining();
         final ByteBuffer ptr = cp.slice();

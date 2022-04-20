@@ -3,7 +3,6 @@ package htsjdk.samtools.cram.compression.rans.ransnx16;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSEncode;
 import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
-import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
@@ -13,35 +12,24 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private static final int MINIMUM__ORDER_1_SIZE = 4;
 
-    public ByteBuffer compress(final ByteBuffer inBuffer, final RANSNx16Params params) {
+    public ByteBuffer compress(final ByteBuffer inBuffer, final RANSNx16Params ransNx16Params) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
         final ByteBuffer outBuffer = allocateOutputBuffer(inBuffer.remaining());
-        final int formatFlags = params.getFormatFlags();
+        final int formatFlags = ransNx16Params.getFormatFlags();
         outBuffer.put((byte) (formatFlags)); // one byte for formatFlags
-        final RANSParams.ORDER order = params.getOrder(); // Order-0 or Order-1 entropy coding
-        final boolean x32 = params.getX32(); // Interleave N = 32 rANS states (else N = 4)
-        final boolean stripe = params.getStripe(); //multiway interleaving of byte streams
-        final boolean nosz = params.getNosz(); // original size is not recorded
-        final boolean cat = params.getCAT(); // Data is uncompressed
-        final boolean rle = params.getRLE(); // Run length encoding, with runs and literals encoded separately
-        final boolean pack = params.getPack(); // Pack 2, 4, 8 or infinite symbols per byte
 
         // TODO: add methods to handle various flags
 
-        // N-way interleaving
-        final int Nway = (x32) ? 32 : 4;
-
-        //stripe size
-        final int N = formatFlags>>8;
-
-        if (!nosz) {
+        if (!ransNx16Params.getNosz()) {
+            // original size is not recorded
             int insize = inBuffer.remaining();
             Utils.writeUint7(insize,outBuffer);
         }
         initializeRANSEncoder();
-        if (cat) {
+        if (ransNx16Params.getCAT()) {
+            // Data is uncompressed
             outBuffer.put(inBuffer);
             return outBuffer;
         }
@@ -49,20 +37,20 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE) {
             // TODO: check if this still applies for Nx16 or if there is a different limit
             // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
-            return compressOrder0WayN(inBuffer, Nway, outBuffer);
+            return compressOrder0WayN(inBuffer, ransNx16Params, outBuffer);
         }
 
-        switch (order) {
+        switch (ransNx16Params.getOrder()) {
             case ZERO:
-                return compressOrder0WayN(inBuffer, Nway, outBuffer);
+                return compressOrder0WayN(inBuffer, ransNx16Params, outBuffer);
             case ONE:
-                return compressOrder1WayN(inBuffer, Nway, outBuffer);
+                return compressOrder1WayN(inBuffer, ransNx16Params, outBuffer);
             default:
-                throw new RuntimeException("Unknown rANS order: " + order);
+                throw new RuntimeException("Unknown rANS order: " + ransNx16Params.getOrder());
         }
     }
 
-    private ByteBuffer compressOrder0WayN(final ByteBuffer inBuffer, final int Nway, final ByteBuffer outBuffer) {
+    private ByteBuffer compressOrder0WayN(final ByteBuffer inBuffer, final RANSNx16Params ransNx16Params, final ByteBuffer outBuffer) {
         final int inSize = inBuffer.remaining();
         final int[] F = buildFrequenciesOrder0(inBuffer);
         final ByteBuffer cp = outBuffer.slice();
@@ -85,16 +73,16 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // update the RANS Encoding Symbols
         buildSymsOrder0(F);
         inBuffer.rewind();
-        final int compressedBlobSize = E0N.compress(inBuffer, getEncodingSymbols()[0], cp, Nway);
+        final int compressedBlobSize = E0N.compress(inBuffer, getEncodingSymbols()[0], cp, ransNx16Params);
         outBuffer.rewind(); // set position to 0
         outBuffer.limit(prefix_size + frequencyTableSize + compressedBlobSize);
         return outBuffer;
     }
 
-    private ByteBuffer compressOrder1WayN(final ByteBuffer inBuffer, final int Nway, final ByteBuffer outBuffer) {
+    private ByteBuffer compressOrder1WayN(final ByteBuffer inBuffer, final RANSNx16Params ransNx16Params, final ByteBuffer outBuffer) {
         //TODO: does not work as expected. Need to fix
         final ByteBuffer cp = outBuffer.slice();
-        final int[][] F = buildFrequenciesOrder1(inBuffer, Nway);
+        final int[][] F = buildFrequenciesOrder1(inBuffer, ransNx16Params.getInterleaveSize());
         final int shift = 12;
 
         // normalise frequencies with a variable shift calculated
@@ -112,7 +100,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         frequencyTable.rewind();
 
         // compressed frequency table using RANS Nx16 Order 0
-        compressedFrequencyTable = compressOrder0WayN(frequencyTable,4,compressedFrequencyTable);
+        compressedFrequencyTable = compressOrder0WayN(frequencyTable, ransNx16Params, compressedFrequencyTable);
         frequencyTable.rewind();
         int compressedFrequencyTableSize = compressedFrequencyTable.limit();
 
