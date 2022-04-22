@@ -64,7 +64,47 @@ public class RANSNx16Decode extends RANSDecode {
         readFrequencyTableOrder0(inBuffer);
 
         // uncompress using Nway rans states
-        D0N.uncompress(inBuffer, getD()[0], getDecodingSymbols()[0], outBuffer, n_out, ransNx16Params);
+        //TODO: remove this temporary variable aliasing/staging
+        final ArithmeticDecoder D = getD()[0];
+        final RANSDecodingSymbol[] syms = getDecodingSymbols()[0];
+        final int Nway = ransNx16Params.getInterleaveSize();
+
+        // Nway parallel rans states. Nway = 4 or 32
+        final int[] rans = new int[Nway];
+
+        // c is the array of decoded symbols
+        final byte[] c = new byte[Nway];
+        int r;
+        for (r=0; r<Nway; r++){
+            rans[r] = inBuffer.getInt();
+        }
+
+        // Number of elements that don't fall into the Nway streams
+        int remSize = (n_out % Nway);
+        final int out_end = n_out - remSize;
+        for (int i = 0; i < out_end; i += Nway) {
+            for (r=0; r<Nway; r++){
+
+                // Nway parallel decoding rans states
+                c[r] = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
+                outBuffer.put(i+r, c[r]);
+                rans[r] = syms[0xFF & c[r]].advanceSymbolStep(rans[r], Constants.TOTAL_FREQ_SHIFT);
+                rans[r] = Utils.RANSDecodeRenormalizeNx16(rans[r], inBuffer);
+            }
+        }
+        outBuffer.position(out_end);
+        int rev_idx = 0;
+
+        // decode the remaining bytes
+        while (remSize>0){
+            byte symbol = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[rev_idx], Constants.TOTAL_FREQ_SHIFT)];
+            syms[0xFF & symbol].advanceSymbolNx16(rans[rev_idx], inBuffer, Constants.TOTAL_FREQ_SHIFT);
+            outBuffer.put(symbol);
+            remSize --;
+            rev_idx ++;
+        }
+        outBuffer.position(0);
+
         return outBuffer;
     }
 
