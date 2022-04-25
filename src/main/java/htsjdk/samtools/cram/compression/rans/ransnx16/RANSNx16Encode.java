@@ -416,7 +416,9 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     private void buildSymsOrder0(final int[] F) {
         final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
         // updates the RANSEncodingSymbol array for all the symbols
-        final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
+
+        // TODO: commented out to suppress spotBugs warning
+        //final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
 
         // T = running sum of frequencies including the current symbol
         // F[j] = frequency of symbol "j"
