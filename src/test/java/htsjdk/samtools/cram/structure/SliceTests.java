@@ -37,9 +37,9 @@ public class SliceTests extends HtsjdkTest {
         final Slice slice = container.getSlices().get(0);
         Assert.assertEquals(slice.getAlignmentContext().getReferenceContext(), ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
 
-        Assert.assertTrue(slice.referenceMD5IsValid(null));
-        Assert.assertTrue(slice.referenceMD5IsValid(new byte[0]));
-        Assert.assertTrue(slice.referenceMD5IsValid(new byte[1024]));
+        slice.validateReferenceBases(null);
+        slice.validateReferenceBases(new byte[0]);
+        slice.validateReferenceBases(new byte[1024]);
     }
 
     @Test
