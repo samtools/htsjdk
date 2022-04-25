@@ -239,7 +239,9 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer cp,
             int shift) {
         final int[][] F = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
-        final int[][] C = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
+
+        // TODO: commented out to suppress spotBugs warning
+        //final int[][] C = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
         final ArithmeticDecoder[] D = getD();
         final RANSDecodingSymbol[][] decodingSymbols = getDecodingSymbols();
         final int[] A = readAlphabet(cp);

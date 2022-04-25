@@ -221,7 +221,9 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
     private void buildSymsOrder0(final int[] F) {
         final RANSEncodingSymbol[] encodingSymbols = getEncodingSymbols()[0];
-        final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
+
+        // TODO: commented out to suppress spotBugs warning
+        //final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
 
         // T = running sum of frequencies including the current symbol
         // F[j] = frequency of symbol "j"
