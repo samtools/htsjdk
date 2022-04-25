@@ -451,12 +451,7 @@ public class Slice {
                         getAlignmentContext().getReferenceContext().getReferenceSequenceID()
                 );
 
-                if (!referenceMD5IsValid(referenceBases)) {
-                    throw new CRAMException(String.format(
-                            "Reference sequence MD5 mismatch for slice: %s, expected MD5 %s",
-                            getAlignmentContext(),
-                            String.format("%032x", new BigInteger(1, getReferenceMD5()))));
-                }
+                validateReferenceBases(referenceBases);
             }
         } else {
             // RR = false might mean that no reference compression was used, or that an embedded reference
@@ -690,7 +685,7 @@ public class Slice {
     }
 
     //VisibleForTesting
-    boolean referenceMD5IsValid(final byte[] referenceBases) {
+    void validateReferenceBases(final byte[] referenceBases) {
         if (alignmentContext.getReferenceContext().isMappedSingleRef() && compressionHeader.isReferenceRequired()) {
             validateAlignmentSpanForReference(referenceBases);
             if (!referenceMD5IsValid(
@@ -698,11 +693,13 @@ public class Slice {
                     alignmentContext.getAlignmentStart(),
                     alignmentContext.getAlignmentSpan(),
                     referenceMD5)) {
-                throw new CRAMException(String.format("Reference MD5 failed to validate against %s",
-                        String.format("%032x", new BigInteger(1, referenceMD5))));
+                throw new CRAMException(
+                        String.format(
+                            "The MD5 for the reference failed to validate against the expected value %032x. %s.",
+                                new BigInteger(1, referenceMD5),
+                                "This indicates that the supplied reference is not the one originally used to create the CRAM."));
             }
         }
-        return true;
     }
 
     private static boolean referenceMD5IsValid(
