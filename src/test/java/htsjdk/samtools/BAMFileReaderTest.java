@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import org.testng.Assert;
@@ -10,7 +9,8 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.net.URL;
+import java.nio.file.Paths;
 
 public class BAMFileReaderTest extends HtsjdkTest {
     private final static File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
@@ -34,6 +34,23 @@ public class BAMFileReaderTest extends HtsjdkTest {
         bamFileReaderCSI = new BAMFileReader(bamFile, csiFileIndex, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
         bamFileReaderWrong = new BAMFileReader(bamFile, iiiFileIndex, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
         bamFileReaderNull = new BAMFileReader(bamFile, null, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
+    }
+
+    @Test
+    public static void testCSIFromURL() throws IOException {
+        // https://github.com/samtools/htsjdk/issues/1507
+        final URL bamURL = Paths.get(bamFile.toURI()).toUri().toURL();
+        final URL csiURL = Paths.get(csiFileIndex.toURI()).toUri().toURL();
+        final SamInputResource resource = SamInputResource.of(bamURL).index(csiURL);
+        final SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
+        try (final SamReader samReader = factory.open(resource)) {
+            Assert.assertTrue(samReader.hasIndex());
+            final BAMIndex index = samReader.indexing().getIndex();
+            Assert.assertTrue(index instanceof CSIIndex);
+            try (final SAMRecordIterator unusedIterator =
+                         samReader.queryAlignmentStart("chr1_random", 1)) {}
+            try (final SAMRecordIterator unusedIterator = samReader.queryUnmapped()) {}
+        }
     }
 
     @Test

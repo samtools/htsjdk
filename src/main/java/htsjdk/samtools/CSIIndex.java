@@ -35,7 +35,7 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
      */
 
     public CSIIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
-        this(new IndexStreamBuffer(stream), stream.getSource(), dictionary);
+        this(IndexFileBufferFactory.getBuffer(stream), stream.getSource(), dictionary);
     }
 
     public CSIIndex(final Path path, final SAMSequenceDictionary dictionary) throws IOException {

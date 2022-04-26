@@ -4,12 +4,15 @@ import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.zip.GZIPInputStream;
 
 /**
  * A helper class to read BAI and CRAI indexes. Main goal is to provide BAI stream as a sort of common API for all index types.
@@ -100,6 +103,36 @@ public enum SamIndexes {
         }
 
         return null;
+    }
+
+    public static SamIndexes getSAMIndexTypeFromStream(final SeekableStream seekableStream) {
+        SamIndexes indexType = null;
+        try {
+            seekableStream.seek(0);
+            final SeekableBufferedStream bss = new SeekableBufferedStream(seekableStream);
+
+            if (IOUtil.isGZIPInputStream(bss)) {
+                bss.seek(0);
+                GZIPInputStream gzipStream = new GZIPInputStream(bss);
+                if (doesStreamStartWith(gzipStream, CSI.magic)) {
+                    indexType = CSI;
+                } else {
+                    // the CRAI format has no signature bytes, so optimistically call it CRAI
+                    // if its gzipped but not CSI
+                    indexType = CRAI;
+                }
+            } else {
+                bss.seek(0);
+                if (doesStreamStartWith(bss, BAI.magic)) {
+                    indexType = BAI;
+                }
+            }
+            seekableStream.seek(0);
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Error interrogating index input stream", e);
+        }
+
+        return indexType;
     }
 
     private static boolean doesStreamStartWith(final InputStream is, final byte[] bytes) throws IOException {
