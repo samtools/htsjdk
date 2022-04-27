@@ -29,10 +29,13 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.PositionalBufferedStream;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Static methods to create an {@link FastaSequenceIndex}.
@@ -66,6 +69,21 @@ public final class FastaSequenceIndexCreator {
     }
 
     /**
+     * Wrap only non-GZIP input streams as a positional buffered input stream for use in {@link AsciiLineReader#from(InputStream)}
+     *
+     * @param input the input stream.
+     *
+     * @return the input stream which is either a GZIP input stream or a position buffered stream.
+     */
+    private static InputStream optionallyWrapAsPositional(final InputStream input) {
+        if (input instanceof GZIPInputStream) {
+            return input;
+        } else {
+            return new PositionalBufferedStream(input);
+        }
+    }
+
+    /**
      * Builds a FastaSequenceIndex on the fly from a FASTA file.
      *
      * <p>Note: this also allows to create an index for a compressed file, but does not generate the
@@ -79,8 +97,8 @@ public final class FastaSequenceIndexCreator {
      * @throws SAMException for formatting errors.
      * @throws IOException  if an IO error occurs.
      */
-    public static FastaSequenceIndex buildFromFasta(final Path fastaFile) throws IOException {
-        try(final AsciiLineReader in = AsciiLineReader.from(IOUtil.openFileForReading(fastaFile))) {
+    public static FastaSequenceIndex buildFromFasta(final Path fastaFile) throws IOException, SAMException {
+        try(final AsciiLineReader in = AsciiLineReader.from(optionallyWrapAsPositional(IOUtil.openFileForReading(fastaFile)))) {
 
             // sanity check reference format:
             // 1. Non-empty file
