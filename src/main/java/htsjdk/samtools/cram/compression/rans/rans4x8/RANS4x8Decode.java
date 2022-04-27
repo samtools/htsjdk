@@ -19,7 +19,7 @@ public class RANS4x8Decode extends RANSDecode {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
-        initializeRANSDecoder();
+
         // first byte of compressed stream gives order
         final RANSParams.ORDER order = RANSParams.ORDER.fromInt(inBuffer.get());
 
@@ -35,7 +35,7 @@ public class RANS4x8Decode extends RANSDecode {
         // uncompressed bytes length
         final int outSize = inBuffer.getInt();
         final ByteBuffer outBuffer = ByteBuffer.allocate(outSize);
-
+        initializeRANSDecoder();
         switch (order) {
             case ZERO:
                 return uncompressOrder0Way4(inBuffer, outBuffer);
