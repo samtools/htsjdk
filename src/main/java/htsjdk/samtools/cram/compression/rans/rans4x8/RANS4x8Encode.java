@@ -1,6 +1,10 @@
 package htsjdk.samtools.cram.compression.rans.rans4x8;
 
-import htsjdk.samtools.cram.compression.rans.*;
+import htsjdk.samtools.cram.compression.rans.Constants;
+import htsjdk.samtools.cram.compression.rans.RANSEncode;
+import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
+import htsjdk.samtools.cram.compression.rans.Utils;
 import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
