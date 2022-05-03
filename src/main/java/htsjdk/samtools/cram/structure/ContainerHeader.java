@@ -42,7 +42,7 @@ public class ContainerHeader {
     // total length of all blocks in this container (total length of this container, minus the Container Header).
     private final AlignmentContext alignmentContext;
     private final int recordCount;
-    private final long globalRecordCounter;
+    private long globalRecordCounter;
     private final long baseCount;
     private final int blockCount;
 
@@ -247,6 +247,10 @@ public class ContainerHeader {
                 && recordCount == 0;
 
         return v3 || v2;
+    }
+
+    void setGlobalRecordCounter(final long recordCounter) {
+        this.globalRecordCounter = recordCount;
     }
 
 }
