@@ -67,7 +67,7 @@ public class Slice {
     // Slice header components as defined in the spec
     private final AlignmentContext alignmentContext; // ref sequence, alignment start and span
     private final int nRecords;
-    private final long globalRecordCounter;
+    private long globalRecordCounter;
     private final int nSliceBlocks;              // includes the core block and external blocks, but not the header block
     private List<Integer> contentIDs;
     private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
@@ -78,7 +78,7 @@ public class Slice {
 
     private final CompressionHeader compressionHeader;
     private final SliceBlocks sliceBlocks;
-    private final long byteOffsetOfContainer;
+    public long byteOffsetOfContainer;
 
     private Block sliceHeaderBlock;
 
@@ -517,6 +517,22 @@ public class Slice {
             record.setIsNormalized();
         }
      }
+
+    /**
+     * Update the stream-relative values (global record counter and container stream byte offset) for
+     * this slice. For use when re-serializing a container that has been read from an existing stream
+     * into a new stream. This method mutates the container and it's slices - the container is no
+     * longer valid in the context of it's original stream.
+     *
+     * @param sliceRecordCounter the new global record counter for this slice
+     * @param containerByteOffset the new stream byte offset counter for this slice's enclosing container
+     * @return the updated global record counter
+     */
+    long relocateSlice(final long sliceRecordCounter, final long containerByteOffset) {
+        this.byteOffsetOfContainer = containerByteOffset;
+        this.globalRecordCounter = sliceRecordCounter;
+        return sliceRecordCounter + getNumberOfRecords();
+    }
 
     private int getReferenceOffset(final boolean hasEmbeddedReference) {
         final ReferenceContext sliceReferenceContext = getAlignmentContext().getReferenceContext();

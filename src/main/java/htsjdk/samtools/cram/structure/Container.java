@@ -49,7 +49,7 @@ public class Container {
     private final List<Slice> slices;
 
     // container's byte offset from the start of the containing stream, used for indexing
-    private final long containerByteOffset;
+    private long containerByteOffset;
 
     /**
      * Create a Container with a {@link ReferenceContext} derived from its {@link Slice}s.
@@ -190,6 +190,7 @@ public class Container {
                 // landmark 0 = byte length of the compression header
                 // landmarks after 0 = byte length of the compression header plus all slices before this one
                 landmarks.add(tempOutputStream.size());
+                slice.byteOffsetOfContainer = containerByteOffset;
                 slice.write(cramVersion, tempOutputStream);
             }
             getContainerHeader().setLandmarks(landmarks);
@@ -335,6 +336,28 @@ public class Container {
     public CompressionHeader getCompressionHeader() { return compressionHeader; }
     public AlignmentContext getAlignmentContext() { return containerHeader.getAlignmentContext(); }
     public long getContainerByteOffset() { return containerByteOffset; }
+
+    /**
+     * Update the stream-relative values (global record counter and stream byte offset) for this
+     * container. For use when re-serializing a container that has been read from an existing stream
+     * into a new stream. This method mutates the container and it's slices - the container is no
+     * longer valid in the context of it's original stream.
+     *
+     * @param containerRecordCounter the new global record counter for this container
+     * @param streamByteOffset the new stream byte offset counter for this container
+     * @return the updated global record counter
+     */
+    public long relocateContainer(final long containerRecordCounter, final long streamByteOffset) {
+        this.containerByteOffset = streamByteOffset;
+        this.getContainerHeader().setGlobalRecordCounter(containerRecordCounter);
+
+        long sliceRecordCounter = containerRecordCounter;
+        for (final Slice slice : getSlices()) {
+            sliceRecordCounter = slice.relocateSlice(sliceRecordCounter, streamByteOffset);
+        }
+        return sliceRecordCounter;
+    }
+
     public List<Slice> getSlices() { return slices; }
     public boolean isEOF() {
         return containerHeader.isEOF() && (getSlices() == null || getSlices().size() == 0);
