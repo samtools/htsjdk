@@ -37,7 +37,11 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE) {
             // TODO: check if this still applies for Nx16 or if there is a different limit
             // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
-            return compressOrder0WayN(inBuffer, ransNx16Params, outBuffer);
+
+            // First byte of the compressed output provides the order of RANS.
+            // So, it has to be changed to 0x00
+            outBuffer.put(0,(byte) 0x00);
+            return compressOrder0WayN(inBuffer, new RANSNx16Params(0x00), outBuffer); // correct the format flags to 0
         }
 
         switch (ransNx16Params.getOrder()) {
@@ -56,8 +60,9 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final ByteBuffer cp = outBuffer.slice();
         int bitSize = (int) Math.ceil(Math.log(inSize) / Math.log(2));
 
-        if (bitSize > 12) {
-            bitSize = 12;
+        // TODO: Can bitSize be 0 and should we handle it?
+        if (bitSize > Constants.TOTAL_FREQ_SHIFT) {
+            bitSize = Constants.TOTAL_FREQ_SHIFT;
         }
         final int prefix_size = outBuffer.position();
 
@@ -67,8 +72,12 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // Write the Frequency table. Keep track of the size for later
         final int frequencyTableSize = writeFrequenciesOrder0(cp, F);
 
-        // Normalize Frequencies such that sum of Frequencies = 1 << 12
-        Utils.normaliseFrequenciesOrder0(F, 12);
+        // Normalise Frequencies such that sum of Frequencies = 1 << 12
+        // Since, Frequencies are already normalised to be a sum of power of 2,
+        // for further normalisation, calculate the bit shift that is required to scale the frequencies to (1 << bits)
+        if (bitSize != Constants.TOTAL_FREQ_SHIFT) {
+            Utils.normaliseFrequenciesOrder0Shift(F, Constants.TOTAL_FREQ_SHIFT);
+        }
 
         // update the RANS Encoding Symbols
         buildSymsOrder0(F);
@@ -81,7 +90,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final int cdata_size;
         final int in_size = inBuffer.remaining();
         final ByteBuffer ptr = cp.slice();
-        final int[] rans = new int[Nway];
+        final long[] rans = new long[Nway];
         final int[] c = new int[Nway]; // c is the array of symbols
         int r;
         for (r=0; r<Nway; r++){
@@ -114,7 +123,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             }
         }
         for (i=Nway-1; i>=0; i--){
-            ptr.putInt(rans[i]);
+            ptr.putInt((int) rans[i]);
         }
         ptr.position();
         ptr.flip();
@@ -134,11 +143,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         //TODO: does not work as expected. Need to fix
         final ByteBuffer cp = outBuffer.slice();
         final int[][] F = buildFrequenciesOrder1(inBuffer, ransNx16Params.getInterleaveSize());
-        final int shift = 12;
 
         // normalise frequencies with a variable shift calculated
         // using the minimum bit size that is needed to represent a frequency context array
-        Utils.normaliseFrequenciesOrder1(F, shift, false);
+        Utils.normaliseFrequenciesOrder1(F, Constants.TOTAL_FREQ_SHIFT);
         final int prefix_size = outBuffer.position();
 
         // TODO: How is the buffer size calculated? js: 257*257*3+9
@@ -151,14 +159,16 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         frequencyTable.rewind();
 
         // compressed frequency table using RANS Nx16 Order 0
-        compressedFrequencyTable = compressOrder0WayN(frequencyTable, ransNx16Params, compressedFrequencyTable);
+        compressedFrequencyTable = compressOrder0WayN(frequencyTable, new RANSNx16Params(0x00), compressedFrequencyTable);
         frequencyTable.rewind();
         int compressedFrequencyTableSize = compressedFrequencyTable.limit();
 
+        // spec: The order-1 frequency table itself may still be quite large,
+        // so is optionally compressed using the order-0 rANSNx16 codec with a fixed 4-way interleaving.
         if (compressedFrequencyTableSize  < uncompressedFrequencyTableSize) {
 
             // first byte
-            cp.put((byte) (1 | shift << 4 ));
+            cp.put((byte) (1 | Constants.TOTAL_FREQ_SHIFT << 4 ));
             Utils.writeUint7(uncompressedFrequencyTableSize,cp);
             Utils.writeUint7(compressedFrequencyTableSize,cp);
 
@@ -169,9 +179,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 i++;
             }
         } else {
-
             // first byte
-            cp.put((byte) (0 | shift << 4 ));
+            cp.put((byte) (0 | Constants.TOTAL_FREQ_SHIFT << 4 ));
             int i=0;
             while (i<uncompressedFrequencyTableSize){
                 cp.put(frequencyTable.get());
@@ -181,11 +190,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         int frequencyTableSize = cp.position();
 
         // normalise frequencies with a constant shift
-        Utils.normaliseFrequenciesOrder1(F, shift, true);
+        Utils.normaliseFrequenciesOrder1Shift(F, Constants.TOTAL_FREQ_SHIFT);
 
         // set encoding symbols
-        buildSymsOrder1(F);
-        inBuffer.rewind();
+        buildSymsOrder1(F); // TODO: move into utils
 
         // uncompress for Nway = 4. then extend Nway to be variable - 4 or 32
         // TODO: debug.
@@ -195,7 +203,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         final int in_size = inBuffer.remaining();
         final int compressedBlobSize;
-        int rans0, rans1, rans2, rans3;
+        long rans0, rans1, rans2, rans3;
         rans0 = Constants.RANS_Nx16_LOWER_BOUND;
         rans1 = Constants.RANS_Nx16_LOWER_BOUND;
         rans2 = Constants.RANS_Nx16_LOWER_BOUND;
@@ -204,7 +212,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         /*
          * Slicing is needed for buffer reversing later.
          */
-        final ByteBuffer ptr = outBuffer.slice();
+        final ByteBuffer ptr = cp.slice();
 
         final int isz4 = in_size >> 2;
         int i0 = isz4 - 2;
@@ -257,10 +265,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         rans0 = syms[0][l0].putSymbolNx16(rans0, ptr);
 
         ptr.order(ByteOrder.BIG_ENDIAN);
-        ptr.putInt(rans3);
-        ptr.putInt(rans2);
-        ptr.putInt(rans1);
-        ptr.putInt(rans0);
+        ptr.putInt((int) rans3);
+        ptr.putInt((int) rans2);
+        ptr.putInt((int) rans1);
+        ptr.putInt((int) rans0);
         ptr.flip();
         compressedBlobSize = ptr.limit();
         Utils.reverse(ptr);
@@ -306,9 +314,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
         frequency[Constants.NUMBER_OF_SYMBOLS][contextSymbol]++;
 
-        // set ‘\0’ as context for the first byte in the N interleaved streams
-        for (int n = 0; n < Nway; n++){
-            frequency[0][inBuffer.get((n*((int)Math.floor(inSize/Nway))))]++;
+        // set ‘\0’ as context for the first byte in the N interleaved streams.
+        // the first byte of the first interleaved stream is already accounted for.
+        for (int n = 1; n < Nway; n++){
+            frequency[0][0xFF & inBuffer.get((n*((int)Math.floor(inSize/Nway))))]++; // TODO: use shift operator for division
         }
         frequency[Constants.NUMBER_OF_SYMBOLS][0] += Nway-1;
         return frequency;
@@ -374,7 +383,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                                 break;
                             }
                         }
-                        cp.put((byte) run);
+                        Utils.writeUint7(run,cp);
                     }
                 }
             }
@@ -435,6 +444,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     }
 
     private void buildSymsOrder1(final int[][] F) {
+        // TODO: Call buildSymsOrder0 from buildSymsOrder1
         final RANSEncodingSymbol[][] encodingSymbols = getEncodingSymbols();
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
             final int[] F_i_ = F[i];

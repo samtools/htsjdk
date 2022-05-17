@@ -56,7 +56,7 @@ public class RANS4x8Decode extends RANSDecode {
         final ArithmeticDecoder D = getD()[0];
         final RANSDecodingSymbol[] syms = getDecodingSymbols()[0];
 
-        int rans0, rans1, rans2, rans3;
+        long rans0, rans1, rans2, rans3;
         rans0 = inBuffer.getInt();
         rans1 = inBuffer.getInt();
         rans2 = inBuffer.getInt();
@@ -134,7 +134,7 @@ public class RANS4x8Decode extends RANSDecode {
         final ArithmeticDecoder[] D = getD();
         final RANSDecodingSymbol[][] syms = getDecodingSymbols();
         final int out_sz = outBuffer.remaining();
-        int rans0, rans1, rans2, rans7;
+        long rans0, rans1, rans2, rans7;
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         rans0 = inBuffer.getInt();
         rans1 = inBuffer.getInt();
@@ -219,7 +219,7 @@ public class RANS4x8Decode extends RANSDecode {
             }
         } while (j != 0);
 
-        assert (x < Constants.TOTAL_FREQ);
+        assert (x <= Constants.TOTAL_FREQ);
     }
 
     private void readStatsOrder1(final ByteBuffer cp) {

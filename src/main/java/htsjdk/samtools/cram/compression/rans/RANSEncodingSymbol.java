@@ -29,21 +29,22 @@ import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
 
 public final class RANSEncodingSymbol {
-    private int xMax;       // (Exclusive) upper bound of pre-normalization interval
+    private long xMax;       // (Exclusive) upper bound of pre-normalization interval
     private int rcpFreq;    // Fixed-point reciprocal frequency
     private int bias;       // Bias
     private int cmplFreq;   // Complement of frequency: (1 << scaleBits) - freq
     private int rcpShift;   // Reciprocal shift
 
     public void reset() {
-        xMax = rcpFreq = bias = cmplFreq = rcpFreq = 0;
+        xMax = rcpFreq = bias = cmplFreq = rcpShift = 0;
     }
 
     public void set(final int start, final int freq, final int scaleBits) {
 
         // Rans4x8: xMax = ((Constants.RANS_BYTE_L_4x8 >> scaleBits) << 8) * freq = (1<< 31-scaleBits) * freq
         // RansNx16: xMax = ((Constants.RANS_BYTE_L_Nx16 >> scaleBits) << 16) * freq = (1<< 31-scaleBits) * freq
-        xMax = (1<< (31-scaleBits)) * freq;
+        // why freq > 4095 in Nx16?
+        xMax = (1L<< (31-scaleBits)) * freq;
         cmplFreq = (1 << scaleBits) - freq;
         if (freq < 2) {
             rcpFreq = (int) ~0L;
@@ -66,11 +67,12 @@ public final class RANSEncodingSymbol {
         rcpShift += 32; // Avoid the extra >>32 in RansEncPutSymbol
     }
 
-    public int putSymbol4x8(int r, final ByteBuffer byteBuffer) {
+    public long putSymbol4x8(long r, final ByteBuffer byteBuffer) {
         ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
 
         // re-normalize
-        int x = r;
+        long x = r;
+        // TODO: x should also be long if there is a case where x could be greater than xMax
         if (x >= xMax) {
             byteBuffer.put((byte) (x & 0xFF));
             x >>= 8;
@@ -88,15 +90,15 @@ public final class RANSEncodingSymbol {
 
         // The extra >>32 has already been added to RansEncSymbolInit
         final long q = ((x * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
-        r = (int) (x + bias + q * cmplFreq);
+        r = x + bias + q * cmplFreq;
         return r;
     }
 
-    public int putSymbolNx16(int r, final ByteBuffer byteBuffer) {
+    public long putSymbolNx16(long r, final ByteBuffer byteBuffer) {
         ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
 
         // re-normalize
-        int x = r;
+        long x = r;
         if (x >= xMax) {
             byteBuffer.put((byte) ((x>>8) & 0xFF)); // extra line - 1 more byte
             byteBuffer.put((byte) (x & 0xFF));
@@ -116,7 +118,7 @@ public final class RANSEncodingSymbol {
 
         // The extra >>32 has already been added to RansEncSymbolInit
         final long q = ((x * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
-        r = (int) (x + bias + q * cmplFreq);
+        r = (x + bias + q * cmplFreq);
         return r;
     }
 }
