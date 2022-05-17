@@ -82,7 +82,8 @@ public class RansTest extends HtsjdkTest {
         final RANSNx16Decode ransNx16Decode = new RANSNx16Decode();
         // TODO: More formatFlags values i.e, combinations of bit flags will be added later
         return new Object[][]{
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0)} ,//RANSNx16 formatFlags(first byte) 0
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x00)} ,//RANSNx16 formatFlags(first byte) 0
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x01)} ,//RANSNx16 formatFlags(first byte) 1
         };
     }
 

@@ -42,7 +42,7 @@ final public class RANSDecodingSymbol {
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits".
     // No renormalization or output happens.
-    public int advanceSymbolStep(final int r, final int scaleBits) {
+    public long advanceSymbolStep(final long r, final int scaleBits) {
         final int mask = ((1 << scaleBits) - 1);
 
         // s, x = D(x)
@@ -52,11 +52,11 @@ final public class RANSDecodingSymbol {
     // Advances in the bit stream by "popping" a single symbol with range start
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits".
-    public int advanceSymbol4x8(final int rIn, final ByteBuffer byteBuffer, final int scaleBits) {
+    public long advanceSymbol4x8(final long rIn, final ByteBuffer byteBuffer, final int scaleBits) {
         final int mask = (1 << scaleBits) - 1;
 
         // s, x = D(x)
-        int r = rIn;
+        long r = rIn;
         r = freq * (r >> scaleBits) + (r & mask) - start;
 
         // re-normalize
@@ -70,11 +70,11 @@ final public class RANSDecodingSymbol {
         return r;
     }
 
-    public int advanceSymbolNx16(final int rIn, final ByteBuffer byteBuffer, final int scaleBits) {
+    public long advanceSymbolNx16(final long rIn, final ByteBuffer byteBuffer, final int scaleBits) {
         final int mask = (1 << scaleBits) - 1;
 
         // s, x = D(x)
-        int r = rIn;
+        long r = rIn;
         r = freq * (r >> scaleBits) + (r & mask) - start;
 
         // re-normalize

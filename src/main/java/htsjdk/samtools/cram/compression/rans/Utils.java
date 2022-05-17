@@ -34,15 +34,15 @@ final public class Utils {
     }
 
     // Returns the current cumulative frequency (map it to a symbol yourself!)
-    public static int RANSGetCumulativeFrequency(final int r, final int scaleBits) {
-        return r & ((1 << scaleBits) - 1);
+    public static int RANSGetCumulativeFrequency(final long r, final int scaleBits) {
+        return (int) (r & ((1 << scaleBits) - 1)); // since cumulative frequency will be a maximum of 4096
     }
 
     // Re-normalize.
-    public static int RANSDecodeRenormalize4x8(int r, final ByteBuffer byteBuffer) {
-        // re-normalize
+    public static long RANSDecodeRenormalize4x8(long r, final ByteBuffer byteBuffer) {
 
         //rans4x8
+        // TODO: replace if - do - while with while
         if (r < Constants.RANS_4x8_LOWER_BOUND) {
             do {
                 r = (r << 8) | (0xFF & byteBuffer.get());
@@ -51,7 +51,7 @@ final public class Utils {
         return r;
     }
 
-    public static int RANSDecodeRenormalizeNx16(int r, final ByteBuffer byteBuffer) {
+    public static long RANSDecodeRenormalizeNx16(long r, final ByteBuffer byteBuffer) {
         // ransNx16
         if (r < (Constants.RANS_Nx16_LOWER_BOUND)) {
             int i = (0xFF & byteBuffer.get());
@@ -123,6 +123,7 @@ final public class Utils {
                 continue;
             }
 
+            // As per spec, total frequencies after normalization should be 4096 (4095 could be considered legacy value)
             // using tr to normalize symbol frequencies such that their total = renormFreq
             if ((F[symbol] = (int) ((F[symbol] * tr) >> 31)) == 0) {
 
@@ -142,19 +143,24 @@ final public class Utils {
         }
     }
 
-    public static void normaliseFrequenciesOrder1(final int[][] F, final int shift, final boolean constantShift) {
+    public static void normaliseFrequenciesOrder1(final int[][] F, final int shift) {
+        // calculate the minimum bit size required for representing the frequency array for each symbol
+        // and normalise the frequency array using the calculated bit size
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if (F[Constants.NUMBER_OF_SYMBOLS][j]==0){
                 continue;
             }
             int bitSize = shift;
-            if (!constantShift) {
-                // log2 N = Math.log(N)/Math.log(2)
-                bitSize = (int) Math.ceil(Math.log(F[Constants.NUMBER_OF_SYMBOLS][j]) / Math.log(2));
 
-                if (bitSize > shift)
-                    bitSize = shift;
-            }
+            // log2 N = Math.log(N)/Math.log(2)
+            bitSize = (int) Math.ceil(Math.log(F[Constants.NUMBER_OF_SYMBOLS][j]) / Math.log(2));
+            if (bitSize > shift)
+                bitSize = shift;
+
+            // TODO: check if handling bitSize = 0 is required
+            if (bitSize == 0)
+                bitSize = 1; // bitSize cannot be zero
+
             // special case -> if a symbol occurs only once and at the end of the input,
             // then the order 0 freq table associated with it should have a frequency of 1 for symbol 0
             // i.e, F[sym][0] = 1
@@ -162,4 +168,38 @@ final public class Utils {
         }
     }
 
+    public static void normaliseFrequenciesOrder0Shift(final int[] F, final int bits){
+
+        // compute total frequency
+        int totalFrequency = 0;
+        for (int freq : F) {
+            totalFrequency += freq;
+        }
+        if (totalFrequency == 0 || totalFrequency == (1<<bits)){
+            return;
+        }
+
+        // calculate the bit shift that is required to scale the frequencies to (1 << bits)
+        int shift = 0;
+        while (totalFrequency < (1 << bits)) {
+            totalFrequency *= 2;
+            shift++;
+        }
+
+        // scale the frequencies to (1 << bits) using the calculated shift
+        for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
+            if (F[symbol]!=0){
+            F[symbol] <<= shift;
+            }
+        }
+    }
+
+    public static void normaliseFrequenciesOrder1Shift(final int[][] F, final int shift){
+        // normalise the frequency array for each symbol
+        for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
+            if (F[Constants.NUMBER_OF_SYMBOLS][symbol]!=0){
+                normaliseFrequenciesOrder0Shift(F[symbol],shift);
+            }
+        }
+    }
 }

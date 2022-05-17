@@ -70,7 +70,7 @@ public class RANSNx16Decode extends RANSDecode {
         final int Nway = ransNx16Params.getInterleaveSize();
 
         // Nway parallel rans states. Nway = 4 or 32
-        final int[] rans = new int[Nway];
+        final long[] rans = new long[Nway];
 
         // c is the array of decoded symbols
         final byte[] c = new byte[Nway];
@@ -116,13 +116,16 @@ public class RANSNx16Decode extends RANSDecode {
 
         // TODO: does not work as expected. Need to fix!
         // read the first byte and calculate the bit shift
-        int frequencyTableFirstByte = (inBuffer.get() & 0xFF);
-        int shift = frequencyTableFirstByte >> 4;
-        boolean optionalCompressFlag = ((frequencyTableFirstByte & FREQ_TABLE_OPTIONALLY_COMPRESSED_MASK)!=0);
+        final int frequencyTableFirstByte = (inBuffer.get() & 0xFF);
+        final int shift = frequencyTableFirstByte >> 4;
+        final boolean optionalCompressFlag = ((frequencyTableFirstByte & FREQ_TABLE_OPTIONALLY_COMPRESSED_MASK)!=0);
         ByteBuffer freqTableSource;
         if (optionalCompressFlag) {
 
-            // if optionalCompressFlag is true, the frequency table was compressed using RANS Nx16, N=4
+            // spec: The order-1 frequency table itself may still be quite large,
+            // so is optionally compressed using the order-0 rANSNx16 codec with a fixed 4-way interleaving.
+
+            // if optionalCompressFlag is true, the frequency table was compressed using RANS Nx16, N=4 Order 0
             final int uncompressedLength = Utils.readUint7(inBuffer);
             final int compressedLength = Utils.readUint7(inBuffer);
             byte[] compressedFreqTable = new byte[compressedLength];
@@ -130,11 +133,11 @@ public class RANSNx16Decode extends RANSDecode {
             // read compressedLength bytes into compressedFreqTable byte array
             inBuffer.get(compressedFreqTable,0,compressedLength);
 
-            // decode the compressedFreqTable to get the uncompressedFreqTable
+            // decode the compressedFreqTable to get the uncompressedFreqTable using RANS Nx16, N=4 Order 0 uncompress
             freqTableSource = ByteBuffer.allocate(uncompressedLength);
             ByteBuffer compressedFrequencyTableBuffer = ByteBuffer.wrap(compressedFreqTable);
             compressedFrequencyTableBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            uncompressOrder0WayN(compressedFrequencyTableBuffer, freqTableSource, uncompressedLength,ransNx16Params);
+            uncompressOrder0WayN(compressedFrequencyTableBuffer, freqTableSource, uncompressedLength,new RANSNx16Params(0x00)); // format flags = 0
         }
         else {
             freqTableSource = inBuffer;
@@ -147,7 +150,7 @@ public class RANSNx16Decode extends RANSDecode {
         // uncompress for Nway = 4. then extend Nway to be variable - 4 or 32
         // TODO: Fails - unexpected symbol in the third iteration of the for loop.
         final int out_sz = outBuffer.remaining();
-        int rans0, rans1, rans2, rans7;
+        long rans0, rans1, rans2, rans7;
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         rans0 = inBuffer.getInt();
         rans1 = inBuffer.getInt();
@@ -164,20 +167,20 @@ public class RANSNx16Decode extends RANSDecode {
         int l2 = 0;
         int l7 = 0;
         for (; i0 < isz4; i0++, i1++, i2++, i7++) {
-            final int c0 = 0xFF & D[l0].reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
-            final int c1 = 0xFF & D[l1].reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, Constants.TOTAL_FREQ_SHIFT)];
-            final int c2 = 0xFF & D[l2].reverseLookup[Utils.RANSGetCumulativeFrequency(rans2, Constants.TOTAL_FREQ_SHIFT)];
-            final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
+            final int c0 = 0xFF & D[l0].reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, shift)];
+            final int c1 = 0xFF & D[l1].reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, shift)];
+            final int c2 = 0xFF & D[l2].reverseLookup[Utils.RANSGetCumulativeFrequency(rans2, shift)];
+            final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, shift)];
 
             outBuffer.put(i0, (byte) c0);
             outBuffer.put(i1, (byte) c1);
             outBuffer.put(i2, (byte) c2);
             outBuffer.put(i7, (byte) c7);
 
-            rans0 = syms[l0][c0].advanceSymbolStep(rans0,  Constants.TOTAL_FREQ_SHIFT);
-            rans1 = syms[l1][c1].advanceSymbolStep(rans1, Constants.TOTAL_FREQ_SHIFT);
-            rans2 = syms[l2][c2].advanceSymbolStep(rans2, Constants.TOTAL_FREQ_SHIFT);
-            rans7 = syms[l7][c7].advanceSymbolStep(rans7,  Constants.TOTAL_FREQ_SHIFT);
+            rans0 = syms[l0][c0].advanceSymbolStep(rans0, shift);
+            rans1 = syms[l1][c1].advanceSymbolStep(rans1, shift);
+            rans2 = syms[l2][c2].advanceSymbolStep(rans2, shift);
+            rans7 = syms[l7][c7].advanceSymbolStep(rans7, shift);
 
             rans0 = Utils.RANSDecodeRenormalizeNx16(rans0, inBuffer);
             rans1 = Utils.RANSDecodeRenormalizeNx16(rans1, inBuffer);
@@ -192,9 +195,9 @@ public class RANSNx16Decode extends RANSDecode {
 
         // Remainder
         for (; i7 < out_sz; i7++) {
-            final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
+            final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, shift)];
             outBuffer.put(i7, (byte) c7);
-            rans7 = syms[l7][c7].advanceSymbolNx16(rans7, inBuffer, Constants.TOTAL_FREQ_SHIFT);
+            rans7 = syms[l7][c7].advanceSymbolNx16(rans7, inBuffer, shift);
             l7 = c7;
         }
         return outBuffer;
@@ -218,7 +221,7 @@ public class RANSNx16Decode extends RANSDecode {
                 }
             }
         }
-        Utils.normaliseFrequenciesOrder0(F,12);
+        Utils.normaliseFrequenciesOrder0Shift(F,12);
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if(A[j]>0){
 
@@ -263,7 +266,7 @@ public class RANSNx16Decode extends RANSDecode {
                 }
 
                 // For each symbol, normalise it's order 0 frequency table
-                Utils.normaliseFrequenciesOrder0(F[i],shift);
+                Utils.normaliseFrequenciesOrder0Shift(F[i],shift);
                 int cumulativeFreq=0;
 
                 // set decoding symbols

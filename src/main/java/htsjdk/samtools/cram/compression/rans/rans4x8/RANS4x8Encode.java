@@ -69,7 +69,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
         final int cdata_size;
         final int in_size = inBuffer.remaining();
-        int rans0, rans1, rans2, rans3;
+        long rans0, rans1, rans2, rans3;
         final ByteBuffer ptr = cp.slice();
         rans0 = Constants.RANS_4x8_LOWER_BOUND;
         rans1 = Constants.RANS_4x8_LOWER_BOUND;
@@ -99,10 +99,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             rans0 = syms[c0].putSymbol4x8(rans0, ptr);
         }
 
-        ptr.putInt(rans3);
-        ptr.putInt(rans2);
-        ptr.putInt(rans1);
-        ptr.putInt(rans0);
+        ptr.putInt((int) rans3);
+        ptr.putInt((int) rans2);
+        ptr.putInt((int) rans1);
+        ptr.putInt((int) rans0);
         ptr.flip();
         cdata_size = ptr.limit();
         // reverse the compressed bytes, so that they become in REVERSE order:
@@ -135,7 +135,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         final RANSEncodingSymbol[][] syms = getEncodingSymbols();
         final int in_size = inBuffer.remaining();
         final int compressedBlobSize;
-        int rans0, rans1, rans2, rans3;
+        long rans0, rans1, rans2, rans3;
         rans0 = Constants.RANS_4x8_LOWER_BOUND;
         rans1 = Constants.RANS_4x8_LOWER_BOUND;
         rans2 = Constants.RANS_4x8_LOWER_BOUND;
@@ -197,10 +197,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         rans0 = syms[0][l0].putSymbol4x8(rans0, ptr);
 
         ptr.order(ByteOrder.BIG_ENDIAN);
-        ptr.putInt(rans3);
-        ptr.putInt(rans2);
-        ptr.putInt(rans1);
-        ptr.putInt(rans0);
+        ptr.putInt((int) rans3);
+        ptr.putInt((int) rans2);
+        ptr.putInt((int) rans1);
+        ptr.putInt((int) rans0);
         ptr.flip();
         compressedBlobSize = ptr.limit();
         Utils.reverse(ptr);
@@ -237,21 +237,19 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
     private static int[] calcFrequenciesOrder0(final ByteBuffer inBuffer) {
         // TODO: remove duplicate code -use Utils.normalise here
-        final int inSize = inBuffer.remaining();
+        final int T = inBuffer.remaining();
 
         // Compute statistics
-        // T = total of true counts
+        // T = total of true counts = inBuffer size
         // F = scaled integer frequencies
         // M = sum(fs)
         final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
-        int T = 0; //// T is the total number of symbols in the input
-        for (int i = 0; i < inSize; i++) {
+        for (int i = 0; i < T; i++) {
             F[0xFF & inBuffer.get()]++;
-            T++;
         }
         final long tr = ((long) Constants.TOTAL_FREQ << 31) / T + (1 << 30) / T;
 
-        // Normalise so T[i] == TOTFREQ
+        // Normalise so T == TOTFREQ
         // m is the maximum frequency value
         // M is the symbol that has the maximum frequency
         int m = 0;
@@ -277,7 +275,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             fsum += F[j];
         }
 
-        fsum++;
+        // Commenting the below line as it is incrementing fsum by 1, which does not make sense
+        // and it also makes total normalised frequency = 4095 and not 4096.
+        // fsum++;
+
         // adjust the frequency of the symbol with maximum frequency to make sure that
         // the sum of frequencies of all the symbols = 4096
         if (fsum < Constants.TOTAL_FREQ) {
@@ -328,7 +329,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                 t2 += F[i][j];
             }
 
-            t2++;
+            // Commenting the below line as it is incrementing t2 by 1, which does not make sense
+            // and it also makes total normalised frequency = 4095 and not 4096.
+            // t2++;
+
             if (t2 < Constants.TOTAL_FREQ) {
                 F[i][M] += Constants.TOTAL_FREQ - t2;
             } else {
