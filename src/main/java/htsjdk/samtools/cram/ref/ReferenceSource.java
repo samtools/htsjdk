@@ -190,41 +190,35 @@ public class ReferenceSource implements CRAMReferenceSource {
     @Override
     public byte[] getReferenceBasesByRegion(
             final SAMSequenceRecord sequenceRecord,
-            final int zeroBasedOffset,
+            final int zeroBasedStart,
             final int requestedRegionLength) {
-        ValidationUtils.validateArg(zeroBasedOffset >= 0, "start must be >= 0");
+        ValidationUtils.validateArg(zeroBasedStart >= 0, "start must be >= 0");
 
         // this implementation maintains the entire reference sequence, and hands out whatever region
         // of it is requested
-        final byte[] currentBackingBases = getMatchingBackingBases(sequenceRecord);
-        final byte[] bases =
-                currentBackingBases == null ?
-                    getReferenceBases(sequenceRecord, false) :
-                    currentBackingBases;
+        final byte[] bases = getBackingBases(sequenceRecord);
 
         if (bases != null) {
             // cache the backing bases to prevent thrashing due to aggressive GC
             backingReferenceBases = bases;
             backingContigIndex = sequenceRecord.getSequenceIndex();
 
-            if ((zeroBasedOffset + requestedRegionLength) > bases.length) {
-                log.warn("Can't supply reference bytes for start: " + zeroBasedOffset + " length: " +
-                        requestedRegionLength + " from sequence: " + sequenceRecord.getSequenceName() +
-                                " of length " + bases.length + " bytes");
-                final byte[] basesSlice = Arrays.copyOfRange(bases, zeroBasedOffset, bases.length);
-                return basesSlice;
-            } else {
-                final byte[] basesSlice = Arrays.copyOfRange(bases, zeroBasedOffset, zeroBasedOffset + requestedRegionLength);
-                return basesSlice;
+            if (zeroBasedStart >= bases.length) {
+                throw new IllegalArgumentException(String.format("Requested start %d is beyond the sequence length %s",
+                        zeroBasedStart,
+                        sequenceRecord.getSequenceName()));
             }
+            return Arrays.copyOfRange(bases, zeroBasedStart, Math.min(bases.length, zeroBasedStart + requestedRegionLength));
         }
         return bases;
     }
 
-    private byte[] getMatchingBackingBases(final SAMSequenceRecord sequenceRecord) {
-         return backingReferenceBases != null && backingContigIndex == sequenceRecord.getSequenceIndex() ?
-                 backingReferenceBases :
-                 null;
+    private byte[] getBackingBases(final SAMSequenceRecord sequenceRecord) {
+        if (backingReferenceBases != null && backingContigIndex == sequenceRecord.getSequenceIndex()) {
+            return backingReferenceBases;
+        } else {
+            return getReferenceBases(sequenceRecord, false);
+        }
     }
 
     private byte[] findBasesByName(final String name, final boolean tryVariants) {

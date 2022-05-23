@@ -42,11 +42,11 @@ public class SliceTests extends HtsjdkTest {
 
         // ensure these do not throw
         slice.validateReferenceBases(
-                new CRAMReferenceRegion(createTestReferenceSource(null), CRAMStructureTestHelper.SAM_FILE_HEADER));
+                new CRAMReferenceRegion(createTestReferenceSource(null), CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary()));
         slice.validateReferenceBases(
-                new CRAMReferenceRegion(createTestReferenceSource(new byte[0]), CRAMStructureTestHelper.SAM_FILE_HEADER));
+                new CRAMReferenceRegion(createTestReferenceSource(new byte[0]), CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary()));
         slice.validateReferenceBases(
-                new CRAMReferenceRegion(createTestReferenceSource(new byte[1024]), CRAMStructureTestHelper.SAM_FILE_HEADER));
+                new CRAMReferenceRegion(createTestReferenceSource(new byte[1024]), CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary()));
     }
 
     private CRAMReferenceSource createTestReferenceSource(final byte[] bases) {
@@ -57,7 +57,7 @@ public class SliceTests extends HtsjdkTest {
             }
 
             @Override
-            public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord, int zeroBasedOffset,
+            public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord, int zeroBasedStart,
                                                     int requestedRegionLength) {
                 return bases;
             }

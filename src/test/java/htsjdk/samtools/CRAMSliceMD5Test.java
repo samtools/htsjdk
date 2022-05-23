@@ -106,9 +106,9 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
                 @Override
                 public byte[] getReferenceBasesByRegion(
                         final SAMSequenceRecord sequenceRecord,
-                        final int zeroBasedOffset,
+                        final int zeroBasedStart,
                         final int requestedRegionLength) {
-                    return Arrays.copyOfRange(referenceBases, zeroBasedOffset, requestedRegionLength);
+                    return Arrays.copyOfRange(referenceBases, zeroBasedStart, requestedRegionLength);
                 }
             };
 

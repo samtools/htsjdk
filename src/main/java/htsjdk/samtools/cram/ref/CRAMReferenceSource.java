@@ -20,15 +20,18 @@ public interface CRAMReferenceSource {
     byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, final boolean tryNameVariants);
 
     /**
-     * Get the reference bases for a region of a reference contig.
+     * Get the reference bases for a region of a reference contig. If the sequence can be retrieved,
+     * but is not long enough to satisfy the requested length, it is permissible to return fewer bases
+     * than the {@code requestedRegionLength}. It is the caller's responsibility to detect and handle
+     * this case.
      *
      * @param sequenceRecord the SAMSequenceRecord for the reference contig being requested
-     * @param zeroBasedOffset the zero based offset of the starting reference base
+     * @param zeroBasedStart the zero based offset of the starting reference base, must be >= 0
      * @param requestedRegionLength the length of the requested reference region
-     * @return the bases for the reference region
+     * @return the bases for the reference region, or null if the sequence cannot be found.
      */
     byte[] getReferenceBasesByRegion(
             final SAMSequenceRecord sequenceRecord,
-            final int zeroBasedOffset,
+            final int zeroBasedStart,
             final int requestedRegionLength);
 }

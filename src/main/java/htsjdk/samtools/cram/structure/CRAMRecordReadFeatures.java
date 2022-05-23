@@ -363,9 +363,13 @@ public class CRAMRecordReadFeatures {
      * @param isUnknownBases true if CF_UNKNOWN_BASES CRAM flag is set for this read
      * @param readAlignmentStart 1-based CRAM record alignment start
      * @param readLength read length for this read
-     * @param cramReferenceRegion CRAMReferenceRegion spanning the reference bases for this read,
-     *                           if reference-compressed. the region must already be resolved to the correct
-     *                            reference span.
+     * @param cramReferenceRegion CRAMReferenceRegion spanning the reference bases required for this read,
+     *                            if reference-compressed. It is the caller's responsibility to have already
+     *                            fetched the correct bases (that is, the CRAMReferenceRegion's current bases
+     *                            must overlap this read's reference span. It is permissible for the
+     *                            region's span to be less than the entire read span in the case
+     *                            where the read span exceeds beyond the end of the underlying reference
+     *                            sequence.
      * @param substitutionMatrix substitution matrix to use for base resolution
      * @return byte[] of read bases for this read
      */
@@ -385,7 +389,7 @@ public class CRAMRecordReadFeatures {
         int posInRead = 1;
         int posInSeq = 0;
         final int alignmentStart = readAlignmentStart - 1;
-        final int zeroBasedReferenceOffset = cramReferenceRegion.getRegionOffset();
+        final int zeroBasedReferenceOffset = cramReferenceRegion.getRegionStart();
         final byte[] referenceBases = cramReferenceRegion.getCurrentReferenceBases();
 
         if (readFeatures == null) {

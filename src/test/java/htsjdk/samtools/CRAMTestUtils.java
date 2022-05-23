@@ -108,9 +108,9 @@ public final class CRAMTestUtils {
             @Override
             public byte[] getReferenceBasesByRegion(
                     final SAMSequenceRecord sequenceRecord,
-                    final int zeroBasedOffset,
+                    final int zeroBasedStart,
                     final int requestedRegionLength) {
-                byte[] bases = new byte[requestedRegionLength - zeroBasedOffset];
+                byte[] bases = new byte[requestedRegionLength - zeroBasedStart];
                 Arrays.fill(bases, (byte)'A');
                 return bases;
             }

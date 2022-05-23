@@ -17,10 +17,10 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
     private Object[][] getReferenceBasesByIndexTests() {
         return new Object[][] {
                 // index - only 0 or 1 should be accepted
-                {  new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER),
+                {  new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary()),
                    CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
                    CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO_BYTE },
-                {  new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER),
+                {  new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary()),
                    CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE,
                    CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE_BYTE
                 },
@@ -34,7 +34,8 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
             final byte expectedReferenceByte) {
         final byte[] expectedBases = new byte[CRAMStructureTestHelper.SAM_FILE_HEADER.getSequence(index).getSequenceLength()];
         Arrays.fill(expectedBases, expectedReferenceByte);
-        final byte[] bases = cramReferenceRegion.getReferenceBases(index);
+        cramReferenceRegion.fetchReferenceBases(index);
+        final byte[] bases = cramReferenceRegion.getCurrentReferenceBases();
 
         Assert.assertEquals(bases.length, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequence(index).getSequenceLength());
         Assert.assertEquals(bases, expectedBases);
@@ -46,16 +47,16 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
                 // index - anything but 0 or 1 should be rejected
                 {  new CRAMReferenceRegion(
                         CRAMStructureTestHelper.REFERENCE_SOURCE,
-                        CRAMStructureTestHelper.SAM_FILE_HEADER), -1},
+                        CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary()), -1},
                 {  new CRAMReferenceRegion(
                         CRAMStructureTestHelper.REFERENCE_SOURCE,
-                        CRAMStructureTestHelper.SAM_FILE_HEADER), 2},
+                        CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary()), 2},
         };
     }
 
     @Test(dataProvider = "getReferenceBasesByIndexNegative", expectedExceptions = IllegalArgumentException.class)
     public void testGetReferenceBasesByIndexNegative(final CRAMReferenceRegion cramReferenceRegion, final int index) {
-        cramReferenceRegion.getReferenceBases(index);
+        cramReferenceRegion.fetchReferenceBases(index);
     }
 
     @DataProvider(name="getReferenceBasesByRegionPositive")
@@ -82,7 +83,7 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
                         true
                 },
                 {
-                        // 1first byte of contig 0
+                        // first byte of contig 0
                         getAlternatingReferenceRegion(),
                         CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
                         0,
@@ -155,8 +156,9 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
             final int requestedOffset,
             final int requestedLength,
             final boolean reversed) {
-        final byte[] bases = cramReferenceRegion.getReferenceBasesByRegion(index, requestedOffset, requestedLength);
-        Assert.assertEquals(cramReferenceRegion.getRegionOffset(), requestedOffset);
+        cramReferenceRegion.fetchReferenceBasesByRegion(index, requestedOffset, requestedLength);
+        final byte[] bases = cramReferenceRegion.getCurrentReferenceBases();
+        Assert.assertEquals(cramReferenceRegion.getRegionStart(), requestedOffset);
         Assert.assertEquals(cramReferenceRegion.getRegionLength(), requestedLength);
         Assert.assertEquals(bases.length, requestedLength);
         Assert.assertEquals(cramReferenceRegion.getCurrentReferenceBases(), bases);
@@ -165,35 +167,65 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
         Assert.assertEquals(bases, Arrays.copyOfRange(fullContigBases, requestedOffset, requestedOffset + requestedLength));
     }
 
+    @Test
+    public void testGetReferenceBasesByRegionExceedsContigLength() {
+        int regionStart = CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH / 2;
+        int requestedFragmentLength = CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH;
+
+        final CRAMReferenceRegion cramReferenceRegion = getAlternatingReferenceRegion();
+        cramReferenceRegion.fetchReferenceBasesByRegion(
+                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
+                regionStart,
+                requestedFragmentLength);
+        Assert.assertEquals(cramReferenceRegion.getRegionStart(), regionStart);
+        Assert.assertEquals(cramReferenceRegion.getRegionLength(), requestedFragmentLength / 2);
+        final byte[] bases = cramReferenceRegion.getCurrentReferenceBases();
+        Assert.assertEquals(bases.length, requestedFragmentLength /2);
+        final byte[] fullContigBases = getRepeatingBaseSequence(
+                CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH,
+                false);
+        Assert.assertEquals(bases,
+                Arrays.copyOfRange(fullContigBases, regionStart, CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRequestedOffstBeyondEndOfContig() {
+        final CRAMReferenceRegion cramReferenceRegion = getAlternatingReferenceRegion();
+        cramReferenceRegion.fetchReferenceBasesByRegion(
+                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
+                CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH,
+                1);
+    }
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     private void testRejectNegativeOffset() {
         final CRAMReferenceRegion referenceRegion =
-                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER);
-        referenceRegion.getReferenceBasesByRegion(
+                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+        referenceRegion.fetchReferenceBasesByRegion(
                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, -1, 10);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     private void testRejectNegativeContigIndex() {
         final CRAMReferenceRegion referenceRegion =
-                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER);
-        referenceRegion.getReferenceBasesByRegion(
+                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+        referenceRegion.fetchReferenceBasesByRegion(
                 -1, 0, 10);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     private void testRejectNonExistentContigIndex() {
         final CRAMReferenceRegion referenceRegion =
-                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER);
-        referenceRegion.getReferenceBasesByRegion(
+                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+        referenceRegion.fetchReferenceBasesByRegion(
                 27, 0, 10);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     private void testUncooperativeReferenceSource() {
         final CRAMReferenceRegion referenceRegion =
-                new CRAMReferenceRegion(getUncooperativeReferenceSource(), CRAMStructureTestHelper.SAM_FILE_HEADER);
-        referenceRegion.getReferenceBasesByRegion(
+                new CRAMReferenceRegion(getUncooperativeReferenceSource(), CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+        referenceRegion.fetchReferenceBasesByRegion(
                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
                 0,
                 10);
@@ -208,7 +240,7 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
 
                     @Override
                     public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord,
-                                                            int zeroBasedOffset, int requestedRegionLength) {
+                                                            int zeroBasedStart, int requestedRegionLength) {
                         return null;
                     }
                 };
@@ -217,7 +249,7 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
     private static CRAMReferenceRegion getAlternatingReferenceRegion() {
         return new CRAMReferenceRegion(
                 new ReferenceSource(getReferenceFileWithAlternatingBases(CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH)),
-                CRAMStructureTestHelper.SAM_FILE_HEADER);
+                CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
     }
 
     private static InMemoryReferenceSequenceFile getReferenceFileWithAlternatingBases(final int length) {

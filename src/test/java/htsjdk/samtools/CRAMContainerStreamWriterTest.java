@@ -20,6 +20,8 @@ import java.util.List;
 
 public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
+    final static int SEQUENCE_LENGTH = 1024 * 1024;
+
     private List<SAMRecord> createRecords(int count) {
         final List<SAMRecord> list = new ArrayList<>(count);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
@@ -41,15 +43,15 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
     private SAMFileHeader createSAMHeader(SAMFileHeader.SortOrder sortOrder) {
         final SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(sortOrder);
-        header.addSequence(new SAMSequenceRecord("chr1", 123));
-        header.addSequence(new SAMSequenceRecord("chr2", 123));
+        header.addSequence(new SAMSequenceRecord("chr1", SEQUENCE_LENGTH));
+        header.addSequence(new SAMSequenceRecord("chr2", SEQUENCE_LENGTH));
         SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord("1");
         header.addReadGroup(readGroupRecord);
         return header;
     }
 
     private ReferenceSource createReferenceSource() {
-        final byte[] refBases = new byte[1024 * 1024];
+        final byte[] refBases = new byte[SEQUENCE_LENGTH];
         Arrays.fill(refBases, (byte) 'A');
         InMemoryReferenceSequenceFile rsf = new InMemoryReferenceSequenceFile();
         rsf.add("chr1", refBases);

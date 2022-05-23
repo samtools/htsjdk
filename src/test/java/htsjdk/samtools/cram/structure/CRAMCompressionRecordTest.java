@@ -143,14 +143,14 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
             @Override
             public byte[] getReferenceBasesByRegion(
                     final SAMSequenceRecord sequenceRecord,
-                    final int zeroBasedOffset,
+                    final int zeroBasedStart,
                     final int requestedRegionLength) {
-                return Arrays.copyOfRange(refBases.getBytes(), zeroBasedOffset, requestedRegionLength);
+                return Arrays.copyOfRange(refBases.getBytes(), zeroBasedStart, requestedRegionLength);
             }
         };
         final CRAMReferenceRegion cramReferenceRegion = new CRAMReferenceRegion(
-                cramReferenceSource, CRAMStructureTestHelper.SAM_FILE_HEADER);
-        cramReferenceRegion.getReferenceBases(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+                cramReferenceSource, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+        cramReferenceRegion.fetchReferenceBases(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
         slice.setReferenceMD5(cramReferenceRegion);
         slice.normalizeCRAMRecords(cramRecords, cramReferenceRegion);
         final SAMRecord roundTrippedSAMRecord = cramRecord.toSAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);

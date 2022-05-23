@@ -445,11 +445,9 @@ public class Slice {
         boolean hasEmbeddedReference = false;
         if (compressionHeader.isReferenceRequired()) {
             // get the reference bases required for the entire slice and validate the reference MD5
-            if (getAlignmentContext().getReferenceContext().isMappedSingleRef()) {
-                cramReferenceRegion.getReferenceBasesByRegion(
-                        alignmentContext.getReferenceContext().getReferenceSequenceID(),
-                        alignmentContext.getAlignmentStart() - 1, // 1 based to 0-based
-                        alignmentContext.getAlignmentSpan());
+            final AlignmentContext sliceAlignmentContext = getAlignmentContext();
+            if (sliceAlignmentContext.getReferenceContext().isMappedSingleRef()) {
+                cramReferenceRegion.fetchReferenceBasesByRegion(sliceAlignmentContext);
                 validateReferenceBases(cramReferenceRegion);
             }
         } else {
@@ -498,11 +496,10 @@ public class Slice {
                         getAlignmentContext().getReferenceContext().isMultiRef() &&
                         !record.isUnknownBases() &&
                         !hasEmbeddedReference) {
-                    // the pathological case where we need to re-resolve the reference bases for each record we
-                    // visit because this is a multi-reference slice and all the reads are not necessarily mapped
-                    // to the same reference contig
-                    //ignore the return since we only care about the side effect
-                    cramReferenceRegion.getReferenceBasesByRegion(
+                    // if the slice is a multi-ref slice because the reads are not coordinate-sorted, this code
+                    // can wind up needing to re-resolve the reference bases for *each* record in the slice, which
+                    // can in turn be pathologically slow, especially if the reference source is remote
+                    cramReferenceRegion.fetchReferenceBasesByRegion(
                             record.getReferenceIndex(),
                             record.getAlignmentStart() - 1,  // 1 based to 0-based
                             record.getAlignmentEnd() - record.getAlignmentStart() + 1);
@@ -665,7 +662,7 @@ public class Slice {
         //TODO: CRAMComplianceTest/c1#bounds triggers this (the reads are mapped beyond reference length),
         // and CRAMEdgeCasesTest.testNullsAndBeyondRef seems to deliberately test that reads that extend
         // beyond the reference length should be ok ?
-        if (((alignmentContext.getAlignmentStart()-1)  < cramReferenceRegion.getRegionOffset()) ||
+        if (((alignmentContext.getAlignmentStart()-1)  < cramReferenceRegion.getRegionStart()) ||
                 (alignmentContext.getAlignmentSpan() > cramReferenceRegion.getRegionLength())) {
             log.warn(String.format(
                     "Slice mapped outside of reference bases length %d: slice reference context=%s, start=%d, span=%d, counter=%d.",

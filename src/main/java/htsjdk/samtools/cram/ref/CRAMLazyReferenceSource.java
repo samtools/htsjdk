@@ -44,7 +44,7 @@ public class CRAMLazyReferenceSource implements CRAMReferenceSource {
     @Override
     public byte[] getReferenceBasesByRegion(
             final SAMSequenceRecord sequenceRecord,
-            final int zeroBasedOffset,
+            final int zeroBasedStart,
             final int requestedRegionLength) {
         throw new IllegalArgumentException(String.format(NO_REF_MESSAGE, sequenceRecord.getSequenceName()));
     }

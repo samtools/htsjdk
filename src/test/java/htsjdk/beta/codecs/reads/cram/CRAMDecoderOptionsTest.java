@@ -19,7 +19,7 @@ public class CRAMDecoderOptionsTest extends HtsjdkTest {
                 return null;
             }
             @Override
-            public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord, int zeroBasedOffset,
+            public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord, int zeroBasedStart,
                                                     int requestedRegionLength) {
                 return null;
             }
