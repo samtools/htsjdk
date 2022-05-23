@@ -418,7 +418,8 @@ public class CRAMStructureTestHelper {
         final List<SAMSequenceRecord> sequenceRecords = new ArrayList<>();
         sequenceRecords.add(new SAMSequenceRecord("0", REFERENCE_CONTIG_LENGTH));
         sequenceRecords.add(new SAMSequenceRecord("1", REFERENCE_CONTIG_LENGTH));
-        final SAMFileHeader header = new SAMFileHeader(new SAMSequenceDictionary(sequenceRecords));
+        final SAMFileHeader header = CRAMTestUtils.addFakeSequenceMD5s(
+                new SAMFileHeader(new SAMSequenceDictionary(sequenceRecords)));
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         return header;
     }

@@ -199,12 +199,14 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
 
     private static void addRandomSequence(SAMFileHeader header, int length, InMemoryReferenceSequenceFile rsf) {
         String name = String.valueOf(header.getSequenceDictionary().size() + 1);
-        header.addSequence(new SAMSequenceRecord(name, length));
+        final SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(name, length);
         byte[] refBases = new byte[length];
         byte[] alphabet = "ACGTN".getBytes();
-        for (int i = 0; i < refBases.length; i++)
+        for (int i = 0; i < refBases.length; i++) {
             refBases[i] = alphabet[random.nextInt(alphabet.length)];
-
+        }
         rsf.add(name, refBases);
+        sequenceRecord.setComputedMd5(refBases);
+        header.addSequence(sequenceRecord);
     }
 }

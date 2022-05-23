@@ -179,7 +179,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         // write them to a cram stream
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final ReferenceSource source = new ReferenceSource(t.refFile);
-        final CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, samFileHeader, name);
+        final CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, CRAMTestUtils.addFakeSequenceMD5s(samFileHeader), name);
         for (SAMRecord samRecord : samRecords) {
             cramFileWriter.addAlignment(samRecord);
         }
@@ -331,7 +331,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         final File tempCRAMFile = File.createTempFile("testBAMThroughCRAMRoundTrip", FileExtensions.CRAM);
         tempCRAMFile.deleteOnExit();
         SAMFileHeader samHeader = getFileHeader(originalBAMInputFile, referenceFile);
-        writeRecordsToFile(originalBAMRecords, tempCRAMFile, referenceFile, samHeader);
+        writeRecordsToFile(originalBAMRecords, tempCRAMFile, referenceFile, CRAMTestUtils.addFakeSequenceMD5s(samHeader));
 
         // read the CRAM records back in and compare to the original BAM records
         List<SAMRecord> cramRecords = getSAMRecordsFromFile(tempCRAMFile, referenceFile);
@@ -359,7 +359,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path tempCRAM = jimfs.getPath("testBAMThroughCRAMRoundTrip" + FileExtensions.CRAM);
             SAMFileHeader samHeader = getFileHeader(originalBAMInputFile, referenceFile);
-            writeRecordsToPath(originalBAMRecords, tempCRAM, referenceFile, samHeader);
+            writeRecordsToPath(originalBAMRecords, tempCRAM, referenceFile, CRAMTestUtils.addFakeSequenceMD5s(samHeader));
 
             // read the CRAM records back in and compare to the original BAM records
             List<SAMRecord> cramRecords = getSAMRecordsFromPath(tempCRAM, referenceFile);
