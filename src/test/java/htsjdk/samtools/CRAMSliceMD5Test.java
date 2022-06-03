@@ -96,7 +96,21 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
             samFileHeader.addReadGroup(new SAMReadGroupRecord("rg1"));
 
             // this source does not change ref bases:
-            referenceSourceMixedCase = (sequenceRecord, tryNameVariants) -> referenceBases;
+            referenceSourceMixedCase = new CRAMReferenceSource() {
+
+                @Override
+                public byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, final boolean tryNameVariants) {
+                    return referenceBases;
+                }
+
+                @Override
+                public byte[] getReferenceBasesByRegion(
+                        final SAMSequenceRecord sequenceRecord,
+                        final int zeroBasedStart,
+                        final int requestedRegionLength) {
+                    return Arrays.copyOfRange(referenceBases, zeroBasedStart, requestedRegionLength);
+                }
+            };
 
             memoryReferenceSequenceFile = new InMemoryReferenceSequenceFile();
             // copy ref bases to avoid the original from upper casing:

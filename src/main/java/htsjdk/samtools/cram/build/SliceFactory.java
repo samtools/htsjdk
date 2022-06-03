@@ -29,6 +29,7 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
+import htsjdk.samtools.cram.structure.AlignmentContext;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.CRAMCompressionRecord;
 import htsjdk.samtools.cram.structure.CompressionHeader;
@@ -67,7 +68,7 @@ public final class SliceFactory {
             final SAMFileHeader samFileHeader,
             final long globalRecordCounter) {
         this.encodingStrategy = cramEncodingStrategy;
-        this.cramReferenceRegion = new CRAMReferenceRegion(cramReferenceSource, samFileHeader);
+        this.cramReferenceRegion = new CRAMReferenceRegion(cramReferenceSource, samFileHeader.getSequenceDictionary());
         minimumSingleReferenceSliceThreshold = encodingStrategy.getMinimumSingleReferenceSliceSize();
         maxRecordsPerSlice = this.encodingStrategy.getReadsPerSlice();
         this.coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
@@ -136,7 +137,11 @@ public final class SliceFactory {
                     containerByteOffset,
                     sliceStagingEntry.getGlobalRecordCounter()
             );
-            slice.setReferenceMD5(cramReferenceRegion.getCurrentReferenceBases());
+            final AlignmentContext sliceAlignmentContext = slice.getAlignmentContext();
+            if (sliceAlignmentContext.getReferenceContext().isMappedSingleRef()) {
+                cramReferenceRegion.fetchReferenceBasesByRegion(sliceAlignmentContext);
+                slice.setReferenceMD5(cramReferenceRegion);
+             }
             slices.add(slice);
         }
         cramRecordSliceEntries.clear();
@@ -150,11 +155,16 @@ public final class SliceFactory {
         final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>();
         for (final SAMRecord samRecord : samRecords) {
             int referenceIndex = samRecord.getReferenceIndex();
+            byte[] referenceBases = null;
+            if (referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                cramReferenceRegion.fetchReferenceBases(referenceIndex);
+                referenceBases = cramReferenceRegion.getCurrentReferenceBases();
+            }
             final CRAMCompressionRecord cramCompressionRecord = new CRAMCompressionRecord(
                     CramVersions.DEFAULT_CRAM_VERSION,
                     encodingStrategy,
                     samRecord,
-                    cramReferenceRegion.getReferenceBases(referenceIndex),
+                    referenceBases,
                     recordIndex++,
                     readGroupNameToID);
             cramCompressionRecords.add(cramCompressionRecord);

@@ -35,7 +35,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
     private final CramContainerIterator containerIterator;
     private final CramHeader cramHeader;
     private final SAMFileHeader samFileHeader;
-    private final CRAMReferenceRegion cramReferenceState;
+    private final CRAMReferenceRegion cramReferenceRegion;
     private final QueryInterval[] queryIntervals;
 
     private ValidationStringency validationStringency;
@@ -64,7 +64,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
 
         this.validationStringency = validationStringency;
         samFileHeader = containerIterator.getSamFileHeader();
-        cramReferenceState = new CRAMReferenceRegion(referenceSource, samFileHeader);
+        cramReferenceRegion = new CRAMReferenceRegion(referenceSource, samFileHeader.getSequenceDictionary());
         cramHeader = containerIterator.getCramHeader();
         firstContainerOffset = this.countingInputStream.getCount();
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
@@ -81,7 +81,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
 
         this.validationStringency = validationStringency;
         samFileHeader = containerIterator.getSamFileHeader();
-        cramReferenceState = new CRAMReferenceRegion(referenceSource, samFileHeader);
+        cramReferenceRegion = new CRAMReferenceRegion(referenceSource, samFileHeader.getSequenceDictionary());
         cramHeader = containerIterator.getCramHeader();
         firstContainerOffset = this.countingInputStream.getCount();
         samRecords = new ArrayList<>(new CRAMEncodingStrategy().getReadsPerSlice());
@@ -111,7 +111,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
         if (containerMatchesQuery(container)) {
             samRecords = container.getSAMRecords(
                     validationStringency,
-                    cramReferenceState,
+                    cramReferenceRegion,
                     compressorCache,
                     getSAMFileHeader());
             samRecordIterator = samRecords.iterator();

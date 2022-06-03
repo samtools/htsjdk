@@ -96,10 +96,24 @@ public final class CRAMTestUtils {
      * return a CRAMReferenceSource that returns all A's for any sequence queried
      */
     public static CRAMReferenceSource getFakeReferenceSource() {
-        return (sequenceRecord, tryNameVariants) -> {
-            byte[] bases = new byte[sequenceRecord.getSequenceLength()];
-            Arrays.fill(bases, (byte)'A');
-            return bases;
+        return new CRAMReferenceSource() {
+
+            @Override
+            public byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, final boolean tryNameVariants) {
+                byte[] bases = new byte[sequenceRecord.getSequenceLength()];
+                Arrays.fill(bases, (byte)'A');
+                return bases;
+            }
+
+            @Override
+            public byte[] getReferenceBasesByRegion(
+                    final SAMSequenceRecord sequenceRecord,
+                    final int zeroBasedStart,
+                    final int requestedRegionLength) {
+                byte[] bases = new byte[requestedRegionLength - zeroBasedStart];
+                Arrays.fill(bases, (byte)'A');
+                return bases;
+            }
         };
     }
 }

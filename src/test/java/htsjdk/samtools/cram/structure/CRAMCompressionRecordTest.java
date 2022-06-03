@@ -6,6 +6,7 @@ import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -133,11 +134,25 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         final CompressionHeader compressionHeader = new CompressionHeaderFactory(new CRAMEncodingStrategy())
                 .createCompressionHeader(cramRecords, true);
         final Slice slice = new Slice(cramRecords, compressionHeader, 0L, 0L);
-        slice.setReferenceMD5(refBases.getBytes());
-        slice.normalizeCRAMRecords(
-                cramRecords,
-                new CRAMReferenceRegion((sequenceRecord, tryNameVariants) -> refBases.getBytes(),
-                        CRAMStructureTestHelper.SAM_FILE_HEADER));
+        final CRAMReferenceSource cramReferenceSource = new CRAMReferenceSource() {
+            @Override
+            public byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, final boolean tryNameVariants) {
+                return refBases.getBytes();
+            }
+
+            @Override
+            public byte[] getReferenceBasesByRegion(
+                    final SAMSequenceRecord sequenceRecord,
+                    final int zeroBasedStart,
+                    final int requestedRegionLength) {
+                return Arrays.copyOfRange(refBases.getBytes(), zeroBasedStart, requestedRegionLength);
+            }
+        };
+        final CRAMReferenceRegion cramReferenceRegion = new CRAMReferenceRegion(
+                cramReferenceSource, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+        cramReferenceRegion.fetchReferenceBases(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        slice.setReferenceMD5(cramReferenceRegion);
+        slice.normalizeCRAMRecords(cramRecords, cramReferenceRegion);
         final SAMRecord roundTrippedSAMRecord = cramRecord.toSAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
 
         Assert.assertEquals(roundTrippedSAMRecord.getReadBases(), expectedReadBases.getBytes());

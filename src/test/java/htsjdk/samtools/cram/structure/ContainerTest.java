@@ -246,7 +246,7 @@ public class ContainerTest extends HtsjdkTest {
 
         final List<SAMRecord> roundTripRecords = container.getSAMRecords(
                 ValidationStringency.STRICT,
-                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER),
+                new CRAMReferenceRegion(CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary()),
                 new CompressorCache(),
                 CRAMStructureTestHelper.SAM_FILE_HEADER
         );

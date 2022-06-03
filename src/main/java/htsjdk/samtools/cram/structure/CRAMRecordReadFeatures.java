@@ -29,6 +29,7 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.build.Utils;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.util.SequenceUtil;
@@ -356,22 +357,28 @@ public class CRAMRecordReadFeatures {
     }
 
     /**
-     * Get the set of readBases given these read features.
-     * @param isUnknownBases
-     * @param readAlignmentStart 1-based alignment start for this record
-     * @param readLength
-     * @param referenceBases
-     * @param zeroBasedReferenceOffset
-     * @param substitutionMatrix
-     * @return
+     * Get the read bases for a CRAMRecord given a set of read feaures and a reference region.
+     *
+     * @param readFeatures list of ReadFeatures for this record. may be null
+     * @param isUnknownBases true if CF_UNKNOWN_BASES CRAM flag is set for this read
+     * @param readAlignmentStart 1-based CRAM record alignment start
+     * @param readLength read length for this read
+     * @param cramReferenceRegion CRAMReferenceRegion spanning the reference bases required for this read,
+     *                            if reference-compressed. It is the caller's responsibility to have already
+     *                            fetched the correct bases (that is, the CRAMReferenceRegion's current bases
+     *                            must overlap this read's reference span. It is permissible for the
+     *                            region's span to be less than the entire read span in the case
+     *                            where the read span exceeds beyond the end of the underlying reference
+     *                            sequence.
+     * @param substitutionMatrix substitution matrix to use for base resolution
+     * @return byte[] of read bases for this read
      */
     public static byte[] restoreReadBases(
             final List<ReadFeature> readFeatures,
             final boolean isUnknownBases,
             final int readAlignmentStart,
             final int readLength,
-            final byte[] referenceBases,
-            final int zeroBasedReferenceOffset,
+            final CRAMReferenceRegion cramReferenceRegion,
             final SubstitutionMatrix substitutionMatrix) {
         if (isUnknownBases || readLength == 0) {
             return SAMRecord.NULL_SEQUENCE;
@@ -380,9 +387,11 @@ public class CRAMRecordReadFeatures {
 
         // ReadFeatures use a 0-based feature position, but the CRAMRecord uses SAM (1 based) coordinates
         int posInRead = 1;
-        final int alignmentStart = readAlignmentStart - 1;
-
         int posInSeq = 0;
+        final int alignmentStart = readAlignmentStart - 1;
+        final int zeroBasedReferenceOffset = cramReferenceRegion.getRegionStart();
+        final byte[] referenceBases = cramReferenceRegion.getCurrentReferenceBases();
+
         if (readFeatures == null) {
             if (referenceBases.length + zeroBasedReferenceOffset < alignmentStart + bases.length) {
                 Arrays.fill(bases, (byte) 'N');

@@ -17,6 +17,12 @@ public class CRAMEncoderOptionsTest extends HtsjdkTest {
             public byte[] getReferenceBases(SAMSequenceRecord sequenceRecord, boolean tryNameVariants) {
                 return null;
             }
+
+            @Override
+            public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord, int zeroBasedStart,
+                                                    int requestedRegionLength) {
+                return null;
+            }
         };
         cramEncoderOptions.setReferencePath(null);
         cramEncoderOptions.setReferenceSource(cramReferenceSource);

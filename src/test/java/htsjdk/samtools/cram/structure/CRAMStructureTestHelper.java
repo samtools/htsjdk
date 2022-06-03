@@ -18,6 +18,8 @@ public class CRAMStructureTestHelper {
     public static final int READ_LENGTH = 20;
     public static final int REFERENCE_SEQUENCE_ZERO = 0;
     public static final int REFERENCE_SEQUENCE_ONE = 1;
+    public static final byte REFERENCE_SEQUENCE_ZERO_BYTE = 'A';
+    public static final byte REFERENCE_SEQUENCE_ONE_BYTE = 'C';
 
     public static final CRAMEncodingStrategy ENCODING_STRATEGY = new CRAMEncodingStrategy();
     public static final Map<String, Integer> READ_GROUP_MAP = new HashMap();
@@ -391,30 +393,7 @@ public class CRAMStructureTestHelper {
         Assert.assertEquals(container.getContainerByteOffset(), expectedByteOffset);
     }
 
-    public static void assertContainerState(final Container container,
-                                            final AlignmentContext expectedAlignmentContext,
-                                            final int expectedRecordCount,
-                                            final int expectedBaseCount,
-                                            final long expectedGlobalRecordCounter,
-                                            final long expectedByteOffset) {
-        Assert.assertEquals(container.getAlignmentContext(), expectedAlignmentContext);
-        Assert.assertEquals(container.getContainerByteOffset(), expectedByteOffset);
-
-        Assert.assertEquals(container.getContainerHeader().getNumberOfRecords(), expectedRecordCount);
-        Assert.assertEquals(container.getContainerHeader().getBaseCount(), expectedBaseCount);
-        Assert.assertEquals(container.getContainerHeader().getGlobalRecordCounter(), expectedGlobalRecordCounter);
-
-        //Note: this assumes a single slice
-        Assert.assertEquals(container.getSlices().size(), 1);
-        assertSliceState(
-                container.getSlices().get(0),
-                expectedAlignmentContext,
-                expectedRecordCount,
-                expectedBaseCount,
-                expectedGlobalRecordCounter);
-    }
-
-    private static SAMFileHeader createSAMFileHeader() {
+    public static SAMFileHeader createSAMFileHeader() {
         final List<SAMSequenceRecord> sequenceRecords = new ArrayList<>();
         sequenceRecords.add(new SAMSequenceRecord("0", REFERENCE_CONTIG_LENGTH));
         sequenceRecords.add(new SAMSequenceRecord("1", REFERENCE_CONTIG_LENGTH));
@@ -426,11 +405,11 @@ public class CRAMStructureTestHelper {
     private static final InMemoryReferenceSequenceFile getReferenceFile() {
         final InMemoryReferenceSequenceFile referenceFile = new InMemoryReferenceSequenceFile();
         byte[] bases = new byte[REFERENCE_CONTIG_LENGTH];
-        Arrays.fill(bases, (byte) 'A');
+        Arrays.fill(bases, REFERENCE_SEQUENCE_ZERO_BYTE);
         referenceFile.add("0", bases);
 
         bases = new byte[REFERENCE_CONTIG_LENGTH];
-        Arrays.fill(bases, (byte) 'C');
+        Arrays.fill(bases, REFERENCE_SEQUENCE_ONE_BYTE);
         referenceFile.add("1", bases);
 
         return referenceFile;

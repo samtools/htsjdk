@@ -374,7 +374,7 @@ public class CRAMCompressionRecord {
      * scores, and mate graph are not stored directly as part of the record. These values must be resolved
      * through the separate process of normalization, which is performed at Slice granularity (all records in a
      * Slice are normalized at the same time).
-     * (see {@link Slice#normalizeCRAMRecords(List, CRAMReferenceRegion)} )}).
+     * (see {@link Slice#normalizeCRAMRecords(List, CRAMReferenceRegion)}).
      * @return true if this record is normalized
      */
     public boolean isNormalized() { return isNormalized; }
@@ -455,16 +455,13 @@ public class CRAMCompressionRecord {
     }
 
     /**
+     * Restore the actual read bases for this record.
      *
-     * @param referenceBases reference bases for this reference, if one is required (may be null for records with
-     *                 RR=false in the compression header)
-     * @param zeroBasedReferenceOffset zero-based reference offset of the first base in {@code referenceBases}
-     * @param substitutionMatrix substitution matrix
+     * @param cramReferenceRegion CRAMReferenceRegion spanning the reference bases for this record, if reference
+     *                           bases are required (may be null for records with RR=false in the compression header)
+     * @param substitutionMatrix substitution matrix to use for this record
      */
-    public void restoreReadBases(
-            final byte[] referenceBases,
-            final int zeroBasedReferenceOffset,
-            final SubstitutionMatrix substitutionMatrix) {
+    public void restoreReadBases(CRAMReferenceRegion cramReferenceRegion, final SubstitutionMatrix substitutionMatrix) {
         if (isUnknownBases()) {
             readBases = SAMRecord.NULL_SEQUENCE;
         } else {
@@ -475,8 +472,7 @@ public class CRAMCompressionRecord {
                     isUnknownBases(),
                     alignmentStart,
                     readLength,
-                    referenceBases,
-                    zeroBasedReferenceOffset,
+                    cramReferenceRegion,
                     substitutionMatrix);
         }
     }

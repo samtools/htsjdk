@@ -18,6 +18,11 @@ public class CRAMDecoderOptionsTest extends HtsjdkTest {
             public byte[] getReferenceBases(SAMSequenceRecord sequenceRecord, boolean tryNameVariants) {
                 return null;
             }
+            @Override
+            public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord, int zeroBasedStart,
+                                                    int requestedRegionLength) {
+                return null;
+            }
         };
         cramDecoderOptions.setReferencePath(null);
         cramDecoderOptions.setReferenceSource(cramReferenceSource);

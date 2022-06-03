@@ -100,7 +100,6 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
     // testing for a contig found in the reads but not in the reference
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testContigNotFoundInRef() throws IOException {
-        boolean sawException = false;
         final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/CRAMException/testContigNotInRef.cram");
         final File refFile = new File("src/test/resources/htsjdk/samtools/cram/CRAMException/testContigNotInRef.fa");
         final ReferenceSource refSource = new ReferenceSource(refFile);
