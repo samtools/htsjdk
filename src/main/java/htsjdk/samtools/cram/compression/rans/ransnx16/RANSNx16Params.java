@@ -43,9 +43,7 @@ public class RANSNx16Params implements RANSParams {
 
     public int getInterleaveSize(){
         // Interleave N = 32 rANS states (else N = 4)
-        //TODO: temporarily always return 4
-        //return ((formatFlags & N32_FLAG_MASK) == 0) ? 32 : 4;
-        return 4;
+        return ((formatFlags & N32_FLAG_MASK) == 0) ? 4 : 32;
     }
 
     public boolean getStripe(){

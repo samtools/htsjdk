@@ -101,6 +101,24 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
                             new RANSNx16Params(0x01),
                             "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
                     });
+
+                    // RANS Nx16 order 1, bitflags = 0x04
+                    testCases.add(new Object[] {
+                            p,
+                            ransNx16Encode,
+                            ransNx16Decode ,
+                            new RANSNx16Params(0x04),
+                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
+                    });
+
+                    // RANS Nx16 order 1, bitflags = 0x05
+                    testCases.add(new Object[] {
+                            p,
+                            ransNx16Encode,
+                            ransNx16Decode ,
+                            new RANSNx16Params(0x05),
+                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
+                    });
                 });
         return testCases.toArray(new Object[][]{});
     }
@@ -173,7 +191,7 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
             final ByteBuffer htsjdkCompressedBytes = ransEncode.compress(inputBytes, params);
             inputBytes.rewind();
 
-//            // commenting for testing!
+//            // commenting as the comparison of compressed bytes is not needed to ensure interoperability.
 //            // Compare the htsjdk compressed bytes with the precompressed file from htscodecs repo
 //            Assert.assertEquals(htsjdkCompressedBytes, preCompressedInputBytes);
 
