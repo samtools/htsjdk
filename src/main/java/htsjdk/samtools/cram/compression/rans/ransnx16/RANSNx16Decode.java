@@ -41,6 +41,7 @@ public class RANSNx16Decode extends RANSDecode {
             initializeRANSDecoder();
             final ByteBuffer outBuffer = ByteBuffer.allocate(n_out);
             switch (ransNx16Params.getOrder()){
+                // TODO: remove n_out?
                 case ZERO:
                     uncompressOrder0WayN(inBuffer, outBuffer, n_out, ransNx16Params);
                     break;
@@ -72,39 +73,43 @@ public class RANSNx16Decode extends RANSDecode {
         // Nway parallel rans states. Nway = 4 or 32
         final long[] rans = new long[Nway];
 
-        // c is the array of decoded symbols
-        final byte[] c = new byte[Nway];
+        // symbols is the array of decoded symbols
+        final int[] symbols = new int[Nway];
         int r;
         for (r=0; r<Nway; r++){
             rans[r] = inBuffer.getInt();
         }
 
+        // size of each interleaved stream
+        // For Nway = 4, division by 4 is the same as right shift by 2 bits
+        // For Nway = 32, division by 32 is the same as right shift by 5 bits
+        final int interleaveSize = (Nway == 4) ? (n_out >> 2) : (n_out >> 5);
+
         // Number of elements that don't fall into the Nway streams
-        int remSize = (n_out % Nway);
+        int remSize = n_out - (interleaveSize * Nway);
         final int out_end = n_out - remSize;
         for (int i = 0; i < out_end; i += Nway) {
             for (r=0; r<Nway; r++){
 
                 // Nway parallel decoding rans states
-                c[r] = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
-                outBuffer.put(i+r, c[r]);
-                rans[r] = syms[0xFF & c[r]].advanceSymbolStep(rans[r], Constants.TOTAL_FREQ_SHIFT);
+                symbols[r] = 0xFF & D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
+                outBuffer.put(i+r, (byte) symbols[r]);
+                rans[r] = syms[symbols[r]].advanceSymbolStep(rans[r], Constants.TOTAL_FREQ_SHIFT);
                 rans[r] = Utils.RANSDecodeRenormalizeNx16(rans[r], inBuffer);
             }
         }
         outBuffer.position(out_end);
-        int rev_idx = 0;
+        int reverseIndex = 0;
 
         // decode the remaining bytes
         while (remSize>0){
-            byte symbol = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[rev_idx], Constants.TOTAL_FREQ_SHIFT)];
-            syms[0xFF & symbol].advanceSymbolNx16(rans[rev_idx], inBuffer, Constants.TOTAL_FREQ_SHIFT);
-            outBuffer.put(symbol);
+            int remainingSymbol = 0xFF & D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[reverseIndex], Constants.TOTAL_FREQ_SHIFT)];
+            syms[remainingSymbol].advanceSymbolNx16(rans[reverseIndex], inBuffer, Constants.TOTAL_FREQ_SHIFT);
+            outBuffer.put((byte) remainingSymbol);
             remSize --;
-            rev_idx ++;
+            reverseIndex ++;
         }
         outBuffer.position(0);
-
         return outBuffer;
     }
 
@@ -114,7 +119,6 @@ public class RANSNx16Decode extends RANSDecode {
             final int n_out,
             final RANSNx16Params ransNx16Params) {
 
-        // TODO: does not work as expected. Need to fix!
         // read the first byte and calculate the bit shift
         final int frequencyTableFirstByte = (inBuffer.get() & 0xFF);
         final int shift = frequencyTableFirstByte >> 4;
@@ -143,97 +147,88 @@ public class RANSNx16Decode extends RANSDecode {
             freqTableSource = inBuffer;
         }
         readFrequencyTableOrder1(freqTableSource, shift);
-
         final ArithmeticDecoder[] D = getD();
         final RANSDecodingSymbol[][] syms = getDecodingSymbols();
-
-        // uncompress for Nway = 4. then extend Nway to be variable - 4 or 32
-        // TODO: Fails - unexpected symbol in the third iteration of the for loop.
-        final int out_sz = outBuffer.remaining();
-        long rans0, rans1, rans2, rans7;
+        final int outputSize = outBuffer.remaining();
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        rans0 = inBuffer.getInt();
-        rans1 = inBuffer.getInt();
-        rans2 = inBuffer.getInt();
-        rans7 = inBuffer.getInt();
 
-        final int isz4 = out_sz >> 2;
-        int i0 = 0;
-        int i1 = isz4;
-        int i2 = 2 * isz4;
-        int i7 = 3 * isz4;
-        int l0 = 0;
-        int l1 = 0;
-        int l2 = 0;
-        int l7 = 0;
-        for (; i0 < isz4; i0++, i1++, i2++, i7++) {
-            final int c0 = 0xFF & D[l0].reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, shift)];
-            final int c1 = 0xFF & D[l1].reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, shift)];
-            final int c2 = 0xFF & D[l2].reverseLookup[Utils.RANSGetCumulativeFrequency(rans2, shift)];
-            final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, shift)];
+        // Nway parallel rans states. Nway = 4 or 32
+        final int Nway = ransNx16Params.getInterleaveSize();
+        final long[] rans = new long[Nway];
+        final int[] interleaveStreamIndex = new int[Nway];
+        final int[] context = new int[Nway];
+        final int[] symbol = new int[Nway];
 
-            outBuffer.put(i0, (byte) c0);
-            outBuffer.put(i1, (byte) c1);
-            outBuffer.put(i2, (byte) c2);
-            outBuffer.put(i7, (byte) c7);
+        // size of interleaved stream = outputSize / Nway
+        // For Nway = 4, division by 4 is the same as right shift by 2 bits
+        // For Nway = 32, division by 32 is the same as right shift by 5 bits
+        final int interleaveSize = (Nway==4) ? (outputSize >> 2): (outputSize >> 5);
 
-            rans0 = syms[l0][c0].advanceSymbolStep(rans0, shift);
-            rans1 = syms[l1][c1].advanceSymbolStep(rans1, shift);
-            rans2 = syms[l2][c2].advanceSymbolStep(rans2, shift);
-            rans7 = syms[l7][c7].advanceSymbolStep(rans7, shift);
+        int r;
+        for (r=0; r<Nway; r++){
 
-            rans0 = Utils.RANSDecodeRenormalizeNx16(rans0, inBuffer);
-            rans1 = Utils.RANSDecodeRenormalizeNx16(rans1, inBuffer);
-            rans2 = Utils.RANSDecodeRenormalizeNx16(rans2, inBuffer);
-            rans7 = Utils.RANSDecodeRenormalizeNx16(rans7, inBuffer);
-
-            l0 = c0;
-            l1 = c1;
-            l2 = c2;
-            l7 = c7;
+            // initialize rans, interleaveStreamIndex and context arrays
+            rans[r] = inBuffer.getInt();
+            interleaveStreamIndex[r] = r * interleaveSize;
+            context[r] = 0;
         }
 
-        // Remainder
-        for (; i7 < out_sz; i7++) {
-            final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, shift)];
-            outBuffer.put(i7, (byte) c7);
-            rans7 = syms[l7][c7].advanceSymbolNx16(rans7, inBuffer, shift);
-            l7 = c7;
+        while (interleaveStreamIndex[0] < interleaveSize) {
+            for (r = 0; r < Nway; r++){
+                symbol[r] = 0xFF & D[context[r]].reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], shift)];
+                outBuffer.put(interleaveStreamIndex[r],(byte) symbol[r]);
+                rans[r] = syms[context[r]][symbol[r]].advanceSymbolStep(rans[r], shift);
+                rans[r] = Utils.RANSDecodeRenormalizeNx16(rans[r], inBuffer);
+                context[r]=symbol[r];
+            }
+            for (r = 0; r < Nway; r++){
+                interleaveStreamIndex[r]++;
+            }
+        }
+
+        // Deal with the remaining elements
+        for (; interleaveStreamIndex[Nway - 1] < outputSize; interleaveStreamIndex[Nway - 1]++) {
+            symbol[Nway - 1] = 0xFF & D[context[Nway - 1]].reverseLookup[Utils.RANSGetCumulativeFrequency(rans[Nway - 1], shift)];
+            outBuffer.put(interleaveStreamIndex[Nway - 1], (byte) symbol[Nway - 1]);
+            rans[Nway - 1] = syms[context[Nway - 1]][symbol[Nway - 1]].advanceSymbolNx16(rans[Nway - 1], inBuffer, shift);
+            context[Nway - 1] = symbol[Nway - 1];
         }
         return outBuffer;
     }
 
     private void readFrequencyTableOrder0(
             final ByteBuffer cp) {
+
+        // Use the Frequency table to set the values of Frequencies, Cumulative Frequency
+        // and Reverse Lookup table
+
         final ArithmeticDecoder decoder = getD()[0];
         final RANSDecodingSymbol[] decodingSymbols = getDecodingSymbols()[0];
-        // Use the Frequency table to set the values of F, C and R
-        final int[] A = readAlphabet(cp);
-        int cumulativeFreq = 0;
-        final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
+        final int[] alphabet = readAlphabet(cp);
+        int cumulativeFrequency = 0;
+        final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
 
-        // read F, normalise F then calculate C and R
+        // read frequencies, normalise frequencies then calculate C and R
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-            if (A[j] > 0) {
-                if ((F[j] = (cp.get() & 0xFF)) >= 0x80){
-                    F[j] &= ~0x80;
-                    F[j] = (( F[j] &0x7f) << 7) | (cp.get() & 0x7F);
+            if (alphabet[j] > 0) {
+                if ((frequencies[j] = (cp.get() & 0xFF)) >= 0x80){
+                    frequencies[j] &= ~0x80;
+                    frequencies[j] = (( frequencies[j] &0x7f) << 7) | (cp.get() & 0x7F);
                 }
             }
         }
-        Utils.normaliseFrequenciesOrder0Shift(F,12);
+        Utils.normaliseFrequenciesOrder0Shift(frequencies,12);
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-            if(A[j]>0){
+            if(alphabet[j]>0){
 
-                // decoder.fc[j].F -> Frequency
-                // decoder.fc[j].C -> Cumulative Frequency preceding the current symbol
-                decoder.freq[j] = F[j];
-                decoder.cumulativeFreq[j] = cumulativeFreq;
+                // set RANSDecodingSymbol
+                decoder.freq[j] = frequencies[j];
+                decoder.cumulativeFreq[j] = cumulativeFrequency;
                 decodingSymbols[j].set(decoder.cumulativeFreq[j], decoder.freq[j]);
 
-                // R -> Reverse Lookup table
-                Arrays.fill(decoder.reverseLookup, cumulativeFreq, cumulativeFreq + decoder.freq[j], (byte) j);
-                cumulativeFreq += decoder.freq[j];
+                // update Reverse Lookup table
+                Arrays.fill(decoder.reverseLookup, cumulativeFrequency, cumulativeFrequency + decoder.freq[j], (byte) j);
+                cumulativeFrequency += decoder.freq[j];
             }
         }
     }
@@ -241,24 +236,21 @@ public class RANSNx16Decode extends RANSDecode {
     private void readFrequencyTableOrder1(
             final ByteBuffer cp,
             int shift) {
-        final int[][] F = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
-
-        // TODO: commented out to suppress spotBugs warning
-        //final int[][] C = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
+        final int[][] frequencies = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
         final ArithmeticDecoder[] D = getD();
         final RANSDecodingSymbol[][] decodingSymbols = getDecodingSymbols();
-        final int[] A = readAlphabet(cp);
+        final int[] alphabet = readAlphabet(cp);
 
         for (int i=0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            if (A[i] > 0) {
+            if (alphabet[i] > 0) {
                 int run = 0;
                 for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-                    if (A[j] > 0) {
+                    if (alphabet[j] > 0) {
                         if (run > 0) {
                             run--;
                         } else {
-                            F[i][j] = Utils.readUint7(cp);
-                            if (F[i][j] == 0){
+                            frequencies[i][j] = Utils.readUint7(cp);
+                            if (frequencies[i][j] == 0){
                                 run = Utils.readUint7(cp);
                             }
                         }
@@ -266,12 +258,12 @@ public class RANSNx16Decode extends RANSDecode {
                 }
 
                 // For each symbol, normalise it's order 0 frequency table
-                Utils.normaliseFrequenciesOrder0Shift(F[i],shift);
+                Utils.normaliseFrequenciesOrder0Shift(frequencies[i],shift);
                 int cumulativeFreq=0;
 
                 // set decoding symbols
                 for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-                    D[i].freq[j]=F[i][j];
+                    D[i].freq[j]=frequencies[i][j];
                     D[i].cumulativeFreq[j]=cumulativeFreq;
                     decodingSymbols[i][j].set(
                             D[i].cumulativeFreq[j],
@@ -279,7 +271,7 @@ public class RANSNx16Decode extends RANSDecode {
                     );
                     /* Build reverse lookup table */
                     Arrays.fill(D[i].reverseLookup, cumulativeFreq, cumulativeFreq + D[i].freq[j], (byte) j);
-                    cumulativeFreq+=F[i][j];
+                    cumulativeFreq+=frequencies[i][j];
                 }
             }
         }
@@ -287,26 +279,26 @@ public class RANSNx16Decode extends RANSDecode {
 
     private static int[] readAlphabet(final ByteBuffer cp){
         // gets the list of alphabets whose frequency!=0
-        final int[] A = new int[Constants.NUMBER_OF_SYMBOLS];
+        final int[] alphabet = new int[Constants.NUMBER_OF_SYMBOLS];
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            A[i]=0;
+            alphabet[i]=0;
         }
         int rle = 0;
-        int sym = cp.get() & 0xFF;
-        int last_sym = sym;
+        int symbol = cp.get() & 0xFF;
+        int lastSymbol = symbol;
         do {
-            A[sym] = 1;
+            alphabet[symbol] = 1;
             if (rle!=0) {
                 rle--;
-                sym++;
+                symbol++;
             } else {
-                sym = cp.get() & 0xFF;
-                if (sym == last_sym+1)
+                symbol = cp.get() & 0xFF;
+                if (symbol == lastSymbol+1)
                     rle = cp.get() & 0xFF;
             }
-            last_sym = sym;
-        } while (sym != 0);
-        return A;
+            lastSymbol = symbol;
+        } while (symbol != 0);
+        return alphabet;
     }
 
 }

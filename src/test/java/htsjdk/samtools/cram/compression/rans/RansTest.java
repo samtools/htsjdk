@@ -84,6 +84,8 @@ public class RansTest extends HtsjdkTest {
         return new Object[][]{
                 {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x00)} ,//RANSNx16 formatFlags(first byte) 0
                 {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x01)} ,//RANSNx16 formatFlags(first byte) 1
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x04)} ,//RANSNx16 formatFlags(first byte) 4
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x05)} ,//RANSNx16 formatFlags(first byte) 5
         };
     }
 
