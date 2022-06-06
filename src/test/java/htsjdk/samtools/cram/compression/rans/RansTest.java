@@ -82,10 +82,32 @@ public class RansTest extends HtsjdkTest {
         final RANSNx16Decode ransNx16Decode = new RANSNx16Decode();
         // TODO: More formatFlags values i.e, combinations of bit flags will be added later
         return new Object[][]{
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x00)} ,//RANSNx16 formatFlags(first byte) 0
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x01)} ,//RANSNx16 formatFlags(first byte) 1
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x04)} ,//RANSNx16 formatFlags(first byte) 4
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x05)} ,//RANSNx16 formatFlags(first byte) 5
+
+                //RANSNx16 formatFlags(first byte) 0: Order 0, N = 4, CAT false
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x00)} ,
+
+                //RANSNx16 formatFlags(first byte) 1: Order 1, N = 4, CAT false
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x01)} ,
+
+                //RANSNx16 formatFlags(first byte) 4: Order 0, N = 32, CAT false
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x04)} ,
+
+                //RANSNx16 formatFlags(first byte) 5: Order 1, N = 32, CAT false
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x05)} ,
+
+                //RANSNx16 formatFlags(first byte) 32: Order 0, N = 4, CAT true
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x20)} ,
+
+                //RANSNx16 formatFlags(first byte) 33: Order 1, N = 4, CAT true
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x21)} ,
+
+                //RANSNx16 formatFlags(first byte) 36: Order 0, N = 32, CAT true
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x24)} ,
+
+                //RANSNx16 formatFlags(first byte) 37: Order 1, N = 32, CAT true
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x25)} ,
+
+
         };
     }
 
