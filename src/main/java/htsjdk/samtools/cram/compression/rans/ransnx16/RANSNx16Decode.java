@@ -280,9 +280,6 @@ public class RANSNx16Decode extends RANSDecode {
     private static int[] readAlphabet(final ByteBuffer cp){
         // gets the list of alphabets whose frequency!=0
         final int[] alphabet = new int[Constants.NUMBER_OF_SYMBOLS];
-        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            alphabet[i]=0;
-        }
         int rle = 0;
         int symbol = cp.get() & 0xFF;
         int lastSymbol = symbol;
