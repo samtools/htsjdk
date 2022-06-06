@@ -30,6 +30,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         if (ransNx16Params.getCAT()) {
             // Data is uncompressed
             outBuffer.put(inBuffer);
+            outBuffer.limit(outBuffer.position());
+            outBuffer.rewind(); // set position to 0
             return outBuffer;
         }
 
