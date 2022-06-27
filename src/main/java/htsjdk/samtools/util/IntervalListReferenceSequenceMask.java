@@ -46,10 +46,9 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
 
     public IntervalListReferenceSequenceMask(final IntervalList intervalList) {
         this.header = intervalList.getHeader();
-        if (intervalList.getHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
-            intervalList.sorted();
-        }
-        final List<Interval> uniqueIntervals = intervalList.uniqued().getIntervals();
+        final boolean isSorted = intervalList.getHeader().getSortOrder() == SAMFileHeader.SortOrder.coordinate;
+        final IntervalList sortedIntervalList = isSorted ? intervalList : intervalList.sorted();
+        final List<Interval> uniqueIntervals = sortedIntervalList.uniqued().getIntervals();
         if (uniqueIntervals.isEmpty()) {
             lastSequenceIndex = -1;
             lastPosition = 0;
