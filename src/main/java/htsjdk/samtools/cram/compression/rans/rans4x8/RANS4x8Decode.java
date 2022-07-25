@@ -146,25 +146,25 @@ public class RANS4x8Decode extends RANSDecode {
         int i1 = isz4;
         int i2 = 2 * isz4;
         int i7 = 3 * isz4;
-        int l0 = 0;
-        int l1 = 0;
-        int l2 = 0;
-        int l7 = 0;
+        byte l0 = 0;
+        byte l1 = 0;
+        byte l2 = 0;
+        byte l7 = 0;
         for (; i0 < isz4; i0++, i1++, i2++, i7++) {
-            final int c0 = 0xFF & D[l0].reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
-            final int c1 = 0xFF & D[l1].reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, Constants.TOTAL_FREQ_SHIFT)];
-            final int c2 = 0xFF & D[l2].reverseLookup[Utils.RANSGetCumulativeFrequency(rans2, Constants.TOTAL_FREQ_SHIFT)];
-            final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
+            final byte c0 = D[0xFF & l0].reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
+            final byte c1 = D[0xFF & l1].reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, Constants.TOTAL_FREQ_SHIFT)];
+            final byte c2 = D[0xFF & l2].reverseLookup[Utils.RANSGetCumulativeFrequency(rans2, Constants.TOTAL_FREQ_SHIFT)];
+            final byte c7 = D[0xFF & l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
 
-            outBuffer.put(i0, (byte) c0);
-            outBuffer.put(i1, (byte) c1);
-            outBuffer.put(i2, (byte) c2);
-            outBuffer.put(i7, (byte) c7);
+            outBuffer.put(i0, c0);
+            outBuffer.put(i1, c1);
+            outBuffer.put(i2, c2);
+            outBuffer.put(i7, c7);
 
-            rans0 = syms[l0][c0].advanceSymbolStep(rans0,  Constants.TOTAL_FREQ_SHIFT);
-            rans1 = syms[l1][c1].advanceSymbolStep(rans1, Constants.TOTAL_FREQ_SHIFT);
-            rans2 = syms[l2][c2].advanceSymbolStep(rans2, Constants.TOTAL_FREQ_SHIFT);
-            rans7 = syms[l7][c7].advanceSymbolStep(rans7,  Constants.TOTAL_FREQ_SHIFT);
+            rans0 = syms[0xFF & l0][0xFF & c0].advanceSymbolStep(rans0,  Constants.TOTAL_FREQ_SHIFT);
+            rans1 = syms[0xFF & l1][0xFF & c1].advanceSymbolStep(rans1, Constants.TOTAL_FREQ_SHIFT);
+            rans2 = syms[0xFF & l2][0xFF & c2].advanceSymbolStep(rans2, Constants.TOTAL_FREQ_SHIFT);
+            rans7 = syms[0xFF & l7][0xFF & c7].advanceSymbolStep(rans7,  Constants.TOTAL_FREQ_SHIFT);
 
             rans0 = Utils.RANSDecodeRenormalize4x8(rans0, inBuffer);
             rans1 = Utils.RANSDecodeRenormalize4x8(rans1, inBuffer);
@@ -179,9 +179,9 @@ public class RANS4x8Decode extends RANSDecode {
 
         // Remainder
         for (; i7 < out_sz; i7++) {
-            final int c7 = 0xFF & D[l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
-            outBuffer.put(i7, (byte) c7);
-            rans7 = syms[l7][c7].advanceSymbol4x8(rans7, inBuffer, Constants.TOTAL_FREQ_SHIFT);
+            final byte c7 = D[0xFF & l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
+            outBuffer.put(i7, c7);
+            rans7 = syms[0xFF & l7][0xFF & c7].advanceSymbol4x8(rans7, inBuffer, Constants.TOTAL_FREQ_SHIFT);
             l7 = c7;
         }
         return outBuffer;

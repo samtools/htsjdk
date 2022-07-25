@@ -112,7 +112,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final int inputSize = inBuffer.remaining();
         final ByteBuffer ptr = cp.slice();
         final long[] rans = new long[Nway];
-        final int[] symbol = new int[Nway];
+        final byte[] symbol = new byte[Nway];
         for (int r=0; r<Nway; r++){
 
             // initialize rans states
@@ -139,8 +139,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             for (int r = Nway - 1; r >= 0; r--){
 
                 // encode using Nway parallel rans states. Nway = 4 or 32
-                symbol[r] = 0xFF & inBuffer.get(i - (Nway - r));
-                rans[r] = ransEncodingSymbols[symbol[r]].putSymbolNx16(rans[r], ptr);
+                symbol[r] = inBuffer.get(i - (Nway - r));
+                rans[r] = ransEncodingSymbols[0xFF & symbol[r]].putSymbolNx16(rans[r], ptr);
             }
         }
         for (int i=Nway-1; i>=0; i--){
@@ -241,8 +241,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // For Nway = 32, division by 32 is the same as right shift by 5 bits
         final int interleaveSize = (Nway == 4) ? inputSize >> 2: inputSize >> 5;
         final int[] interleaveStreamIndex = new int[Nway];
-        final int[] symbol = new int[Nway];
-        final int[] context = new int[Nway];
+        final byte[] symbol = new byte[Nway];
+        final byte[] context = new byte[Nway];
         for (int r=0; r<Nway; r++){
 
             // initialize interleaveStreamIndex
@@ -252,10 +252,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             //intialize symbol
             symbol[r]=0;
             if((interleaveStreamIndex[r]+1 >= 0) & (r!= Nway-1)){
-                symbol[r] = 0xFF & inBuffer.get(interleaveStreamIndex[r] + 1);
+                symbol[r] = inBuffer.get(interleaveStreamIndex[r] + 1);
             }
             if ( r == Nway-1 ){
-                symbol[r] = 0xFF & inBuffer.get(inputSize - 1);
+                symbol[r] = inBuffer.get(inputSize - 1);
             }
         }
 
@@ -264,15 +264,15 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 interleaveStreamIndex[Nway - 1] = inputSize - 2;
                 interleaveStreamIndex[Nway - 1] > Nway * interleaveSize - 2 && interleaveStreamIndex[Nway - 1] >= 0;
                 interleaveStreamIndex[Nway - 1]-- ) {
-            context[Nway - 1] = 0xFF & inBuffer.get(interleaveStreamIndex[Nway - 1]);
-            rans[Nway - 1] = ransEncodingSymbols[context[Nway - 1]][symbol[Nway - 1]].putSymbolNx16(rans[Nway - 1], ptr);
+            context[Nway - 1] = inBuffer.get(interleaveStreamIndex[Nway - 1]);
+            rans[Nway - 1] = ransEncodingSymbols[0xFF & context[Nway - 1]][0xFF & symbol[Nway - 1]].putSymbolNx16(rans[Nway - 1], ptr);
             symbol[Nway - 1] = context[Nway - 1];
         }
 
         while (interleaveStreamIndex[0] >= 0) {
             for (int r=0; r<Nway; r++ ){
-                context[Nway-1-r] = 0xFF & inBuffer.get(interleaveStreamIndex[Nway-1-r]);
-                rans[Nway-1-r] = ransEncodingSymbols[context[Nway-1-r]][symbol[Nway-1 - r]].putSymbolNx16(rans[Nway-1-r],ptr);
+                context[Nway-1-r] = inBuffer.get(interleaveStreamIndex[Nway-1-r]);
+                rans[Nway-1-r] = ransEncodingSymbols[0xFF & context[Nway-1-r]][0xFF & symbol[Nway-1 - r]].putSymbolNx16(rans[Nway-1-r],ptr);
                 symbol[Nway-1-r]=context[Nway-1-r];
             }
             for (int r=0; r<Nway; r++ ){
@@ -282,7 +282,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
 
         for (int r=0; r<Nway; r++ ){
-            rans[Nway -1 - r] = ransEncodingSymbols[0][symbol[Nway -1 - r]].putSymbolNx16(rans[Nway-1 - r], ptr);
+            rans[Nway -1 - r] = ransEncodingSymbols[0][0xFF & symbol[Nway -1 - r]].putSymbolNx16(rans[Nway-1 - r], ptr);
         }
 
         ptr.order(ByteOrder.BIG_ENDIAN);
@@ -323,17 +323,17 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final int[][] frequency = new int[Constants.NUMBER_OF_SYMBOLS+1][Constants.NUMBER_OF_SYMBOLS];
 
         // ‘\0’ is the initial context
-        int contextSymbol = 0;
-        int srcSymbol;
+        byte contextSymbol = 0;
+        byte srcSymbol;
         for (int i = 0; i < inputSize; i++) {
 
             // update the context array
-            frequency[Constants.NUMBER_OF_SYMBOLS][contextSymbol]++;
-            srcSymbol = 0xFF & inBuffer.get(i);
-            frequency[contextSymbol][srcSymbol ]++;
+            frequency[Constants.NUMBER_OF_SYMBOLS][0xFF & contextSymbol]++;
+            srcSymbol = inBuffer.get(i);
+            frequency[0xFF & contextSymbol][0xFF & srcSymbol ]++;
             contextSymbol = srcSymbol;
         }
-        frequency[Constants.NUMBER_OF_SYMBOLS][contextSymbol]++;
+        frequency[Constants.NUMBER_OF_SYMBOLS][0xFF & contextSymbol]++;
 
         // set ‘\0’ as context for the first byte in the N interleaved streams.
         // the first byte of the first interleaved stream is already accounted for.
