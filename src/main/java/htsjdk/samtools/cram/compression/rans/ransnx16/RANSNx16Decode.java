@@ -92,7 +92,7 @@ public class RANSNx16Decode extends RANSDecode {
         final long[] rans = new long[Nway];
 
         // symbols is the array of decoded symbols
-        final int[] symbols = new int[Nway];
+        final byte[] symbols = new byte[Nway];
         for (int r=0; r<Nway; r++){
             rans[r] = inBuffer.getInt();
         }
@@ -109,9 +109,9 @@ public class RANSNx16Decode extends RANSDecode {
             for (int r=0; r<Nway; r++){
 
                 // Nway parallel decoding rans states
-                symbols[r] = 0xFF & D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
-                outBuffer.put(i+r, (byte) symbols[r]);
-                rans[r] = syms[symbols[r]].advanceSymbolStep(rans[r], Constants.TOTAL_FREQ_SHIFT);
+                symbols[r] = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
+                outBuffer.put(i+r, symbols[r]);
+                rans[r] = syms[0xFF & symbols[r]].advanceSymbolStep(rans[r], Constants.TOTAL_FREQ_SHIFT);
                 rans[r] = Utils.RANSDecodeRenormalizeNx16(rans[r], inBuffer);
             }
         }
@@ -120,9 +120,9 @@ public class RANSNx16Decode extends RANSDecode {
 
         // decode the remaining bytes
         while (remSize>0){
-            int remainingSymbol = 0xFF & D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[reverseIndex], Constants.TOTAL_FREQ_SHIFT)];
-            syms[remainingSymbol].advanceSymbolNx16(rans[reverseIndex], inBuffer, Constants.TOTAL_FREQ_SHIFT);
-            outBuffer.put((byte) remainingSymbol);
+            byte remainingSymbol = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[reverseIndex], Constants.TOTAL_FREQ_SHIFT)];
+            syms[0xFF & remainingSymbol].advanceSymbolNx16(rans[reverseIndex], inBuffer, Constants.TOTAL_FREQ_SHIFT);
+            outBuffer.put(remainingSymbol);
             remSize --;
             reverseIndex ++;
         }
@@ -349,14 +349,14 @@ public class RANSNx16Decode extends RANSDecode {
         ByteBuffer outBuffer = ByteBuffer.allocate(uncompressedRLEOutputLength);
         int j = 0;
         for(int i = 0; j< uncompressedRLEOutputLength; i++){
-            int sym = inBuffer.get(i) & 0xFF;
-            if (rleSymbols[sym]!=0){
+            byte sym = inBuffer.get(i);
+            if (rleSymbols[sym & 0xFF]!=0){
                 int run = Utils.readUint7(uncompressedRLEMetaData);
                 for (int r=0; r<= run; r++){
-                    outBuffer.put(j++, (byte) sym);
+                    outBuffer.put(j++, sym);
                 }
             }else {
-                outBuffer.put(j++, (byte) sym);
+                outBuffer.put(j++, sym);
             }
         }
         return outBuffer;

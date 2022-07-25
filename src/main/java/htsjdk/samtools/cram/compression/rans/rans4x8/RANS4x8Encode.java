@@ -88,15 +88,15 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                 break;
         }
         for (i = (in_size & ~3); i > 0; i -= 4) {
-            final int c3 = 0xFF & inBuffer.get(i - 1);
-            final int c2 = 0xFF & inBuffer.get(i - 2);
-            final int c1 = 0xFF & inBuffer.get(i - 3);
-            final int c0 = 0xFF & inBuffer.get(i - 4);
+            final byte c3 = inBuffer.get(i - 1);
+            final byte c2 = inBuffer.get(i - 2);
+            final byte c1 = inBuffer.get(i - 3);
+            final byte c0 = inBuffer.get(i - 4);
 
-            rans3 = syms[c3].putSymbol4x8(rans3, ptr);
-            rans2 = syms[c2].putSymbol4x8(rans2, ptr);
-            rans1 = syms[c1].putSymbol4x8(rans1, ptr);
-            rans0 = syms[c0].putSymbol4x8(rans0, ptr);
+            rans3 = syms[0xFF & c3].putSymbol4x8(rans3, ptr);
+            rans2 = syms[0xFF & c2].putSymbol4x8(rans2, ptr);
+            rans1 = syms[0xFF & c1].putSymbol4x8(rans1, ptr);
+            rans0 = syms[0xFF & c0].putSymbol4x8(rans0, ptr);
         }
 
         ptr.putInt((int) rans3);
@@ -152,38 +152,37 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         int i2 = 3 * isz4 - 2;
         int i3 = 4 * isz4 - 2;
 
-        int l0 = 0;
+        byte l0 = 0;
         if (i0 + 1 >= 0) {
-            l0 = 0xFF & inBuffer.get(i0 + 1);
+            l0 = inBuffer.get(i0 + 1);
         }
-        int l1 = 0;
+        byte l1 = 0;
         if (i1 + 1 >= 0) {
-            l1 = 0xFF & inBuffer.get(i1 + 1);
+            l1 = inBuffer.get(i1 + 1);
         }
-        int l2 = 0;
+        byte l2 = 0;
         if (i2 + 1 >= 0) {
-            l2 = 0xFF & inBuffer.get(i2 + 1);
+            l2 = inBuffer.get(i2 + 1);
         }
-        int l3;
 
         // Deal with the remainder
-        l3 = 0xFF & inBuffer.get(in_size - 1);
+        byte l3 = inBuffer.get(in_size - 1);
         for (i3 = in_size - 2; i3 > 4 * isz4 - 2 && i3 >= 0; i3--) {
-            final int c3 = 0xFF & inBuffer.get(i3);
-            rans3 = syms[c3][l3].putSymbol4x8(rans3, ptr);
+            final byte c3 = inBuffer.get(i3);
+            rans3 = syms[0xFF & c3][0xFF & l3].putSymbol4x8(rans3, ptr);
             l3 = c3;
         }
 
         for (; i0 >= 0; i0--, i1--, i2--, i3--) {
-            final int c0 = 0xFF & inBuffer.get(i0);
-            final int c1 = 0xFF & inBuffer.get(i1);
-            final int c2 = 0xFF & inBuffer.get(i2);
-            final int c3 = 0xFF & inBuffer.get(i3);
+            final byte c0 = inBuffer.get(i0);
+            final byte c1 = inBuffer.get(i1);
+            final byte c2 = inBuffer.get(i2);
+            final byte c3 = inBuffer.get(i3);
 
-            rans3 = syms[c3][l3].putSymbol4x8(rans3, ptr);
-            rans2 = syms[c2][l2].putSymbol4x8(rans2, ptr);
-            rans1 = syms[c1][l1].putSymbol4x8(rans1, ptr);
-            rans0 = syms[c0][l0].putSymbol4x8(rans0, ptr);
+            rans3 = syms[0xFF & c3][0xFF & l3].putSymbol4x8(rans3, ptr);
+            rans2 = syms[0xFF & c2][0xFF & l2].putSymbol4x8(rans2, ptr);
+            rans1 = syms[0xFF & c1][0xFF & l1].putSymbol4x8(rans1, ptr);
+            rans0 = syms[0xFF & c0][0xFF & l0].putSymbol4x8(rans0, ptr);
 
             l0 = c0;
             l1 = c1;
@@ -191,10 +190,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             l3 = c3;
         }
 
-        rans3 = syms[0][l3].putSymbol4x8(rans3, ptr);
-        rans2 = syms[0][l2].putSymbol4x8(rans2, ptr);
-        rans1 = syms[0][l1].putSymbol4x8(rans1, ptr);
-        rans0 = syms[0][l0].putSymbol4x8(rans0, ptr);
+        rans3 = syms[0][0xFF & l3].putSymbol4x8(rans3, ptr);
+        rans2 = syms[0][0xFF & l2].putSymbol4x8(rans2, ptr);
+        rans1 = syms[0][0xFF & l1].putSymbol4x8(rans1, ptr);
+        rans0 = syms[0][0xFF & l0].putSymbol4x8(rans0, ptr);
 
         ptr.order(ByteOrder.BIG_ENDIAN);
         ptr.putInt((int) rans3);
