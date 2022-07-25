@@ -113,8 +113,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final ByteBuffer ptr = cp.slice();
         final long[] rans = new long[Nway];
         final int[] symbol = new int[Nway];
-        int r;
-        for (r=0; r<Nway; r++){
+        for (int r=0; r<Nway; r++){
 
             // initialize rans states
             rans[r] = Constants.RANS_Nx16_LOWER_BOUND;
@@ -136,17 +135,15 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             remainingSize --;
             reverseIndex ++;
         }
-        int i;
-
-        for (i = (interleaveSize * Nway); i > 0; i -= Nway) {
-            for (r = Nway - 1; r >= 0; r--){
+        for (int i = (interleaveSize * Nway); i > 0; i -= Nway) {
+            for (int r = Nway - 1; r >= 0; r--){
 
                 // encode using Nway parallel rans states. Nway = 4 or 32
                 symbol[r] = 0xFF & inBuffer.get(i - (Nway - r));
                 rans[r] = ransEncodingSymbols[symbol[r]].putSymbolNx16(rans[r], ptr);
             }
         }
-        for (i=Nway-1; i>=0; i--){
+        for (int i=Nway-1; i>=0; i--){
             ptr.putInt((int) rans[i]);
         }
         ptr.position();
@@ -228,8 +225,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final int Nway = ransNx16Params.getInterleaveSize();
         final int inputSize = inBuffer.remaining();
         final long[] rans = new long[Nway];
-        int r;
-        for (r=0; r<Nway; r++){
+        for (int r=0; r<Nway; r++){
 
             // initialize rans states
             rans[r] = Constants.RANS_Nx16_LOWER_BOUND;
@@ -247,7 +243,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final int[] interleaveStreamIndex = new int[Nway];
         final int[] symbol = new int[Nway];
         final int[] context = new int[Nway];
-        for (r=0; r<Nway; r++){
+        for (int r=0; r<Nway; r++){
 
             // initialize interleaveStreamIndex
             // interleaveStreamIndex = (index of last element in the interleaved stream - 1) = (interleaveSize - 1) - 1
@@ -274,23 +270,23 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
 
         while (interleaveStreamIndex[0] >= 0) {
-            for (r=0; r<Nway; r++ ){
+            for (int r=0; r<Nway; r++ ){
                 context[Nway-1-r] = 0xFF & inBuffer.get(interleaveStreamIndex[Nway-1-r]);
                 rans[Nway-1-r] = ransEncodingSymbols[context[Nway-1-r]][symbol[Nway-1 - r]].putSymbolNx16(rans[Nway-1-r],ptr);
                 symbol[Nway-1-r]=context[Nway-1-r];
             }
-            for (r=0; r<Nway; r++ ){
+            for (int r=0; r<Nway; r++ ){
                 interleaveStreamIndex[r]--;
             }
 
         }
 
-        for (r=0; r<Nway; r++ ){
+        for (int r=0; r<Nway; r++ ){
             rans[Nway -1 - r] = ransEncodingSymbols[0][symbol[Nway -1 - r]].putSymbolNx16(rans[Nway-1 - r], ptr);
         }
 
         ptr.order(ByteOrder.BIG_ENDIAN);
-        for (r=Nway-1; r>=0; r-- ){
+        for (int r=Nway-1; r>=0; r-- ){
             ptr.putInt((int) rans[r]);
         }
 
