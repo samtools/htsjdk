@@ -26,8 +26,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.*;
 
-import java.util.Iterator;
-
 /**
  * Iterator that traverses a SAM File, accumulating information on a per-locus basis.
  * Optionally takes a target interval list, in which case the loci returned are the ones covered by
@@ -43,8 +41,7 @@ import java.util.Iterator;
 public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffset, AbstractLocusInfo<EdgingRecordAndOffset>> {
     // These variables are required to perform the detection of overlap between reads and intervals
     private Interval currentInterval = null;
-    private Interval nextInterval = null;
-    private final Iterator<Interval> intervalListIterator;
+    private final PeekableIterator<Interval> intervalListIterator;
     private final IntervalCoordinateComparator intervalCoordinateComparator;
 
     private final OverlapDetector<Interval> overlapDetector;
@@ -81,9 +78,7 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
      *                     as well as useIndex==false, and generally will be much faster.
      */
     public EdgeReadIterator(final SamReader samReader, final IntervalList intervalList, final boolean useIndex) {
-        super(samReader,
-                intervalList == null || intervalList.getHeader().getSortOrder() == SAMFileHeader.SortOrder.coordinate ? intervalList : intervalList.sorted(),
-                useIndex);
+        super(samReader, intervalList, useIndex);
 
         if (getIntervals() == null) {
             intervalListIterator = null;
@@ -92,12 +87,9 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
         } else {
             // For the easy case of a read being fully contained in an interval, we use an iterator to keep track
             // of the current interval.
-            intervalListIterator = getIntervals().iterator();
+            intervalListIterator = new PeekableIterator<>(getIntervals().iterator());
             if (intervalListIterator.hasNext()) {
                 currentInterval = intervalListIterator.next();
-            }
-            if (intervalListIterator.hasNext()) {
-                nextInterval = intervalListIterator.next();
             }
             // We also need this comparator to keep track of the different contigs. The constructor of
             // AbstractLocusInfo ensures that the sequence dictionaries of the SAM file and the interval list match.
@@ -109,12 +101,12 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
     }
 
     /**
-     * This function updates currentInterval and nextInterval according to the position of the record that it is
+     * This function updates currentInterval according to the position of the record that it is
      * presented and determines if the current read is fully contained in the currentInterval.
      * @param rec The record we want to consider
      * @return True, if rec is fully contained in the current interval, otherwise false
      */
-     protected boolean intervalCompletelyContainsRead(final SAMRecord rec) {
+     protected boolean advanceCurrentIntervalAndCheckIfIntervalContainsRead(final SAMRecord rec) {
          // currentInterval should never be null when calling this method, but we have to check it just to make sure,
          // so that we don't get a NullPointerException in the return statement.
          if (currentInterval == null) {
@@ -122,9 +114,8 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
          }
         // Here we need to update the currentInterval. We have to do this using an
         // IntervalCoordinateComparator to take factor in the order in the sequence dictionary.
-        while (nextInterval != null && intervalCoordinateComparator.compare(new Interval(rec), nextInterval) > 0) {
-            currentInterval = nextInterval;
-            nextInterval = intervalListIterator.hasNext() ? intervalListIterator.next() : null;
+        while (intervalListIterator.peek() != null && intervalCoordinateComparator.compare(new Interval(rec), intervalListIterator.peek()) > 0) {
+            currentInterval = intervalListIterator.next();
         }
         return currentInterval.contains(rec);
     }
@@ -142,10 +133,33 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
         // In the case that no intervals are passed, or that the current interval completely contains
         // the current read (which is the most common case for WGS), set needToConsiderIntervals to false, so we don't
         // have to find intersections and can later emit the read right away.
-        final boolean needToConsiderIntervals = intervals != null && !intervalCompletelyContainsRead(rec);
+        final boolean needToConsiderIntervals = intervals != null && !advanceCurrentIntervalAndCheckIfIntervalContainsRead(rec);
 
         // interpret the CIGAR string and add the base info
         for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
+            // General concept
+            //
+            // Example: Read (or more accurately, AlignmentBlock) from position 101 to 108
+            //
+            // accumulator (ArrayList<LocusInfo>)     30  31  32  33  34  35  36  37  38 (has one LocusInfo at each position, corresponding to the genomic position)
+            // LocusInfo objects (with genomic pos.) 100 101 102 103 104 105 106 107 108 (the LocusInfo objects can contain EdgingRecordAndOffset objects, if a record starts or ends there)
+            //                                            ^                           ^
+            //                                            |                           |
+            // EdgingRecordAndOffset objects              B                           E
+
+            // Steps:
+            // 1. Fill accumulator with enough LocusInfos to the end of the read
+            // 2. Determine which parts of the read are covered by the specified intervals
+            //    (this step will be skipped if the read is completely contained within the
+            //    interval, i.e. needToConsiderIntervals is false, otherwise each overlap
+            //    will be considered individually)
+            // 2. Create a EdgingRecordAndOffset object with the type BEGIN and add it
+            //    to the LocusInfo at the position in the accumulator corresponding to
+            //    the start position of the read (or overlap)
+            // 3. Create a EdgingRecordAndOffset object with the type END and add it
+            //    to the LocusInfo at the position in the accumulator corresponding to
+            //    the end position of the read (or overlap)
+
             // 0-based offset into the read of the current base
             final int offsetStartOfAlignmentBlockInRead = alignmentBlock.getReadStart() - 1;
             // 1-based reference position that the current base aligns to

@@ -441,7 +441,6 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         };
 
         EdgeReadIterator iterator = new EdgeReadIterator(builder.getSamReader(), intervals);
-        iterator.iterator(); // We need this call to initialize the samReader. Usually a call to hasNext() would do that, which we don't need here.
         AbstractLocusInfo<EdgingRecordAndOffset> currentLocusInfo = iterator.next();
         for (final Interval interval : intervalsCovered) {
             // Continue iterating over the LocusInfos if there is no RecordAndOffsets (size == 0) or it isn't a BEGIN record.
@@ -499,7 +498,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         EdgeReadIterator iterator = new EdgeReadIterator(builder.getSamReader(), intervals);
         int i = 0;
         for (final SAMRecord record : builder.getRecords()) {
-            assertEquals(iterator.intervalCompletelyContainsRead(record), expectedResults[i], "Read: " + record.getReadName());
+            assertEquals(iterator.advanceCurrentIntervalAndCheckIfIntervalContainsRead(record), expectedResults[i], "Read: " + record.getReadName());
             i += 1;
         }
         assertEquals(i, expectedResults.length); // Make sure we checked all reads

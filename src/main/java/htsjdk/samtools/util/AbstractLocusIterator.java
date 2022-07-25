@@ -175,8 +175,8 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
                 throw new SAMException("The sequence dictionary of the interval list file differs from the sequence dictionary of the input SAM file.");
             }
 
-            final boolean isSorted = intervalList.getHeader().getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-            final IntervalList sortedIntervalList = isSorted ? intervalList : intervalList.sorted();
+            final boolean intervalListIsSorted = intervalList.getHeader().getSortOrder() == SAMFileHeader.SortOrder.coordinate;
+            final IntervalList sortedIntervalList = intervalListIsSorted ? intervalList : intervalList.sorted();
             intervals = sortedIntervalList.uniqued().getIntervals();
             this.referenceSequenceMask = new IntervalListReferenceSequenceMask(sortedIntervalList);
         } else {
@@ -265,6 +265,9 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      */
     @Override
     public K next() {
+        if (this.samIterator == null) {
+            iterator();
+        }
         // if we don't have any completed entries to return, try and make some!
         while (complete.isEmpty() && samHasMore()) {
             final SAMRecord rec = samIterator.peek();
