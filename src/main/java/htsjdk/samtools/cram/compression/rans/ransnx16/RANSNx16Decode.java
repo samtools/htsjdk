@@ -93,8 +93,7 @@ public class RANSNx16Decode extends RANSDecode {
 
         // symbols is the array of decoded symbols
         final int[] symbols = new int[Nway];
-        int r;
-        for (r=0; r<Nway; r++){
+        for (int r=0; r<Nway; r++){
             rans[r] = inBuffer.getInt();
         }
 
@@ -107,7 +106,7 @@ public class RANSNx16Decode extends RANSDecode {
         int remSize = n_out - (interleaveSize * Nway);
         final int out_end = n_out - remSize;
         for (int i = 0; i < out_end; i += Nway) {
-            for (r=0; r<Nway; r++){
+            for (int r=0; r<Nway; r++){
 
                 // Nway parallel decoding rans states
                 symbols[r] = 0xFF & D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
@@ -183,8 +182,7 @@ public class RANSNx16Decode extends RANSDecode {
         // For Nway = 32, division by 32 is the same as right shift by 5 bits
         final int interleaveSize = (Nway==4) ? (outputSize >> 2): (outputSize >> 5);
 
-        int r;
-        for (r=0; r<Nway; r++){
+        for (int r=0; r<Nway; r++){
 
             // initialize rans, interleaveStreamIndex and context arrays
             rans[r] = inBuffer.getInt();
@@ -193,14 +191,14 @@ public class RANSNx16Decode extends RANSDecode {
         }
 
         while (interleaveStreamIndex[0] < interleaveSize) {
-            for (r = 0; r < Nway; r++){
+            for (int r = 0; r < Nway; r++){
                 symbol[r] = 0xFF & D[context[r]].reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], shift)];
                 outBuffer.put(interleaveStreamIndex[r],(byte) symbol[r]);
                 rans[r] = syms[context[r]][symbol[r]].advanceSymbolStep(rans[r], shift);
                 rans[r] = Utils.RANSDecodeRenormalizeNx16(rans[r], inBuffer);
                 context[r]=symbol[r];
             }
-            for (r = 0; r < Nway; r++){
+            for (int r = 0; r < Nway; r++){
                 interleaveStreamIndex[r]++;
             }
         }
