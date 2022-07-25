@@ -106,7 +106,12 @@ public class RansTest extends HtsjdkTest {
 
                 //RANSNx16 formatFlags(first byte) 37: Order 1, N = 32, CAT true
                 {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x25)} ,
+//
+                //RANSNx16 formatFlags(first byte) 64: Order 0, N = 4, CAT false, RLE = true
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x40)} ,
 
+//                //RANSNx16 formatFlags(first byte) 65: Order 1, N = 4, CAT false, RLE = true
+//                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x41)} ,
 
         };
     }
@@ -225,6 +230,8 @@ public class RansTest extends HtsjdkTest {
         final ByteBuffer compressed = ransEncode.compress(data, params);
         final ByteBuffer uncompressed = ransDecode.uncompress(compressed);
         data.rewind();
+//        Assert.assertEquals(data, uncompressed);
+
         while (data.hasRemaining()) {
             if (!uncompressed.hasRemaining()) {
                 Assert.fail("Premature end of uncompressed data.");
