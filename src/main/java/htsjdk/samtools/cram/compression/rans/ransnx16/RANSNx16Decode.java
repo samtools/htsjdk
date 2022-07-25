@@ -86,7 +86,7 @@ public class RANSNx16Decode extends RANSDecode {
         //TODO: remove this temporary variable aliasing/staging
         final ArithmeticDecoder D = getD()[0];
         final RANSDecodingSymbol[] syms = getDecodingSymbols()[0];
-        final int Nway = ransNx16Params.getInterleaveSize();
+        final int Nway = ransNx16Params.getNumInterleavedRANSStates();
 
         // Nway parallel rans states. Nway = 4 or 32
         final long[] rans = new long[Nway];
@@ -171,7 +171,7 @@ public class RANSNx16Decode extends RANSDecode {
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
         // Nway parallel rans states. Nway = 4 or 32
-        final int Nway = ransNx16Params.getInterleaveSize();
+        final int Nway = ransNx16Params.getNumInterleavedRANSStates();
         final long[] rans = new long[Nway];
         final int[] interleaveStreamIndex = new int[Nway];
         final int[] context = new int[Nway];
