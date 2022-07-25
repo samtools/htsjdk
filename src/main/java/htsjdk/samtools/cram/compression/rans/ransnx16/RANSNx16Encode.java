@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.compression.rans.ransnx16;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSEncode;
 import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
@@ -22,35 +23,49 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // TODO: add methods to handle various flags
 
+        //  NoSize
         if (!ransNx16Params.getNosz()) {
             // original size is not recorded
             int insize = inBuffer.remaining();
             Utils.writeUint7(insize,outBuffer);
         }
+
+        // TODO: Add Stripe
+
+        // TODO: Add Pack
+
+        // using inputBuffer as inBuffer is declared final
+        // TODO: should inBuffer not be declared final?
+        ByteBuffer inputBuffer = inBuffer;
+        // RLE
+        if (ransNx16Params.getRLE()){
+            inputBuffer = encodeRLE(inBuffer, ransNx16Params, outBuffer);
+        }
+
+
         if (ransNx16Params.getCAT()) {
             // Data is uncompressed
-            outBuffer.put(inBuffer);
+            outBuffer.put(inputBuffer);
             outBuffer.limit(outBuffer.position());
             outBuffer.rewind(); // set position to 0
             return outBuffer;
         }
 
-        initializeRANSEncoder();
-        if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE) {
+        if (inputBuffer.remaining() < MINIMUM__ORDER_1_SIZE && ransNx16Params.getOrder() == RANSParams.ORDER.ONE) {
             // TODO: check if this still applies for Nx16 or if there is a different limit
             // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
 
             // First byte of the compressed output provides the order of RANS.
             // So, it has to be changed to 0x00
             outBuffer.put(0,(byte) 0x00);
-            return compressOrder0WayN(inBuffer, new RANSNx16Params(0x00), outBuffer);
+            return compressOrder0WayN(inputBuffer, new RANSNx16Params(0x00), outBuffer);
         }
 
         switch (ransNx16Params.getOrder()) {
             case ZERO:
-                return compressOrder0WayN(inBuffer, ransNx16Params, outBuffer);
+                return compressOrder0WayN(inputBuffer, ransNx16Params, outBuffer);
             case ONE:
-                return compressOrder1WayN(inBuffer, ransNx16Params, outBuffer);
+                return compressOrder1WayN(inputBuffer, ransNx16Params, outBuffer);
             default:
                 throw new RuntimeException("Unknown rANS order: " + ransNx16Params.getOrder());
         }
@@ -60,6 +75,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             final ByteBuffer inBuffer,
             final RANSNx16Params ransNx16Params,
             final ByteBuffer outBuffer) {
+        initializeRANSEncoder();
         final int inSize = inBuffer.remaining();
         final int[] F = buildFrequenciesOrder0(inBuffer);
         final ByteBuffer cp = outBuffer.slice();
@@ -150,6 +166,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             final ByteBuffer inBuffer,
             final RANSNx16Params ransNx16Params,
             final ByteBuffer outBuffer) {
+        initializeRANSEncoder();
         final ByteBuffer cp = outBuffer.slice();
         final int[][] frequencies = buildFrequenciesOrder1(inBuffer, ransNx16Params.getInterleaveSize());
 
@@ -467,6 +484,104 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 }
             }
         }
+    }
+
+    private ByteBuffer encodeRLE(final ByteBuffer inBuffer ,final RANSParams ransParams, final ByteBuffer outBuffer){
+
+        // Find the symbols that benefit from RLE, i.e, the symbols that occur more than 2 times in succession.
+        // spec: For symbols that occur many times in succession, we can replace them with a single symbol and a count.
+        final int[] rleSymbols = new int[Constants.NUMBER_OF_SYMBOLS];
+        int inputSize = inBuffer.remaining();
+
+        int lastSymbol = -1;
+        for (int i = 0; i < inputSize; i++) {
+            int currentSymbol = inBuffer.get(i)&0xFF;
+            rleSymbols[currentSymbol] += (currentSymbol==lastSymbol ? 1:-1);
+            lastSymbol = currentSymbol;
+        }
+
+        // numRLESymbols is the number of symbols that are run length encoded
+        int numRLESymbols = 0;
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            if (rleSymbols[i]>0) {
+                numRLESymbols++;
+            }
+        }
+
+        if (numRLESymbols==0) {
+            // Format cannot cope with zero RLE symbols, so pick one!
+            numRLESymbols = 1;
+            rleSymbols[0] = 1;
+        }
+
+        // create rleMetaData buffer to store rle metadata.
+        // This buffer will be compressed using compressOrder0WayN towards the end of this method
+        // TODO: How did we come up with this calculation for Buffer size? numRLESymbols+1+inputSize
+        ByteBuffer rleMetaData = ByteBuffer.allocate(numRLESymbols+1+inputSize); // rleMetaData
+
+        // write number of symbols that are run length encoded to the outBuffer
+        rleMetaData.put((byte) numRLESymbols);
+
+        for (int i=0; i<256; i++){
+            if (rleSymbols[i] >0){
+                // write the symbols that are run length encoded
+                rleMetaData.put((byte) i);
+            }
+
+        }
+
+        // Apply RLE
+        // encodedData -> input src data without repetition
+        ByteBuffer encodedData = ByteBuffer.allocate(inputSize); // rleInBuffer
+        int encodedDataIdx = 0; // rleInBufferIndex
+
+        for (int i = 0; i < inputSize; i++) {
+            encodedData.put(encodedDataIdx++,inBuffer.get(i));
+            if (rleSymbols[inBuffer.get(i)&0xFF]>0) {
+                lastSymbol = inBuffer.get(i) & 0xFF;
+                int run = 0;
+
+                // calculate the run value for current symbol
+                while (i+run+1 < inputSize && (inBuffer.get(i+run+1)& 0xFF)==lastSymbol) {
+                    run++;
+                }
+
+                // write the run value to metadata
+                Utils.writeUint7(run, rleMetaData);
+
+                // go to the next element that is not equal to it's previous element
+                i += run;
+            }
+        }
+
+        encodedData.limit(encodedDataIdx);
+        // limit and rewind
+        // TODO: check if position of rleMetadata is at the end of the buffer as expected
+        rleMetaData.limit(rleMetaData.position());
+        rleMetaData.rewind();
+
+        // compress the rleMetaData Buffer
+        ByteBuffer compressedRleMetaData = allocateOutputBuffer(rleMetaData.remaining());
+
+        // TODO: Nway? Check other places as well -> How to setInterleaveSize? - can i do it by changing formatflags?
+        // // Compress lengths with O0 and literals with O0/O1 ("order" param)
+        // TODO: get Nway from ransParams and use N to uncompress
+
+        compressOrder0WayN(rleMetaData, new RANSNx16Params(0x00),compressedRleMetaData);
+
+        // write to compressedRleMetaData to outBuffer
+        Utils.writeUint7(rleMetaData.limit()*2, outBuffer);
+        Utils.writeUint7(encodedDataIdx, outBuffer);
+        Utils.writeUint7(compressedRleMetaData.limit(),outBuffer);
+
+        outBuffer.put(compressedRleMetaData);
+
+        /*
+         * Depletion of the inBuffer cannot be confirmed because of the get(int
+         * position) method use during encoding, hence enforcing:
+         */
+        inBuffer.position(inBuffer.limit());
+        return encodedData;
     }
 
 }

@@ -4,6 +4,7 @@ import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
 import htsjdk.samtools.cram.compression.rans.RANSDecodingSymbol;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
@@ -23,13 +24,25 @@ public class RANSNx16Decode extends RANSDecode {
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
         // the first byte of compressed stream gives the formatFlags
-        final int formatFlags = inBuffer.get();
+        final int formatFlags = inBuffer.get() & 0xFF;
         final RANSNx16Params ransNx16Params = new RANSNx16Params(formatFlags);
 
         // TODO: add methods to handle various flags
 
         // if nosz is set, then uncompressed size is not recorded.
         int n_out = ransNx16Params.getNosz() ? 0 : Utils.readUint7(inBuffer);
+
+        // if rle, get rle metadata, which will be used later to decode rle
+        final int uncompressedRLEMetaDataLength;
+        int uncompressedRLEOutputLength = 0;
+        final int[] rleSymbols = new int[Constants.NUMBER_OF_SYMBOLS];
+        ByteBuffer uncompressedRLEMetaData = null;
+        if (ransNx16Params.getRLE()){
+            uncompressedRLEMetaDataLength = Utils.readUint7(inBuffer);
+            uncompressedRLEOutputLength = n_out;
+            n_out = Utils.readUint7(inBuffer);
+            uncompressedRLEMetaData = decodeRLEMeta(inBuffer,ransNx16Params,uncompressedRLEMetaDataLength,rleSymbols);
+        }
 
         // If CAT is set then, the input is uncompressed
         if (ransNx16Params.getCAT()){
@@ -38,7 +51,6 @@ public class RANSNx16Decode extends RANSDecode {
             return ByteBuffer.wrap(data);
         }
         else {
-            initializeRANSDecoder();
             final ByteBuffer outBuffer = ByteBuffer.allocate(n_out);
             switch (ransNx16Params.getOrder()){
                 // TODO: remove n_out?
@@ -51,6 +63,11 @@ public class RANSNx16Decode extends RANSDecode {
                 default:
                     throw new RuntimeException("Unknown rANS order: " + ransNx16Params.getOrder());
             }
+
+            // if rle, then decodeRLE
+            if (ransNx16Params.getRLE() & uncompressedRLEMetaData!=null ){
+                return decodeRLE(outBuffer,rleSymbols,uncompressedRLEMetaData, uncompressedRLEOutputLength);
+            }
             return outBuffer;
         }
     }
@@ -60,6 +77,7 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer outBuffer,
             final int n_out,
             final RANSNx16Params ransNx16Params) {
+        initializeRANSDecoder();
 
         // read the frequency table, get the normalised frequencies and use it to set the RANSDecodingSymbols
         readFrequencyTableOrder0(inBuffer);
@@ -118,6 +136,7 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer outBuffer,
             final int n_out,
             final RANSNx16Params ransNx16Params) {
+        initializeRANSDecoder();
 
         // read the first byte and calculate the bit shift
         final int frequencyTableFirstByte = (inBuffer.get() & 0xFF);
@@ -296,6 +315,53 @@ public class RANSNx16Decode extends RANSDecode {
             lastSymbol = symbol;
         } while (symbol != 0);
         return alphabet;
+    }
+
+    private ByteBuffer decodeRLEMeta(final ByteBuffer inBuffer , final RANSParams ransParams, final int uncompressedRLEMetaDataLength, final int[] rleSymbols) {
+        ByteBuffer uncompressedRLEMetaData;
+        final int compressedRLEMetaDataLength;
+        if ((uncompressedRLEMetaDataLength & 0x01)!=0) {
+            byte[] uncompressedRLEMetaDataArray = new byte[(uncompressedRLEMetaDataLength-1)/2];
+            inBuffer.get(uncompressedRLEMetaDataArray, 0, (uncompressedRLEMetaDataLength-1)/2);
+            uncompressedRLEMetaData = ByteBuffer.wrap(uncompressedRLEMetaDataArray);
+        } else {
+            compressedRLEMetaDataLength = Utils.readUint7(inBuffer);
+            ByteBuffer compressedRLEMetaData = ByteBuffer.allocate(compressedRLEMetaDataLength);
+            byte[] compressedRLEMetaDataArray = new byte[compressedRLEMetaDataLength];
+            inBuffer.get(compressedRLEMetaDataArray,0,compressedRLEMetaDataLength);
+            compressedRLEMetaData = ByteBuffer.wrap(compressedRLEMetaDataArray);
+            compressedRLEMetaData.order(ByteOrder.LITTLE_ENDIAN);
+            uncompressedRLEMetaData = ByteBuffer.allocate(uncompressedRLEMetaDataLength / 2);
+            
+            // TODO: get Nway from ransParams and use N to uncompress
+            uncompressOrder0WayN(compressedRLEMetaData,uncompressedRLEMetaData, uncompressedRLEMetaDataLength / 2, new RANSNx16Params(0x00)); // N should come from the prev step
+        }
+
+        int numRLESymbols = uncompressedRLEMetaData.get() & 0xFF;
+        if (numRLESymbols == 0) {
+            numRLESymbols = 256;
+        }
+        for (int i = 0; i< numRLESymbols; i++) {
+            rleSymbols[uncompressedRLEMetaData.get() & 0xFF] = 1;
+        }
+        return uncompressedRLEMetaData;
+    }
+
+    private ByteBuffer decodeRLE(final ByteBuffer inBuffer , final int[] rleSymbols, final ByteBuffer uncompressedRLEMetaData, int uncompressedRLEOutputLength) {
+        ByteBuffer outBuffer = ByteBuffer.allocate(uncompressedRLEOutputLength);
+        int j = 0;
+        for(int i = 0; j< uncompressedRLEOutputLength; i++){
+            int sym = inBuffer.get(i) & 0xFF;
+            if (rleSymbols[sym]!=0){
+                int run = Utils.readUint7(uncompressedRLEMetaData);
+                for (int r=0; r<= run; r++){
+                    outBuffer.put(j++, (byte) sym);
+                }
+            }else {
+                outBuffer.put(j++, (byte) sym);
+            }
+        }
+        return outBuffer;
     }
 
 }

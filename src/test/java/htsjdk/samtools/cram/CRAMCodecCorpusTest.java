@@ -93,6 +93,16 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
                             new RANSNx16Params(0x00),
                             "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
                     });
+
+                    // RANS Nx16 order 0, rle flag is set
+                    testCases.add(new Object[] {
+                            p,
+                            ransNx16Encode,
+                            ransNx16Decode ,
+                            new RANSNx16Params(0x40),
+                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
+                    });
+
                     // RANS Nx16 order 1, bitflags = 0x01
                     testCases.add(new Object[] {
                             p,
