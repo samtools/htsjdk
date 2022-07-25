@@ -106,7 +106,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         //TODO: tmp staging glue
         final RANSEncodingSymbol[] ransEncodingSymbols = getEncodingSymbols()[0];
-        final int Nway = ransNx16Params.getInterleaveSize();
+        final int Nway = ransNx16Params.getNumInterleavedRANSStates();
 
         final int compressedDataSize;
         final int inputSize = inBuffer.remaining();
@@ -165,7 +165,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             final ByteBuffer outBuffer) {
         initializeRANSEncoder();
         final ByteBuffer cp = outBuffer.slice();
-        final int[][] frequencies = buildFrequenciesOrder1(inBuffer, ransNx16Params.getInterleaveSize());
+        final int[][] frequencies = buildFrequenciesOrder1(inBuffer, ransNx16Params.getNumInterleavedRANSStates());
 
         // normalise frequencies with a variable shift calculated
         // using the minimum bit size that is needed to represent a frequency context array
@@ -222,7 +222,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         //TODO: tmp staging
         final RANSEncodingSymbol[][] ransEncodingSymbols = getEncodingSymbols();
-        final int Nway = ransNx16Params.getInterleaveSize();
+        final int Nway = ransNx16Params.getNumInterleavedRANSStates();
         final int inputSize = inBuffer.remaining();
         final long[] rans = new long[Nway];
         for (int r=0; r<Nway; r++){
