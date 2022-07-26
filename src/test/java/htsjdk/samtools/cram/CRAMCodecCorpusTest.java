@@ -94,7 +94,7 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
                             "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
                     });
 
-                    // RANS Nx16 order 0, rle flag is set
+                    // RANS Nx16 order 0, bitflags = 0x40. rle flag is set
                     testCases.add(new Object[] {
                             p,
                             ransNx16Encode,
@@ -127,6 +127,15 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
                             ransNx16Encode,
                             ransNx16Decode ,
                             new RANSNx16Params(0x05),
+                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
+                    });
+
+                    // RANS Nx16 order 1, bitflags = 0x41. rle flag is set
+                    testCases.add(new Object[] {
+                            p,
+                            ransNx16Encode,
+                            ransNx16Decode ,
+                            new RANSNx16Params(0x41),
                             "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
                     });
                 });

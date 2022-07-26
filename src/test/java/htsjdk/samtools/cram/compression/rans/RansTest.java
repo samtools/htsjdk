@@ -110,8 +110,8 @@ public class RansTest extends HtsjdkTest {
                 //RANSNx16 formatFlags(first byte) 64: Order 0, N = 4, CAT false, RLE = true
                 {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x40)} ,
 
-//                //RANSNx16 formatFlags(first byte) 65: Order 1, N = 4, CAT false, RLE = true
-//                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x41)} ,
+                //RANSNx16 formatFlags(first byte) 65: Order 1, N = 4, CAT false, RLE = true
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x41)} ,
 
         };
     }

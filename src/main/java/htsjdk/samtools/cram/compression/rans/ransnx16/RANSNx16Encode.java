@@ -30,6 +30,19 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             Utils.writeUint7(insize,outBuffer);
         }
 
+        if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE && ransNx16Params.getOrder() == RANSParams.ORDER.ONE) {
+            // Do this before RLE, pack etc..
+            // Make sure outBuffer does not have anything except format flag and size
+
+            // TODO: check if this still applies for Nx16 or if there is a different limit
+            // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
+
+            // First byte of the compressed output provides the order of RANS.
+            // So, it has to be changed to 0x00
+            outBuffer.put(0,(byte) 0x00);
+            return compressOrder0WayN(inBuffer, new RANSNx16Params(0x00), outBuffer);
+        }
+
         // TODO: Add Stripe
 
         // TODO: Add Pack
@@ -49,16 +62,6 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             outBuffer.limit(outBuffer.position());
             outBuffer.rewind(); // set position to 0
             return outBuffer;
-        }
-
-        if (inputBuffer.remaining() < MINIMUM__ORDER_1_SIZE && ransNx16Params.getOrder() == RANSParams.ORDER.ONE) {
-            // TODO: check if this still applies for Nx16 or if there is a different limit
-            // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
-
-            // First byte of the compressed output provides the order of RANS.
-            // So, it has to be changed to 0x00
-            outBuffer.put(0,(byte) 0x00);
-            return compressOrder0WayN(inputBuffer, new RANSNx16Params(0x00), outBuffer);
         }
 
         switch (ransNx16Params.getOrder()) {
