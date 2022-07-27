@@ -984,13 +984,7 @@ public class IOUtil {
      */
     public static File createTempDir(final String prefix, final String suffix) {
         try {
-            final File tmp = File.createTempFile(prefix, suffix);
-            if (!tmp.delete()) {
-                throw new SAMException("Could not delete temporary file " + tmp);
-            }
-            if (!tmp.mkdir()) {
-                throw new SAMException("Could not create temporary directory " + tmp);
-            }
+            final File tmp = Files.createTempDirectory(prefix + suffix).toFile();
             return tmp;
         } catch (IOException e) {
             throw new SAMException("Exception creating temporary directory.", e);
