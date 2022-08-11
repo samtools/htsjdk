@@ -138,6 +138,44 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
                             new RANSNx16Params(0x41),
                             "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
                     });
+
+                    // RANS Nx16 order 0, bitflags = 0x80. pack flag is set
+                    testCases.add(new Object[] {
+                            p,
+                            ransNx16Encode,
+                            ransNx16Decode ,
+                            new RANSNx16Params(0x80),
+                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
+                    });
+
+                    // RANS Nx16 order 1, bitflags = 0x81. pack flag is set
+                    testCases.add(new Object[] {
+                            p,
+                            ransNx16Encode,
+                            ransNx16Decode ,
+                            new RANSNx16Params(0x81),
+                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
+                    });
+
+                    // RANS Nx16 order 0, bitflags = 0xC0. rle flag is set, pack flag is set
+                    testCases.add(new Object[] {
+                            p,
+                            ransNx16Encode,
+                            ransNx16Decode ,
+                            new RANSNx16Params(0xC0),
+                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
+                    });
+
+                    // RANS Nx16 order 1, bitflags = 0xC1. rle flag is set, pack flag is set
+                    testCases.add(new Object[] {
+                            p,
+                            ransNx16Encode,
+                            ransNx16Decode ,
+                            new RANSNx16Params(0xC1),
+                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
+                    });
+
+
                 });
         return testCases.toArray(new Object[][]{});
     }

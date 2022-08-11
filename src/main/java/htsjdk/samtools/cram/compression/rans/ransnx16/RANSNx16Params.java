@@ -18,8 +18,7 @@ public class RANSNx16Params implements RANSParams {
     // and entropy encoders to be combined
     private int formatFlags;
 
-    // To get the least significant 7 bits of format byte
-    private static final int FORMAT_FLAG_MASK = 0x7f;
+    private static final int FORMAT_FLAG_MASK = 0xFF;
 
     public RANSNx16Params(int formatFlags) {
         this.formatFlags = formatFlags;
