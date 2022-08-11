@@ -18,7 +18,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             return EMPTY_BUFFER;
         }
         final ByteBuffer outBuffer = allocateOutputBuffer(inBuffer.remaining());
-        final int formatFlags = ransNx16Params.getFormatFlags();
+        final int formatFlags = ransNx16Params.getFormatFlags() & 0xFF;
         outBuffer.put((byte) (formatFlags)); // one byte for formatFlags
 
         // TODO: add methods to handle various flags
@@ -30,29 +30,38 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             Utils.writeUint7(insize,outBuffer);
         }
 
-        if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE && ransNx16Params.getOrder() == RANSParams.ORDER.ONE) {
-            // Do this before RLE, pack etc..
-            // Make sure outBuffer does not have anything except format flag and size
-
-            // TODO: check if this still applies for Nx16 or if there is a different limit
-            // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
-
-            // First byte of the compressed output provides the order of RANS.
-            // So, it has to be changed to 0x00
-            outBuffer.put(0,(byte) 0x00);
-            return compressOrder0WayN(inBuffer, new RANSNx16Params(0x00), outBuffer);
-        }
+        // using inputBuffer as inBuffer is declared final
+        ByteBuffer inputBuffer = inBuffer;
 
         // TODO: Add Stripe
 
-        // TODO: Add Pack
+        // Pack
+        if (ransNx16Params.getPack()) {
+            final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
+            final int inSize = inBuffer.remaining();
+            for (int i = 0; i < inSize; i ++) {
+                F[inBuffer.get(i) & 0xFF]++;
+            }
+            int numSymbols = 0;
+            final int[] P = new int[Constants.NUMBER_OF_SYMBOLS];
+            for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+                if (F[i]>0) {
+                    P[i] = numSymbols++;
+                }
+            }
 
-        // using inputBuffer as inBuffer is declared final
-        // TODO: should inBuffer not be declared final?
-        ByteBuffer inputBuffer = inBuffer;
+            // skip Packing if numSymbols = 0  or numSymbols > 16
+            if (numSymbols !=0 & numSymbols <= 16) {
+                inputBuffer = encodePack(inputBuffer, outBuffer, F, P, numSymbols);
+            } else {
+                // unset pack flag in the first byte of the outBuffer
+                outBuffer.put(0,(byte)(outBuffer.get(0) & ~RANSNx16Params.PACK_FLAG_MASK));
+            }
+        }
+
         // RLE
         if (ransNx16Params.getRLE()){
-            inputBuffer = encodeRLE(inBuffer, ransNx16Params, outBuffer);
+            inputBuffer = encodeRLE(inputBuffer, ransNx16Params, outBuffer);
         }
 
 
@@ -62,6 +71,20 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             outBuffer.limit(outBuffer.position());
             outBuffer.rewind(); // set position to 0
             return outBuffer;
+        }
+
+        // if after encoding pack and rle, the inputBuffer size < 4, then use order 0
+        if (inputBuffer.remaining() < MINIMUM__ORDER_1_SIZE && ransNx16Params.getOrder() == RANSParams.ORDER.ONE) {
+
+            // set order flag to "0" in the first byte of the outBuffer
+            outBuffer.put(0,(byte)(outBuffer.get(0) & ~RANSNx16Params.ORDER_FLAG_MASK));
+            if (inputBuffer.remaining() == 0){
+                outBuffer.limit(outBuffer.position()); //TODO: check if this is correct
+                outBuffer.rewind();
+                return outBuffer;
+
+            }
+            return compressOrder0WayN(inputBuffer, new RANSNx16Params(outBuffer.get(0)), outBuffer);
         }
 
         switch (ransNx16Params.getOrder()) {
@@ -581,6 +604,76 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
          */
         inBuffer.position(inBuffer.limit());
         return encodedData;
+    }
+
+    private ByteBuffer encodePack(
+            final ByteBuffer inBuffer ,
+            final ByteBuffer outBuffer,
+            final int[] F,
+            final int[] P,
+            final int numSymbols){
+
+        final int inSize = inBuffer.remaining();
+
+        ByteBuffer data;
+        if (numSymbols <= 1) {
+            data = ByteBuffer.allocate(0);
+
+        } else if (numSymbols <= 2) {
+            // 1 bit per value
+            int dataSize = (int) Math.ceil((double) inSize/8);
+            data = ByteBuffer.allocate(dataSize);
+            data.limit(dataSize);
+            int j = -1;
+            for (int i = 0; i < inSize; i ++) {
+                if (i % 8 == 0) {
+                    data.put(++j, (byte) 0);
+                }
+                data.put(j, (byte) (data.get(j) + (P[inBuffer.get(i) & 0xFF] << (i % 8))));
+            }
+        } else if (numSymbols <= 4) {
+            // 2 bits per value
+            int dataSize = (int) Math.ceil((double) inSize/4);
+            data = ByteBuffer.allocate(dataSize);
+            data.limit(dataSize);
+            int j = -1;
+            for (int i = 0; i < inSize; i ++) {
+                if (i % 4 == 0) {
+                    data.put(++j, (byte) 0);
+                }
+                data.put(j, (byte) (data.get(j) + (P[inBuffer.get(i) & 0xFF] << ((i % 4) * 2))));
+            }
+        } else {
+            // 4 bits per value
+            int dataSize = (int) Math.ceil((double)inSize/2);
+            data = ByteBuffer.allocate(dataSize);
+            data.limit(dataSize);
+            int j = -1;
+            for (int i = 0; i < inSize; i ++) {
+                if (i % 2 == 0) {
+                    data.put(++j, (byte) 0);
+                }
+                data.put(j, (byte) (data.get(j) + (P[inBuffer.get(i) & 0xFF] << ((i % 2) * 4))));
+            }
+        }
+
+        // write numSymbols
+        outBuffer.put((byte) numSymbols);
+
+
+
+        int j = 0;
+        // TODO: What is the purpose of the variable "j"?
+        for(int i = 0 ; i < Constants.NUMBER_OF_SYMBOLS; i ++) {
+            if (F[i] > 0) {
+                F[i] = j++;
+                outBuffer.put((byte) i);
+            }
+        }
+
+        // write the length of data
+        Utils.writeUint7(data.limit(), outBuffer);
+        return data; //pos = 0
     }
 
 }
