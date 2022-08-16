@@ -32,19 +32,19 @@ public class RANSNx16Decode extends RANSDecode {
         // if nosz flag is set, then uncompressed size is not recorded.
         int outSize = ransNx16Params.getNosz() ? 0 : Utils.readUint7(inBuffer);
 
-        // if pack, get pack metadata, which will be used later to decode pack
+        // if pack, get pack metadata, which will be used later to decode packed data
         int packDataLength = 0;
         int numSymbols = 0;
-        int[] packMap = new int[0];
+        int[] packMappingTable = new int[0];
         if (ransNx16Params.getPack()){
             packDataLength = outSize;
             numSymbols = inBuffer.get() & 0xFF;
 
             // if (numSymbols > 16 or numSymbols==0) then skip decoding Pack
             if (numSymbols <= 16 & numSymbols!=0) {
-                packMap = new int[numSymbols];
+                packMappingTable = new int[numSymbols];
                 for (int i = 0; i < numSymbols; i++) {
-                    packMap[i] = inBuffer.get() & 0xFF;
+                    packMappingTable[i] = inBuffer.get() & 0xFF;
                 }
                 outSize = Utils.readUint7(inBuffer);
             }
@@ -90,8 +90,8 @@ public class RANSNx16Decode extends RANSDecode {
             }
 
             // if pack, then decodePack
-            if (ransNx16Params.getPack() & packMap.length > 0) {
-                outBuffer = decodePack(outBuffer, packMap, numSymbols, packDataLength);
+            if (ransNx16Params.getPack() & packMappingTable.length > 0) {
+                outBuffer = decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
             }
             return outBuffer;
         }
@@ -388,13 +388,13 @@ public class RANSNx16Decode extends RANSDecode {
         return inBuffer;
     }
 
-    private ByteBuffer decodePack(ByteBuffer inBuffer, final int[] packMap, int numSymbols, int uncompressedPackOutputLength) {
+    private ByteBuffer decodePack(ByteBuffer inBuffer, final int[] packMappingTable, int numSymbols, int uncompressedPackOutputLength) {
         ByteBuffer outBufferPack = ByteBuffer.allocate(uncompressedPackOutputLength);
         int j = 0;
 
         if (numSymbols <= 1) {
             for (int i=0; i < uncompressedPackOutputLength; i++){
-                outBufferPack.put(i, (byte) packMap[0]);
+                outBufferPack.put(i, (byte) packMappingTable[0]);
             }
         }
 
@@ -405,7 +405,7 @@ public class RANSNx16Decode extends RANSDecode {
                 if (i % 8 == 0){
                     v = inBuffer.get(j++);
                 }
-                outBufferPack.put(i, (byte) packMap[v & 1]);
+                outBufferPack.put(i, (byte) packMappingTable[v & 1]);
                 v >>=1;
             }
         }
@@ -417,7 +417,7 @@ public class RANSNx16Decode extends RANSDecode {
                 if (i % 4 == 0){
                     v = inBuffer.get(j++);
                 }
-                outBufferPack.put(i, (byte) packMap[v & 3]);
+                outBufferPack.put(i, (byte) packMappingTable[v & 3]);
                 v >>=2;
             }
         }
@@ -429,7 +429,7 @@ public class RANSNx16Decode extends RANSDecode {
                 if (i % 2 == 0){
                     v = inBuffer.get(j++);
                 }
-                outBufferPack.put(i, (byte) packMap[v & 15]);
+                outBufferPack.put(i, (byte) packMappingTable[v & 15]);
                 v >>=4;
             }
         }

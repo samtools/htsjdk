@@ -37,22 +37,22 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // Pack
         if (ransNx16Params.getPack()) {
-            final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
+            final int[] frequencyTable = new int[Constants.NUMBER_OF_SYMBOLS];
             final int inSize = inBuffer.remaining();
             for (int i = 0; i < inSize; i ++) {
-                F[inBuffer.get(i) & 0xFF]++;
+                frequencyTable[inBuffer.get(i) & 0xFF]++;
             }
             int numSymbols = 0;
-            final int[] P = new int[Constants.NUMBER_OF_SYMBOLS];
+            final int[] packMappingTable = new int[Constants.NUMBER_OF_SYMBOLS];
             for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-                if (F[i]>0) {
-                    P[i] = numSymbols++;
+                if (frequencyTable[i]>0) {
+                    packMappingTable[i] = numSymbols++;
                 }
             }
 
             // skip Packing if numSymbols = 0  or numSymbols > 16
             if (numSymbols !=0 & numSymbols <= 16) {
-                inputBuffer = encodePack(inputBuffer, outBuffer, F, P, numSymbols);
+                inputBuffer = encodePack(inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
             } else {
                 // unset pack flag in the first byte of the outBuffer
                 outBuffer.put(0,(byte)(outBuffer.get(0) & ~RANSNx16Params.PACK_FLAG_MASK));
@@ -609,71 +609,64 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     private ByteBuffer encodePack(
             final ByteBuffer inBuffer ,
             final ByteBuffer outBuffer,
-            final int[] F,
-            final int[] P,
+            final int[] frequencyTable,
+            final int[] packMappingTable,
             final int numSymbols){
-
         final int inSize = inBuffer.remaining();
-
         ByteBuffer data;
         if (numSymbols <= 1) {
             data = ByteBuffer.allocate(0);
-
         } else if (numSymbols <= 2) {
+
             // 1 bit per value
             int dataSize = (int) Math.ceil((double) inSize/8);
             data = ByteBuffer.allocate(dataSize);
-            data.limit(dataSize);
             int j = -1;
             for (int i = 0; i < inSize; i ++) {
                 if (i % 8 == 0) {
                     data.put(++j, (byte) 0);
                 }
-                data.put(j, (byte) (data.get(j) + (P[inBuffer.get(i) & 0xFF] << (i % 8))));
+                data.put(j, (byte) (data.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << (i % 8))));
             }
         } else if (numSymbols <= 4) {
+
             // 2 bits per value
             int dataSize = (int) Math.ceil((double) inSize/4);
             data = ByteBuffer.allocate(dataSize);
-            data.limit(dataSize);
             int j = -1;
             for (int i = 0; i < inSize; i ++) {
                 if (i % 4 == 0) {
                     data.put(++j, (byte) 0);
                 }
-                data.put(j, (byte) (data.get(j) + (P[inBuffer.get(i) & 0xFF] << ((i % 4) * 2))));
+                data.put(j, (byte) (data.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 4) * 2))));
             }
         } else {
+
             // 4 bits per value
             int dataSize = (int) Math.ceil((double)inSize/2);
             data = ByteBuffer.allocate(dataSize);
-            data.limit(dataSize);
             int j = -1;
             for (int i = 0; i < inSize; i ++) {
                 if (i % 2 == 0) {
                     data.put(++j, (byte) 0);
                 }
-                data.put(j, (byte) (data.get(j) + (P[inBuffer.get(i) & 0xFF] << ((i % 2) * 4))));
+                data.put(j, (byte) (data.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 2) * 4))));
             }
         }
 
         // write numSymbols
         outBuffer.put((byte) numSymbols);
 
-
-
-        int j = 0;
-        // TODO: What is the purpose of the variable "j"?
+        // write mapping table "packMappingTable" that converts mapped value to original symbol
         for(int i = 0 ; i < Constants.NUMBER_OF_SYMBOLS; i ++) {
-            if (F[i] > 0) {
-                F[i] = j++;
+            if (frequencyTable[i] > 0) {
                 outBuffer.put((byte) i);
             }
         }
 
         // write the length of data
         Utils.writeUint7(data.limit(), outBuffer);
-        return data; //pos = 0
+        return data; // Here position = 0 since we have always accessed the data buffer using index
     }
 
 }
