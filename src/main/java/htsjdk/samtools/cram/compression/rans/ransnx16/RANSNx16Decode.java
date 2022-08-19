@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.compression.rans.ransnx16;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
@@ -40,13 +41,15 @@ public class RANSNx16Decode extends RANSDecode {
             packDataLength = outSize;
             numSymbols = inBuffer.get() & 0xFF;
 
-            // if (numSymbols > 16 or numSymbols==0) then skip decoding Pack
+            // if (numSymbols > 16 or numSymbols==0), raise exception
             if (numSymbols <= 16 & numSymbols!=0) {
                 packMappingTable = new int[numSymbols];
                 for (int i = 0; i < numSymbols; i++) {
                     packMappingTable[i] = inBuffer.get() & 0xFF;
                 }
                 outSize = Utils.readUint7(inBuffer);
+            } else {
+                throw new CRAMException("Bit Packing is not permitted when number of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: " + numSymbols);
             }
         }
 
@@ -436,4 +439,5 @@ public class RANSNx16Decode extends RANSDecode {
         inBuffer = outBufferPack;
         return inBuffer;
     }
+
 }
