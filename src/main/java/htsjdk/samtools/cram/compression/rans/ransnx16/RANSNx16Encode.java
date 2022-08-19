@@ -38,9 +38,9 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // Pack
         if (ransNx16Params.getPack()) {
             final int[] frequencyTable = new int[Constants.NUMBER_OF_SYMBOLS];
-            final int inSize = inBuffer.remaining();
+            final int inSize = inputBuffer.remaining();
             for (int i = 0; i < inSize; i ++) {
-                frequencyTable[inBuffer.get(i) & 0xFF]++;
+                frequencyTable[inputBuffer.get(i) & 0xFF]++;
             }
             int numSymbols = 0;
             final int[] packMappingTable = new int[Constants.NUMBER_OF_SYMBOLS];
