@@ -17,6 +17,10 @@ public class RANSNx16Decode extends RANSDecode {
     private static final int FREQ_TABLE_OPTIONALLY_COMPRESSED_MASK = 0x01;
 
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
+        return uncompressStream(inBuffer, 0);
+    }
+
+    public ByteBuffer uncompressStream(final ByteBuffer inBuffer, int outSize) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
@@ -28,10 +32,13 @@ public class RANSNx16Decode extends RANSDecode {
         final int formatFlags = inBuffer.get() & 0xFF;
         final RANSNx16Params ransNx16Params = new RANSNx16Params(formatFlags);
 
-        // TODO: add methods to handle stripe
-
         // if nosz flag is set, then uncompressed size is not recorded.
-        int outSize = ransNx16Params.getNosz() ? 0 : Utils.readUint7(inBuffer);
+        outSize = ransNx16Params.getNosz() ? outSize : Utils.readUint7(inBuffer);
+
+        // if stripe, then decodeStripe
+        if (ransNx16Params.getStripe()) {
+            return decodeStripe(inBuffer, outSize);
+        }
 
         // if pack, get pack metadata, which will be used later to decode packed data
         int packDataLength = 0;
@@ -438,6 +445,40 @@ public class RANSNx16Decode extends RANSDecode {
         }
         inBuffer = outBufferPack;
         return inBuffer;
+    }
+
+    private ByteBuffer decodeStripe(ByteBuffer inBuffer, final int outSize){
+
+        final int numInterleaveStreams = inBuffer.get() & 0xFF;
+
+        // retrieve lengths of compressed interleaved streams
+        int[] clen = new int[numInterleaveStreams];
+        for ( int j=0; j<numInterleaveStreams; j++ ){
+            clen[j] = Utils.readUint7(inBuffer);
+        }
+
+        // Decode the compressed interleaved stream
+        int[] ulen = new int[numInterleaveStreams];
+        ByteBuffer[] T = new ByteBuffer[numInterleaveStreams];
+
+        for ( int j=0; j<numInterleaveStreams; j++){
+            ulen[j] = (int) Math.floor(((double) outSize)/numInterleaveStreams);
+            if ((outSize % numInterleaveStreams) > j){
+                ulen[j]++;
+            }
+
+            T[j] = uncompressStream(inBuffer, ulen[j]);
+        }
+
+        // Transpose
+        ByteBuffer out = ByteBuffer.allocate(outSize);
+        for (int j = 0; j <numInterleaveStreams; j++) {
+            for (int i = 0; i < ulen[j]; i++) {
+                out.put((i*numInterleaveStreams)+j, T[j].get(i));
+            }
+        }
+
+        return out;
     }
 
 }

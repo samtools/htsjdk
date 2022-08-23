@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.compression.rans.ransnx16;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSEncode;
 import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
@@ -33,7 +34,11 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // using inputBuffer as inBuffer is declared final
         ByteBuffer inputBuffer = inBuffer;
 
-        // TODO: Add Stripe
+        // Stripe
+        // Encoding is not implemented for Stripe
+        if (ransNx16Params.getStripe()) {
+            throw new CRAMException("RANSNx16 Encoding with Stripe Flag is not implemented.");
+        }
 
         // Pack
         if (ransNx16Params.getPack()) {
