@@ -20,4 +20,8 @@ public class RANS4x8Params implements RANSParams {
         return order;
     }
 
+    public int getFormatFlags(){
+        return order.ordinal();
+    }
+
 }

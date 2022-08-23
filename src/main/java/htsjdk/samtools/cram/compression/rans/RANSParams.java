@@ -14,6 +14,8 @@ public interface RANSParams {
         }
     }
 
+    int getFormatFlags();
+
     ORDER getOrder();
 
 }
