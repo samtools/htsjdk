@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 import static htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params.STRIPE_FLAG_MASK;
 
 /**
- * HTSCodecs test data is kept in a separate repository, currently at https://github.com/jkbonfield/htscodecs-corpus
+ * HTSCodecs test data is kept in a separate repository, currently at https://github.com/jkbonfield/htscodecs-corpus,
  * so it can be shared across htslib/samtools/htsjdk.
  */
 public class CRAMCodecCorpusTest extends HtsjdkTest {
@@ -230,18 +230,18 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
 
                 // If Stripe Flag is set, skip the round trip test as encoding is not implemented for this case.
                 // TODO: Assert raise Exception
-                System.out.println(String.format("Stripe Flag is set. Skipping testRANSRoundTrip for file: %s. " +
+                System.out.printf("Stripe Flag is set. Skipping testRANSRoundTrip for file: %s. " +
                         "Format Flags: %s . The current RANSNx16 implementation does not " +
-                        "support encoding when Stripe Flag is set", inputTestDataPath.toString(), params.getFormatFlags()));
+                        "support encoding when Stripe Flag is set%n", inputTestDataPath.toString(), params.getFormatFlags());
             }
             else {
                 final ByteBuffer compressedBytes = ransEncode.compress(uncompressedBytes, params);
                 uncompressedBytes.rewind();
-                System.out.println(String.format("filename:%s %s Uncompressed: (%,d) Compressed: (%,d)",
+                System.out.printf("filename:%s %s Uncompressed: (%,d) Compressed: (%,d)%n",
                         inputTestDataPath.getFileName(),
                         params.toString(),
                         uncompressedBytes.remaining(),
-                        compressedBytes.remaining()));
+                        compressedBytes.remaining());
                 Assert.assertEquals(ransDecode.uncompress(compressedBytes), uncompressedBytes);
             }
         }
@@ -254,7 +254,7 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
                     "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
     public void testRANSPreCompressed(
             final Path inputTestDataPath,
-            final RANSEncode ransEncode,
+            final RANSEncode unused,
             final RANSDecode ransDecode,
             final RANSParams params,
             final String CompressedDirname) throws IOException {

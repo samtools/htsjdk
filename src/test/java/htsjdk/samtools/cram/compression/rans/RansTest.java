@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.compression.rans;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
@@ -12,7 +13,6 @@ import htsjdk.utils.TestNGUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  * Created by vadim on 22/04/2015.
  */
 public class RansTest extends HtsjdkTest {
-    private Random random = new Random(TestUtil.RANDOM_SEED);
+    private final Random random = new Random(TestUtil.RANDOM_SEED);
 
     // Since some of our test cases use very large byte arrays, so enclose them in a wrapper class since
     // otherwise IntelliJ serializes them to strings for display in the test output, which is *super*-slow.
@@ -37,9 +37,14 @@ public class RansTest extends HtsjdkTest {
         }
     }
 
+    public Object[][] getRansEmptyTestData() {
+        return new Object[][]{
+                { new TestDataEnvelope(new byte[]{}) },
+        };
+    }
+
     public Object[][] getRansTestData() {
         return new Object[][] {
-                { new TestDataEnvelope(new byte[]{}) },
                 { new TestDataEnvelope(new byte[] {0}) },
                 { new TestDataEnvelope(new byte[] {0, 1}) },
                 { new TestDataEnvelope(new byte[] {0, 1, 2}) },
@@ -128,6 +133,26 @@ public class RansTest extends HtsjdkTest {
         };
     }
 
+    public Object[][] getRansNx16DecodeOnlyCodecs() {
+        final RANSNx16Encode ransNx16Encode = new RANSNx16Encode();
+        final RANSNx16Decode ransNx16Decode = new RANSNx16Decode();
+        return new Object[][]{
+
+                //RANSNx16 formatFlags(first byte) 8: Order 0, N = 4, CAT false, RLE = false, Pack = false, Stripe = True
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x08)},
+
+                //RANSNx16 formatFlags(first byte) 9: Order 1, N = 4, CAT false, RLE = false, Pack = false, Stripe = True
+                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x09)}
+        };
+    }
+
+    @DataProvider(name="RansNx16DecodeOnlyAndData")
+    public Object[][] getRansNx16DecodeOnlyAndData() {
+
+        // this data provider provides all the testdata except empty input for RANS Nx16 codec
+        return TestNGUtils.cartesianProduct(getRansNx16DecodeOnlyCodecs(), getRansTestData());
+    }
+
     public Object[][] getAllRansCodecs() {
         // concatenate RANS4x8 and RANSNx16 codecs
         return Stream.concat(Arrays.stream(getRans4x8Codecs()), Arrays.stream(getRansNx16Codecs()))
@@ -136,13 +161,18 @@ public class RansTest extends HtsjdkTest {
 
     @DataProvider(name="allRansAndData")
     public Object[][] getAllRansAndData() {
+
         // this data provider provides all the testdata for all of RANS codecs
         // params: RANSEncode, RANSDecode, RANSParams, data
-        return TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansTestData());
+        return Stream.concat(
+                Arrays.stream(TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansTestData())),
+                Arrays.stream(TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansEmptyTestData())))
+                .toArray(Object[][]::new);
     }
 
     @DataProvider(name="allRansAndDataForTinySmallLarge")
     public Object[][] getAllRansAndDataForTinySmallLarge() {
+
         // this data provider provides Tiny, Small and Large testdata for all of RANS codecs
         // params: RANSEncode, RANSDecode, RANSParams, data, lower limit, upper limit
         return TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansTestDataTinySmallLarge());
@@ -268,6 +298,23 @@ public class RansTest extends HtsjdkTest {
             final TestDataEnvelope td) {
         ransRoundTrip(ransEncode, ransDecode, params, ByteBuffer.wrap(td.testArray));
     }
+
+    @Test(
+            dataProvider = "RansNx16DecodeOnlyAndData",
+            expectedExceptions = { CRAMException.class },
+            expectedExceptionsMessageRegExp = "RANSNx16 Encoding with Stripe Flag is not implemented.")
+    public void testRansNx16EncodeStripe(
+            final RANSNx16Encode ransEncode,
+            final RANSNx16Decode unused,
+            final RANSNx16Params params,
+            final TestDataEnvelope td) {
+
+        // When td is not Empty, Encoding with Stripe Flag should throw an Exception
+        // as Encode Stripe is not implemented
+        final ByteBuffer compressed = ransEncode.compress(ByteBuffer.wrap(td.testArray), params);
+    }
+
+    // TODO: Add Test to DecodePack with nsym > 16
 
     private static void ransRoundTrip(
             final RANSEncode ransEncode,
