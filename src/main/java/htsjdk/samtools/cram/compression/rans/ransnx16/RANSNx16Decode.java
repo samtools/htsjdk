@@ -49,7 +49,7 @@ public class RANSNx16Decode extends RANSDecode {
             numSymbols = inBuffer.get() & 0xFF;
 
             // if (numSymbols > 16 or numSymbols==0), raise exception
-            if (numSymbols <= 16 & numSymbols!=0) {
+            if (numSymbols <= 16 && numSymbols!=0) {
                 packMappingTable = new int[numSymbols];
                 for (int i = 0; i < numSymbols; i++) {
                     packMappingTable[i] = inBuffer.get() & 0xFF;
@@ -95,12 +95,12 @@ public class RANSNx16Decode extends RANSDecode {
             }
 
             // if rle, then decodeRLE
-            if (ransNx16Params.getRLE() & uncompressedRLEMetaData!=null ){
+            if (ransNx16Params.getRLE() && uncompressedRLEMetaData!=null ){
                 outBuffer = decodeRLE(outBuffer,rleSymbols,uncompressedRLEMetaData, uncompressedRLEOutputLength);
             }
 
             // if pack, then decodePack
-            if (ransNx16Params.getPack() & packMappingTable.length > 0) {
+            if (ransNx16Params.getPack() && packMappingTable.length > 0) {
                 outBuffer = decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
             }
             return outBuffer;
