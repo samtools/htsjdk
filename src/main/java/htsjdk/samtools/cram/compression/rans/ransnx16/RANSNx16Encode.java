@@ -56,7 +56,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             }
 
             // skip Packing if numSymbols = 0  or numSymbols > 16
-            if (numSymbols !=0 & numSymbols <= 16) {
+            if (numSymbols !=0 && numSymbols <= 16) {
                 inputBuffer = encodePack(inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
             } else {
                 // unset pack flag in the first byte of the outBuffer
@@ -282,7 +282,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
             //intialize symbol
             symbol[r]=0;
-            if((interleaveStreamIndex[r]+1 >= 0) & (r!= Nway-1)){
+            if((interleaveStreamIndex[r]+1 >= 0) && (r!= Nway-1)){
                 symbol[r] = inBuffer.get(interleaveStreamIndex[r] + 1);
             }
             if ( r == Nway-1 ){
