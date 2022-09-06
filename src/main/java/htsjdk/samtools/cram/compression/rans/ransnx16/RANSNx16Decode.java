@@ -359,10 +359,9 @@ public class RANSNx16Decode extends RANSDecode {
             uncompressedRLEMetaData = ByteBuffer.wrap(uncompressedRLEMetaDataArray);
         } else {
             compressedRLEMetaDataLength = Utils.readUint7(inBuffer);
-            ByteBuffer compressedRLEMetaData = ByteBuffer.allocate(compressedRLEMetaDataLength);
             byte[] compressedRLEMetaDataArray = new byte[compressedRLEMetaDataLength];
             inBuffer.get(compressedRLEMetaDataArray,0,compressedRLEMetaDataLength);
-            compressedRLEMetaData = ByteBuffer.wrap(compressedRLEMetaDataArray);
+            ByteBuffer compressedRLEMetaData = ByteBuffer.wrap(compressedRLEMetaDataArray);
             compressedRLEMetaData.order(ByteOrder.LITTLE_ENDIAN);
             uncompressedRLEMetaData = ByteBuffer.allocate(uncompressedRLEMetaDataLength / 2);
             

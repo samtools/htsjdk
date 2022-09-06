@@ -9,8 +9,6 @@ import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static htsjdk.samtools.cram.compression.rans.Constants.NUMBER_OF_SYMBOLS;
-
 public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
     private static final int ORDER_BYTE_LENGTH = 1;
     private static final int COMPRESSED_BYTE_LENGTH = 4;
@@ -394,7 +392,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                     // Note: maximum possible rle = 254
                     // rle requires atmost 1 byte
                     if (rle == 0 && j != 0 && F[j - 1] != 0) {
-                        for (rle = j + 1; rle < NUMBER_OF_SYMBOLS && F[rle] != 0; rle++)
+                        for (rle = j + 1; rle < Constants.NUMBER_OF_SYMBOLS && F[rle] != 0; rle++)
                             ;
                         rle -= j + 1;
                         cp.put((byte) rle);
@@ -442,7 +440,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                 // FIXME: could use order-0 statistics to observe which alphabet
                 // symbols are present and base RLE on that ordering instead.
                 if (i != 0 && T[i - 1] != 0) {
-                    for (rle_i = i + 1; rle_i < NUMBER_OF_SYMBOLS && T[rle_i] != 0; rle_i++)
+                    for (rle_i = i + 1; rle_i < Constants.NUMBER_OF_SYMBOLS && T[rle_i] != 0; rle_i++)
                         ;
                     rle_i -= i + 1;
                     cp.put((byte) rle_i);
@@ -460,7 +458,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                     } else {
                         cp.put((byte) j);
                         if (rle_j == 0 && j != 0 && F_i_[j - 1] != 0) {
-                            for (rle_j = j + 1; rle_j < NUMBER_OF_SYMBOLS && F_i_[rle_j] != 0; rle_j++)
+                            for (rle_j = j + 1; rle_j < Constants.NUMBER_OF_SYMBOLS && F_i_[rle_j] != 0; rle_j++)
                                 ;
                             rle_j -= j + 1;
                             cp.put((byte) rle_j);
