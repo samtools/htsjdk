@@ -28,20 +28,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params.STRIPE_FLAG_MASK;
-
 /**
- * HTSCodecs test data is kept in a separate repository, currently at https://github.com/jkbonfield/htscodecs-corpus,
+ * Interop test data is kept in a separate repository, currently at https://github.com/samtools/htscodecs
  * so it can be shared across htslib/samtools/htsjdk.
  */
-public class CRAMCodecCorpusTest extends HtsjdkTest {
+public class RANSInteropTest extends HtsjdkTest {
     @Test
-    public void testGetHTSCodecsCorpus() {
-        if (!CRAMCodecCorpus.isHtsCodecsTestDataAvailable()) {
+    public void testGetHTSCodecsCorpus() throws SkipException{
+        if (!RANSInteropTestUtils.isInteropTestDataAvailable()) {
             throw new SkipException(String.format(
-                    "No HTS codecs test data found." +
-                            " The %s environment variable must be set to the location of the local hts codecs test data.",
-                    CRAMCodecCorpus.HTSCODECS_TEST_DATA_ENV));
+                    "No RANS Interop test data found at location: %s",
+                    RANSInteropTestUtils.INTEROP_TEST_FILES_PATH));
         }
     }
 
@@ -49,7 +46,9 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
     // RANS tests
     /////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //TODO: the TestDataProviders tests fail if the hts codecs corpus isn't available because
+    // TODO: the TestDataProviders tests fail if the hts codecs corpus isn't available. For time being,
+    //  we fix this by adding some small test files, which would later be replaced by a more permanent
+    //  solution like adding the tests directly from samtools/hts-codecs using git submodule
 
     // RANS4x8 codecs and testdata
     public Object[][] getRANS4x8TestData() throws IOException {
@@ -57,7 +56,7 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
         final RANS4x8Encode rans4x8Encode = new RANS4x8Encode();
         final RANS4x8Decode rans4x8Decode = new RANS4x8Decode();
         final List<Object[]> testCases = new ArrayList<>();
-        getHtsCodecRANSTestFiles().stream()
+        getInteropRANSTestFiles()
                 .forEach(p ->
                 {
                     // RANS 4x8 order 0
@@ -85,7 +84,7 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
         final RANSNx16Encode ransNx16Encode = new RANSNx16Encode();
         final RANSNx16Decode ransNx16Decode = new RANSNx16Decode();
         final List<Object[]> testCases = new ArrayList<>();
-        getHtsCodecRANSTestFiles().stream()
+        getInteropRANSTestFiles()
                 .forEach(p ->
                 {
                     // RANS Nx16 order 0, none of the bit flags are set
@@ -213,12 +212,12 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
             description = "Roundtrip using htsjdk RANS. Compare the output with the original file" )
     public void testRANSRoundTrip(
             final Path inputTestDataPath,
-            final RANSEncode ransEncode,
+            final RANSEncode<RANSParams> ransEncode,
             final RANSDecode ransDecode,
             final RANSParams params,
-            final String unusedCompressedDirname) throws IOException {
-        if (!CRAMCodecCorpus.isHtsCodecsTestDataAvailable()) {
-            throw new SkipException("htscodecs test data is not available locally");
+            final String unusedCompressedDirname) throws IOException, SkipException {
+        if (!RANSInteropTestUtils.isInteropTestDataAvailable()) {
+            throw new SkipException("Interop test data is not available locally");
         }
         try (final InputStream is = Files.newInputStream(inputTestDataPath)) {
 
@@ -226,22 +225,11 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
             final ByteBuffer uncompressedBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(is)));
-            if ((params.getFormatFlags() & STRIPE_FLAG_MASK)!=0) {
 
-                // If Stripe Flag is set, skip the round trip test as encoding is not implemented for this case.
-                // TODO: Assert raise Exception
-                System.out.printf("Stripe Flag is set. Skipping testRANSRoundTrip for file: %s. " +
-                        "Format Flags: %s . The current RANSNx16 implementation does not " +
-                        "support encoding when Stripe Flag is set%n", inputTestDataPath.toString(), params.getFormatFlags());
-            }
-            else {
+            // If Stripe Flag is set, skip the round trip test as encoding is not implemented for this case.
+            if ((params.getFormatFlags() & RANSNx16Params.STRIPE_FLAG_MASK)==0) {
                 final ByteBuffer compressedBytes = ransEncode.compress(uncompressedBytes, params);
                 uncompressedBytes.rewind();
-                System.out.printf("filename:%s %s Uncompressed: (%,d) Compressed: (%,d)%n",
-                        inputTestDataPath.getFileName(),
-                        params.toString(),
-                        uncompressedBytes.remaining(),
-                        compressedBytes.remaining());
                 Assert.assertEquals(ransDecode.uncompress(compressedBytes), uncompressedBytes);
             }
         }
@@ -253,54 +241,44 @@ public class CRAMCodecCorpusTest extends HtsjdkTest {
             description = "Compress the original file using htsjdk RANS and compare it with the existing compressed file. " +
                     "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
     public void testRANSPreCompressed(
-            final Path inputTestDataPath,
-            final RANSEncode unused,
+            final Path uncompressedInteropPath,
+            final RANSEncode<RANSParams> unused,
             final RANSDecode ransDecode,
             final RANSParams params,
-            final String CompressedDirname) throws IOException {
-        if (!CRAMCodecCorpus.isHtsCodecsTestDataAvailable()) {
-            throw new SkipException("htscodecs test data is not available locally");
+            final String compressedInteropDirName) throws IOException, SkipException {
+        if (!RANSInteropTestUtils.isInteropTestDataAvailable()) {
+            throw new SkipException("Interop test data is not available locally");
         }
 
-        final Path preCompressedDataPath = getCompressedRANSPath(CompressedDirname,inputTestDataPath, params);
+        final Path preCompressedInteropPath = getCompressedRANSPath(compressedInteropDirName,uncompressedInteropPath, params);
 
-        try (final InputStream inputStream = Files.newInputStream(inputTestDataPath);
-             final InputStream preCompressedInputStream = Files.newInputStream(preCompressedDataPath);
+        try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
+             final InputStream preCompressedInteropStream = Files.newInputStream(preCompressedInteropPath)
         ) {
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
-            final ByteBuffer inputBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(inputStream)));
+            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
-            final ByteBuffer preCompressedInputBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInputStream));
-
-            // commenting as htsjdkCompressedBytes is not used anywhere
-            // Use htsjdk to compress the input file from htscodecs repo
-//            final ByteBuffer htsjdkCompressedBytes = ransEncode.compress(inputBytes, params);
-//            inputBytes.rewind();
-
-//            // commenting as the comparison of compressed bytes is not needed to ensure interoperability.
-//            // Compare the htsjdk compressed bytes with the precompressed file from htscodecs repo
-//            Assert.assertEquals(htsjdkCompressedBytes, preCompressedInputBytes);
+            final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
-            final ByteBuffer htsjdkUncompressedBytes = ransDecode.uncompress(preCompressedInputBytes);
+            final ByteBuffer uncompressedHtsjdkBytes = ransDecode.uncompress(preCompressedInteropBytes);
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
-            Assert.assertEquals(htsjdkUncompressedBytes, inputBytes);
+            Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);
         } catch (NoSuchFileException ex){
-            // if precompressed file or input file is not present
-            System.out.println("Skipping testRANSPrecompressed as either input file " +
+            throw new SkipException("Skipping testRANSPrecompressed as either input file " +
                     "or precompressed file is missing. File Missing: " + ex.getMessage());
         }
     }
 
-    // return a list of all RANS test data files in the htscodecs test directory
-    private List<Path> getHtsCodecRANSTestFiles() throws IOException {
-        CRAMCodecCorpus.assertHTSCodecsTestDataAvailable();
+    // return a list of all RANS test data files in the InteropTest/RANS directory
+    private List<Path> getInteropRANSTestFiles() throws IOException, SkipException {
+        RANSInteropTestUtils.assertHTSCodecsTestDataAvailable();
         final List<Path> paths = new ArrayList<>();
         Files.newDirectoryStream(
-                        CRAMCodecCorpus.getHTSCodecsTestDataLocation().resolve("dat"),
+                        RANSInteropTestUtils.getInteropTestDataLocation().resolve("RANS"),
                         path -> path.getFileName().startsWith("q4") ||
                                 path.getFileName().startsWith("q8") ||
                                 path.getFileName().startsWith("qvar") ||

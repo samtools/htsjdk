@@ -4,7 +4,7 @@ import htsjdk.samtools.cram.compression.rans.RANSParams;
 
 public class RANS4x8Params implements RANSParams {
 
-    private ORDER order;
+    private final ORDER order;
 
     public RANS4x8Params(ORDER order) {
         this.order = order;
