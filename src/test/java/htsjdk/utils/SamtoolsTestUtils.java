@@ -1,7 +1,8 @@
 package htsjdk.utils;
 
-import htsjdk.samtools.util.*;
-
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.ProcessExecutor;
+import htsjdk.samtools.util.RuntimeIOException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,6 +15,7 @@ import java.nio.file.Paths;
 public class SamtoolsTestUtils {
     private static final String SAMTOOLS_BINARY_ENV_VARIABLE = "HTSJDK_SAMTOOLS_BIN";
     public final static String expectedSamtoolsVersion = "1.14";
+    public final static String expectedHtslibVersion = "1.14";
 
     /**
      * @return true if samtools is available, otherwise false
@@ -45,6 +47,11 @@ public class SamtoolsTestUtils {
     public static String getSamtoolsBin() {
         final String samtoolsPath = System.getenv(SAMTOOLS_BINARY_ENV_VARIABLE);
         return samtoolsPath == null ? "/usr/local/bin/samtools" : samtoolsPath;
+    }
+
+    public static String getCRAMInteropData() {
+        final String samtoolsPath = System.getenv(SAMTOOLS_BINARY_ENV_VARIABLE);
+        return samtoolsPath == null ? "../htscodecs/tests" : samtoolsPath + "/htslib-"+expectedHtslibVersion+"/htscodecs/tests";
     }
 
     /**

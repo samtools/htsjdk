@@ -33,14 +33,6 @@ import java.util.stream.Stream;
  * so it can be shared across htslib/samtools/htsjdk.
  */
 public class RANSInteropTest extends HtsjdkTest {
-    @Test
-    public void testGetHTSCodecsCorpus() throws SkipException{
-        if (!RANSInteropTestUtils.isInteropTestDataAvailable()) {
-            throw new SkipException(String.format(
-                    "No RANS Interop test data found at location: %s",
-                    RANSInteropTestUtils.INTEROP_TEST_FILES_PATH));
-        }
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // RANS tests
@@ -206,19 +198,25 @@ public class RANSInteropTest extends HtsjdkTest {
                 .toArray(Object[][]::new);
     }
 
+    // TODO: testHtslibVersion should depend on SamtoolsTestUtilsTest.testSamtoolsVersion
+    @Test(description = "Test if CRAM Interop Test Data is available")
+    public void testGetHTSCodecsCorpus() {
+        if (!RANSInteropTestUtils.isInteropTestDataAvailable()) {
+            throw new SkipException(String.format("RANS Interop Test Data is not available at %s",
+                    RANSInteropTestUtils.INTEROP_TEST_FILES_PATH));
+        }
+    }
+
     @Test (
-            dataProvider = "allRansCodecsAndData",
             dependsOnMethods = "testGetHTSCodecsCorpus",
+            dataProvider = "allRansCodecsAndData",
             description = "Roundtrip using htsjdk RANS. Compare the output with the original file" )
     public void testRANSRoundTrip(
             final Path inputTestDataPath,
             final RANSEncode<RANSParams> ransEncode,
             final RANSDecode ransDecode,
             final RANSParams params,
-            final String unusedCompressedDirname) throws IOException, SkipException {
-        if (!RANSInteropTestUtils.isInteropTestDataAvailable()) {
-            throw new SkipException("Interop test data is not available locally");
-        }
+            final String unusedCompressedDirname) throws IOException {
         try (final InputStream is = Files.newInputStream(inputTestDataPath)) {
 
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
@@ -236,8 +234,8 @@ public class RANSInteropTest extends HtsjdkTest {
     }
 
     @Test (
-            dataProvider = "allRansCodecsAndData",
             dependsOnMethods = "testGetHTSCodecsCorpus",
+            dataProvider = "allRansCodecsAndData",
             description = "Compress the original file using htsjdk RANS and compare it with the existing compressed file. " +
                     "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
     public void testRANSPreCompressed(
@@ -245,10 +243,7 @@ public class RANSInteropTest extends HtsjdkTest {
             final RANSEncode<RANSParams> unused,
             final RANSDecode ransDecode,
             final RANSParams params,
-            final String compressedInteropDirName) throws IOException, SkipException {
-        if (!RANSInteropTestUtils.isInteropTestDataAvailable()) {
-            throw new SkipException("Interop test data is not available locally");
-        }
+            final String compressedInteropDirName) throws IOException {
 
         final Path preCompressedInteropPath = getCompressedRANSPath(compressedInteropDirName,uncompressedInteropPath, params);
 
@@ -269,16 +264,15 @@ public class RANSInteropTest extends HtsjdkTest {
             Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);
         } catch (NoSuchFileException ex){
             throw new SkipException("Skipping testRANSPrecompressed as either input file " +
-                    "or precompressed file is missing. File Missing: " + ex.getMessage());
+                    "or precompressed file is missing.", ex);
         }
     }
 
     // return a list of all RANS test data files in the InteropTest/RANS directory
-    private List<Path> getInteropRANSTestFiles() throws IOException, SkipException {
-        RANSInteropTestUtils.assertHTSCodecsTestDataAvailable();
+    private List<Path> getInteropRANSTestFiles() throws IOException {
         final List<Path> paths = new ArrayList<>();
         Files.newDirectoryStream(
-                        RANSInteropTestUtils.getInteropTestDataLocation().resolve("RANS"),
+                        RANSInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
                         path -> path.getFileName().startsWith("q4") ||
                                 path.getFileName().startsWith("q8") ||
                                 path.getFileName().startsWith("qvar") ||
