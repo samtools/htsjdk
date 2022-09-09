@@ -9,7 +9,7 @@ import htsjdk.utils.SamtoolsTestUtils;
  * Interop test data is kept in a separate repository, currently at https://github.com/samtools/htscodecs
  * so it can be shared across htslib/samtools/htsjdk.
  */
-public class RANSInteropTestUtils {
+public class CRAMInteropTestUtils {
     public static final String INTEROP_TEST_FILES_PATH = SamtoolsTestUtils.getCRAMInteropData();
 
     /**
