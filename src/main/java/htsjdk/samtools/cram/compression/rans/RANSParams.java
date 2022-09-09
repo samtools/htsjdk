@@ -9,7 +9,7 @@ public interface RANSParams {
             try {
                 return ORDER.values()[orderValue];
             } catch (final ArrayIndexOutOfBoundsException e) {
-                throw new IllegalArgumentException("Unknown rANS order: " + orderValue);
+                throw new IllegalArgumentException("Unknown rANS order: " + orderValue, e);
             }
         }
     }

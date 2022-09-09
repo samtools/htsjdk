@@ -11,6 +11,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    // This is a naive implementation of RANS Nx16 Encoding
+    // Stripe flag is not implemented in the write implementation
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private static final int MINIMUM__ORDER_1_SIZE = 4;
 
@@ -31,11 +36,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             Utils.writeUint7(insize,outBuffer);
         }
 
-        // using inputBuffer as inBuffer is declared final
         ByteBuffer inputBuffer = inBuffer;
 
         // Stripe
-        // Encoding is not implemented for Stripe
+        // Stripe flag is not implemented in the write implementation
         if (ransNx16Params.getStripe()) {
             throw new CRAMException("RANSNx16 Encoding with Stripe Flag is not implemented.");
         }

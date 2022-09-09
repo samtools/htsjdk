@@ -29,165 +29,67 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Interop test data is kept in a separate repository, currently at https://github.com/samtools/htscodecs
- * so it can be shared across htslib/samtools/htsjdk.
+ * RANSInteropTest tests if the htsjdk RANS4x8 and RANSNx16 implementations are interoperable
+ * with the htslib implementations. The test files for Interop tests is kept in a separate repository,
+ * currently at https://github.com/samtools/htscodecs so it can be shared across htslib/samtools/htsjdk.
+ *
+ * For native development env, the Interop test files are downloaded locally and made available at "../htscodecs/tests"
+ * For CI env, the Interop test files are made available from the existing samtools installation
+ * at "/samtools-1.14/htslib-1.14/htscodecs/tests"
  */
 public class RANSInteropTest extends HtsjdkTest {
+    public static final String COMPRESSED_RANS4X8_DIR = "r4x8";
+    public static final String COMPRESSED_RANSNX16_DIR = "r4x16";
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // RANS tests
     /////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // TODO: the TestDataProviders tests fail if the hts codecs corpus isn't available. For time being,
-    //  we fix this by adding some small test files, which would later be replaced by a more permanent
-    //  solution like adding the tests directly from samtools/hts-codecs using git submodule
-
     // RANS4x8 codecs and testdata
     public Object[][] getRANS4x8TestData() throws IOException {
         // cache/reuse this for each test case to eliminate excessive garbage collection
-        final RANS4x8Encode rans4x8Encode = new RANS4x8Encode();
-        final RANS4x8Decode rans4x8Decode = new RANS4x8Decode();
+        final List<RANSParams.ORDER> rans4x8ParamsOrderList = Arrays.asList(
+                RANSParams.ORDER.ZERO,
+                RANSParams.ORDER.ONE);
         final List<Object[]> testCases = new ArrayList<>();
         getInteropRANSTestFiles()
-                .forEach(p ->
-                {
-                    // RANS 4x8 order 0
-                    testCases.add(new Object[] {
-                            p,
-                            rans4x8Encode ,
-                            rans4x8Decode,
-                            new RANS4x8Params(RANSParams.ORDER.ZERO),
-                            "r4x8" // htscodecs directory where the RANS4x8 compressed files reside
-                    });
-                    // RANS 4x8 order 1
-                    testCases.add(new Object[] {
-                            p,
-                            rans4x8Encode ,
-                            rans4x8Decode,
-                            new RANS4x8Params(RANSParams.ORDER.ONE),
-                            "r4x8" // htscodecs directory where the RANS4x8 compressed files reside
-                    });
-                });
+                .forEach(path ->
+                        rans4x8ParamsOrderList.stream().map(rans4x8ParamsOrder -> new Object[]{
+                                path,
+                                new RANS4x8Encode(),
+                                new RANS4x8Decode(),
+                                new RANS4x8Params(rans4x8ParamsOrder),
+                                COMPRESSED_RANS4X8_DIR
+                        }).forEach(testCases::add));
         return testCases.toArray(new Object[][]{});
     }
 
     // RANSNx16 codecs and testdata
     public Object[][] getRANS4x16TestData() throws IOException {
-        final RANSNx16Encode ransNx16Encode = new RANSNx16Encode();
-        final RANSNx16Decode ransNx16Decode = new RANSNx16Decode();
+        final List<Integer> ransNx16ParamsFormatFlagList = Arrays.asList(
+                0x00,
+                RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.N32_FLAG_MASK,
+                RANSNx16Params.N32_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.PACK_FLAG_MASK,
+                RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.STRIPE_FLAG_MASK,
+                RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK
+                );
         final List<Object[]> testCases = new ArrayList<>();
         getInteropRANSTestFiles()
-                .forEach(p ->
-                {
-                    // RANS Nx16 order 0, none of the bit flags are set
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x00),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 0, bitflags = 0x40. rle flag is set
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x40),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 1, bitflags = 0x01
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x01),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 1, bitflags = 0x04
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x04),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 1, bitflags = 0x05
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x05),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 1, bitflags = 0x41. rle flag is set
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x41),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 0, bitflags = 0x80. pack flag is set
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x80),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 1, bitflags = 0x81. pack flag is set
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x81),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 0, bitflags = 0xC0. rle flag is set, pack flag is set
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0xC0),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 1, bitflags = 0xC1. rle flag is set, pack flag is set
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0xC1),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 0, bitflags = 0x08.
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x08),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                    // RANS Nx16 order 1, bitflags = 0x09.
-                    testCases.add(new Object[] {
-                            p,
-                            ransNx16Encode,
-                            ransNx16Decode ,
-                            new RANSNx16Params(0x09),
-                            "r4x16" // htscodecs directory where the RANSNx16 compressed files reside
-                    });
-
-                });
+                .forEach(path ->
+                        ransNx16ParamsFormatFlagList.stream().map(ransNx16ParamsFormatFlag -> new Object[]{
+                                path,
+                                new RANSNx16Encode(),
+                                new RANSNx16Decode(),
+                                new RANSNx16Params(ransNx16ParamsFormatFlag),
+                                COMPRESSED_RANSNX16_DIR
+                        }).forEach(testCases::add));
         return testCases.toArray(new Object[][]{});
     }
 
@@ -201,9 +103,9 @@ public class RANSInteropTest extends HtsjdkTest {
     // TODO: testHtslibVersion should depend on SamtoolsTestUtilsTest.testSamtoolsVersion
     @Test(description = "Test if CRAM Interop Test Data is available")
     public void testGetHTSCodecsCorpus() {
-        if (!RANSInteropTestUtils.isInteropTestDataAvailable()) {
+        if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
             throw new SkipException(String.format("RANS Interop Test Data is not available at %s",
-                    RANSInteropTestUtils.INTEROP_TEST_FILES_PATH));
+                    CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
         }
     }
 
@@ -212,23 +114,23 @@ public class RANSInteropTest extends HtsjdkTest {
             dataProvider = "allRansCodecsAndData",
             description = "Roundtrip using htsjdk RANS. Compare the output with the original file" )
     public void testRANSRoundTrip(
-            final Path inputTestDataPath,
+            final Path uncompressedInteropPath,
             final RANSEncode<RANSParams> ransEncode,
             final RANSDecode ransDecode,
             final RANSParams params,
             final String unusedCompressedDirname) throws IOException {
-        try (final InputStream is = Files.newInputStream(inputTestDataPath)) {
+        try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath)) {
 
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
-            final ByteBuffer uncompressedBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(is)));
+            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
             // If Stripe Flag is set, skip the round trip test as encoding is not implemented for this case.
             if ((params.getFormatFlags() & RANSNx16Params.STRIPE_FLAG_MASK)==0) {
-                final ByteBuffer compressedBytes = ransEncode.compress(uncompressedBytes, params);
-                uncompressedBytes.rewind();
-                Assert.assertEquals(ransDecode.uncompress(compressedBytes), uncompressedBytes);
+                final ByteBuffer compressedHtsjdkBytes = ransEncode.compress(uncompressedInteropBytes, params);
+                uncompressedInteropBytes.rewind();
+                Assert.assertEquals(ransDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
             }
         }
     }
@@ -262,7 +164,7 @@ public class RANSInteropTest extends HtsjdkTest {
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
             Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);
-        } catch (NoSuchFileException ex){
+        } catch (final NoSuchFileException ex){
             throw new SkipException("Skipping testRANSPrecompressed as either input file " +
                     "or precompressed file is missing.", ex);
         }
@@ -272,7 +174,7 @@ public class RANSInteropTest extends HtsjdkTest {
     private List<Path> getInteropRANSTestFiles() throws IOException {
         final List<Path> paths = new ArrayList<>();
         Files.newDirectoryStream(
-                        RANSInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
+                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
                         path -> path.getFileName().startsWith("q4") ||
                                 path.getFileName().startsWith("q8") ||
                                 path.getFileName().startsWith("qvar") ||
@@ -304,12 +206,12 @@ public class RANSInteropTest extends HtsjdkTest {
     }
 
     // Given a test file name, map it to the corresponding rans compressed path
-    final Path getCompressedRANSPath(final String ransType,final Path inputTestDataPath, RANSParams params) {
+    final Path getCompressedRANSPath(final String ransType,final Path uncompressedInteropPath, RANSParams params) {
 
         // Example compressedFileName: r4x16/q4.193
         // the substring after "." in the compressedFileName is the formatFlags (aka. the first byte of the compressed stream)
-        final String compressedFileName = String.format("%s/%s.%s", ransType, inputTestDataPath.getFileName(), params.getFormatFlags());
-        return inputTestDataPath.getParent().resolve(compressedFileName);
+        final String compressedFileName = String.format("%s/%s.%s", ransType, uncompressedInteropPath.getFileName(), params.getFormatFlags());
+        return uncompressedInteropPath.getParent().resolve(compressedFileName);
     }
 
 }
