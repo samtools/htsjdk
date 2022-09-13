@@ -51,7 +51,7 @@ public class SamtoolsTestUtils {
 
     public static String getCRAMInteropData() {
         final String samtoolsPath = System.getenv(SAMTOOLS_BINARY_ENV_VARIABLE);
-        return samtoolsPath == null ? "../htscodecs/tests" : "/samtools-"+expectedHtslibVersion+ "/htslib-"+expectedHtslibVersion+"/htscodecs/tests";
+        return samtoolsPath == null ? "../htscodecs/tests" : "./samtools-"+expectedHtslibVersion+ "/htslib-"+expectedHtslibVersion+"/htscodecs/tests";
     }
 
     /**
