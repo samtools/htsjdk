@@ -142,11 +142,6 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
 
     private final LocusComparator<Locus> locusComparator = new LocusComparator<>();
 
-    /**
-     * Last processed interval, relevant only if list of intervals is defined.
-     */
-    private int lastInterval = 0;
-
 
 
     public SAMFileHeader getHeader() {
@@ -159,7 +154,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      *
      * @param samReader    must be coordinate sorted
      * @param intervalList Either the list of desired intervals, or null.  Note that if an intervalList is
-     *                     passed in that is not coordinate sorted, it will eventually be coordinated sorted by this class.
+     *                     passed in that is not coordinate sorted, it will eventually be coordinated sorted here.
      * @param useIndex     If true, do indexed lookup to improve performance.  Not relevant if intervalList == null.
      *                     It is no longer the case the useIndex==true can make performance worse.  It should always perform at least
      *                     as well as useIndex==false, and generally will be much faster.
@@ -176,8 +171,14 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
         this.samReader = samReader;
         this.useIndex = useIndex;
         if (intervalList != null) {
-            intervals = intervalList.uniqued().getIntervals();
-            this.referenceSequenceMask = new IntervalListReferenceSequenceMask(intervalList);
+            if (!intervalList.getHeader().getSequenceDictionary().isSameDictionary(getHeader().getSequenceDictionary())) {
+                throw new SAMException("The sequence dictionary of the interval list file differs from the sequence dictionary of the input SAM file.");
+            }
+
+            final boolean intervalListIsSorted = intervalList.getHeader().getSortOrder() == SAMFileHeader.SortOrder.coordinate;
+            final IntervalList sortedIntervalList = intervalListIsSorted ? intervalList : intervalList.sorted();
+            intervals = sortedIntervalList.uniqued().getIntervals();
+            this.referenceSequenceMask = new IntervalListReferenceSequenceMask(sortedIntervalList);
         } else {
             intervals = null;
             this.referenceSequenceMask = new WholeGenomeReferenceSequenceMask(samReader.getFileHeader());
@@ -264,6 +265,9 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      */
     @Override
     public K next() {
+        if (this.samIterator == null) {
+            iterator();
+        }
         // if we don't have any completed entries to return, try and make some!
         while (complete.isEmpty() && samHasMore()) {
             final SAMRecord rec = samIterator.peek();
@@ -574,11 +578,6 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
 
     protected List<Interval> getIntervals() {
         return intervals;
-    }
-
-    protected Interval getCurrentInterval() {
-        if (intervals == null) return null;
-        return intervals.get(lastInterval);
     }
 
     public boolean isIncludeIndels() {
