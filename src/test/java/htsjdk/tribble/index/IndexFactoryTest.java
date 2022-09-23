@@ -166,7 +166,7 @@ public class IndexFactoryTest extends HtsjdkTest {
             final File inputVCF,
             final Interval queryInterval) throws IOException {
         // copy the original file and create the index for the copy
-        final File tempDir = IOUtil.createTempDir("testCreateTabixIndexFromVCF", null);
+        final File tempDir = IOUtil.createTempDir("testCreateTabixIndexFromVCF").toFile();
         tempDir.deleteOnExit();
         final File tmpVCF = new File(tempDir, inputVCF.getName());
         Files.copy(inputVCF, tmpVCF);
@@ -208,7 +208,7 @@ public class IndexFactoryTest extends HtsjdkTest {
     @Test(dataProvider = "bcfDataFactory")
     public void testCreateLinearIndexFromBCF(final File inputBCF) throws IOException {
         // copy the original file and create the index for the copy
-        final File tempDir = IOUtil.createTempDir("testCreateIndexFromBCF", null);
+        final File tempDir = IOUtil.createTempDir("testCreateIndexFromBCF").toFile();
         tempDir.deleteOnExit();
         final File tmpBCF = new File(tempDir, inputBCF.getName());
         Files.copy(inputBCF, tmpBCF);
@@ -250,7 +250,7 @@ public class IndexFactoryTest extends HtsjdkTest {
     @Test(dataProvider = "getRedirectFiles")
     public void testIndexRedirectedFiles(String input, IndexFactory.IndexType type) throws IOException {
         final VCFRedirectCodec codec = new VCFRedirectCodec();
-        final File dir = IOUtil.createTempDir("redirec-test", "dir");
+        final File dir = IOUtil.createTempDir("redirec-test.dir").toFile();
         try {
             final File tmpInput = new File(dir, new File(input).getName());
             Files.copy(new File(input), tmpInput);

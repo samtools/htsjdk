@@ -52,7 +52,7 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
         final File testBam =  new File(TEST_DATA_DIR, "BAMFileIndexTest/index_test.bam");
 
         //create a temp dir with a space in the name and copy the test file there
-        final File tempDir = IOUtil.createTempDir("test spaces", "");
+        final File tempDir = IOUtil.createTempDir("test spaces").toFile();
         Assert.assertTrue(tempDir.getAbsolutePath().contains(" "));
         tempDir.deleteOnExit();
         final File inputBam = new File(tempDir, "index_test.bam");

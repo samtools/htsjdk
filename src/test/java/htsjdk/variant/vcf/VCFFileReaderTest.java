@@ -110,7 +110,7 @@ public class VCFFileReaderTest extends HtsjdkTest {
         // Copy the input files into a temporary directory with embedded spaces in the name.
         // This test needs to include the associated .tbi file because we want to force execution
         // of the tabix code path.
-        final File tempDir = IOUtil.createTempDir("test spaces", "");
+        final File tempDir = IOUtil.createTempDir("test spaces").toFile();
         Assert.assertTrue(tempDir.getAbsolutePath().contains(" "));
         tempDir.deleteOnExit();
         final File inputVCF = new File(tempDir, "HiSeq.10000.vcf.bgz");

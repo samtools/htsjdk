@@ -222,7 +222,7 @@ public class BAMMergerTest extends HtsjdkTest {
 
     @Test
     public void test() throws IOException {
-        final Path outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".", ".tmp").toPath();
+        final Path outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".tmp");
         IOUtil.deleteOnExit(outputDir);
 
         final Path outputBam = File.createTempFile(this.getClass().getSimpleName() + ".", ".bam").toPath();

@@ -312,7 +312,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "fileNamesForDelete")
     public void testDeletePathLocal(final List<String> fileNames) throws Exception {
-        final File tmpDir = IOUtil.createTempDir("testDeletePath", "");
+        final Path tmpDir = IOUtil.createTempDir("testDeletePath");
         final List<Path> paths = createLocalFiles(tmpDir, fileNames);
         testDeletePaths(paths);
     }
@@ -341,7 +341,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "fileNamesForDelete")
     public void testDeleteArrayPathLocal(final List<String> fileNames) throws Exception {
-        final File tmpDir = IOUtil.createTempDir("testDeletePath", "");
+        final Path tmpDir = IOUtil.createTempDir("testDeletePath");
         final List<Path> paths = createLocalFiles(tmpDir, fileNames);
         testDeletePathArray(paths);
     }
@@ -365,12 +365,11 @@ public class IOUtilTest extends HtsjdkTest {
         paths.forEach(p -> Assert.assertFalse(Files.exists(p)));
     }
 
-    private static List<Path> createLocalFiles(final File tmpDir, final List<String> fileNames) throws Exception {
+    private static List<Path> createLocalFiles(final Path tmpDir, final List<String> fileNames) throws Exception {
         final List<Path> paths = new ArrayList<>(fileNames.size());
         for (final String f: fileNames) {
-            final File file = new File(tmpDir, f);
-            Assert.assertTrue(file.createNewFile(), "failed to create test file" +file);
-            paths.add(file.toPath());
+            final Path file = Files.createFile(tmpDir.resolve(f));
+            paths.add(file);
         }
         return paths;
     }

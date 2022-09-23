@@ -63,7 +63,7 @@ public class FastaSequenceIndexCreatorTest extends HtsjdkTest {
     @Test(dataProvider = "indexedSequences")
     public void testCreate(final File indexedFile) throws Exception {
         // copy the file to index
-        final File tempDir = IOUtil.createTempDir("FastaSequenceIndexCreatorTest", "testCreate");
+        final File tempDir = IOUtil.createTempDir("FastaSequenceIndexCreatorTest.testCreate").toFile();
         final File copied = new File(tempDir, indexedFile.getName());
         copied.deleteOnExit();
         Files.copy(indexedFile.toPath(), copied.toPath());
