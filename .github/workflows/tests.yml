@@ -40,8 +40,8 @@ jobs:
         run: scripts/htsget-scripts/start-htsget-test-server.sh
       - name: Run tests
         run: ./gradlew test jacocoTestReport
-      - name: Upload to codecov
-        run:  bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
+#      - name: Upload to codecov
+#        run:  bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v2
@@ -66,8 +66,8 @@ jobs:
         run: ./gradlew compileJava
       - name: Run tests
         run: ./gradlew testFTP jacocoTestReport
-      - name: Upload to codecov
-        run: bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
+#      - name: Upload to codecov
+#        run: bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v2
@@ -92,8 +92,8 @@ jobs:
         run: ./gradlew compileJava
       - name: Run tests
         run: ./gradlew testFTP jacocoTestReport
-      - name: Upload to codecov
-        run: bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
+#      - name: Upload to codecov
+#        run: bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v2
