@@ -190,7 +190,7 @@ public class TabixIndexTest extends HtsjdkTest {
             final List<Interval> queryIntervals
     ) throws Exception {
         // copy the input file and create an index for the copy
-        final File tempDir = IOUtil.createTempDir("testBedTabixIndex", null);
+        final File tempDir = IOUtil.createTempDir("testBedTabixIndex.tmp").toFile();
         tempDir.deleteOnExit();
         final File tmpBed = new File(tempDir, inputBed.getName());
         Files.copy(inputBed, tmpBed);

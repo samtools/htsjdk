@@ -271,11 +271,11 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     public void test_roundtrip_many_reads() throws IOException {
 
         // Create the input file
-        final File outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".", ".tmp");
+        final File outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".tmp").toFile();
         outputDir.deleteOnExit();
         final Path output = new File(outputDir, "input.cram").toPath();
         IOUtil.deleteOnExit(output);
-        final Path fastaDir = IOUtil.createTempDir("CRAMFileWriterTest", "").toPath();
+        final Path fastaDir = IOUtil.createTempDir("CRAMFileWriterTest");
         IOUtil.deleteOnExit(fastaDir);
         final Path newFasta = fastaDir.resolve("input.fasta");
         IOUtil.deleteOnExit(newFasta);

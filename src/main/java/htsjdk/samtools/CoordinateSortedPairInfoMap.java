@@ -56,7 +56,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
     /**
      * directory where files will go
      */
-    private final File workDir = IOUtil.createTempDir("CSPI.", null);
+    private final File workDir = IOUtil.createTempDir("CSPI.tmp").toFile();
     private int sequenceIndexOfMapInRam = INVALID_SEQUENCE_INDEX;
     private Map<KEY, REC> mapInRam = null;
     private final FileAppendStreamLRUCache outputStreams;
