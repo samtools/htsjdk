@@ -45,27 +45,27 @@ public class RANSNx16Params implements RANSParams {
         return ((formatFlags & N32_FLAG_MASK) == 0) ? 4 : 32;
     }
 
-    public boolean getStripe(){
+    public boolean isStripe(){
         // multiway interleaving of byte streams
         return ((formatFlags & STRIPE_FLAG_MASK)!=0);
     }
 
-    public boolean getNosz(){
+    public boolean isNosz(){
         // original size is not recorded (for use by Stripe)
         return ((formatFlags & NOSZ_FLAG_MASK)!=0);
     }
 
-    public boolean getCAT(){
+    public boolean isCAT(){
         // Data is uncompressed
         return ((formatFlags & CAT_FLAG_MASK)!=0);
     }
 
-    public boolean getRLE(){
+    public boolean isRLE(){
         // Run length encoding, with runs and literals encoded separately
         return ((formatFlags & RLE_FLAG_MASK)!=0);
     }
 
-    public boolean getPack(){
+    public boolean isPack(){
         // Pack 2, 4, 8 or infinite symbols per byte
         return ((formatFlags & PACK_FLAG_MASK)!=0);
     }

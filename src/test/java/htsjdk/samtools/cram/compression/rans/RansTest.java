@@ -230,13 +230,13 @@ public class RansTest extends HtsjdkTest {
                 numSym++;
             }
         }
-        if (params.getPack() & (numSym == 0 | numSym > 16)) {
+        if (params.isPack() & (numSym == 0 | numSym > 16)) {
             Assert.assertEquals(FormatFlags, params.getFormatFlags() & ~RANSNx16Params.PACK_FLAG_MASK);
         } else {
             Assert.assertEquals(FormatFlags, params.getFormatFlags());
         }
         // if nosz flag is not set, then the uncompressed size is recorded
-        if (!params.getNosz()){
+        if (!params.isNosz()){
             Assert.assertEquals(Utils.readUint7(compressed), size);
         }
     }
@@ -279,13 +279,13 @@ public class RansTest extends HtsjdkTest {
                 numSym++;
             }
         }
-        if (params.getPack() & (numSym == 0 | numSym > 16)) {
+        if (params.isPack() & (numSym == 0 | numSym > 16)) {
             Assert.assertEquals(FormatFlags, (byte) (params.getFormatFlags() & ~RANSNx16Params.PACK_FLAG_MASK));
         } else {
             Assert.assertEquals(FormatFlags, (byte) params.getFormatFlags());
         }
         // if nosz flag is not set, then the uncompressed size is recorded
-        if (!params.getNosz()){
+        if (!params.isNosz()){
             Assert.assertEquals(Utils.readUint7(compressed), size);
         }
     }
