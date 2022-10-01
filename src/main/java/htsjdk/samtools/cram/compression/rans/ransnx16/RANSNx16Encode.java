@@ -30,7 +30,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // TODO: add methods to handle various flags
 
         //  NoSize
-        if (!ransNx16Params.getNosz()) {
+        if (!ransNx16Params.isNosz()) {
             // original size is not recorded
             int insize = inBuffer.remaining();
             Utils.writeUint7(insize,outBuffer);
@@ -40,12 +40,12 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // Stripe
         // Stripe flag is not implemented in the write implementation
-        if (ransNx16Params.getStripe()) {
+        if (ransNx16Params.isStripe()) {
             throw new CRAMException("RANSNx16 Encoding with Stripe Flag is not implemented.");
         }
 
         // Pack
-        if (ransNx16Params.getPack()) {
+        if (ransNx16Params.isPack()) {
             final int[] frequencyTable = new int[Constants.NUMBER_OF_SYMBOLS];
             final int inSize = inputBuffer.remaining();
             for (int i = 0; i < inSize; i ++) {
@@ -69,12 +69,12 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
 
         // RLE
-        if (ransNx16Params.getRLE()){
+        if (ransNx16Params.isRLE()){
             inputBuffer = encodeRLE(inputBuffer, ransNx16Params, outBuffer);
         }
 
 
-        if (ransNx16Params.getCAT()) {
+        if (ransNx16Params.isCAT()) {
             // Data is uncompressed
             outBuffer.put(inputBuffer);
             outBuffer.limit(outBuffer.position());

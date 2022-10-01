@@ -33,10 +33,10 @@ public class RANSNx16Decode extends RANSDecode {
         final RANSNx16Params ransNx16Params = new RANSNx16Params(formatFlags);
 
         // if nosz flag is set, then uncompressed size is not recorded.
-        outSize = ransNx16Params.getNosz() ? outSize : Utils.readUint7(inBuffer);
+        outSize = ransNx16Params.isNosz() ? outSize : Utils.readUint7(inBuffer);
 
         // if stripe, then decodeStripe
-        if (ransNx16Params.getStripe()) {
+        if (ransNx16Params.isStripe()) {
             return decodeStripe(inBuffer, outSize);
         }
 
@@ -44,7 +44,7 @@ public class RANSNx16Decode extends RANSDecode {
         int packDataLength = 0;
         int numSymbols = 0;
         int[] packMappingTable = new int[0];
-        if (ransNx16Params.getPack()){
+        if (ransNx16Params.isPack()){
             packDataLength = outSize;
             numSymbols = inBuffer.get() & 0xFF;
 
@@ -65,7 +65,7 @@ public class RANSNx16Decode extends RANSDecode {
         int uncompressedRLEOutputLength = 0;
         final int[] rleSymbols = new int[Constants.NUMBER_OF_SYMBOLS];
         ByteBuffer uncompressedRLEMetaData = null;
-        if (ransNx16Params.getRLE()){
+        if (ransNx16Params.isRLE()){
             uncompressedRLEMetaDataLength = Utils.readUint7(inBuffer);
             uncompressedRLEOutputLength = outSize;
             outSize = Utils.readUint7(inBuffer);
@@ -74,7 +74,7 @@ public class RANSNx16Decode extends RANSDecode {
         }
 
         // If CAT is set then, the input is uncompressed
-        if (ransNx16Params.getCAT()){
+        if (ransNx16Params.isCAT()){
             byte[] data = new byte[outSize];
             inBuffer.get( data,0, outSize);
             return ByteBuffer.wrap(data);
@@ -95,12 +95,12 @@ public class RANSNx16Decode extends RANSDecode {
             }
 
             // if rle, then decodeRLE
-            if (ransNx16Params.getRLE() && uncompressedRLEMetaData!=null ){
+            if (ransNx16Params.isRLE() && uncompressedRLEMetaData!=null ){
                 outBuffer = decodeRLE(outBuffer,rleSymbols,uncompressedRLEMetaData, uncompressedRLEOutputLength);
             }
 
             // if pack, then decodePack
-            if (ransNx16Params.getPack() && packMappingTable.length > 0) {
+            if (ransNx16Params.isPack() && packMappingTable.length > 0) {
                 outBuffer = decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
             }
             return outBuffer;
