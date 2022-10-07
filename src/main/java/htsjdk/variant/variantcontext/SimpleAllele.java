@@ -76,7 +76,7 @@ public class SimpleAllele implements Allele {
         this.bases = bases;
 
         if ( ! Allele.acceptableAlleleBases(bases, isRef) )
-            throw new IllegalArgumentException("Unexpected base in allele bases \'" + new String(bases)+"\'");
+            throw new IllegalArgumentException("Unexpected base in allele bases '" + new String(bases)+"'");
     }
 
     protected SimpleAllele(final String bases, final boolean isRef) {
