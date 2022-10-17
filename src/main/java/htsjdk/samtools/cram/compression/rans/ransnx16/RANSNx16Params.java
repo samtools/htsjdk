@@ -36,7 +36,7 @@ public class RANSNx16Params implements RANSParams {
     }
 
     public int getFormatFlags(){
-        // Least significant 7 bits of the format
+        // first byte of the encoded stream
         return formatFlags & FORMAT_FLAG_MASK;
     }
 

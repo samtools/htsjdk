@@ -24,10 +24,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             return EMPTY_BUFFER;
         }
         final ByteBuffer outBuffer = allocateOutputBuffer(inBuffer.remaining());
-        final int formatFlags = ransNx16Params.getFormatFlags() & 0xFF;
+        final int formatFlags = ransNx16Params.getFormatFlags();
         outBuffer.put((byte) (formatFlags)); // one byte for formatFlags
-
-        // TODO: add methods to handle various flags
 
         //  NoSize
         if (!ransNx16Params.isNosz()) {
