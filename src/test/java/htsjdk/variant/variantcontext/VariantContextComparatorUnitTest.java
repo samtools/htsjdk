@@ -22,6 +22,19 @@ public class VariantContextComparatorUnitTest extends HtsjdkTest {
     }
 
     @Test
+    public void testVariantContextsWithSameSiteSortLexicographicallyByAlleleIdentical() {
+        final String contig = "chr1";
+        final VariantContextComparator comparator = new VariantContextComparator(Collections.singletonList(contig));
+        final VariantContextBuilder builder = new VariantContextBuilder("test", contig, 1, 1, Collections.emptyList());
+
+        final VariantContext variant1 = builder.alleles(Arrays.asList(refA, altG)).make();
+        final VariantContext variant2 = builder.alleles(Arrays.asList(refA, altG)).make();
+
+        final int compare = comparator.compare(variant1, variant2);
+        Assert.assertEquals(compare, 0); // TODO: What other criteria might we sort by to break this tie?
+    }
+
+    @Test
     public void testVariantContextsWithSameSiteSortLexicographicallyByAllele() {
         final String contig = "chr1";
         final VariantContextComparator comparator = new VariantContextComparator(Collections.singletonList(contig));
