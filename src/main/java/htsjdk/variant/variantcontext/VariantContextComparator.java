@@ -88,11 +88,14 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 		if (contigCompare == 0) {
 			// Compare variants that have the same genomic span (chr:start-end) lexicographically by all alleles (ref and alts).
 			for (int i = 0; i < firstVariantContext.getAlleles().size(); i++) {
-				if (i > secondVariantContext.getAlleles().size()) { return 1; }
+				// If all previous alleles are identical and the first variant has additional alleles, make the first variant greater.
+				if (i >= secondVariantContext.getAlleles().size()) { return 1; }
 				contigCompare = firstVariantContext.getAlleles().get(i).compareTo(secondVariantContext.getAlleles().get(i));
 				if (contigCompare != 0) return contigCompare;
 			}
 		}
+		// If all previous alleles are identical and the second variant has additional alleles, make the second variant greater.
+		if (firstVariantContext.getAlleles().size() < secondVariantContext.getAlleles().size()) { return -1; }
 		return contigCompare;
 	}
 
