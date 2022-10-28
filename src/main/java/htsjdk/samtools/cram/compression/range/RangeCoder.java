@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 public class RangeCoder {
 
-    private int low;
+    private long low;
     private long range;
     private int code;
     private int FFnum;
@@ -13,12 +13,12 @@ public class RangeCoder {
 
     public RangeCoder() {
         // Spec: RangeEncodeStart
-        low = 0;
-        range = 0xffffffff; // 4 bytes of all 1's (2**32 - 1)
-        code = 0;
-        FFnum = 0;
-        carry = false;
-        cache = 0;
+        this.low = 0;
+        this.range = 0xFFFFFFFFL; // 4 bytes of all 1's
+        this.code = 0;
+        this.FFnum = 0;
+        this.carry = false;
+        this.cache = 0;
     }
 
     public int rangeGetFrequency(final int tot_freq){
@@ -34,7 +34,7 @@ public class RangeCoder {
         // "cache" holds the top byte that will be flushed to the output
 
 
-        if ((low < 0xff000000) || carry) {
+        if ((low < 0xff000000L) || carry) { //TODO: 0xff000000L make this magic number a constant
             if (carry == false) {
                 outBuffer.put((byte) cache);
                 while (FFnum > 0) {
@@ -49,21 +49,20 @@ public class RangeCoder {
                 }
 
             }
-            cache = low >> 24; // Copy of top byte ready for next flush
+            cache = (int) (low >> 24); // Copy of top byte ready for next flush
             carry = false;
         } else {
             FFnum++;
         }
-        low = low << 8;
-        // TODO: is it necessary to do -> low = low >>> 0 // keep "low" positive
-        // i.e, arithmetic right shift by 0 bits?
+
+        low = (low<<8) & (0xFFFFFFFFL); // truncate top byte or keep bottom 4 bytes
     }
 
     public void rangeEncode(final ByteBuffer outBuffer, final int sym_low, final int sym_freq, final int tot_freq){
-        int old_low = low;
+        long old_low = low;
         range = (long) Math.floor(range/tot_freq);
         low += sym_low * range;
-        low >>>=0; // TODO: Inspect this!! Truncate to +ve int so we can spot overflow
+        low = low & (0xFFFFFFFFL); // keep bottom 4 bytes
         range *= sym_freq;
 
         if (low < old_low) {

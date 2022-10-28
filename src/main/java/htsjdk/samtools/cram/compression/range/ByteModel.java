@@ -1,24 +1,26 @@
 package htsjdk.samtools.cram.compression.range;
 
-import com.sun.org.apache.xalan.internal.xsltc.compiler.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
 
 public class ByteModel {
-    // Is this analogous to Arithmetic Decoder in rans
-
+    // spec: To encode any symbol the entropy encoder needs to know
+    // the frequency of the symbol to encode,
+    // the cumulative frequencies of all symbols prior to this symbol,
+    // and the total of all frequencies.
     public int totalFrequency;
     public int maxSymbol;
-    public final int[] symbols =new int[Constants.NUMBER_OF_SYMBOLS];
-    public final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
+    public final int[] symbols;
+    public final int[] frequencies;
 
     public ByteModel(final int numSymbols) {
         // Spec: ModelCreate method
         this.totalFrequency = numSymbols;
         this.maxSymbol = numSymbols - 1;
-        for (int i = 0; i < maxSymbol; i++) {
-            this.symbols[i] = 0;
-            this.frequencies[i] = 0;
+        frequencies = new int[maxSymbol+1];
+        symbols = new int[maxSymbol+1];
+        for (int i = 0; i <= maxSymbol; i++) {
+            this.symbols[i] = i;
+            this.frequencies[i] = 1;
         }
     }
 

@@ -1,16 +1,12 @@
 package htsjdk.samtools.cram.compression.range;
 
-
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.compression.rans.Utils;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class RangeEncode {
+public class RangeEncode<T extends RangeParams> {
 
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
-//    private static final int MINIMUM__ORDER_1_SIZE = 4;
 
     public ByteBuffer compress(final ByteBuffer inBuffer, final RangeParams rangeParams) {
         if (inBuffer.remaining() == 0) {
@@ -128,6 +124,7 @@ public class RangeEncode {
         }
         maxSymbol++; // TODO: Is this correct? Not what spec states!!
 
+        // TODO: initialize byteModel -> set and reset symbols?
         ByteModel byteModel = new ByteModel(maxSymbol);
         outBuffer.put((byte) maxSymbol);
 
@@ -135,13 +132,14 @@ public class RangeEncode {
         RangeCoder rangeCoder = new RangeCoder();
 
         for (int i=0; i <inSize; i++){
-            byteModel.modelEncode(outBuffer,rangeCoder,inBuffer.getInt(i));
+            byteModel.modelEncode(outBuffer,rangeCoder,inBuffer.get(i));
         }
         rangeCoder.rangeEncodeEnd(outBuffer);
 
         // TODO: should we set littleEndian true somehwere?
+        outBuffer.limit(outBuffer.position());
+        outBuffer.rewind();
         return outBuffer;
-
     }
 
 
