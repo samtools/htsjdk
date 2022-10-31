@@ -14,7 +14,9 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -63,8 +65,9 @@ public class RansTest extends HtsjdkTest {
     }
 
     public Object[][] getRansTestDataTinySmallLarge() {
+
+        // params: test data, lower limit, upper limit
         return new Object[][]{
-                // params: test data, lower limit, upper limit
                 { new TestDataEnvelope(randomBytesFromGeometricDistribution(100, 0.1)), 1, 100 }, // Tiny
                 { new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)), 4, 1000 }, // Small
                 { new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01)), 100 * 1000 + 3 - 4, 100 * 1000 + 3 } // Large
@@ -73,87 +76,66 @@ public class RansTest extends HtsjdkTest {
 
     @DataProvider(name="rans4x8")
     public Object[][] getRans4x8Codecs() {
-        final RANS4x8Encode rans4x8Encode = new RANS4x8Encode();
-        final RANS4x8Decode rans4x8Decode = new RANS4x8Decode();
+
+        // params: RANS encoder, RANS decoder, RANS params
         return new Object[][]{
-                {rans4x8Encode, rans4x8Decode, new RANS4x8Params(RANSParams.ORDER.ZERO)}, // RANS4x8 Order 0
-                {rans4x8Encode, rans4x8Decode, new RANS4x8Params(RANSParams.ORDER.ONE)} // RANS4x8 Order 1
+                {new RANS4x8Encode(), new RANS4x8Decode(), new RANS4x8Params(RANSParams.ORDER.ZERO)},
+                {new RANS4x8Encode(), new RANS4x8Decode(), new RANS4x8Params(RANSParams.ORDER.ONE)}
         };
     }
 
     @DataProvider(name="ransNx16")
     public Object[][] getRansNx16Codecs() {
-        final RANSNx16Encode ransNx16Encode = new RANSNx16Encode();
-        final RANSNx16Decode ransNx16Decode = new RANSNx16Decode();
-        // TODO: More formatFlags values i.e, combinations of bit flags will be added later
-        return new Object[][]{
 
-                //RANSNx16 formatFlags(first byte) 0: Order 0, N = 4, CAT false
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x00)} ,
-
-                //RANSNx16 formatFlags(first byte) 1: Order 1, N = 4, CAT false
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x01)} ,
-
-                //RANSNx16 formatFlags(first byte) 4: Order 0, N = 32, CAT false
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x04)} ,
-
-                //RANSNx16 formatFlags(first byte) 5: Order 1, N = 32, CAT false
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x05)} ,
-
-                //RANSNx16 formatFlags(first byte) 32: Order 0, N = 4, CAT true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x20)} ,
-
-                //RANSNx16 formatFlags(first byte) 33: Order 1, N = 4, CAT true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x21)} ,
-
-                //RANSNx16 formatFlags(first byte) 36: Order 0, N = 32, CAT true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x24)} ,
-
-                //RANSNx16 formatFlags(first byte) 37: Order 1, N = 32, CAT true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x25)} ,
-
-                //RANSNx16 formatFlags(first byte) 64: Order 0, N = 4, CAT false, RLE = true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x40)} ,
-
-                //RANSNx16 formatFlags(first byte) 65: Order 1, N = 4, CAT false, RLE = true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x41)} ,
-
-                //RANSNx16 formatFlags(first byte) 128: Order 0, N = 4, CAT false, RLE = false, Pack = true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x80)} ,
-
-                //RANSNx16 formatFlags(first byte) 129: Order 1, N = 4, CAT false, RLE = false, Pack = true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x81)} ,
-
-                //RANSNx16 formatFlags(first byte) 192: Order 0, N = 4, CAT false, RLE = true, Pack = true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0xC0)} ,
-
-                //RANSNx16 formatFlags(first byte) 193: Order 1, N = 4, CAT false, RLE = true, Pack = true
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0xC1)} ,
-
-        };
+        // params: RANS encoder, RANS decoder, RANS params
+        final List<Integer> ransNx16ParamsFormatFlagList = Arrays.asList(
+                0x00,
+                RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.N32_FLAG_MASK,
+                RANSNx16Params.N32_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.CAT_FLAG_MASK,
+                RANSNx16Params.CAT_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.CAT_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK,
+                RANSNx16Params.CAT_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.PACK_FLAG_MASK,
+                RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK
+        );
+        final List<Object[]> testCases = new ArrayList<>();
+        for (Integer ransNx16ParamsFormatFlag : ransNx16ParamsFormatFlagList) {
+            Object[] objects = new Object[]{
+                    new RANSNx16Encode(),
+                    new RANSNx16Decode(),
+                    new RANSNx16Params(ransNx16ParamsFormatFlag)
+            };
+            testCases.add(objects);
+        }
+        return testCases.toArray(new Object[][]{});
     }
 
     public Object[][] getRansNx16DecodeOnlyCodecs() {
-        final RANSNx16Encode ransNx16Encode = new RANSNx16Encode();
-        final RANSNx16Decode ransNx16Decode = new RANSNx16Decode();
+
+        // params: RANS encoder, RANS decoder, RANS params
         return new Object[][]{
-
-                //RANSNx16 formatFlags(first byte) 8: Order 0, N = 4, CAT false, RLE = false, Pack = false, Stripe = True
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x08)},
-
-                //RANSNx16 formatFlags(first byte) 9: Order 1, N = 4, CAT false, RLE = false, Pack = false, Stripe = True
-                {ransNx16Encode, ransNx16Decode, new RANSNx16Params(0x09)}
+                {new RANSNx16Encode(), new RANSNx16Decode(), new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK)},
+                {new RANSNx16Encode(), new RANSNx16Decode(), new RANSNx16Params(RANSNx16Params.ORDER_FLAG_MASK|RANSNx16Params.STRIPE_FLAG_MASK)}
         };
     }
 
     @DataProvider(name="RansNx16DecodeOnlyAndData")
     public Object[][] getRansNx16DecodeOnlyAndData() {
 
-        // this data provider provides all the testdata except empty input for RANS Nx16 codec
+        // params: RANS encoder, RANS decoder, RANS params, test data
+        // this data provider provides all the non-empty testdata input for RANS Nx16 codec
         return TestNGUtils.cartesianProduct(getRansNx16DecodeOnlyCodecs(), getRansTestData());
     }
 
     public Object[][] getAllRansCodecs() {
+
+        // params: RANSEncode, RANSDecode, RANSParams
         // concatenate RANS4x8 and RANSNx16 codecs
         return Stream.concat(Arrays.stream(getRans4x8Codecs()), Arrays.stream(getRansNx16Codecs()))
                 .toArray(Object[][]::new);
@@ -162,8 +144,8 @@ public class RansTest extends HtsjdkTest {
     @DataProvider(name="allRansAndData")
     public Object[][] getAllRansAndData() {
 
+        // params: RANSEncode, RANSDecode, RANSParams, test data
         // this data provider provides all the testdata for all of RANS codecs
-        // params: RANSEncode, RANSDecode, RANSParams, data
         return Stream.concat(
                 Arrays.stream(TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansTestData())),
                 Arrays.stream(TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansEmptyTestData())))
@@ -173,8 +155,8 @@ public class RansTest extends HtsjdkTest {
     @DataProvider(name="allRansAndDataForTinySmallLarge")
     public Object[][] getAllRansAndDataForTinySmallLarge() {
 
+        // params: RANSEncode, RANSDecode, RANSParams, test data, lower limit, upper limit
         // this data provider provides Tiny, Small and Large testdata for all of RANS codecs
-        // params: RANSEncode, RANSDecode, RANSParams, data, lower limit, upper limit
         return TestNGUtils.cartesianProduct(getAllRansCodecs(), getRansTestDataTinySmallLarge());
     }
 
@@ -324,15 +306,7 @@ public class RansTest extends HtsjdkTest {
         final ByteBuffer compressed = ransEncode.compress(data, params);
         final ByteBuffer uncompressed = ransDecode.uncompress(compressed);
         data.rewind();
-//        Assert.assertEquals(data, uncompressed);
-
-        while (data.hasRemaining()) {
-            if (!uncompressed.hasRemaining()) {
-                Assert.fail("Premature end of uncompressed data.");
-            }
-            Assert.assertEquals(uncompressed.get(), data.get());
-        }
-        Assert.assertFalse(uncompressed.hasRemaining());
+        Assert.assertEquals(data, uncompressed);
     }
 
     public ByteBuffer ransBufferMeetBoundaryExpectations(
