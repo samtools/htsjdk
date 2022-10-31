@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.compression.rans.rans4x8;
 
 import htsjdk.samtools.cram.compression.rans.RANSParams;
+import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
 
 public class RANS4x8Params implements RANSParams {
 
@@ -21,7 +22,9 @@ public class RANS4x8Params implements RANSParams {
     }
 
     public int getFormatFlags(){
-        return order.ordinal();
+        return order == ORDER.ONE ?
+                RANSNx16Params.ORDER_FLAG_MASK :
+                0;
     }
 
 }
