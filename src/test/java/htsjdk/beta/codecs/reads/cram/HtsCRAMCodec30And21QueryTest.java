@@ -586,18 +586,18 @@ public class HtsCRAMCodec30And21QueryTest extends HtsjdkTest {
     public Object[][] alignmentStartQueries() {
         return new Object[][] {
                 // cram file, reference, query contig, alignment start query, number of reads with matching alignment start
-                {cramQueryWithCRAI, cramQueryReference, "20", 100013, 2},
-                {cramQueryWithLocalCRAI, cramQueryReference, "20", 100013, 2},
-                {cramQueryWithBAI, cramQueryReference, "20", 100013, 2},
+                {cramQueryWithCRAI, cramQueryReference, "20", 100013L, 2},
+                {cramQueryWithLocalCRAI, cramQueryReference, "20", 100013L, 2},
+                {cramQueryWithBAI, cramQueryReference, "20", 100013L, 2},
                 // tests to ensure that query results on inputs that have matching reads that are followed by reads
                 // in the same container that don't match the alignment start are properly constrained to only the
                 // matching reads
                 {new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.cram"),
                         new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.fa"),
-                        "Mito", 631, 24},
+                        "Mito", 631L, 24},
                 {new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTestGATKGen.cram"),
                         new HtsPath(TEST_DATA_DIR + "mitoAlignmentStartTest.fa"),
-                        "Mito", 631, 24},
+                        "Mito", 631L, 24},
         };
     }
 
