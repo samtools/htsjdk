@@ -175,10 +175,12 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         throws IOException {
         this(useAsynchronousIO ? new AsyncBlockCompressedInputStream(file, inflaterFactory) : new BlockCompressedInputStream(file, inflaterFactory),
                 indexFile!=null ? indexFile : SamFiles.findIndex(file), eagerDecode, useAsynchronousIO, file.getAbsolutePath(), validationStringency, samRecordFactory);
-        if (mIndexFile != null && mIndexFile.lastModified() < file.lastModified()) {
+
+        if (mIndexFile != null && mIndexFile.lastModified() < file.lastModified() - 5000) {
             System.err.println("WARNING: BAM index file " + mIndexFile.getAbsolutePath() +
                     " is older than BAM " + file.getAbsolutePath());
         }
+
         // Provide better error message when there is an error reading.
         mStream.setInputFileName(file.getAbsolutePath());
     }
