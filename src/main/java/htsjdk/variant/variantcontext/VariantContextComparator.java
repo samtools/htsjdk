@@ -11,19 +11,22 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * A Comparator that orders VariantContexts by the ordering of the contigs/chromosomes in the List
- * provided at construction time, then by start position with each contig/chromosome.
+ * provided at construction time, then by start position with each contig/chromosome, then by Ref
+ * and finally by order agnostic Alt alleles
  */
 public class VariantContextComparator implements Comparator<VariantContext>, Serializable {
 	private static final long serialVersionUID = 1L;
 
 	public static List<String> getSequenceNameList(final SAMSequenceDictionary dictionary) {
-		final List<String> list = new ArrayList<String>();
+		final List<String> list = new ArrayList<>();
 		for (final SAMSequenceRecord record : dictionary.getSequences()) {
 			list.add(record.getSequenceName());
 		}
@@ -32,11 +35,20 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 
 	// For fast lookup of the contig's index in the contig list
 	private final Map<String, Integer> contigIndexLookup;
+	private final Comparator<VariantContext> internalComparator;
+
+	private static Comparator<VariantContext> makeComparator(final Map<String, Integer> contigIndexLookup) {
+		return Comparator.comparingInt((VariantContext vc) -> contigIndexLookup.get(vc.getContig()))
+				.thenComparingInt(VariantContext::getStart)
+				.thenComparingInt(VariantContext::getEnd)
+				.thenComparing(VariantContext::getReference)
+				.thenComparing(VariantContext::getAlternateAlleles, new SortedUniquedElementsComparator<>());
+	}
 
 	public VariantContextComparator(final List<String> contigs) {
 		if (contigs.isEmpty()) throw new IllegalArgumentException("One or more contigs must be in the contig list.");
 
-		final Map<String, Integer> protoContigIndexLookup = new HashMap<String, Integer>();
+		final Map<String, Integer> protoContigIndexLookup = new HashMap<>();
 		int index = 0;
 		for (final String contig : contigs) {
 			protoContigIndexLookup.put(contig, index++);
@@ -47,6 +59,7 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 		}
 
 		this.contigIndexLookup = Collections.unmodifiableMap(protoContigIndexLookup);
+		this.internalComparator = makeComparator(this.contigIndexLookup);
 	}
 
 	/**
@@ -57,7 +70,7 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 	public VariantContextComparator(final Collection<VCFContigHeaderLine> headerLines) {
 		if (headerLines.isEmpty()) throw new IllegalArgumentException("One or more header lines must be in the header line collection.");
 
-		final Map<String, Integer> protoContigIndexLookup = new HashMap<String, Integer>();
+		final Map<String, Integer> protoContigIndexLookup = new HashMap<>();
 		for (final VCFContigHeaderLine headerLine : headerLines) {
 			protoContigIndexLookup.put(headerLine.getID(), headerLine.getContigIndex());
 		}
@@ -66,12 +79,13 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 			throw new IllegalArgumentException("There are duplicate contigs/chromosomes in the input header line collection.");
 		}
 
-		final Set<Integer> protoIndexValues = new HashSet<Integer>(protoContigIndexLookup.values());
+		final Set<Integer> protoIndexValues = new HashSet<>(protoContigIndexLookup.values());
 		if (protoIndexValues.size() != headerLines.size()) {
 			throw new IllegalArgumentException("One or more contigs share the same index number.");
 		}
 
 		this.contigIndexLookup = Collections.unmodifiableMap(protoContigIndexLookup);
+		this.internalComparator = makeComparator(this.contigIndexLookup);
 	}
 
     public VariantContextComparator(final SAMSequenceDictionary dictionary) {
@@ -83,20 +97,24 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 		// Will throw NullPointerException -- happily -- if either of the chromosomes/contigs aren't
 		// present. This error checking should already have been done in the constructor but it's left
 		// in as defence anyway.
-		int contigCompare = this.contigIndexLookup.get(firstVariantContext.getContig()).compareTo(this.contigIndexLookup.get(secondVariantContext.getContig()));
-		contigCompare = contigCompare == 0 ? firstVariantContext.getStart() - secondVariantContext.getStart() : contigCompare;
-		if (contigCompare == 0) {
-			// Compare variants that have the same genomic span (chr:start-end) lexicographically by all alleles (ref and alts).
-			for (int i = 0; i < firstVariantContext.getAlleles().size(); i++) {
-				// If all previous alleles are identical and the first variant has additional alleles, make the first variant greater.
-				if (i >= secondVariantContext.getAlleles().size()) { return 1; }
-				contigCompare = firstVariantContext.getAlleles().get(i).compareTo(secondVariantContext.getAlleles().get(i));
-				if (contigCompare != 0) return contigCompare;
+		return internalComparator.compare(firstVariantContext, secondVariantContext);
+	}
+
+	//Sorts and uniques the inputs and then compares the values pairwise in their natural order
+	//until there is a mismatch or 1 of the inputs runs out.
+	private static class SortedUniquedElementsComparator<T extends Comparable<T>> implements Comparator<Collection<T>>{
+		@Override
+		public int compare(final Collection<T> o1, final Collection<T> o2) {
+			final Iterator<T> left = new TreeSet<>(o1).iterator();
+			final Iterator<T> right = new TreeSet<>(o2).iterator();
+			while(left.hasNext() && right.hasNext()){
+				final int result = left.next().compareTo(right.next());
+				if( result != 0 ){
+					return result;
+				}
 			}
+			return Boolean.compare(left.hasNext(), right.hasNext());
 		}
-		// If all previous alleles are identical and the second variant has additional alleles, make the second variant greater.
-		if (firstVariantContext.getAlleles().size() < secondVariantContext.getAlleles().size()) { return -1; }
-		return contigCompare;
 	}
 
 	/**
