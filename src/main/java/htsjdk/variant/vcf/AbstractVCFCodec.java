@@ -886,7 +886,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     protected void generateException(String message) {
-        throw new TribbleException(String.format("The provided VCF file is malformed at approximately line number %d: %s", lineNo, message));
+        throw new TribbleException(String.format("The provided VCF file is malformed at approximately line number %d: %s", lineNo.get(), message));
     }
 
     protected static void generateException(String message, int lineNo) {
