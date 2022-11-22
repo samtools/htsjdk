@@ -163,6 +163,9 @@ public class RANSInteropTest extends HtsjdkTest {
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
             final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            final ByteBuffer compressedHtsjdkBytes = ransEncode.compress(uncompressedInteropBytes, params);
+            uncompressedInteropBytes.rewind();
+            Assert.assertEquals(ransDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
         }
     }
 
