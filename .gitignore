@@ -1,6 +1,5 @@
 htsjdk.iws
 .command_tmp
-.DS_Store
 atlassian-ide-plugin.xml
 /htsjdk.version.properties
 /test-output/
