@@ -81,7 +81,9 @@ tasks.withType(Test) { task ->
 
     // Always run serially because there are some very badly behaved tests in HTSJDK that
     // will cause errors and even deadlocks if run multi-threaded
-    task.maxParallelForks = 1
+
+    //naaah, lets try it
+    task.maxParallelForks = 2
 
     // set heap size for the test JVM(s)
     task.minHeapSize = "1G"
