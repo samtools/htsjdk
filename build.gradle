@@ -55,7 +55,8 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 final isRelease = Boolean.getBoolean("release")
-final gitVersion = versionDetails().lastTag
+//final gitVersion = versionDetails().lastTag
+final gitVersion = "2.30.0"
 version = isRelease ? gitVersion : gitVersion + "-SNAPSHOT"
 
 logger.info("build for version:" + version)
@@ -192,8 +193,12 @@ uploadArchives {
 
 //            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-            repository(url: "scp://50.19.196.47/var/lib/genestack-repo/trunk") {
-                authentication(userName: "maven", privateKey: System.getProperty("user.home") + "/.ssh/id_rsa")
+            repository(url: System.env.MAVEN_REGISTRY_RELEASES) {
+                authentication(userName: System.env.SERVICE_USER, password: System.env.SERVICE_PASSWORD)
+            }
+
+            snapshotRepository(url: System.env.MAVEN_REGISTRY_SNAPSHOTS) {
+                authentication(userName: System.env.SERVICE_USER, password: System.env.SERVICE_PASSWORD)
             }
 
 //            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
