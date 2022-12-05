@@ -35,13 +35,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -92,6 +95,8 @@ public class ReferenceSource implements CRAMReferenceSource {
      *<p><ul>
      * <li>Defaults.REFERENCE_FASTA - the value of the system property "reference_fasta". If set,
      * must refer to a valid reference file.</li>
+     * <li>Defaults.REF_CACHE - the value of the system property "ref_cache". Local disk directory
+     * where the reference files are cached.</li>
      * <li>ENA Reference Service if it is enabled</li>
      * </ul>
      */
@@ -105,6 +110,10 @@ public class ReferenceSource implements CRAMReferenceSource {
                 throw new IllegalArgumentException(
                         "The file specified by the reference_fasta property does not exist: " + Defaults.REFERENCE_FASTA.getName());
             }
+        }
+        else if (!Defaults.REF_CACHE.isEmpty()) {
+            log.info("REF_CACHE is set, so attempting to find reference file in disk cache.");
+            return new ReferenceSource((ReferenceSequenceFile)null);
         }
         else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
             log.info("USE_CRAM_REF_DOWNLOAD=true, so attempting to download reference file as needed.");
@@ -173,6 +182,14 @@ public class ReferenceSource implements CRAMReferenceSource {
         }
 
         {
+            if (!Defaults.REF_CACHE.isEmpty()) {
+                // try to fetch from local disk cache
+                bases = findBasesByMD5inLocalDiskCache(md5);
+                if (bases != null) {
+                    return addToCache(md5, bases);
+                }
+            }
+
             if (Defaults.USE_CRAM_REF_DOWNLOAD) { // try to fetch sequence by md5:
                 if (md5 != null) {
                     bases = findBasesByMD5(md5.toLowerCase());
@@ -262,6 +279,13 @@ public class ReferenceSource implements CRAMReferenceSource {
 
                 final String downloadedMD5 = SequenceUtil.calculateMD5String(data);
                 if (md5.equals(downloadedMD5)) {
+                    if(!Defaults.REF_CACHE.isEmpty()) {
+                        // save to local disk cache unless it is there already
+                        Path refFile = pathToLocalDiskCache(md5);
+                        if (!Files.exists(refFile)) {
+                            Files.write(refFile, data);
+                        }
+                    }
                     return data;
                 } else {
                     final String message = String
@@ -276,6 +300,55 @@ public class ReferenceSource implements CRAMReferenceSource {
         }
         throw new GaveUpException("Giving up on downloading sequence for md5 "
                 + md5);
+    }
+
+    private byte[] findBasesByMD5inLocalDiskCache(final String md5) {
+         Path refFile = pathToLocalDiskCache(md5);
+         if (Files.exists(refFile)) {
+             try {
+                 // read the reference if present
+                 log.info("Found reference in local disk cache: " + refFile.toString());
+                 return Files.readAllBytes(refFile);
+             } catch (IOException e) {
+                 final String message = String
+                         .format("File not found: %s", refFile.toString());
+                 log.error(message);
+             }
+         }
+         return null;
+    }
+
+    private Path pathToLocalDiskCache(final String md5) {
+        // initial segment of the path name up to the first "%"
+        String[] subdirs = Defaults.REF_CACHE.split("%");
+        StringBuilder pathName = new StringBuilder(subdirs[0]);
+        // process subdirectory names
+        Pattern pattern = Pattern.compile("(\\d*)s(.?)");
+        String rem = md5;
+        for (int i = 1; i < subdirs.length; i++) {
+            Matcher matcher = pattern.matcher(subdirs[i]);
+            if (matcher.find() && !rem.isEmpty()) {
+                if (matcher.group(1).isEmpty()) {
+                    // last segment of the path
+                    pathName.append(rem);
+                    rem = "";
+                } else {
+                    // first matched group corresponds to sub-directory name length
+                    int subdirLength = Integer.parseInt(matcher.group(1));
+                    pathName.append(rem.substring(0, subdirLength) + matcher.group(2));
+                    if (subdirLength < rem.length())
+                        rem = rem.substring(subdirLength);
+                    else
+                        rem = "";
+                }
+            } else {
+                final String message = String
+                        .format("Invalid REF_CACHE syntax: %s", Defaults.REF_CACHE);
+                log.error(message);
+                return null;
+            }
+        }
+        return Paths.get(pathName.toString());
     }
 
     private static final Pattern chrPattern = Pattern.compile("chr.*",

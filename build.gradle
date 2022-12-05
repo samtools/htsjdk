@@ -109,6 +109,24 @@ task testWithDefaultReference(type: Test) {
     }
 }
 
+task testReferenceCache(type: Test) {
+    description = "Run tests which require one-level reference cache"
+    jvmArgs += '-Dsamjdk.ref_cache=src/test/resources/htsjdk/samtools/ref_cache/%s'
+
+    tags {
+        include "refCache"
+    }
+}
+
+task testReferenceCacheMultilevel(type: Test) {
+    description = "Run tests which require multilevel reference cache"
+    jvmArgs += "-Dsamjdk.ref_cache=${temporaryDir}/%2s/%s"
+
+    tags {
+        include "refCacheMultilevel"
+    }
+}
+
 test {
     description = "Runs the unit tests other than the SRA tests"
 
@@ -124,10 +142,12 @@ test {
         exclude "http"
         exclude "sra"
         exclude "ena"
+        exclude "refCache"
+        exclude "refCacheMultilevel"
 
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
-} dependsOn findScalaAndJavaTypes, testWithDefaultReference
+} dependsOn findScalaAndJavaTypes, testWithDefaultReference, testReferenceCache, testReferenceCacheMultilevel
 
 
 task testFTP(type: Test) {
