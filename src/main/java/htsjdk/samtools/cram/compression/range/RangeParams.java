@@ -17,12 +17,13 @@ public class RangeParams {
 
     private static final int FORMAT_FLAG_MASK = 0xFF;
 
-    enum ORDER {
+    public enum ORDER {
         ZERO, ONE;
 
         public static RangeParams.ORDER fromInt(final int orderValue) {
             try {
-                return RangeParams.ORDER.values()[orderValue];
+                ORDER[] x = ORDER.values();
+                return x[orderValue];
             } catch (final ArrayIndexOutOfBoundsException e) {
                 throw new IllegalArgumentException("Unknown Range order: " + orderValue, e);
             }

@@ -6,7 +6,7 @@ public class RangeCoder {
 
     private long low;
     private long range;
-    private int code;
+    private long code;
     private int FFnum;
     private boolean carry;
     private int cache;
@@ -21,6 +21,24 @@ public class RangeCoder {
         this.cache = 0;
     }
 
+    public void rangeDecodeStart(ByteBuffer inBuffer){
+        for (int i = 0; i < 5; i++){
+
+            // Get next 5 bytes. Ensure it is +ve
+            code = (code << 8) + (inBuffer.get() & 0xFF);
+        }
+    }
+
+    public void rangeDecode(ByteBuffer inBuffer, int sym_low, int sym_freq, int tot_freq){
+        code -= sym_low * range;
+        range *= sym_freq;
+
+        while (range < (1<<24)) {
+            range <<= 8;
+            code = (code << 8) + (inBuffer.get() & 0xFF); // Ensure code is positive
+        }
+    }
+
     public int rangeGetFrequency(final int tot_freq){
         range =  (long) Math.floor(range / tot_freq);
         return (int) Math.floor(code / range);
@@ -32,7 +50,6 @@ public class RangeCoder {
 
         // range must be less than (2^24) or (1<<24) or (0x1000000)
         // "cache" holds the top byte that will be flushed to the output
-
 
         if ((low < 0xff000000L) || carry) { //TODO: 0xff000000L make this magic number a constant
             if (carry == false) {
@@ -54,15 +71,14 @@ public class RangeCoder {
         } else {
             FFnum++;
         }
-
-        low = (low<<8) & (0xFFFFFFFFL); // truncate top byte or keep bottom 4 bytes
+        low = low<<8 & (0xFFFFFFFFL); // force low to be +ve
     }
 
     public void rangeEncode(final ByteBuffer outBuffer, final int sym_low, final int sym_freq, final int tot_freq){
         long old_low = low;
         range = (long) Math.floor(range/tot_freq);
         low += sym_low * range;
-        low = low & (0xFFFFFFFFL); // keep bottom 4 bytes
+        low &= 0xFFFFFFFFL; // keep bottom 4 bytes, shift the top byte out of low
         range *= sym_freq;
 
         if (low < old_low) {
@@ -71,7 +87,7 @@ public class RangeCoder {
 
         // Renormalise if range gets too small
         while (range < (1<<24)) {
-            range <<= 8; // range *= 256
+            range <<= 8;
             rangeShiftLow(outBuffer);
         }
 
@@ -79,7 +95,7 @@ public class RangeCoder {
 
     public void rangeEncodeEnd(final ByteBuffer outBuffer){
         //TODO: Where is the magic number 5 coming from?
-        for(int i=0; i<5;i++){
+        for(int i = 0; i < 5; i++){
             rangeShiftLow(outBuffer);
         }
     }

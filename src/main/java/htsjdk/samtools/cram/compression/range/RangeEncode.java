@@ -3,6 +3,8 @@ package htsjdk.samtools.cram.compression.range;
 import htsjdk.samtools.cram.CRAMException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RangeEncode<T extends RangeParams> {
 
@@ -14,10 +16,10 @@ public class RangeEncode<T extends RangeParams> {
         }
 
         final ByteBuffer outBuffer = allocateOutputBuffer(inBuffer.remaining());
+        outBuffer.order(ByteOrder.BIG_ENDIAN);
         final int formatFlags = rangeParams.getFormatFlags();
-        outBuffer.put((byte) (formatFlags)); // one byte for formatFlags
+        outBuffer.put((byte) (formatFlags));
 
-        //  NoSize
         if (!rangeParams.isNosz()) {
             // original size is not recorded
             int insize = inBuffer.remaining();
@@ -32,12 +34,11 @@ public class RangeEncode<T extends RangeParams> {
         }
 
         final RangeParams.ORDER order = rangeParams.getOrder();
-        final int e_len = inputBuffer.remaining(); // e_len -> inSize
+        final int inSize = inputBuffer.remaining(); // e_len -> inSize
 
         // Pack
         if (rangeParams.isPack()) {
             final int[] frequencyTable = new int[Constants.NUMBER_OF_SYMBOLS];
-            final int inSize = inputBuffer.remaining();
             for (int i = 0; i < inSize; i ++) {
                 frequencyTable[inputBuffer.get(i) & 0xFF]++;
             }
@@ -60,36 +61,30 @@ public class RangeEncode<T extends RangeParams> {
 
         if (rangeParams.isCAT()){
 
+            // Data is uncompressed
+            outBuffer.put(inputBuffer);
+            outBuffer.limit(outBuffer.position());
+            outBuffer.rewind(); // set position to 0
+            return outBuffer;
         } else if (rangeParams.isExternalCompression()){
 
-
+            // TODO
         } else if (rangeParams.isRLE()){
             switch (rangeParams.getOrder()) {
                 case ZERO:
-//                    return compressRLEOrder0(inputBuffer, rangeParams, outBuffer); //src, e_len, this.stream
+                    return compressRLEOrder0(inputBuffer, rangeParams, outBuffer);
                 case ONE:
-//                    return compressRLEOrder1(inputBuffer, rangeParams, outBuffer); //src, e_len, this.stream
+                    return compressRLEOrder1(inputBuffer, rangeParams, outBuffer);
             }
         } else {
             switch (rangeParams.getOrder()) {
                 case ZERO:
-                    return compressOrder0(inputBuffer, rangeParams, outBuffer); //src, e_len, this.stream
+                    return compressOrder0(inputBuffer, rangeParams, outBuffer);
                 case ONE:
-//                    return compressOrder1(inputBuffer, rangeParams, outBuffer); //src, e_len, this.stream
+                    return compressOrder1(inputBuffer, rangeParams, outBuffer);
             }
 
         }
-
-
-
-//        if flagsAND Cat then
-//              data  ReadData(len)
-//        else if flagsAND Ext then
-//              data  DecodeEXT(len)
-//        else if flagsAND RLE then
-//        ...
-//        else ..
-
 
 //        // step 1: Encode meta-data
 //        var pack_meta
@@ -100,13 +95,6 @@ public class RangeEncode<T extends RangeParams> {
 //        if (flags & ARITH_PACK)
 //            this.stream.WriteStream(pack_meta)
 
-
-
-
-
-
-
-        // temp
         return inBuffer;
     }
 
@@ -118,8 +106,8 @@ public class RangeEncode<T extends RangeParams> {
         int maxSymbol = 0;
         final int inSize = inBuffer.remaining();
         for (int i = 0; i < inSize; i++){
-            if(maxSymbol < inBuffer.get(i)){
-                maxSymbol = inBuffer.get(i);
+            if(maxSymbol < (inBuffer.get(i) & 0xFF)){
+                maxSymbol = inBuffer.get(i) & 0xFF;
             }
         }
         maxSymbol++; // TODO: Is this correct? Not what spec states!!
@@ -127,12 +115,45 @@ public class RangeEncode<T extends RangeParams> {
         // TODO: initialize byteModel -> set and reset symbols?
         ByteModel byteModel = new ByteModel(maxSymbol);
         outBuffer.put((byte) maxSymbol);
+        RangeCoder rangeCoder = new RangeCoder();
+        for (int i = 0; i < inSize; i++){
+            byteModel.modelEncode(outBuffer,rangeCoder,inBuffer.get(i)&0xFF);
+        }
+        rangeCoder.rangeEncodeEnd(outBuffer);
+        outBuffer.limit(outBuffer.position());
+        outBuffer.rewind();
+        return outBuffer;
+    }
+
+    private ByteBuffer compressOrder1 (
+            final ByteBuffer inBuffer,
+            final RangeParams rangeParams,
+            final ByteBuffer outBuffer) {
+        int maxSymbol = 0;
+        final int inSize = inBuffer.remaining();
+        for (int i = 0; i < inSize; i++){
+            if(maxSymbol < (inBuffer.get(i) & 0xFF)){
+                maxSymbol = inBuffer.get(i) & 0xFF;
+            }
+        }
+        maxSymbol++; // TODO: Is this correct? Not what spec states!!
+
+        final List<ByteModel> byteModelList = new ArrayList();
+
+        // TODO: initialize byteModel -> set and reset symbols?
+
+        for(int i=0;i<maxSymbol;i++){
+            byteModelList.add(i,new ByteModel(maxSymbol));
+        }
+        outBuffer.put((byte) maxSymbol);
 
         // TODO: should we pass outBuffer to rangecoder?
         RangeCoder rangeCoder = new RangeCoder();
 
-        for (int i=0; i <inSize; i++){
-            byteModel.modelEncode(outBuffer,rangeCoder,inBuffer.get(i));
+        int last = 0;
+        for (int i = 0; i < inSize; i++ ){
+            byteModelList.get(last).modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
+            last = inBuffer.get(i) & 0xFF;
         }
         rangeCoder.rangeEncodeEnd(outBuffer);
 
@@ -142,12 +163,110 @@ public class RangeEncode<T extends RangeParams> {
         return outBuffer;
     }
 
+    private ByteBuffer compressRLEOrder0 (
+            final ByteBuffer inBuffer,
+            final RangeParams rangeParams,
+            final ByteBuffer outBuffer) {
+        int maxSymbols = 0;
+        int inSize = inBuffer.remaining();
+        for (int i = 0; i < inSize; i++) {
+            if (maxSymbols < (inBuffer.get(i) & 0xFF)) {
+                maxSymbols = inBuffer.get(i) & 0xFF;
+            }
+        }
+        maxSymbols++;  // FIXME not what spec states!
+
+        ByteModel modelLit = new ByteModel(maxSymbols);
+        final List<ByteModel> byteModelRunsList = new ArrayList(258);
+
+        for (int i=0; i <= 257; i++){
+            byteModelRunsList.add(i,new ByteModel(4));
+        }
+        outBuffer.put((byte)maxSymbols);
+        RangeCoder rangeCoder = new RangeCoder();
 
 
+        int i = 0;
+        while (i < inSize) {
+            modelLit.modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
+            int run = 1;
+            while (i+run < inSize && (inBuffer.get(i+run) & 0xFF)== (inBuffer.get(i) & 0xFF)){
+                run++;
+            }
+            run--; // Check this!!
+            int rctx = inBuffer.get(i) & 0xFF;
+            int last = inBuffer.get(i) & 0xFF;
+            i += run+1;
+            int part = run >=3 ? 3 : run;
+            byteModelRunsList.get(rctx).modelEncode(outBuffer, rangeCoder, part);
+            run -= part;
+            rctx = 256;
+            while (part == 3){
+                part = run >=3 ? 3 : run;
+                byteModelRunsList.get(rctx).modelEncode(outBuffer,rangeCoder,part);
+                rctx = 257;
+                run -= part;
+            }
+        }
+        rangeCoder.rangeEncodeEnd(outBuffer);
+        outBuffer.limit(outBuffer.position());
+        outBuffer.rewind();
+        return outBuffer;
+    }
+
+    private ByteBuffer compressRLEOrder1 (
+            final ByteBuffer inBuffer,
+            final RangeParams rangeParams,
+            final ByteBuffer outBuffer) {
+        int maxSymbols = 0;
+        int inSize = inBuffer.remaining();
+        for (int i = 0; i < inSize; i++) {
+            if (maxSymbols < (inBuffer.get(i) & 0xFF)) {
+                maxSymbols = inBuffer.get(i) & 0xFF;
+            }
+        }
+        maxSymbols++;  // FIXME not what spec states!
+
+        final List<ByteModel> modelLitList = new ArrayList<>(maxSymbols);
+        for (int i = 0; i < maxSymbols; i++){
+            modelLitList.add(i, new ByteModel(maxSymbols));
+        }
+        final List<ByteModel> byteModelRunsList = new ArrayList(258);
+        for (int i=0; i <= 257; i++){
+            byteModelRunsList.add(i,new ByteModel(4));
+        }
+        outBuffer.put((byte)maxSymbols);
+        RangeCoder rangeCoder = new RangeCoder();
 
 
-
-
+        int i = 0;
+        int last = 0;
+        while (i < inSize) {
+            modelLitList.get(last).modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
+            int run = 1;
+            while (i+run < inSize && inBuffer.get(i+run) == inBuffer.get(i)){
+                run++;
+            }
+            run--; // Check this!!
+            int rctx = inBuffer.get(i) & 0xFF;
+            last = inBuffer.get(i) & 0xFF;
+            i += run+1;
+            int part = run >=3 ? 3 : run;
+            byteModelRunsList.get(rctx).modelEncode(outBuffer, rangeCoder, part);
+            run -= part;
+            rctx = 256;
+            while (part == 3){
+                part = run >=3 ? 3 : run;
+                byteModelRunsList.get(rctx).modelEncode(outBuffer,rangeCoder,part);
+                rctx = 257;
+                run -= part;
+            }
+        }
+        rangeCoder.rangeEncodeEnd(outBuffer);
+        outBuffer.limit(outBuffer.position());
+        outBuffer.rewind();
+        return outBuffer;
+    }
 
 
     protected ByteBuffer allocateOutputBuffer(final int inSize) {

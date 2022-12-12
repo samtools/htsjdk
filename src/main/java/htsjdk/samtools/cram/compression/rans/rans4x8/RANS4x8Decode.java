@@ -184,6 +184,8 @@ public class RANS4x8Decode extends RANSDecode {
             final byte c7 = D[0xFF & l7].reverseLookup[Utils.RANSGetCumulativeFrequency(rans7, Constants.TOTAL_FREQ_SHIFT)];
             outBuffer.put(i7, c7);
             rans7 = syms[0xFF & l7][0xFF & c7].advanceSymbol4x8(rans7, inBuffer, Constants.TOTAL_FREQ_SHIFT);
+            // TODO: the spec specifies renormalize here
+            // rans7 = Utils.RANSDecodeRenormalize4x8(rans7, inBuffer);
             l7 = c7;
         }
     }
