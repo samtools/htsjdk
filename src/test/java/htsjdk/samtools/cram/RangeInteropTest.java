@@ -31,6 +31,7 @@ public class RangeInteropTest extends HtsjdkTest  {
                 RangeParams.ORDER_FLAG_MASK,
                 RangeParams.RLE_FLAG_MASK,
                 RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK
+                // TODO: No interop test files avaiable for EXT
         );
         final List<Object[]> testCases = new ArrayList<>();
         getInteropRangeTestFiles()
