@@ -57,7 +57,6 @@ public class RangeDecode {
             }
         }
 
-        // cat
         ByteBuffer outBuffer = ByteBuffer.allocate(outSize);
         if (rangeParams.isCAT()){
             byte[] data = new byte[outSize];

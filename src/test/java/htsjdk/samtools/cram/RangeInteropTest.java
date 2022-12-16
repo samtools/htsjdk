@@ -99,7 +99,10 @@ public class RangeInteropTest extends HtsjdkTest  {
             final ByteBuffer compressedHtsjdkBytes = rangeEncode.compress(uncompressedInteropBytes, params);
             Assert.assertEquals(compressedHtsjdkBytes, preCompressedInteropBytes);
             Assert.assertEquals(rangeDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
-        }
+        } catch (final NoSuchFileException ex){
+        throw new SkipException("Skipping testRangeRoundTrip as either input file " +
+                "or precompressed file is missing.", ex);
+    }
 
     }
 

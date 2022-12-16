@@ -75,7 +75,11 @@ public class RangeTest extends HtsjdkTest {
                 RangeParams.RLE_FLAG_MASK,
                 RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
                 RangeParams.CAT_FLAG_MASK,
-                RangeParams.CAT_FLAG_MASK | RangeParams.ORDER_FLAG_MASK);
+                RangeParams.CAT_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+                RangeParams.PACK_FLAG_MASK,
+                RangeParams.PACK_FLAG_MASK | RangeParams. ORDER_FLAG_MASK,
+                RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK,
+                RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK);
         final List<Object[]> testCases = new ArrayList<>();
         for (Integer rangeParamsFormatFlag : rangeParamsFormatFlagList) {
             Object[] objects = new Object[]{
@@ -89,12 +93,20 @@ public class RangeTest extends HtsjdkTest {
     }
 
     public Object[][] getRangeDecodeOnlyCodecs() {
-
         // params: Range encoder, Range decoder, Range params
-        return new Object[][]{
-                {new RangeEncode(), new RangeDecode(), new RangeParams(RangeParams.STRIPE_FLAG_MASK)},
-                {new RangeEncode(), new RangeDecode(), new RangeParams(RangeParams.ORDER_FLAG_MASK|RangeParams.STRIPE_FLAG_MASK)}
-        };
+        final List<Integer> rangeParamsFormatFlagList = Arrays.asList(
+                RangeParams.STRIPE_FLAG_MASK,
+                RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK);
+        final List<Object[]> testCases = new ArrayList<>();
+        for (Integer rangeParamsFormatFlag : rangeParamsFormatFlagList) {
+            Object[] objects = new Object[]{
+                    new RangeEncode(),
+                    new RangeDecode(),
+                    new RangeParams(rangeParamsFormatFlag)
+            };
+            testCases.add(objects);
+        }
+        return testCases.toArray(new Object[][]{});
     }
 
     @DataProvider(name="RangeDecodeOnlyAndData")
