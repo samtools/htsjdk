@@ -76,7 +76,7 @@
         <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" />
     </Match>
     <Match>
-        <!--This seems to be a false positive due to a bug in how spotify handles breaks with gotos -->
+        <!--This seems to be a false positive due to a bug in how spotbugs handles breaks with gotos -->
         <!-- SA_FIELD_SELF_ASSIGNMENT: Self assignment of field -->
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#sa-self-assignment-of-local-variable-sa-local-self-assignment -->
         <Class name="htsjdk.tribble.readers.LongLineBufferedReader" />
