@@ -59,9 +59,13 @@
     </Match>
     <Match>
         <!-- It's OK for test classes to create one-off Random objects -->
+        <!-- This is done deliberately in SAMRecordSetBuilder in order to have a deterministic psuedo random result based on the input parameters -->
         <!-- DMI: Random object created and used only once -->
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#dmi-random-object-created-and-used-only-once-dmi-random-used-only-once -->
-        <Class name="~.*\.*Test" />
+        <Or>
+            <Class name="~.*\.*Test" />
+            <Class name="htsjdk.samtools.SAMRecordSetBuilder" />
+        </Or>
         <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE" />
     </Match>
     <Match>
@@ -70,6 +74,13 @@
         <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#st-write-to-static-field-from-instance-method-st-write-to-static-from-instance-method -->
         <Class name="htsjdk.samtools.util.BlockCompressedInputStreamTest" />
         <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" />
+    </Match>
+    <Match>
+        <!--This seems to be a false positive due to a bug in how spotbugs handles breaks with gotos -->
+        <!-- SA_FIELD_SELF_ASSIGNMENT: Self assignment of field -->
+        <!-- https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html#sa-self-assignment-of-local-variable-sa-local-self-assignment -->
+        <Class name="htsjdk.tribble.readers.LongLineBufferedReader" />
+        <Bug pattern="SA_FIELD_SELF_ASSIGNMENT" />
     </Match>
 
 </FindBugsFilter>

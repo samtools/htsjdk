@@ -5,15 +5,13 @@ buildscript {
 }
 
 plugins {
-    id 'java'
-    id 'scala'
+    id 'java-library'
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
     id 'com.palantir.git-version' version '0.11.0'
     id 'com.github.johnrengelman.shadow' version '4.0.4'
-    id 'com.github.maiflai.scalatest' version '0.23'
-    id 'com.github.spotbugs' version '1.6.9'
+    id 'com.github.spotbugs' version "5.0.13"
 }
 
 repositories {
@@ -31,23 +29,21 @@ jacocoTestReport {
 }
 
 dependencies {
-    compile "org.apache.commons:commons-jexl:2.1.1"
-    compile "commons-logging:commons-logging:1.1.1"
-    compile "org.xerial.snappy:snappy-java:1.1.8.4"
-    compile "org.apache.commons:commons-compress:1.22"
-    compile 'org.tukaani:xz:1.8'
-    compile "gov.nih.nlm.ncbi:ngs-java:2.9.0"
-    compile ('org.sharegov:mjson:1.4.1') {
-        exclude group: "junit" 
+    implementation "commons-logging:commons-logging:1.1.1"
+    implementation "org.xerial.snappy:snappy-java:1.1.8.4"
+    implementation "org.apache.commons:commons-compress:1.22"
+    implementation 'org.tukaani:xz:1.8'
+    implementation ('org.sharegov:mjson:1.4.1') {
+        exclude group: "junit"
     }
 
-    testCompile "org.scala-lang:scala-library:2.12.8"
-    testCompile "org.scalatest:scalatest_2.12:3.0.5"
-    testRuntime 'org.pegdown:pegdown:1.6.0' // Necessary for generating HTML reports with ScalaTest
-    testCompile "org.testng:testng:6.14.3"
-    testCompile "com.google.jimfs:jimfs:1.1"
-    testCompile "com.google.guava:guava:26.0-jre"
-    testCompile "org.apache.commons:commons-lang3:3.7"
+    api "gov.nih.nlm.ncbi:ngs-java:2.9.0"
+    api "org.apache.commons:commons-jexl:2.1.1"
+
+    testImplementation "org.testng:testng:6.14.3"
+    testImplementation "com.google.jimfs:jimfs:1.1"
+    testImplementation "com.google.guava:guava:26.0-jre"
+    testImplementation "org.apache.commons:commons-lang3:3.7"
 }
 
 sourceCompatibility = 1.8
@@ -92,50 +88,58 @@ tasks.withType(Test) { task ->
     task.maxHeapSize = "2G"
 
     task.jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
-}
 
-task findScalaAndJavaTypes(type: Exec) {
-    description = "Check that Scala files only exist in the scala test dir and that java files do not reside in the scala test dir."
-    commandLine './scripts/checkScalaAndJavaFiles.sh'
-}
+    int count = 0
+    // listen to events in the test execution lifecycle
 
+    beforeTest { descriptor ->
+        count++
+        if( count % 200 == 0) {
+            logger.lifecycle("Finished "+ Integer.toString(count++) + " tests")
+        }
+    }
+
+    testLogging {
+        testLogging {
+            events "skipped", "failed"
+            exceptionFormat = "full"
+        }
+        afterSuite { desc, result ->
+            if (!desc.parent) { // will match the outermost suite
+                println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+            }
+        }
+    }
+
+}
 
 task testWithDefaultReference(type: Test) {
     description = "Run tests with a default reference File"
     jvmArgs += '-Dsamjdk.reference_fasta=src/test/resources/htsjdk/samtools/cram/ce.fa'
 
-    tags {
-        include "defaultReference"
+    useTestNG {
+        includeGroups "defaultReference"
     }
 }
 
 test {
     description = "Runs the unit tests other than the SRA tests"
 
-    testLogging {
-        events "failed", "skipped"
-    }
-
-    tags {
-        exclude "slow"
-        exclude "broken"
-        exclude "defaultReference"
-        exclude "ftp"
-        exclude "http"
-        exclude "sra"
-        exclude "ena"
-
-        if (!OperatingSystem.current().isUnix()) exclude "unix"
-    }
-} dependsOn findScalaAndJavaTypes, testWithDefaultReference
+   useTestNG {
+       if (OperatingSystem.current().isUnix()) {
+           excludeGroups "slow", "broken", "defaultReference", "ftp", "http", "sra", "ena"
+       } else {
+           excludeGroups "slow", "broken", "defaultReference", "ftp", "http", "sra", "ena", "unix"
+       }
+   }
+} dependsOn testWithDefaultReference
 
 
 task testFTP(type: Test) {
     description = "Runs the tests that require connection to a remote ftp server"
-    tags {
-        include "ftp"
-        exclude "slow"
-        exclude "broken"
+    useTestNG {
+        includeGroups "ftp"
+        excludeGroups "slow", "broken"
     }
 }
 
@@ -143,18 +147,15 @@ task testExternalApis(type: Test) {
     description = "Run the SRA, ENA, and HTTP tests (tests that interact with external APIs)"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
-    tags {
-        include "sra"
-        include "http"
-        include "ena"
-        exclude "slow"
-        exclude "broken"
+    useTestNG {
+        includeGroups "sra", "http", "ena"
+        excludeGroups "slow", "broken"
     }
 }
 
 if(project == rootProject) {
     wrapper {
-        gradleVersion = '5.2.1'
+        gradleVersion = '7.5.1'
     }
 }
 
@@ -177,7 +178,15 @@ spotbugs {
     excludeFilter = file('gradle/spotbugs-exclude.xml')
 }
 
-tasks.withType(com.github.spotbugs.SpotBugsTask) {
+
+spotbugsMain {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+spotbugsTest {
     reports {
         xml.enabled = false
         html.enabled = true
