@@ -64,7 +64,13 @@ public class RangeDecode {
             return ByteBuffer.wrap(data);
         } else if (rangeParams.isExternalCompression()){
             byte[] extCompressedBytes = new byte[inBuffer.remaining()];
-            inBuffer.get( extCompressedBytes,inBuffer.position(), inBuffer.remaining());
+            int extCompressedBytesIdx = 0;
+            int start = inBuffer.position();
+            int end = inBuffer.limit();
+            for (int i = start; i < end; i++) {
+                extCompressedBytes[extCompressedBytesIdx] = inBuffer.get();
+                extCompressedBytesIdx++;
+            }
             uncompressEXT(extCompressedBytes, outBuffer);
         } else if (rangeParams.isRLE()){
             switch (rangeParams.getOrder()) {
@@ -90,8 +96,7 @@ public class RangeDecode {
         if (rangeParams.isPack() && packMappingTable.length > 0) {
             outBuffer = decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
         }
-
-        outBuffer.position(0);
+        outBuffer.rewind();
         return outBuffer;
 
     }

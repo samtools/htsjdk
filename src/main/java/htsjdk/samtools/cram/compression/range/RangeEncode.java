@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.compression.range;
 
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.compression.BZIP2ExternalCompressor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ public class RangeEncode<T extends RangeParams> {
             return EMPTY_BUFFER;
         }
 
-        final ByteBuffer outBuffer = allocateOutputBuffer(inBuffer.remaining());
+        ByteBuffer outBuffer = allocateOutputBuffer(inBuffer.remaining());
         outBuffer.order(ByteOrder.BIG_ENDIAN);
         final int formatFlags = rangeParams.getFormatFlags();
         outBuffer.put((byte) (formatFlags));
@@ -67,8 +68,14 @@ public class RangeEncode<T extends RangeParams> {
             outBuffer.rewind(); // set position to 0
             return outBuffer;
         } else if (rangeParams.isExternalCompression()){
-
-            // TODO
+            byte[] rawBytes = new byte[inputBuffer.remaining()];
+            inputBuffer.get( rawBytes,inBuffer.position(), inputBuffer.remaining());
+            final BZIP2ExternalCompressor compressor = new BZIP2ExternalCompressor();
+            final byte [] extCompressedBytes = compressor.compress(rawBytes);
+            outBuffer.put(extCompressedBytes);
+            outBuffer.limit(outBuffer.position());
+            outBuffer.rewind(); // set position to 0
+            return outBuffer;
         } else if (rangeParams.isRLE()){
             switch (rangeParams.getOrder()) {
                 case ZERO:
@@ -85,17 +92,7 @@ public class RangeEncode<T extends RangeParams> {
             }
 
         }
-
-//        // step 1: Encode meta-data
-//        var pack_meta
-//        if (flags & ARITH_PACK)
-//	    [pack_meta, src, e_len] = this.encodePack(src)
-//
-//        // step 2: Write any meta data
-//        if (flags & ARITH_PACK)
-//            this.stream.WriteStream(pack_meta)
-
-        return inBuffer;
+        return outBuffer;
     }
 
     private ByteBuffer compressOrder0 (
@@ -267,7 +264,6 @@ public class RangeEncode<T extends RangeParams> {
         outBuffer.rewind();
         return outBuffer;
     }
-
 
     protected ByteBuffer allocateOutputBuffer(final int inSize) {
 

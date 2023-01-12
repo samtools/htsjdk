@@ -79,7 +79,9 @@ public class RangeTest extends HtsjdkTest {
                 RangeParams.PACK_FLAG_MASK,
                 RangeParams.PACK_FLAG_MASK | RangeParams. ORDER_FLAG_MASK,
                 RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK,
-                RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK);
+                RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+                RangeParams.EXT_FLAG_MASK,
+                RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK);
         final List<Object[]> testCases = new ArrayList<>();
         for (Integer rangeParamsFormatFlag : rangeParamsFormatFlagList) {
             Object[] objects = new Object[]{
