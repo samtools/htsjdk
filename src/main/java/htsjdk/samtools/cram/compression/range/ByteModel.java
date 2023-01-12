@@ -101,7 +101,6 @@ public class ByteModel {
         }
 
         // Keep symbols approximately frequency sorted (ascending order)
-        symbol = symbols[i];
         if (i > 0 && frequencies[i] > frequencies[i-1]){
             // swap frequencies
             int tmp = frequencies[i];
