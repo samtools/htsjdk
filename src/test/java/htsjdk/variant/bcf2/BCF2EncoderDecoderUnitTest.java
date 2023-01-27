@@ -151,11 +151,11 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
         final Object value;
 
         private BCF2TypedValue(final int value, final BCF2Type type) {
-            this(new Integer(value), type);
+            this((Integer)value, type);
         }
 
         private BCF2TypedValue(final double value, final BCF2Type type) {
-            this(new Double(value), type);
+            this((Double)value, type);
         }
 
         private BCF2TypedValue(final Object value, final BCF2Type type) {

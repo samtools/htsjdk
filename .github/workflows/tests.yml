@@ -14,11 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ 8, 11 ]
+        java: [ 17 ]
         experimental: [false]
-#        include:
-#          - java: 17
-#            experimental: true
       fail-fast: false
     continue-on-error: ${{ matrix.experimental }}
     name: Java ${{ matrix.Java }} build and test
@@ -40,8 +37,6 @@ jobs:
         run: scripts/htsget-scripts/start-htsget-test-server.sh
       - name: Run tests
         run: ./gradlew test jacocoTestReport
-#      - name: Upload to codecov
-#        run:  bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v2

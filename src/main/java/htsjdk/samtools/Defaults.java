@@ -166,7 +166,7 @@ public class Defaults {
     private static String getStringProperty(final String name, final String def) {
         try {
             return System.getProperty(Defaults.SAMJDK_PREFIX + name, def);
-        } catch (final java.security.AccessControlException error) {
+        } catch (final SecurityException error) {
             log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning default value: " + def );
             return def;
         }
@@ -178,7 +178,7 @@ public class Defaults {
     private static boolean hasProperty(final String name){
         try {
             return null != System.getProperty(Defaults.SAMJDK_PREFIX + name);
-        } catch (final java.security.AccessControlException error) {
+        } catch (final SecurityException error) {
             log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning false");
             return false;
         }
