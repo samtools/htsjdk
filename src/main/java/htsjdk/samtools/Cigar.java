@@ -36,7 +36,7 @@ import java.util.List;
  * * deletion of 1 base
  * * match or mismatch for 25 bases
  *
- * c.f. http://samtools.sourceforge.net/SAM1.pdf for complete CIGAR specification.
+ * c.f. https://samtools.github.io/hts-specs/SAMv1.pdf for complete CIGAR specification.
  */
 public class Cigar implements Serializable, Iterable<CigarElement> {
     public static final long serialVersionUID = 1L;
@@ -291,6 +291,16 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
             i = j;
         }
         return new Cigar(cigarElementList);
+    }
+
+    /**
+     * Decode a Cigar from a SAM formatted CIGAR String, uses {@link TextCigarCodec#decode(String)}
+     * Only performs minimal validation.
+     * @param cigarString A SAM formatted CIGAR string.
+     * @return a new Cigar
+     */
+    public static Cigar fromCigarString(String cigarString){
+        return TextCigarCodec.decode(cigarString);
     }
     
     /** shortcut to <code>getCigarElements().iterator()</code> */
