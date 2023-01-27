@@ -3,6 +3,7 @@ package htsjdk.variant.vcf;
 import htsjdk.HtsjdkTest;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -133,6 +134,20 @@ public class VCFEncoderTest extends HtsjdkTest {
         baseGT.noAttributes();
 
         return tests.toArray(new Object[][]{});
+    }
+
+    @Test
+    public void testEncodeGT(){
+        final VariantContextBuilder vcb = new VariantContextBuilder("test",
+                "chr?", 100, 100,
+                Arrays.asList(Allele.REF_A, Allele.ALT_T, Allele.create("TC")));
+        final Genotype g1 = new GenotypeBuilder("s1", Arrays.asList(Allele.REF_A, Allele.REF_A)).make();
+        final Genotype g2 = new GenotypeBuilder("s2", Arrays.asList(Allele.ALT_T, Allele.create("TC"))).make();
+        vcb.genotypes(g1, g2);
+        final VariantContext vc = vcb.make();
+
+        Assert.assertEquals(VCFEncoder.encodeGtField(vc, g1), "0/0");
+        Assert.assertEquals(VCFEncoder.encodeGtField(vc, g2), "1/2");
     }
 
     @Test(dataProvider = "MissingFormatTestData")
