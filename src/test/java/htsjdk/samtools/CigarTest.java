@@ -100,7 +100,12 @@ public class CigarTest extends HtsjdkTest {
         Assert.assertEquals(errors.size(), 1, String.format("Got %d error, expected exactly one error.", errors.size()));
         Assert.assertEquals(errors.get(0).getType(), type);
     }
-    
+
+    @Test(dataProvider = "positiveTestsData")
+    public void testFromCigarString(String cigarString){
+        Assert.assertEquals(Cigar.fromCigarString(cigarString), TextCigarCodec.decode(cigarString) );
+    }
+
     @Test
     public void testMakeCigarFromOperators() {
         final List<CigarOperator> cigarOperators = Arrays.asList(
