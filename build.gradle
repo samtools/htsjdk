@@ -23,8 +23,8 @@ jacocoTestReport {
     description = "Generate Jacoco coverage reports after running tests."
 
     reports {
-        xml.enabled = true // codecov depends on xml format report
-        html.enabled = true
+        xml.required = true // codecov depends on xml format report
+        html.required = true
     }
 }
 
@@ -70,7 +70,7 @@ jar {
     manifest {
         attributes 'Implementation-Title': 'HTSJDK',
                 'Implementation-Vendor': 'Samtools Organization',
-                'Implementation-Version': version
+                'Implementation-Version': archiveVersion
     }
 }
 
@@ -155,7 +155,7 @@ task testExternalApis(type: Test) {
 
 if(project == rootProject) {
     wrapper {
-        gradleVersion = '7.5.1'
+        gradleVersion = '7.6'
     }
 }
 
