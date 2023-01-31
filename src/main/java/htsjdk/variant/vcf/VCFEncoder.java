@@ -219,7 +219,7 @@ public class VCFEncoder {
     }
 
     @SuppressWarnings("rawtypes")
-    String formatVCFField(final Object val) {
+    static String formatVCFField(final Object val) {
         final String result;
         if (val == null) {
             result = VCFConstants.MISSING_VALUE_v4;
@@ -327,11 +327,7 @@ public class VCFEncoder {
                         throw new IllegalStateException("GTs cannot be missing for some samples if they are available for others in the record");
                     }
 
-                    writeAllele(g.getAllele(0), alleleMap, vcfoutput);
-                    for (int i = 1; i < g.getPloidy(); i++) {
-                        vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
-                        writeAllele(g.getAllele(i), alleleMap, vcfoutput);
-                    }
+                    writeGtField(alleleMap, vcfoutput, g);
                     continue;
 
                 } else {
@@ -387,6 +383,21 @@ public class VCFEncoder {
         }
     }
 
+    /**
+     * write the encoded GT field for a Genotype
+     * @param alleleMap a mapping of Allele -> GT allele value (from {@link this#buildAlleleStrings(VariantContext)}
+     * @param vcfoutput the appendable to write to, to avoid inefficiency due to string copying
+     * @param g the genotoype to encode
+     * @throws IOException if appending fails with an IOException
+     */
+    public static void writeGtField(final Map<Allele, String> alleleMap, final Appendable vcfoutput, final Genotype g) throws IOException {
+        writeAllele(g.getAllele(0), alleleMap, vcfoutput);
+        for (int i = 1; i < g.getPloidy(); i++) {
+            vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
+            writeAllele(g.getAllele(i), alleleMap, vcfoutput);
+        }
+    }
+
     /*
      * Create the info string; assumes that no values are null
      */
@@ -416,8 +427,31 @@ public class VCFEncoder {
         }
     }
 
-    public Map<Allele, String> buildAlleleStrings(final VariantContext vc) {
-        final Map<Allele, String> alleleMap = new HashMap<Allele, String>(vc.getAlleles().size() + 1);
+    /**
+     * Easy way to generate the GT field for a Genotype.  This will be less efficient than using
+     * {@link this#writeGtField(Map, Appendable, Genotype)} because of redundant Map initializations
+     * @param vc a VariantContext which must contain g or the results are likely to be incorrect
+     * @param g a Genotype in vc
+     * @return a String containing the encoding of the GT field of g
+     */
+    public static String encodeGtField(VariantContext vc, Genotype g) {
+      final StringBuilder builder = new StringBuilder();
+        try {
+            writeGtField(VCFEncoder.buildAlleleStrings(vc), builder, g);
+        } catch (final IOException e) {
+            throw new RuntimeException("Somehow we failed to append to a StringBuilder, this shouldn't happen.", e);
+        }
+        return builder.toString();
+    }
+
+    /**
+     * return a Map containing Allele -> String(allele position) for all Alleles in VC 
+     * (as well as NO_CALL) 
+     * ex: A,T,TC -> { A:0, T:1, TC:2, NO_CALL:EMPTY_ALLELE}
+     * This may be efficient when looking up values for many genotypes per VC
+     */
+    public static Map<Allele, String> buildAlleleStrings(final VariantContext vc) {
+        final Map<Allele, String> alleleMap = new HashMap<>(vc.getAlleles().size() + 1);
         alleleMap.put(Allele.NO_CALL, VCFConstants.EMPTY_ALLELE); // convenience for lookup
 
         final List<Allele> alleles = vc.getAlleles();
