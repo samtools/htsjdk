@@ -1,4 +1,3 @@
-[![Coverage Status](https://codecov.io/gh/samtools/htsjdk/branch/master/graph/badge.svg)](https://codecov.io/gh/samtools/htsjdk)
 [![Build and Test](https://github.com/samtools/htsjdk/actions/workflows/tests.yml/badge.svg?branch=master&event=push)](https://github.com/samtools/htsjdk/actions/workflows/tests.yml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.samtools/htsjdk/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.samtools%22%20AND%20a%3A%22htsjdk%22)
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/samtools/htsjdk)
@@ -26,7 +25,7 @@ To receive announcements of releases and other significant project news please s
 
 ### Building HTSJDK
 
-HTSJDK is now built using [gradle](http://gradle.org/).
+HTSJDK is built using [gradle](http://gradle.org/).
 
 A wrapper script (`gradlew`) is included which will download the appropriate version of gradle on the first invocation.
 
@@ -102,16 +101,19 @@ Broadly speaking the majority of the code is covered under the MIT license with 
 ### Java Minimum Version Support Policy
 
 Htsjdk currently targets Java 8 and is tested on both 8 and 11.
-We do not currently plan to support versions of Java which are not long-term-support releases (ex: 9, 10, or 12).  
 
-We will notify the community at least 6 months before we plan to stop support for Java 8.  
+We intend to drop support for 8/11 and switch exclusively to 17+ in our next release (4.0.0).
+
+Given our promise of 6 months of warning before a move off of 8, we will atttempt to provide 3.x releases on demand if
+any critical bugs are discovered in the next 6 months.
 
 Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support | Proposed End of Support in HTSJDK | Actual End of Support in HTSJDK
----- | ---- | ---- | ----
-6  | Feb 2013 | Aug 2013 | Oct 2015
-7  | Apr 2015 | Oct 2015 | Oct 2015
-8  | Jan 2019 | TBD      | TBD
-11 | Sep 2022 | TBD      | TBD
+---- | ---- |-----------------------------------| ----
+6  | Feb 2013 | Aug 2013                          | Oct 2015
+7  | Apr 2015 | Oct 2015                          | Oct 2015
+8  | Jan 2019 | Feb 2022                          | TBD
+11 | Sep 2022 | Feb 2022                          | TBD
+17 | TBD      | TBD                               | BD
 
  
 ### Meaning of the Htsjdk version number
