@@ -9,7 +9,7 @@
 
 HTSJDK is an implementation of a unified Java library for accessing
 common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
-sequencing data.  There are also an number of useful utilities for 
+sequencing data.  There are also a number of useful utilities for 
 manipulating HTS data.
 
 > **NOTE: _HTSJDK has only partial support for the latest Variant Call Format Specification.  VCFv4.3 can be read but not written and there is no support for BCFv2.2_**
@@ -78,7 +78,7 @@ Example gradle usage from the htsjdk root directory:
 ### Create an HTSJDK project in IntelliJ
 To create a project in IntelliJ IDE for htsjdk do the following:
 
-1. Select fom the menu: `File -> New -> Project from Existing Sources`
+1. Select from the menu: `File -> New -> Project from Existing Sources`
 2. In the resulting dialog, chose `Import from existing model`, select `Gradle` and `Next`
 3. Choose the `default gradle wrapper` and `Finish`.
 
@@ -116,8 +116,8 @@ Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support |
  
 ### Meaning of the Htsjdk version number
 We encourage downstream projects to use the most recent htsjdk release in order to have access to the most up to date features and bug fixes.  It is therefore important therefore to make upgrading to newer versions as easy as possible. We make a best effort to adhere to the following principles in order to minimize disruption to projects that depend on htsjdk:
-* Avoid making breaking changes whenever possible. A breaking change is one which requires downstream projects to recompile against the new version of htsjdk or make changes to their source code.  These include both binary incompatiblities and source incompatibilites. 
-* Deprecate and provide new alternatives instead of removing exising APIs.
+* Avoid making breaking changes whenever possible. A breaking change is one which requires downstream projects to recompile against the new version of htsjdk or make changes to their source code.  These include both binary incompatibilities and source incompatibilities. 
+* Deprecate and provide new alternatives instead of removing existing APIs.
 * Document breaking changes in the release notes.
 * Provide clear instructions for upgrading to new API's when breaking changes/ deprecations occur.
 * Provide explanations for the rare cases when functionality is deprecated or removed without replacement.
