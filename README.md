@@ -113,7 +113,7 @@ Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support |
 7  | Apr 2015 | Oct 2015                          | Oct 2015
 8  | Jan 2019 | Feb 2022                          | TBD
 11 | Sep 2022 | Feb 2022                          | TBD
-17 | TBD      | TBD                               | BD
+17 | TBD      | TBD                               | TBD
 
  
 ### Meaning of the Htsjdk version number
