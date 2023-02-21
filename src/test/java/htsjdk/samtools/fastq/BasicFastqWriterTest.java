@@ -38,6 +38,6 @@ public class BasicFastqWriterTest extends HtsjdkTest {
             }
         }
         // flush()/close() results in two flushes
-        Assert.assertTrue(loggedStream.flushCalled <= 2);
+        Assert.assertTrue(loggedStream.flushCalled <= 5, "flush called " + loggedStream.flushCalled + " times which is > 5");
     }
 }

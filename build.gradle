@@ -10,7 +10,7 @@ plugins {
     id 'signing'
     id 'jacoco'
     id 'com.palantir.git-version' version '0.11.0'
-    id 'com.github.johnrengelman.shadow' version '4.0.4'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'com.github.spotbugs' version "5.0.13"
 }
 
@@ -37,17 +37,25 @@ dependencies {
         exclude group: "junit"
     }
 
+    implementation 'org.openjdk.nashorn:nashorn-core:15.4'
+
+
     api "gov.nih.nlm.ncbi:ngs-java:2.9.0"
     api "org.apache.commons:commons-jexl:2.1.1"
 
-    testImplementation "org.testng:testng:6.14.3"
-    testImplementation "com.google.jimfs:jimfs:1.1"
-    testImplementation "com.google.guava:guava:26.0-jre"
+    testImplementation 'org.testng:testng:7.7.0'
+    testImplementation 'com.google.jimfs:jimfs:1.1'
+    testImplementation "com.google.guava:guava:31.1-jre"
     testImplementation "org.apache.commons:commons-lang3:3.7"
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+    withJavadocJar()
+    withSourcesJar()
+}
 
 final isRelease = Boolean.getBoolean("release")
 final gitVersion = gitVersion().replaceAll(".dirty", "")
@@ -64,6 +72,7 @@ tasks.withType(JavaCompile) {
 
 tasks.withType(Javadoc) {
     options.addStringOption('encoding', 'UTF-8')
+    options.addStringOption('Xdoclint:none', '-quiet')
 }
 
 jar {
@@ -159,20 +168,6 @@ if(project == rootProject) {
     }
 }
 
-tasks.withType(Javadoc) {
-    options.addStringOption('Xdoclint:none', '-quiet')
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    archiveClassifier.set('javadoc')
-    from 'build/docs/javadoc'
-}
-
-task sourcesJar(type: Jar) {
-    from sourceSets.main.allSource
-    archiveClassifier.set('sources')
-}
-
 spotbugs {
     reportLevel = 'high'
     excludeFilter = file('gradle/spotbugs-exclude.xml')
@@ -197,8 +192,6 @@ publishing {
     publications {
         htsjdk(MavenPublication) {
             from components.java
-            artifact javadocJar
-            artifact sourcesJar
 
             pom {
                 name = 'HTSJDK'
@@ -250,6 +243,7 @@ signing {
     required { isRelease && gradle.taskGraph.hasTask("publishHtsjdkPublicationToMavenRepository") }
     sign publishing.publications.htsjdk
 }
+
 gradle.taskGraph.beforeTask { Task task ->
     println "executing $task ..."
 }

@@ -342,12 +342,12 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertNull(record.getUnsignedIntegerAttribute(binaryTag));
 
         record.setAttribute("UI", (long) 0L);
-        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(stringTag));
-        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(binaryTag));
+        Assert.assertEquals(0L, record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertEquals(0L, record.getUnsignedIntegerAttribute(binaryTag));
 
         record.setAttribute("UI", BinaryCodec.MAX_UINT);
-        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(stringTag));
-        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(binaryTag));
+        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(binaryTag));
 
         final SAMBinaryTagAndValue tv_zero = new SAMBinaryTagAndValue(binaryTag, 0L);
         record = new SAMRecord(header){
@@ -355,17 +355,18 @@ public class SAMRecordUnitTest extends HtsjdkTest {
                 setAttributes(tv_zero);
             }
         };
-        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(stringTag));
-        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(binaryTag));
+        Assert.assertEquals(0L, record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertEquals(0L, record.getUnsignedIntegerAttribute(binaryTag));
 
         final SAMBinaryTagAndValue tv_max = new SAMBinaryTagAndValue(binaryTag, BinaryCodec.MAX_UINT);
         record = new SAMRecord(header){
             {
+
                 setAttributes(tv_max);
             }
         };
-        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(stringTag));
-        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(binaryTag));
+        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(binaryTag));
     }
 
     /**
@@ -380,11 +381,11 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
         record = new SAMRecord(header);
         record.setAttribute("UI", 0L);
-        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(tag));
+        Assert.assertEquals(0L, record.getUnsignedIntegerAttribute(tag));
 
         record = new SAMRecord(header);
         record.setAttribute("UI", BinaryCodec.MAX_UINT);
-        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute("UI"));
+        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute("UI"));
     }
 
     @Test(expectedExceptions = SAMException.class)
@@ -406,23 +407,23 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     // SAMBinaryTagAndValue, but we'll leave this test here until the code is removed.
     @Test
     public void test_isAllowedAttributeDataType() {
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Byte((byte) 0)));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Short((short) 0)));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Integer(0)));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue("a string"));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Character('C')));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Float(0.1F)));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new byte[]{0}));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new short[]{0}));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new int[]{0}));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new float[]{0.1F}));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue((byte) 0));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue((short) 0));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(0));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue("a string"));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue('C'));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(0.1F));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new byte[]{0}));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new short[]{0}));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new int[]{0}));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new float[]{0.1F}));
 
         // unsigned integers:
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Long(0)));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Long(BinaryCodec.MAX_UINT)));
-        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Long(-1L)));
-        Assert.assertFalse(SAMRecord.isAllowedAttributeValue(new Long(BinaryCodec.MAX_UINT + 1L)));
-        Assert.assertFalse(SAMRecord.isAllowedAttributeValue(new Long(Integer.MIN_VALUE - 1L)));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(0L));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(BinaryCodec.MAX_UINT));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(-1L));
+        Assert.assertFalse(SAMBinaryTagAndValue.isAllowedAttributeValue(BinaryCodec.MAX_UINT + 1L));
+        Assert.assertFalse(SAMBinaryTagAndValue.isAllowedAttributeValue(Integer.MIN_VALUE - 1L));
     }
 
     @Test()
@@ -463,7 +464,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
 
         record.setAttribute(tag, BinaryCodec.MAX_UINT);
-        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(tag));
+        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(tag));
 
         record.setAttribute(tag, null);
         Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
@@ -877,7 +878,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
         // force re-resolution of the reference name against the new header
         sam.setHeaderStrict(newHeader);
-        Assert.assertEquals(sam.getReferenceIndex(), new Integer(0));
+        Assert.assertEquals(sam.getReferenceIndex(), 0);
     }
 
     @Test(expectedExceptions=IllegalArgumentException.class)
@@ -886,7 +887,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final SAMFileHeader samHeader = sam.getHeader();
 
         sam.setReferenceName("unresolvable");
-        Assert.assertEquals(new Integer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX), sam.getReferenceIndex());
+        Assert.assertEquals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, sam.getReferenceIndex());
 
         // throw on force re-resolution of the unresolvable reference name
         sam.setHeaderStrict(samHeader);
@@ -898,7 +899,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final SAMFileHeader samHeader = sam.getHeader();
 
         sam.setMateReferenceName("unresolvable");
-        Assert.assertEquals(new Integer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX), sam.getMateReferenceIndex());
+        Assert.assertEquals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, sam.getMateReferenceIndex());
 
         // throw on force re-resolution of the unresolvable mate reference name
         sam.setHeaderStrict(samHeader);
@@ -920,7 +921,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final SAMRecord sam = createTestRecordHelper();
         final SAMFileHeader samHeader = sam.getHeader();
         final String contigName = sam.getContig();
-        Assert.assertEquals(SAMRecord.resolveIndexFromName(contigName, samHeader, true), new Integer(samHeader.getSequenceIndex(contigName)));
+        Assert.assertEquals(SAMRecord.resolveIndexFromName(contigName, samHeader, true), samHeader.getSequenceIndex(contigName));
     }
 
     @Test(expectedExceptions=IllegalStateException.class)
@@ -944,7 +945,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     public void testResolveIndexNoAlignment() {
         final SAMFileHeader samHeader = new SAMFileHeader();
         Assert.assertEquals(SAMRecord.resolveIndexFromName(
-                SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, samHeader, true), new Integer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+                SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, samHeader, true), SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
     }
 
     @Test(expectedExceptions=IllegalStateException.class)
