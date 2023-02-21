@@ -495,6 +495,9 @@ public class CRAMRecordReadFeatures {
     }
 
     private static byte getByteOrDefault(final byte[] array, final int pos, final byte outOfBoundsValue) {
+        if (array == null) {
+            return outOfBoundsValue;
+        }
         return pos >= array.length ?
                 outOfBoundsValue :
                 array[pos];
