@@ -146,7 +146,7 @@ public class GtfCodec extends AsciiFeatureCodec<GtfFeature> {
         		}
         	
         	//no value
-        	if(i>=attributesString.length()) {
+        	if (i >= len) {
         		logger.warn("no value for '"+key+"' in "+attributesString);
         		values.add("");
         		break;
@@ -157,7 +157,7 @@ public class GtfCodec extends AsciiFeatureCodec<GtfFeature> {
 			//first char of value
 			char c = attributesString.charAt(i);
 			
-			if(c==GtfConstants.ATTRIBUTE_DELIMITER) {  // no value
+			if (c==GtfConstants.ATTRIBUTE_DELIMITER) {  // no value
         		i++;
 				values.add("");
         		logger.warn("no value for '"+key+"' in "+attributesString);
@@ -198,8 +198,8 @@ public class GtfCodec extends AsciiFeatureCodec<GtfFeature> {
 	        	while( i<  len &&  Character.isWhitespace(attributesString.charAt(i))) {
 	        		i++;
 	        		}
-	        	if(i>=attributesString.length()) break;
-	        	if( attributesString.charAt(i)!=GtfConstants.ATTRIBUTE_DELIMITER) throw new TribbleException("expected a "+GtfConstants.ATTRIBUTE_DELIMITER+" after value "+ valueBuilder);
+	        	if ( i >= len) break;
+	        	if ( attributesString.charAt(i) != GtfConstants.ATTRIBUTE_DELIMITER) throw new TribbleException("expected a "+GtfConstants.ATTRIBUTE_DELIMITER+" after value "+ valueBuilder);
 	        	i++;
 				}
 			else /* not a quoted string */
