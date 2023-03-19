@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -651,7 +650,7 @@ public class SAMFileWriterFactory implements Cloneable {
             if (!IOUtil.isRegularPath(outputFile)) {
                 log.warn("Cannot create index for CRAM because output file is not a regular file: " + outputFile.toUri());
             } else {
-                final Path indexPath = IOUtil.addExtension(outputFile, FileExtensions.BAI_INDEX);
+                final Path indexPath = IOUtil.addExtension(outputFile, FileExtensions.BAM_BAI_INDEX);
                 try {
 
                     indexOS = Files.newOutputStream(indexPath) ;
