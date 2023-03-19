@@ -72,7 +72,7 @@ public class TextCigarCodec
             for (++i; isDigit(cigarBytes[i]); ++i) {
                 length = (length * 10) + cigarBytes[i] - ZERO_BYTE;
             }
-            final CigarOperator operator = CigarOperator.characterToEnum(cigarBytes[i]);
+            final CigarOperator operator = CigarOperator.fromChar(cigarBytes[i]);
             ret.add(new CigarElement(length, operator));
         }
         return ret;
