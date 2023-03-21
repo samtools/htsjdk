@@ -80,7 +80,6 @@ public class RANSNx16Decode extends RANSDecode {
             inBuffer.get(data, 0, outSize);
             outBuffer = ByteBuffer.wrap(data);
         } else {
-            outBuffer = ByteBuffer.allocate(outSize);
             if (outSize != 0) {
                 switch (ransNx16Params.getOrder()) {
                     case ZERO:
