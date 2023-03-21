@@ -13,10 +13,10 @@ public class RangeDecode {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
-        return uncompressStream(inBuffer, 0);
+        return uncompress(inBuffer, 0);
     }
 
-    public ByteBuffer uncompressStream(final ByteBuffer inBuffer, int outSize) {
+    public ByteBuffer uncompress(final ByteBuffer inBuffer, int outSize) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
@@ -61,7 +61,7 @@ public class RangeDecode {
         if (rangeParams.isCAT()){
             byte[] data = new byte[outSize];
             inBuffer.get( data,0, outSize);
-            return ByteBuffer.wrap(data);
+            outBuffer = ByteBuffer.wrap(data);
         } else if (rangeParams.isExternalCompression()){
             byte[] extCompressedBytes = new byte[inBuffer.remaining()];
             int extCompressedBytesIdx = 0;
@@ -297,7 +297,7 @@ public class RangeDecode {
                 ulen[j]++;
             }
 
-            T[j] = uncompressStream(inBuffer, ulen[j]);
+            T[j] = uncompress(inBuffer, ulen[j]);
         }
 
         // Transpose
