@@ -161,7 +161,7 @@ public class RANSNx16Decode extends RANSDecode {
             remSize --;
             reverseIndex ++;
         }
-        outBuffer.position(0);
+        outBuffer.rewind();
         return outBuffer;
     }
 

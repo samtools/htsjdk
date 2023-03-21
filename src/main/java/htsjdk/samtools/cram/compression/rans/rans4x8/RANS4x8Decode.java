@@ -123,7 +123,7 @@ public class RANS4x8Decode extends RANSDecode {
                 break;
         }
 
-        outBuffer.position(0);
+        outBuffer.rewind();
         return outBuffer;
     }
 
