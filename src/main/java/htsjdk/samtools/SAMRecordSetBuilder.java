@@ -455,13 +455,6 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             end2.setSecondaryAlignment(true);
         }
 
-        if (record1NonPrimary) {
-            end1.setSecondaryAlignment(true);
-        }
-        if (record2NonPrimary) {
-            end2.setSecondaryAlignment(true);
-        }
-
         // set mate info
         SamPairUtil.setMateInfo(end1, end2, true);
 
