@@ -29,6 +29,7 @@ package htsjdk.variant.variantcontext.writer;
 // the imports for unit testing.
 
 
+import htsjdk.io.HtsPath;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.variant.VariantBaseTest;
@@ -36,7 +37,10 @@ import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextTestProvider;
 import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
+import org.broadinstitute.pgen.PgenWriter;
+import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -44,6 +48,8 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -56,6 +62,25 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
     public void before() throws IOException {
         dictionary = createArtificialSequenceDictionary();
         VariantContextTestProvider.initializeTests();
+    }
+
+    @Test
+    private void testPgenLoader() throws IOException {
+        try (final VCFFileReader reader = new VCFFileReader(new File("/Users/cnorman/projects/pgen-jni/pgen/testdata/CEUtrioTest.vcf"), false);
+             final PgenWriter writer = new PgenWriter(
+                     new HtsPath("my.pgen"),
+                     2,
+                     PgenWriter.MAX_PLINK2_ALTERNATE_ALLELES,
+                     6,
+                     3)) {
+            for (final VariantContext vc : reader) {
+                writer.add(vc);
+            }
+        }
+
+        // for now, just make sure there are contents
+        final long pgenSize = Files.size(Paths.get("my.pgen"));
+        Assert.assertNotEquals(pgenSize, 0L);
     }
 
     @DataProvider(name = "VariantContextTest_SingleContexts")
