@@ -69,7 +69,7 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
         try (final VCFFileReader reader = new VCFFileReader(new File("/Users/cnorman/projects/pgen-jni/pgen/testdata/CEUtrioTest.vcf"), false);
              final PgenWriter writer = new PgenWriter(
                      new HtsPath("my.pgen"),
-                     2,
+                     PgenWriter.PgenWriteMode.PGEN_FILE_MODE_WRITE_AND_COPY,
                      PgenWriter.MAX_PLINK2_ALTERNATE_ALLELES,
                      6,
                      3)) {
