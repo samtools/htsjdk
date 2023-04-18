@@ -23,19 +23,17 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.BinaryCodec;
-import htsjdk.samtools.util.CigarUtil;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.CoordMath;
-import htsjdk.samtools.util.RuntimeEOFException;
-import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.*;
 import htsjdk.tribble.annotation.Strand;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -675,6 +673,17 @@ public final class SAMUtils {
 
         return m1 + m2;
 
+    }
+
+    // tsatof:
+    public static long findVirtualOffsetOfFirstRecordInBam(final Path bamFile) {
+        try {
+            InputStream yo = IOUtil.openFileForReading(bamFile);
+            SeekableStream ss = new SeekablePathStream(bamFile); // tsato: best way? buffering needed?
+            return BAMFileReader.findVirtualOffsetOfFirstRecord(ss);
+        } catch (final IOException ioe) {
+            throw new RuntimeEOFException(ioe);
+        }
     }
 
     /**

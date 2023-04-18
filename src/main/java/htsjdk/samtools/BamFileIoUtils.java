@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
@@ -11,11 +12,8 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -64,6 +62,54 @@ public class BamFileIoUtils {
             throw new RuntimeIOException(ioe);
         }
     }
+
+    // tsato: let's do it.
+    public static void blockCopyBamFile(final Path inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
+        // FileInputStream in = null;
+        try (final CountingInputStream in = new CountingInputStream(Files.newInputStream(inputFile))){
+            // in = new FileInputStream(inputFile);
+
+            // check that a) the end of the file is valid and b) if there's a terminator block and not copy it if skipTerminator is true
+            final BlockCompressedInputStream.FileTermination term = BlockCompressedInputStream.checkTermination(inputFile);
+            if (term == BlockCompressedInputStream.FileTermination.DEFECTIVE)
+                throw new SAMException(inputFile + " does not have a valid GZIP block at the end of the file.");
+
+            if (skipHeader) {
+                final long vOffsetOfFirstRecord = SAMUtils.findVirtualOffsetOfFirstRecordInBam(inputFile); // tsato: need to convert
+                final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(IOUtil.openFileForReading(inputFile)); // tsato hmmm...
+                blockIn.seek(vOffsetOfFirstRecord);
+                final long remainingInBlock = blockIn.available();
+
+                // If we found the end of the header then write the remainder of this block out as a
+                // new gzip block and then break out of the while loop
+                if (remainingInBlock >= 0) {
+                    final BlockCompressedOutputStream blockOut = new BlockCompressedOutputStream(outputStream, (Path)null);
+                    IOUtil.transferByStream(blockIn, blockOut, remainingInBlock);
+                    blockOut.flush();
+                    // Don't close blockOut because closing underlying stream would break everything
+                }
+
+                long pos = BlockCompressedFilePointerUtil.getBlockAddress(blockIn.getFilePointer());
+                blockIn.close();
+                while (pos > 0) {
+                    pos -= in.skip(pos);
+                }
+            }
+
+            // Copy remainder of input stream into output stream
+            final long currentPos = in.getCount();
+            // final long length = inputPath.toFile().length(); // tsato: this right? length of the file in bytes..vs size? -- see below
+            final long length = Files.size(inputFile); // tsato: rename to size
+            final long skipLast = ((term == BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) && skipTerminator) ?
+                    BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length : 0;
+            final long bytesToWrite = length - skipLast - currentPos;
+
+            IOUtil.transferByStream(in, outputStream, bytesToWrite);
+        } catch (final IOException ioe) {
+            throw new RuntimeIOException(ioe);
+        }
+    }
+
 
     /**
      * Copy data from a BAM file to an OutputStream by directly copying the gzip blocks
