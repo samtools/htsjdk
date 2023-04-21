@@ -710,6 +710,13 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
     }
 
+    // tsato: can I consolidate with above?
+    public static void assertNonDefectivePath(final Path file) throws IOException {
+        if (checkTermination(file) == FileTermination.DEFECTIVE) {
+            throw new SAMException(file.toUri() + " does not have a valid GZIP block at the end of the file.");
+        }
+    }
+
     private static boolean preambleEqual(final byte[] preamble, final byte[] buf, final int startOffset, final int length) {
         for (int i = 0; i < length; ++i) {
             if (preamble[i] != buf[i + startOffset]) {

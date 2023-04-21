@@ -15,6 +15,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class BamFileIoUtils {
@@ -30,7 +31,13 @@ public class BamFileIoUtils {
         return ((file != null) && SamReader.Type.BAM_TYPE.hasValidFileExtension(file.getName()));
     }
 
-    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile) {
+    // tsato: no longer needed
+//    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile) {
+//        reheaderBamFile(samFileHeader, inputFile, outputFile, true, true);
+//    }
+
+    // tsato
+    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile) {
         reheaderBamFile(samFileHeader, inputFile, outputFile, true, true);
     }
 
@@ -43,12 +50,12 @@ public class BamFileIoUtils {
      * @param createMd5     Whether or not to create an MD5 file for the new BAM
      * @param createIndex   Whether or not to create an index file for the new BAM
      */
-    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile, final boolean createMd5, final boolean createIndex) {
+    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile, final boolean createMd5, final boolean createIndex) {
         IOUtil.assertFileIsReadable(inputFile);
-        IOUtil.assertFileIsWritable(outputFile);
+        // IOUtil.assertFileIsWritable(outputFile); // tsato: what do I do with this...
 
         try {
-            BlockCompressedInputStream.assertNonDefectiveFile(inputFile);
+            BlockCompressedInputStream.assertNonDefectivePath(inputFile);
             assertSortOrdersAreEqual(samFileHeader, inputFile);
 
             final OutputStream outputStream = buildOutputStream(outputFile, createMd5, createIndex);
@@ -207,6 +214,18 @@ public class BamFileIoUtils {
         }
     }
 
+    // tsato: consolidate as needed....
+    private static OutputStream buildOutputStream(final Path outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
+        OutputStream outputStream = Files.newOutputStream(outputFile);
+        if (createMd5) {
+            outputStream = new Md5CalculatingOutputStream(outputStream, Paths.get(outputFile + ".md")); // tsato: is this right?
+        }
+        if (createIndex) {
+            outputStream = new StreamInflatingIndexingOutputStream(outputStream, Paths.get(IOUtil.basename(outputFile.toFile()) + FileExtensions.BAI_INDEX)); // tsato: what happens when I run toFile on a cloud file...
+        }
+        return outputStream;
+    }
+
     private static OutputStream buildOutputStream(final File outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
         OutputStream outputStream = new FileOutputStream(outputFile);
         if (createMd5) {
@@ -218,7 +237,7 @@ public class BamFileIoUtils {
         return outputStream;
     }
 
-    private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final File inputFile) throws IOException {
+    private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final Path inputFile) throws IOException {
         final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);
         final SAMFileHeader origHeader = reader.getFileHeader();
         final SAMFileHeader.SortOrder newSortOrder = newHeader.getSortOrder();
