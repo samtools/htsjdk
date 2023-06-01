@@ -1,5 +1,7 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.beta.io.IOPathUtils;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
@@ -19,8 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -201,6 +202,14 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
             Assert.assertEquals(vcs.get(0).getContig(), "22");
             Assert.assertEquals(vcs.get(0).getStart(), 327);
         }
+    }
+
+    @Test
+    public void testVCF43AcceptsInfoFieldWithSpaces() {
+        // 1st variant has an info field with a value containing an embedded space
+        final Path infoSpaceFile = TEST_PATH.resolve("infoSpace43.vcf");
+        final Tuple<VCFHeader, List<VariantContext>> infoSpace43 = readEntireVCFIntoMemory(infoSpaceFile);
+        Assert.assertTrue(infoSpace43.b.get(0).getAttribute("set").toString().contains(" "));
     }
 
     //
