@@ -105,13 +105,10 @@ public class VCFCodec extends AbstractVCFCodec {
      */
     protected Map<String, Object> parseInfo(String infoField) {
         if ((infoField.indexOf(' ') != -1) && !version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            generateException(
-                    String.format("Whitespace is not allowed in the INFO field in VCF version %s: %s",
-                            version == null ?
-                                    "unknown" :
-                                    version.getVersionString(),
-                            infoField)
-            );
+            generateException(String.format(
+                    "Whitespace is not allowed in the INFO field in VCF version %s: %s",
+                    version.getVersionString(),
+                    infoField));
         }
         return super.parseInfo(infoField);
     }
