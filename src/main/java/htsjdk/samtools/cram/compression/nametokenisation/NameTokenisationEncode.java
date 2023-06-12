@@ -72,19 +72,16 @@ public class NameTokenisationEncode {
         // as we also need to store the TOKEN_TYPE, relative value when compared to prev name's token
         // along with the token value.
         List<List<EncodeToken>> tokensList = new ArrayList<>(numNames);
-        HashMap<String, Integer> H = new HashMap<>();
-        int[] F = new int[256];
-        for(int i = 0; i < numNames; i++) {
-            tokeniseName(tokensList, H, F, names.get(i), i);
+        HashMap<String, Integer> nameIndexMap = new HashMap<>();
+        int[] tokenFrequencies = new int[256];
+        for(int nameIndex = 0; nameIndex < numNames; nameIndex++) {
+            tokeniseName(tokensList, nameIndexMap, tokenFrequencies, names.get(nameIndex), nameIndex);
         }
         TokenStreams tokenStreams = new TokenStreams();
 
-        // TODO: use one for loop for both fillByteStreams & serializeByteStreams
-        // Reuse tokenStream instead of creating an array of tokenStreams
+        // TODO: Reuse tokenStream instead of creating an array of tokenStreams
         for (int tokPosition = 0; tokPosition < maxToken; tokPosition++) {
-            fillByteStreams( tokenStreams,tokensList,tokPosition,names);
-        }
-        for (int tokPosition = 0; tokPosition < maxToken; tokPosition++) {
+            fillByteStreams( tokenStreams,tokensList,tokPosition,numNames);
             serializeByteStreams( tokenStreams,tokPosition,useArith,outBuffer);
         }
 
@@ -95,7 +92,7 @@ public class NameTokenisationEncode {
 
     private void tokeniseName(final List<List<EncodeToken>> tokensList,
                               HashMap<String, Integer> nameIndexMap,
-                              int[] F,
+                              int[] tokenFrequencies,
                               final String name,
                               final int currentNameIndex) {
         int currMaxLength = 0;
@@ -146,16 +143,16 @@ public class NameTokenisationEncode {
                     int v = Integer.parseInt(val);
                     int s = Integer.parseInt(prevToken.getActualTokenValue());
                     int d = v - s;
-                    F[tokenIndex]++;
-                    if (d >= 0 && d < 256 && F[tokenIndex] > currentNameIndex / 2) {
+                    tokenFrequencies[tokenIndex]++;
+                    if (d >= 0 && d < 256 && tokenFrequencies[tokenIndex] > currentNameIndex / 2) {
                         type = TOKEN_DELTA;
                         val = String.valueOf(d);
                     }
                 } else if (type==TOKEN_DIGITS0 && prevToken.getActualTokenValue().length() == val.length()
                         && (prevToken.getTokenType() == TOKEN_DIGITS0 || prevToken.getTokenType() == TOKEN_DELTA0)) {
                     int d = Integer.parseInt(val) - Integer.parseInt(prevToken.getActualTokenValue());
-                    F[tokenIndex]++;
-                    if (d >= 0 && d < 256 && F[tokenIndex] > currentNameIndex / 2) {
+                    tokenFrequencies[tokenIndex]++;
+                    if (d >= 0 && d < 256 && tokenFrequencies[tokenIndex] > currentNameIndex / 2) {
                         type = TOKEN_DELTA0;
                         val = String.valueOf(d);
                     }
@@ -179,26 +176,26 @@ public class NameTokenisationEncode {
     }
 
     public void fillByteStreams(
-            TokenStreams tokenStreams,
-            List<List<EncodeToken>> tokensList,
-            int tokenPosition,
-            ArrayList<String> names) {
+            final TokenStreams tokenStreams,
+            final List<List<EncodeToken>> tokensList,
+            final int tokenPosition,
+            final int numNames) {
 
         // In tokenStreams, for every token, for the given position add a ByteBuffer of length = names.len * max_len
         for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
             final List<Token> currTokenStream = tokenStreams.getTokenStreamByType(i);
-            currTokenStream.add(new Token(ByteBuffer.allocate(names.size()* maxLength).order(ByteOrder.LITTLE_ENDIAN)));
+            currTokenStream.add(new Token(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN)));
         }
 
         // Fill tokenStreams object using tokensList
-        for (int n = 0; n < names.size(); n++) {
-            if (tokenPosition > 0 && tokensList.get(n).get(0).getTokenType() == TOKEN_DUP) {
+        for (int nameIndex = 0; nameIndex < numNames; nameIndex++) {
+            if (tokenPosition > 0 && tokensList.get(nameIndex).get(0).getTokenType() == TOKEN_DUP) {
                 continue;
             }
-            if (tokensList.get(n).size() <= tokenPosition) {
+            if (tokensList.get(nameIndex).size() <= tokenPosition) {
                 continue;
             }
-            EncodeToken encodeToken = tokensList.get(n).get(tokenPosition);
+            EncodeToken encodeToken = tokensList.get(nameIndex).get(tokenPosition);
             byte type = encodeToken.getTokenType();
             tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_TYPE).put(type);
             switch (type) {
@@ -243,13 +240,13 @@ public class NameTokenisationEncode {
         }
     }
 
-    private static void writeString(ByteBuffer tokenStreamBuffer, String val) {
+    private static void writeString(final ByteBuffer tokenStreamBuffer, final String val) {
         byte[] bytes = val.getBytes();
         tokenStreamBuffer.put(bytes);
         tokenStreamBuffer.put((byte) 0);
     }
 
-    public static ByteBuffer tryCompress(ByteBuffer src, final int useArith) {
+    public static ByteBuffer tryCompress(final ByteBuffer src, final int useArith) {
         // compress with different formatFlags
         // and return the compressed output ByteBuffer with the least number of bytes
         int bestcompressedByteLength = 1 << 30;
@@ -286,10 +283,10 @@ public class NameTokenisationEncode {
     }
 
     protected void serializeByteStreams(
-            TokenStreams tokenStreams,
+            final TokenStreams tokenStreams,
             final int tokenPosition,
             final int useArith,
-            ByteBuffer outBuffer) {
+            final ByteBuffer outBuffer) {
 
         // Compress and serialise tokenStreams
         for (int tokenType = 0; tokenType <= TOKEN_END; tokenType++) {
