@@ -2,8 +2,10 @@ package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.nametokenisation.NameTokenisationDecode;
+import htsjdk.samtools.cram.compression.nametokenisation.NameTokenisationEncode;
 import org.apache.commons.compress.utils.IOUtils;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -12,6 +14,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,35 +26,80 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
     public Object[][] getAllRansCodecsForRoundTrip() throws IOException {
 
         // params:
-        // compressed testfile path, uncompressed testfile path, NameTokenization decoder,
+        // compressed testfile path, uncompressed testfile path, NameTokenization encoder, NameTokenization decoder
         final List<Object[]> testCases = new ArrayList<>();
         for (Path path : getInteropNameTokenizationCompressedFiles()) {
                 Object[] objects = new Object[]{
                         path,
                         getNameTokenizationUnCompressedFilePath(path),
+                        new NameTokenisationEncode(),
                         new NameTokenisationDecode()
                 };
                 testCases.add(objects);
         }
         return testCases.toArray(new Object[][]{});
-
     }
 
-    @Test(
+    @Test(description = "Test if CRAM Interop Test Data is available")
+    public void testGetHTSCodecsCorpus() {
+        if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
+            throw new SkipException(String.format("CRAM Interop Test Data is not available at %s",
+                    CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
+        }
+    }
+
+    @Test (
+            dependsOnMethods = "testGetHTSCodecsCorpus",
             dataProvider = "allNameTokenizationFiles",
-            description = "Uncompress the existing compressed file using htsjdk NameTokenization " +
-                    "and compare it with the original file.")
-    public void testNameTokenizationDecoder(
+            description = "Roundtrip using htsjdk NameTokenization Codec. Compare the output with the original file" )
+    public void testRangeRoundTrip(
+            final Path precompressedFilePath,
+            final Path uncompressedFilePath,
+            final NameTokenisationEncode nameTokenisationEncode,
+            final NameTokenisationDecode nameTokenisationDecode) throws IOException {
+        try(final InputStream preCompressedInteropStream = Files.newInputStream(precompressedFilePath);
+            final InputStream unCompressedInteropStream = Files.newInputStream(uncompressedFilePath)){
+            final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
+            final ByteBuffer unCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(unCompressedInteropStream));
+            ByteBuffer compressedHtsjdkBytes = nameTokenisationEncode.compress(unCompressedInteropBytes);
+            String decompressedHtsjdkString = nameTokenisationDecode.uncompress(compressedHtsjdkBytes);
+            ByteBuffer decompressedHtsjdkBytes = StandardCharsets.UTF_8.encode(decompressedHtsjdkString);
+            unCompressedInteropBytes.rewind();
+            Assert.assertEquals(decompressedHtsjdkBytes, unCompressedInteropBytes);
+        } catch (final NoSuchFileException ex){
+            throw new SkipException("Skipping testRangeRoundTrip as either the input precompressed file " +
+                    "or the uncompressed file is missing.", ex);
+        }
+    }
+
+
+
+    @Test (
+            dependsOnMethods = "testGetHTSCodecsCorpus",
+            dataProvider = "allNameTokenizationFiles",
+            description = "Compress the original file using htsjdk NameTokenization Codec and compare it with the existing compressed file. " +
+                    "Uncompress the existing compressed file using htsjdk NameTokenization Codec and compare it with the original file.")
+    public void testtNameTokenizationPreCompressed(
             final Path compressedFilePath,
             final Path uncompressedFilePath,
+            final NameTokenisationEncode unsusednameTokenisationEncode,
             final NameTokenisationDecode nameTokenisationDecode) throws IOException {
-        final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath);
-        final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
-        final InputStream unCompressedInteropStream = Files.newInputStream(uncompressedFilePath);
-        final ByteBuffer unCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(unCompressedInteropStream));
-        String decompressedNames = nameTokenisationDecode.uncompress(preCompressedInteropBytes);
-        ByteBuffer decompressedNamesBuffer = StandardCharsets.UTF_8.encode(decompressedNames);
-        Assert.assertEquals(decompressedNamesBuffer,unCompressedInteropBytes);
+        try(final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath);
+            final InputStream unCompressedInteropStream = Files.newInputStream(uncompressedFilePath)){
+            final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
+            final ByteBuffer unCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(unCompressedInteropStream));
+
+            // Use htsjdk to uncompress the precompressed file from htscodecs repo
+            final String uncompressedHtsjdkString = nameTokenisationDecode.uncompress(preCompressedInteropBytes);
+            ByteBuffer uncompressedHtsjdkBytes = StandardCharsets.UTF_8.encode(uncompressedHtsjdkString);
+
+            // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
+            Assert.assertEquals(uncompressedHtsjdkBytes, unCompressedInteropBytes);
+        } catch (final NoSuchFileException ex){
+            throw new SkipException("Skipping testNameTokenizationPrecompressed as either input file " +
+                    "or precompressed file is missing.", ex);
+        }
+
     }
 
     // return a list of all NameTokenization encoded test data files in the htscodecs/tests/names/tok3 directory

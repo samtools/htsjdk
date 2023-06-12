@@ -13,58 +13,73 @@ import java.util.List;
 
 public class TokenStreams {
 
-    public static final int TOKEN_TYPE = 0;
-    public static final int TOKEN_STRING  = 1;
-    public static final int TOKEN_CHAR = 2;
-    public static final int TOKEN_DIGITS0 = 3;
-    public static final int TOKEN_DZLEN = 4;
-    public static final int TOKEN_DUP = 5;
-    public static final int TOKEN_DIGITS = 7;
-    public static final int TOKEN_DELTA = 8;
-    public static final int TOKEN_DELTA0 = 9;
-    public static final int TOKEN_MATCH = 10;
-    public static final int TOKEN_END = 12;
+    public static final byte TOKEN_TYPE = 0x00;
+    public static final byte TOKEN_STRING  = 0x01;
+    public static final byte TOKEN_CHAR = 0x02;
+    public static final byte TOKEN_DIGITS0 = 0x03;
+    public static final byte TOKEN_DZLEN = 0x04;
+    public static final byte TOKEN_DUP = 0x05;
+    public static final byte TOKEN_DIFF = 0x06;
+    public static final byte TOKEN_DIGITS = 0x07;
+    public static final byte TOKEN_DELTA = 0x08;
+    public static final byte TOKEN_DELTA0 = 0x09;
+    public static final byte TOKEN_MATCH = 0x0A;
+    public static final byte TOKEN_END = 0x0C;
+    public static final int TOTAL_TOKEN_TYPES = 13;
 
-    private static final int TOTAL_TOKEN_TYPES = 13;
     private static final int NEW_TOKEN_FLAG_MASK = 0x80;
     private static final int DUP_TOKEN_FLAG_MASK = 0x40;
     private static final int TYPE_TOKEN_FLAG_MASK = 0x3F;
 
     private final List<List<Token>> tokenStreams;
 
-    public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames) {
-        // TokenStreams is a List of List of Tokens.
-        // The outer index corresponds to the type of the token
-        // and the inner index corresponds to the index of the current Name in the list of Names
+    public TokenStreams() {
         tokenStreams = new ArrayList<>(TOTAL_TOKEN_TYPES);
         for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
             tokenStreams.add(new ArrayList<>());
         }
+    }
+
+    public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames) {
+        // The outer index corresponds to type of the token
+        // and the inner index corresponds to the position of the token in a name (starting at index 1)
+        // Each element in this list of lists is a Token (ie, a ByteBuffer)
+
+        // TokenStreams[type = TOKEN_TYPE(0x00), pos = 0] contains a ByteBuffer of length = number of names
+        // This ByteBuffer helps determine if each of the names is a TOKEN_DUP or TOKEN_DIFF
+        // when compared with the previous name
+
+        // TokenStreams[type = TOKEN_TYPE(0x00), pos = all except 0]
+        // contains a ByteBuffer of length = number of names
+        // This ByteBuffer helps determine the type of each of the token at the specicfied pos
+
+        this();
         int tokenPosition = -1;
         while (inputByteBuffer.hasRemaining()) {
-            final int tokenTypeFlags = inputByteBuffer.get() & 0xFF;
+            final byte tokenTypeFlags = inputByteBuffer.get();
             final boolean isNewToken = ((tokenTypeFlags & NEW_TOKEN_FLAG_MASK) != 0);
             final boolean isDupToken = ((tokenTypeFlags & DUP_TOKEN_FLAG_MASK) != 0);
             final int tokenType = (tokenTypeFlags & TYPE_TOKEN_FLAG_MASK);
-            if (tokenType < 0 || tokenType > 13) {
+            if (tokenType < 0 || tokenType > TOKEN_END) {
                 throw new CRAMException("Invalid Token tokenType: " + tokenType);
             }
             if (isNewToken) {
                 tokenPosition++;
                 if (tokenPosition > 0) {
                     // If newToken and not the first newToken
+                    // Ensure that the size of tokenStream for each type of token = tokenPosition
+                    // by adding an empty ByteBuffer if needed
                     for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-                        final List<Token> tokenStream = tokenStreams.get(i);
-                        if (tokenStream.size() < tokenPosition) {
-                            tokenStream.add(new Token(ByteBuffer.allocate(0)));
+                        final List<Token> currTokenStream = tokenStreams.get(i);
+                        if (currTokenStream.size() < tokenPosition) {
+                            currTokenStream.add(new Token(ByteBuffer.allocate(0)));
                         }
-                        if (tokenStream.size() < tokenPosition) {
+                        if (currTokenStream.size() < tokenPosition) {
                             throw new CRAMException("TokenStream is missing Token(s) at Token Type: " + i);
                         }
                     }
                 }
             }
-
             if ((isNewToken) && (tokenType != TOKEN_TYPE)) {
 
                 // Spec: if we have a byte stream B5,DIGIT S but no B5,T Y P E
@@ -96,12 +111,16 @@ public class TokenStreams {
                     RANSDecode ransdecode = new RANSNx16Decode();
                     uncompressedDataByteBuffer = ransdecode.uncompress(ByteBuffer.wrap(dataBytes));
                 }
-                tokenStreams.get(tokenType).add(tokenPosition,new Token(uncompressedDataByteBuffer));
+                this.getTokenStreamByType(tokenType).add(tokenPosition,new Token(uncompressedDataByteBuffer));
             }
         }
     }
 
-    public ByteBuffer getTokenStreamBuffer(final int position, final int type) {
-        return tokenStreams.get(type).get(position).getByteBuffer();
+    public List<Token> getTokenStreamByType(final int tokenType) {
+        return tokenStreams.get(tokenType);
+    }
+
+    public ByteBuffer getTokenStreamByteBuffer(final int tokenPosition, final int tokenType) {
+        return tokenStreams.get(tokenType).get(tokenPosition).getByteBuffer();
     }
 }
