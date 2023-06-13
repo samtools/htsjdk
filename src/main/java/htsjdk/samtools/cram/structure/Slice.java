@@ -745,9 +745,6 @@ public class Slice {
      * @param value tag value
      */
     public void setAttribute(final String tag, final Object value) {
-        if (value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
-            throw new IllegalArgumentException("Empty value passed for tag " + tag);
-        }
         setAttribute(SAMTag.makeBinaryTag(tag), value);
     }
 
