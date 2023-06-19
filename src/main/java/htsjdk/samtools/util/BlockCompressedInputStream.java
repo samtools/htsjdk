@@ -63,7 +63,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
 
     private InputStream mStream = null;
     private boolean mIsClosed = false;
-    private SeekableStream mFile = null;
+    private SeekableStream mFile = null; // tsato: change name to mPath?
     private byte[] mFileBuffer = null;
     private DecompressedBlock mCurrentBlock = null;
     private int mCurrentOffset = 0;
@@ -359,7 +359,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
 
         // Cannot seek on streams that are not file based
-        if (mFile == null) {
+        if (mFile == null) { // tsato: mFile is a seekable stream---
             throw new IOException(CANNOT_SEEK_STREAM_MSG);
         }
 

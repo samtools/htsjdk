@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.cram.io.CountingInputStream;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
@@ -70,7 +71,7 @@ public class BamFileIoUtils {
         }
     }
 
-    // tsato: let's do it.
+    // tsato: let's do it....this is the path version of blockCopyBamFile. Keeping the File version below, to be deleted.
     public static void blockCopyBamFile(final Path inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
         // FileInputStream in = null;
         try (final CountingInputStream in = new CountingInputStream(Files.newInputStream(inputFile))){
@@ -83,8 +84,12 @@ public class BamFileIoUtils {
 
             if (skipHeader) {
                 final long vOffsetOfFirstRecord = SAMUtils.findVirtualOffsetOfFirstRecordInBam(inputFile); // tsato: need to convert
-                final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(IOUtil.openFileForReading(inputFile)); // tsato hmmm...
-                blockIn.seek(vOffsetOfFirstRecord);
+                // tsato: passing an inputStream directly to BlockCompressed... won't make it seekable (which we need, I think, buy why for block copying...)
+                // can we just construct a seekable input stream? Is it buffered? Buffering probably not needed. See transferByStream
+                final SeekablePathStream seekablePathStream = new SeekablePathStream(inputFile);
+                final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(seekablePathStream); // tsato hmmm...
+                // final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(IOUtil.openFileForReading(inputFile)); // tsato hmmm...
+                blockIn.seek(vOffsetOfFirstRecord); // tsato: if seekablePathStream is not used mFile is null so this throws an error
                 final long remainingInBlock = blockIn.available();
 
                 // If we found the end of the header then write the remainder of this block out as a
@@ -93,7 +98,7 @@ public class BamFileIoUtils {
                     final BlockCompressedOutputStream blockOut = new BlockCompressedOutputStream(outputStream, (Path)null);
                     IOUtil.transferByStream(blockIn, blockOut, remainingInBlock);
                     blockOut.flush();
-                    // Don't close blockOut because closing underlying stream would break everything
+                    // Don't close blockOut because closing underlying stream would break everything (tsato: why?)
                 }
 
                 long pos = BlockCompressedFilePointerUtil.getBlockAddress(blockIn.getFilePointer());
@@ -103,7 +108,7 @@ public class BamFileIoUtils {
                 }
             }
 
-            // Copy remainder of input stream into output stream
+            // Copy remainder of input stream into output stream (tsato: why would there be anything left? Didn't we close the input stream already?)
             final long currentPos = in.getCount();
             // final long length = inputPath.toFile().length(); // tsato: this right? length of the file in bytes..vs size? -- see below
             final long length = Files.size(inputFile); // tsato: rename to size
