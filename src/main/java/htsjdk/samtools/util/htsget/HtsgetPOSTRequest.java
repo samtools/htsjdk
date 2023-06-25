@@ -3,7 +3,8 @@ package htsjdk.samtools.util.htsget;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.RuntimeIOException;
-import mjson.Json;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -134,41 +135,41 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
         return this.getEndpoint();
     }
 
-    public mjson.Json queryBody() {
-        final mjson.Json postBody = Json.object();
+    public JSONObject queryBody() {
+        final JSONObject postBody = new JSONObject();
         if (this.format != null) {
-            postBody.set("format", this.getFormat().toString());
+            postBody.put("format", this.getFormat().toString());
         }
         if (this.dataClass != null) {
-            postBody.set("class", this.getDataClass().toString());
+            postBody.put("class", this.getDataClass().toString());
         }
         if (!this.fields.isEmpty()) {
-            postBody.set(
+            postBody.put(
                 "fields",
-                Json.array(this.getFields().stream()
+                new JSONArray(this.getFields().stream()
                     .map(HtsgetRequestField::toString)
                     .toArray())
             );
         }
         if (!this.tags.isEmpty()) {
-            postBody.set("tags", Json.array(this.getTags().toArray()));
+            postBody.put("tags", new JSONArray(this.getTags().toArray()));
         }
         if (!this.notags.isEmpty()) {
-            postBody.set("notags", Json.array(this.getNoTags().toArray()));
+            postBody.put("notags", new JSONArray(this.getNoTags().toArray()));
         }
         if (!this.intervals.isEmpty()) {
-            postBody.set("regions", Json.array(
+            postBody.put("regions", new JSONArray(
                 this.intervals.stream()
                     .map(interval -> {
-                        final mjson.Json intervalJson = Json.object();
+                        final JSONObject intervalJson = new JSONObject();
                         if (interval != null && interval.getContig() != null) {
-                            intervalJson.set("referenceName", interval.getContig());
+                            intervalJson.put("referenceName", interval.getContig());
                             // Do not insert start and end for unmapped reads or if we are requesting the entire contig
                             if (!interval.getContig().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME)) {
                                 // getStart() - 1 is necessary as GA4GH standards use 0-based coordinates while Locatables are 1-based
-                                intervalJson.set("start", interval.getStart() - 1);
+                                intervalJson.put("start", interval.getStart() - 1);
                                 if (interval.getEnd() != Integer.MAX_VALUE && interval.getEnd() != -1) {
-                                    intervalJson.set("end", interval.getEnd());
+                                    intervalJson.put("end", interval.getEnd());
                                 }
                             }
                         }
