@@ -51,10 +51,10 @@ public class BundleJSON {
      * @throws IllegalArgumentException if any resource in bundle is not an IOPathResources.
      */
     public static String toJSON(final Bundle bundle) {
-        final JSONObject outerJSON = new JSONObject();
-        outerJSON.put(JSON_PROPERTY_SCHEMA_NAME, JSON_SCHEMA_NAME);
-        outerJSON.put(JSON_PROPERTY_SCHEMA_VERSION, JSON_SCHEMA_VERSION);
-        outerJSON.put(JSON_PROPERTY_PRIMARY, bundle.getPrimaryContentType());
+        final JSONObject outerJSON = new JSONObject()
+            .put(JSON_PROPERTY_SCHEMA_NAME, JSON_SCHEMA_NAME)
+            .put(JSON_PROPERTY_SCHEMA_VERSION, JSON_SCHEMA_VERSION)
+            .put(JSON_PROPERTY_PRIMARY, bundle.getPrimaryContentType());
 
         bundle.forEach(bundleResource -> {
             final Optional<IOPath> resourcePath = bundleResource.getIOPath();
@@ -102,25 +102,25 @@ public class BundleJSON {
 
         try {
             final JSONObject jsonDocument = new JSONObject(jsonString);
-            if (jsonDocument == null || jsonString.length() < 1) {
+            if (jsonString.length() < 1) {
                 throw new IllegalArgumentException(
                         String.format("JSON file parsing failed %s", jsonString));
             }
 
             // validate the schema name
-            final String schemaName = getPropertyAsString(JSON_PROPERTY_SCHEMA_NAME, jsonDocument);
+            final String schemaName = jsonDocument.optString(JSON_PROPERTY_SCHEMA_NAME, null);
             if (!schemaName.equals(JSON_SCHEMA_NAME)) {
                 throw new IllegalArgumentException(
                         String.format("Expected bundle schema name %s but found %s", JSON_SCHEMA_NAME, schemaName));
             }
 
             // validate the schema version
-            final String schemaVersion = getPropertyAsString(JSON_PROPERTY_SCHEMA_VERSION, jsonDocument);
+            final String schemaVersion = jsonDocument.optString(JSON_PROPERTY_SCHEMA_VERSION, null);
             if (!schemaVersion.equals(JSON_SCHEMA_VERSION)) {
                 throw new IllegalArgumentException(String.format("Expected bundle schema version %s but found %s",
                         JSON_SCHEMA_VERSION, schemaVersion));
             }
-            primaryContentType = getPropertyAsString(JSON_PROPERTY_PRIMARY, jsonDocument);
+            primaryContentType = jsonDocument.optString(JSON_PROPERTY_PRIMARY, null);
 
             jsonDocument.toMap().forEach((String contentType, Object jsonDocObj) -> {
                 if (! (jsonDocObj instanceof JSONObject jsonDoc)) {
@@ -130,11 +130,11 @@ public class BundleJSON {
                 if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
                     final String format = jsonDoc.optString(JSON_PROPERTY_FORMAT, null);
                     final IOPathResource ioPathResource = new IOPathResource(
-                            ioPathConstructor.apply(getPropertyAsString(JSON_PROPERTY_PATH, jsonDoc)),
+                            ioPathConstructor.apply(jsonDoc.optString(JSON_PROPERTY_PATH, null)),
                             contentType,
                             format == null ?
                                     null :
-                                    getPropertyAsString(JSON_PROPERTY_FORMAT, jsonDoc));
+                                    jsonDoc.optString(JSON_PROPERTY_FORMAT, null));
                     resources.add(ioPathResource);
                 }
             });
@@ -158,17 +158,17 @@ public class BundleJSON {
             sb.append("{\n");
 
             // schema name
-            final String schemaName = getPropertyAsString(JSON_PROPERTY_SCHEMA_NAME, jsonDocument);
+            final String schemaName = jsonDocument.optString(JSON_PROPERTY_SCHEMA_NAME, null);
             sb.append(String.format(TOP_LEVEL_PROPERTY_FORMAT, JSON_PROPERTY_SCHEMA_NAME, schemaName));
             sb.append(",\n");
 
             // schema version
-            final String schemaVersion = getPropertyAsString(JSON_PROPERTY_SCHEMA_VERSION, jsonDocument);
+            final String schemaVersion = jsonDocument.optString(JSON_PROPERTY_SCHEMA_VERSION, null);
             sb.append(String.format(TOP_LEVEL_PROPERTY_FORMAT, JSON_PROPERTY_SCHEMA_VERSION, schemaVersion));
             sb.append(",\n");
 
             // primary
-            final String primary = getPropertyAsString(JSON_PROPERTY_PRIMARY, jsonDocument);
+            final String primary = jsonDocument.optString(JSON_PROPERTY_PRIMARY, null);
             sb.append(String.format(TOP_LEVEL_PROPERTY_FORMAT, JSON_PROPERTY_PRIMARY, primary));
             sb.append(",\n");
 
@@ -184,13 +184,13 @@ public class BundleJSON {
                     if (format != null) {
                         resSB.append(String.format("{\"%s\":\"%s\",\"%s\":\"%s\"}",
                                 JSON_PROPERTY_PATH,
-                                getPropertyAsString(JSON_PROPERTY_PATH, jsonDoc),
+                                jsonDoc.optString(JSON_PROPERTY_PATH, null),
                                 JSON_PROPERTY_FORMAT,
-                                getPropertyAsString(JSON_PROPERTY_FORMAT, jsonDoc)));
+                                jsonDoc.optString(JSON_PROPERTY_FORMAT, null)));
                     } else {
                         resSB.append(String.format("{\"%s\":\"%s\"}",
                                 JSON_PROPERTY_PATH,
-                                getPropertyAsString(JSON_PROPERTY_PATH, jsonDoc)));
+                                jsonDoc.optString(JSON_PROPERTY_PATH, null)));
                     }
                     formattedResources.add(String.format("  \"%s\":%s", contentType, resSB.toString()));
                 }
@@ -203,23 +203,4 @@ public class BundleJSON {
 
         return sb.toString();
     }
-
-    // return the value of propertyName from jsonDocument as a String value
-    private static String getPropertyAsString(final String propertyName, final JSONObject jsonDocument) {
-        return jsonDocument.getString(propertyName);
-//        final JSONObject propertyValue = jsonDocument.at(propertyName);
-//        if (propertyValue == null) {
-//            throw new IllegalArgumentException(
-//                    String.format("JSON bundle is missing the required property %s (%s)",
-//                            propertyName,
-//                            jsonDocument.toString()));
-//        } else if (!propertyValue.isString()) {
-//            throw new IllegalArgumentException(
-//                    String.format("Expected string value for bundle property %s but found %s",
-//                            propertyName,
-//                            propertyValue.toString()));
-//        }
-//        return propertyValue.asString();
-    }
-
 }
