@@ -108,19 +108,19 @@ public class BundleJSON {
             }
 
             // validate the schema name
-            final String schemaName = jsonDocument.optString(JSON_PROPERTY_SCHEMA_NAME, null);
+            final String schemaName = getRequiredPropertyAsString(jsonDocument, JSON_PROPERTY_SCHEMA_NAME);
             if (!schemaName.equals(JSON_SCHEMA_NAME)) {
                 throw new IllegalArgumentException(
                         String.format("Expected bundle schema name %s but found %s", JSON_SCHEMA_NAME, schemaName));
             }
 
             // validate the schema version
-            final String schemaVersion = jsonDocument.optString(JSON_PROPERTY_SCHEMA_VERSION, null);
+            final String schemaVersion = getRequiredPropertyAsString(jsonDocument, JSON_PROPERTY_SCHEMA_VERSION);
             if (!schemaVersion.equals(JSON_SCHEMA_VERSION)) {
                 throw new IllegalArgumentException(String.format("Expected bundle schema version %s but found %s",
                         JSON_SCHEMA_VERSION, schemaVersion));
             }
-            primaryContentType = jsonDocument.optString(JSON_PROPERTY_PRIMARY, null);
+            primaryContentType = getRequiredPropertyAsString(jsonDocument, JSON_PROPERTY_PRIMARY);
 
             jsonDocument.keySet().forEach((String contentType) -> {
                 if (! (jsonDocument.get(contentType) instanceof JSONObject jsonDoc)) {
@@ -130,7 +130,7 @@ public class BundleJSON {
                 if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
                     final String format = jsonDoc.optString(JSON_PROPERTY_FORMAT, null);
                     final IOPathResource ioPathResource = new IOPathResource(
-                            ioPathConstructor.apply(jsonDoc.optString(JSON_PROPERTY_PATH, null)),
+                            ioPathConstructor.apply(getRequiredPropertyAsString(jsonDoc, JSON_PROPERTY_PATH)),
                             contentType,
                             format == null ?
                                     null :
@@ -146,5 +146,17 @@ public class BundleJSON {
         }
 
         return new Bundle(primaryContentType, resources);
+    }
+
+    private static String getRequiredPropertyAsString(JSONObject jsonDocument, String propertyName) {
+        final String propertyValue = jsonDocument.optString(propertyName, null);
+        if (propertyValue == null) {
+            throw new IllegalArgumentException(
+                    String.format("JSON bundle is missing the required property %s (%s)",
+                            propertyName,
+                            jsonDocument));
+        }
+
+        return propertyValue;
     }
 }
