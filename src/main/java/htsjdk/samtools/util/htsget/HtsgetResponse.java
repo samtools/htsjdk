@@ -4,12 +4,16 @@ import htsjdk.samtools.util.RuntimeIOException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Class allowing deserialization from json htsget response, as defined in https://samtools.github.io/hts-specs/htsget.html
@@ -101,7 +105,7 @@ public class HtsgetResponse {
          * @return parsed block object
          */
         public static Block parse(final JSONObject blockJson) {
-            final String uriJson = blockJson.optString("url");
+            final String uriJson = blockJson.optString("url", null);
             if (uriJson == null) {
                 throw new HtsgetMalformedResponseException("No URI found in Htsget data block: " +
                     blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())));
@@ -113,7 +117,7 @@ public class HtsgetResponse {
                 throw new HtsgetMalformedResponseException("Could not parse URI in Htsget data block: " + uriJson, e);
             }
 
-            final String dataClassJson = blockJson.optString("class");
+            final String dataClassJson = blockJson.optString("class", null);
             final HtsgetClass dataClass = dataClassJson == null
                 ? null
                 : HtsgetClass.valueOf(dataClassJson.toLowerCase());
@@ -169,17 +173,16 @@ public class HtsgetResponse {
             throw new HtsgetMalformedResponseException("No htsget key found in response");
         }
 
-        final String md5Json = htsget.optString("md5");
-        final String formatJson = htsget.optString("format");
+        final String md5Json = htsget.optString("md5", null);
+        final String formatJson = htsget.optString("format", null);
 
         final JSONArray blocksJson = htsget.optJSONArray("urls");
         if (blocksJson == null) {
             throw new HtsgetMalformedResponseException("No urls field found in Htsget Response");
         }
 
-        final List<Block> blocks = blocksJson.toList().stream()
-            .filter(JSONObject.class::isInstance)
-            .map(JSONObject.class::cast)
+        final List<Block> blocks = IntStream.range(0, blocksJson.length())
+            .mapToObj(blocksJson::getJSONObject)
             .map(Block::parse)
             .collect(Collectors.toList());
 

@@ -128,7 +128,7 @@ public class BundleJSON {
                 }
 
                 if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
-                    final String format = jsonDoc.optString(JSON_PROPERTY_FORMAT);
+                    final String format = jsonDoc.optString(JSON_PROPERTY_FORMAT, null);
                     final IOPathResource ioPathResource = new IOPathResource(
                             ioPathConstructor.apply(getPropertyAsString(JSON_PROPERTY_PATH, jsonDoc)),
                             contentType,
