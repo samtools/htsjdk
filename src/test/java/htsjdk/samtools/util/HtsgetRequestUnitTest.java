@@ -135,11 +135,11 @@ public class HtsgetRequestUnitTest extends HtsjdkTest {
             new String[]{"tag2"}
         );
 
-        final JSONArray expectedRegions = new JSONArray();
-        expectedRegions.put(new JSONObject("{referenceName: \"chr1\", start: 0, end: 16}"));
-        expectedRegions.put(new JSONObject("{referenceName: \"chr1\", start: 16, end: 32}"));
-        expectedRegions.put(new JSONObject("{referenceName: \"chrM\", start: 0, end: 16}"));
-        expectedRegions.put(new JSONObject("{referenceName: \"chrM\", start: 16, end: 32}"));
+        final JSONArray expectedRegions = new JSONArray()
+            .put(new JSONObject("{referenceName: \"chr1\", start: 0, end: 16}"))
+            .put(new JSONObject("{referenceName: \"chr1\", start: 16, end: 32}"))
+            .put(new JSONObject("{referenceName: \"chrM\", start: 0, end: 16}"))
+            .put(new JSONObject("{referenceName: \"chrM\", start: 16, end: 32}"));
 
         Assert.assertEqualsNoOrder(
             postBody.getJSONArray("regions").toList(),
