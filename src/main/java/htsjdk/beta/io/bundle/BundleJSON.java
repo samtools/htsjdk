@@ -70,7 +70,7 @@ public class BundleJSON {
             outerJSON.put(bundleResource.getContentType(), resourceJSON);
         });
 
-        return prettyPrintJSON(outerJSON);
+        return outerJSON.toString(1);
     }
 
     /**
@@ -122,9 +122,9 @@ public class BundleJSON {
             }
             primaryContentType = jsonDocument.optString(JSON_PROPERTY_PRIMARY, null);
 
-            jsonDocument.toMap().forEach((String contentType, Object jsonDocObj) -> {
-                if (! (jsonDocObj instanceof JSONObject jsonDoc)) {
-                    throw new IllegalStateException("Not a JSONObject");
+            jsonDocument.keySet().forEach((String contentType) -> {
+                if (! (jsonDocument.get(contentType) instanceof JSONObject jsonDoc)) {
+                    return;
                 }
 
                 if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
@@ -146,61 +146,5 @@ public class BundleJSON {
         }
 
         return new Bundle(primaryContentType, resources);
-    }
-
-    // Simple pretty-printer to produce indented JSON strings from a Json document. Note that
-    // this is not generalized and will only work on Json documents produced by BundleJSON::toJSON.
-    private static String prettyPrintJSON(final JSONObject jsonDocument) {
-        final StringBuilder sb = new StringBuilder();
-        final String TOP_LEVEL_PROPERTY_FORMAT = "  \"%s\":\"%s\"";
-
-        try {
-            sb.append("{\n");
-
-            // schema name
-            final String schemaName = jsonDocument.optString(JSON_PROPERTY_SCHEMA_NAME, null);
-            sb.append(String.format(TOP_LEVEL_PROPERTY_FORMAT, JSON_PROPERTY_SCHEMA_NAME, schemaName));
-            sb.append(",\n");
-
-            // schema version
-            final String schemaVersion = jsonDocument.optString(JSON_PROPERTY_SCHEMA_VERSION, null);
-            sb.append(String.format(TOP_LEVEL_PROPERTY_FORMAT, JSON_PROPERTY_SCHEMA_VERSION, schemaVersion));
-            sb.append(",\n");
-
-            // primary
-            final String primary = jsonDocument.optString(JSON_PROPERTY_PRIMARY, null);
-            sb.append(String.format(TOP_LEVEL_PROPERTY_FORMAT, JSON_PROPERTY_PRIMARY, primary));
-            sb.append(",\n");
-
-            final List<String> formattedResources = new ArrayList<>();
-            jsonDocument.toMap().forEach((String contentType, Object jsonDocObj) -> {
-                if (! (jsonDocObj instanceof JSONObject jsonDoc)) {
-                    throw new IllegalStateException("Not a JSONObject");
-                }
-
-                if (!TOP_LEVEL_PROPERTIES.contains(contentType)) {
-                    final JSONObject format = jsonDoc.getJSONObject(JSON_PROPERTY_FORMAT);
-                    final StringBuilder resSB = new StringBuilder();
-                    if (format != null) {
-                        resSB.append(String.format("{\"%s\":\"%s\",\"%s\":\"%s\"}",
-                                JSON_PROPERTY_PATH,
-                                jsonDoc.optString(JSON_PROPERTY_PATH, null),
-                                JSON_PROPERTY_FORMAT,
-                                jsonDoc.optString(JSON_PROPERTY_FORMAT, null)));
-                    } else {
-                        resSB.append(String.format("{\"%s\":\"%s\"}",
-                                JSON_PROPERTY_PATH,
-                                jsonDoc.optString(JSON_PROPERTY_PATH, null)));
-                    }
-                    formattedResources.add(String.format("  \"%s\":%s", contentType, resSB.toString()));
-                }
-            });
-            sb.append(formattedResources.stream().collect(Collectors.joining(",\n", "", "\n")));
-            sb.append("}\n");
-        } catch (JSONException | UnsupportedOperationException e) {
-            throw new IllegalArgumentException(e);
-        }
-
-        return sb.toString();
     }
 }
