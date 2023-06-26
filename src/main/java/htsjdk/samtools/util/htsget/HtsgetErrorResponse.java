@@ -38,8 +38,8 @@ public class HtsgetErrorResponse {
             throw new IllegalStateException(new HtsgetMalformedResponseException("No htsget key found in response"));
         }
 
-        final String errorJson = htsget.optString("error");
-        final String messageJson = htsget.optString("message");
+        final String errorJson = htsget.optString("error", null);
+        final String messageJson = htsget.optString("message", null);
 
         return new HtsgetErrorResponse(errorJson, messageJson);
     }
