@@ -77,26 +77,13 @@ public class NameTokenisationEncode {
         for(int nameIndex = 0; nameIndex < numNames; nameIndex++) {
             tokeniseName(tokensList, nameIndexMap, tokenFrequencies, names.get(nameIndex), nameIndex);
         }
-        TokenStreams tokenStreams = new TokenStreams();
-
-        // TODO: Reuse tokenStream instead of creating an array of tokenStreams
-        // List<Token> tokenStream = ArrayList(TOTAL_TOKEN_TYPES);
-        // tokenStream.getTokenStreamByteBuffer(tokenPosition,TOKEN_TYPE) will be the same as
-        // tokenStream.get(TOKEN_TYPE)
-
         for (int tokenPosition = 0; tokenPosition < maxToken; tokenPosition++) {
-
-            // In tokenStreams, for every token, for the given position add a ByteBuffer of length = names.len * max_len
+            List<Token> tokenStream = new ArrayList(TOTAL_TOKEN_TYPES);
             for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-                final List<Token> currTokenStream = tokenStreams.getTokenStreamByType(i);
-                currTokenStream.add(new Token(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN)));
+                tokenStream.add(new Token(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN)));
             }
-            fillByteStreams( tokenStreams,tokensList,tokenPosition,numNames);
-            for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-                final ByteBuffer currTokenStream = tokenStreams.getTokenStreamByteBuffer(tokenPosition,i);
-                currTokenStream.flip();
-            }
-            serializeByteStreams( tokenStreams,tokenPosition,useArith,outBuffer);
+            fillByteStreams( tokenStream,tokensList,tokenPosition,numNames);
+            serializeByteStreams( tokenStream,useArith,outBuffer);
         }
 
         // sets limit to current position and position to '0'
@@ -190,7 +177,7 @@ public class NameTokenisationEncode {
     }
 
     public void fillByteStreams(
-            final TokenStreams tokenStreams,
+            final List<Token> tokenStream,
             final List<List<EncodeToken>> tokensList,
             final int tokenPosition,
             final int numNames) {
@@ -205,39 +192,39 @@ public class NameTokenisationEncode {
             }
             EncodeToken encodeToken = tokensList.get(nameIndex).get(tokenPosition);
             byte type = encodeToken.getTokenType();
-            tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_TYPE).put(type);
+            tokenStream.get(TOKEN_TYPE).getByteBuffer().put(type);
             switch (type) {
                 case TOKEN_DIFF:
-                    tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_DIFF).putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    tokenStream.get(TOKEN_DIFF).getByteBuffer().putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
                 case TOKEN_DUP:
-                    tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_DUP).putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    tokenStream.get(TOKEN_DUP).getByteBuffer().putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
                 case TOKEN_STRING:
-                    writeString(tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_STRING),encodeToken.getRelativeTokenValue());
+                    writeString(tokenStream.get(TOKEN_STRING).getByteBuffer(),encodeToken.getRelativeTokenValue());
                     break;
 
                 case TOKEN_CHAR:
-                    tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_CHAR).put(encodeToken.getRelativeTokenValue().getBytes()[0]);
+                    tokenStream.get(TOKEN_CHAR).getByteBuffer().put(encodeToken.getRelativeTokenValue().getBytes()[0]);
                     break;
 
                 case TOKEN_DIGITS:
-                    tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_DIGITS).putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    tokenStream.get(TOKEN_DIGITS).getByteBuffer().putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
                 case TOKEN_DIGITS0:
-                    tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_DIGITS0).putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
-                    tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_DZLEN).put((byte) encodeToken.getRelativeTokenValue().length());
+                    tokenStream.get(TOKEN_DIGITS0).getByteBuffer().putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    tokenStream.get(TOKEN_DZLEN).getByteBuffer().put((byte) encodeToken.getRelativeTokenValue().length());
                     break;
 
                 case TOKEN_DELTA:
-                    tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_DELTA).put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    tokenStream.get(TOKEN_DELTA).getByteBuffer().put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
                 case TOKEN_DELTA0:
-                    tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_DELTA0).put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    tokenStream.get(TOKEN_DELTA0).getByteBuffer().put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
             }
         }
@@ -286,16 +273,15 @@ public class NameTokenisationEncode {
     }
 
     protected void serializeByteStreams(
-            final TokenStreams tokenStreams,
-            final int tokenPosition,
+            final List<Token> tokenStream,
             final int useArith,
             final ByteBuffer outBuffer) {
 
         // Compress and serialise tokenStreams
         for (int tokenType = 0; tokenType <= TOKEN_END; tokenType++) {
-            if (tokenStreams.getTokenStreamByteBuffer(tokenPosition, tokenType).remaining() > 0) {
+            if (tokenStream.get(tokenType).getByteBuffer().remaining() > 0) {
                 outBuffer.put((byte) (tokenType + ((tokenType == 0) ? 128 : 0)));
-                ByteBuffer tempOutByteBuffer = tryCompress(tokenStreams.getTokenStreamByteBuffer(tokenPosition, tokenType), useArith);
+                ByteBuffer tempOutByteBuffer = tryCompress(tokenStream.get(tokenType).getByteBuffer(), useArith);
                 writeUint7(tempOutByteBuffer.limit(),outBuffer);
                 outBuffer.put(tempOutByteBuffer);
             }
