@@ -80,9 +80,23 @@ public class NameTokenisationEncode {
         TokenStreams tokenStreams = new TokenStreams();
 
         // TODO: Reuse tokenStream instead of creating an array of tokenStreams
-        for (int tokPosition = 0; tokPosition < maxToken; tokPosition++) {
-            fillByteStreams( tokenStreams,tokensList,tokPosition,numNames);
-            serializeByteStreams( tokenStreams,tokPosition,useArith,outBuffer);
+        // List<Token> tokenStream = ArrayList(TOTAL_TOKEN_TYPES);
+        // tokenStream.getTokenStreamByteBuffer(tokenPosition,TOKEN_TYPE) will be the same as
+        // tokenStream.get(TOKEN_TYPE)
+
+        for (int tokenPosition = 0; tokenPosition < maxToken; tokenPosition++) {
+
+            // In tokenStreams, for every token, for the given position add a ByteBuffer of length = names.len * max_len
+            for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
+                final List<Token> currTokenStream = tokenStreams.getTokenStreamByType(i);
+                currTokenStream.add(new Token(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN)));
+            }
+            fillByteStreams( tokenStreams,tokensList,tokenPosition,numNames);
+            for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
+                final ByteBuffer currTokenStream = tokenStreams.getTokenStreamByteBuffer(tokenPosition,i);
+                currTokenStream.flip();
+            }
+            serializeByteStreams( tokenStreams,tokenPosition,useArith,outBuffer);
         }
 
         // sets limit to current position and position to '0'
@@ -181,12 +195,6 @@ public class NameTokenisationEncode {
             final int tokenPosition,
             final int numNames) {
 
-        // In tokenStreams, for every token, for the given position add a ByteBuffer of length = names.len * max_len
-        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            final List<Token> currTokenStream = tokenStreams.getTokenStreamByType(i);
-            currTokenStream.add(new Token(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN)));
-        }
-
         // Fill tokenStreams object using tokensList
         for (int nameIndex = 0; nameIndex < numNames; nameIndex++) {
             if (tokenPosition > 0 && tokensList.get(nameIndex).get(0).getTokenType() == TOKEN_DUP) {
@@ -232,11 +240,6 @@ public class NameTokenisationEncode {
                     tokenStreams.getTokenStreamByteBuffer(tokenPosition,TOKEN_DELTA0).put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
             }
-        }
-
-        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            final ByteBuffer currTokenStream = tokenStreams.getTokenStreamByteBuffer(tokenPosition,i);
-            currTokenStream.flip();
         }
     }
 

@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
 
 import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_TYPE;
 import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_STRING;
@@ -36,11 +37,15 @@ public class NameTokenisationDecode {
         for(int i = 0; i < numNames; i++) {
             tokensList.add(new ArrayList<>());
         }
-        StringBuilder decodedNamesBuilder = new StringBuilder();
-        for (int i = 0; i< numNames; i++){
-            decodedNamesBuilder.append(decodeSingleName(tokenStreams, tokensList, i)).append(separator);
+        StringJoiner decodedNamesJoiner = new StringJoiner(separator);
+        for (int i = 0; i < numNames; i++) {
+            decodedNamesJoiner.add(decodeSingleName(tokenStreams, tokensList, i));
         }
-        return decodedNamesBuilder.toString();
+        String uncompressedNames = decodedNamesJoiner.toString();
+        if (uncompressedLength == uncompressedNames.length() + separator.length()){
+            return uncompressedNames + separator;
+        }
+        return uncompressedNames;
     }
 
     private static String decodeSingleName(
