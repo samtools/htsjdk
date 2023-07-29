@@ -678,7 +678,6 @@ public final class SAMUtils {
     // tsatof:
     public static long findVirtualOffsetOfFirstRecordInBam(final Path bamFile) {
         try {
-            InputStream yo = IOUtil.openFileForReading(bamFile);
             SeekableStream ss = new SeekablePathStream(bamFile); // tsato: best way? buffering needed?
             return BAMFileReader.findVirtualOffsetOfFirstRecord(ss);
         } catch (final IOException ioe) {

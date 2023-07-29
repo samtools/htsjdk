@@ -60,9 +60,9 @@ public class FilteringSamIterator implements CloseableIterator<SAMRecord> {
     public FilteringSamIterator(final Iterator<SAMRecord> iterator, final SamRecordFilter filter,
                                 final boolean filterByPair) {
 
-        if (filterByPair && iterator instanceof SAMRecordIterator) {
-            ((SAMRecordIterator)iterator).assertSorted(SAMFileHeader.SortOrder.queryname);
-        }
+        if (filterByPair && iterator instanceof SAMRecordIterator) { // tsato: this whole thing has code smell
+            ((SAMRecordIterator)iterator).assertSorted(SAMFileHeader.SortOrder.queryname); // tsato: wtf is this?
+        } // tsato: this does not throw an error here if the sort order is mismatched...bizarre.
 
         this.iterator = new PeekableIterator<SAMRecord>(iterator);
         this.filter = filter;
@@ -137,7 +137,7 @@ public class FilteringSamIterator implements CloseableIterator<SAMRecord> {
             if (filterReadPairs && record.getReadPairedFlag() && record.getFirstOfPairFlag() &&
                 iterator.hasNext()) {
 
-                SamPairUtil.assertMate(record, iterator.peek());
+                SamPairUtil.assertMate(record, iterator.peek()); // tsato: why is the code complaining?
 
                 if (filter.filterOut(record, iterator.peek())) {
                     // skip second read
@@ -148,7 +148,7 @@ public class FilteringSamIterator implements CloseableIterator<SAMRecord> {
             } else if (filterReadPairs && record.getReadPairedFlag() &&
                 record.getSecondOfPairFlag()) {
                 // assume that we did a pass(first, second) and it passed the filter
-                return record;
+                return record; // tsato: doesn't the first of pair always appear first if queryname sorted?
             } else if (!filter.filterOut(record)) {
                 return record;
             }

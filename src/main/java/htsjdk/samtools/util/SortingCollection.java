@@ -55,7 +55,7 @@ import java.util.TreeSet;
  * If Snappy DLL is available and snappy.disable system property is not set to true, then Snappy is used
  * to compress temporary files.
  */
-public class SortingCollection<T> implements Iterable<T> {
+public class SortingCollection<T> implements Iterable<T> { 
     private static final Log log = Log.getInstance(SortingCollection.class);
 
     /**

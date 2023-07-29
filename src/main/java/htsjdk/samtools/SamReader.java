@@ -593,7 +593,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
                 final SAMRecord previous = checker.getPreviousRecord();
                 if (!checker.isSorted(result)) {
                     throw new IllegalStateException(String.format(
-                            "Record %s should come after %s when sorting with %s ordering.",
+                            "Record %s should come after %s when sorting with %s ordering.", // tsato: why doesn't this code get triggered when you have a bad sort order?
                             previous.getSAMString().trim(),
                             result.getSAMString().trim(), checker.getSortOrder()));
                 }
