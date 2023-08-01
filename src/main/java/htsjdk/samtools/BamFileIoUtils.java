@@ -38,7 +38,7 @@ public class BamFileIoUtils {
 
 
     /**
-     * Kept for backward compatibility. Use the same method with Path inputs below.
+     * Support File input types for backward compatibility. Use the same method with Path inputs below.
      */
     @Deprecated
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile, final boolean createMd5, final boolean createIndex) {
@@ -56,7 +56,7 @@ public class BamFileIoUtils {
      */
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile, final boolean createMd5, final boolean createIndex) {
         IOUtil.assertFileIsReadable(inputFile);
-        // IOUtil.assertFileIsWritable(outputFile); // tsato: what do I do with this...
+        IOUtil.assertFileIsWritable(outputFile); // tsato: what do I do with this...
 
         try {
             BlockCompressedInputStream.assertNonDefectivePath(inputFile);
@@ -74,6 +74,19 @@ public class BamFileIoUtils {
         }
     }
 
+    @Deprecated
+    public static void blockCopyBamFile(final File inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
+        blockCopyBamFile(inputFile.toPath(), outputStream, skipHeader, skipTerminator);
+    }
+
+    /**
+     * Copy data from a BAM file to an OutputStream by directly copying the gzip blocks
+     *
+     * @param inputFile      The file to be copied
+     * @param outputStream   The stream to write the copied data to
+     * @param skipHeader     If true, the header of the input file will not be copied to the output stream
+     * @param skipTerminator If true, the terminator block of the input file will not be written to the output stream
+     */
     // tsato: let's do it....this is the path version of blockCopyBamFile. Keeping the File version below, to be deleted.
     public static void blockCopyBamFile(final Path inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
         // FileInputStream in = null;
@@ -124,63 +137,7 @@ public class BamFileIoUtils {
             throw new RuntimeIOException(ioe);
         }
     }
-
-
-    /**
-     * Copy data from a BAM file to an OutputStream by directly copying the gzip blocks
-     *
-     * @param inputFile      The file to be copied
-     * @param outputStream   The stream to write the copied data to
-     * @param skipHeader     If true, the header of the input file will not be copied to the output stream
-     * @param skipTerminator If true, the terminator block of the input file will not be written to the output stream
-     */
-//    public static void blockCopyBamFile(final File inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
-//        FileInputStream in = null;
-//        try {
-//            in = new FileInputStream(inputFile);
-//
-//            // a) It's good to check that the end of the file is valid and b) we need to know if there's a terminator block and not copy it if skipTerminator is true
-//            final BlockCompressedInputStream.FileTermination term = BlockCompressedInputStream.checkTermination(inputFile);
-//            if (term == BlockCompressedInputStream.FileTermination.DEFECTIVE)
-//                throw new SAMException(inputFile.getAbsolutePath() + " does not have a valid GZIP block at the end of the file.");
-//
-//            if (skipHeader) {
-//                final long vOffsetOfFirstRecord = SAMUtils.findVirtualOffsetOfFirstRecordInBam(inputFile);
-//                final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(inputFile);
-//                blockIn.seek(vOffsetOfFirstRecord);
-//                final long remainingInBlock = blockIn.available();
-//
-//                // If we found the end of the header then write the remainder of this block out as a
-//                // new gzip block and then break out of the while loop
-//                if (remainingInBlock >= 0) {
-//                    final BlockCompressedOutputStream blockOut = new BlockCompressedOutputStream(outputStream, (Path)null);
-//                    IOUtil.transferByStream(blockIn, blockOut, remainingInBlock);
-//                    blockOut.flush();
-//                    // Don't close blockOut because closing underlying stream would break everything
-//                }
-//
-//                long pos = BlockCompressedFilePointerUtil.getBlockAddress(blockIn.getFilePointer());
-//                blockIn.close();
-//                while (pos > 0) {
-//                    pos -= in.skip(pos);
-//                }
-//            }
-//
-//            // Copy remainder of input stream into output stream
-//            final long currentPos = in.getChannel().position();
-//            final long length = inputFile.length();
-//            final long skipLast = ((term == BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) && skipTerminator) ?
-//                    BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length : 0;
-//            final long bytesToWrite = length - skipLast - currentPos;
-//
-//            IOUtil.transferByStream(in, outputStream, bytesToWrite);
-//        } catch (final IOException ioe) {
-//            throw new RuntimeIOException(ioe);
-//        } finally {
-//            CloserUtil.close(in);
-//        }
-//    }
-
+    
     /**
      * Assumes that all inputs and outputs are block compressed VCF files and copies them without decompressing and parsing
      * most of the gzip blocks. Will decompress and parse blocks up to the one containing the end of the header in each file
