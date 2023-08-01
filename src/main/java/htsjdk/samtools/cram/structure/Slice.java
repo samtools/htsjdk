@@ -736,38 +736,6 @@ public class Slice {
     }
 
     /**
-     * Hijacking attributes-related methods from SAMRecord:
-     */
-
-    /**
-     * Set a value for the tag.
-     * @param tag tag ID as a short integer as returned by {@link SAMTag#makeBinaryTag(String)}
-     * @param value tag value
-     */
-    public void setAttribute(final String tag, final Object value) {
-        setAttribute(SAMTag.makeBinaryTag(tag), value);
-    }
-
-    void setAttribute(final short tag, final Object value) {
-        setAttribute(tag, value, false);
-    }
-
-    void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
-        if (value == null) {
-            if (this.sliceTags != null) this.sliceTags = this.sliceTags.remove(tag);
-        } else {
-            final SAMBinaryTagAndValue tmp;
-            if (!isUnsignedArray) {
-                tmp = new SAMBinaryTagAndValue(tag, value);
-            } else {
-                tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, value);
-            }
-            if (this.sliceTags == null) this.sliceTags = tmp;
-            else this.sliceTags = this.sliceTags.insert(tmp);
-        }
-    }
-
-    /**
      * Uses a Multiple Reference Slice Alignment Reader to determine the reference spans of a MULTI_REF Slice.
      * Used for creating CRAI/BAI index entries.
      *
