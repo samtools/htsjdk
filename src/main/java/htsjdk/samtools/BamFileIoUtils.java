@@ -32,12 +32,17 @@ public class BamFileIoUtils {
         return ((file != null) && SamReader.Type.BAM_TYPE.hasValidFileExtension(file.getName()));
     }
 
-    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile) {
-        reheaderBamFile(samFileHeader, inputFile.toPath(), outputFile.toPath(), true, true);
-    }
-
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile) {
         reheaderBamFile(samFileHeader, inputFile, outputFile, true, true);
+    }
+
+
+    /**
+     * Kept for backward compatibility. Use the same method with Path inputs below.
+     */
+    @Deprecated
+    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile, final boolean createMd5, final boolean createIndex) {
+        reheaderBamFile(samFileHeader, inputFile.toPath(), outputFile.toPath(), createMd5, createIndex);
     }
 
     /**
