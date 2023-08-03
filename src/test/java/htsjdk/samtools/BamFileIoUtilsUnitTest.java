@@ -1,25 +1,44 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.beta.exception.HtsjdkException;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.nio.file.Paths;
-
-import static org.testng.Assert.*;
+import java.io.IOException;
+import java.util.Iterator;
 
 public class BamFileIoUtilsUnitTest extends HtsjdkTest {
-    private String inputBam = "gs://broad-dsde-methods-takuto/gatk/test/K-562_test.bam";
-    private String bamWithNewHeader = "gs://broad-dsde-methods-takuto/gatk/test/K-562_test_new_header.bam";
-
-    // Or, should we just write this in Picard?
-    // But this functionality is in htsjdk, so definitely should be tested here
-    // Does Paths.get() take a gs:// file and figure it out though...
+    final static String TEST_DATA_DIR = "src/test/resources/htsjdk/samtools/cram/";
+    final String originalBam = TEST_DATA_DIR + "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam";
+    final String bamWithDesiredHeader = TEST_DATA_DIR + "NA12878.20.21.unmapped.orig.bam";
 
     @Test
     public void testReheaderBamFile(){
-        SAMFileHeader header = null; // tsato: to implement
-        BamFileIoUtils.reheaderBamFile(header, Paths.get(inputBam), Paths.get(bamWithNewHeader)); // tsato: is this going to cut it?
-        // Creating a temp file....needed in htsjdk too...
+        final File originalBam = new File(this.originalBam);
+        SAMFileHeader header = SamReaderFactory.make().getFileHeader(new File(bamWithDesiredHeader));
+        try {
+            final File output = File.createTempFile("output", ".bam");
+            BamFileIoUtils.reheaderBamFile(header, originalBam.toPath(), output.toPath());
+
+            // Confirm that the header has been replaced
+            final SamReader outputReader = SamReaderFactory.make().open(output.toPath());
+            Assert.assertEquals(outputReader.getFileHeader(), header);
+
+            // Confirm that the reads are the same as the original
+            final Iterator<SAMRecord> originalBamIterator = SamReaderFactory.make().open(originalBam.toPath()).iterator();
+            final Iterator<SAMRecord> outputBamIterator = outputReader.iterator();
+            final int numRecordsToRead = 10;
+            for (int i = 0; i < numRecordsToRead; i++){
+                final SAMRecord originalRead = originalBamIterator.next();
+                final SAMRecord outputRead = outputBamIterator.next();
+                Assert.assertEquals(originalRead, outputRead);
+            }
+
+        } catch (IOException e){
+            throw new HtsjdkException("Could not create a temporary output file.", e);
+        }
+
     }
 }

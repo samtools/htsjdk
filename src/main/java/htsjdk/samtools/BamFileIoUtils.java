@@ -56,7 +56,7 @@ public class BamFileIoUtils {
      */
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile, final boolean createMd5, final boolean createIndex) {
         IOUtil.assertFileIsReadable(inputFile);
-        IOUtil.assertFileIsWritable(outputFile); // tsato: what do I do with this...
+        // IOUtil.assertFileIsWritable(outputFile); // tsato: what do I do with this...
 
         try {
             BlockCompressedInputStream.assertNonDefectivePath(inputFile);
@@ -87,16 +87,17 @@ public class BamFileIoUtils {
      * @param skipHeader     If true, the header of the input file will not be copied to the output stream
      * @param skipTerminator If true, the terminator block of the input file will not be written to the output stream
      */
-    // tsato: let's do it....this is the path version of blockCopyBamFile. Keeping the File version below, to be deleted.
     public static void blockCopyBamFile(final Path inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
         // FileInputStream in = null;
         try (final CountingInputStream in = new CountingInputStream(Files.newInputStream(inputFile))){
             // in = new FileInputStream(inputFile);
 
-            // check that a) the end of the file is valid and b) if there's a terminator block and not copy it if skipTerminator is true
+            // check:
+            //   a) that the end of the file is valid, and
+            //   b) if there's a terminator block and not copy it if skipTerminator is true
             final BlockCompressedInputStream.FileTermination term = BlockCompressedInputStream.checkTermination(inputFile);
             if (term == BlockCompressedInputStream.FileTermination.DEFECTIVE)
-                throw new SAMException(inputFile + " does not have a valid GZIP block at the end of the file.");
+                throw new SAMException(inputFile.toUri() + " does not have a valid GZIP block at the end of the file.");
 
             if (skipHeader) {
                 final long vOffsetOfFirstRecord = SAMUtils.findVirtualOffsetOfFirstRecordInBam(inputFile); // tsato: this is where we "seek"
@@ -137,7 +138,7 @@ public class BamFileIoUtils {
             throw new RuntimeIOException(ioe);
         }
     }
-    
+
     /**
      * Assumes that all inputs and outputs are block compressed VCF files and copies them without decompressing and parsing
      * most of the gzip blocks. Will decompress and parse blocks up to the one containing the end of the header in each file
