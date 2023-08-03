@@ -1124,6 +1124,19 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertNull(record.getStringAttribute(ARRAY_TAG));
     }
 
+    @Test
+    public void test_setUnsignedArrayAttribute_empty_array() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = new SAMRecord(header);
+        Assert.assertNull(record.getStringAttribute(ARRAY_TAG));
+        record.setUnsignedArrayAttribute(ARRAY_TAG, new int[0]);
+        Assert.assertNotNull(record.getUnsignedIntArrayAttribute(ARRAY_TAG));
+        Assert.assertEquals(record.getUnsignedIntArrayAttribute(ARRAY_TAG), new int[0]);
+        Assert.assertEquals(record.getAttribute(ARRAY_TAG), new char[0]);
+        record.setAttribute(ARRAY_TAG, null);
+        Assert.assertNull(record.getStringAttribute(ARRAY_TAG));
+    }
+
     private static Object[][] getEmptyArrays() {
         return new Object[][]{
                 {new int[0], int[].class},
