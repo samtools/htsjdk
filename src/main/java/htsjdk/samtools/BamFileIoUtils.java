@@ -13,7 +13,10 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -74,6 +77,9 @@ public class BamFileIoUtils {
         }
     }
 
+    /**
+     * @deprecated as of August 2023. Use the method by the same name below with Path input
+     */
     @Deprecated
     public static void blockCopyBamFile(final File inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
         blockCopyBamFile(inputFile.toPath(), outputStream, skipHeader, skipTerminator);
@@ -88,13 +94,10 @@ public class BamFileIoUtils {
      * @param skipTerminator If true, the terminator block of the input file will not be written to the output stream
      */
     public static void blockCopyBamFile(final Path inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
-        // FileInputStream in = null;
+        // tsato: why use CountingInputStream?
         try (final CountingInputStream in = new CountingInputStream(Files.newInputStream(inputFile))){
-            // in = new FileInputStream(inputFile);
 
-            // check:
-            //   a) that the end of the file is valid, and
-            //   b) if there's a terminator block and not copy it if skipTerminator is true
+            // a) It's good to check that the end of the file is valid and b) we need to know if there's a terminator block and not copy it if skipTerminator is true
             final BlockCompressedInputStream.FileTermination term = BlockCompressedInputStream.checkTermination(inputFile);
             if (term == BlockCompressedInputStream.FileTermination.DEFECTIVE)
                 throw new SAMException(inputFile.toUri() + " does not have a valid GZIP block at the end of the file.");
