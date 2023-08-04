@@ -431,5 +431,8 @@ public interface Allele extends Comparable<Allele>, Serializable {
 
     int length();
 
+    /**
+     *  @return true if Allele is either {@code <NON_REF>} or {@code <*>}
+     */
     boolean isNonRefAllele();
 }

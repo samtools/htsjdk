@@ -31,6 +31,7 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.vcf.VCFConstants;
+import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -69,6 +70,28 @@ public class GenotypeUnitTest extends VariantBaseTest {
         Assert.assertTrue(makeGB().make().hasAnyAttribute(VCFConstants.GENOTYPE_FILTER_KEY), "hasAnyAttribute(GENOTYPE_FILTER_KEY) should return true");
         Assert.assertFalse(makeGB().filter("").make().isFiltered(), "empty filters should count as unfiltered");
         Assert.assertEquals(makeGB().filter("").make().getFilters(), null, "empty filter string should result in null filters");
+    }
+    
+    @Test
+    public void testHasAltAllele() {
+        Assert.assertTrue(GenotypeBuilder.create("s", Arrays.asList(A)).hasAltAllele());
+        Assert.assertTrue(GenotypeBuilder.create("s", Arrays.asList(A,Aref)).hasAltAllele());
+        Assert.assertTrue(GenotypeBuilder.create("s", Arrays.asList(A,Allele.NO_CALL)).hasAltAllele());
+        Assert.assertFalse(GenotypeBuilder.create("s", Arrays.asList(Aref)).hasAltAllele());
+        Assert.assertFalse(GenotypeBuilder.create("s", Arrays.asList(Aref,Aref)).hasAltAllele());
+        Assert.assertFalse(GenotypeBuilder.create("s", Arrays.asList(Allele.NO_CALL,Allele.NO_CALL)).hasAltAllele());
+        Assert.assertTrue(GenotypeBuilder.create("s", Arrays.asList(Allele.NON_REF_ALLELE)).hasAltAllele());
+        Assert.assertTrue(GenotypeBuilder.create("s", Arrays.asList(Allele.SPAN_DEL)).hasAltAllele());
+    }
+
+    @Test
+    public void testHasRefAllele() {
+        Assert.assertFalse(GenotypeBuilder.create("s", Arrays.asList(A)).hasRefAllele());
+        Assert.assertTrue(GenotypeBuilder.create("s", Arrays.asList(A,Aref)).hasRefAllele());
+        Assert.assertFalse(GenotypeBuilder.create("s", Arrays.asList(A,Allele.NO_CALL)).hasRefAllele());
+        Assert.assertTrue(GenotypeBuilder.create("s", Arrays.asList(Aref)).hasRefAllele());
+        Assert.assertTrue(GenotypeBuilder.create("s", Arrays.asList(Aref,Aref)).hasRefAllele());
+        Assert.assertFalse(GenotypeBuilder.create("s", Arrays.asList(Allele.NO_CALL,Allele.NO_CALL)).hasRefAllele());
     }
 
 //    public Genotype(String sampleName, List<Allele> alleles, double negLog10PError, Set<String> filters, Map<String, ?> attributes, boolean isPhased) {
