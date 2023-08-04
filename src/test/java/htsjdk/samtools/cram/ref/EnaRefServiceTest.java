@@ -14,7 +14,7 @@ public class EnaRefServiceTest extends HtsjdkTest {
                 {"0000088cbcebe818eb431d58c908c698"}};
     }
 
-    @Test(dataProvider = "testEnaRefServiceData")
+    @Test(dataProvider = "testEnaRefServiceData", groups = "ena")
     public void testEnaRefServiceData(final String md5) throws GaveUpException {
         Assert.assertNotNull(new EnaRefService().getSequence(md5));
     }
