@@ -2,7 +2,9 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.exception.HtsjdkException;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -60,18 +62,42 @@ public class BamFileIoUtilsUnitTest extends HtsjdkTest {
         return true;
     }
 
-    @Test
-    public void testBlockCopyBamFile() throws IOException {
+    // tsato: kinda ugly?
+    @DataProvider(name="BlockCopyBamFileTestInput")
+    public Object[][] getBlockCopyBamFileTestInput() {
+        return new Object[][] {
+                {true, true},
+                {true, false},
+                {false, true},
+                {false, false}
+        };
+    }
+
+    @Test(dataProvider = "BlockCopyBamFileTestInput")
+    public void testBlockCopyBamFile(final boolean skipHeader, final boolean skipTerminator) throws IOException {
+        System.out.println(skipHeader + ", " + skipTerminator);
         final File output = File.createTempFile("output", ".bam");
         final OutputStream out = Files.newOutputStream(output.toPath());
         final Path input = Paths.get(NA12878_8000);
-        final InputStream in = Files.newInputStream(input);
 
-        BamFileIoUtils.blockCopyBamFile(Paths.get(NA12878_8000), out, false, false);
+        BamFileIoUtils.blockCopyBamFile(Paths.get(NA12878_8000), out, skipHeader, skipTerminator);
 
         final SamReader inputReader = SamReaderFactory.make().open(input);
         final SamReader outputReader = SamReaderFactory.make().open(output);
-        Assert.assertEquals(outputReader.getFileHeader(), inputReader.getFileHeader());
-        Assert.assertTrue(compareBamReads(input.toFile(), output, DEFAULT_NUM_RECORDS_TO_COMPARE));
+
+        if (skipHeader){
+            SAMFileHeader h = outputReader.getFileHeader();
+            Assert.assertTrue(h.getReadGroups().isEmpty()); // a proxy for the header being empty
+        } else {
+            Assert.assertEquals(outputReader.getFileHeader(), inputReader.getFileHeader());
+            // Reading will fail when the header is absent
+            Assert.assertTrue(compareBamReads(input.toFile(), output, DEFAULT_NUM_RECORDS_TO_COMPARE));
+        }
+
+        if (skipTerminator){
+            BlockCompressedInputStream.FileTermination termination = BlockCompressedInputStream.checkTermination(output);
+            Assert.assertEquals(termination, BlockCompressedInputStream.FileTermination.HAS_HEALTHY_LAST_BLOCK);
+        }
+
     }
 }
