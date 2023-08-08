@@ -30,5 +30,4 @@ package htsjdk.tribble;
  */
 public interface IntervalFileFeature extends Feature {
     String getName();
-
 }
