@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2013 The Broad Institute
+ * Copyright (c) 2023 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,33 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package htsjdk.tribble.bed;
+package htsjdk.tribble;
 
-import htsjdk.tribble.IntervalFileFeature;
-import htsjdk.tribble.annotation.Strand;
-
-import java.awt.*;
 
 /**
- * @author jrobinso
- * @date Dec 24, 2009
- *
- * BED feature start and end positions must adhere to the Feature interval specifications.
- * This is different than the 0-based representation in a BED file.  This conversion is handled by {@link BEDCodec}.
- * Anyone writing a bed file should be aware of this difference.
+ * An interface for features provided via an interval file, e.g. bed or interval_list.
+ * Provides a common interface for accessing the name column for both of these file types.
  */
-public interface BEDFeature extends IntervalFileFeature {
-    Strand getStrand();
+public interface IntervalFileFeature extends Feature {
+    String getName();
 
-    String getType();
-
-    Color getColor();
-
-    String getDescription();
-
-    java.util.List<FullBEDFeature.Exon> getExons();
-
-    float getScore();
-
-    String getLink();
 }
