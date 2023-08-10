@@ -129,18 +129,8 @@ public class BamFileIoUtils {
                 }
             }
 
-            // *** START INVESTIGATION *** //
-            // Copy remainder of input stream into output stream (tsato: why would there be anything left? Didn't we close the input stream already?)
-            // Test wha this does and how it gets the position of the first record without the SeekableInputStream.
-            final long vOffsetOfFirstRecord2 = SAMUtils.findVirtualOffsetOfFirstRecordInBam(inputFile.toFile());
-            FileInputStream inOld = new FileInputStream(inputFile.toFile());
-            final long currentPosOld = inOld.getChannel().position(); // tsato: why use the channel here...well, is there a different way of doing this?
-            InputStream in2 = Files.newInputStream(inputFile); // tsato: might be good to compare performance though, just in case.
-            // I see, FileInputStream vs InputStream. Is
-            // *** END INVESTIGATION *** //
-
             final long currentPos = in.getCount(); // tsato: assuming currentPos is the position after writing the first block, this should be ok.
-            // final long length = inputPath.toFile().length(); // tsato: this right? length of the file in bytes..vs size? -- see below
+            // final long length = inputFile.length();
             final long length = Files.size(inputFile); // tsato: rename to size
             final long skipLast = ((term == BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) && skipTerminator) ?
                     BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length : 0;
@@ -198,7 +188,6 @@ public class BamFileIoUtils {
         return buildOutputStream(outputFile.toPath(), createMd5, createIndex);
     }
 
-    // tsato: consolidate as needed....
     private static OutputStream buildOutputStream(final Path outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
         OutputStream outputStream = Files.newOutputStream(outputFile);
         if (createMd5) {
