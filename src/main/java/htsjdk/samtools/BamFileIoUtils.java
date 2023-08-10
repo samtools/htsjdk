@@ -12,10 +12,13 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
+import org.apache.commons.compress.utils.FileNameUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,22 +97,20 @@ public class BamFileIoUtils {
      * @param skipTerminator If true, the terminator block of the input file will not be written to the output stream
      */
     public static void blockCopyBamFile(final Path inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
-        // tsato: why use CountingInputStream?
+        // tsato: use CountingInputStream to replace FileInputStream. The latter has .getChannel().getPosition
+        // The regular InputStream from Files.newInputStream() doesn't have it, but I might be able to do so by creating Channel object and avoid using CountingInputStream
         try (final CountingInputStream in = new CountingInputStream(Files.newInputStream(inputFile))){
-
+        // try (final InputStream in = Files.newInputStream(inputFile)){
             // a) It's good to check that the end of the file is valid and b) we need to know if there's a terminator block and not copy it if skipTerminator is true
             final BlockCompressedInputStream.FileTermination term = BlockCompressedInputStream.checkTermination(inputFile);
             if (term == BlockCompressedInputStream.FileTermination.DEFECTIVE)
                 throw new SAMException(inputFile.toUri() + " does not have a valid GZIP block at the end of the file.");
 
-            if (skipHeader) {
-                final long vOffsetOfFirstRecord = SAMUtils.findVirtualOffsetOfFirstRecordInBam(inputFile); // tsato: this is where we "seek"
-                // tsato: passing an inputStream directly to BlockCompressed... won't make it seekable (which we need, I think, buy why for block copying...)
-                // can we just construct a seekable input stream? Is it buffered? Buffering probably not needed. See transferByStream
+            if (skipHeader) { // tsato: this method assumes bam file...should I test cram?
                 final SeekablePathStream seekablePathStream = new SeekablePathStream(inputFile);
-                final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(seekablePathStream); // tsato hmmm...
-                // final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(IOUtil.openFileForReading(inputFile)); // tsato hmmm...
-                blockIn.seek(vOffsetOfFirstRecord); // tsato: if seekablePathStream is not used mFile is null so this throws an error
+                final long vOffsetOfFirstRecord = SAMUtils.findVirtualOffsetOfFirstRecordInBam(seekablePathStream);
+                final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(seekablePathStream);
+                blockIn.seek(vOffsetOfFirstRecord); // This is why we give the BlockCompressedInputStream a SeekablePathStream rather than the regular InputStream
                 final long remainingInBlock = blockIn.available();
 
                 // If we found the end of the header then write the remainder of this block out as a
@@ -118,7 +119,7 @@ public class BamFileIoUtils {
                     final BlockCompressedOutputStream blockOut = new BlockCompressedOutputStream(outputStream, (Path)null);
                     IOUtil.transferByStream(blockIn, blockOut, remainingInBlock);
                     blockOut.flush();
-                    // Don't close blockOut because closing underlying stream would break everything (tsato: why?)
+                    // Don't close blockOut because closing underlying stream would break everything
                 }
 
                 long pos = BlockCompressedFilePointerUtil.getBlockAddress(blockIn.getFilePointer());
@@ -128,15 +129,24 @@ public class BamFileIoUtils {
                 }
             }
 
+            // *** START INVESTIGATION *** //
             // Copy remainder of input stream into output stream (tsato: why would there be anything left? Didn't we close the input stream already?)
-            final long currentPos = in.getCount();
+            // Test wha this does and how it gets the position of the first record without the SeekableInputStream.
+            final long vOffsetOfFirstRecord2 = SAMUtils.findVirtualOffsetOfFirstRecordInBam(inputFile.toFile());
+            FileInputStream inOld = new FileInputStream(inputFile.toFile());
+            final long currentPosOld = inOld.getChannel().position(); // tsato: why use the channel here...well, is there a different way of doing this?
+            InputStream in2 = Files.newInputStream(inputFile); // tsato: might be good to compare performance though, just in case.
+            // I see, FileInputStream vs InputStream. Is
+            // *** END INVESTIGATION *** //
+
+            final long currentPos = in.getCount(); // tsato: assuming currentPos is the position after writing the first block, this should be ok.
             // final long length = inputPath.toFile().length(); // tsato: this right? length of the file in bytes..vs size? -- see below
             final long length = Files.size(inputFile); // tsato: rename to size
             final long skipLast = ((term == BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) && skipTerminator) ?
                     BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length : 0;
             final long bytesToWrite = length - skipLast - currentPos;
 
-            IOUtil.transferByStream(in, outputStream, bytesToWrite);
+            IOUtil.transferByStream(in, outputStream, bytesToWrite); // tsato: this method is manually buffered so make sure BufferedReader/Writer is not used (or does that matter?)
         } catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
         }
@@ -183,28 +193,29 @@ public class BamFileIoUtils {
         }
     }
 
+    @Deprecated
+    private static OutputStream buildOutputStream(final File outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
+        return buildOutputStream(outputFile.toPath(), createMd5, createIndex);
+    }
+
     // tsato: consolidate as needed....
     private static OutputStream buildOutputStream(final Path outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
         OutputStream outputStream = Files.newOutputStream(outputFile);
         if (createMd5) {
-            outputStream = new Md5CalculatingOutputStream(outputStream, Paths.get(outputFile + ".md")); // tsato: is this right?
+            outputStream = new Md5CalculatingOutputStream(outputStream, Paths.get(outputFile + ".md")); // tsato: is this right? maybe need .getURI()
         }
         if (createIndex) {
-            outputStream = new StreamInflatingIndexingOutputStream(outputStream, Paths.get(IOUtil.basename(outputFile.toFile()) + FileExtensions.BAI_INDEX)); // tsato: what happens when I run toFile on a cloud file...
+            final String baseName = FileNameUtils.getBaseName(outputFile);
+            outputStream = new StreamInflatingIndexingOutputStream(outputStream, Paths.get(baseName + FileExtensions.BAI_INDEX));
         }
         return outputStream;
     }
 
-//    private static OutputStream buildOutputStream(final File outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
-//        OutputStream outputStream = new FileOutputStream(outputFile);
-//        if (createMd5) {
-//            outputStream = new Md5CalculatingOutputStream(outputStream, new File(outputFile.getAbsolutePath() + ".md5"));
-//        }
-//        if (createIndex) {
-//            outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + FileExtensions.BAI_INDEX));
-//        }
-//        return outputStream;
-//    }
+
+    @Deprecated
+    private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final File inputFile) throws IOException {
+        assertSortOrdersAreEqual(newHeader, inputFile.toPath());
+    }
 
     private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final Path inputFile) throws IOException {
         final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);

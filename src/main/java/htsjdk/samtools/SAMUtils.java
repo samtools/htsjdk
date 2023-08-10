@@ -675,10 +675,10 @@ public final class SAMUtils {
 
     }
 
-    // tsatof:
+    // tsato: to delete
     public static long findVirtualOffsetOfFirstRecordInBam(final Path bamFile) {
         try {
-            SeekableStream ss = new SeekablePathStream(bamFile); // tsato: best way? buffering needed?
+            SeekableStream ss = new SeekablePathStream(bamFile);
             return BAMFileReader.findVirtualOffsetOfFirstRecord(ss);
         } catch (final IOException ioe) {
             throw new RuntimeEOFException(ioe);
