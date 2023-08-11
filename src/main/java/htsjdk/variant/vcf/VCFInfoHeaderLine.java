@@ -26,44 +26,90 @@
 package htsjdk.variant.vcf;
 
 
+import htsjdk.samtools.util.Log;
+import htsjdk.utils.ValidationUtils;
+
 /**
- * @author ebanks
  *         <p>
  *         Class VCFInfoHeaderLine
  *         </p>
  *         <p>
- *         A class representing a key=value entry for INFO fields in the VCF header
+ *         A class representing an INFO field in the VCF header
  *         </p>
  */
 public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
-    public VCFInfoHeaderLine(String name, int count, VCFHeaderLineType type, String description) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO);
-    }
+    private static final long serialVersionUID = 1L;
+
+    protected final static Log logger = Log.getInstance(VCFFormatHeaderLine.class);
 
     public VCFInfoHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO);
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
+    }
+
+    public VCFInfoHeaderLine(String name, int count, VCFHeaderLineType type, String description) {
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
     }
 
     public VCFInfoHeaderLine(String name, int count, VCFHeaderLineType type, String description, String source, String version) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO, source, version);
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
+        this.updateGenericField(SOURCE_ATTRIBUTE, source);
+        this.updateGenericField(VERSION_ATTRIBUTE, version);
     }
 
     public VCFInfoHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description, String source, String version) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO, source, version);
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
+        this.updateGenericField(SOURCE_ATTRIBUTE, source);
+        this.updateGenericField(VERSION_ATTRIBUTE, version);
     }
 
     public VCFInfoHeaderLine(String line, VCFHeaderVersion version) {
-        super(line, version, SupportedHeaderLineType.INFO);
+        super(VCFConstants.INFO_HEADER_KEY,
+              VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrder),
+              version
+        );
+        validateForVersionOrThrow(version);
     }
 
-    // info fields allow flag values
-    @Override
-    boolean allowFlagValues() {
-        return true;
+    /**
+     * Compare two VCFInfoHeaderLine objects to determine if they have compatible number types, and return a
+     * VCFInfoHeaderLine that represents the result of merging these two lines.
+     *
+     * @param infoLine1 first info line to merge
+     * @param infoLine2 second info line to merge
+     * @param conflictWarner conflict warning emitter
+     * @return a merged VCFInfoHeaderLine
+     */
+    public static VCFInfoHeaderLine getMergedInfoHeaderLine(
+            final VCFInfoHeaderLine infoLine1,
+            final VCFInfoHeaderLine infoLine2,
+            final VCFHeaderMerger.HeaderMergeConflictWarnings conflictWarner)
+    {
+        ValidationUtils. nonNull(infoLine1);
+        ValidationUtils. nonNull(infoLine2);
+        ValidationUtils. nonNull(conflictWarner);
+
+        // delegate to the generic VCFCompoundHeaderLine merger, passing a resolver lambda
+        return VCFCompoundHeaderLine.getMergedCompoundHeaderLine(
+                infoLine1,
+                infoLine2,
+                conflictWarner,
+                (l1, l2) -> new VCFInfoHeaderLine(
+                        l1.getID(),
+                        VCFHeaderLineCount.UNBOUNDED,
+                        l1.getType(),
+                        l1.getDescription())
+        );
     }
 
     @Override
     public boolean shouldBeAddedToDictionary() {
         return true;
     }
+
+    @Override
+    //TODO: integrate this with the existing validateKeyOrID method
+    protected boolean validHeaderID(final String id) {
+        return super.validHeaderID(id) || id.equals(VCFConstants.THOUSAND_GENOMES_KEY);
+    }
+
 }

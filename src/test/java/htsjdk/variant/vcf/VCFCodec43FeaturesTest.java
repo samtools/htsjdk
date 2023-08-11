@@ -1,5 +1,7 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.beta.io.IOPathUtils;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
@@ -19,8 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,23 +44,31 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     private Object[][] allVCF43Files() {
         return new Object[][] {
                 // a .vcf, .vcf.gz, .vcf with UTF8 chars, and .vcf.gz with UTF8 chars
-                { TEST_43_FILE },
-                { TEST_43_UTF8_FILE },
-                { TEST_43_GZ_FILE },
-                { TEST_43_UTF8_GZ_FILE }
+
+                // these first two files have a duplicate INFO header line in them that differ
+                // from each other only by virtue of having different descriptions:
+                //WARNING	2021-02-23 15:37:13	VCFMetaDataLines	Attempt to add header line (INFO=<ID=DP,Number=1,
+                // Type=Integer,Description="Total Depth">) collides with existing line header line (INFO=<ID=DP,
+                // Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">).
+                // The existing line will be retained
+                { TEST_43_FILE, 69 },
+                { TEST_43_UTF8_FILE, 69 },
+
+                { TEST_43_GZ_FILE, 70 },
+                { TEST_43_UTF8_GZ_FILE, 70 }
         };
     }
 
     @Test(dataProvider="all43Files")
-    public void testReadAllVCF43Features(final Path testFile) {
+    public void testReadAllVCF43Features(final Path testFile, int expectedHeaderLineCount) {
         final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
-        Assert.assertEquals(entireVCF.a.getMetaDataInInputOrder().size(), 70);
+        Assert.assertEquals(entireVCF.a.getMetaDataInInputOrder().size(), expectedHeaderLineCount);
         Assert.assertEquals(entireVCF.b.size(), 25);
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43SampleLine(final Path testFile) {
+    public void testVCF43SampleLine(final Path testFile, int ignored) {
         // ##SAMPLE=<ID=NA19238,Assay=WholeGenome,Ethnicity=AFR,Disease=None,Description="Test NA19238 SAMPLE header line",
         // DOI=http://someurl,ExtraSampleField="extra sample">
         final VCFSampleHeaderLine sampleLine = getHeaderLineFromTestFile(
@@ -77,7 +86,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43AltLine(final Path testFile) {
+    public void testVCF43AltLine(final Path testFile, int ignored) {
         // ##ALT=<ID=DEL,Description="Deletion",ExtraAltField="extra alt">
         final VCFAltHeaderLine altLine = getHeaderLineFromTestFile(
                 testFile,
@@ -90,7 +99,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43PedigreeLine(final Path testFile) {
+    public void testVCF43PedigreeLine(final Path testFile, int ignored) {
         // ##PEDIGREE=<ID=ChildID,Father=FatherID,Mother=MotherID,ExtraPedigreeField="extra pedigree">
         final VCFPedigreeHeaderLine pedigreeLine = getHeaderLineFromTestFile(
                 testFile,
@@ -116,7 +125,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43MetaLine(final Path testFile) {
+    public void testVCF43MetaLine(final Path testFile, int ignored) {
         // ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome or Exome],ExtraMetaField="extra meta">
         final VCFMetaHeaderLine metaLine = getHeaderLineFromTestFile(
                 testFile,
@@ -129,7 +138,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43PercentEncoding(final Path testFile) {
+    public void testVCF43PercentEncoding(final Path testFile, int ignored) {
         final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
         // 1       327     .       T       <*>     666.18  GATK_STANDARD;HARD_TO_VALIDATE
@@ -142,7 +151,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testSymbolicAlternateAllele(final Path testFile) {
+    public void testSymbolicAlternateAllele(final Path testFile, int ignored) {
         final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
         // 1       327     .       T       <*>     666.18  GATK_STANDARD;HARD_TO_VALIDATE
@@ -195,6 +204,14 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
         }
     }
 
+    @Test
+    public void testVCF43AcceptsInfoFieldWithSpaces() {
+        // 1st variant has an info field with a value containing an embedded space
+        final Path infoSpaceFile = TEST_PATH.resolve("infoSpace43.vcf");
+        final Tuple<VCFHeader, List<VariantContext>> infoSpace43 = readEntireVCFIntoMemory(infoSpaceFile);
+        Assert.assertTrue(infoSpace43.b.get(0).getAttribute("set").toString().contains(" "));
+    }
+
     //
     // UTF8-specific tests
     //
@@ -241,7 +258,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     // given a vcf file, extract a header line with the given key and ID, cast to the target
     // header line type (T) via the transformer function
-    private static <T extends VCFIDHeaderLine> T getHeaderLineFromTestFile(
+    private static <T extends VCFSimpleHeaderLine> T getHeaderLineFromTestFile(
             final Path testVCFFile,
             final String key,
             final String ID,

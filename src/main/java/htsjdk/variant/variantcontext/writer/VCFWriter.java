@@ -27,8 +27,11 @@ package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.IndexCreator;
+import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFConstants;
@@ -36,6 +39,7 @@ import htsjdk.variant.vcf.VCFEncoder;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -45,14 +49,15 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 /**
  * this class writes VCF files
  */
 class VCFWriter extends IndexingVariantContextWriter {
+    protected final static Log logger = Log.getInstance(VCFWriter.class);
 
-    private static final String VERSION_LINE =
-            VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString() + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
+    private static final String DEFAULT_VERSION_LINE = VCFHeader.DEFAULT_VCF_VERSION.toHeaderVersionLine();
 
 	// Initialized when the header is written to the output stream
 	private VCFEncoder vcfEncoder = null;
@@ -164,7 +169,7 @@ class VCFWriter extends IndexingVariantContextWriter {
     }
 
     public static String getVersionLine() {
-        return VERSION_LINE;
+        return DEFAULT_VERSION_LINE;
     }
 
     public static VCFHeader writeHeader(VCFHeader header,
@@ -175,12 +180,18 @@ class VCFWriter extends IndexingVariantContextWriter {
         try {
             rejectVCFV43Headers(header);
 
-            // the file format field needs to be written first
+            // Validate that the file version we're writing is version-compatible this header's version.
+            validateHeaderVersion(header, versionLine);
+
+            // The file format field needs to be written first; below any file format lines
+            // embedded in the header will be removed
             writer.write(versionLine + "\n");
 
             for (final VCFHeaderLine line : header.getMetaDataInSortedOrder() ) {
-                if ( VCFHeaderVersion.isFormatString(line.getKey()) )
+                // Remove the fileformat header lines
+                if ( VCFHeaderVersion.isFormatString(line.getKey()) ) {
                     continue;
+                }
 
                 writer.write(VCFHeader.METADATA_INDICATOR);
                 writer.write(line.toString());
@@ -189,14 +200,9 @@ class VCFWriter extends IndexingVariantContextWriter {
 
             // write out the column line
             writer.write(VCFHeader.HEADER_INDICATOR);
-            boolean isFirst = true;
-            for (final VCFHeader.HEADER_FIELDS field : header.getHeaderFields() ) {
-                if ( isFirst )
-                    isFirst = false; // don't write out a field separator
-                else
-                    writer.write(VCFConstants.FIELD_SEPARATOR);
-                writer.write(field.toString());
-            }
+            writer.write(header.getHeaderFields().stream()
+                    .map(f -> f.name())
+                    .collect(Collectors.joining(VCFConstants.FIELD_SEPARATOR)).toString());
 
             if ( header.hasGenotypingData() ) {
                 writer.write(VCFConstants.FIELD_SEPARATOR);
@@ -274,6 +280,28 @@ class VCFWriter extends IndexingVariantContextWriter {
         if (targetHeader.getVCFHeaderVersion() != null && targetHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             throw new IllegalArgumentException(String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
         }
-
     }
+
+    // Given a header and a requested target output version, see if the header's version is compatible with the
+    // requested version (where compatible means its ok to just declare that the header has the requested
+    // version).
+    private static void validateHeaderVersion(final VCFHeader header, final String requestedVersionLine) {
+        ValidationUtils.nonNull(header);
+        ValidationUtils.nonNull(requestedVersionLine);
+
+        final VCFHeaderVersion vcfCurrentVersion = header.getVCFHeaderVersion();
+        final VCFHeaderVersion vcfRequestedVersion = VCFHeaderVersion.fromHeaderVersionLine(requestedVersionLine);
+        if (!vcfCurrentVersion.equals(vcfRequestedVersion)) {
+            if (!VCFHeaderVersion.versionsAreCompatible(VCFHeaderVersion.fromHeaderVersionLine(requestedVersionLine), vcfCurrentVersion)) {
+                final String message = String.format("Attempting to write a %s VCF header to a %s VCFWriter",
+                        vcfRequestedVersion,
+                        vcfCurrentVersion.getVersionString());
+                if (VCFUtils.isStrictVCFVersionValidation()) {
+                    throw new TribbleException(message);
+                }
+                logger.warn(message);
+            }
+        }
+    }
+
 }

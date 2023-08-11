@@ -26,28 +26,23 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.Serializable;
 import java.util.Map;
-
+import java.util.Optional;
 
 /**
- * @author ebanks
- *         <p>
- *         Class VCFHeaderLine
- *         </p>
- *         <p>
- *         A class representing a key=value entry in the VCF header
- *         </p>
+ * <p> A class representing a key=value entry in the VCF header, and the base class for structured header lines.
+ * Header lines are immutable, and derived classes should maintain immutability.
+ * </p>
  */
 public class VCFHeaderLine implements Comparable, Serializable {
     public static final long serialVersionUID = 1L;
 
-    protected static final boolean ALLOW_UNBOUND_DESCRIPTIONS = true;
-    protected static final String UNBOUND_DESCRIPTION = "Not provided in original VCF header";
-
-    private String mKey = null;
-    private String mValue = null;
+    // immutable - we don't want to let the hash value change
+    private final String mKey;
+    private final String mValue;
 
     /**
      * create a VCF header line
@@ -55,13 +50,11 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @param key     the key for this header line
      * @param value   the value for this header line
      */
-    public VCFHeaderLine(String key, String value) {
-        if ( key == null )
-            throw new IllegalArgumentException("VCFHeaderLine: key cannot be null");
-        if ( key.contains("<") || key.contains(">") )
-            throw new IllegalArgumentException("VCFHeaderLine: key cannot contain angle brackets");
-        if ( key.contains("=") )
-            throw new IllegalArgumentException("VCFHeaderLine: key cannot contain an equals sign");
+    public VCFHeaderLine(final String key, final String value) {
+        final Optional<String> validationFailure = validateAttributeName(key, "header line key");
+        if (validationFailure.isPresent()) {
+            throw new TribbleException(validationFailure.get());
+        }
         mKey = key;
         mValue = value;
     }
@@ -76,16 +69,111 @@ public class VCFHeaderLine implements Comparable, Serializable {
     }
 
     /**
-     * Get the value
+     * Get the value. May be null.
      *
-     * @return the value
+     * @return the value. may be null (for subclass implementations that use structured values)
      */
     public String getValue() {
         return mValue;
     }
 
     /**
-     * By default the header lines won't be added to the dictionary, unless this method will be override (for example in FORMAT, INFO or FILTER header lines)
+     * @return true if this is a structured header line (has a unique ID, and key/value pairs), otherwise false
+     */
+    public boolean isIDHeaderLine() { return false; }
+
+    /**
+     * Return the unique ID for this line. Returns null iff {@link #isIDHeaderLine()} is false.
+     * @return the line's ID, or null if isIDHeaderLine() is false
+     */
+    public String getID() { return null; }
+
+    /**
+     * Validates this header line against {@code vcfTargetVersion} and returns a {@link VCFValidationFailure}
+     * describing the reaon for the failure, if one exists. This method is used to report the reason for a
+     * version upgrade failure.
+     *
+     * Subclasses can override this to provide line type-specific version validation. Overrides should
+     * call super.validateForVersion to allow each class in the  hierarchy to do class-level validation.
+     *
+     * @param vcfTargetVersion
+     * @return Optional containing a {@link VCFValidationFailure} describing validation failure if this
+     * line fails validation, otherwise Optional.empty().
+     */
+    public Optional<VCFValidationFailure<VCFHeaderLine>> validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+        ValidationUtils.nonNull(vcfTargetVersion);
+
+        // If this header line is itself a fileformat/version line,
+        // make sure it doesn't clash with the requested vcfTargetVersion.
+        if (VCFHeaderVersion.isFormatString(getKey())) {
+            if (!vcfTargetVersion.getFormatString().equals(getKey()) ||
+                !vcfTargetVersion.getVersionString().equals(getValue())
+            ) {
+                return Optional.of(new VCFValidationFailure<>(
+                        vcfTargetVersion,
+                        this,
+                        String.format("The target version (%s) is incompatible with the header line's content.",
+                                vcfTargetVersion)));
+            }
+        } else if (getKey().equals(VCFConstants.PEDIGREE_HEADER_KEY)) {
+            // previous to vcf4.3, PEDIGREE header lines are not modeled as VCFPedigreeHeaderLine because they
+            // were not structured header lines (had no ID), so we need to check HERE to see if an attempt is
+            // being made to use one of those old-style pedigree lines in a newer-versioned header, and reject
+            // it if so
+            if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) && ! (this instanceof VCFPedigreeHeaderLine)) {
+                return Optional.of(new VCFValidationFailure<>(
+                        vcfTargetVersion,
+                        this,
+                        String.format("A pedigree line with no ID cannot be merged with version %s", vcfTargetVersion)));
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Validate that the header line conforms to {@code vcfTargetVersion. throws if the line fails to
+     * validate for the target version.
+     *
+     * @param vcfTargetVersion the version agint which to validate the line
+     * @throws {@link TribbleException.VersionValidationFailure} if this header line fails to conform
+     */
+    public void validateForVersionOrThrow(final VCFHeaderVersion vcfTargetVersion) {
+        ValidationUtils.nonNull(vcfTargetVersion);
+        final Optional<VCFValidationFailure<VCFHeaderLine>> versionValidationFailure = validateForVersion(vcfTargetVersion);
+        if (versionValidationFailure.isPresent()) {
+            throw new TribbleException.VersionValidationFailure(versionValidationFailure.get().getSourceMessage());
+        }
+    }
+
+    /**
+     * Validate a string that is to be used as a unique id or key field, and return an Optional String describing
+     * the validation failure.
+     *
+     * @param targetString the string to validate
+     * @param targetContext the context for which the {@code targetString} is used. Used when reporting validation
+     *                      failures. May not be null.
+     * @return an Optional String containing an error message
+     */
+    protected static Optional<String> validateAttributeName(final String targetString, final String targetContext) {
+        ValidationUtils.nonNull(targetContext);
+
+        if (targetString == null) {
+            return Optional.of(String.format("VCFHeaderLine: %s is null", targetContext));
+        } else if (targetString.length() < 1) {
+            return Optional.of(String.format("VCFHeaderLine: %s has zero length", targetContext));
+        } else if ( targetString.contains("<") || targetString.contains(">") ) {
+            return Optional.of(String.format("VCFHeaderLine: angle brackets not allowed in \"%s\" value", targetContext));
+        } else if ( targetString.contains("=") ) {
+            return Optional.of(String.format("VCFHeaderLine: equals sign not allowed in %s value \"%s\"", targetContext, targetString));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * By default the header lines won't be added to the BCF dictionary, unless this method is overriden
+     * (for example in FORMAT, INFO or FILTER header lines).
      *
      * @return false
      */
@@ -141,10 +229,11 @@ public class VCFHeaderLine implements Comparable, Serializable {
     }
 
     /**
-     * create a string of a mapping pair for the target VCF version
+     * create a string of a mapping pair
      * @param keyValues a mapping of the key-&gt;value pairs to output
      * @return a string, correctly formatted
      */
+    @Deprecated // starting after version 2.24.1
     public static String toStringEncoding(Map<String, ? extends Object> keyValues) {
         StringBuilder builder = new StringBuilder();
         builder.append('<');

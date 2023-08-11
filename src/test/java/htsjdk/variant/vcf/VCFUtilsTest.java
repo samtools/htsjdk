@@ -1,6 +1,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.tribble.TribbleException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -11,45 +12,55 @@ public class VCFUtilsTest extends HtsjdkTest {
 
     @DataProvider(name="validHeaderVersionMerger")
     public Object[][] validHeaderMergerVersions() {
-        // v4.3 can only merge with v4.3, all other version mergers are allowed
+
+        // header version must be at least v4.2 to merge, result is always highest version
         return new Object[][] {
-                {Arrays.asList("VCFv4.0", "VCFv4.0")},
-                {Arrays.asList("VCFv4.1", "VCFv4.1")},
-                {Arrays.asList("VCFv4.2", "VCFv4.2")},
-                {Arrays.asList("VCFv4.3", "VCFv4.3")},
-                {Arrays.asList("VCFv4.2", "VCFv4.2")},
-                {Arrays.asList("VCFv4.2", "VCFv4.2", "VCFv4.2")},
+                // headers to merge, expected result version
+                {Arrays.asList("VCFv4.2", "VCFv4.2"), VCFHeaderVersion.VCF4_2},
+                {Arrays.asList("VCFv4.3", "VCFv4.3"), VCFHeaderVersion.VCF4_3},
+                {Arrays.asList("VCFv4.2", "VCFv4.3"), VCFHeaderVersion.VCF4_3},
+                {Arrays.asList("VCFv4.3", "VCFv4.2"), VCFHeaderVersion.VCF4_3},
+                {Arrays.asList("VCFv4.2", "VCFv4.2"), VCFHeaderVersion.VCF4_2 },
+                {Arrays.asList("VCFv4.2", "VCFv4.2", "VCFv4.3"), VCFHeaderVersion.VCF4_3},
+                {Arrays.asList("VCFv4.3", "VCFv4.3", "VCFv4.2"), VCFHeaderVersion.VCF4_3},
+                {Arrays.asList("VCFv4.3", "VCFv4.2", "VCFv4.3"), VCFHeaderVersion.VCF4_3},
         };
     }
 
     @DataProvider(name="invalidHeaderVersionMerger")
     public Object[][] invalidHeaderVersionMerger() {
-        // v4.3 can only merge with v4.3, all other version mergers are allowed
+        // header version must be at least v4.2 to merge
         return new Object[][] {
-                {Arrays.asList("VCFv4.0", "VCFv4.3")},
-                {Arrays.asList("VCFv4.1", "VCFv4.3")},
-                {Arrays.asList("VCFv4.2", "VCFv4.3")},
-                {Arrays.asList("VCFv4.0", "VCFv4.0", "VCFv4.2", "VCFv4.3")},
-                {Arrays.asList("VCFv4.3", "VCFv4.0", "VCFv4.1", "VCFv4.2")},
+                {Arrays.asList("VCFv4.0", "VCFv4.2")},
+                {Arrays.asList("VCFv4.1", "VCFv4.2")},
+                {Arrays.asList("VCFv4.0", "VCFv4.1", "VCFv4.2", "VCFv4.3")},
+                {Arrays.asList("VCFv4.3", "VCFv4.2", "VCFv4.1", "VCFv4.0")},
         };
     }
 
     @Test(dataProvider="validHeaderVersionMerger")
-    public void testValidHeaderVersionMerger(final List<String> headerVersions) {
-        final List<VCFHeader> headersToMerge = new ArrayList<>(headerVersions.size());
-        headerVersions.forEach(hv -> headersToMerge.add(
-                new VCFHeader(VCFHeaderVersion.toHeaderVersion(hv), Collections.emptySet(), Collections.emptySet()))
-        );
-        final Set<VCFHeaderLine> resultHeaders = VCFUtils.smartMergeHeaders(headersToMerge, true);
+    public void testValidHeaderVersionMerger(final List<String> headerVersions, final VCFHeaderVersion expectedVersion) {
+        final Set<VCFHeaderLine> mergedHeaderLines = doHeaderMerge(headerVersions);
+
+        final VCFMetaDataLines metaDataLines = new VCFMetaDataLines();
+        metaDataLines.addMetaDataLines(mergedHeaderLines);
+        final VCFHeaderLine versionLine = metaDataLines.getFileFormatLine();
+        Assert.assertEquals(VCFHeaderVersion.toHeaderVersion(versionLine.getValue()), expectedVersion);
     }
 
-    @Test(dataProvider="invalidHeaderVersionMerger", expectedExceptions = IllegalArgumentException.class)
+    @Test(dataProvider="invalidHeaderVersionMerger", expectedExceptions = TribbleException.class)
     public void testInvalidHeaderVersionMerger(final List<String> headerVersions) {
+        doHeaderMerge(headerVersions);
+    }
+
+    private Set<VCFHeaderLine> doHeaderMerge(final List<String> headerVersions) {
         final List<VCFHeader> headersToMerge = new ArrayList<>(headerVersions.size());
         headerVersions.forEach(hv -> headersToMerge.add(
-                new VCFHeader(VCFHeaderVersion.toHeaderVersion(hv), Collections.emptySet(), Collections.emptySet()))
+                new VCFHeader(
+                        VCFHeader.makeHeaderVersionLineSet(VCFHeaderVersion.toHeaderVersion(hv)),
+                        Collections.emptySet()))
         );
-        VCFUtils.smartMergeHeaders(headersToMerge, true);
+        return VCFUtils.smartMergeHeaders(headersToMerge, true);
     }
 
     @DataProvider(name = "caseIntolerantDoubles")
