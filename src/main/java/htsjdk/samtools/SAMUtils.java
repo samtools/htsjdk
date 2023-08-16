@@ -25,12 +25,16 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.*;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.CigarUtil;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.RuntimeEOFException;
+import htsjdk.samtools.util.StringUtil;
 import htsjdk.tribble.annotation.Strand;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -675,7 +679,6 @@ public final class SAMUtils {
 
     }
 
-    // tsato: to delete
     public static long findVirtualOffsetOfFirstRecordInBam(final Path bamFile) {
         try {
             SeekableStream ss = new SeekablePathStream(bamFile);

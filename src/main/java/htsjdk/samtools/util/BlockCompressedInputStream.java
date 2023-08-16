@@ -704,13 +704,11 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
     }
 
+    @Deprecated
     public static void assertNonDefectiveFile(final File file) throws IOException {
-        if (checkTermination(file) == FileTermination.DEFECTIVE) {
-            throw new SAMException(file.getAbsolutePath() + " does not have a valid GZIP block at the end of the file.");
-        }
+        assertNonDefectivePath(file.toPath());
     }
 
-    // tsato: can I consolidate with above?
     public static void assertNonDefectivePath(final Path file) throws IOException {
         if (checkTermination(file) == FileTermination.DEFECTIVE) {
             throw new SAMException(file.toUri() + " does not have a valid GZIP block at the end of the file.");
