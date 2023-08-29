@@ -75,6 +75,7 @@ public final class FileExtensions {
     public static final String GZI = ".gzi";
     public static final String SBI = ".sbi";
     public static final String CSI = ".csi";
+    public static final String MD5 = ".md5";
 
     public static final Set<String> BLOCK_COMPRESSED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 

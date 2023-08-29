@@ -210,7 +210,7 @@ public class SamFileValidator {
     }
 
     public void validateBamFileTermination(final File inputFile) {
-        validateBamFileTermination(inputFile.toPath());
+        validateBamFileTermination(IOUtil.toPath(inputFile));
     }
 
     public void validateBamFileTermination(final Path inputFile) {
@@ -222,12 +222,11 @@ public class SamFileValidator {
                     BlockCompressedInputStream.checkTermination(inputFile);
             if (terminationState.equals(BlockCompressedInputStream.FileTermination.DEFECTIVE)) {
                 addError(new SAMValidationError(Type.TRUNCATED_FILE, "BAM file has defective last gzip block",
-                        inputFile.toAbsolutePath().toString())); // tsato: confirm toAbsolutePath() is the right thing to do here
+                        inputFile.toUri().toString()));
             } else if (terminationState.equals(BlockCompressedInputStream.FileTermination.HAS_HEALTHY_LAST_BLOCK)) {
                 addError(new SAMValidationError(Type.BAM_FILE_MISSING_TERMINATOR_BLOCK,
                         "Older BAM file -- does not have terminator block",
-                        inputFile.toAbsolutePath().toString()));
-
+                        inputFile.toUri().toString()));
             }
         } catch (IOException e) {
             throw new SAMException("IOException", e);

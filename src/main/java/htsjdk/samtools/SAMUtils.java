@@ -679,9 +679,9 @@ public final class SAMUtils {
 
     }
 
+
     public static long findVirtualOffsetOfFirstRecordInBam(final Path bamFile) {
-        try {
-            SeekableStream ss = new SeekablePathStream(bamFile);
+        try (SeekableStream ss = new SeekablePathStream(bamFile)){
             return BAMFileReader.findVirtualOffsetOfFirstRecord(ss);
         } catch (final IOException ioe) {
             throw new RuntimeEOFException(ioe);

@@ -35,7 +35,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.spi.FileSystemProvider;
 
+import htsjdk.beta.exception.HtsjdkException;
+import htsjdk.samtools.BAMFileWriter;
+import htsjdk.samtools.BamFileIoUtils;
+import htsjdk.samtools.HtsjdkTestUtils;
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SamReaderFactory;
+import org.apache.commons.compress.compressors.FileNameUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -795,6 +802,22 @@ public class IOUtilTest extends HtsjdkTest {
             // call twice to verify 'in.reset()' was called
             Assert.assertEquals(IOUtil.isGZIPInputStream(inputStream), isGzipped);
         }
+    }
+
+    @Test
+    public void testOpenFileForMd5CalculatingWriting() throws IOException {
+        Path output = Files.createTempFile("test", FileExtensions.BAM);
+
+        try (final OutputStream outputStream = IOUtil.openFileForMd5CalculatingWriting(output)){
+            // tsato: perhaps BamFileIoUtils is a better place for this test
+            BamFileIoUtils.blockCopyBamFile(IOUtil.toPath(HtsjdkTestUtils.NA12878_8000), outputStream, false, false);
+        } catch (IOException e) {
+            throw new HtsjdkException("Encountered an IO error", e);
+        }
+
+        final String md5FileName = output.getFileName() + FileExtensions.MD5;
+        Assert.assertTrue(md5FileName.endsWith(".bam.md5"));
+        Assert.assertTrue(Files.exists(output.resolveSibling(md5FileName)));
     }
 }
 

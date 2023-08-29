@@ -29,6 +29,7 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
 
@@ -63,7 +64,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
 
     private InputStream mStream = null;
     private boolean mIsClosed = false;
-    private SeekableStream mFile = null; // tsato: change name to mPath?
+    private SeekableStream mFile = null;
     private byte[] mFileBuffer = null;
     private DecompressedBlock mCurrentBlock = null;
     private int mCurrentOffset = 0;
@@ -123,6 +124,15 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         this(file, BlockGunzipper.getDefaultInflaterFactory());
     }
 
+
+    /**
+     * Equivalent constructor for Path as the one that takes a File. Supports seeking.
+     */
+    public BlockCompressedInputStream(final Path file) throws IOException {
+        this(new SeekablePathStream(file));
+    }
+
+
     /**
      * Use this ctor if you wish to call seek()
      * @param file source of bytes
@@ -134,6 +144,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         mStream = null;
         blockGunzipper = new BlockGunzipper(inflaterFactory);
     }
+
 
     /**
      * @param url source of bytes
@@ -359,7 +370,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
 
         // Cannot seek on streams that are not file based
-        if (mFile == null) { // tsato: mFile is a seekable stream---
+        if (mFile == null) {
             throw new IOException(CANNOT_SEEK_STREAM_MSG);
         }
 
@@ -706,7 +717,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
 
     @Deprecated
     public static void assertNonDefectiveFile(final File file) throws IOException {
-        assertNonDefectivePath(file.toPath());
+        assertNonDefectivePath(IOUtil.toPath(file));
     }
 
     public static void assertNonDefectivePath(final Path file) throws IOException {
