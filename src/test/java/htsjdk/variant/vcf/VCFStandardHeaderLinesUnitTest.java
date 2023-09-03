@@ -31,8 +31,9 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by IntelliJ IDEA.
@@ -188,7 +189,13 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "RepairHeaderTest")
     public void testRepairHeaderTest(final RepairHeaderTest cfg) {
-        final VCFHeader toRepair = new VCFHeader(Collections.singleton((VCFHeaderLine)cfg.original));
+        final Set<VCFHeaderLine> headerLines = new LinkedHashSet<>();
+        // The standard header line repair facility is not sufficiently powerful to fix broken lines
+        // starting from version 4.3, so it is only used for versions <= 4.2, and we use version 4.2 for this test
+        headerLines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
+        headerLines.add(cfg.original);
+
+        final VCFHeader toRepair = new VCFHeader(headerLines);
         final VCFHeader repaired = VCFStandardHeaderLines.repairStandardHeaderLines(toRepair);
 
         VCFCompoundHeaderLine repairedLine = (VCFCompoundHeaderLine)repaired.getFormatHeaderLine(cfg.original.getID());

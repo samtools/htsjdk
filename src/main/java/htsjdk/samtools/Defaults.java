@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
 
 import java.io.File;
 import java.util.Collections;
@@ -110,6 +111,17 @@ public class Defaults {
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
+    /**
+     * Strict VCF version validation.  Default = true.
+     */
+    public static final boolean STRICT_VCF_VERSION_VALIDATION;
+
+    /**
+     * How to treat files from VCF versions older than the current version.
+     * Default = {@link VCFVersionUpgradePolicy#UPGRADE_OR_FALLBACK}
+     */
+    public static final VCFVersionUpgradePolicy VCF_VERSION_TRANSITION_POLICY;
+
 
     public static final String SAMJDK_PREFIX = "samjdk.";
     static {
@@ -134,6 +146,11 @@ public class Defaults {
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
+        STRICT_VCF_VERSION_VALIDATION = getBooleanProperty("strict_version_validation", true);
+        VCF_VERSION_TRANSITION_POLICY = VCFVersionUpgradePolicy.valueOf(getStringProperty(
+            "vcf_version_upgrade_policy",
+            VCFVersionUpgradePolicy.UPGRADE_OR_FALLBACK.name()
+        ));
     }
 
     /**
@@ -157,6 +174,7 @@ public class Defaults {
         result.put("CUSTOM_READER_FACTORY", CUSTOM_READER_FACTORY);
         result.put("SAM_FLAG_FIELD_FORMAT", SAM_FLAG_FIELD_FORMAT);
         result.put("DISABLE_SNAPPY_COMPRESSOR", DISABLE_SNAPPY_COMPRESSOR);
+        result.put("VCF_VERSION_UPGRADE_POLICY", VCF_VERSION_TRANSITION_POLICY);
         return Collections.unmodifiableSortedMap(result);
     }
 

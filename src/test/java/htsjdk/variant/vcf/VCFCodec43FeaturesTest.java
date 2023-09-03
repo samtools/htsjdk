@@ -1,5 +1,7 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.beta.io.IOPathUtils;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
@@ -10,6 +12,10 @@ import htsjdk.tribble.index.IndexFactory;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VCFVersionUpgradePolicy;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -39,27 +45,40 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     private static final Path TEST_43_UTF8_FILE = TEST_PATH.resolve("all43Features.utf8.vcf");
     private static final Path TEST_43_UTF8_GZ_FILE = TEST_PATH.resolve("all43FeaturesCompressed.utf8.vcf.gz");
 
+    private static final Path TEST_42_PEDIGREE_FILE = TEST_PATH.resolve("42Pedigree.vcf");
+    private static final Path TEST_INVALID_43_CONTIG_NAME_FILE = TEST_PATH.resolve("invalid43ContigName.vcf");
+    private static final Path TEST_VALID_43_CONTIG_NAME_FILE = TEST_PATH.resolve("valid43ContigName.vcf");
+    private static final Path TEST_42_AUTOMATICALLY_CONVERTIBLE_FILE = TEST_PATH.resolve("42AutomaticallyConvertible.vcf");
+
     @DataProvider(name="all43Files")
     private Object[][] allVCF43Files() {
         return new Object[][] {
                 // a .vcf, .vcf.gz, .vcf with UTF8 chars, and .vcf.gz with UTF8 chars
-                { TEST_43_FILE },
-                { TEST_43_UTF8_FILE },
-                { TEST_43_GZ_FILE },
-                { TEST_43_UTF8_GZ_FILE }
+
+                // these first two files have a duplicate INFO header line in them that differ
+                // from each other only by virtue of having different descriptions:
+                //WARNING	2021-02-23 15:37:13	VCFMetaDataLines	Attempt to add header line (INFO=<ID=DP,Number=1,
+                // Type=Integer,Description="Total Depth">) collides with existing line header line (INFO=<ID=DP,
+                // Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">).
+                // The existing line will be retained
+                { TEST_43_FILE, 69 },
+                { TEST_43_UTF8_FILE, 69 },
+
+                { TEST_43_GZ_FILE, 70 },
+                { TEST_43_UTF8_GZ_FILE, 70 }
         };
     }
 
     @Test(dataProvider="all43Files")
-    public void testReadAllVCF43Features(final Path testFile) {
+    public void testReadAllVCF43Features(final Path testFile, final int expectedHeaderLineCount) {
         final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
-        Assert.assertEquals(entireVCF.a.getMetaDataInInputOrder().size(), 70);
+        Assert.assertEquals(entireVCF.a.getMetaDataInInputOrder().size(), expectedHeaderLineCount);
         Assert.assertEquals(entireVCF.b.size(), 25);
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43SampleLine(final Path testFile) {
+    public void testVCF43SampleLine(final Path testFile, int ignored) {
         // ##SAMPLE=<ID=NA19238,Assay=WholeGenome,Ethnicity=AFR,Disease=None,Description="Test NA19238 SAMPLE header line",
         // DOI=http://someurl,ExtraSampleField="extra sample">
         final VCFSampleHeaderLine sampleLine = getHeaderLineFromTestFile(
@@ -77,7 +96,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43AltLine(final Path testFile) {
+    public void testVCF43AltLine(final Path testFile, int ignored) {
         // ##ALT=<ID=DEL,Description="Deletion",ExtraAltField="extra alt">
         final VCFAltHeaderLine altLine = getHeaderLineFromTestFile(
                 testFile,
@@ -90,7 +109,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43PedigreeLine(final Path testFile) {
+    public void testVCF43PedigreeLine(final Path testFile, int ignored) {
         // ##PEDIGREE=<ID=ChildID,Father=FatherID,Mother=MotherID,ExtraPedigreeField="extra pedigree">
         final VCFPedigreeHeaderLine pedigreeLine = getHeaderLineFromTestFile(
                 testFile,
@@ -116,7 +135,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43MetaLine(final Path testFile) {
+    public void testVCF43MetaLine(final Path testFile, int ignored) {
         // ##META=<ID=Assay,Type=String,Number=.,Values=[WholeGenome or Exome],ExtraMetaField="extra meta">
         final VCFMetaHeaderLine metaLine = getHeaderLineFromTestFile(
                 testFile,
@@ -129,12 +148,12 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testVCF43PercentEncoding(final Path testFile) {
+    public void testVCF43PercentEncoding(final Path testFile, int ignored) {
         final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
         // 1       327     .       T       <*>     666.18  GATK_STANDARD;HARD_TO_VALIDATE
         // AB=0.74;AC=3;AF=0.50;AN=6;DB=0;DP=936;Dels=0.00;HRun=3;MQ=34.66;MQ0=728;QD=0.71;SB=-268.74;set=fil%3AteredInBoth
-        final VariantContext vc = entireVCF.b.get(0);
+        final VariantContext vc = entireVCF.b.get(0).fullyDecode(entireVCF.a, false);
         Assert.assertEquals(vc.getContig(), "1");
         Assert.assertEquals(vc.getStart(), 327);
         // set=fil%3AteredInBoth
@@ -142,7 +161,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     }
 
     @Test(dataProvider="all43Files")
-    public void testSymbolicAlternateAllele(final Path testFile) {
+    public void testSymbolicAlternateAllele(final Path testFile, int ignored) {
         final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
         // 1       327     .       T       <*>     666.18  GATK_STANDARD;HARD_TO_VALIDATE
@@ -156,6 +175,78 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
         Assert.assertTrue(symbolicAlternateAllele.isNonRefAllele(), symbolicAlternateAllele.toString());
         Assert.assertTrue(symbolicAlternateAllele.isNonReference(), symbolicAlternateAllele.toString());
         Assert.assertEquals(symbolicAlternateAllele, Allele.create(Allele.UNSPECIFIED_ALTERNATE_ALLELE_STRING));
+    }
+
+    @Test(dataProvider = "all43Files")
+    public void testReadWriteRoundTrip(final Path testFile, final int ignored) throws IOException {
+        // Make sure 4.3 files round trip through reading into memory, writing, then reading back in
+        final Tuple<VCFHeader, List<VariantContext>> readVCF = readEntireVCFIntoMemory(testFile);
+        final VCFHeader readHeader = readVCF.a;
+
+        final File out = File.createTempFile("testReadWriteRoundTrip", testFile.getFileName().toString());
+        out.deleteOnExit();
+
+        final VariantContextWriter writer = new VariantContextWriterBuilder()
+            .setOutputFile(out)
+            .unsetOption(Options.INDEX_ON_THE_FLY)
+            .unsetOption(Options.DO_NOT_WRITE_GENOTYPES)
+            .build();
+
+        writer.writeHeader(readHeader);
+        for (final VariantContext vc : readVCF.b) {
+            writer.add(vc);
+        }
+
+        writer.close();
+
+        final Tuple<VCFHeader, List<VariantContext>> writeVCF = readEntireVCFIntoMemory(out.toPath());
+        final VCFHeader writeHeader = writeVCF.a;
+
+        Assert.assertNotNull(readHeader.getVCFHeaderVersion());
+        Assert.assertNotNull(writeHeader.getVCFHeaderVersion());
+
+        Assert.assertEquals(readHeader.getMetaDataInSortedOrder(), writeHeader.getMetaDataInSortedOrder());
+        Assert.assertEquals(readHeader.getInfoHeaderLines(), writeHeader.getInfoHeaderLines());
+        Assert.assertEquals(readHeader.getFormatHeaderLines(), writeHeader.getFormatHeaderLines());
+
+        Assert.assertEqualsNoOrder(readHeader.getFilterLines().toArray(), writeHeader.getFilterLines().toArray());
+        Assert.assertEqualsNoOrder(readHeader.getContigLines().toArray(), writeHeader.getContigLines().toArray());
+
+        for (int i = 0; i < writeVCF.b.size(); i++) {
+            VariantBaseTest.assertVariantContextsAreEqual(writeVCF.b.get(i), readVCF.b.get(i));
+        }
+    }
+
+    @DataProvider(name = "automaticUpConversionTestFiles")
+    private Object[][] automaticUpConversionTestFiles() {
+        return new Object[][]{
+            {TEST_42_PEDIGREE_FILE, VCFHeaderVersion.VCF4_2},
+            {TEST_INVALID_43_CONTIG_NAME_FILE, VCFHeaderVersion.VCF4_2},
+            {TEST_VALID_43_CONTIG_NAME_FILE, VCFHeaderVersion.VCF4_3},
+            {TEST_42_AUTOMATICALLY_CONVERTIBLE_FILE, VCFHeaderVersion.VCF4_3}
+        };
+    }
+
+    @Test(dataProvider = "automaticUpConversionTestFiles")
+    public void testAutomaticUpConversion(final Path testFile, final VCFHeaderVersion expectedVersion) throws IOException {
+        // Pre 4.3 files which can be automatically converted to 4.3 should be
+        // and files which cannot should be left as 4.2
+        final Tuple<VCFHeader, List<VariantContext>> readVCF = readEntireVCFIntoMemory(testFile);
+
+        final File out = File.createTempFile("test", testFile.getFileName().toString());
+        out.deleteOnExit();
+
+        final VariantContextWriter writer = new VariantContextWriterBuilder()
+            .setOutputFile(out)
+            .unsetOption(Options.INDEX_ON_THE_FLY)
+            .unsetOption(Options.DO_NOT_WRITE_GENOTYPES)
+            .build();
+
+        writer.writeHeader(readVCF.a);
+        writer.close();
+
+        final Tuple<VCFHeader, List<VariantContext>> writeVCF = readEntireVCFIntoMemory(out.toPath());
+        Assert.assertEquals(writeVCF.a.getVCFHeaderVersion(), expectedVersion);
     }
 
     @DataProvider(name="all43IndexableFiles")
@@ -193,6 +284,14 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
             Assert.assertEquals(vcs.get(0).getContig(), "22");
             Assert.assertEquals(vcs.get(0).getStart(), 327);
         }
+    }
+
+    @Test
+    public void testVCF43AcceptsInfoFieldWithSpaces() {
+        // 1st variant has an info field with a value containing an embedded space
+        final Path infoSpaceFile = TEST_PATH.resolve("infoSpace43.vcf");
+        final Tuple<VCFHeader, List<VariantContext>> infoSpace43 = readEntireVCFIntoMemory(infoSpaceFile);
+        Assert.assertTrue(infoSpace43.b.get(0).getAttribute("set").toString().contains(" "));
     }
 
     //
@@ -241,7 +340,7 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     // given a vcf file, extract a header line with the given key and ID, cast to the target
     // header line type (T) via the transformer function
-    private static <T extends VCFIDHeaderLine> T getHeaderLineFromTestFile(
+    private static <T extends VCFSimpleHeaderLine> T getHeaderLineFromTestFile(
             final Path testVCFFile,
             final String key,
             final String ID,
@@ -265,5 +364,4 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
                         .collect(Collectors.toList());
         return headerLines;
     }
-
 }

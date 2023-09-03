@@ -31,7 +31,10 @@ public class VCFCodecV4_3 extends VCFCodec {
 
     @Override
     public VCFEncoder getEncoder(final Bundle outputBundle, final VariantsEncoderOptions encoderOptions) {
-        throw new HtsjdkUnsupportedOperationException("Version v4.3 VCF encoder not yet implemented");
+        ValidationUtils.nonNull(outputBundle, "outputBundle");
+        ValidationUtils.nonNull(encoderOptions, "encoderOptions");
+
+        return new VCFEncoderV4_3(outputBundle, encoderOptions);
     }
 
     @Override

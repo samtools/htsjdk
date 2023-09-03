@@ -102,12 +102,14 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
         List<String> sourceVersion = Arrays.asList("Source", "Version");
         return new Object[][]{
                 // to parse, expected, recommended, error message
-                {"<Description=\"Y\",ID=X>", idDesc, none, "Tag Description in wrong order (was #1, expected #2)"},
-                {"<ID=X,Desc=\"Y\">", idDesc, none, "Unexpected tag Desc"},
-                {"<>", idDesc, none, "Unexpected tag  "},
+                {"<Description=\"Y\",ID=X>", idDesc, none, "Unexpected tag or tag order for tag \"Description\""},
+                {"<ID=X,Desc=\"Y\">", idDesc, none, "Unexpected tag or tag order for tag \"Desc\""},
+                {"<>", idDesc, none, "Unexpected tag or tag order for tag \"\""},
 
-                {"<Source=\"source\",ID=X,Description=\"Y\">", idDesc, sourceVersion, "Recommended tag Source must be listed after all expected tags"},
-                {"<ID=X,Source=\"E\",Description=\"Y\">", idDesc, sourceVersion, "Recommended tag Source must be listed after all expected tags"}
+                {"<Source=\"source\",ID=X,Description=\"Y\">", idDesc, sourceVersion,
+                        "Unexpected tag or tag order for tag \"Source\""},
+                {"<ID=X,Source=\"E\",Description=\"Y\">", idDesc, sourceVersion,
+                        "Unexpected tag or tag order for tag \"Source\""}
         };
     }
 
@@ -119,7 +121,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
             VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, line, expectedTagOrder);
         }
         else {
-            VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, line, expectedTagOrder, recommendedTags);
+            VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, line, expectedTagOrder);
         }
     }
 
@@ -153,13 +155,4 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
         };
     }
 
-    @Test(dataProvider = "vcfv3", expectedExceptions = TribbleException.class)
-    public void testVcfV3FailsRecommendedTags(final VCFHeaderVersion vcfVersion) {
-        VCFHeaderLineTranslator.parseLine(
-                vcfVersion,
-                "<ID=X,Description=\"Y\">",
-                Arrays.asList("ID"),
-                Arrays.asList("Description")
-        );
-    }
 }

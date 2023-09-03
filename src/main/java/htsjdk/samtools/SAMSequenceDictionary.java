@@ -53,6 +53,13 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
         setSequences(list);
     }
 
+    //TODO: this returns sequences in the internal list order instead of
+    // honoring each sequence's contigIndex
+    /**
+     * Get a list of sequences for this dictionary.
+     * @return the list of sequences for this dictionary in internal order (the order in which the sequences
+     * were added to this dictionary)
+     */
     public List<SAMSequenceRecord> getSequences() {
         return Collections.unmodifiableList(mSequences);
     }
@@ -75,6 +82,14 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
         list.forEach(this::addSequence);
     }
 
+    /**
+     * Add a sequence to the dictionary.
+     * @param sequenceRecord the sequence record to add - note that this method mutates the contig
+     *                       index of the sequenceRecord to match the newly added record's relative
+     *                       order in the list
+     */
+    //TODO: this method ignores (and actually mutates) the sequenceRecord's contig index to make it match
+    // the record's relative placement in the dictionary's internal list
     public void addSequence(final SAMSequenceRecord sequenceRecord) {
         if (mSequenceMap.containsKey(sequenceRecord.getSequenceName())) {
             throw new IllegalArgumentException("Cannot add sequence that already exists in SAMSequenceDictionary: " +

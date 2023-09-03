@@ -25,15 +25,84 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class GenotypeBuilderTest extends VariantBaseTest {
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testRejectDuplicateFilters() {
+        final GenotypeBuilder gb = new GenotypeBuilder("test");
+        gb.filter("x;y;x");
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testRejectDuplicateFiltersCollection() {
+        final GenotypeBuilder gb = new GenotypeBuilder("test");
+        gb.filters(Arrays.asList("x", "y", "x"));
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testRejectDuplicateFiltersArray() {
+        final GenotypeBuilder gb = new GenotypeBuilder("test");
+        gb.filters("x", "y", "x");
+    }
+
+    @DataProvider
+    public Object[][] illegalFilterNameProvider() {
+        return new Object[][]{
+            // Reserved string 0
+            {"0"},
+            // Contains whitespace
+            {"a b"},
+            // Contains separator
+            {"a;b"}
+        };
+    }
+
+    @Test(dataProvider = "illegalFilterNameProvider", expectedExceptions = TribbleException.class)
+    public void testRejectIllegalFilterName(final String filter) {
+        final GenotypeBuilder gb = new GenotypeBuilder("test");
+        gb.filters(Collections.singletonList(filter));
+    }
+
+    @DataProvider
+    public Object[][] illegalFilterSeparatorPlacementProvider() {
+        return new Object[][]{
+            // Begins with ;
+            {";a"},
+            // Ends with ;
+            {"a;"},
+            // Contains adjacent internal ;
+            {"a;;b"}
+        };
+    }
+
+    @Test(dataProvider = "illegalFilterSeparatorPlacementProvider", expectedExceptions = TribbleException.class)
+    public void testRejectIllegalFilterSeparatorPlacement(final String filter) {
+        final GenotypeBuilder gb = new GenotypeBuilder("test");
+        gb.filters(filter);
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testRejectMissingWithValueFilterString() {
+        final GenotypeBuilder gb = new GenotypeBuilder("test");
+        gb.filters("a;.");
+    }
+
+    @Test
+    public void testAcceptMissingFilterString() {
+        final GenotypeBuilder gb = new GenotypeBuilder("test");
+        gb.filters(".");
+    }
 
     @Test
     public void testMakeWithShallowCopy() {
