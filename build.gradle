@@ -129,17 +129,26 @@ task testWithDefaultReference(type: Test) {
     }
 }
 
+task testWithOptimisticVCF4_4(type: Test) {
+    description = "Run tests with optimistic VCF 4.4 reading"
+    jvmArgs += '-Dsamjdk.optimistic_vcf_4_4=true'
+
+    useTestNG {
+        includeGroups "optimistic_vcf_4_4"
+    }
+}
+
 test {
     description = "Runs the unit tests other than the SRA tests"
 
    useTestNG {
        if (OperatingSystem.current().isUnix()) {
-           excludeGroups "slow", "broken", "defaultReference", "ftp", "http", "sra", "ena"
+           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena"
        } else {
-           excludeGroups "slow", "broken", "defaultReference", "ftp", "http", "sra", "ena", "unix"
+           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena", "unix"
        }
    }
-} dependsOn testWithDefaultReference
+} dependsOn testWithDefaultReference, testWithOptimisticVCF4_4
 
 
 task testFTP(type: Test) {

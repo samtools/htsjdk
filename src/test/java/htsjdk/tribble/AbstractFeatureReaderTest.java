@@ -11,7 +11,10 @@ import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -97,7 +100,15 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     public void testBlockCompressionExtensionStringVersion(final String testURIString, final boolean expected) {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURIString), expected);
     }
-
+    @Test(groups = "optimistic_vcf_4_4")
+    public void testVCF4_4Optimistic() {
+        final AbstractFeatureReader<VariantContext, ?> fr = AbstractFeatureReader.getFeatureReader(
+                Paths.get("src/test/resources/htsjdk/variant/", "VCF4_4HeaderTest.vcf").toString(),
+                new VCFCodec(),
+                false);
+        final VCFHeader vcfHeader = (VCFHeader) fr.getHeader();
+        Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+    }
 
     @DataProvider(name = "vcfFileAndWrapperCombinations")
     private static Object[][] vcfFileAndWrapperCombinations(){

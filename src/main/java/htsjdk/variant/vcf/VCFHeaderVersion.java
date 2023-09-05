@@ -37,7 +37,10 @@ public enum VCFHeaderVersion {
     VCF4_0("VCFv4.0", "fileformat"),
     VCF4_1("VCFv4.1", "fileformat"),
     VCF4_2("VCFv4.2", "fileformat"),
-    VCF4_3("VCFv4.3", "fileformat");
+    VCF4_3("VCFv4.3", "fileformat"),
+    // VCFv4.4 is not fully supported yet, but we need this to support optimistic reading when
+    // the "optimistic_vcf_4_4" property is set
+    VCF4_4("VCFv4.4", "fileformat");
 
     private final String versionString;
     private final String formatString;
