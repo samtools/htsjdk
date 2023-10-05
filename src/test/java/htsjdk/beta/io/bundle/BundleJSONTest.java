@@ -3,6 +3,7 @@ package htsjdk.beta.io.bundle;
 import htsjdk.HtsjdkTest;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
+import org.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -157,7 +158,7 @@ public class BundleJSONTest extends HtsjdkTest {
     public void testRoundTripJSON(final String jsonString, final String primaryKey, final List<BundleResource> resources) {
         final Bundle bundleFromResources = new Bundle(primaryKey, resources);
         final String actualJSONString = BundleJSON.toJSON(bundleFromResources);
-        Assert.assertEquals(actualJSONString, jsonString);
+        Assert.assertEquals(actualJSONString, new JSONObject(jsonString).toString(1));
 
         // now recreate the bundle from JSON
         final Bundle bundleFromJSON = BundleJSON.toBundle(jsonString);
@@ -227,7 +228,7 @@ public class BundleJSONTest extends HtsjdkTest {
                 // syntax error (missing quote in before schemaName
                 { "{\"schemaVersion\":\"0.1.0\",schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"myreads" +
                         ".bam\",\"format\":\"BAM\"},\"primary\":\"ALIGNED_READS\"}",
-                        "Invalid JSON near position: 25" },
+                        "Expected a ':' after a key at 36" },
                 // no enclosing {} -> UnsupportedOperationException (no text message)
                 {"\"schemaName\":\"htsbundle\", \"schemaVersion\":\"0.1.0\"",
                         "", },

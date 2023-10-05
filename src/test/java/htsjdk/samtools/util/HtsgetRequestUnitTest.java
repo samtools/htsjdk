@@ -2,6 +2,8 @@ package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.htsget.*;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -115,33 +117,33 @@ public class HtsgetRequestUnitTest extends HtsjdkTest {
                 new Interval("chrM", 17, 32))
             );
 
-        final mjson.Json postBody = req.queryBody();
+        final JSONObject postBody = req.queryBody();
 
-        Assert.assertEquals(postBody.at("format").asString(), "BAM");
-        Assert.assertEquals(postBody.at("class").asString(), "header");
+        Assert.assertEquals(postBody.getString("format"), "BAM");
+        Assert.assertEquals(postBody.getString("class"), "header");
 
         Assert.assertEqualsNoOrder(
-            postBody.at("fields").asList().stream().map(Object::toString).toArray(String[]::new),
+            postBody.getJSONArray("fields").toList().stream().map(Object::toString).toArray(String[]::new),
             new String[]{"QNAME", "CIGAR"}
         );
         Assert.assertEqualsNoOrder(
-            postBody.at("tags").asList().stream().map(Object::toString).toArray(String[]::new),
+            postBody.getJSONArray("tags").toList().stream().map(Object::toString).toArray(String[]::new),
             new String[]{"tag1", "tag3"}
         );
         Assert.assertEqualsNoOrder(
-            postBody.at("notags").asList().stream().map(Object::toString).toArray(String[]::new),
+            postBody.getJSONArray("notags").toList().stream().map(Object::toString).toArray(String[]::new),
             new String[]{"tag2"}
         );
 
-        final mjson.Json[] expectedRegions = new mjson.Json[]{
-            mjson.Json.object("referenceName", "chr1", "start", 0, "end", 16),
-            mjson.Json.object("referenceName", "chr1", "start", 16, "end", 32),
-            mjson.Json.object("referenceName", "chrM", "start", 0, "end", 16),
-            mjson.Json.object("referenceName", "chrM", "start", 16, "end", 32),
-        };
+        final JSONArray expectedRegions = new JSONArray()
+            .put(new JSONObject("{referenceName: \"chr1\", start: 0, end: 16}"))
+            .put(new JSONObject("{referenceName: \"chr1\", start: 16, end: 32}"))
+            .put(new JSONObject("{referenceName: \"chrM\", start: 0, end: 16}"))
+            .put(new JSONObject("{referenceName: \"chrM\", start: 16, end: 32}"));
+
         Assert.assertEqualsNoOrder(
-            postBody.at("regions").asJsonList().toArray(new mjson.Json[0]),
-            expectedRegions
+            postBody.getJSONArray("regions").toList(),
+            expectedRegions.toList()
         );
     }
 }

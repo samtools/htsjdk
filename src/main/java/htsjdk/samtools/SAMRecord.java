@@ -1541,9 +1541,6 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
         if (!value.getClass().isArray()) {
             throw new IllegalArgumentException("Non-array passed to setUnsignedArrayAttribute for tag " + tag);
         }
-        if (Array.getLength(value) == 0) {
-            throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
-        }
         setAttribute(SAMTag.makeBinaryTag(tag), value, true);
     }
 

@@ -78,6 +78,20 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     public abstract List<Allele> getAlleles();
 
     /**
+     * @return true if any allele is REF
+     */
+    public boolean hasRefAllele() {
+        return getAlleles().stream().anyMatch(A->A.isReference());
+    };
+
+    /**
+     * @return true if any allele is ALT, (NO_CALL are ignored)
+     */
+    public boolean hasAltAllele() {
+        return getAlleles().stream().anyMatch(A->!(A.isReference() || A.isNoCall()));
+    };
+
+    /**
      * Returns how many times allele appears in this genotype object?
      *
      * @param allele

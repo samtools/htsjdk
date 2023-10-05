@@ -24,7 +24,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-import htsjdk.tribble.Feature;
+import htsjdk.tribble.NamedFeature;
 import htsjdk.tribble.annotation.Strand;
 
 import java.util.Collection;
@@ -34,7 +34,7 @@ import java.util.Collection;
  *
  * @author Tim Fennell
  */
-public class Interval implements Comparable<Interval>, Cloneable, Feature {
+public class Interval implements Comparable<Interval>, Cloneable, NamedFeature {
     private final boolean negativeStrand;
     private final String name;
     private final String contig;

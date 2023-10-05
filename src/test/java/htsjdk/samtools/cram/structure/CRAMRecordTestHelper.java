@@ -13,10 +13,6 @@ import java.util.stream.IntStream;
 public class CRAMRecordTestHelper {
 
     final SAMRecordSetBuilder recordSetBuilder = new SAMRecordSetBuilder();
-    final Map<String, Integer> readGroupMap = new HashMap<String, Integer>() {{
-        readGroupMap.put("chr1", 1);
-        readGroupMap.put("chr2", 2);
-    }};
 
     @BeforeTest
     public void setupRecordSetBuilder() {

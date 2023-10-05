@@ -91,6 +91,9 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
         /** Pacific Biotechnology */
         PACBIO,
+        
+        /** Singular Genomics */
+        SINGULAR,
 
         /** Life Technologies */
         SOLID,

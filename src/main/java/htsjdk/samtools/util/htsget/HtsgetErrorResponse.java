@@ -1,6 +1,8 @@
 package htsjdk.samtools.util.htsget;
 
 
+import org.json.JSONObject;
+
 /**
  * Class allowing deserialization from json htsget error response, as defined in https://samtools.github.io/hts-specs/htsget.html
  *
@@ -30,17 +32,15 @@ public class HtsgetErrorResponse {
     }
 
     public static HtsgetErrorResponse parse(final String s) {
-        final mjson.Json j = mjson.Json.read(s);
-        final mjson.Json htsget = j.at("htsget");
+        final JSONObject j = new JSONObject(s);
+        final JSONObject htsget = j.optJSONObject("htsget");
         if (htsget == null) {
             throw new IllegalStateException(new HtsgetMalformedResponseException("No htsget key found in response"));
         }
 
-        final mjson.Json errorJson = htsget.at("error");
-        final mjson.Json messageJson = htsget.at("message");
+        final String errorJson = htsget.optString("error", null);
+        final String messageJson = htsget.optString("message", null);
 
-        return new HtsgetErrorResponse(
-            errorJson == null ? null : errorJson.asString(),
-            messageJson == null ? null : messageJson.asString());
+        return new HtsgetErrorResponse(errorJson, messageJson);
     }
 }

@@ -1,4 +1,3 @@
-[![Coverage Status](https://codecov.io/gh/samtools/htsjdk/branch/master/graph/badge.svg)](https://codecov.io/gh/samtools/htsjdk)
 [![Build and Test](https://github.com/samtools/htsjdk/actions/workflows/tests.yml/badge.svg?branch=master&event=push)](https://github.com/samtools/htsjdk/actions/workflows/tests.yml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.samtools/htsjdk/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.samtools%22%20AND%20a%3A%22htsjdk%22)
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/samtools/htsjdk)
@@ -9,7 +8,7 @@
 
 HTSJDK is an implementation of a unified Java library for accessing
 common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
-sequencing data.  There are also an number of useful utilities for 
+sequencing data.  There are also a number of useful utilities for 
 manipulating HTS data.
 
 > **NOTE: _HTSJDK has only partial support for the latest Variant Call Format Specification.  VCFv4.3 can be read but not written and there is no support for BCFv2.2_**
@@ -26,7 +25,7 @@ To receive announcements of releases and other significant project news please s
 
 ### Building HTSJDK
 
-HTSJDK is now built using [gradle](http://gradle.org/).
+HTSJDK is built using [gradle](http://gradle.org/).
 
 A wrapper script (`gradlew`) is included which will download the appropriate version of gradle on the first invocation.
 
@@ -78,7 +77,7 @@ Example gradle usage from the htsjdk root directory:
 ### Create an HTSJDK project in IntelliJ
 To create a project in IntelliJ IDE for htsjdk do the following:
 
-1. Select fom the menu: `File -> New -> Project from Existing Sources`
+1. Select from the menu: `File -> New -> Project from Existing Sources`
 2. In the resulting dialog, chose `Import from existing model`, select `Gradle` and `Next`
 3. Choose the `default gradle wrapper` and `Finish`.
 
@@ -102,22 +101,25 @@ Broadly speaking the majority of the code is covered under the MIT license with 
 ### Java Minimum Version Support Policy
 
 Htsjdk currently targets Java 8 and is tested on both 8 and 11.
-We do not currently plan to support versions of Java which are not long-term-support releases (ex: 9, 10, or 12).  
 
-We will notify the community at least 6 months before we plan to stop support for Java 8.  
+We intend to drop support for 8/11 and switch exclusively to 17+ in our next release (4.0.0).
+
+Given our promise of 6 months of warning before a move off of 8, we will atttempt to provide 3.x releases on demand if
+any critical bugs are discovered in the next 6 months.
 
 Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support | Proposed End of Support in HTSJDK | Actual End of Support in HTSJDK
----- | ---- | ---- | ----
-6  | Feb 2013 | Aug 2013 | Oct 2015
-7  | Apr 2015 | Oct 2015 | Oct 2015
-8  | Jan 2019 | TBD      | TBD
-11 | Sep 2022 | TBD      | TBD
+---- | ---- |-----------------------------------| ----
+6  | Feb 2013 | Aug 2013                          | Oct 2015
+7  | Apr 2015 | Oct 2015                          | Oct 2015
+8  | Jan 2019 | Feb 2022                          | TBD
+11 | Sep 2022 | Feb 2022                          | TBD
+17 | TBD      | TBD                               | TBD
 
  
 ### Meaning of the Htsjdk version number
 We encourage downstream projects to use the most recent htsjdk release in order to have access to the most up to date features and bug fixes.  It is therefore important therefore to make upgrading to newer versions as easy as possible. We make a best effort to adhere to the following principles in order to minimize disruption to projects that depend on htsjdk:
-* Avoid making breaking changes whenever possible. A breaking change is one which requires downstream projects to recompile against the new version of htsjdk or make changes to their source code.  These include both binary incompatiblities and source incompatibilites. 
-* Deprecate and provide new alternatives instead of removing exising APIs.
+* Avoid making breaking changes whenever possible. A breaking change is one which requires downstream projects to recompile against the new version of htsjdk or make changes to their source code.  These include both binary incompatibilities and source incompatibilities. 
+* Deprecate and provide new alternatives instead of removing existing APIs.
 * Document breaking changes in the release notes.
 * Provide clear instructions for upgrading to new API's when breaking changes/ deprecations occur.
 * Provide explanations for the rare cases when functionality is deprecated or removed without replacement.

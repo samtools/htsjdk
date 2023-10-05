@@ -204,7 +204,7 @@ public class TextTagCodec {
             }
         } else if (type.equals("f")) {
             try {
-                return new Float(stringVal);
+                return Float.parseFloat(stringVal);
             } catch (NumberFormatException e) {
                 throw new SAMFormatException("Tag of type f should have single-precision floating point value");
             }

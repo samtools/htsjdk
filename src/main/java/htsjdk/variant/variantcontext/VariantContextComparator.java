@@ -83,20 +83,11 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 		// Will throw NullPointerException -- happily -- if either of the chromosomes/contigs aren't
 		// present. This error checking should already have been done in the constructor but it's left
 		// in as defence anyway.
-		int contigCompare = this.contigIndexLookup.get(firstVariantContext.getContig()).compareTo(this.contigIndexLookup.get(secondVariantContext.getContig()));
-		contigCompare = contigCompare == 0 ? firstVariantContext.getStart() - secondVariantContext.getStart() : contigCompare;
-		if (contigCompare == 0) {
-			// Compare variants that have the same genomic span (chr:start-end) lexicographically by all alleles (ref and alts).
-			for (int i = 0; i < firstVariantContext.getAlleles().size(); i++) {
-				// If all previous alleles are identical and the first variant has additional alleles, make the first variant greater.
-				if (i >= secondVariantContext.getAlleles().size()) { return 1; }
-				contigCompare = firstVariantContext.getAlleles().get(i).compareTo(secondVariantContext.getAlleles().get(i));
-				if (contigCompare != 0) return contigCompare;
-			}
-		}
-		// If all previous alleles are identical and the second variant has additional alleles, make the second variant greater.
-		if (firstVariantContext.getAlleles().size() < secondVariantContext.getAlleles().size()) { return -1; }
-		return contigCompare;
+		final int contigCompare =
+				this.contigIndexLookup.get(firstVariantContext.getContig()) - this.contigIndexLookup.get(secondVariantContext.getContig());
+		return contigCompare != 0
+				? contigCompare
+				: firstVariantContext.getStart() - secondVariantContext.getStart();
 	}
 
 	/**
