@@ -25,6 +25,8 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.Defaults;
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
 
@@ -72,6 +74,8 @@ import java.util.List;
  * @since 2010
  */
 public class VCFCodec extends AbstractVCFCodec {
+    private final static Log log = Log.getInstance(VCFCodec.class);
+
     // Our aim is to read in the records and convert to VariantContext as quickly as possible, relying on VariantContext to do the validation of any contradictory (or malformed) record parameters.
     public final static String VCF4_MAGIC_HEADER = "##fileformat=VCFv4";
 
@@ -96,9 +100,11 @@ public class VCFCodec extends AbstractVCFCodec {
                         throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
                     foundHeaderVersion = true;
                     version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
-                    if ( ! version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) )
-                        throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4; please use the VCF3 codec for " + lineFields[1]);
-                    if ( version != VCFHeaderVersion.VCF4_0 && version != VCFHeaderVersion.VCF4_1 && version != VCFHeaderVersion.VCF4_2 && version != VCFHeaderVersion.VCF4_3)
+                    if (Defaults.OPTIMISTIC_VCF_4_4 == true && version == VCFHeaderVersion.VCF4_4 ) {
+                        // if optimistic VCFv4.4 is enabled, accept VCFv4.4 as input, but treat it as VCFv4.3, and hope for the best
+                        log.warn("********** VCFv4.4 is not yet fully supported - processing VCFv4.4 input as VCFv4.3!  **********");
+                        version = VCFHeaderVersion.VCF4_3;
+                    } else if ( version != VCFHeaderVersion.VCF4_0 && version != VCFHeaderVersion.VCF4_1 && version != VCFHeaderVersion.VCF4_2 && version != VCFHeaderVersion.VCF4_3)
                         throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4 and does not support " + lineFields[1]);
                 }
                 headerStrings.add(lineIterator.next());

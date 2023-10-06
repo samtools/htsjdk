@@ -3,10 +3,9 @@ package htsjdk.variant.vcf;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.TribbleException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -49,6 +48,10 @@ public class VCFFileReaderTest extends HtsjdkTest {
         return new Object[][]{
                 // various ways to refer to a local file
                 {TEST_DATA_DIR + "VCF4HeaderTest.vcf", null, false, true},
+
+                // this file is the same as VCF4HeaderTest.vcf, except the header is marked as VCF 4.4
+                // this fails unless the "optimistic_vcf_4_4" property is set, so it's expected to fail here
+                {TEST_DATA_DIR + "VCF4_4HeaderTest.vcf", null, false, false},
 
 //                // this is almost a vcf, but not quite it's missing the #CHROM line and it has no content...
                 {TEST_DATA_DIR + "Homo_sapiens_assembly38.tile_db_header.vcf", null, false, false},
@@ -100,6 +103,16 @@ public class VCFFileReaderTest extends HtsjdkTest {
         }
         // fail if a test that should have thrown didn't
         Assert.assertTrue(shouldSucceed, "Test should have failed but succeeded");
+    }
+
+    @Test(groups = "optimistic_vcf_4_4")
+    public void testAcceptOptimisticVCF4_4() {
+        // This file is the same as VCF4HeaderTest.vcf, except the header is marked as VCF 4.4
+        // This will fail unless the optimistic_vcf_4_4" property isn't set
+        try (final VCFFileReader reader = new VCFFileReader(Paths.get(TEST_DATA_DIR.getAbsolutePath(), "VCF4_4HeaderTest.vcf"), false)) {
+            final VCFHeader header = reader.getFileHeader();
+            Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+        }
     }
 
     @Test
